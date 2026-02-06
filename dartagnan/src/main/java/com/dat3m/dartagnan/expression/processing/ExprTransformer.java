@@ -194,6 +194,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
+    public Expression visitMemoryExtend(MemoryExtend expr) {
+        return expressions.makeMemoryExtend(expr.getOperand().accept(this), expr.getTargetType());
+    }
+
+    @Override
     public Expression visitLeafExpression(LeafExpression expr) {
         return expr;
     }

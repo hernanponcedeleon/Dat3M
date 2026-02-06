@@ -30,7 +30,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
@@ -76,13 +75,13 @@ public class ExpressionEncoder {
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanAt(Expression expression, Event at) {
-        checkArgument(expression.getType() instanceof BooleanType);
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeAt(expression, at);
     }
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanFinal(Expression expression) {
-        checkArgument(expression.getType() instanceof BooleanType);
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
     }
 
@@ -108,7 +107,7 @@ public class ExpressionEncoder {
             }
             variable = fmgr.getTupleFormulaManager().makeTuple(fields);
         } else if (type instanceof ArrayType arrType) {
-            checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
+            Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
             final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
             for (int i = 0; i < arrType.getNumElements(); i++) {
                 elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()).formula());
@@ -129,7 +128,7 @@ public class ExpressionEncoder {
     // Utility
 
     public BooleanFormula equal(Expression left, Expression right) {
-        checkArgument(left.getType().equals(right.getType()));
+        Preconditions.checkArgument(left.getType().equals(right.getType()));
         return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
     }
 
@@ -140,7 +139,7 @@ public class ExpressionEncoder {
     public enum ConversionMode {
         STRICT,                     // No conversion, types must match exactly
         CAST,                       // Immediate cast
-        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory but source/target type sizes must match
+        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory, but source/target type sizes must match
         MEMORY_ROUND_TRIP_RELAXED,  // Round-trip over memory, source/target can have mismatching sizes
     }
 
@@ -150,7 +149,7 @@ public class ExpressionEncoder {
 
         final Expression value = switch (conversion) {
             case STRICT -> {
-                checkArgument(left.getType().equals(right.getType()));
+                Preconditions.checkArgument(left.getType().equals(right.getType()));
                 yield right;
             }
             case CAST -> {
@@ -195,7 +194,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<IntegerType, ?> encodeIntegerExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof IntegerType);
+            Preconditions.checkArgument(expression.getType() instanceof IntegerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -213,7 +212,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<MemoryType, ?> encodeMemoryExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof MemoryType);
+            Preconditions.checkArgument(expression.getType() instanceof MemoryType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -222,7 +221,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<BooleanType, BooleanFormula> encodeBooleanExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof BooleanType);
+            Preconditions.checkArgument(expression.getType() instanceof BooleanType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof BooleanFormula;
@@ -231,7 +230,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<?, TupleFormula> encodeAggregateExpr(Expression expression) {
-            checkArgument(ExpressionHelper.isAggregateLike(expression));
+            Preconditions.checkArgument(ExpressionHelper.isAggregateLike(expression));
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof TupleFormula;
@@ -514,7 +513,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
-            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
             final List<? extends TypedFormula<IntegerType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodeIntegerExpr)
                     .toList();
@@ -747,13 +746,29 @@ public class ExpressionEncoder {
         // ====================================================================================
         // Memory type
 
+        private void checkMemoryCastSupport(Type type) {
+            if (!(type instanceof IntegerType)) {
+                throw new UnsupportedOperationException("Cannot cast memory to type: " + type);
+            }
+        }
+
         @Override
         public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
             final TypedFormula<?, ?> inner = encode(expr.getOperand());
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
 
+            checkMemoryCastSupport(expr.getSourceType());
+
+            Formula enc = inner.formula();
+            if (inner.formula() instanceof BitvectorFormula bvform) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int innerSize = bvmgr.getLength(bvform);
+                if (innerSize < targetType.getBitWidth()) {
+                    enc = bvmgr.extend(bvform, targetType.getBitWidth() - innerSize, false);
+                }
+            }
             // TODO: Do actual conversions
-            return new TypedFormula<MemoryType, Formula>(targetType, inner.formula());
+            return new TypedFormula<>(targetType, enc);
         }
 
         @Override
@@ -761,13 +776,24 @@ public class ExpressionEncoder {
             final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
 
+            checkMemoryCastSupport(targetType);
+
+            Formula enc = inner.formula();
+            if (!context.useIntegers && targetType instanceof IntegerType bvType) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int targetSize = bvType.getBitWidth();
+                if (targetSize < expr.getSourceType().getBitWidth()) {
+                    enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
+                }
+            }
+
             // TODO: Do actual conversions
-            return new TypedFormula<Type, Formula>(targetType, inner.formula());
+            return new TypedFormula<>(targetType, enc);
         }
 
         @Override
         public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
-            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
             Preconditions.checkState(!context.useIntegers);
 
             // TODO: We just do normal bitvector concatenation for now
@@ -800,6 +826,21 @@ public class ExpressionEncoder {
                 enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
             }
             return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryExtend(MemoryExtend expr) {
+            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc;
+            if (context.useIntegers) {
+                enc = operand; // Maybe remove sign?
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
+                enc = bvmgr.extend((BitvectorFormula) operand, extendedBits, false);
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+
         }
 
         @Override
@@ -849,7 +890,7 @@ public class ExpressionEncoder {
             checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
             final MemoryObject base = val.getMemoryObject();
             final int offset = val.getOffset();
-            checkArgument(base.isInRange(offset), "Array index out of bounds");
+            Preconditions.checkArgument(base.isInRange(offset), "Array index out of bounds");
             final String name = String.format("last_val_at_%s_%d", base, offset);
             return makeVariable(name, val.getType());
         }
