@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -36,6 +37,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -102,7 +104,8 @@ public final class EncodingContext {
         final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()
                 .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
                 .toList();
-        constraintsToEncode = DependencyGraph.from(Iterables.concat(c, anarchicConstraints));
+        final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
+        constraintsToEncode = DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies);
         exprEncoder = new ExpressionEncoder(this);
     }
 
@@ -311,6 +314,12 @@ public final class EncodingContext {
 
     // ====================================================================================
     // Private implementation
+
+    private static Collection<? extends Constraint> computeConstraintDependencies(Constraint c) {
+        final List<Relation> r = c instanceof Definition d ? d.getConstrainedRelations() : null;
+        final Collection<? extends Relation> rels = r == null ? c.getConstrainedRelations() : r.subList(1, r.size());
+        return rels.stream().map(Relation::getDefinition).toList();
+    }
 
     private void initialize() {
         // ------- Control flow variables -------
