@@ -34,7 +34,6 @@ import com.google.common.collect.Ordering;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;

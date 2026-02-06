@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 
+import com.dat3m.dartagnan.expression.type.MemoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -482,7 +483,7 @@ public class PropertyEncoder implements Encoder {
             return false;
         }
         if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType ||
-                o.getMemValue().getType() instanceof PointerType)) {
+                o.getMemValue().getType() instanceof PointerType || o.getMemValue().getType() instanceof MemoryType)) {
             return false;
         }
         final TypeFactory types = TypeFactory.getInstance();
@@ -499,7 +500,8 @@ public class PropertyEncoder implements Encoder {
         Expression pointer;
         if (isValue) {
             List<Expression> memVals = stores.stream().map(Store::getMemValue).toList();
-            pointer = memVals.get(0) instanceof IntegerType ?expressions.makeIntConcat(memVals): expressions.makePtrConcat(memVals);
+            // assert memVals.get(0) instanceof MemoryType;
+            pointer = expressions.makeFromMemoryCast(expressions.makeMemoryConcat(memVals),object.getType());
         }else{
             pointer = stores.get(0).getAddress();
         }

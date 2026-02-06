@@ -203,7 +203,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<PointerType, ?> encodePointerExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof PointerType);
+            Preconditions.checkArgument(expression.getType() instanceof PointerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.type() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -681,7 +681,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<PointerType, ?> visitPtrConcat(PtrConcat expr) {
-            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
             final List<? extends TypedFormula<PointerType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodePointerExpr)
                     .toList();
@@ -747,7 +747,7 @@ public class ExpressionEncoder {
         // Memory type
 
         private void checkMemoryCastSupport(Type type) {
-            if (!(type instanceof IntegerType)) {
+            if (!(type instanceof IntegerType || type instanceof PointerType)) {
                 throw new UnsupportedOperationException("Cannot cast memory to type: " + type);
             }
         }
