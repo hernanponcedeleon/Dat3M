@@ -129,6 +129,9 @@ public final class ExpressionFactory {
     public IntLiteral makeValue(BigInteger value, IntegerType type) {
         return new IntLiteral(type, value);
     }
+    public IntLiteral makeValue(int value, int bitwidth) {
+        return makeValue(BigInteger.valueOf(value), bitwidth);
+    }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
         if (leftOperand.getType() instanceof PointerType){
@@ -574,10 +577,9 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
         } else if (type instanceof MemoryType memoryType) {
-            return makeToMemoryCast(makeZero(TypeFactory.getInstance().getIntegerType(memoryType.getBitWidth())));
-        } else {
-        } else if (type instanceof PointerType pointerType) {
-            return makeNullLiteral(pointerType);
+            return makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
+        } else if (type instanceof PointerType pt) {
+            return makeNullLiteral(pt);
         }else{
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }

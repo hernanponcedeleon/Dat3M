@@ -173,6 +173,9 @@ public final class TypeFactory {
         if (type instanceof IntegerType) {
             return getIntegerType(memSizeInBits);
         }
+        if (type instanceof PointerType) {
+            return getPointerType(memSizeInBits);
+        }
 
         throw new UnsupportedOperationException(String.format("Type %s has no compatible type of size %s", type, memSizeInBits));
     }

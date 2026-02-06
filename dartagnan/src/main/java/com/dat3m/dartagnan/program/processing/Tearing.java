@@ -34,6 +34,7 @@ import com.google.common.collect.Ordering;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -178,9 +179,9 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
         final int bytes = checkBytes(load, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
-                "Non-integer address in '%s'", load);
-        checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
+        final PointerType addressType = checkPointerType(load.getAddress().getType(),
+                "Non-pointer address in '%s'", load);
+        checkType(load.getAccessType(), "Non-integer and non-pointer mixed-size access in '%s'", load);
         final Function function = load.getFunction();
         final Register addressRegister = toRegister(load.getAddress(), function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
@@ -198,8 +199,8 @@ public final class Tearing implements ProgramProcessor {
         }
         for (int i = -1; i < offsets.size(); i++) {
             final int start = i < 0 ? 0 : offsets.get(i);
-            final Expression offset = expressions.makeValue(start, addressType);
-            final Expression address = expressions.makeAdd(addressRegister, offset);
+            final Expression offset = expressions.makeValue(start, addressType.getBitWidth());
+            final Expression address = expressions.makePtrAdd(addressRegister, offset);
             final Load byteLoad = load.getCopy();
             final Register result = smallerRegisters.get(i + 1);
             byteLoad.setResultRegister(result);
@@ -220,9 +221,9 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Store store, List<Integer> offsets, Map<MemoryCoreEvent, List<Event>> map, boolean bigEndian) {
         final int bytes = checkBytes(store, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
+        final PointerType addressType = checkPointerType(store.getAddress().getType(),
                 "Non-integer address in '%s'", store);
-        checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
+        checkType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);
         final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
@@ -239,7 +240,7 @@ public final class Tearing implements ProgramProcessor {
             final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             final int start = bigEndian ? bytes - next : offset;
             final int end = bigEndian ? bytes - offset : next;
-            final Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(offset, addressType));
+            final Expression address = expressions.makePtrAdd(addressRegister, expressions.makeValue(offset, addressType.getBitWidth()));
             final Expression value = expressions.makeMemoryExtract(memValue, 8 * start, 8 * end - 1);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
@@ -257,8 +258,17 @@ public final class Tearing implements ProgramProcessor {
         return replacement;
     }
 
-    private IntegerType checkIntegerType(Type type, String message, Event event) {
+    private Type checkType(Type type, String message, Event event) {
         if (type instanceof IntegerType t) {
+            return t;
+        }
+        if (type instanceof PointerType p) {
+            return p;
+        }
+        throw new UnsupportedOperationException(String.format(message, event));
+    }
+    private PointerType checkPointerType(Type type, String message, Event event) {
+        if (type instanceof PointerType t) {
             return t;
         }
         throw new UnsupportedOperationException(String.format(message, event));
