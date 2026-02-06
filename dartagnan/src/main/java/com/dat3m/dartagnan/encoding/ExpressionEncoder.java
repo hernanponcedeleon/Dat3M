@@ -64,8 +64,8 @@ public class ExpressionEncoder {
         return fmgr.getFloatingPointFormulaManager();
     }
 
-    private FloatingPointType getFloatType(int exponentBits, int mantissaBits) {
-        return FormulaType.getFloatingPointType(exponentBits, mantissaBits);
+    private FloatingPointType getFloatType(FloatType type) {
+        return FormulaType.getFloatingPointType(type.getExponentBits(), type.getMantissaBits());
     }
 
     // ====================================================================================
@@ -103,7 +103,7 @@ public class ExpressionEncoder {
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
         } else if (type instanceof FloatType floatType) {
-            final FloatingPointType fType = getFloatType(floatType.getExponentBits(), floatType.getMantissaBits());
+            final FloatingPointType fType = getFloatType(floatType);
             variable = floatingPointFormulaManager().makeVariable(name, fType);
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
@@ -537,7 +537,7 @@ public class ExpressionEncoder {
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = (FloatType) expr.getTargetType();
-            final FloatingPointType targetType = getFloatType(fType.getExponentBits(), fType.getMantissaBits());
+            final FloatingPointType targetType = getFloatType(fType);
             return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats));
         }
 
@@ -547,7 +547,7 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
             final FloatType fType = (FloatType) floatLiteral.getType();
-            final FloatingPointType fFType = getFloatType(fType.getExponentBits(), fType.getMantissaBits());
+            final FloatingPointType fFType = getFloatType(fType);
             final Formula result;
             if (floatLiteral.isNaN()) {
                 result = floatingPointFormulaManager().makeNaN(fFType);
@@ -638,7 +638,7 @@ public class ExpressionEncoder {
                 return inner;
             } else {
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
-                final FloatingPointType fType = getFloatType(expr.getTargetType().getExponentBits(), expr.getTargetType().getMantissaBits());
+                final FloatingPointType fType = getFloatType(expr.getTargetType());
                 enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), true, fType, context.roundingModeFloats);
             }
             return new TypedFormula<>(expr.getType(), enc);
