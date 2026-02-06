@@ -74,6 +74,9 @@ public class OptionNames {
     public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generateGraphvizDebugFiles";
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
+    // Eager SMT Options
+    public static final String INCREMENTAL_SOLVING = "eager.incremental";
+
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
 
