@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.encoding;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -27,8 +26,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -480,14 +479,34 @@ public class PropertyEncoder implements Encoder {
         if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
             return false;
         }
-        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType)) {
-            return false;
-        }
-        final TypeFactory types = TypeFactory.getInstance();
-        final int pointerSize = types.getMemorySizeInBytes(types.getPointerType());
-        final int accessSize = stores.stream().mapToInt(st -> types.getMemorySizeInBytes(st.getAccessType())).sum();
+
         //TODO Recognize pointers contained in aggregate values.
-        return pointerSize == accessSize;
+        return mayBePointerValue(stores);
+    }
+
+    private boolean mayBePointerValue(List<Store> stores) {
+        final TypeFactory types = TypeFactory.getInstance();
+        if (stores.size() == 1) {
+            return stores.get(0).getAccessType() instanceof IntegerType intType
+                    && intType.getBitWidth() == types.getMemorySizeInBits(types.getPointerType());
+        } else {
+            final boolean allMemoryTypes = stores.stream().allMatch(o -> o.getAccessType() instanceof MemoryType);
+            final boolean hasPointerSize = stores.stream()
+                    .mapToInt(st -> types.getMemorySizeInBits(st.getAccessType()))
+                    .sum() == types.getMemorySizeInBits(types.getPointerType());
+            return allMemoryTypes && hasPointerSize;
+        }
+    }
+
+    private Expression toPointerValue(List<Store> stores) {
+        if (stores.size() == 1) {
+            return stores.get(0).getMemValue();
+        }
+        final ExpressionFactory exprs = context.getExpressionFactory();
+        return exprs.makeFromMemoryCast(
+                exprs.makeMemoryConcat(stores.stream().map(Store::getMemValue).toList()),
+                TypeFactory.getInstance().getPointerType()
+        );
     }
 
     private BooleanFormula referencesObject(List<Store> stores, boolean isValue, MemoryObject object) {
@@ -495,7 +514,7 @@ public class PropertyEncoder implements Encoder {
         //TODO Use provenance to omit some of these checks statically.
         final ExpressionFactory expressions = context.getExpressionFactory();
         final Expression pointer = isValue
-                ? expressions.makeIntConcat(stores.stream().map(Store::getMemValue).toList())
+                ? toPointerValue(stores)
                 : stores.get(0).getAddress();
         if (object.equals(pointer)) {
             return bmgr.makeTrue();
