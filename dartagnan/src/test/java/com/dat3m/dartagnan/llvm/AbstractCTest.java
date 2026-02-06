@@ -50,7 +50,7 @@ public abstract class AbstractCTest {
     }
 
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "true");
+        return builder.setOption(OptionNames.USE_INTEGERS, "false");
     }
 
     protected Provider<String> getProgramPathProvider() {

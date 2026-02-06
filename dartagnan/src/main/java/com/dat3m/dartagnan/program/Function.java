@@ -62,7 +62,7 @@ public class Function implements LeafExpression {
 
     @Override
     public Type getType() {
-        return TypeFactory.getInstance().getArchType();
+        return TypeFactory.getInstance().getPointerType();
     }
 
     @Override

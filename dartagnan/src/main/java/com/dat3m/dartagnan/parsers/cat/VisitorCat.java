@@ -32,6 +32,11 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
+import com.dat3m.dartagnan.parsers.CatParser.*;
+import com.dat3m.dartagnan.wmm.definition.*;
+import org.antlr.v4.runtime.*;
+import java.util.*;
+
 class VisitorCat extends CatBaseVisitor<Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(VisitorCat.class);

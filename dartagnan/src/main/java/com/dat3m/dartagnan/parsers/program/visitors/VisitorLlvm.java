@@ -52,7 +52,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
+    private final PointerType pointerType = types.getPointerType();
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
@@ -588,6 +588,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression compared = switch (operator) {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
+
+
+            // fixme :
+            // The two arguments must be integer, pointer ,or integer vector typed. They must also be of identical types.
+            // llvm doc: If the operands are pointer typed, the pointer values are compared as if they were integers.
+            // cmp should cast directly to int if both are pointers else normal int cmp
+
             case "slt", "ult" -> expressions.makeLT(left, right, operator.startsWith("s"));
             case "sle", "ule" -> expressions.makeLTE(left, right, operator.startsWith("s"));
             case "sgt", "ugt" -> expressions.makeGT(left, right, operator.startsWith("s"));
@@ -827,10 +834,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        final Expression result = expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        // checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
+        final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
+
 
     // =================================================================================================================
     // Expressions
@@ -847,7 +855,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        // return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeNullLiteral();
     }
 
     @Override
@@ -1069,8 +1078,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType, "Non integer or pointer type %s.", target);
+        return expressions.makeCast(operandExpression, targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

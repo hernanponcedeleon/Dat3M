@@ -52,6 +52,7 @@ public class AsmCkArmv8Test {
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
             {"stack_empty", 2, Result.UNKNOWN},
+
         });
     }
 

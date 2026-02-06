@@ -14,9 +14,12 @@ import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
 import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.pointers.*;
+
 
 import java.util.ArrayList;
 
@@ -117,6 +120,44 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         );
     }
 
+
+    @Override
+    public Expression visitPtrAddExpression(PtrAddExpr expr) {
+        return expressions.makePtrAdd(
+                expr.getBase().accept(this),
+                expr.getOffset().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr expr) {
+        return expressions.makePtrCmp(
+                expr.getLeft().accept(this),
+                expr.getKind(),
+                expr.getRight().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
+        return expressions.makePtrToIntCast(expr.getOperand().accept(this), expr.getType());
+    }
+
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return expressions.makeIntToPtrCast(expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitPtrConcat(PtrConcat expr) {
+        return expressions.makePtrConcat(expr.getOperands().stream().map(e -> e.accept(this)).toList());
+    }
+
+    @Override
+    public Expression visitPtrExtract(PtrExtract expr) {
+        return expressions.makePtrExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+    }
+
     @Override
     public Expression visitGEPExpression(GEPExpr gep) {
         Expression base = gep.getBase().accept(this);
@@ -125,6 +166,36 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
             offsets.add(offset.accept(this));
         }
         return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+    }
+
+    @Override
+    public Expression visitToMemoryCastExpression(ToMemoryCast expr) {
+        return expressions.makeToMemoryCast(expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitFromMemoryCastExpression(FromMemoryCast expr) {
+        return expressions.makeFromMemoryCast(expr.getOperand().accept(this), expr.getTargetType());
+    }
+
+    @Override
+    public Expression visitMemoryConcatExpression(MemoryConcat expr) {
+        return expressions.makeMemoryConcat(expr.getOperands().stream().map(e -> e.accept(this)).toList());
+    }
+
+    @Override
+    public Expression visitMemoryExtractExpression(MemoryExtract expr) {
+        return expressions.makeMemoryExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+    }
+
+    @Override
+    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        return expressions.makeEQ(expr.getLeft().accept(this), expr.getRight().accept(this));
+    }
+
+    @Override
+    public Expression visitMemoryExtend(MemoryExtend expr) {
+        return expressions.makeMemoryExtend(expr.getOperand().accept(this), expr.getTargetType());
     }
 
     @Override

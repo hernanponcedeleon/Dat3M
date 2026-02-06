@@ -10,10 +10,7 @@ import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
@@ -86,6 +83,7 @@ public class ThreadCreation implements ProgramProcessor {
     private final IntegerType archType = types.getArchType();
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
+    private final PointerType pointerType = types.getPointerType();
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -169,7 +167,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Event> replacement = eventSequence(
                         newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
+                        newLocal(tidRegister, new TIdExpr((IntegerType) tidRegister.getType(), spawnedThread.thread()))
                 );
                 IRHelper.replaceWithMetadata(create, replacement);
 
@@ -190,7 +188,9 @@ public class ThreadCreation implements ProgramProcessor {
 
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
-            final Expression tidExpr = join.getTid();
+            final Expression tidExpr_ = join.getTid();
+            // todo check if this makes sense
+            final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_, archType) : tidExpr_;
 
             final Register joinRegister = join.getResultRegister();
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
@@ -343,11 +343,18 @@ public class ThreadCreation implements ProgramProcessor {
             }
             if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_SELF) {
                 final Register resultRegister = getResultRegister(call);
-                assert resultRegister.getType() instanceof IntegerType;
+                Type regType = resultRegister.getType();
+                assert regType instanceof PointerType || regType instanceof IntegerType;
                 assert call.getArguments().isEmpty();
-                final Expression tidExpr = new TIdExpr((IntegerType) resultRegister.getType(), call.getThread());
-                final Local tidAssignment = newLocal(resultRegister, tidExpr);
-                IRHelper.replaceWithMetadata(call, tidAssignment);
+                if (regType instanceof PointerType) {
+                    final Expression tidExpr = new TIdExpr(archType, call.getThread());
+                    final Local tidAssignment = newLocal(resultRegister, expressions.makeIntToPtrCast(tidExpr));
+                    IRHelper.replaceWithMetadata(call, tidAssignment);
+                }else{
+                    final Expression tidExpr = new TIdExpr((IntegerType) regType, call.getThread());
+                    final Local tidAssignment = newLocal(resultRegister, tidExpr);
+                    IRHelper.replaceWithMetadata(call, tidAssignment);
+                }
             }
         }
     }
@@ -431,14 +438,14 @@ public class ThreadCreation implements ProgramProcessor {
         return new ThreadData(thread, null, threadReturnLabel);
     }
 
-
     private void replaceThreadLocalsWithStackalloc(Memory memory, Thread thread) {
+        final TypeFactory types = TypeFactory.getInstance();
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+
         // Translate thread-local memory object to local stack allocation
         Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
         for (MemoryObject memoryObject : memory.getObjects()) {
-            if (!memoryObject.isThreadLocal()) {
-                continue;
-            }
+            if (!memoryObject.isThreadLocal()) {continue;}
             Preconditions.checkState(memoryObject.hasKnownSize());
 
             // Compute type of memory object based on initial values
@@ -451,9 +458,9 @@ public class ThreadCreation implements ProgramProcessor {
             final Type memoryType = types.getAggregateType(contentTypes, offsets);
 
             // Allocate single object of memory type
-            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, types.getPointerType());
+            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, pointerType);
             final Event localAlloc = EventFactory.newAlloc(
-                    reg, memoryType, expressions.makeOne(types.getArchType()),
+                    reg, memoryType, expressions.makeOne(archType),
                     false, true
             );
 
@@ -461,7 +468,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        expressions.makeAdd(reg, expressions.makeValue(initOffset, types.getArchType())),
+                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, archType)),// null pointer store here!!
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
@@ -748,6 +755,5 @@ public class ThreadCreation implements ProgramProcessor {
             return visitor.visitLeafExpression(this);
         }
     }
-
 
 }

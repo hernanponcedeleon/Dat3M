@@ -62,6 +62,11 @@ public class FormulaManagerExt {
         return false;
     }
 
+    public BooleanFormula isZeroBitVector(BitvectorFormula formula) {
+        BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+        return bvfm.equal(bvfm.makeBitvector(bvfm.getLength(formula),0), formula);
+    }
+
     public BooleanFormula equal(Formula left, Formula right) {
         Preconditions.checkArgument(hasSameType(left, right));
 

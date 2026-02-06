@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrAddExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
@@ -108,6 +109,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                     continue;
                 }
                 final Expression negatedGuard = jump.getGuard();
+
                 // Now we check for the guard shape "r != 0" (i.e., we exit when r == 0 due to the inversion).
                 if (!(negatedGuard instanceof IntCmpExpr cond
                         && cond.getLeft() instanceof Register r
@@ -137,15 +139,21 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
         // We found the non-trivial source. Check that this is indeed the desired increment:
         // (1) It is an addition operation
-        if (!(source instanceof Local local && local.getExpr() instanceof IntBinaryExpr add && add.getKind() == IntBinaryOp.ADD)) {
-            return null;
+        if (source instanceof Local local && local.getExpr() instanceof IntBinaryExpr add && add.getKind() == IntBinaryOp.ADD) {
+            // (2) The addition is a positive increment of the register.
+            if (add.getLeft().equals(register) && add.getRight() instanceof IntLiteral c && c.getValue().signum() > 0) {
+                return local;
+            }
         }
-        // (2) The addition is a positive increment of the register.
-        if (!(add.getLeft().equals(register) && add.getRight() instanceof IntLiteral c && c.getValue().signum() > 0)) {
-            return null;
+        // same as above
+        if (source instanceof Local local && local.getExpr() instanceof PtrAddExpr add) {
+            if (add.getBase().equals(register) && add.getOffset() instanceof IntLiteral c && c.getValue().signum() > 0) {
+                return local;
+            }
         }
+        return null;
         // TODO: return also the increment
-        return local;
+
     }
 
     private Expression computeLoopBound(List<Event> events, Register exitReg, Register counterReg, int counterRegInitVal,

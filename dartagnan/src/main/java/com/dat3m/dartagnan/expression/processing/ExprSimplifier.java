@@ -10,7 +10,11 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
+import com.dat3m.dartagnan.expression.memory.MemoryEqualExpr;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -19,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -190,6 +196,49 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr cmp) {
+        final Expression rewrite = tryGeneralRewrite(cmp);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
+        final Expression left = cmp.getLeft().accept(this);
+        final Expression right = cmp.getRight().accept(this);
+        final PtrCmpOp op = cmp.getKind();
+
+        // ------- Operations on same value -------
+        if (aggressive && left.equals(right)) {
+            return expressions.makeValue(!op.isStrict());
+        }
+
+        // ------- Operations with constants -------
+        if (left instanceof NullLiteral && right instanceof NullLiteral) {
+            final boolean cmpResult = switch (op) {
+                case EQ -> true;
+                case NEQ -> false;
+            };
+            return expressions.makeValue(cmpResult);
+        }
+
+        // ------- Operations on memory objects -------
+        if (left instanceof MemoryObject && right instanceof MemoryObject
+                || left instanceof Function && right instanceof Function) {
+            final boolean sameObj = left.equals(right);
+
+            final Boolean cmpResult = switch (op) {
+                case EQ -> sameObj;
+                case NEQ -> !sameObj;
+            };
+
+            if (cmpResult != null) {
+                return expressions.makeValue(cmpResult);
+            }
+        }
+
+        return expressions.makePtrCmp(left, op, right);
+    }
+
+    @Override
     public Expression visitIntSizeCastExpression(IntSizeCast expr) {
         final Expression operand = expr.getOperand().accept(this);
 
@@ -287,7 +336,60 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeIntBinary(left, op, right);
     }
 
-    // TODO: Add simplifications for IntExtract and IntConcat expressions
+    // what about (base + offset) + offset ->  base + (offset + offset)?
+    @Override
+    public Expression visitPtrAddExpression(PtrAddExpr expr) {
+
+        final Expression base = expr.getBase().accept(this);
+        final Expression offset = expr.getOffset().accept(this);
+
+
+        // Optimizations for "x op constant"
+        if (offset instanceof IntLiteral lit) {
+            if(lit.isZero()){return base;}
+        }
+        return expressions.makePtrAdd(base, offset);
+    }
+
+    // TODO: Add simplifications for IntExtract and IntConcat expressions.
+
+    // Simplifies (int(i) -> ptr(i)) -> int(i).
+    @Override
+    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
+        final Expression sub = expr.getOperand().accept(this);
+        if (sub instanceof IntToPtrCast subT){
+            final int originalBitWidth = subT.getSourceType().getBitWidth();
+            final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
+            final int finalBitWidth = expr.getType().getBitWidth();
+
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+                return subT.getOperand();
+            }
+        }
+        if (sub instanceof NullLiteral) {
+            return expressions.makeZero(expr.getType());
+        }
+    return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
+    }
+
+    // Simplifies (ptr(i) -> int(i)) -> ptr(i).
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        final Expression sub = expr.getOperand().accept(this);
+        if (sub instanceof PtrToIntCast subT){
+            final int originalBitWidth = subT.getSourceType().getBitWidth();
+            final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
+            final int finalBitWidth = expr.getType().getBitWidth();
+
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+                return subT.getOperand();
+            }
+        }
+        if (sub instanceof IntLiteral && ((IntLiteral) sub).isZero()) {
+            return expressions.makeNullLiteral(expr.getType());
+        }
+        return expressions.makeIntToPtrCast(expr.getOperand());
+    }
 
     @Override
     public Expression visitITEExpression(ITEExpr expr) {
@@ -378,8 +480,30 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeAggregateCmp(left, expr.getKind(), right);
     }
 
-    // =================================== Helper methods ===================================
+    // =================================== Memory type ===================================
 
+    @Override
+    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        final Expression rewrite = tryGeneralRewrite(expr);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
+        return super.visitMemoryEqualExpression(expr);
+    }
+
+    @Override
+    public Expression visitFromMemoryCastExpression(FromMemoryCast cast) {
+        final Expression inner = cast.getOperand().accept(this);
+        if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
+            return toMemoryCast.getOperand();
+        }
+
+        return expressions.makeFromMemoryCast(inner, cast.getTargetType());
+    }
+
+
+    // =================================== Helper methods ===================================
     // An expression is potentially eliminable if it either carries no dependencies
     // or we are in aggressive mode.
     private boolean isPotentiallyEliminable(Expression expr) {

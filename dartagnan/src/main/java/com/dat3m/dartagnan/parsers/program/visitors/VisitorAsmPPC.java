@@ -10,16 +10,21 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.AsmPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmPPCParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
@@ -32,6 +37,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
@@ -41,6 +47,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final List<Expression> argsRegisters;
     // expected type of RHS of a comparison.
     private Type expectedType;
+
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
@@ -89,7 +96,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address,offset);
         asmInstructions.add(EventFactory.newRMWLoadExclusive(register, newAddress));
         return null;
     }
@@ -108,9 +115,9 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
-        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
-        this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
+        Expression newAddress = expressions.makePtrAdd(address,offset);
+        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", archType);
+        this.comparator = new CmpInstruction(resultRegister, expressions.makeZero(archType));
         asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
         return null;
     }
@@ -127,7 +134,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmPPCParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeNEQ(comparator.left(), comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -183,10 +190,13 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmPPCParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+        checkState(expectedType instanceof IntegerType || expectedType instanceof PointerType, "Expected type is not an integer or pointer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType) {
+            return expressions.makeValue(value, (IntegerType) expectedType);
+        }
+        return expressions.makeValue(value, ((PointerType) expectedType).getBitWidth());
     }
     
 

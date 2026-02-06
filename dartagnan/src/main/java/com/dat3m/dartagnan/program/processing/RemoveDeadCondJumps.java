@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -127,6 +128,9 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
             return true;
         }
         if (jump.getGuard() instanceof IntCmpExpr a1 && other.getGuard() instanceof IntCmpExpr a2) {
+            return a1.getKind().inverted() == a2.getKind() && a1.getLeft().equals(a2.getLeft()) && a1.getRight().equals(a2.getRight());
+        }
+        if (jump.getGuard() instanceof PtrCmpExpr a1 && other.getGuard() instanceof PtrCmpExpr a2) {
             return a1.getKind().inverted() == a2.getKind() && a1.getLeft().equals(a2.getLeft()) && a1.getRight().equals(a2.getRight());
         }
         return false;

@@ -46,8 +46,6 @@ public class AsmLibvsyncArmv7Test {
             //bounded_queue
             {"bounded_spsc", 1, PASS},
             {"bounded_mpmc_check_full", 3, PASS},
-            {"bounded_mpmc_check_empty", 4, PASS},
-
             //spinlocks
             // {"caslock", 4, PASS}, // passes Refinement but takes ~10 minutes 
             {"clhlock", 3, PASS},
@@ -68,7 +66,8 @@ public class AsmLibvsyncArmv7Test {
             {"mutex_musl", 3, PASS},
             {"mutex_slim", 2, PASS},
             {"mutex_waiters", 2, PASS},
-            {"once", 2, PASS}
+            {"once", 2, PASS},
+            {"bounded_mpmc_check_empty", 4, PASS}
         });
     }
 

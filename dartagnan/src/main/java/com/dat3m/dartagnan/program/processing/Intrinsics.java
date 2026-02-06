@@ -9,8 +9,10 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointers.NullLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -65,6 +67,7 @@ public class Intrinsics {
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
     private final boolean detectMixedSizeAccesses;
+    private final IntegerType archType = types.getArchType();
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -427,7 +430,7 @@ public class Intrinsics {
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
-        final Register tidReg = call.getFunction().newUniqueRegister("__tid", types.getArchType());
+        final Register tidReg = call.getFunction().newUniqueRegister("__tid", archType);
         final Event createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
@@ -455,7 +458,9 @@ public class Intrinsics {
         assert arguments.size() == 2;
         final Expression tidExpr = arguments.get(0);
         final Expression returnAddr = arguments.get(1);
-        final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
+        // final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
+        assert returnAddr.getType() instanceof PointerType;
+        final boolean hasReturnAddr = !(returnAddr instanceof NullLiteral); // is this enough?
 
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
@@ -905,7 +910,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         //TODO store a value such that later uses of the lock fail
         //final Expression lock = call.getArguments().get(0);
-        //final Expression finalizedValue = expressions.makeZero(types.getArchType());
+        //final Expression finalizedValue = expressions.makeZero(archType);
         return List.of(
                 //EventFactory.newStore(lock, finalizedValue)
                 assignSuccess(errorRegister)
@@ -1031,7 +1036,7 @@ public class Intrinsics {
     }
 
     private IntegerType getRwlockDatatype() {
-        return types.getArchType();
+        return archType;
     }
 
     private IntLiteral getRwlockUnlockedValue() {
@@ -1597,7 +1602,7 @@ public class Intrinsics {
     private List<Event> inlineMemCpy(FunctionCall call) {
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
-        final Expression src = call.getArguments().get(1);
+        final Expression src = call.getArguments().get(1); //  null ptr !!
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
 
@@ -1608,13 +1613,13 @@ public class Intrinsics {
         final int count = countValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        //FIXME without MSA detection, each byte is treated as a 64-bit value.
-        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
+        // FIXME without MSA detection, each byte is treated as a 64-bit value.
+        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : archType;
         final int typeSize = detectMixedSizeAccesses ? count : 1;
         for (int i = 0; i < count; i += typeSize) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression offset = expressions.makeValue(i, archType);
+            final Expression srcAddr = expressions.makePtrAdd(src, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
 
             final Event load = EventFactory.newLoad(reg, srcAddr);
@@ -1657,23 +1662,26 @@ public class Intrinsics {
         final int destsz = destszValue.getValueAsInt();
 
         // Runtime checks
-        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        final Expression nullExpr = expressions.makeNullLiteral();
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
         // We assume RSIZE_MAX = 2^64-1
-        final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
-        // These parameters have type rsize_t/size_t which we model as types.getArchType(), thus the cast
-        final Expression castDestszExpr = expressions.makeCast(destszExpr, types.getArchType());
-        final Expression castCountExpr = expressions.makeCast(countExpr, types.getArchType());
+        final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), archType);
+        // These parameters have type rsize_t/size_t which we model as archType, thus the cast
+        final Expression castDestszExpr = expressions.makeCast(destszExpr, archType);
+        final Expression castCountExpr = expressions.makeCast(countExpr, archType);
 
         final Expression invalidDestsz = expressions.makeGT(castDestszExpr, rsize_max, false);
         final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
         final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
-                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
+                expressions.makeGT(expressions.makePtrToIntCast(expressions.makePtrAdd(src, castCountExpr),archType),
+                        expressions.makePtrToIntCast(dest, archType), false),
+                expressions.makeGT(expressions.makePtrToIntCast(expressions.makePtrAdd(dest, castCountExpr), archType),
+                        expressions.makePtrToIntCast(src,archType), false));
+
 
         final List<Event> replacement = new ArrayList<>();
         
@@ -1709,9 +1717,9 @@ public class Intrinsics {
             skipE2
         ));
         for (int i = 0; i < destsz; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
-            final Expression zero = expressions.makeZero(types.getArchType());
+            final Expression offset = expressions.makeValue(i, archType);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
+            final Expression zero = expressions.makeZero(archType);
             replacement.add(
                 newStore(destAddr, zero)
             );
@@ -1725,11 +1733,11 @@ public class Intrinsics {
         Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
         replacement.add(success);        
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression offset = expressions.makeValue(i, archType);
+            final Expression srcAddr = expressions.makePtrAdd(src, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, archType);
 
             replacement.addAll(List.of(
                     EventFactory.newLoad(reg, srcAddr),
@@ -1760,7 +1768,7 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>(4 * count + 1);
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
+            final Expression offset = expressions.makeValue(i, archType);
             final Expression src1Addr = expressions.makeAdd(src1, offset);
             final Expression src2Addr = expressions.makeAdd(src2, offset);
             //FIXME: This method should properly load byte chunks and compare them (unsigned).
@@ -1812,8 +1820,8 @@ public class Intrinsics {
         final Expression zero = expressions.makeValue(fill, types.getByteType());
         final List<Event> replacement = new ArrayList<>( count + 1);
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression offset = expressions.makeValue(i, archType);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
 
             replacement.add(newStore(destAddr, zero));
         }

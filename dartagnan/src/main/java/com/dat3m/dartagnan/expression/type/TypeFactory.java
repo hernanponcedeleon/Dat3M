@@ -20,12 +20,13 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerDifferenceType;
-
+    private final IntegerType archType;
+    private final PointerType pointerType;
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);
+        pointerType = getPointerType(64);
     }
 
 
@@ -42,13 +43,31 @@ public final class TypeFactory {
 
     public Type getUnitType() { return getAggregateType(List.of()); }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public PointerType getPointerType() {
+        return pointerType;
+    }
+
+    public PointerType getPointerType(int bitWidth) {
+        // to be used in tearing
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new PointerType(bitWidth));
     }
 
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
+    }
+
+    public MemoryType getMemoryType(int bitWidth) {
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new MemoryType(bitWidth));
+    }
+
+    public MemoryType getMemoryTypeFor(Type other) {
+        if (other instanceof MemoryType memType) {
+            return memType;
+        }
+        return getMemoryType(getMemorySizeInBits(other));
     }
 
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
@@ -143,11 +162,22 @@ public final class TypeFactory {
     }
 
     public IntegerType getArchType() {
-        return pointerDifferenceType;
+        return archType;
     }
 
     public IntegerType getByteType() {
         return getIntegerType(8);
+    }
+
+    public Type getCompatibleTypeOfMemorySize(Type type, int memSizeInBits) {
+        if (type instanceof IntegerType) {
+            return getIntegerType(memSizeInBits);
+        }
+        if (type instanceof PointerType) {
+            return getPointerType(memSizeInBits);
+        }
+
+        throw new UnsupportedOperationException(String.format("Type %s has no compatible type of size %s", type, memSizeInBits));
     }
 
     public int getMemorySizeInBytes(Type type) {
@@ -158,8 +188,14 @@ public final class TypeFactory {
         if (type instanceof BooleanType) {
             return 1;
         }
+        if (type instanceof MemoryType memType) {
+            return IntMath.divide(memType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
+        if (type instanceof PointerType pointerTypp) {
+            return IntMath.divide(pointerTypp.getBitWidth(), 8, RoundingMode.CEILING);
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
@@ -200,7 +236,7 @@ public final class TypeFactory {
     }
 
     private int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType || type instanceof PointerType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {
@@ -267,7 +303,7 @@ public final class TypeFactory {
     }
 
     public static boolean isStaticType(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof PointerType || type instanceof FloatType) {
             return true;
         }
         if (type instanceof ArrayType aType) {

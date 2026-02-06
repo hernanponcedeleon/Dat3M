@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 
+import com.dat3m.dartagnan.expression.type.MemoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -8,6 +9,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -218,10 +220,10 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    final BooleanFormula sameValue = exprEncoder.equal(
+                    final BooleanFormula sameValue = exprEncoder.assignEqual(
                             new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
                             context.value(w1),
-                            RIGHT_TO_LEFT
+                            MEMORY_ROUND_TRIP_RELAXED
                     );
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
@@ -243,11 +245,11 @@ public class PropertyEncoder implements Encoder {
                     }
                     BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    BooleanFormula sameValue = exprEncoder.assignEqual(finalValue, context.value(w), MEMORY_ROUND_TRIP_RELAXED);
                     readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                BooleanFormula readInitValue = exprEncoder.assignEqual(finalValue, context.value(init), MEMORY_ROUND_TRIP_RELAXED);
                 enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
             }
         }
@@ -480,7 +482,8 @@ public class PropertyEncoder implements Encoder {
         if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
             return false;
         }
-        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType)) {
+        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType ||
+                o.getMemValue().getType() instanceof PointerType || o.getMemValue().getType() instanceof MemoryType)) {
             return false;
         }
         final TypeFactory types = TypeFactory.getInstance();
@@ -494,13 +497,18 @@ public class PropertyEncoder implements Encoder {
         Preconditions.checkArgument(!stores.isEmpty(), "Empty instruction cannot reference object '%s'.", object);
         //TODO Use provenance to omit some of these checks statically.
         final ExpressionFactory expressions = context.getExpressionFactory();
-        final Expression pointer = isValue
-                ? expressions.makeIntConcat(stores.stream().map(Store::getMemValue).toList())
-                : stores.get(0).getAddress();
+        Expression pointer;
+        if (isValue) {
+            List<Expression> memVals = stores.stream().map(Store::getMemValue).toList();
+            // assert memVals.get(0) instanceof MemoryType;
+            pointer = expressions.makeFromMemoryCast(expressions.makeMemoryConcat(memVals),object.getType());
+        }else{
+            pointer = stores.get(0).getAddress();
+        }
         if (object.equals(pointer)) {
             return bmgr.makeTrue();
         }
-        final Expression objectEnd = expressions.makeAdd(object, object.size());
+        final Expression objectEnd = expressions.makePtrAdd(object, object.size());
         final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
         final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
         final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);

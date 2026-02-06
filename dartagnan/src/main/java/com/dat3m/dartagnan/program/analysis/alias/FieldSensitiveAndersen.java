@@ -7,6 +7,9 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.PtrAddExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -389,6 +392,36 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return null;
         }
 
+        @Override
+        public Result visitPtrAddExpression(PtrAddExpr x) {
+            Result l = x.getBase().accept(this);
+            Result r = x.getOffset().accept(this);
+
+            if (l.address != null && r.address != null) {
+                return null;
+            }
+            MemoryObject base = l.address != null ? l.address : r.address;
+            BigInteger offset = l.offset.add(r.offset);
+            if (base != null) {
+                return new Result(base,
+                        null,
+                        offset,
+                        min(min(l.alignment, l.register), min(r.alignment, r.register)));
+            }
+            if (l.register != null) {
+                return new Result(null, l.register, offset, min(l.alignment, min(r.alignment, r.register)));
+            }
+            return new Result(null, r.register, offset, min(l.alignment, r.alignment));
+
+        }
+        @Override
+        public Result visitIntToPtrCastExpression(IntToPtrCast expr) {
+            return expr.getOperand().accept(this);
+        }
+        @Override
+        public Result visitPtrToIntCastExpression(PtrToIntCast expr) {
+            return expr.getOperand().accept(this);
+        }
         @Override
         public Result visitIntUnaryExpression(IntUnaryExpr x) {
             Result i = x.getOperand().accept(this);

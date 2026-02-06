@@ -117,7 +117,7 @@ public class EventFactory {
 
     public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        arraySize = expressions.makeCast(arraySize, types.getArchType(), false);
+        arraySize = expressions.makeCast(arraySize, types.getArchType(), false); // why cast?
         alignment = expressions.makeCast(alignment, types.getArchType(), false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
@@ -169,7 +169,7 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
+                expressions.makePtrAdd(base, expressions.makeValue(offset, types.getArchType()));
         final Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());
         return init;

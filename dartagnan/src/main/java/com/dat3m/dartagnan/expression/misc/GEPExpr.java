@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -21,7 +22,7 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
 
     public GEPExpr(Type indexType, Expression base, List<? extends Expression> offsets, Integer stride) {
         super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
-        ExpressionHelper.checkExpectedType(base, IntegerType.class);
+        ExpressionHelper.checkExpectedType(base, PointerType.class);
         if (offsets.size() > 1) {
             Preconditions.checkArgument(isAggregateLike(indexType), "Indexing with multiple indices into non-aggregate type.");
         }

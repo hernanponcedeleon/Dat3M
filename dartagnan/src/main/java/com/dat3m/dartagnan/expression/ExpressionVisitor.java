@@ -9,8 +9,10 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -57,6 +59,13 @@ public interface ExpressionVisitor<TRet> {
 
     // =================================== Pointer ===================================
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
+    default TRet visitPtrAddExpression(PtrAddExpr expr) { return visitExpression(expr); }
+    default TRet visitIntToPtrCastExpression(IntToPtrCast expr) { return visitCastExpression(expr); }
+    default TRet visitPtrToIntCastExpression(PtrToIntCast expr) { return visitCastExpression(expr); }
+    default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
+    default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
+    default TRet visitPtrConcat(PtrConcat expr){ return visitExpression(expr); }
+    default TRet visitPtrExtract(PtrExtract expr){ return visitUnaryExpression(expr); }
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
@@ -67,6 +76,14 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitMemoryObject(MemoryObject memObj) { return visitLeafExpression(memObj); }
     default TRet visitFinalMemoryValue(FinalMemoryValue val) { return visitLeafExpression(val); }
     default TRet visitNonDetValue(NonDetValue nonDet) { return visitLeafExpression(nonDet); }
+
+    // =================================== Memory ===================================
+    default TRet visitToMemoryCastExpression(ToMemoryCast expr) { return visitCastExpression(expr); }
+    default TRet visitFromMemoryCastExpression(FromMemoryCast expr) { return visitCastExpression(expr); }
+    default TRet visitMemoryConcatExpression(MemoryConcat expr) { return visitExpression(expr); }
+    default TRet visitMemoryExtractExpression(MemoryExtract expr) { return visitUnaryExpression(expr); }
+    default TRet visitMemoryEqualExpression(MemoryEqualExpr expr) { return visitBinaryExpression(expr); }
+    default TRet visitMemoryExtend(MemoryExtend expr) { return visitUnaryExpression(expr); }
 
 
     private static UnsupportedOperationException unsupported(Expression expr, Class<?> clazz) {

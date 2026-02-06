@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.common;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -32,6 +33,7 @@ public abstract class SingleAccessMemoryEvent extends AbstractEvent implements M
     // The empty string means no memory order 
     public SingleAccessMemoryEvent(Expression address, Type accessType, String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
+        // Preconditions.checkArgument(address.getType() instanceof PointerType);
         this.address = address;
         this.mo = mo;
         this.accessType = accessType;

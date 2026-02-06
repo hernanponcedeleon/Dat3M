@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser;
@@ -26,6 +27,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
+    private final PointerType pointerType = types.getPointerType();
     private int mainThread;
     private int threadCount = 0;
 
@@ -34,7 +36,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
-
     @Override
     public Object visitMain(LitmusRISCVParser.MainContext ctx) {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
@@ -48,7 +49,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Variable declarator list
-
     @Override
     public Object visitVariableDeclaratorLocation(LitmusRISCVParser.VariableDeclaratorLocationContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
@@ -65,7 +65,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusRISCVParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
@@ -75,10 +75,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         return null;
     }
 
-
     // ----------------------------------------------------------------------------------------------------------------
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
-
     @Override
     public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {
         for(LitmusRISCVParser.ThreadIdContext threadCtx : ctx.threadId()){
@@ -88,10 +86,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         return null;
     }
 
-
     // ----------------------------------------------------------------------------------------------------------------
     // Instruction list (the program itself)
-
     @Override
     public Object visitInstructionRow(LitmusRISCVParser.InstructionRowContext ctx) {
         for(int i = 0; i < threadCount; i++){
@@ -137,10 +133,16 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
+        // todo the problem here is pointer addition saved to int reg
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, r3)));
+
+        return programBuilder.addChild(
+                mainThread, EventFactory.newLocal(r1, expressions.makeCast(
+                        expressions.makeAdd(expressions.makeIntegerCast(r2,archType,false),
+                                expressions.makeIntegerCast(r3,archType,false)),r1.getType())));
+
 
 	}
 
@@ -180,21 +182,21 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, expressions.makePtrCast(ra,pointerType), getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(expressions.makePtrCast(ra,pointerType), r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusiveWithMo(r1, expressions.makePtrCast(ra,pointerType), getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
@@ -202,7 +204,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(r1, expressions.makePtrCast(ra,pointerType), r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
@@ -256,7 +258,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	// =======================================
 	// ================ Utils ================
 	// =======================================
-
 	private String getMo(LitmusRISCVParser.MoRISCVContext mo1, LitmusRISCVParser.MoRISCVContext mo2) {
 		String moR = mo1 != null ? mo1.mo : "";
 		String moW = mo2 != null ? mo2.mo : "";
