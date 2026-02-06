@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.wmm.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -10,6 +7,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.ConstraintCopier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.IdentityHashMap;
 import java.util.List;
