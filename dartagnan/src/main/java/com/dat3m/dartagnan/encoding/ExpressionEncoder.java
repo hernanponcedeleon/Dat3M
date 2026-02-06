@@ -551,8 +551,10 @@ public class ExpressionEncoder {
             final Formula result;
             if (floatLiteral.isNaN()) {
                 result = floatingPointFormulaManager().makeNaN(fFType);
-            } else if (floatLiteral.isInf()) { // TODO sign
+            } else if (floatLiteral.isPlusInf()) {
                 result = floatingPointFormulaManager().makePlusInfinity(fFType);
+            } else if (floatLiteral.isMinusInf()) {
+                result = floatingPointFormulaManager().makeMinusInfinity(fFType);
             } else {
                 result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType, context.roundingModeFloats);
             }

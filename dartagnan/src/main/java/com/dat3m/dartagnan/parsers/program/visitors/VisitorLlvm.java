@@ -968,7 +968,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             long bits = Long.parseUnsignedLong(ctx.getText().substring(2), 16);
             double value = Double.longBitsToDouble(bits);
             if (Double.isInfinite(value)) {
-                return expressions.makeInf(fType);
+                return value > 0 ? expressions.makePlusInf(fType) : expressions.makeMinusInf(fType);
             }
             if (Double.isNaN(value)) {
                 return expressions.makeNan(fType);

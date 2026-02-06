@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.type.FloatType;
 
 import java.math.BigDecimal;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /*
     FIXME:
      - This class cannot represent all floating point special values.
@@ -26,6 +28,8 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
     }
 
     public BigDecimal getValue() {
+        checkArgument(!isNaN, "Cannot call getValue on NaN.");
+        checkArgument(!isInf, "Cannot call getValue on INF.");
         return value;
     }
 
@@ -33,8 +37,12 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
         return isNaN;
     }
 
-    public boolean isInf() {
-        return isInf;
+    public boolean isPlusInf() {
+        return isInf && (value.signum() > 0);
+    }
+
+    public boolean isMinusInf() {
+        return isInf && (value.signum() < 0);
     }
 
     public double getValueAsDouble() {
@@ -62,8 +70,10 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
 
     @Override
     public String toString() {
-        if (isInf) {
-            return "INF";
+        if (isPlusInf()) {
+            return "+INF";
+        } else if (isMinusInf()) {
+            return "-INF";
         } else if (isNaN) {
             return "NaN";
         }

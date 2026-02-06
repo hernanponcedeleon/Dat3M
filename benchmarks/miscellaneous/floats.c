@@ -27,7 +27,7 @@ int main(void) {
     if (f == 0.0f && !signbit(f)) {
         float inv = 1.0f / f;
         assert(isinf(inv));
-        // assert(!signbit(inv)); // TODO: we currently FAIL this one, probably due to the lack of support for sign in INF
+        assert(!signbit(inv));
     }
     if (f == 0.0f && signbit(f)) {
         float inv = 1.0f / f;

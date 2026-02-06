@@ -213,8 +213,12 @@ public final class ExpressionFactory {
         return makeValue(BigDecimal.ZERO, type);
     }
 
-    public FloatLiteral makeInf(FloatType type) {
-        return new FloatLiteral(type, null, false, true);
+    public FloatLiteral makePlusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(1), false, true);
+    }
+
+    public FloatLiteral makeMinusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(-1), false, true);
     }
 
     public FloatLiteral makeNan(FloatType type) {
