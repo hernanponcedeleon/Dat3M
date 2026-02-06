@@ -595,8 +595,16 @@ public class ExpressionEncoder {
 
             checkMemoryCastSupport(expr.getSourceType());
 
+            Formula enc = inner.formula();
+            if (inner.formula() instanceof BitvectorFormula bvform) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int innerSize = bvmgr.getLength(bvform);
+                if (innerSize < targetType.getBitWidth()) {
+                    enc = bvmgr.extend(bvform, targetType.getBitWidth() - innerSize, false);
+                }
+            }
             // TODO: Do actual conversions
-            return new TypedFormula<MemoryType, Formula>(targetType, inner.formula());
+            return new TypedFormula<>(targetType, enc);
         }
 
         @Override
@@ -606,8 +614,17 @@ public class ExpressionEncoder {
 
             checkMemoryCastSupport(targetType);
 
+            Formula enc = inner.formula();
+            if (!context.useIntegers && targetType instanceof IntegerType bvType) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int targetSize = bvType.getBitWidth();
+                if (targetSize < expr.getSourceType().getBitWidth()) {
+                    enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
+                }
+            }
+
             // TODO: Do actual conversions
-            return new TypedFormula<Type, Formula>(targetType, inner.formula());
+            return new TypedFormula<>(targetType, enc);
         }
 
         @Override
