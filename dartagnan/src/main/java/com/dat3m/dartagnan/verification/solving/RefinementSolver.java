@@ -67,8 +67,6 @@ import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-;
-
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
     and iteratively refines it to perform a verification task.
@@ -207,18 +205,16 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
 
         //  ------- Generate refinement model -------
-        final Collection<Constraint> cut = new HashSet<>(biases);
-        // All anarchic relations have to be encoded.
-        Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> cut.add(memoryModel.getRelation(n).getDefinition()));
+        final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
         // The cut has to be encoded.
-        cut.addAll(generateCut(memoryModel));
+        wmmConstraintsToEncode.addAll(generateCut(memoryModel));
 
         // ------------------------ Encoding ------------------------
         initSMTSolver(config);
         final SolverContext ctx = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), cut);
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);

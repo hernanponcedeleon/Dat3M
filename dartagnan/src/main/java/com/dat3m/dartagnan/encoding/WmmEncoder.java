@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -105,10 +104,9 @@ public class WmmEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFullMemoryModel() {
-        final Set<Constraint> constraints = context.getConstraintsToEncode();
-        final Collection<? extends Constraint> toEncode = DependencyGraph.from(constraints).getNodeContents();
+        final List<Constraint> toEncode = context.constraintsToEncode.getNodeContents();
         final Collection<? extends Constraint> total = context.getTask().getMemoryModel().getConstraints();
-        logger.info("Encoding {} based on {} of {} constraints.", toEncode.size(), constraints.size(), total.size());
+        logger.info("Encoding {} of {} constraints.", toEncode.size(), total.size());
         final var encoder = new RelationEncoder();
         for (Constraint c : toEncode) {
             logger.trace("Encoding {} '{}'", c instanceof Definition ? "definition" : "axiom", c);

@@ -24,7 +24,7 @@ public class WMMSolver {
     private final CoreReasoner reasoner;
 
     private WMMSolver(EncodingContext c) {
-        this.executionGraph = new ExecutionGraph(c.getTask().getMemoryModel(), c.getConstraintsToEncode());
+        this.executionGraph = new ExecutionGraph(c.getTask().getMemoryModel(), c::isEncoded);
         this.executionModel = ExecutionModel.withContext(c);
         this.reasoner = new CoreReasoner(c.getAnalysisContext(), executionGraph);
         this.solver = CAATSolver.create();

@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class ExecutionGraph {
 
@@ -37,7 +38,7 @@ public class ExecutionGraph {
     // assigned during construction.
 
     private final Wmm memoryModel;
-    private final Set<? extends com.dat3m.dartagnan.wmm.Constraint> encodedConstraints;
+    private final Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encodedConstraints;
     private final BiMap<Relation, CAATPredicate> predicateToRelationMap = HashBiMap.create();
     private final BiMap<Axiom, Constraint> constraintMap = HashBiMap.create();
 
@@ -48,9 +49,9 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(Wmm model, Collection<? extends com.dat3m.dartagnan.wmm.Constraint> toBeEncoded) {
+    public ExecutionGraph(Wmm model, Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encoded) {
         memoryModel = Preconditions.checkNotNull(model);
-        encodedConstraints = Set.copyOf(DependencyGraph.from(toBeEncoded).getNodeContents());
+        encodedConstraints = Preconditions.checkNotNull(encoded);
         constructMappings();
     }
 
@@ -68,7 +69,7 @@ public class ExecutionGraph {
 
         // Special treatment for recursive relations.
         for (Set<DependencyGraph<Relation>.Node> component : dependencyGraph.getSCCs()) {
-            if (encodedConstraints.contains(component.iterator().next().getContent().getDefinition())) {
+            if (encodedConstraints.test(component.iterator().next().getContent().getDefinition())) {
                 // We skip all relations that are below or on the cut, because we do not handle recursion on those
                 continue;
             }
@@ -98,7 +99,7 @@ public class ExecutionGraph {
         }
 
         for (Axiom axiom : memoryModel.getAxioms()) {
-            if (axiom.isFlagged() || axiom.isNegated() || encodedConstraints.contains(axiom)) {
+            if (axiom.isFlagged() || axiom.isNegated() || encodedConstraints.test(axiom)) {
                 continue;
             }
             Constraint constraint = getOrCreateConstraintFromAxiom(axiom);
@@ -141,7 +142,7 @@ public class ExecutionGraph {
     }
 
     public boolean isEncoded(Relation relation) {
-        return encodedConstraints.contains(relation.getDefinition());
+        return encodedConstraints.test(relation.getDefinition());
     }
 
     // ====================================================
@@ -204,7 +205,11 @@ public class ExecutionGraph {
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
 
-        if (encodedConstraints.contains(rel.getDefinition())) {
+        if (relClass == ReadFrom.class) {
+            graph = new ReadFromGraph();
+        } else if (relClass == Coherence.class) {
+            graph = new CoherenceGraph();
+        } else if (encodedConstraints.test(rel.getDefinition())) {
             graph = new DynamicDefaultWMMGraph(rel);
         } else if (relClass == SameLocation.class) {
             graph = new LocationGraph();
@@ -258,7 +263,7 @@ public class ExecutionGraph {
         final Class<?> relClass = relation.getDefinition().getClass();
         final List<Relation> dependencies = relation.getDependencies();
         final SetPredicate set;
-        if (encodedConstraints.contains(relation.getDefinition())) {
+        if (encodedConstraints.test(relation.getDefinition())) {
             set = new DynamicDefaultWMMSet(relation);
         } else if (relClass == TagSet.class) {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());

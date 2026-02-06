@@ -16,13 +16,16 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.collect.Iterables;
 
 
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -34,7 +37,6 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
@@ -54,7 +56,7 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    private final Set<Constraint> constraintsToEncode;
+    final DependencyGraph<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -96,7 +98,11 @@ public final class EncodingContext {
         relationAnalysis = a.requires(RelationAnalysis.class);
         formulaManager = new FormulaManagerExt(m);
         booleanFormulaManager = formulaManager.getBooleanFormulaManager();
-        constraintsToEncode = Set.copyOf(c);
+        // All anarchic relations have to be encoded.
+        final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()
+                .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
+                .toList();
+        constraintsToEncode = DependencyGraph.from(Iterables.concat(c, anarchicConstraints));
         exprEncoder = new ExpressionEncoder(this);
     }
 
@@ -141,7 +147,7 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public Set<Constraint> getConstraintsToEncode() { return constraintsToEncode; }
+    public boolean isEncoded(Constraint c) { return constraintsToEncode.get(c) != null; }
 
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
