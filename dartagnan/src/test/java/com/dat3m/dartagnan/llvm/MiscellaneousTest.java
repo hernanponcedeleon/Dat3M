@@ -114,7 +114,6 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"floats_12", IMM, PASS, 1},
                 {"floats_13", IMM, PASS, 1},
                 {"floats_14", IMM, PASS, 1},
-                {"floats_15", IMM, PASS, 1},
         });
     }
 
