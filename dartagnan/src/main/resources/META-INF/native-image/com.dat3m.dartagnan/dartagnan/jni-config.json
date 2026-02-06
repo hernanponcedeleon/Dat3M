@@ -1,14 +1,27 @@
 [
     {
       "name": "com.microsoft.z3.Native$IntPtr",
-      "fields": [
+      "fields":
+      [
         { "name": "value", "allowWrite": true }
       ]
     },
     {
       "name": "com.microsoft.z3.Native$LongPtr",
-      "fields": [
+      "fields":
+      [
         { "name": "value", "allowWrite": true }
       ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.mathsat5.Mathsat5NativeApi$TerminationCallback",
+      "methods":
+      [
+        {
+          "name": "shouldTerminate",
+          "parameterTypes": [],
+          "returnType": "boolean"
+        }
+      ]
     }
-  ]
+]
