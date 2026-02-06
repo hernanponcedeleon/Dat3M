@@ -134,7 +134,7 @@ public class ExpressionEncoder {
     public enum ConversionMode {
         STRICT,                     // No conversion, types must match exactly
         CAST,                       // Immediate cast
-        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory but source/target type sizes must match
+        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory, but source/target type sizes must match
         MEMORY_ROUND_TRIP_RELAXED,  // Round-trip over memory, source/target can have mismatching sizes
     }
 
@@ -582,10 +582,18 @@ public class ExpressionEncoder {
         // ====================================================================================
         // Memory type
 
+        private void checkMemoryCastSupport(Type type) {
+            if (!(type instanceof IntegerType)) {
+                throw new UnsupportedOperationException("Cannot cast memory to type: " + type);
+            }
+        }
+
         @Override
         public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
             final TypedFormula<?, ?> inner = encode(expr.getOperand());
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
+
+            checkMemoryCastSupport(expr.getSourceType());
 
             // TODO: Do actual conversions
             return new TypedFormula<MemoryType, Formula>(targetType, inner.formula());
@@ -595,6 +603,8 @@ public class ExpressionEncoder {
         public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
             final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
+
+            checkMemoryCastSupport(targetType);
 
             // TODO: Do actual conversions
             return new TypedFormula<Type, Formula>(targetType, inner.formula());
@@ -635,6 +645,21 @@ public class ExpressionEncoder {
                 enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
             }
             return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryExtend(MemoryExtend expr) {
+            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc;
+            if (context.useIntegers) {
+                enc = operand; // Maybe remove sign?
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
+                enc = bvmgr.extend((BitvectorFormula) operand, extendedBits, false);
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+
         }
 
         @Override

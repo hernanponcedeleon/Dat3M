@@ -75,6 +75,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitMemoryConcatExpression(MemoryConcat expr) { return visitExpression(expr); }
     default TRet visitMemoryExtractExpression(MemoryExtract expr) { return visitUnaryExpression(expr); }
     default TRet visitMemoryEqualExpression(MemoryEqualExpr expr) { return visitBinaryExpression(expr); }
+    default TRet visitMemoryExtend(MemoryExtend expr) { return visitUnaryExpression(expr); }
 
 
     private static UnsupportedOperationException unsupported(Expression expr, Class<?> clazz) {

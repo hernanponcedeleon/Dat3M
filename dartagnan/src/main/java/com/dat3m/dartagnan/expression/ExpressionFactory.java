@@ -31,8 +31,8 @@ public final class ExpressionFactory {
     static {
         // This is a bit awkward, but ExpressionFactory and ExprTransformer/Simplifier have
         // cyclic dependencies, and so we need to ensure a specific initialization order.
-        // Maybe we should not use ExpressionSimplifier in this class or avoid ExpressionSimplifier
-        // caching a static instance of ExpressionFactory.
+        // Maybe we should not use ExpressionSimplifier in this class or don't let ExpressionSimplifier
+        // cache a static instance of ExpressionFactory.
         instance = new ExpressionFactory();
         simplifier = new ExprSimplifier(false);
     }
@@ -360,6 +360,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeFromMemoryCast(Expression operand, Type type) {
+        Preconditions.checkArgument(types.getMemorySizeInBits(operand.getType()) == types.getMemorySizeInBits(type));
         if (operand.getType().equals(type)) {
             return operand;
         }
@@ -374,11 +375,15 @@ public final class ExpressionFactory {
         return new MemoryExtract(operand, lowBit, highBit);
     }
 
+    public Expression makeMemoryExtend(Expression operand, MemoryType targetType) {
+        return new MemoryExtend(targetType, operand);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
 
     // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".
     // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
-    // "source type < target type": after the memory cast, a zero-extension is performed (if possible)
+    // "source type < target type": a zero-extension is performed before converting to the target type
     // "source type > target type": only the lowest bits of <expr> are used for the conversion.
     public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict, boolean signed) {
         final Type sourceType = expr.getType();
@@ -398,15 +403,10 @@ public final class ExpressionFactory {
         Expression exprMem = makeToMemoryCast(expr);
         if (targetSize < sourceSize) {
             exprMem = makeMemoryExtract(exprMem, 0, targetSize - 1);
-            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, targetSize));
-            exprMem = makeCast(exprMem, targetType, signed);
-        } else if (targetSize == sourceSize) {
-            exprMem = makeFromMemoryCast(exprMem, targetType);
-        } else {
-            assert (targetSize > sourceSize);
-            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, sourceSize));
-            exprMem = makeCast(exprMem, targetType, signed);
+        } else if (targetSize > sourceSize) {
+            exprMem = makeMemoryExtend(exprMem, types.getMemoryTypeFor(targetType));
         }
+        exprMem = makeFromMemoryCast(exprMem, targetType);
 
         return exprMem.accept(simplifier);
     }
@@ -527,4 +527,5 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
+
 }
