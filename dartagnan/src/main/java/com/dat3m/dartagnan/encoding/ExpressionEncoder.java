@@ -99,9 +99,8 @@ public class ExpressionEncoder {
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
         } else if (type instanceof FloatType floatType) {
-            final int exponentBits = floatType.getExponentBits();
-            final int mantissaBits = floatType.getMantissaBits();
-            variable = floatingPointFormulaManager().makeVariable(name, FormulaType.getFloatingPointType(exponentBits, mantissaBits));
+            final FloatingPointType fType = getFloatType(floatType.getExponentBits(), floatType.getMantissaBits())
+            variable = floatingPointFormulaManager().makeVariable(name, fType);
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
             for (TypeOffset field : aggType.getFields()) {
@@ -534,9 +533,7 @@ public class ExpressionEncoder {
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = (FloatType) expr.getTargetType();
-            final int exponentBits = fType.getExponentBits();
-            final int mantissaBits = fType.getMantissaBits();
-            final FloatingPointType targetType = FormulaType.getFloatingPointType(exponentBits, mantissaBits);
+            final FloatingPointType targetType = getFloatType(fType.getExponentBits(), fType.getMantissaBits())
             return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats));
         }
 
@@ -546,9 +543,7 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
             final FloatType fType = (FloatType) floatLiteral.getType();
-            final int exponentBits = fType.getExponentBits();
-            final int mantissaBits = fType.getMantissaBits();
-            final FloatingPointType fFType = FormulaType.getFloatingPointType(exponentBits, mantissaBits);
+            final FloatingPointType fFType = getFloatType(fType.getExponentBits(), fType.getMantissaBits())
             final Formula result;
             if (floatLiteral.isNaN()) {
                 result = floatingPointFormulaManager().makeNaN(fFType);
@@ -639,9 +634,8 @@ public class ExpressionEncoder {
                 return inner;
             } else {
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
-                final int exponentBits = expr.getTargetType().getExponentBits();
-                final int mantissaBits = expr.getTargetType().getMantissaBits();
-                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), true, FormulaType.getFloatingPointType(exponentBits, mantissaBits), context.roundingModeFloats);
+                final FloatingPointType fType = getFloatType(expr.getTargetType().getExponentBits(), expr.getTargetType().getMantissaBits())
+                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), true, fType, context.roundingModeFloats);
             }
             return new TypedFormula<>(expr.getType(), enc);
         }
@@ -654,6 +648,10 @@ public class ExpressionEncoder {
             // https://llvm.org/docs/LangRef.html#fptoui-to-instruction
             // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
             return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO));
+        }
+
+        private FloatingPointType getFloatType(int exponentBits, int mantissaBits) {
+            return FormulaType.getFloatingPointType(exponentBits, mantissaBits);
         }
 
         // ====================================================================================
