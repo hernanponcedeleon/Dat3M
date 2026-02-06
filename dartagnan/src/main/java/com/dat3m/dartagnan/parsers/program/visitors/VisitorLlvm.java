@@ -924,7 +924,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target);
+        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
+        // checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target); // TODO we can enable this once we have proper support for bitcats, see #957
         final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
