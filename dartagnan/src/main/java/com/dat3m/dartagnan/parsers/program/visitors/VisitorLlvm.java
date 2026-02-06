@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
@@ -77,8 +78,65 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     public Program buildProgram() {
+        handleMainArguments();
         ProgramBuilder.processAfterParsing(program);
         return program;
+    }
+
+    /*
+      This is just a rough approximation of arguments (int argc, char *argv[]) passed to main:
+      - We enforce 1 <= argc <= m (the upper bound m is an arbitrary but fixed constant)
+      - We initialize argv with malloc(m * sizeof(char*)):
+          -- For each entry i, we statically allocate a memory object with fixed size c
+             and store it in argv[i]
+          -- These memory objects are not initialized!
+     TODO/Alternatives:
+      - Currently m=10, which is likely enough. We could use proper non-det values but then
+        we need to use loops to initialize the content of argv
+      - The entries of argv have fixed size c=10 but are not initialized:
+          -- argv[0] should be the programs name (though there might be exceptions to this rule?)
+          -- argv[i] (i > 0) should be non-deterministic (each of its c-many entries)
+    */
+    private void handleMainArguments() {
+        program.getFunctionByName(DEFAULT_ENTRY_FUNCTION).ifPresent(main -> {
+            if (main.getParameterRegisters().size() == 2) {
+                // ------ Setup argc and argv input parameters ------
+
+                final Register argc = main.getParameterRegisters().get(0);
+                final Register argv = main.getParameterRegisters().get(1);
+
+                final IntLiteral argcMin = expressions.makeValue(1, (IntegerType) argc.getType());
+                // This is an arbitrary value just to allow for a fixed-size allocation for <argv>
+                final IntLiteral argcMax = expressions.makeValue(10, (IntegerType) argc.getType());
+                final Expression argcBounds = expressions.makeAnd(
+                        expressions.makeLTE(argcMin, argc, true),
+                        expressions.makeLTE(argc, argcMax, true)
+                );
+
+                final List<Event> initialization = new ArrayList<>(List.of(
+                        EventFactory.newStringAnnotation("---- begin init main args ----"),
+                        Svcomp.newNonDetChoice(argc),
+                        EventFactory.newAssume(argcBounds),
+                        // We allocate an array for <argv> with maximal possible size
+                        EventFactory.newAlloc(argv, pointerType, argcMax, true, false)
+                ));
+
+                final int argvEntryMaxSize = 10;
+                for (int i = 0; i < argcMax.getValueAsInt(); i++) {
+                    final MemoryObject argvEntry = program.getMemory().allocate(argvEntryMaxSize);
+                    argvEntry.setName("__argv_" + i);
+                    final Expression argvIndex = expressions.makeGetElementPointer(
+                            types.getPointerType(), argv, List.of(expressions.makeValue(i, types.getArchType()))
+                    );
+
+                    initialization.add(EventFactory.newStore(argvIndex, argvEntry));
+                }
+
+                initialization.add(EventFactory.newStringAnnotation("---- end init main args ----"));
+
+                main.getEntry().insertAfter(initialization);
+            }
+        });
     }
 
     @Override
@@ -125,6 +183,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
         return null;
     }
+
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Top Level Entities
