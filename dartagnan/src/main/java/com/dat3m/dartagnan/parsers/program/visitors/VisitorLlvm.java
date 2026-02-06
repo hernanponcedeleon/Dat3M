@@ -604,7 +604,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression right = checkExpression(left.getType(), ctx.value());
         final String operator = ctx.fPred().getText();
         final Expression compared = switch (operator) {
-            // TODO oeq vs ueq
             case "oeq" -> expressions.makeFEQ(left, right, true);
             case "one" -> expressions.makeFNEQ(left, right, true);
             case "olt" -> expressions.makeOLT(left, right);
