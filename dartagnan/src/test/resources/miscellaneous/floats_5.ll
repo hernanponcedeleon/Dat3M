@@ -22,7 +22,7 @@ define dso_local i32 @main() #0 !dbg !10 {
   store double %6, double* %3, align 8, !dbg !22
   %7 = load double, double* %3, align 8, !dbg !24
   %8 = call double @llvm.fabs.f64(double %7), !dbg !26
-  %9 = fcmp olt double %8, 0x10000000000000, !dbg !27
+  %9 = fcmp ole double %8, 0x10000000000000, !dbg !27
   br i1 %9, label %10, label %19, !dbg !28
 
 10:                                               ; preds = %0
@@ -39,7 +39,7 @@ define dso_local i32 @main() #0 !dbg !10 {
   br label %18, !dbg !37
 
 17:                                               ; preds = %10
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([18 x i8], [18 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([54 x i8], [54 x i8]* @.str.1, i64 0, i64 0), i32 noundef 56, i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #4, !dbg !34
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([18 x i8], [18 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([54 x i8], [54 x i8]* @.str.1, i64 0, i64 0), i32 noundef 53, i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #4, !dbg !34
   unreachable, !dbg !34
 
 18:                                               ; preds = %16
@@ -73,7 +73,7 @@ attributes #4 = { noreturn nounwind }
 !llvm.ident = !{!9}
 
 !0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "Ubuntu clang version 14.0.0-1ubuntu1.1", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, splitDebugInlining: false, nameTableKind: None)
-!1 = !DIFile(filename: "/home/drc/git/Dat3M/benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "016a68962542b9f94ab88bda45b97e2a")
+!1 = !DIFile(filename: "/home/drc/git/Dat3M/benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "4723053dddf493d2cabef543d9d3ad92")
 !2 = !{i32 7, !"Dwarf Version", i32 5}
 !3 = !{i32 2, !"Debug Info Version", i32 3}
 !4 = !{i32 1, !"wchar_size", i32 4}
@@ -82,33 +82,33 @@ attributes #4 = { noreturn nounwind }
 !7 = !{i32 7, !"uwtable", i32 1}
 !8 = !{i32 7, !"frame-pointer", i32 2}
 !9 = !{!"Ubuntu clang version 14.0.0-1ubuntu1.1"}
-!10 = distinct !DISubprogram(name: "main", scope: !11, file: !11, line: 14, type: !12, scopeLine: 14, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !15)
-!11 = !DIFile(filename: "benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "016a68962542b9f94ab88bda45b97e2a")
+!10 = distinct !DISubprogram(name: "main", scope: !11, file: !11, line: 11, type: !12, scopeLine: 11, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !15)
+!11 = !DIFile(filename: "benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "4723053dddf493d2cabef543d9d3ad92")
 !12 = !DISubroutineType(types: !13)
 !13 = !{!14}
 !14 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
 !15 = !{}
-!16 = !DILocalVariable(name: "f", scope: !10, file: !11, line: 15, type: !17)
+!16 = !DILocalVariable(name: "f", scope: !10, file: !11, line: 12, type: !17)
 !17 = !DIBasicType(name: "float", size: 32, encoding: DW_ATE_float)
-!18 = !DILocation(line: 15, column: 12, scope: !10)
-!19 = !DILocation(line: 15, column: 16, scope: !10)
-!20 = !DILocalVariable(name: "d", scope: !10, file: !11, line: 16, type: !21)
+!18 = !DILocation(line: 12, column: 12, scope: !10)
+!19 = !DILocation(line: 12, column: 16, scope: !10)
+!20 = !DILocalVariable(name: "d", scope: !10, file: !11, line: 13, type: !21)
 !21 = !DIBasicType(name: "double", size: 64, encoding: DW_ATE_float)
-!22 = !DILocation(line: 16, column: 12, scope: !10)
-!23 = !DILocation(line: 16, column: 16, scope: !10)
-!24 = !DILocation(line: 54, column: 14, scope: !25)
-!25 = distinct !DILexicalBlock(scope: !10, file: !11, line: 54, column: 9)
-!26 = !DILocation(line: 54, column: 9, scope: !25)
-!27 = !DILocation(line: 54, column: 17, scope: !25)
-!28 = !DILocation(line: 54, column: 9, scope: !10)
-!29 = !DILocalVariable(name: "x", scope: !30, file: !11, line: 55, type: !21)
-!30 = distinct !DILexicalBlock(scope: !25, file: !11, line: 54, column: 28)
-!31 = !DILocation(line: 55, column: 16, scope: !30)
-!32 = !DILocation(line: 55, column: 20, scope: !30)
-!33 = !DILocation(line: 55, column: 22, scope: !30)
-!34 = !DILocation(line: 56, column: 9, scope: !35)
-!35 = distinct !DILexicalBlock(scope: !36, file: !11, line: 56, column: 9)
-!36 = distinct !DILexicalBlock(scope: !30, file: !11, line: 56, column: 9)
-!37 = !DILocation(line: 56, column: 9, scope: !36)
-!38 = !DILocation(line: 60, column: 5, scope: !30)
-!39 = !DILocation(line: 165, column: 5, scope: !10)
+!22 = !DILocation(line: 13, column: 12, scope: !10)
+!23 = !DILocation(line: 13, column: 16, scope: !10)
+!24 = !DILocation(line: 51, column: 14, scope: !25)
+!25 = distinct !DILexicalBlock(scope: !10, file: !11, line: 51, column: 9)
+!26 = !DILocation(line: 51, column: 9, scope: !25)
+!27 = !DILocation(line: 51, column: 17, scope: !25)
+!28 = !DILocation(line: 51, column: 9, scope: !10)
+!29 = !DILocalVariable(name: "x", scope: !30, file: !11, line: 52, type: !21)
+!30 = distinct !DILexicalBlock(scope: !25, file: !11, line: 51, column: 29)
+!31 = !DILocation(line: 52, column: 16, scope: !30)
+!32 = !DILocation(line: 52, column: 20, scope: !30)
+!33 = !DILocation(line: 52, column: 22, scope: !30)
+!34 = !DILocation(line: 53, column: 9, scope: !35)
+!35 = distinct !DILexicalBlock(scope: !36, file: !11, line: 53, column: 9)
+!36 = distinct !DILexicalBlock(scope: !30, file: !11, line: 53, column: 9)
+!37 = !DILocation(line: 53, column: 9, scope: !36)
+!38 = !DILocation(line: 57, column: 5, scope: !30)
+!39 = !DILocation(line: 155, column: 5, scope: !10)

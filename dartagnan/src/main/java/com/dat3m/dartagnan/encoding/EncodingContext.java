@@ -71,6 +71,8 @@ public final class EncodingContext {
             secure = true)
     boolean useIntegers = false;
 
+    // TODO: If we ever simplify floats, this option will play a role there besides than the encoding.
+    // If that is the case we need to move this option outside of this encoding class.
     @Option(name = ROUNDING_MODE_FLOATS,
             description = "Rounding mode for floating point operations.",
             secure = true)

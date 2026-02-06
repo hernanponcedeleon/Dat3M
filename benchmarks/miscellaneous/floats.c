@@ -1,10 +1,7 @@
 #include <math.h>
 #include <float.h>
 #include <assert.h>
-
-/* Nondeterministic generators */
-extern float  __VERIFIER_nondet_float(void);
-extern double __VERIFIER_nondet_double(void);
+#include <dat3m.h>
 
 /* Test selector */
 #ifndef TEST_ID
@@ -51,7 +48,7 @@ int main(void) {
 
 #elif TEST_ID == 5
     /* --- Underflow / subnormals --- */
-    if (fabs(d) < DBL_MIN) {
+    if (fabs(d) <= DBL_MIN) {
         double x = d / 2.0;
         assert(fabs(x) < DBL_MIN);
 #ifdef FAIL
@@ -122,13 +119,6 @@ int main(void) {
     }
 
 #elif TEST_ID == 12
-    /* --- Subnormal boundaries --- */
-    if (fabs(d) == DBL_MIN) {
-        double x = d / 2.0;
-        assert(fabs(x) < DBL_MIN);
-    }
-
-#elif TEST_ID == 13
     /* --- Comparison corner cases --- */
     if (!isnan(f)) {
         assert(!(f < f));
@@ -140,14 +130,14 @@ int main(void) {
         assert(!(f > 1.0f));
     }
 
-#elif TEST_ID == 14
+#elif TEST_ID == 13
     /* --- float vs double narrowing --- */
     {
         float ff = (float)1e-300;
         assert(ff == 0.0f);
     }
 
-#elif TEST_ID == 15
+#elif TEST_ID == 14
     /* --- Division corner cases --- */
     if (!isnan(d) && !isinf(d) && d != 0.0) {
         double x = d / d;
