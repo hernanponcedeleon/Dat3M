@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 0 * * 3'  # Run weekly
+    - cron: '0 0 * * 4'  # Run weekly
   workflow_dispatch:
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -65,7 +65,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -89,7 +89,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -113,7 +113,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -143,7 +143,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
