@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.utils.rules;
 
-import org.apache.logging.log4j.LogManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.junit.rules.ExternalResource;
 
 /*
@@ -29,7 +31,7 @@ public abstract class AbstractProvider<T> extends ExternalResource implements Pr
             try {
                 closeable.close();
             } catch (Exception e) {
-                LogManager.getRootLogger().error(e.getMessage());
+                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).error(e.getMessage());
             }
         }
         value = null;

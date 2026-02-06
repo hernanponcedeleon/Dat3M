@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.dat3m</groupId>
         <artifactId>dat3m</artifactId>
-        <version>4.3.0</version>
+        <version>4.3.1</version>
     </parent>
     <artifactId>dartagnan</artifactId>
     <packaging>jar</packaging>
@@ -38,9 +38,9 @@
             <version>${log4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -153,6 +153,17 @@
                             <classpathPrefix>${dat3m.library.path}</classpathPrefix>
                             <mainClass>com.dat3m.dartagnan.Dartagnan</mainClass>
                         </manifest>
+                        <!--
+                            From Java 24 onward, the user needs to invoke Java apps like this:
+                                    java &#45;&#45enable-native-access=ALL-UNNAMED <App>   // &#45='-'
+                            to enable access to native methods (in Java 24 just a warning is triggered,
+                            but it will become an error in the future)
+                            We can enable this option in the manifest file so the user does not
+                            need to specify it.
+                        -->
+                        <manifestEntries>
+                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -211,4 +222,71 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <properties>
+                <cyclonedx.skip>true</cyclonedx.skip>
+            </properties>
+            <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${native-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <noFallback>true</noFallback>
+                        <metadataRepository>
+                            <enabled>true</enabled>
+                        </metadataRepository>
+                        <buildArgs>
+                            <buildArg>-Dlogback.statusListenerClass=</buildArg>
+                            <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
+                        </buildArgs>
+                        <initializeAtBuildTime>
+                            <className>com.dat3m.dartagnan.wmm.RelationNameRepository</className>
+                            <className>com.dat3m.dartagnan.configuration.OptionNames</className>
+                            <className>com.dat3m.dartagnan.wmm.axiom.Acyclicity</className>
+                            <className>com.dat3m.dartagnan.wmm.axiom.Emptiness</className>
+                            <className>com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom</className>
+                            <className>com.dat3m.dartagnan.wmm.axiom.Irreflexivity</className>
+                            <className>com.dat3m.dartagnan.Dartagnan</className>
+                            <className>com.dat3m.dartagnan.encoding.EncodingContext</className>
+                            <className>com.dat3m.dartagnan.encoding.ProgramEncoder</className>
+                            <className>com.dat3m.dartagnan.encoding.SymmetryEncoder</className>
+                            <className>com.dat3m.dartagnan.encoding.WmmEncoder</className>
+                            <className>com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config</className>
+                            <className>com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config</className>
+                            <className>com.dat3m.dartagnan.program.processing.BranchReordering</className>
+                            <className>com.dat3m.dartagnan.program.processing.Inlining</className>
+                            <className>com.dat3m.dartagnan.program.processing.Intrinsics</className>
+                            <className>com.dat3m.dartagnan.program.processing.LoopUnrolling</className>
+                            <className>com.dat3m.dartagnan.program.processing.MemoryAllocation</className>
+                            <className>com.dat3m.dartagnan.program.processing.NonterminationDetection</className>
+                            <className>com.dat3m.dartagnan.program.processing.ProcessingManager</className>
+                            <className>com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation</className>
+                            <className>com.dat3m.dartagnan.program.processing.ThreadCreation</className>
+                            <className>com.dat3m.dartagnan.program.processing.compilation.Compilation</className>
+                            <className>com.dat3m.dartagnan.utils.options.BaseOptions</className>
+                            <className>com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig</className>
+                            <className>com.dat3m.dartagnan.wmm.Wmm$Config</className>
+                            <className>com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config</className>
+                            <className>com.dat3m.dartagnan.wmm.analysis.WmmAnalysis</className>
+                            <className>com.dat3m.dartagnan.wmm.processing.WmmProcessingManager</className>
+                        </initializeAtBuildTime>
+                    </configuration>
+                </plugin>
+            </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

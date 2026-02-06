@@ -22,8 +22,8 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.java_smt.api.Evaluator;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -39,7 +39,7 @@ public class IREvaluator implements AutoCloseable {
     private final ExpressionEncoder exprEnc;
     private final ModelExt smtModel;
 
-    IREvaluator(EncodingContext ctx, Model smtModel) {
+    IREvaluator(EncodingContext ctx, Evaluator smtModel) {
         this.ctx = ctx;
         this.exprEnc = ctx.getExpressionEncoder();
         this.smtModel = new ModelExt(smtModel);
@@ -112,6 +112,14 @@ public class IREvaluator implements AutoCloseable {
     @SuppressWarnings("unchecked")
     public TypedValue<IntegerType, BigInteger> size(MemoryObject memoryObject) {
         return (TypedValue<IntegerType, BigInteger>) evaluate(ctx.size(memoryObject));
+    }
+
+    public boolean isLeaked(MemoryObject object) {
+        return object.isHeapAllocated() && TRUE.equals(smtModel.evaluate(ctx.leakVariable(object)));
+    }
+
+    public boolean isTrackable(MemoryObject object) {
+        return object.isHeapAllocated() && TRUE.equals(smtModel.evaluate(ctx.trackVariable(object)));
     }
 
     // ====================================================================================

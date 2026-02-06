@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -41,6 +42,7 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private final AliasAnalysis.Config config;
+    private final Set<MemoryObject> allObjects;
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -64,6 +66,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private AndersenAliasAnalysis(Program program, Config c) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         config = c;
+        allObjects = program.getMemory().getObjects();
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
@@ -94,6 +97,16 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent a) {
+        return getMaxAddressSet(a).stream().map(l -> l.base).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
+        return a instanceof Load || a instanceof Store ? allObjects : Set.of();
     }
 
     @Override

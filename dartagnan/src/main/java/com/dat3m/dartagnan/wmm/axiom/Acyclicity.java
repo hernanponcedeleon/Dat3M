@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -13,8 +16,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
@@ -23,7 +26,7 @@ import java.util.*;
 
 public class Acyclicity extends Axiom {
 
-    private static final Logger logger = LogManager.getLogger(Acyclicity.class);
+    private static final Logger logger = LoggerFactory.getLogger(Acyclicity.class);
 
     public Acyclicity(Relation rel, boolean negated, boolean flag) {
         super(Relation.checkIsRelation(rel), negated, flag);

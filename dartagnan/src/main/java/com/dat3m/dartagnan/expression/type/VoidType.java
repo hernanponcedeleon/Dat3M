@@ -10,4 +10,9 @@ public final class VoidType implements Type {
     public String toString() {
         return "void";
     }
+
+    @Override
+    public int hashCode() {
+        return 1;
+    }
 }

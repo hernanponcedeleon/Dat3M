@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -13,8 +16,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.google.common.collect.Maps;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -37,7 +40,7 @@ import java.util.*;
  */
 public class MemToReg implements FunctionProcessor {
 
-    private static final Logger logger = LogManager.getLogger(MemToReg.class);
+    private static final Logger logger = LoggerFactory.getLogger(MemToReg.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -61,7 +64,9 @@ public class MemToReg implements FunctionProcessor {
         // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
-            if (allocation.getUsers().isEmpty()) {
+            // Heap allocations may violate trackability, so should not be promoted.
+            //TODO Promote heap allocations only if they are properly freed or trackability is not checked.
+            if (allocation.getUsers().isEmpty() && !allocation.isHeapAllocation()) {
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
             }
         }

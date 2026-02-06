@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
@@ -22,11 +25,11 @@ import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.math.IntMath;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -73,7 +76,7 @@ import static com.google.common.base.Verify.verify;
 */
 public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
+    private static final Logger logger = LoggerFactory.getLogger(InclusionBasedPointerAnalysis.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -89,6 +92,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
+    private final Map<MemoryCoreEvent, DerivedVariable> valueVariables = new HashMap<>();
 
     // Maps memory objects to variables representing their base address.
     // These Variables should always have empty includes-sets.
@@ -190,6 +194,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final DerivedVariable vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base && vx.modifier.offset == vy.modifier.offset &&
                 isConstant(vx.modifier) && isConstant(vy.modifier);
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+        final DerivedVariable v = addressVariables.get(e);
+        return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
+                : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+        final DerivedVariable v = valueVariables.get(e);
+        return v == null ? e instanceof Load || e instanceof Store ? objectVariables.keySet() : Set.of()
+                : v.base.object != null ? Set.of(v.base.object)
+                : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
     }
 
     @Override
@@ -304,7 +323,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
             postProcess(entry);
         }
-        objectVariables.clear();
         registerVariables.clear();
     }
 
@@ -361,6 +379,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (event instanceof Store store) {
             final DerivedVariable value = getResultVariable(store.getMemValue(), store);
             if (value != null) {
+                valueVariables.put(store, value);
                 final StoreEdge edge = new StoreEdge(value, address.modifier);
                 address.base.stores.add(edge);
                 value.base.seeAlso.add(address.base);

@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -18,8 +21,8 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -38,7 +41,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIG
 @Options
 public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
-    private static final Logger logger = LogManager.getLogger(SparseConditionalConstantPropagation.class);
+    private static final Logger logger = LoggerFactory.getLogger(SparseConditionalConstantPropagation.class);
 
     @Option(name = PROPAGATE_COPY_ASSIGNMENTS,
             description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
@@ -70,8 +73,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             return;
         }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
-                : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);
+                ? (expr -> expr instanceof MemoryObject || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
+                : (expr -> expr instanceof MemoryObject || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();

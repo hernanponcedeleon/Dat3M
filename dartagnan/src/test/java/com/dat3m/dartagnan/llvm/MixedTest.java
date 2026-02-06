@@ -1,24 +1,24 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Arch.*;
+import static com.dat3m.dartagnan.configuration.Arch.ARM8;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
-import static org.junit.Assert.assertEquals;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 
 @RunWith(Parameterized.class)
 public class MixedTest extends AbstractCTest {
@@ -43,10 +43,13 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
-    protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(MIXED_SIZE, "true")
-                .build();
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return () -> EnumSet.of(name.startsWith("memtrack") ? Property.TRACKABILITY : Property.PROGRAM_SPEC);
+    }
+
+    @Override
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(MIXED_SIZE, "true");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -58,6 +61,9 @@ public class MixedTest extends AbstractCTest {
             {"lockref-par1", ARM8, FAIL},
             {"lockref-par2", ARM8, PASS},
             {"lockref-par3", ARM8, FAIL},
+            {"memtrack1-fail", ARM8, FAIL},
+            {"memtrack2-pass", ARM8, PASS},
+            {"memtrack3-pass", ARM8, PASS},
             {"mixed-local1", ARM8, PASS},
             {"mixed-local2", ARM8, FAIL},
             {"store-to-load-forwarding1", ARM8, FAIL},
@@ -66,13 +72,11 @@ public class MixedTest extends AbstractCTest {
 
     @Test
     public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.LAZY);
     }
 }

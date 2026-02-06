@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
@@ -23,9 +26,7 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
+import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -33,8 +34,8 @@ import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -51,7 +52,7 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
  * This pass handles (reachable) pthread-related function calls.
  * - each pthread_create call spawns a new Thread object.
  * - pthread_join and pthread_detach calls are lowered to appropriate synchronization primitives.
- * - get_my_tid calls are replaced by constant tid values.
+ * - pthread_self calls are replaced by a supposedly-read-only register.
  * Initially, a single thread from the "main" function is spawned.
  * Then the pass works iteratively by picking a (newly created) thread and handling all its pthread calls.
  *
@@ -70,7 +71,7 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 @Options
 public class ThreadCreation implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(ThreadCreation.class);
+    private static final Logger logger = LoggerFactory.getLogger(ThreadCreation.class);
 
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
             description = "Calling pthread_create is guaranteed to succeed.",
@@ -91,6 +92,8 @@ public class ThreadCreation implements ProgramProcessor {
         compiler = Compilation.fromConfig(config);
     }
 
+    public static final String THREAD_SELF_REGISTER_NAME = "__dat3m_thread_self";
+
     public static ThreadCreation fromConfig(Configuration config) throws InvalidConfigurationException {
         return new ThreadCreation(config);
     }
@@ -104,6 +107,7 @@ public class ThreadCreation implements ProgramProcessor {
         if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
             final List<ThreadData> threads = createThreads(ep);
             resolvePthreadSelf(program);
+            resolveDynamicThreadLocals(program, threads);
             resolveDynamicThreadJoin(program, threads);
             resolveDynamicThreadDetach(program, threads);
             IdReassignment.newInstance().run(program);
@@ -363,6 +367,10 @@ public class ThreadCreation implements ProgramProcessor {
         final List<Event> body = IRHelper.copyEvents(function.getEvents(), IRHelper.makeRegisterReplacer(registerReplacement), new HashMap<>());
         thread.getEntry().insertAfter(body);
 
+        // ------------------- Define runtime thread id -------------------
+        final var tidExpr = new TIdExpr(types.getArchType(), thread);
+        thread.getEntry().insertAfter(newLocal(thread.getOrNewRegister(THREAD_SELF_REGISTER_NAME, tidExpr.getType()), tidExpr));
+
         // ------------------- Create thread-local variables -------------------
         replaceThreadLocalsWithStackalloc(function.getProgram().getMemory(), thread);
 
@@ -370,15 +378,10 @@ public class ThreadCreation implements ProgramProcessor {
         final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
-        final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
 
-        // ------------------- Replace AbortIf, (Thread)Return, and pthread_exit -------------------
+        // ------------------- Replace (Thread)Return -------------------
         for (Event e : thread.getEvents()) {
-            if (e instanceof AbortIf abort) {
-                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
-                jumpToEnd.addTags(abort.getTags());
-                IRHelper.replaceWithMetadata(abort, jumpToEnd);
-            } else if (e instanceof Return || e instanceof ThreadReturn) {
+            if (e instanceof Return || e instanceof ThreadReturn) {
                 // NOTE: We also replace ThreadReturn but generate a single new one (normalization) afterward.
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
                         : ((ThreadReturn)e).getValue().orElse(null);
@@ -393,8 +396,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Event threadReturn = EventFactory.newThreadReturn(returnRegister);
         thread.append(List.of(
                 threadReturnLabel,
-                threadReturn,
-                threadEnd
+                threadReturn
         ));
 
         // ------------------- Add Sync, End, and Argument events if this thread was spawned -------------------
@@ -423,17 +425,14 @@ public class ThreadCreation implements ProgramProcessor {
             threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadState(JOINABLE)));
 
             creator.setSpawnedThread(thread);
-            return new ThreadData(thread, comAddress);
+            return new ThreadData(thread, comAddress, threadReturnLabel);
         }
 
-        return new ThreadData(thread, null);
+        return new ThreadData(thread, null, threadReturnLabel);
     }
 
 
     private void replaceThreadLocalsWithStackalloc(Memory memory, Thread thread) {
-        final TypeFactory types = TypeFactory.getInstance();
-        final ExpressionFactory exprs = ExpressionFactory.getInstance();
-
         // Translate thread-local memory object to local stack allocation
         Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
         for (MemoryObject memoryObject : memory.getObjects()) {
@@ -462,7 +461,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        exprs.makeAdd(reg, exprs.makeValue(initOffset, types.getArchType())),
+                        expressions.makeAdd(reg, expressions.makeValue(initOffset, types.getArchType())),
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
@@ -500,6 +499,99 @@ public class ThreadCreation implements ProgramProcessor {
         };
         for (RegReader reader : program.getThreadEvents(RegReader.class)) {
             reader.transformExpressions(transformer);
+        }
+    }
+
+    private void resolveDynamicThreadLocals(Program program, List<ThreadData> threads) {
+        record Storage(int id, MemoryObject data, MemoryObject destructor) {}
+        interface StorageField { MemoryObject get(Storage s); }
+        interface Match { Expression compute(StorageField f, Expression k); }
+        final List<Storage> storage = new ArrayList<>();
+        final Type type = types.getPointerType();
+        final int size = types.getMemorySizeInBytes(type);
+        final Expression nil = expressions.makeGeneralZero(type);
+        for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {
+            final int id = storage.size() + 1;
+            final MemoryObject data = program.getMemory().allocate(size);
+            final MemoryObject destructor = program.getMemory().allocate(size);
+            final var t = (IntegerType) create.getResultRegister().getType();
+            data.setIsThreadLocal(true);
+            storage.add(new Storage(id, data, destructor));
+            create.replaceBy(List.of(
+                    newFunctionCallMarker("__dat3m_dynamic_thread_create"),
+                    newStore(destructor, create.getDestructor()),
+                    newLocal(create.getResultRegister(), expressions.makeValue(id, t)),
+                    newFunctionReturnMarker("__dat3m_dynamic_thread_create")
+            ));
+        }
+        final Match match = (field, key) -> {
+            Expression data = nil;
+            for (Storage s : storage) {
+                final Expression id = expressions.makeValue(s.id, (IntegerType) key.getType());
+                data = expressions.makeITE(expressions.makeEQ(key, id), field.get(s), data);
+            }
+            return data;
+        };
+        //TODO prune possibilities
+        for (DynamicThreadLocalDelete delete : program.getThreadEvents(DynamicThreadLocalDelete.class)) {
+            // Set the destructor to null.
+            final Register destructor = delete.getThread().newUniqueRegister("__thread_local_delete_destructor", type);
+            final Label end = newLabel("__thread_local_delete_end");
+            delete.replaceBy(List.of(
+                    newFunctionCallMarker("__dat3m_dynamic_thread_delete"),
+                    newLocal(destructor, match.compute(Storage::destructor, delete.getKey())),
+                    newIfJump(expressions.makeEQ(destructor, nil), end, end),
+                    newStore(destructor, nil),
+                    end,
+                    newFunctionReturnMarker("__dat3m_dynamic_thread_delete")
+            ));
+        }
+        for (DynamicThreadLocalGet get : program.getThreadEvents(DynamicThreadLocalGet.class)) {
+            final Register data = get.getThread().newUniqueRegister("__thread_local_get_key", type);
+            final Label end = newLabel("__thread_local_get_end");
+            get.replaceBy(List.of(
+                    newFunctionCallMarker("__dat3m_dynamic_thread_get"),
+                    newLocal(data, match.compute(Storage::data, get.getKey())),
+                    newIfJump(expressions.makeEQ(data, nil), end, end),
+                    newLoad(get.getResultRegister(), data),
+                    end,
+                    newFunctionReturnMarker("__dat3m_dynamic_thread_get")
+            ));
+        }
+        for (DynamicThreadLocalSet set : program.getThreadEvents(DynamicThreadLocalSet.class)) {
+            final Register data = set.getThread().newUniqueRegister("__thread_local_set_key", type);
+            final Label end = newLabel("__thread_local_set_end");
+            set.replaceBy(List.of(
+                    newFunctionCallMarker("__dat3m_dynamic_thread_set"),
+                    newLocal(data, match.compute(Storage::data, set.getKey())),
+                    newIfJump(expressions.makeEQ(data, nil), end, end),
+                    newStore(data, set.getValue()),
+                    end,
+                    newFunctionReturnMarker("__dat3m_dynamic_thread_set")
+            ));
+        }
+        // Call destructors at the end of the thread.
+        final FunctionType destructorType = types.getFunctionType(types.getVoidType(), List.of(type));
+        for (ThreadData thread : threads) {
+            //TODO order the destructors non-deterministically
+            final List<Event> exit = new ArrayList<>();
+            final Register destructor = thread.thread.newUniqueRegister("__thread_exit_destructor", type);
+            final Register value = thread.thread.newUniqueRegister("__thread_exit_value", type);
+            int index = 0;
+            for (Storage s : storage) {
+                final Label end = newLabel("__thread_exit_destructor_%d".formatted(++index));
+                exit.addAll(List.of(
+                        newLoad(destructor, s.destructor),
+                        newIfJump(expressions.makeEQ(destructor, nil), end, end),
+                        newLoad(value, s.data),
+                        newVoidFunctionCall(destructorType, destructor, List.of(value)),
+                        end
+                ));
+            }
+            thread.returnLabel.insertAfter(exit);
+        }
+        for (Thread thread : program.getThreads()) {
+            replaceThreadLocalsWithStackalloc(program.getMemory(), thread);
         }
     }
 
@@ -623,7 +715,7 @@ public class ThreadCreation implements ProgramProcessor {
     // ==============================================================================================================
     // Helper classes
 
-    private record ThreadData(Thread thread, MemoryObject comAddress) {
+    private record ThreadData(Thread thread, MemoryObject comAddress, Label returnLabel) {
         public boolean isDynamic() { return comAddress != null; }
         // We assume all dynamically created threads are joinable.
         // This is not true for pthread_join in general.

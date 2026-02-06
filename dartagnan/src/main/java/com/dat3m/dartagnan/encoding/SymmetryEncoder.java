@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -15,8 +18,8 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -34,7 +37,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 @Options
 public class SymmetryEncoder implements Encoder {
 
-    private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
+    private static final Logger logger = LoggerFactory.getLogger(SymmetryEncoder.class);
 
     private final Wmm memoryModel;
     private final EncodingContext context;

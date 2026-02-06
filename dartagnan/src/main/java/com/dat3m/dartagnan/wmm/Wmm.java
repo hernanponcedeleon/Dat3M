@@ -1,12 +1,15 @@
 package com.dat3m.dartagnan.wmm;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -35,15 +38,16 @@ public class Wmm {
         public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
     }
 
-    private static final Logger logger = LogManager.getLogger(Wmm.class);
+    private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
 
     // These relations are part of every memory model (even the "empty" one) because they are
     // necessary to specify the anarchic program semantics.
     public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, LXSX);
 
-    private final List<Constraint> constraints = new ArrayList<>(); // NOTE: Stores only non-defining constraints
-    private final Set<Relation> relations = new HashSet<>();
-    private final Map<String, Filter> filters = new HashMap<>();
+    // Only stores non-defining constraints.
+    private final List<Constraint> constraints = new ArrayList<>();
+    // Guarantees deterministic iteration order, even though Relation is not value-based.
+    private final Set<Relation> relations = new LinkedHashSet<>();
 
     private final Config config = new Config();
 
@@ -163,32 +167,19 @@ public class Wmm {
         }
     }
 
-    public void addFilter(Filter filter) {
-        filters.put(filter.getName(), filter);
-    }
-
-    public Filter getFilter(String name) {
-        return filters.computeIfAbsent(name, Filter::byTag);
-    }
-
     @Override
     public String toString() {
         Stream<String> a = constraints.stream().map(Constraint::toString);
         Stream<String> r = relations.stream()
                 .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
-        Stream<String> s = filters.values().stream().map(Filter::toString);
-        return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
+        return Stream.of(a, r).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
     // ========================================== Utility Methods ========================================
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
         config.inject(this.config);
-        for (Axiom ax : getAxioms()) {
-            ax.configure(config);
-        }
-
         logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
     }
 

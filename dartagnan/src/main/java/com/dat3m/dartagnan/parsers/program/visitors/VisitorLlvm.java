@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
@@ -28,8 +31,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -43,7 +45,7 @@ import static com.google.common.base.Verify.verify;
 
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final Logger logger = LoggerFactory.getLogger(VisitorLlvm.class);
     private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
@@ -60,7 +62,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Nonnull, if the visitor is inside a function body.
     private Function function;
     private final Map<String, Block> basicBlocks = new HashMap<>();
-    private final Map<BlockPair, List<Event>> phiNodes = new HashMap<>();
+    private final Map<String, Map<String, List<Event>>> phiNodes = new HashMap<>();
     // Nonnull, if the visitor is inside a basic block.
     private Block block;
     // Nonnull, if the visitor is inside a value instruction.  Resolve overloading, like in literals.
@@ -205,17 +207,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
 
             final Event terminator = block.events.get(block.events.size() - 1);
-            for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
-                final BlockPair blockPair = phiNode.getKey();
-                if (blockPair.from == block) {
-                    for (Event event : phiNode.getValue()) {
-                        event.copyAllMetadataFrom(terminator);
-                        function.append(event);
-                    }
-                    final Event gotoTargetBlock = newGoto(blockPair.to.label);
-                    gotoTargetBlock.copyAllMetadataFrom(terminator);
-                    function.append(gotoTargetBlock);
+            for (final Map.Entry<String, List<Event>> phiNode : phiNodes.getOrDefault(block.name, Map.of()).entrySet()) {
+                for (Event event : phiNode.getValue()) {
+                    event.copyAllMetadataFrom(terminator);
+                    function.append(event);
                 }
+                final Event gotoTargetBlock = newGoto(basicBlocks.get(phiNode.getKey()).label);
+                gotoTargetBlock.copyAllMetadataFrom(terminator);
+                function.append(gotoTargetBlock);
             }
         }
         function.validate();
@@ -288,7 +287,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 k -> {
                     final Label l = newLabel("l" + k);
                     l.setFunction(function);
-                    return new Block(l);
+                    return new Block(k, l, new ArrayList<>());
                 });
     }
 
@@ -466,14 +465,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private List<Event> getPhiNode(Block from, Block to) {
-        final BlockPair pair = new BlockPair(from, to);
-        final List<Event> find = phiNodes.get(pair);
+        final Map<String, List<Event>> phiNodesFrom = phiNodes.computeIfAbsent(from.name, k -> new HashMap<>());
+        final List<Event> find = phiNodesFrom.get(to.name);
         if (find != null) {
             return find;
         }
         final var newNode = new ArrayList<Event>();
-        newNode.add(newLabel(from.label.getName() + "." + to.label.getName()));
-        phiNodes.put(pair, newNode);
+        newNode.add(newLabel(from.name + "." + to.name));
+        phiNodesFrom.put(to.name, newNode);
         return newNode;
     }
 
@@ -1417,22 +1416,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return "r" + original;
     }
 
-    private record BlockPair(Block from, Block to) {}
-
-    private static final class Block {
-        private final Label label;
-        private final List<Event> events = new ArrayList<>();
-        private Block(Label l) {
-            label = l;
-        }
-    }
+    private record Block(String name, Label label, List<Event> events) {}
 
     // ----------------------------------------------------------------------------------------------------------------
     // Metadata nodes that reflect LLVM's notion of metadata
 
     private interface MdNode extends Expression {
 
-        Type TYPE = new Type() { };
+        Type TYPE = new Type() {
+            @Override public int hashCode() { return -1; }
+        };
         ExpressionKind MdKind = new ExpressionKind() {
             @Override
             public String getSymbol() { return "Md"; }

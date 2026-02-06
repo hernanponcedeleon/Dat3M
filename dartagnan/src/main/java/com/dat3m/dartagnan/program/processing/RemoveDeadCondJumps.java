@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.program.Function;
@@ -7,8 +10,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -19,7 +22,7 @@ import java.util.Map;
 
 public class RemoveDeadCondJumps implements FunctionProcessor {
 
-    private static final Logger logger = LogManager.getLogger(RemoveDeadCondJumps.class);
+    private static final Logger logger = LoggerFactory.getLogger(RemoveDeadCondJumps.class);
 
     private RemoveDeadCondJumps() {
     }
@@ -65,16 +68,22 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
             if (next == null) {
                 continue;
             }
+            // If a jump is only reachable, when its guard is false, it is dead.
             if (next instanceof CondJump jump && preds.stream().allMatch(e -> mutuallyExclusiveIfs(jump, e))) {
                 toBeRemoved.add(next);
             }
+            // If a label is only accessible from its predecessor, it can be removed as well.
             if (preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
+                if (preds.get(0) instanceof CondJump jump && jump.getLabel().equals(label)) {
+                    assert jump.isDead() || jump.isGoto();
+                    toBeRemoved.add(jump);
+                }
                 toBeRemoved.add(label);
             }
         }
 
-        // Make sure to not remove "NOOPT" events.
-        toBeRemoved.removeIf(e -> e.hasTag(Tag.NOOPT));
+        // Make sure to not remove "NOOPT" or "BOUND" events.
+        toBeRemoved.removeIf(e -> e.hasTag(Tag.NOOPT) || e.hasTag(Tag.BOUND));
 
         // Here is the actual removal
         boolean isCurDead = false;
@@ -96,13 +105,8 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
             }
             if ((isCurDead || toBeRemoved.contains(cur)) && !cur.hasTag(Tag.NOOPT)) {
                 // If the current event is dead or can be removed for another reason, we try to delete it
-                if (cur instanceof Label label) {
-                    //FIXME: We sometimes mark labels that still have jumps to them for deletion.
-                    // We should make sure to also mark the jumps for deletion, rather than explicitly deleting them here.
-                    label.getJumpSet().forEach(Event::tryDelete);
-                }
                 if (!cur.tryDelete()) {
-                    logger.warn("Failed to delete event: {}:   {}", cur.getLocalId(), cur);
+                    logger.debug("Failed to delete event: {}:   {}", cur.getLocalId(), cur);
                 }
             }
             if (cur instanceof CondJump jump && jump.isGoto()) {
