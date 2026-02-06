@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.Interval;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -24,6 +26,7 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -34,8 +37,9 @@ import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -742,6 +746,44 @@ public class ProgramEncoder implements Encoder {
 
             return bmgr.implication(hasForwardProgress(group), bmgr.and(enc));
         }
+    }
+
+    // ============= Bounds =============
+
+    private List<BooleanFormula> encodeRegisterBounds(Formula variable, Interval interval) {
+        List<BooleanFormula> encoding = new ArrayList<>();
+        if (!interval.isTop()) {
+            BigInteger lowerbound = interval.getLowerbound();
+            BigInteger upperbound = interval.getUpperbound();
+            if (variable instanceof BitvectorFormula bvar) {
+                if (interval.isSignInsensitive()) {
+                    BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                    int bitWidth = bvmgr.getLength(bvar);
+                    encoding.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
+                    encoding.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
+                }
+            } else if (variable instanceof IntegerFormula ivar) {
+                IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+                encoding.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
+                encoding.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
+            }
+        }
+        return encoding;
+    }
+
+    public BooleanFormula encodeBounds() {
+        List<BooleanFormula> encoding = new ArrayList<>();
+        for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+            for (Register.Read read : e.getRegisterReads()) {
+                Register r = read.register();
+                if (r.getType() instanceof IntegerType) {
+                    Interval interval = context.getAnalysisContext().requires(IntervalAnalysis.class).getIntervalAt(e, r);
+                    encoding.addAll(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
+                }
+            }
+        }
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(encoding);
     }
 }
 

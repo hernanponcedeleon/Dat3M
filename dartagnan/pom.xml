@@ -265,6 +265,7 @@
                             <className>com.dat3m.dartagnan.encoding.WmmEncoder</className>
                             <className>com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config</className>
                             <className>com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config</className>
+                            <className>com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis$Config</className>
                             <className>com.dat3m.dartagnan.program.processing.BranchReordering</className>
                             <className>com.dat3m.dartagnan.program.processing.Inlining</className>
                             <className>com.dat3m.dartagnan.program.processing.Intrinsics</className>

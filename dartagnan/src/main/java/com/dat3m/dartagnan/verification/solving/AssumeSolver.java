@@ -41,6 +41,7 @@ public class AssumeSolver extends ModelChecker {
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task, analysisContext, config);
         return analysisContext;
     }
 
@@ -71,6 +72,10 @@ public class AssumeSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        // Adding bounds
+        prover.writeComment("Bounds over variables");
+        BooleanFormula bounds = programEncoder.encodeBounds();
+        prover.addConstraint(bounds);
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);

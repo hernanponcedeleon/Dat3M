@@ -60,6 +60,11 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
         "name":"com.dat3m.dartagnan.program.processing.BranchReordering",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
