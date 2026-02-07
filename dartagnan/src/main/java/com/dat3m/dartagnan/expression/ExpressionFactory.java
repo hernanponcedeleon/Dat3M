@@ -449,7 +449,7 @@ public final class ExpressionFactory {
     // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
     // "source type < target type": a zero-extension is performed before converting to the target type
     // "source type > target type": only the lowest bits of <expr> are used for the conversion.
-    public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict, boolean signed) {
+    public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict) {
         final Type sourceType = expr.getType();
         if (sourceType.equals(targetType)) {
             return expr;
@@ -473,6 +473,10 @@ public final class ExpressionFactory {
         exprMem = makeFromMemoryCast(exprMem, targetType);
 
         return exprMem.accept(simplifier);
+    }
+
+    public Expression makeBitcast(Expression expr, Type targetType) {
+        return makeCastOverMemory(expr, targetType, true);
     }
 
     public Expression makeGeneralZero(Type type) {

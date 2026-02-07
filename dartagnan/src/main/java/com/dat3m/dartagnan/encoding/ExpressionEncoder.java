@@ -163,9 +163,8 @@ public class ExpressionEncoder {
                 yield exprs.makeCast(right, left.getType());
             }
             case MEMORY_ROUND_TRIP_STRICT, MEMORY_ROUND_TRIP_RELAXED -> {
-                final boolean signed = true;
                 final boolean strict = conversion == ConversionMode.MEMORY_ROUND_TRIP_STRICT;
-                yield exprs.makeCastOverMemory(right, left.getType(), strict, signed);
+                yield exprs.makeCastOverMemory(right, left.getType(), strict);
             }
         };
 
@@ -727,8 +726,8 @@ public class ExpressionEncoder {
         // Memory type
 
         private void checkMemoryCastSupport(Type type) {
-            if (!(type instanceof IntegerType)) {
-                throw new UnsupportedOperationException("Cannot cast memory to type: " + type);
+            if (!(type instanceof IntegerType) && !(type instanceof FloatType)) {
+                throw new UnsupportedOperationException("Cannot cast between memory and type: " + type);
             }
         }
 
@@ -740,14 +739,18 @@ public class ExpressionEncoder {
             checkMemoryCastSupport(expr.getSourceType());
 
             Formula enc = inner.formula();
-            if (inner.formula() instanceof BitvectorFormula bvform) {
+            if (inner.getType() instanceof IntegerType iType && !context.useIntegers) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final int innerSize = bvmgr.getLength(bvform);
-                if (innerSize < targetType.getBitWidth()) {
-                    enc = bvmgr.extend(bvform, targetType.getBitWidth() - innerSize, false);
+                final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
+                if (extBits > 0) {
+                    enc = bvmgr.extend((BitvectorFormula) inner.formula(), extBits, false);
                 }
+            } else if (inner.getType() instanceof FloatType fType) {
+                assert targetType.getBitWidth() == fType.getBitWidth();
+                final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+                enc = fpmgr.toIeeeBitvector((FloatingPointFormula) inner.formula());
             }
-            // TODO: Do actual conversions
+
             return new TypedFormula<>(targetType, enc);
         }
 
@@ -765,9 +768,11 @@ public class ExpressionEncoder {
                 if (targetSize < expr.getSourceType().getBitWidth()) {
                     enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
                 }
+            } else if (targetType instanceof FloatType fType) {
+                assert !context.useIntegers;
+                enc = floatingPointFormulaManager().fromIeeeBitvector((BitvectorFormula) inner.formula(), getFloatFormulaType(fType));
             }
 
-            // TODO: Do actual conversions
             return new TypedFormula<>(targetType, enc);
         }
 

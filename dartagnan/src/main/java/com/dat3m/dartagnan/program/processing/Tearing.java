@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -23,7 +24,6 @@ import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
-
 import com.google.common.collect.Ordering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +176,7 @@ public final class Tearing implements ProgramProcessor {
         final List<Event> replacement = new ArrayList<>();
         final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
                 "Non-integer address in '%s'", load);
-        checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
+        checkIsTearableType(load.getAccessType(), load);
         final Function function = load.getFunction();
         final Register addressRegister = toRegister(load.getAddress(), function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
@@ -218,7 +218,7 @@ public final class Tearing implements ProgramProcessor {
         final List<Event> replacement = new ArrayList<>();
         final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
                 "Non-integer address in '%s'", store);
-        checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
+        checkIsTearableType(store.getAccessType(), store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);
         final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
@@ -258,6 +258,12 @@ public final class Tearing implements ProgramProcessor {
             return t;
         }
         throw new UnsupportedOperationException(String.format(message, event));
+    }
+
+    private void checkIsTearableType(Type type, Event event) {
+        if (!(type instanceof IntegerType || type instanceof FloatType)) {
+            throw new UnsupportedOperationException(String.format("Tearing of type '%s' is not supported at '%s'", type, event));
+        }
     }
 
     private Register toRegister(Expression expression, Function function, List<Event> replacement) {
