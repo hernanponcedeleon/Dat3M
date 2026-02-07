@@ -912,7 +912,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitBitCastInst(BitCastInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        final Expression operandExpression = visitTypeValue(ctx.typeValue());
+        final Type targetType = parseType(ctx.type());
+        checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", ctx.type());
+        final Expression result = expressions.makeBitcast(operandExpression, targetType);
+        return assignToRegister(result);
     }
 
     @Override
@@ -923,8 +927,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        // checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target); // TODO we can enable this once we have proper support for bitcats, see #957
+        checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target);
         final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }

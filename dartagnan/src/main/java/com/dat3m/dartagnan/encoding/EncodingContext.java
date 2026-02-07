@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -196,12 +197,12 @@ public final class EncodingContext {
         return exprEncoder.equal(result(first), result(second));
     }
 
-    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
-        return exprEncoder.equal(value(first), value(second), cmode);
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
+        return exprEncoder.equal(value(first), value(second));
     }
 
-    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return sameValue(first, second, ExpressionEncoder.ConversionMode.NO);
+    public BooleanFormula assignValue(MemoryCoreEvent left, MemoryCoreEvent right) {
+        return exprEncoder.assignEqual(value(left), value(right), MEMORY_ROUND_TRIP_RELAXED);
     }
 
     public TypedFormula<?, ?> address(MemoryCoreEvent event) {
