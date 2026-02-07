@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,8 +31,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -963,18 +962,19 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitFloatConst(FloatConstContext ctx) {
-        checkState(expectedType instanceof FloatType, "Expected non-float type.");
-        FloatType fType = (FloatType) expectedType;
+        checkState(expectedType instanceof FloatType, "Expected float type.");
+        final FloatType fType = (FloatType) expectedType;
         if (ctx.getText().startsWith("0x") || ctx.getText().startsWith("0X")) {
             long bits = Long.parseUnsignedLong(ctx.getText().substring(2), 16);
             double value = Double.longBitsToDouble(bits);
+
             if (Double.isInfinite(value)) {
                 return value > 0 ? expressions.makePlusInf(fType) : expressions.makeMinusInf(fType);
-            }
-            if (Double.isNaN(value)) {
+            } else if (Double.isNaN(value)) {
                 return expressions.makeNan(fType);
+            } else {
+                return expressions.makeValue(BigDecimal.valueOf(value), fType);
             }
-            return expressions.makeValue(BigDecimal.valueOf(value), fType);
         }
         return expressions.makeValue(new BigDecimal(ctx.getText()), fType);
     }
@@ -1280,12 +1280,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private Type parseFloatType(FloatKindContext ctx) {
-        // Following IEEE-754 conventions
-        // The sign bit is part of the BigDecimal representing constants
         return switch (ctx.getText()) {
-            case "half" -> types.getFloatType(10, 5);
-            case "float" -> types.getFloatType(23, 8);
-            case "double" -> types.getFloatType(52, 11);
+            case "half" -> types.getIEEEHalfType();
+            case "float" -> types.getIEEESingleType();
+            case "double" -> types.getIEEEDoubleType();
             default -> throw new ParsingException("Unsupported float type %s", ctx.getText());
         };
     }

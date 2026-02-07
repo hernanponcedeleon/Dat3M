@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
-import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.floats.*;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
@@ -23,8 +23,8 @@ import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.smt.TupleFormula;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.FormulaType.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class ExpressionEncoder {
         return fmgr.getFloatingPointFormulaManager();
     }
 
-    private FloatingPointType getFloatType(FloatType type) {
+    private FloatingPointType getFloatFormulaType(FloatType type) {
         return FormulaType.getFloatingPointType(type.getExponentBits(), type.getMantissaBits());
     }
 
@@ -103,8 +103,7 @@ public class ExpressionEncoder {
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
         } else if (type instanceof FloatType floatType) {
-            final FloatingPointType fType = getFloatType(floatType);
-            variable = floatingPointFormulaManager().makeVariable(name, fType);
+            variable = floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
             for (TypeOffset field : aggType.getFields()) {
@@ -536,9 +535,10 @@ public class ExpressionEncoder {
 
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
-            final FloatType fType = (FloatType) expr.getTargetType();
-            final FloatingPointType targetType = getFloatType(fType);
-            return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats));
+            final FloatType fType = expr.getTargetType();
+            final FloatingPointType targetType = getFloatFormulaType(fType);
+            final Formula enc = floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats);
+            return new TypedFormula<>(fType, enc);
         }
 
         // ====================================================================================
@@ -546,8 +546,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
-            final FloatType fType = (FloatType) floatLiteral.getType();
-            final FloatingPointType fFType = getFloatType(fType);
+            final FloatingPointType fFType = getFloatFormulaType(floatLiteral.getType());
             final Formula result;
             if (floatLiteral.isNaN()) {
                 result = floatingPointFormulaManager().makeNaN(fFType);
@@ -567,9 +566,8 @@ public class ExpressionEncoder {
             final TypedFormula<FloatType, ?> rhs = encodeFloatExpr(fBin.getRight());
             final FloatingPointFormula fp1 = (FloatingPointFormula) lhs.formula();
             final FloatingPointFormula fp2 = (FloatingPointFormula) rhs.formula();
-            final FloatType type = fBin.getType();
-            final int bitWidth = type.getBitWidth();
             final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+
             final FloatingPointFormula result = switch (fBin.getKind()) {
                 case FADD -> fpmgr.add(fp1, fp2, context.roundingModeFloats);
                 case FSUB -> fpmgr.subtract(fp1, fp2, context.roundingModeFloats);
@@ -579,7 +577,7 @@ public class ExpressionEncoder {
                 case FMAX -> fpmgr.max(fp1, fp2);
                 case FMIN -> fpmgr.min(fp1, fp2);
             };
-            return new TypedFormula<>(type, result);
+            return new TypedFormula<>(fBin.getType(), result);
         }
 
         @Override
@@ -599,7 +597,7 @@ public class ExpressionEncoder {
             final TypedFormula<?, ?> lhs = encode(cmp.getLeft());
             final TypedFormula<?, ?> rhs = encode(cmp.getRight());
             final FloatCmpOp op = cmp.getKind();
-            final FloatingPointFormulaManager fpmgr = fmgr.getFloatingPointFormulaManager();
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
             final FloatingPointFormula l = (FloatingPointFormula) lhs.formula();
             final FloatingPointFormula r = (FloatingPointFormula) rhs.formula();
@@ -627,34 +625,35 @@ public class ExpressionEncoder {
 
         private BooleanFormula fromUnordToOrd(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-            final FloatingPointFormulaManager fpmgr = fmgr.getFloatingPointFormulaManager();
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             return fmgr.ifThenElse(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)), bmgr.makeFalse(), cmp);
         }
 
         @Override
         public TypedFormula<FloatType, ?> visitFloatSizeCastExpression(FloatSizeCast expr) {
             final TypedFormula<FloatType, ?> inner = encodeFloatExpr(expr.getOperand());
-            final Formula enc;
-
             if (expr.isNoop()) {
                 return inner;
-            } else {
-                final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
-                final FloatingPointType fType = getFloatType(expr.getTargetType());
-                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), true, fType, context.roundingModeFloats);
             }
+
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+            final FloatingPointType fType = getFloatFormulaType(expr.getTargetType());
+            final Formula enc = fpmgr.castFrom(inner.formula(), true, fType, context.roundingModeFloats);
             return new TypedFormula<>(expr.getType(), enc);
         }
 
         @Override
         public TypedFormula<?, ?> visitFloatToIntCastExpression(FloatToIntCast expr) {
-            final FormulaType targetFormulaType = context.useIntegers ?
+            final FormulaType<?> targetFormulaType = context.useIntegers ?
                 FormulaType.IntegerType :
                 FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
             // Instructions fptoui and fptosi convert their floating-point operand into the nearest (rounding towards zero) integer value
             // https://llvm.org/docs/LangRef.html#fptoui-to-instruction
             // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
-            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO));
+            final FloatingPointFormula inner = (FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula();
+            final Formula enc = floatingPointFormulaManager().castTo(
+                    inner, expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO);
+            return new TypedFormula<>(expr.getTargetType(), enc);
         }
 
         // ====================================================================================

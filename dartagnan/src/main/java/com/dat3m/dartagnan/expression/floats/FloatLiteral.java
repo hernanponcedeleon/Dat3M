@@ -46,7 +46,7 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
     }
 
     public double getValueAsDouble() {
-        return value.doubleValue();
+        return getValue().doubleValue();
     }
 
     @Override

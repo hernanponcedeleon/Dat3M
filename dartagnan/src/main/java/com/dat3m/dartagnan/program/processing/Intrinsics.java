@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1584,12 +1583,12 @@ public class Intrinsics {
             nonDetType = types.getBooleanType();
         } else if (suffix.equals("float")) {
             // Nondeterministic floats (32 bits)
-            signed = false;
-            nonDetType = types.getFloatType(23, 8);
+            signed = true;
+            nonDetType = types.getIEEESingleType();
         } else if (suffix.equals("double")) {
             // Nondeterministic floats (64 bits)
-            signed = false;
-            nonDetType = types.getFloatType(52, 11);
+            signed = true;
+            nonDetType = types.getIEEEDoubleType();
         } else {
             // Nondeterministic integers
             final int bits = switch (suffix) {
