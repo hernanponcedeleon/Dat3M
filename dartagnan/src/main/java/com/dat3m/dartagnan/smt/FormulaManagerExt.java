@@ -28,6 +28,7 @@ public class FormulaManagerExt {
     public BooleanFormulaManager getBooleanFormulaManager() { return fmgr.getBooleanFormulaManager(); }
     public IntegerFormulaManager getIntegerFormulaManager() { return fmgr.getIntegerFormulaManager(); }
     public BitvectorFormulaManager getBitvectorFormulaManager() { return fmgr.getBitvectorFormulaManager(); }
+    public FloatingPointFormulaManager getFloatingPointFormulaManager() { return fmgr.getFloatingPointFormulaManager(); }
     public TupleFormulaManager getTupleFormulaManager() { return tmgr; }
 
     // ====================================================================================================

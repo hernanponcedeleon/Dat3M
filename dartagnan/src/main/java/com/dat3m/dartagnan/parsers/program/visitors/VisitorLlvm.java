@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,6 +31,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -598,10 +598,49 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFCmpInst(FCmpInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        final String operator = ctx.fPred().getText();
+        final Expression compared = switch (operator) {
+            case "oeq" -> expressions.makeFEQ(left, right, true);
+            case "one" -> expressions.makeFNEQ(left, right, true);
+            case "olt" -> expressions.makeOLT(left, right);
+            case "ole" -> expressions.makeOLTE(left, right);
+            case "ogt" -> expressions.makeOGT(left, right);
+            case "oge" -> expressions.makeOGTE(left, right);
+            case "ord" -> expressions.makeORD(left, right);
+            case "ueq" -> expressions.makeFEQ(left, right, false);
+            case "une" -> expressions.makeFNEQ(left, right, false);
+            case "ult" -> expressions.makeULT(left, right);
+            case "ule" -> expressions.makeULTE(left, right);
+            case "ugt" -> expressions.makeUGT(left, right);
+            case "uge" -> expressions.makeUGTE(left, right);
+            case "uno" -> expressions.makeUNO(left, right);
+            default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
+        };
+        // LLVM does not support a distinct boolean type.
+        return assignToRegister(expressions.makeIntegerCast(compared, getIntegerType(1), false));
+    }
+
+    @Override
+    public Expression visitFNegInst(FNegInstContext ctx) {
+        final Expression operand = visitTypeValue(ctx.typeValue());
+        return assignToRegister(expressions.makeFNeg(operand));
+    }
+
+    @Override
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeAdd(left, right));
+    }
+
+    @Override
+    public Expression visitFAddInst(FAddInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFAdd(left, right));
     }
 
     @Override
@@ -612,10 +651,24 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFSubInst(FSubInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFSub(left, right));
+    }
+
+    @Override
     public Expression visitMulInst(MulInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeMul(left, right));
+    }
+
+    @Override
+    public Expression visitFMulInst(FMulInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFMul(left, right));
     }
 
     @Override
@@ -676,6 +729,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFRemInst(FRemInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFRem(left, right));
+    }
+
+    @Override
     public Expression visitUDivInst(UDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
@@ -687,6 +747,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeDiv(left, right, true));
+    }
+
+    @Override
+    public Expression visitFDivInst(FDivInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFDiv(left, right));
     }
 
     // Aggregate instructions
@@ -794,6 +861,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFpTruncInst(FpTruncInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
     public Expression visitZExtInst(ZExtInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
@@ -801,6 +873,31 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitSExtInst(SExtInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitFpExtInst(FpExtInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitFpToUiInst(FpToUiInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
+    }
+
+    @Override
+    public Expression visitFpToSiInst(FpToSiInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitSiToFpInst(SiToFpInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitUiToFpInst(UiToFpInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
@@ -827,7 +924,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
         checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        final Expression result = expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        // checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target); // TODO we can enable this once we have proper support for bitcats, see #957
+        final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
 
@@ -860,6 +958,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final BigInteger value = parseBigInteger(ctx.IntLit());
         checkState(expectedType instanceof IntegerType, "Expected non-integer type.");
         return expressions.makeValue(value, (IntegerType) expectedType);
+    }
+
+    @Override
+    public Expression visitFloatConst(FloatConstContext ctx) {
+        checkState(expectedType instanceof FloatType, "Expected float type.");
+        final FloatType fType = (FloatType) expectedType;
+        if (ctx.getText().startsWith("0x") || ctx.getText().startsWith("0X")) {
+            long bits = Long.parseUnsignedLong(ctx.getText().substring(2), 16);
+            double value = Double.longBitsToDouble(bits);
+
+            if (Double.isInfinite(value)) {
+                return value > 0 ? expressions.makePlusInf(fType) : expressions.makeMinusInf(fType);
+            } else if (Double.isNaN(value)) {
+                return expressions.makeNan(fType);
+            } else {
+                return expressions.makeValue(BigDecimal.valueOf(value), fType);
+            }
+        }
+        return expressions.makeValue(new BigDecimal(ctx.getText()), fType);
     }
 
     @Override
@@ -1082,6 +1199,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFloatType(FloatTypeContext ctx) {
+        parsedType = parseFloatType(ctx.floatKind());
+        return null;
+    }
+
+    @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
         parsedType = pointerType;
         return null;
@@ -1154,6 +1277,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Type parseIntType(TerminalNode t) {
         assert t.getText().startsWith("i");
         return getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
+    }
+
+    private Type parseFloatType(FloatKindContext ctx) {
+        return switch (ctx.getText()) {
+            case "half" -> types.getIEEEHalfType();
+            case "float" -> types.getIEEESingleType();
+            case "double" -> types.getIEEEDoubleType();
+            default -> throw new ParsingException("Unsupported float type %s", ctx.getText());
+        };
     }
 
     private Type parseType(ParserRuleContext context) {

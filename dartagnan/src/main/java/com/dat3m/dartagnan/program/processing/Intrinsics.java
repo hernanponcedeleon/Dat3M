@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,13 +191,15 @@ public class Intrinsics {
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                 "__VERIFIER_nondet_longlong", "__VERIFIER_nondet_ulonglong",
-                "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
+                "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar",
+                "__VERIFIER_nondet_float", "__VERIFIER_nondet_double"),
                 false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
-        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
+        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.fmax", "llvm.fmin","llvm.maxnum.", "llvm.minnum.",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
                 "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
-                "llvm.ctlz", "llvm.cttz", "llvm.ctpop"),
+                "llvm.ctlz", "llvm.cttz", "llvm.ctpop",
+                "llvm.fabs"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"), false, false, true, true, Intrinsics::inlineAsZero),
@@ -1167,8 +1168,12 @@ public class Intrinsics {
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
-                || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
+                || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")
+                || name.startsWith("llvm.fmax") || name.startsWith("llvm.fmin")
+                || name.startsWith("llvm.maxnum") || name.startsWith("llvm.minnum")) {
             return inlineLLVMMinMax(valueCall);
+        } else if (name.contains("llvm.fabs")) {
+            return inlineLLVMFAbs(valueCall);
         } else {
             final String error = String.format(
                     "Call %s to LLVM intrinsic %s cannot be handled.", call, call.getCalledFunction());
@@ -1255,10 +1260,23 @@ public class Intrinsics {
         final Expression right = arguments.get(1);
         final String name = call.getCalledFunction().getName();
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
-        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
+        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.") || name.startsWith("llvm.fmax.") || name.startsWith("llvm.maxnum.");
+        final boolean isFloat = name.startsWith("llvm.fmax.") || name.startsWith("llvm.fmin.") || name.startsWith("llvm.maxnum.") || name.startsWith("llvm.minnum.");
+        if (isFloat) {
+            final Expression result = isMax ? expressions.makeFMax(left, right) : expressions.makeFMin(left, right);
+            return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+        }
         final Expression isLess = expressions.makeLT(left, right, signed);
         final Expression result = expressions.makeITE(isLess, isMax ? right : left, isMax ? left : right);
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+    }
+
+    private List<Event> inlineLLVMFAbs(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
+        final List<Expression> arguments = call.getArguments();
+        final Expression operand = arguments.get(0);
+        final String name = call.getCalledFunction().getName();
+        return List.of(EventFactory.newLocal(call.getResultRegister(), expressions.makeFAbs(operand)));
     }
 
     private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {
@@ -1563,6 +1581,14 @@ public class Intrinsics {
             // Nondeterministic booleans
             signed = false;
             nonDetType = types.getBooleanType();
+        } else if (suffix.equals("float")) {
+            // Nondeterministic floats (32 bits)
+            signed = true;
+            nonDetType = types.getIEEESingleType();
+        } else if (suffix.equals("double")) {
+            // Nondeterministic floats (64 bits)
+            signed = true;
+            nonDetType = types.getIEEEDoubleType();
         } else {
             // Nondeterministic integers
             final int bits = switch (suffix) {
