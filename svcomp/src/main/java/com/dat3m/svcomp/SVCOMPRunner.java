@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.configuration.Property;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import org.sosy_lab.common.configuration.Configuration;
@@ -21,10 +22,8 @@ import java.util.Set;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 
-
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static java.lang.Integer.parseInt;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 
 @Options

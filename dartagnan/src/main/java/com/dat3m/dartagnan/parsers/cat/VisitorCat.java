@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.cat;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
@@ -17,9 +14,11 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;

@@ -1,9 +1,8 @@
 package com.dat3m.dartagnan.utils.rules;
 
-
+import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.rules.ExternalResource;
 
 /*
     A provider generates a value before a test and stores it for multiple reuses.
