@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -93,7 +92,7 @@ public class ExecutionModel {
         createViews();
     }
 
-    public static ExecutionModel withContext(EncodingContext context) throws InvalidConfigurationException {
+    public static ExecutionModel withContext(EncodingContext context) {
         return new ExecutionModel(context);
     }
 

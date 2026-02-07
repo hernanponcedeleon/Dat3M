@@ -8,9 +8,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Set;
@@ -25,17 +23,16 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModel m) {
-        this.executionGraph = new ExecutionGraph(refinementModel);
-        this.executionModel = m;
-        this.reasoner = new CoreReasoner(analysisContext, executionGraph);
+    private WMMSolver(EncodingContext c) {
+        this.executionGraph = new ExecutionGraph(c.getTask().getMemoryModel(), c::isEncoded);
+        this.executionModel = ExecutionModel.withContext(c);
+        this.reasoner = new CoreReasoner(c.getAnalysisContext(), executionGraph);
         this.solver = CAATSolver.create();
     }
 
-    public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
-            Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
-        config.inject(solver.reasoner);
+    public static WMMSolver withContext(EncodingContext context) throws InvalidConfigurationException {
+        final var solver = new WMMSolver(context);
+        context.getTask().getConfig().inject(solver.reasoner);
         return solver;
     }
 
