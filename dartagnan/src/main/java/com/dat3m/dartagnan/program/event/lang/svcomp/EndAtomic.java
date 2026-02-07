@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
@@ -10,9 +7,11 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 

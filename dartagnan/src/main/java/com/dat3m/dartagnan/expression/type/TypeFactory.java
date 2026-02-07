@@ -81,6 +81,10 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new FloatType(mantissaBits, exponentBits));
     }
 
+    public FloatType getIEEEHalfType() { return getFloatType(10, 5); }
+    public FloatType getIEEESingleType() { return getFloatType(23, 8); }
+    public FloatType getIEEEDoubleType() { return getFloatType(52, 11); }
+
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {
         return getFunctionType(returnType, parameterTypes, false);
     }

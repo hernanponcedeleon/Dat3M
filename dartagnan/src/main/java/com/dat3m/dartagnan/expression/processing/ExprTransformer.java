@@ -10,9 +10,7 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
-import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
-import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
@@ -67,6 +65,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
+    public Expression visitIntToFloatCastExpression(IntToFloatCast expr) {
+        return expressions.makeFloatCast(expr.getOperand().accept(this), expr.getTargetType(), expr.isSigned());
+    }
+
+    @Override
     public Expression visitFloatBinaryExpression(FloatBinaryExpr expr) {
         return expressions.makeFloatBinary(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));
     }
@@ -79,6 +82,16 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitFloatUnaryExpression(FloatUnaryExpr expr) {
         return expressions.makeFloatUnary(expr.getKind(), expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitFloatSizeCastExpression(FloatSizeCast expr) {
+        return expressions.makeFloatCast(expr.getOperand().accept(this), expr.getTargetType(), true);
+    }
+
+    @Override
+    public Expression visitFloatToIntCastExpression(FloatToIntCast expr) {
+        return expressions.makeIntegerCast(expr.getOperand().accept(this), expr.getTargetType(), expr.isSigned());
     }
 
     @Override

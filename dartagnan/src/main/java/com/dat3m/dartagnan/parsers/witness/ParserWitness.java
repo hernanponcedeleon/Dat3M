@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.witness;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
@@ -10,7 +7,8 @@ import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 
 import org.antlr.v4.runtime.*;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;

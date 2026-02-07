@@ -225,8 +225,60 @@ public final class ExpressionFactory {
         return makeValue(BigDecimal.ZERO, type);
     }
 
+    public FloatLiteral makePlusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(1), false, true);
+    }
+
+    public FloatLiteral makeMinusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(-1), false, true);
+    }
+
+    public FloatLiteral makeNan(FloatType type) {
+        return new FloatLiteral(type, null, true, false);
+    }
+
     public FloatLiteral makeValue(BigDecimal value, FloatType type) {
         return new FloatLiteral(type, value, false, false);
+    }
+
+    public Expression makeOLT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLT, rightOperand);
+    }
+
+    public Expression makeOGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGT, rightOperand);
+    }
+
+    public Expression makeOLTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLTE, rightOperand);
+    }
+
+    public Expression makeOGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGTE, rightOperand);
+    }
+
+    public Expression makeORD(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ORD, rightOperand);
+    }
+
+    public Expression makeULT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULT, rightOperand);
+    }
+
+    public Expression makeUGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGT, rightOperand);
+    }
+
+    public Expression makeULTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULTE, rightOperand);
+    }
+
+    public Expression makeUGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGTE, rightOperand);
+    }
+
+    public Expression makeUNO(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UNO, rightOperand);
     }
 
     public Expression makeFAdd(Expression x, Expression y) {
@@ -249,8 +301,20 @@ public final class ExpressionFactory {
         return new FloatBinaryExpr(x, FloatBinaryOp.FREM, y);
     }
 
+    public Expression makeFMin(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMIN, y);
+    }
+
+    public Expression makeFMax(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMAX, y);
+    }
+
     public Expression makeFNeg(Expression expr) {
         return new FloatUnaryExpr(FloatUnaryOp.NEG, expr);
+    }
+
+    public Expression makeFAbs(Expression expr) {
+        return new FloatUnaryExpr(FloatUnaryOp.FABS, expr);
     }
 
     public Expression makeFloatUnary(FloatUnaryOp op, Expression expr) {
@@ -468,14 +532,17 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
-            // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.EQ, rightOperand);
         } else if (type instanceof MemoryType) {
             return new MemoryEqualExpr(booleanType, leftOperand, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
+    }
+
+    public Expression makeFEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.OEQ : FloatCmpOp.UEQ, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
@@ -485,12 +552,15 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } else if (type instanceof FloatType) {
-            // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.NEQ, rightOperand);
         } else if (type instanceof AggregateType) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
+    }
+
+    public Expression makeFNEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.ONEQ : FloatCmpOp.UNEQ, rightOperand);
     }
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {

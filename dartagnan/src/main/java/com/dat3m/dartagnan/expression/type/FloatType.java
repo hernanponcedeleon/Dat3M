@@ -21,7 +21,7 @@ public class FloatType implements Type {
     }
 
     public int getBitWidth() {
-        return mantissaBits + exponentBits;
+        return mantissaBits + exponentBits + 1;
     }
 
     @Override
