@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
-
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,10 +159,10 @@ public class MemToReg implements FunctionProcessor {
         if (event instanceof Load load) {
             final Register reg = load.getResultRegister();
             assert load.getUsers().isEmpty();
-            replacement.add(EventFactory.newLocal(reg, expressions.makeCast(memreg, reg.getType())));
+            replacement.add(EventFactory.newLocal(reg, expressions.makeCastOverMemory(memreg, reg.getType(), true)));
         } else if (event instanceof Store store) {
             assert store.getUsers().isEmpty();
-            replacement.add(EventFactory.newLocal(memreg, expressions.makeCast(store.getMemValue(), accessType)));
+            replacement.add(EventFactory.newLocal(memreg, expressions.makeCastOverMemory(store.getMemValue(), accessType, true)));
             updateMixedRegisters(memreg, field, object, replacement);
         }
         return replacement;
@@ -176,8 +175,7 @@ public class MemToReg implements FunctionProcessor {
         }
         final boolean bigEndian = memreg.getFunction().getProgram().getMemory().isBigEndian();
         assert memreg.getType().equals(field.type);
-        final Type integerType = types.getIntegerType(types.getMemorySizeInBits(field.type));
-        final Expression storedValue = expressions.makeCast(memreg, integerType);
+        final Expression storedValue = expressions.makeToMemoryCast(memreg);
         final int end = field.offset + field.size;
         for (Map.Entry<Field, Register> otherEntry : object.replacingRegisters.entrySet()) {
             final Field other = otherEntry.getKey();
@@ -189,25 +187,24 @@ public class MemToReg implements FunctionProcessor {
             final int overlapEnd = Integer.min(end, other.offset + other.size);
             final int firstByte = bigEndian ? end - overlapEnd : overlapBegin - field.offset;
             final Expression truncated = extractBytes(storedValue, firstByte, overlapEnd - overlapBegin);
-            final Type otherType = otherRegister.getType();
-            final int otherBytes = types.getMemorySizeInBytes(otherType);
-            final Type otherIntegerType = types.getIntegerType(8 * otherBytes);
-            final Expression formerValue = expressions.makeCast(otherRegister, otherIntegerType);
+            final Expression formerValue = expressions.makeToMemoryCast(otherRegister);
             final int frontBytes = overlapBegin - other.offset;
             final int backBytes = other.offset + other.size - overlapEnd;
             final int lowBytes = bigEndian ? backBytes : frontBytes;
             final int highBytes = bigEndian ? frontBytes : backBytes;
+            final Type otherType = otherRegister.getType();
+            final int otherBytes = types.getMemorySizeInBytes(otherType);
             final Expression lowBits = extractBytes(formerValue, 0, lowBytes);
             final Expression highBits = extractBytes(formerValue, otherBytes - highBytes, highBytes);
             final List<Expression> operands = Arrays.asList(lowBits, truncated, highBits);
             final List<Expression> filteredOperands = operands.stream().filter(Objects::nonNull).toList();
-            final Expression extended = expressions.makeIntConcat(filteredOperands);
-            replacement.add(EventFactory.newLocal(otherRegister, expressions.makeCast(extended, otherType)));
+            final Expression extended = expressions.makeMemoryConcat(filteredOperands);
+            replacement.add(EventFactory.newLocal(otherRegister, expressions.makeFromMemoryCast(extended, otherType)));
         }
     }
 
     private Expression extractBytes(Expression operand, int offset, int size) {
-        return size <= 0 ? null : expressions.makeIntExtract(operand, 8 * offset, 8 * (offset + size) - 1);
+        return size <= 0 ? null : expressions.makeMemoryExtract(operand, 8 * offset, 8 * (offset + size) - 1);
     }
 
     private static final class Promotable {
