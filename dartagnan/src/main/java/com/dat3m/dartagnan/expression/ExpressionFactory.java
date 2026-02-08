@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -23,17 +22,7 @@ import java.util.List;
 
 public final class ExpressionFactory {
 
-    private static final ExpressionFactory instance;
-    private static final ExprSimplifier simplifier;
-
-    static {
-        // This is a bit awkward, but ExpressionFactory and ExprTransformer/Simplifier have
-        // cyclic dependencies, and so we need to ensure a specific initialization order.
-        // Maybe we should not use ExpressionSimplifier in this class or don't let ExpressionSimplifier
-        // cache a static instance of ExpressionFactory.
-        instance = new ExpressionFactory();
-        simplifier = new ExprSimplifier(false);
-    }
+    private static final ExpressionFactory instance = new ExpressionFactory();
 
     private final TypeFactory types = TypeFactory.getInstance();
     private final BooleanType booleanType = types.getBooleanType();
@@ -466,7 +455,7 @@ public final class ExpressionFactory {
         }
         exprMem = makeFromMemoryCast(exprMem, targetType);
 
-        return exprMem.accept(simplifier);
+        return exprMem;
     }
 
     public Expression makeBitcast(Expression expr, Type targetType) {

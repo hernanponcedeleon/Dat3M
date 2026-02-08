@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -44,6 +45,7 @@ public class ExpressionEncoder {
     private final EncodingContext context;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
+    private final ExprSimplifier simplifier = new ExprSimplifier(true);
     private final Visitor visitor = new Visitor();
 
     ExpressionEncoder(EncodingContext context) {
@@ -168,7 +170,7 @@ public class ExpressionEncoder {
             }
         };
 
-        return equal(left, value);
+        return equal(left, value.accept(simplifier));
     }
 
 
@@ -733,13 +735,14 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
+            Preconditions.checkState(!context.useIntegers);
+            checkMemoryCastSupport(expr.getSourceType());
+
             final TypedFormula<?, ?> inner = encode(expr.getOperand());
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
 
-            checkMemoryCastSupport(expr.getSourceType());
-
             Formula enc = inner.formula();
-            if (inner.getType() instanceof IntegerType iType && !context.useIntegers) {
+            if (inner.getType() instanceof IntegerType iType) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
                 if (extBits > 0) {
@@ -756,20 +759,20 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
+            Preconditions.checkState(!context.useIntegers);
+            checkMemoryCastSupport(expr.getTargetType());
+
             final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
 
-            checkMemoryCastSupport(targetType);
-
             Formula enc = inner.formula();
-            if (!context.useIntegers && targetType instanceof IntegerType bvType) {
+            if (targetType instanceof IntegerType bvType) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final int targetSize = bvType.getBitWidth();
                 if (targetSize < expr.getSourceType().getBitWidth()) {
                     enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
                 }
             } else if (targetType instanceof FloatType fType) {
-                assert !context.useIntegers;
                 enc = floatingPointFormulaManager().fromIeeeBitvector((BitvectorFormula) inner.formula(), getFloatFormulaType(fType));
             }
 
@@ -795,35 +798,23 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
+            Preconditions.checkState(!context.useIntegers);
+
             // TODO: We just do normal bitvector extraction for now
-            //  NOTE: We need to support mathematical integers for some unit tests, which is a bit awkward
             final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
-            final Formula enc;
-            if (context.useIntegers) {
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
-                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
-                final IntegerFormula op = (IntegerFormula) operand;
-                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
-                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
-            }
+            final Formula enc = bitvectorFormulaManager().extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+
             return new TypedFormula<>(expr.getType(), enc);
         }
 
         @Override
         public TypedFormula<?, ?> visitMemoryExtend(MemoryExtend expr) {
+            Preconditions.checkState(!context.useIntegers);
+
             final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
-            final Formula enc;
-            if (context.useIntegers) {
-                enc = operand; // Maybe remove sign?
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
-                enc = bvmgr.extend((BitvectorFormula) operand, extendedBits, false);
-            }
+            final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
+            final Formula enc = bitvectorFormulaManager().extend((BitvectorFormula) operand, extendedBits, false);
+
             return new TypedFormula<>(expr.getType(), enc);
 
         }
