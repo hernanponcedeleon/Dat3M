@@ -680,7 +680,7 @@ public class ExpressionEncoder {
             // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
             final FloatingPointFormula inner = (FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula();
             final Formula enc = floatingPointFormulaManager().castTo(
-                    inner, expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO);
+                    inner, expr.isSigned(), targetFormulaType, FloatingPointRoundingMode.TOWARD_ZERO);
             return new TypedFormula<>(expr.getTargetType(), enc);
         }
 

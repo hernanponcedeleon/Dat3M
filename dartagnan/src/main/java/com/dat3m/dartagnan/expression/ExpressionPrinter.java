@@ -75,7 +75,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitIntExtract(IntExtract expr) {
-        return String.format("%s[%d..%d]", expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+        return String.format("%s[%d..%d]", visit(expr.getOperand()), expr.getLowBit(), expr.getHighBit());
     }
 
     @Override
@@ -148,6 +148,11 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     @Override
     public String visitMemoryEqualExpression(MemoryEqualExpr expr) {
         return String.format("%s == %s", visit(expr.getLeft()), visit(expr.getRight()));
+    }
+
+    @Override
+    public String visitMemoryExtend(MemoryExtend expr) {
+        return String.format("zext %s to %s", visit(expr.getOperand()), expr.getTargetType());
     }
 
     @Override

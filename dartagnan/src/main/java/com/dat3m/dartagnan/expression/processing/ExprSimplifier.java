@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -427,6 +428,10 @@ public class ExprSimplifier extends ExprTransformer {
     public Expression visitMemoryExtractExpression(MemoryExtract expr) {
         final Expression inner = expr.getOperand().accept(this);
 
+        if (expr.isNoop()) {
+            return inner;
+        }
+
         // (int x to mem)[a..b] == (int x[a..b]) to mem
         // TODO: only true if the int types sizes are byte-multiples
         if (inner instanceof ToMemoryCast cast && cast.getSourceType() instanceof IntegerType) {
@@ -442,12 +447,23 @@ public class ExprSimplifier extends ExprTransformer {
     public Expression visitFromMemoryCastExpression(FromMemoryCast cast) {
         final Expression inner = cast.getOperand().accept(this);
 
-        // T -> mem -> T == identity
+        // T -> mem -> T   ==   identity
         if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
             return toMemoryCast.getOperand();
         }
 
-        // intX -> mem -> intY can be shortcut to intX -> intY
+        // mem -> zext -> int   ==   mem -> int -> zext
+        if (inner instanceof MemoryExtend extend && cast.getTargetType() instanceof IntegerType intTarget) {
+            final MemoryType source = extend.getSourceType();
+            final IntegerType newTarget = types.getIntegerType(source.getBitWidth());
+            return expressions.makeIntegerCast(
+                    expressions.makeFromMemoryCast(extend.getOperand(), newTarget),
+                    intTarget,
+                    false
+            ).accept(this);
+        }
+
+        // intX -> mem -> intY   ==   intX -> intY
         if (inner instanceof ToMemoryCast toMemoryCast
                 && toMemoryCast.getSourceType() instanceof IntegerType
                 && cast.getTargetType() instanceof IntegerType intTarget) {

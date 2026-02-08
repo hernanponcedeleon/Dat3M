@@ -24,6 +24,9 @@ public class MemoryExtract extends UnaryExpressionBase<MemoryType, ExpressionKin
         this.lowBit = lowBit;
         this.highBit = highBit;
     }
+    public boolean isNoop() {
+        return isExtractingLowBits() && isExtractingHighBits();
+    }
 
     public boolean isExtractingLowBits() {
         return lowBit == 0;
