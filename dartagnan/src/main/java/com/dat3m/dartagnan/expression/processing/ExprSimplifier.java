@@ -10,10 +10,9 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
-import com.dat3m.dartagnan.expression.memory.MemoryEqualExpr;
-import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -22,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -290,7 +290,23 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeIntBinary(left, op, right);
     }
 
-    // TODO: Add simplifications for IntExtract and IntConcat expressions
+    // TODO: Add simplifications for IntConcat expressions
+
+
+    @Override
+    public Expression visitIntExtract(IntExtract expr) {
+        final Expression inner = expr.getOperand().accept(this);
+
+        if (inner instanceof IntLiteral lit) {
+            BigInteger val = IntegerHelper.rshift(lit.getValue(), BigInteger.valueOf(expr.getLowBit()), lit.getType().getBitWidth());
+            val = IntegerHelper.truncate(val, expr.getHighBit() - expr.getLowBit() + 1);
+            return expressions.makeValue(val, expr.getType());
+        }
+
+        // TODO: Add more simplifications (e.g., nested extract, or concat-extract pairs)
+
+        return expressions.makeIntExtract(inner, expr.getLowBit(), expr.getHighBit());
+    }
 
     @Override
     public Expression visitITEExpression(ITEExpr expr) {
@@ -394,10 +410,48 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
+    public Expression visitMemoryConcatExpression(MemoryConcat expr) {
+        final List<Expression> inner = expr.getOperands().stream().map(e -> e.accept(this)).toList();
+
+        // (int x to mem) :: (int y to mem) == (int x::y) to mem
+        // TODO: only true if the int types sizes are byte-multiples
+        if (inner.stream().allMatch(e -> e instanceof ToMemoryCast cast && cast.getSourceType() instanceof IntegerType)) {
+            final List<Expression> intConcat = inner.stream().map(e -> ((ToMemoryCast) e).getOperand()).toList();
+            return expressions.makeToMemoryCast(expressions.makeIntConcat(intConcat).accept(this));
+        }
+
+        return expressions.makeMemoryConcat(inner);
+    }
+
+    @Override
+    public Expression visitMemoryExtractExpression(MemoryExtract expr) {
+        final Expression inner = expr.getOperand().accept(this);
+
+        // (int x to mem)[a..b] == (int x[a..b]) to mem
+        // TODO: only true if the int types sizes are byte-multiples
+        if (inner instanceof ToMemoryCast cast && cast.getSourceType() instanceof IntegerType) {
+            return expressions.makeToMemoryCast(
+                    expressions.makeIntExtract(cast.getOperand(), expr.getLowBit(), expr.getHighBit()).accept(this)
+            );
+        }
+
+        return expressions.makeMemoryExtract(inner, expr.getLowBit(), expr.getHighBit());
+    }
+
+    @Override
     public Expression visitFromMemoryCastExpression(FromMemoryCast cast) {
         final Expression inner = cast.getOperand().accept(this);
+
+        // T -> mem -> T == identity
         if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
             return toMemoryCast.getOperand();
+        }
+
+        // intX -> mem -> intY can be shortcut to intX -> intY
+        if (inner instanceof ToMemoryCast toMemoryCast
+                && toMemoryCast.getSourceType() instanceof IntegerType
+                && cast.getTargetType() instanceof IntegerType intTarget) {
+            return expressions.makeIntegerCast(toMemoryCast.getOperand(), intTarget, false);
         }
 
         return expressions.makeFromMemoryCast(inner, cast.getTargetType());

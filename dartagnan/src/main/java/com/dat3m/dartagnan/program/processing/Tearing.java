@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -120,6 +121,7 @@ public final class Tearing implements ProgramProcessor {
     }
 
     private int tearInits(Program program, AliasAnalysis alias, boolean bigEndian) {
+        final ExprSimplifier simplifier = new ExprSimplifier(false);
         int numTearings = 0;
         for (Init init : program.getThreadEvents(Init.class)) {
             final List<Integer> offsets = alias.mayMixedSizeAccesses(init);
@@ -134,14 +136,16 @@ public final class Tearing implements ProgramProcessor {
             final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
             final int frontEnd = bigEndian ? bytes : offsets.get(0);
 
-            final Expression frontValue = expressions.makeMemoryExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
+            final Expression frontValue = expressions.makeMemoryExtract(value, 8 * frontBegin, 8 * frontEnd - 1)
+                    .accept(simplifier);
             base.setInitialValue(initOffset, frontValue);
             for (int i = 0; i < offsets.size(); i++) {
                 final int offset = offsets.get(i);
                 final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
                 final int begin = bigEndian ? bytes - next : offset;
                 final int end = bigEndian ? bytes - offset : next;
-                final Expression tearedValue = expressions.makeMemoryExtract(value, 8 * begin, 8 * end - 1);
+                final Expression tearedValue = expressions.makeMemoryExtract(value, 8 * begin, 8 * end - 1)
+                                .accept(simplifier);
                 base.setInitialValue(initOffset + offset, tearedValue);
             }
             // Tear init event
@@ -174,8 +178,8 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
         final int bytes = checkBytes(load, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
-                "Non-integer address in '%s'", load);
+        final IntegerType addressType = checkPointerType(load.getAddress().getType(),
+                "Non-pointer address in '%s'", load);
         checkIsTearableType(load.getAccessType(), load);
         final Function function = load.getFunction();
         final Register addressRegister = toRegister(load.getAddress(), function, replacement);
@@ -216,8 +220,8 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Store store, List<Integer> offsets, Map<MemoryCoreEvent, List<Event>> map, boolean bigEndian) {
         final int bytes = checkBytes(store, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
-                "Non-integer address in '%s'", store);
+        final IntegerType addressType = checkPointerType(store.getAddress().getType(),
+                "Non-pointer address in '%s'", store);
         checkIsTearableType(store.getAccessType(), store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);
@@ -253,7 +257,7 @@ public final class Tearing implements ProgramProcessor {
         return replacement;
     }
 
-    private IntegerType checkIntegerType(Type type, String message, Event event) {
+    private IntegerType checkPointerType(Type type, String message, Event event) {
         if (type instanceof IntegerType t) {
             return t;
         }
