@@ -18,8 +18,8 @@ public enum FloatBinaryOp implements ExpressionKind {
             case FMUL -> "*";
             case FDIV -> "/";
             case FREM -> "%";
-            case FMAX -> "fmax ";
-            case FMIN -> "fmin ";
+            case FMAX -> "fmax";
+            case FMIN -> "fmin";
         };
     }
 

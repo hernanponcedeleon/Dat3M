@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
@@ -153,11 +153,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             type = pType.getPointedType();
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
-                if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
+                if (!types.isStaticTypeOf(value.getType(), type)) {
                     throw new ParsingException("Mismatching value type for variable '%s', " +
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
-            } else if (!TypeFactory.isStaticType(type)) {
+            } else if (!types.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.makeUndefinedValue(type);
@@ -248,7 +248,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             intIndexes.add(expression instanceof IntLiteral literal ? literal.getValueAsInt() : -1);
         });
         Type memberType = HelperTypes.getMemberType(baseCtx.getText(), baseType, intIndexes);
-        if (!TypeFactory.isStaticTypeOf(resultType, memberType)) {
+        if (!types.isStaticTypeOf(resultType, memberType)) {
             throw new ParsingException("Invalid result type in access chain '%s', " +
                     "expected '%s' but received '%s'", idCtx.getText(), resultType, memberType);
         }

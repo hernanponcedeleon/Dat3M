@@ -54,6 +54,6 @@ public class MemoryType implements Type {
 
     @Override
     public String toString() {
-        return "membits" + bitWidth;
+        return "mem" + bitWidth;
     }
 }

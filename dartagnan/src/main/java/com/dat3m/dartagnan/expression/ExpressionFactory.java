@@ -21,8 +21,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
-
 public final class ExpressionFactory {
 
     private static final ExpressionFactory instance;
@@ -355,7 +353,7 @@ public final class ExpressionFactory {
             long distinctSubtypesCount = items.stream().map(Expression::getType).distinct().count();
             Preconditions.checkArgument(distinctSubtypesCount == 1,
                     "All elements in an array must have the same type.");
-            Preconditions.checkArgument(isStaticTypeOf(items.get(0).getType(), type.getElementType()),
+            Preconditions.checkArgument(types.isStaticTypeOf(items.get(0).getType(), type.getElementType()),
                     "Array elements must match expected type");
         }
         return new ConstructExpr(type, items);
@@ -443,8 +441,6 @@ public final class ExpressionFactory {
         return new MemoryExtend(targetType, operand);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-
     // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".
     // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
     // "source type < target type": a zero-extension is performed before converting to the target type
@@ -458,11 +454,9 @@ public final class ExpressionFactory {
         final int targetSize = types.getMemorySizeInBits(targetType);
         final int sourceSize = types.getMemorySizeInBits(sourceType);
 
-        if (strict && (targetSize != sourceSize)) {
-            final String error = String.format("Strict memory cast from %s to %s not possible: " +
-                    "mismatching memory sizes.", sourceType, targetType);
-            throw new IllegalArgumentException(error);
-        }
+        Preconditions.checkArgument(!strict || (targetSize == sourceSize),
+                "Strict memory cast from %s to %s not possible: " +
+                        "mismatching memory sizes.", sourceType, targetType);
 
         Expression exprMem = makeToMemoryCast(expr);
         if (targetSize < sourceSize) {
@@ -478,6 +472,9 @@ public final class ExpressionFactory {
     public Expression makeBitcast(Expression expr, Type targetType) {
         return makeCastOverMemory(expr, targetType, true);
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
 
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
