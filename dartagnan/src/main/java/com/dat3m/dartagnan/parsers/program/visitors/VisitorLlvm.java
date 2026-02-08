@@ -976,10 +976,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             } else if (Double.isNaN(value)) {
                 return expressions.makeNan(fType);
             } else {
-                return expressions.makeValue(BigDecimal.valueOf(value), fType);
+                final boolean sign = Double.compare(value, 0.0) < 0; // -0.0 < +0.0
+                return expressions.makeValue(BigDecimal.valueOf(value), sign, fType);
             }
+        } else {
+            final String text = ctx.getText();
+            final boolean sign = text.startsWith("-");
+            return expressions.makeValue(new BigDecimal(text), sign, fType);
         }
-        return expressions.makeValue(new BigDecimal(ctx.getText()), fType);
     }
 
     @Override

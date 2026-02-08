@@ -3,10 +3,9 @@ package com.dat3m.dartagnan.expression.floats;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
 import com.dat3m.dartagnan.expression.type.FloatType;
+import com.google.common.base.Preconditions;
 
 import java.math.BigDecimal;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /*
     FIXME:
@@ -16,38 +15,41 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
 
-    private final BigDecimal value;
+    private final BigDecimal absValue;
+    private final boolean sign;
     private final boolean isNaN;
     private final boolean isInf;
 
-    public FloatLiteral(FloatType type, BigDecimal value, boolean isNaN, boolean isInf) {
+    public FloatLiteral(FloatType type, BigDecimal absValue, boolean sign, boolean isNaN, boolean isInf) {
         super(type);
-        this.value = value;
+        Preconditions.checkArgument(!(isNaN && isInf), "Cannot create NaN and Inf literal at the same time");
+        Preconditions.checkArgument(!(isNaN && sign), "Cannot create NaN literal with negative sign");
+        Preconditions.checkArgument(
+                (absValue != null || isNaN || isInf)  // Has value, is NaN, or is Inf
+                        && !(absValue != null && (isNaN || isInf)), // If it has value, then it is neither NaN nor Inf
+                "Invalid float literal"
+        );
+
+        if (absValue != null) {
+            absValue = absValue.abs();
+        }
+        this.absValue = absValue;
+        this.sign = sign;
         this.isNaN = isNaN;
         this.isInf = isInf;
     }
 
-    public BigDecimal getValue() {
-        checkArgument(!isNaN, "Cannot call getValue on NaN.");
-        checkArgument(!isInf, "Cannot call getValue on INF.");
-        return value;
+    public BigDecimal getAbsValue() {
+        Preconditions.checkState(hasFiniteValue(),
+                "Cannot call getAbsValue on non-finite value %s", this);
+        return absValue;
     }
 
-    public boolean isNaN() {
-        return isNaN;
-    }
-
-    public boolean isPlusInf() {
-        return isInf && (value.signum() > 0);
-    }
-
-    public boolean isMinusInf() {
-        return isInf && (value.signum() < 0);
-    }
-
-    public double getValueAsDouble() {
-        return getValue().doubleValue();
-    }
+    public boolean getSign() { return sign; }
+    public boolean isNaN() { return isNaN; }
+    public boolean isPlusInf() { return isInf && !sign; }
+    public boolean isMinusInf() { return isInf && sign; }
+    public boolean hasFiniteValue() { return absValue != null; }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
@@ -56,16 +58,17 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
 
     @Override
     public int hashCode() {
-        return getType().hashCode() ^ 0xa185f6b3 + value.hashCode();
+        return getType().hashCode() ^ 0xa185f6b3 + absValue.hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
         return this == o || (o instanceof FloatLiteral val
                 && getType().equals(val.getType())
-                && value.equals(val.value)
+                && absValue.equals(val.absValue)
                 && isNaN == val.isNaN
-                && isInf == val.isInf);
+                && isInf == val.isInf
+                && sign == val.sign);
     }
 
     @Override
@@ -74,9 +77,9 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
             return "+INF";
         } else if (isMinusInf()) {
             return "-INF";
-        } else if (isNaN) {
+        } else if (isNaN()) {
             return "NaN";
         }
-        return String.format("%s(%s)", getType(), value);
+        return String.format("%s(%s%s)", getType(), sign ? "-" : "", absValue);
     }
 }

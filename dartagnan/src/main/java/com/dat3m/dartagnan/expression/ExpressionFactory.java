@@ -208,24 +208,24 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Floats
 
-    public FloatLiteral makeZero(FloatType type) {
-        return makeValue(BigDecimal.ZERO, type);
+    public FloatLiteral makePlusZero(FloatType type) {
+        return makeValue(BigDecimal.ZERO, true, type);
     }
 
     public FloatLiteral makePlusInf(FloatType type) {
-        return new FloatLiteral(type, BigDecimal.valueOf(1), false, true);
+        return new FloatLiteral(type, null, false, false, true);
     }
 
     public FloatLiteral makeMinusInf(FloatType type) {
-        return new FloatLiteral(type, BigDecimal.valueOf(-1), false, true);
+        return new FloatLiteral(type, null, true, false, true);
     }
 
     public FloatLiteral makeNan(FloatType type) {
-        return new FloatLiteral(type, null, true, false);
+        return new FloatLiteral(type, null, false, true, false);
     }
 
-    public FloatLiteral makeValue(BigDecimal value, FloatType type) {
-        return new FloatLiteral(type, value, false, false);
+    public FloatLiteral makeValue(BigDecimal absValue, boolean sign, FloatType type) {
+        return new FloatLiteral(type, absValue.abs(), sign, false, false);
     }
 
     public Expression makeOLT(Expression leftOperand, Expression rightOperand) {
@@ -484,7 +484,7 @@ public final class ExpressionFactory {
         } else if (type instanceof BooleanType) {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
-            return makeZero(floatType);
+            return makePlusZero(floatType);
         } else if (type instanceof MemoryType memoryType) {
             return makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
         } else {

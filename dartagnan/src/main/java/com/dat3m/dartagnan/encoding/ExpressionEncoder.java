@@ -575,15 +575,17 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
             final FloatingPointType fFType = getFloatFormulaType(floatLiteral.getType());
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             final Formula result;
             if (floatLiteral.isNaN()) {
-                result = floatingPointFormulaManager().makeNaN(fFType);
+                result = fpmgr.makeNaN(fFType);
             } else if (floatLiteral.isPlusInf()) {
-                result = floatingPointFormulaManager().makePlusInfinity(fFType);
+                result = fpmgr.makePlusInfinity(fFType);
             } else if (floatLiteral.isMinusInf()) {
-                result = floatingPointFormulaManager().makeMinusInfinity(fFType);
+                result = fpmgr.makeMinusInfinity(fFType);
             } else {
-                result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType, context.roundingModeFloats);
+                final FloatingPointFormula absVal = fpmgr.makeNumber(floatLiteral.getAbsValue(), fFType, context.roundingModeFloats);
+                result = floatLiteral.getSign() ? fpmgr.negate(absVal) : absVal;
             }
             return new TypedFormula<>(floatLiteral.getType(), result);
         }
