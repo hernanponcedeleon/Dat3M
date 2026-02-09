@@ -255,6 +255,21 @@ public class AnalysisTest {
     }
 
     @Test
+    public void ins0() throws InvalidConfigurationException {
+        program0(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sen0() throws InvalidConfigurationException {
+        program0(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sd0() throws InvalidConfigurationException {
+        program0(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
     public void full0() throws InvalidConfigurationException {
         program0(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
     }
@@ -285,12 +300,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);//precisely no
-        assertAlias(expect[1], a, me0, me2);
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -301,6 +311,21 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive1() throws InvalidConfigurationException {
         program1(FIELD_INSENSITIVE, NONE, NONE, MUST, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void ins1() throws InvalidConfigurationException {
+        program1(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void sen1() throws InvalidConfigurationException {
+        program1(EXPERIMENTAL_FIELD_SENSITIVE, NONE, NONE, MUST, MUST, NONE, NONE);
+    }
+
+    @Test
+    public void sd1() throws InvalidConfigurationException {
+        program1(EXPERIMENTAL_LINEAR_1D, NONE, NONE, MUST, MUST, NONE, NONE);
     }
 
     @Test
@@ -331,12 +356,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);
-        assertAlias(expect[1], a, me0, me2);
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -347,6 +367,21 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive2() throws InvalidConfigurationException {
         program2(FIELD_INSENSITIVE, NONE, NONE, NONE, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void ins2() throws InvalidConfigurationException {
+        program2(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void sen2() throws InvalidConfigurationException {
+        program2(EXPERIMENTAL_FIELD_SENSITIVE, NONE, NONE, NONE, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void sd2() throws InvalidConfigurationException {
+        program2(EXPERIMENTAL_LINEAR_1D, NONE, NONE, NONE, MAY, NONE, MAY);
     }
 
     @Test
@@ -387,12 +422,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);
-        assertAlias(expect[1], a, me0, me2);
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -403,6 +433,21 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive3() throws InvalidConfigurationException {
         program3(FIELD_INSENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void ins3() throws InvalidConfigurationException {
+        program3(EXPERIMENTAL_FIELD_INSENSITIVE, MUST, MAY, MAY, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void sen3() throws InvalidConfigurationException {
+        program3(EXPERIMENTAL_FIELD_SENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void sd3() throws InvalidConfigurationException {
+        program3(EXPERIMENTAL_LINEAR_1D, MUST, NONE, NONE, MAY, MAY, MAY);
     }
 
     @Test
@@ -433,12 +478,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);
-        assertAlias(expect[1], a, me0, me2);
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);//precisely no
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -449,6 +489,21 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive4() throws InvalidConfigurationException {
         program4(FIELD_INSENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void ins4() throws InvalidConfigurationException {
+        program4(EXPERIMENTAL_FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sen4() throws InvalidConfigurationException {
+        program4(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sd4() throws InvalidConfigurationException {
+        program4(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
@@ -482,12 +537,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);//precisely no
-        assertAlias(expect[1], a, me0, me2);//precisely must
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -498,6 +548,21 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive5() throws InvalidConfigurationException {
         program5(FIELD_INSENSITIVE, MUST, NONE, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void ins5() throws InvalidConfigurationException {
+        program5(EXPERIMENTAL_FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sen5() throws InvalidConfigurationException {
+        program5(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void sd5() throws InvalidConfigurationException {
+        program5(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
@@ -531,12 +596,7 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(expect[0], a, me0, me1);//precisely no
-        assertAlias(expect[1], a, me0, me2);//precisely must
-        assertAlias(expect[2], a, me1, me2);
-        assertAlias(expect[3], a, me0, me3);
-        assertAlias(expect[4], a, me1, me3);
-        assertAlias(expect[5], a, me2, me3);
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -570,12 +630,8 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
-        assertAlias(MAY, a, me0, me1);
-        assertAlias(MAY, a, me0, me2);
-        assertAlias(MAY, a, me1, me2);
-        assertAlias(MAY, a, me0, me3);
-        assertAlias(MAY, a, me1, me3);
-        assertAlias(MAY, a, me2, me3);
+        Result[] expect = {MAY, MAY, MAY, MAY, MAY, MAY};
+        assertAlias(expect, a, me0, me1, me2, me3);
     }
 
     @Test
@@ -612,16 +668,8 @@ public class AnalysisTest {
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
         MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
 
-        assertAlias(NONE, a, me0, me1);
-        assertAlias(MAY, a, me0, me2);
-        assertAlias(MAY, a, me1, me2);
-        assertAlias(MAY, a, me0, me3);
-        assertAlias(MAY, a, me1, me3);
-        assertAlias(MAY, a, me2, me3);
-        assertAlias(MAY, a, me0, me4);
-        assertAlias(MAY, a, me1, me4);
-        assertAlias(MUST, a, me2, me4);
-        assertAlias(MAY, a, me3, me4);
+        Result[] expect = {NONE, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MUST, MAY};
+        assertAlias(expect, a, me0, me1, me2, me3, me4);
     }
 
     private Load newLoad(Register value, Expression address) {
@@ -660,21 +708,18 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, analysisContext, configuration, false);
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
-        switch (expect) {
-            case NONE:
-                assertFalse(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MAY:
-                assertTrue(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MUST:
-                assertTrue(a.mayAlias(x, y));
-                assertTrue(a.mustAlias(x, y));
-                break;
+    private void assertAlias(Result[] expect, AliasAnalysis a, MemoryCoreEvent... events) {
+        assert expect.length * 2 == events.length * (events.length - 1);
+        Result[] actual = new Result[expect.length];
+        int k = 0;
+        for (int i = 0; i < events.length; i++) {
+            for (int j = 0; j < i; j++) {
+                boolean may = a.mayAlias(events[i], events[j]);
+                boolean must = a.mustAlias(events[i], events[j]);
+                actual[k++] = may ? must ? Result.MUST : Result.MAY : must ? null : Result.NONE;
+            }
         }
+        assertArrayEquals(expect, actual);
     }
 
     /*

@@ -203,6 +203,6 @@ public abstract class ModelChecker implements AutoCloseable {
     }
 
     public static void performIntervalAnalysis(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        analysisContext.registerOptional(IntervalAnalysis.class, IntervalAnalysis.fromConfig(task.getProgram(), analysisContext, task.getMemoryModel(), config));
+        analysisContext.register(IntervalAnalysis.class, IntervalAnalysis.fromConfig(task.getProgram(), analysisContext, task.getMemoryModel(), config));
     }
 }

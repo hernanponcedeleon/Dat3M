@@ -4,7 +4,10 @@ import java.util.Arrays;
 
 public enum Alias implements OptionInterface {
     // For comparison reasons, we might want to add a NONE method with may = true, must = false
-    FIELD_SENSITIVE, FIELD_INSENSITIVE, FULL;
+    FIELD_SENSITIVE, FIELD_INSENSITIVE, FULL,
+    EXPERIMENTAL_FIELD_INSENSITIVE,
+    EXPERIMENTAL_FIELD_SENSITIVE,
+    EXPERIMENTAL_LINEAR_1D;
 
     public static Alias getDefault() {
         return FULL;
