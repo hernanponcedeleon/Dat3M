@@ -57,7 +57,7 @@ import org.sosy_lab.java_smt.api.Formula;
         Metadata then needs to be preserved even over extract/concatenation operations.
  */
 public record TypedFormula<TType extends Type, TFormula extends Formula>(TType type, TFormula formula)
-    implements LeafExpression {
+        implements LeafExpression {
 
     public TypedFormula {
         Preconditions.checkNotNull(type);

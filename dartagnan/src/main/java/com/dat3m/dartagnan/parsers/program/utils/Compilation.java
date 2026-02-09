@@ -52,8 +52,8 @@ public class Compilation {
         processBuilder.redirectOutput(log);
         Process proc = processBuilder.start();
         proc.waitFor();
-        if(proc.exitValue() != 0) {
-            String errorString =  Files.asCharSource(log, Charsets.UTF_8).read();
+        if (proc.exitValue() != 0) {
+            String errorString = Files.asCharSource(log, Charsets.UTF_8).read();
             throw new IOException("'" + String.join("' '", cmd) + "': " + errorString);
         }
     }

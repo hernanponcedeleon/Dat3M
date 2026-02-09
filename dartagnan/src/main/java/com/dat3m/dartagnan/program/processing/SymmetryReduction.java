@@ -32,7 +32,8 @@ public class SymmetryReduction implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(SymmetryReduction.class);
 
-    private SymmetryReduction() { }
+    private SymmetryReduction() {
+    }
 
     public static SymmetryReduction newInstance() {
         return new SymmetryReduction();

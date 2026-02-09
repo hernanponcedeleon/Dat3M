@@ -171,7 +171,7 @@ public class SyntacticContextAnalysis {
                     // FIXME: DCE can sometimes delete the end marker of functions if those never return
                     //  (e.g., "reach_error() { abort(0); }").
                     //  Here we try to also pop those calls that have missing markers.
-                    if(curContextStack.peek() instanceof CallContext) {
+                    if (curContextStack.peek() instanceof CallContext) {
                         topCallCtx = (CallContext) curContextStack.pop();
                     } else {
                         logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");

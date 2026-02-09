@@ -42,7 +42,9 @@ public class Inlining implements ProgramProcessor {
     private int bound = 1;
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private Inlining() {}
+
+    private Inlining() {
+    }
 
     public static Inlining fromConfig(Configuration config) throws InvalidConfigurationException {
         Inlining process = new Inlining();
@@ -69,7 +71,9 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers, boolean isVarArgs) {}
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers,
+                            boolean isVarArgs) {
+    }
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
@@ -108,10 +112,13 @@ public class Inlining implements ProgramProcessor {
         // Advance scope counter.
         for (Register r : function.getRegisters()) {
             final int i = r.getName().indexOf(":");
-            if (i == -1) { continue; }
+            if (i == -1) {
+                continue;
+            }
             try {
                 scope = Integer.max(scope, Integer.parseInt(r.getName().substring(0, i)));
-            } catch (NumberFormatException ignore) {}
+            } catch (NumberFormatException ignore) {
+            }
         }
         return scope;
     }
@@ -148,11 +155,11 @@ public class Inlining implements ProgramProcessor {
         for (int j = 0; j < callTarget.parameters.size(); j++) {
             final Register register = registerMap.get(callTarget.parameters.get(j));
             if (register.getType() instanceof PointerType) {
-                Expression v = expressions.makeCast(arguments.get(j),(PointerType) register.getType());
+                Expression v = expressions.makeCast(arguments.get(j), (PointerType) register.getType());
                 parameterAssignments.add(newLocal(register, v));
-            }else{
-            Expression v = arguments.get(j);
-            parameterAssignments.add(newLocal(register, v));
+            } else {
+                Expression v = arguments.get(j);
+                parameterAssignments.add(newLocal(register, v));
             }
             // todo check
         }

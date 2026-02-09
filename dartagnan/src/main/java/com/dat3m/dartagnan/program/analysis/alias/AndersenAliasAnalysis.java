@@ -54,9 +54,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
-    ///When a pointer set gains new content, it is added to this queue
+    /// When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
-    ///Super set of all pointer sets in this analysis
+    /// Super set of all pointer sets in this analysis
     private final ImmutableSet<Location> maxAddressSet;
     private final Map<Object, Set<Object>> edges = new HashMap<>();
     private final Map<Object, Set<Location>> addresses = new HashMap<>();
@@ -77,7 +77,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (MemoryObject a : program.getMemory().getObjects()) {
             if (!a.hasKnownSize()) {
                 throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
-                    "You can try the %s alias analysis", FIELD_INSENSITIVE, FULL));
+                        "You can try the %s alias analysis", FIELD_INSENSITIVE, FULL));
             }
             for (int i = 0; i < a.getKnownSize(); i++) {
                 builder.add(new Location(a, i));
@@ -220,7 +220,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         //event is a store operation
         Verify.verify(e instanceof Store,
                 "Encountered memory event that is neither store nor load: {}", e);
-        Expression value = ((Store)e).getMemValue();
+        Expression value = ((Store) e).getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);
             return;
@@ -299,15 +299,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addTarget(reg, new Location(mem, 0));
             return;
         }
-        if (!(exp instanceof IntBinaryExpr|| exp instanceof PtrAddExpr)) {
+        if (!(exp instanceof IntBinaryExpr || exp instanceof PtrAddExpr)) {
             return;
         }
-        Expression base = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getLeft(): ((PtrAddExpr)exp).getBase();
+        Expression base = exp instanceof IntBinaryExpr ? ((IntBinaryExpr) exp).getLeft() : ((PtrAddExpr) exp).getBase();
         // fixme: this is a temp solution.
         if (base instanceof IntToPtrCast || base instanceof PtrToIntCast) {
             base = ((CastExpressionBase<?, ?>) base).getOperand();
         }
-        Expression rhs = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getRight(): ((PtrAddExpr)exp).getOffset();
+        Expression rhs = exp instanceof IntBinaryExpr ? ((IntBinaryExpr) exp).getRight() : ((PtrAddExpr) exp).getOffset();
         if (base instanceof MemoryObject mem) {
             if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
@@ -407,7 +407,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private record Location(MemoryObject base, int offset) {}
+    private record Location(MemoryObject base, int offset) {
+    }
 
     private boolean addEdge(Object v1, Object v2) {
         return edges.computeIfAbsent(v1, key -> new HashSet<>()).add(v2);

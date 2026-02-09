@@ -60,11 +60,11 @@ public class Intrinsics {
 
     @Option(name = REMOVE_ASSERTION_OF_TYPE,
             description = "Remove assertions of type [user, overflow, invalidderef, unknown_function].",
-            toUppercase=true,
+            toUppercase = true,
             secure = true)
     private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
 
-    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
+    private enum AssertionType {USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION}
 
     private final boolean detectMixedSizeAccesses;
     private final IntegerType archType = types.getArchType();
@@ -82,7 +82,7 @@ public class Intrinsics {
     public static Intrinsics newInstance() {
         return new Intrinsics(false);
     }
-    
+
     public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
             throws InvalidConfigurationException {
         Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
@@ -240,10 +240,10 @@ public class Intrinsics {
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
+        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow",
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow", "__ubsan_handle_shift_out_of_bounds"),
                 false, false, false, true, Intrinsics::inlineIntegerOverflow),
-        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
+        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"),
                 false, false, false, true, Intrinsics::inlineInvalidDereference),
         // ------------------------- Unknown function ---------------------------
         MISSING(List.of(), false, false, false, true, Intrinsics::inlineUnknownFunction),
@@ -257,7 +257,7 @@ public class Intrinsics {
         private final Replacer replacer;
 
         Info(List<String> variants, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
-                Replacer replacer) {
+             Replacer replacer) {
             this.variants = variants;
             this.writesMemory = writesMemory;
             this.readsMemory = readsMemory;
@@ -267,7 +267,7 @@ public class Intrinsics {
         }
 
         Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
-                Replacer replacer) {
+             Replacer replacer) {
             this(List.of(name), writesMemory, readsMemory, alwaysReturns, isEarly, replacer);
         }
 
@@ -292,7 +292,7 @@ public class Intrinsics {
         }
 
         private boolean matches(String funcName) {
-            boolean isPrefix = switch(this) {
+            boolean isPrefix = switch (this) {
                 case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET, LLVM_EXPECT, LLVM_OBJECTSIZE -> true;
                 default -> false;
             };
@@ -317,12 +317,13 @@ public class Intrinsics {
                         .findFirst()
                         .ifPresentOrElse(func::setIntrinsicInfo, () -> {
                             missingSymbols.add(funcName);
-                            func.setIntrinsicInfo(Info.MISSING);});
+                            func.setIntrinsicInfo(Info.MISSING);
+                        });
             }
         }
         if (!missingSymbols.isEmpty()) {
             logger.warn(missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")) +
-                ". Detecting calls to unknown functions requires --property=program_spec.");
+                    ". Detecting calls to unknown functions requires --property=program_spec.");
         }
     }
 
@@ -589,10 +590,11 @@ public class Intrinsics {
         return types.getIntegerType(2);
     }
 
-    private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
+    private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {
+    }
 
     private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate,
-            Label returnEINVAL) {
+                                                                   Label returnEINVAL) {
         // POSIX defines these two named constants of type int.
         // see https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/pthread.h.html
         //TODO values may vary by platform
@@ -1113,7 +1115,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
+        if (notToInline.contains(skip)) {
             return List.of();
         }
         assert call.getArguments().size() == 1;
@@ -1144,7 +1146,7 @@ public class Intrinsics {
             replacement.addAll(inlineCallAsNonDet(call));
         }
         replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
-            "Calling unknown function " + call.getCalledFunction().getName()));
+                "Calling unknown function " + call.getCalledFunction().getName()));
         return replacement;
     }
 
@@ -1642,7 +1644,7 @@ public class Intrinsics {
     // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpyS(FunctionCall call) {
         // Cast guaranteed to success by the return type of memcpy_s
-        final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
+        final Register resultRegister = ((ValueFunctionCall) call).getResultRegister();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
         final Expression destszExpr = call.getArguments().get(1);
@@ -1682,14 +1684,14 @@ public class Intrinsics {
 
 
         final List<Event> replacement = new ArrayList<>();
-        
+
         Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
         Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
         Label success = EventFactory.newLabel("__memcpy_s_success");
         Label end = EventFactory.newLabel("__memcpy_s_end");
 
-        Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
-        Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
+        Expression errorCodeFail = expressions.makeOne((IntegerType) resultRegister.getType());
+        Expression errorCodeSuccess = expressions.makeZero((IntegerType) resultRegister.getType());
 
         // Condition 1: dest == NULL or destsz > RSIZE_MAX ----> return error > 0
         final Expression cond1 = expressions.makeOr(destIsNull, invalidDestsz);
@@ -1697,10 +1699,10 @@ public class Intrinsics {
         CondJump skipRest1 = EventFactory.newGoto(end);
         Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
-            check1,
-            skipE1,
-            retError1,
-            skipRest1
+                check1,
+                skipE1,
+                retError1,
+                skipRest1
         ));
 
         // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
@@ -1711,25 +1713,25 @@ public class Intrinsics {
         CondJump skipRest2 = EventFactory.newGoto(end);
         Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
-            check2,
-            skipE2
+                check2,
+                skipE2
         ));
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, archType);
             final Expression destAddr = expressions.makePtrAdd(dest, offset);
             final Expression zero = expressions.makeZero(archType);
             replacement.add(
-                newStore(destAddr, zero)
+                    newStore(destAddr, zero)
             );
         }
         replacement.addAll(List.of(
-            retError2,
-            skipRest2
+                retError2,
+                skipRest2
         ));
 
         // Else ----> return error = 0 and do the actual copy
         Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
-        replacement.add(success);        
+        replacement.add(success);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, archType);
             final Expression srcAddr = expressions.makePtrAdd(src, offset);
@@ -1743,8 +1745,8 @@ public class Intrinsics {
             ));
         }
         replacement.addAll(List.of(
-            retSuccess,
-            end
+                retSuccess,
+                end
         ));
 
         return replacement;
@@ -1755,7 +1757,7 @@ public class Intrinsics {
         final Expression src1 = call.getArguments().get(0);
         final Expression src2 = call.getArguments().get(1);
         final Expression numExpr = call.getArguments().get(2);
-        final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
+        final Register returnReg = ((ValueFunctionCall) call).getResultRegister();
 
         if (!(numExpr instanceof IntLiteral numValue)) {
             final String error = "Cannot handle memcmp with dynamic num argument: " + call;
@@ -1816,7 +1818,7 @@ public class Intrinsics {
         assert fill == 0;
 
         final Expression zero = expressions.makeValue(fill, types.getByteType());
-        final List<Event> replacement = new ArrayList<>( count + 1);
+        final List<Event> replacement = new ArrayList<>(count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, archType);
             final Expression destAddr = expressions.makePtrAdd(dest, offset);
@@ -1836,7 +1838,7 @@ public class Intrinsics {
         final Expression exp = call.getArguments().get(0);
         checkArgument(exp instanceof MemoryObject object && object.isThreadLocal(), "Calling thread-local intrinsic on a non-thread-local object \"%s\"", call);
         return List.of(
-            EventFactory.newLocal(resultReg, exp)
+                EventFactory.newLocal(resultReg, exp)
         );
     }
 
@@ -1850,7 +1852,7 @@ public class Intrinsics {
         final Type outputType = resultReg.getType();
         checkArgument(outputType instanceof IntegerType,
                 "Non-integer %s type for \"%s\".", name, outputType);
-        final IntegerType inputType  = (IntegerType)input.getType();
+        final IntegerType inputType = (IntegerType) input.getType();
         final Expression cttz = expressions.makeCTTZ(input);
         final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
         final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));

@@ -179,7 +179,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()),dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
@@ -369,7 +369,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister,e.getOperator() ,e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = Power.newRMWStoreConditional(address, dummyReg, true);
@@ -660,7 +660,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, expressions.makeCast(e.getExpectedValue(),dummy.getType())), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, expressions.makeCast(e.getExpectedValue(), dummy.getType())), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
@@ -820,11 +820,13 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
         Expression expr;
-        if(regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+        if (regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
             expr = expressions.makePtrAdd(regValue, e.getOperand());
-        } else if( regValue.getType() instanceof IntegerType){
+        } else if (regValue.getType() instanceof IntegerType) {
             expr = expressions.makeAdd(regValue, e.getOperand());
-        }else {throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless operand");}
+        } else {
+            throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless operand");
+        }
         Store store = Power.newRMWStoreConditional(address, expr, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
@@ -842,7 +844,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeNEQ(regValue,unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -896,7 +898,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
+        IntegerType type = (IntegerType) e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -917,7 +919,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType) e.getAccessType()))
         );
     }
 

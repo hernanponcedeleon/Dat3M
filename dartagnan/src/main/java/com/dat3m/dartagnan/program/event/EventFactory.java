@@ -116,7 +116,7 @@ public class EventFactory {
     }
 
     public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
-                                 boolean isHeapAlloc, boolean doesZeroOutMemory) {
+                                        boolean isHeapAlloc, boolean doesZeroOutMemory) {
         arraySize = expressions.makeCast(arraySize, types.getArchType(), false); // why cast?
         alignment = expressions.makeCast(alignment, types.getArchType(), false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
@@ -187,6 +187,7 @@ public class EventFactory {
     public static VoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
         return new VoidFunctionCall(function.getFunctionType(), function, arguments);
     }
+
     public static VoidFunctionCall newVoidFunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
         return new VoidFunctionCall(funcType, funcPtr, arguments);
     }
@@ -781,7 +782,8 @@ public class EventFactory {
     // ============================================ PTX ============================================
     // =============================================================================================
     public static class PTX {
-        private PTX() {}
+        private PTX() {
+        }
 
         public static PTXAtomOp newAtomOp(Expression address, Register register, Expression value,
                                           IntBinaryOp op, String mo, String scope) {
@@ -792,14 +794,14 @@ public class EventFactory {
         }
 
         public static PTXAtomCAS newAtomCAS(Expression address, Register register, Expression expected,
-                Expression value, String mo, String scope) {
+                                            Expression value, String mo, String scope) {
             PTXAtomCAS atom = new PTXAtomCAS(register, address, expected, value, mo);
             atom.addTags(scope);
             return atom;
         }
 
         public static PTXAtomExch newAtomExch(Expression address, Register register,
-                                            Expression value, String mo, String scope) {
+                                              Expression value, String mo, String scope) {
             PTXAtomExch atom = new PTXAtomExch(register, address, value, mo);
             atom.addTags(scope);
             return atom;
@@ -818,10 +820,11 @@ public class EventFactory {
     // =========================================== Vulkan ==========================================
     // =============================================================================================
     public static class Vulkan {
-        private Vulkan() {}
+        private Vulkan() {
+        }
 
         public static VulkanRMW newRMW(Expression address, Register register, Expression value,
-                                          String mo, String scope) {
+                                       String mo, String scope) {
             return new VulkanRMW(register, address, value, mo, scope);
         }
 
@@ -854,7 +857,8 @@ public class EventFactory {
     // =============================================================================================
 
     public static class Spirv {
-        private Spirv() {}
+        private Spirv() {
+        }
 
         public static SpirvLoad newSpirvLoad(Register register, Expression address, String scope,
                                              Set<String> tags) {
@@ -872,7 +876,7 @@ public class EventFactory {
         }
 
         public static SpirvRmw newSpirvRmw(Register register, Expression address, IntBinaryOp op, Expression value,
-                                            String scope, Set<String> tags) {
+                                           String scope, Set<String> tags) {
             return new SpirvRmw(register, address, op, value, scope, tags);
         }
 

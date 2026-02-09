@@ -39,9 +39,13 @@ public final class TypeFactory {
         return booleanType;
     }
 
-    public VoidType getVoidType() { return voidType; }
+    public VoidType getVoidType() {
+        return voidType;
+    }
 
-    public Type getUnitType() { return getAggregateType(List.of()); }
+    public Type getUnitType() {
+        return getAggregateType(List.of());
+    }
 
     public PointerType getPointerType() {
         return pointerType;
@@ -111,10 +115,10 @@ public final class TypeFactory {
         checkArgument(offsets.stream().noneMatch(o -> o < 0), "Offset cannot be negative");
         checkArgument(offsets.isEmpty() || offsets.get(0) == 0, "The first offset must be zero");
         checkArgument(IntStream.range(1, offsets.size()).allMatch(
-                i -> offsets.get(i) >= offsets.get(i - 1) + Integer.max(0, getMemorySizeInBytes(fields.get(i - 1), false))),
+                        i -> offsets.get(i) >= offsets.get(i - 1) + Integer.max(0, getMemorySizeInBytes(fields.get(i - 1), false))),
                 "Offset is too small");
         checkArgument(IntStream.range(0, fields.size() - 1).allMatch(
-                i -> hasKnownSize(fields.get(i))),
+                        i -> hasKnownSize(fields.get(i))),
                 "Non-last element with unknown size");
         return typeNormalizer.normalize(new AggregateType(fields, offsets));
     }
@@ -260,7 +264,9 @@ public final class TypeFactory {
         return size;
     }
 
-    public boolean hasKnownSize(Type type) { return getMemorySizeInBytes(type) >= 0; }
+    public boolean hasKnownSize(Type type) {
+        return getMemorySizeInBytes(type) >= 0;
+    }
 
     public int getMemorySizeInBits(Type type) {
         return getMemorySizeInBytes(type) * 8;

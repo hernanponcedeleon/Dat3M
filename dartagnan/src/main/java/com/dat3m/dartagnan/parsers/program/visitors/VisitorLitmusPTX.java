@@ -239,7 +239,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, atom);
     }
 
-    @Override 
+    @Override
     public Object visitAtomExchange(LitmusPTXParser.AtomExchangeContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
@@ -310,7 +310,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
             }
             barrier = EventFactory.newNamedBarrier(name, instanceId, Tag.PTX.CTA, id, quorum);
         }
-        if(ctx.barrierMode().Arrive() != null) {
+        if (ctx.barrierMode().Arrive() != null) {
             barrier.addTags(Tag.PTX.ARRIVE);
         }
         return programBuilder.addChild(mainThread, barrier);

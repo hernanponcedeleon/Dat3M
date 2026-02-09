@@ -273,8 +273,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final boolean isExternal = ctx.externalLinkage() != null;
         final boolean hasInitializer = ctx.constant() != null;
 
-        check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
-        check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
+        check(!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
+        check(isExternal || hasInitializer, "Global without initializer; %s", ctx);
 
         final Expression value;
         value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
@@ -299,7 +299,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final List<Metadata> metadata = new ArrayList<>();
         //FIXME: This code only looks for DILocation metadata,
         // and it only extracts the information needed to construct SourceLocation metadata
-        for (MetadataAttachmentContext metadataCtx:  metadataAttachmentContexts) {
+        for (MetadataAttachmentContext metadataCtx : metadataAttachmentContexts) {
             MdNode mdNode = (MdNode) metadataCtx.accept(this);
             assert mdNode instanceof MdReference;
             mdNode = metadataSymbolTable.get(((MdReference) mdNode).mdName());
@@ -390,18 +390,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             );
             Optional<List<Event>> events = Optional.empty();
             boolean unsupportedEncountered = false;
-            for(ParserAsm parser : parsers){
+            for (ParserAsm parser : parsers) {
                 // we have to generate the stream each time as the parser consumes it
                 CharStream charStream = CharStreams.fromString(asmCode);
                 try {
-                    events = tryParse(parser,charStream);
-                    if(events.isPresent()){
+                    events = tryParse(parser, charStream);
+                    if (events.isPresent()) {
                         block.events.addAll(events.get());
                         break;
                     }
                 } catch (UnsupportedOperationException e) {
                     logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
-                    if(resultRegister != null){
+                    if (resultRegister != null) {
                         Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
                         events = Optional.of(List.of(nonDeterministicValue));
                     }
@@ -409,9 +409,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     break;
                 }
             }
-            if(!unsupportedEncountered && events.isEmpty()){
+            if (!unsupportedEncountered && events.isEmpty()) {
                 String msg = "Ignoring call.";
-                if(resultRegister != null){
+                if (resultRegister != null) {
                     block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
@@ -539,7 +539,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
         final Event alloc;
-        if(ctx.align() != null) {
+        if (ctx.align() != null) {
             final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
             alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
         } else {
@@ -786,7 +786,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 case "or" -> IntBinaryOp.OR;
                 case "xor" -> IntBinaryOp.XOR;
                 //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
-                default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
+                default ->
+                        throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
             event = Llvm.newRMW(register, address, operand, op, mo);
         }
@@ -1296,12 +1297,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitScopeField(ScopeFieldContext ctx) {
-        return new NamedMdNode("scope", (MdNode)visitMdField(ctx.mdField()));
+        return new NamedMdNode("scope", (MdNode) visitMdField(ctx.mdField()));
     }
 
     @Override
     public Expression visitFileField(FileFieldContext ctx) {
-        return new NamedMdNode("file", (MdNode)visitMdField(ctx.mdField()));
+        return new NamedMdNode("file", (MdNode) visitMdField(ctx.mdField()));
     }
 
     @Override
@@ -1347,12 +1348,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Prefix "u" is used to force interpreting them as hexa ints
         // https://stackoverflow.com/questions/16310509/is-it-possible-to-specify-a-hexadecimal-number-in-llvm-ir-code
         if (nodeString.startsWith("u0x")) {
-           radix = 16;
-           // Get rid of u0x prefix
-           valueString = nodeString.substring(3);
+            radix = 16;
+            // Get rid of u0x prefix
+            valueString = nodeString.substring(3);
         } else {
-           radix = 10;
-           valueString = nodeString;
+            radix = 10;
+            valueString = nodeString;
         }
         return new BigInteger(valueString, radix);
     }
@@ -1425,7 +1426,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return "r" + original;
     }
 
-    private record Block(String name, Label label, List<Event> events) {}
+    private record Block(String name, Label label, List<Event> events) {
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Metadata nodes that reflect LLVM's notion of metadata
@@ -1433,42 +1435,73 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private interface MdNode extends Expression {
 
         Type TYPE = new Type() {
-            @Override public int hashCode() { return -1; }
+            @Override
+            public int hashCode() {
+                return -1;
+            }
         };
         ExpressionKind MdKind = new ExpressionKind() {
             @Override
-            public String getSymbol() { return "Md"; }
+            public String getSymbol() {
+                return "Md";
+            }
+
             @Override
-            public String getName() { return "Metadata"; }
+            public String getName() {
+                return "Metadata";
+            }
+
             @Override
-            public String toString() { return getName(); }
+            public String toString() {
+                return getName();
+            }
         };
 
         @Override
-        default Type getType() { return TYPE; }
+        default Type getType() {
+            return TYPE;
+        }
+
         @Override
-        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException(); }
+        default ImmutableSet<Register> getRegs() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
-        default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
+        default <T> T accept(ExpressionVisitor<T> visitor) {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
-        default ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
+        default ImmutableList<Expression> getOperands() {
+            return ImmutableList.of();
+        }
+
         @Override
-        default ExpressionKind getKind() { return MdKind; }
+        default ExpressionKind getKind() {
+            return MdKind;
+        }
     }
 
     private static final MdNode MD_NULL = new MdNode() {
         @Override
-        public String toString() { return "NULL"; }
+        public String toString() {
+            return "NULL";
+        }
     };
 
     private static final MdNode MD_NOT_PARSED = new MdNode() {
         @Override
-        public String toString() { return "NOT PARSED"; }
+        public String toString() {
+            return "NOT PARSED";
+        }
     };
 
     private record MdReference(String mdName) implements MdNode {
         @Override
-        public String toString() { return mdName; }
+        public String toString() {
+            return mdName;
+        }
     }
 
     private record MdGenericValue<T>(T value) implements MdNode {
@@ -1476,18 +1509,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // This node should only hold values external to the MdNode hierarchy.
             Preconditions.checkArgument(!(value instanceof MdNode));
         }
+
         @Override
-        public String toString() { return value.toString(); }
+        public String toString() {
+            return value.toString();
+        }
     }
 
     private record MdTuple(List<MdNode> mdFields) implements MdNode {
-        public String toString() { return mdFields.stream().map(Object::toString)
-                .collect(Collectors.joining(", ", "!{", "}")); }
+        public String toString() {
+            return mdFields.stream().map(Object::toString)
+                    .collect(Collectors.joining(", ", "!{", "}"));
+        }
     }
 
     private record NamedMdNode(String name, MdNode node) implements MdNode {
         @Override
-        public String toString() { return String.format("%s: %s", name, node); }
+        public String toString() {
+            return String.format("%s: %s", name, node);
+        }
     }
 
     private record SpecialMdTupleNode(Type nodeType, List<NamedMdNode> namedMDFields) implements MdNode {
@@ -1508,7 +1548,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         public <T extends MdNode> Optional<T> getField(String fieldName) {
             for (NamedMdNode field : namedMDFields) {
                 if (field.name().equals(fieldName)) {
-                    return Optional.of((T)field.node());
+                    return Optional.of((T) field.node());
                 }
             }
             return Optional.empty();
@@ -1517,11 +1557,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helper to parse inline asm code
-    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
-        try{
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException {
+        try {
             List<Event> events = parser.parse(asmCode);
             return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException e){}
+        } catch (ParsingException e) {
+        }
         return Optional.empty();
     }
 

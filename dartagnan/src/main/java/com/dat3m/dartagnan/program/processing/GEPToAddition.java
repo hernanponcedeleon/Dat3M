@@ -40,7 +40,8 @@ import java.util.List;
 */
 public class GEPToAddition implements ProgramProcessor {
 
-    private GEPToAddition() {}
+    private GEPToAddition() {
+    }
 
     public static GEPToAddition newInstance() {
         return new GEPToAddition();
@@ -75,7 +76,7 @@ public class GEPToAddition implements ProgramProcessor {
             Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.get(0).accept(this));
 
             for (Expression index : indices.subList(1, indices.size())) {
-                index = index.accept(this);    
+                index = index.accept(this);
                 Expression offset;
                 if (indexingType instanceof AggregateType aggType && index instanceof IntLiteral lit) {
                     final int intIndex = lit.getValueAsInt();

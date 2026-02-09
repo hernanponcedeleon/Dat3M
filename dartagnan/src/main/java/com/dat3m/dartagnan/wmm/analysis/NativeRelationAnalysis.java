@@ -776,7 +776,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void addLXSX(MutableEventGraph may, MutableEventGraph must, List<Event> loads, List<Event> stores,
-                boolean noIntermediaries, boolean requiresMatchingAddresses) {
+                             boolean noIntermediaries, boolean requiresMatchingAddresses) {
             final boolean sameType = sameType(loads, stores);
             for (int i = 0; i < loads.size(); i++) {
                 final MemoryCoreEvent ld = (MemoryCoreEvent) loads.get(i);

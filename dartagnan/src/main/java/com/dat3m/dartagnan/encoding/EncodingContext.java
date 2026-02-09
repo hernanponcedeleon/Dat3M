@@ -57,7 +57,7 @@ public final class EncodingContext {
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     @Option(
-            name=IDL_TO_SAT,
+            name = IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     boolean useSATEncoding = false;
@@ -132,9 +132,13 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
+    public ExpressionEncoder getExpressionEncoder() {
+        return exprEncoder;
+    }
 
-    public ExpressionFactory getExpressionFactory() { return exprs; }
+    public ExpressionFactory getExpressionFactory() {
+        return exprs;
+    }
 
     // ====================================================================================
     // Control flow
@@ -201,7 +205,9 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
-    public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+    public TypedFormula<?, ?> address(MemoryObject memoryObject) {
+        return objAddress.get(memoryObject);
+    }
 
     // NOTE: This formula represents the size of successfully allocated memory objects.
     // For non-allocated memory objects, the size may be any non-negative value.

@@ -9,7 +9,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class ExpressionHelper {
 
-    private ExpressionHelper() {}
+    private ExpressionHelper() {
+    }
 
     public static void checkSameType(Expression x, Expression y) {
         Preconditions.checkArgument(x.getType().equals(y.getType()),

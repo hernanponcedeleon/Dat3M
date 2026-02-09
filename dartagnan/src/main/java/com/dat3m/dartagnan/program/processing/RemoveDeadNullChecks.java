@@ -45,11 +45,14 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
  */
 public class RemoveDeadNullChecks implements FunctionProcessor {
 
-    private final static Logger logger = LoggerFactory.getLogger(RemoveDeadNullChecks.class)
-;
-    private RemoveDeadNullChecks() { }
+    private final static Logger logger = LoggerFactory.getLogger(RemoveDeadNullChecks.class);
 
-    public static RemoveDeadNullChecks newInstance() { return new RemoveDeadNullChecks(); }
+    private RemoveDeadNullChecks() {
+    }
+
+    public static RemoveDeadNullChecks newInstance() {
+        return new RemoveDeadNullChecks();
+    }
 
     private enum Sign {
         UNKNOWN,
@@ -158,6 +161,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
             final int cmpRes = lit.getValue().compareTo(BigInteger.ZERO);
             return cmpRes > 0 ? Sign.POS : cmpRes == 0 ? Sign.NON_NEG : Sign.UNKNOWN;
         }
+
         @Override
         public Sign visitNullLiteral(NullLiteral lit) {
             return Sign.NON_NEG;

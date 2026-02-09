@@ -29,7 +29,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {}
+    private record CmpInstruction(Expression left, Expression right) {
+    }
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.ARM8);
     private final TypeFactory types = programBuilder.getTypeFactory();
@@ -125,7 +126,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitThreadDeclaratorList(ThreadDeclaratorListContext ctx) {
-        for(ThreadIdContext threadCtx : ctx.threadId()){
+        for (ThreadIdContext threadCtx : ctx.threadId()) {
             programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
@@ -137,7 +138,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitInstructionRow(InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
+        for (int i = 0; i < threadCount; i++) {
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
@@ -182,7 +183,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
-        add(EventFactory.newLoadWithMo(register, expressions.makeCast(address,pointerType), mo));
+        add(EventFactory.newLoadWithMo(register, expressions.makeCast(address, pointerType), mo));
         addRegister64Update(r64, register);
         return null;
     }
@@ -299,11 +300,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranch(BranchContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
-        if(ctx.branchCondition() == null){
+        if (ctx.branchCondition() == null) {
             return add(EventFactory.newGoto(label));
         }
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
-        if(cmp == null){
+        if (cmp == null) {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Expression expr = expressions.makeIntCmp(cmp.left, ctx.branchCondition().op, cmp.right);
@@ -341,7 +342,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Expression visitExpressionRegister64(ExpressionRegister64Context ctx) {
         Expression expr = programBuilder.getOrNewRegister(mainThread, ctx.register64().id, i64);
-        if(ctx.shift() != null){
+        if (ctx.shift() != null) {
             IntLiteral val = parseValue(ctx.shift().immediate().constant(), i64);
             expr = expressions.makeIntBinary(expr, ctx.shift().shiftOperator().op, val);
         }
@@ -362,7 +363,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Expression visitExpressionImmediate(ExpressionImmediateContext ctx) {
         Expression expr = parseValue(ctx.immediate().constant(), i64);
-        if(ctx.shift() != null){
+        if (ctx.shift() != null) {
             IntLiteral val = parseValue(ctx.shift().immediate().constant(), i64);
             expr = expressions.makeIntBinary(expr, ctx.shift().shiftOperator().op, val);
         }
@@ -389,7 +390,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private Expression parseAddress(AddressContext ctx) {
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.register64().id);
         if (ctx.offset() == null) {
-            return expressions.makeCast(base,pointerType);
+            return expressions.makeCast(base, pointerType);
         }
         final ExpressionConversionContext conversion = ctx.offset().expressionConversion();
         final Register32Context register32 = conversion == null ? null : conversion.register32();

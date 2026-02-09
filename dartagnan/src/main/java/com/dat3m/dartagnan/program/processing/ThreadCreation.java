@@ -193,8 +193,8 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_, archType) : tidExpr_;
 
             final Register joinRegister = join.getResultRegister();
-            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
-            final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
+            final IntegerType statusType = (IntegerType) ((AggregateType) joinRegister.getType()).getFields().get(0).type();
+            final Type retValType = ((AggregateType) joinRegister.getType()).getFields().get(1).type();
 
             final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
             final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
@@ -254,7 +254,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2joinCases.keySet()) {
                 switchJumpTable.add(EventFactory.newJump(
-                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
+                        expressions.makeEQ(tidExpr, tid), (Label) tid2joinCases.get(tid).get(0))
                 );
             }
             // In the case where no tid matches, we return an error status.
@@ -350,7 +350,7 @@ public class ThreadCreation implements ProgramProcessor {
                     final Expression tidExpr = new TIdExpr(archType, call.getThread());
                     final Local tidAssignment = newLocal(resultRegister, expressions.makeIntToPtrCast(tidExpr));
                     IRHelper.replaceWithMetadata(call, tidAssignment);
-                }else{
+                } else {
                     final Expression tidExpr = new TIdExpr((IntegerType) regType, call.getThread());
                     final Local tidAssignment = newLocal(resultRegister, tidExpr);
                     IRHelper.replaceWithMetadata(call, tidAssignment);
@@ -391,7 +391,7 @@ public class ThreadCreation implements ProgramProcessor {
             if (e instanceof Return || e instanceof ThreadReturn) {
                 // NOTE: We also replace ThreadReturn but generate a single new one (normalization) afterward.
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
-                        : ((ThreadReturn)e).getValue().orElse(null);
+                        : ((ThreadReturn) e).getValue().orElse(null);
                 final List<Event> replacement = eventSequence(
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
@@ -445,7 +445,9 @@ public class ThreadCreation implements ProgramProcessor {
         // Translate thread-local memory object to local stack allocation
         Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
         for (MemoryObject memoryObject : memory.getObjects()) {
-            if (!memoryObject.isThreadLocal()) {continue;}
+            if (!memoryObject.isThreadLocal()) {
+                continue;
+            }
             Preconditions.checkState(memoryObject.hasKnownSize());
 
             // Compute type of memory object based on initial values
@@ -496,6 +498,7 @@ public class ThreadCreation implements ProgramProcessor {
     private void resolveTidExpressions(Program program) {
         final ExprTransformer transformer = new ExprTransformer() {
             final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
             @Override
             public Expression visitLeafExpression(LeafExpression expr) {
                 if (expr instanceof TIdExpr tid) {
@@ -510,9 +513,14 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private void resolveDynamicThreadLocals(Program program, List<ThreadData> threads) {
-        record Storage(int id, MemoryObject data, MemoryObject destructor) {}
-        interface StorageField { MemoryObject get(Storage s); }
-        interface Match { Expression compute(StorageField f, Expression k); }
+        record Storage(int id, MemoryObject data, MemoryObject destructor) {
+        }
+        interface StorageField {
+            MemoryObject get(Storage s);
+        }
+        interface Match {
+            Expression compute(StorageField f, Expression k);
+        }
         final List<Storage> storage = new ArrayList<>();
         final Type type = types.getPointerType();
         final int size = types.getMemorySizeInBytes(type);
@@ -723,11 +731,19 @@ public class ThreadCreation implements ProgramProcessor {
     // Helper classes
 
     private record ThreadData(Thread thread, MemoryObject comAddress, Label returnLabel) {
-        public boolean isDynamic() { return comAddress != null; }
+        public boolean isDynamic() {
+            return comAddress != null;
+        }
+
         // We assume all dynamically created threads are joinable.
         // This is not true for pthread_join in general.
-        public boolean isJoinable() { return isDynamic(); }
-        public boolean isDetachable() { return isDynamic(); }
+        public boolean isJoinable() {
+            return isDynamic();
+        }
+
+        public boolean isDetachable() {
+            return isDynamic();
+        }
     }
 
     // We use this class to refer to thread ids before we have (re)assigned proper ids for all threads.

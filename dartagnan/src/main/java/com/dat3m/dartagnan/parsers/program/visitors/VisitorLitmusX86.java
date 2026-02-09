@@ -28,7 +28,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusX86(){
+    public VisitorLitmusX86() {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     @Override
     public Object visitThreadDeclaratorList(LitmusX86Parser.ThreadDeclaratorListContext ctx) {
-        for(LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()){
+        for (LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()) {
             programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
@@ -92,7 +92,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     @Override
     public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
+        for (int i = 0; i < threadCount; i++) {
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
@@ -167,7 +167,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitFence(LitmusX86Parser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        if(fences.contains(name)) {
+        if (fences.contains(name)) {
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);

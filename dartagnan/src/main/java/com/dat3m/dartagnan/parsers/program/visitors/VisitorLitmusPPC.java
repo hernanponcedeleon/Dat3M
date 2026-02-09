@@ -16,15 +16,20 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+
 import static com.dat3m.dartagnan.program.event.FenceNameRepository.ISYNC;
 import static com.dat3m.dartagnan.program.event.FenceNameRepository.LWSYNC;
 import static com.dat3m.dartagnan.program.event.FenceNameRepository.SYNC;
+
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.collect.ImmutableSet;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {
+    }
+
+    ;
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.POWER);
@@ -86,7 +91,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitThreadDeclaratorList(LitmusPPCParser.ThreadDeclaratorListContext ctx) {
-        for(LitmusPPCParser.ThreadIdContext threadCtx : ctx.threadId()){
+        for (LitmusPPCParser.ThreadIdContext threadCtx : ctx.threadId()) {
             programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
@@ -99,7 +104,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitInstructionRow(LitmusPPCParser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
+        for (int i = 0; i < threadCount; i++) {
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
@@ -195,10 +200,10 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         Expression expr = cmp == null ?
-            // In PPC, when there is no previous comparison instruction,
-            // the value of r0 is used as the branching condition
-            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0",archType)) :
-            expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
+                // In PPC, when there is no previous comparison instruction,
+                // the value of r0 is used as the branching condition
+                expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0", archType)) :
+                expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
@@ -210,7 +215,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitFence(LitmusPPCParser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        if(fences.contains(name)){
+        if (fences.contains(name)) {
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);

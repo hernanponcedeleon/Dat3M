@@ -1,4 +1,5 @@
 package com.dat3m.dartagnan.expression.pointers;
+
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
@@ -20,8 +21,13 @@ public class PtrAddExpr extends ExpressionBase<PointerType> {
         this.offset = offset;
     }
 
-    public Expression getBase() { return base; }
-    public Expression getOffset() { return offset; }
+    public Expression getBase() {
+        return base;
+    }
+
+    public Expression getOffset() {
+        return offset;
+    }
 
     @Override
     public ImmutableList<Expression> getOperands() {

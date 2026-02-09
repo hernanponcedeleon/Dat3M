@@ -396,7 +396,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBitwiseNEQ(dummy,e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBitwiseNEQ(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, e.getStoreValue(), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -459,7 +459,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
-        IntegerType type = (IntegerType)e.getAccessType();
+        IntegerType type = (IntegerType) e.getAccessType();
 
         Register dummy = e.getFunction().newRegister(type);
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
@@ -573,11 +573,13 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(regValue, address); // TODO: No mo on the load?
         Expression expr;
-        if(regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+        if (regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
             expr = expressions.makePtrAdd(regValue, e.getOperand());
-        } else if( regValue.getType() instanceof IntegerType){
+        } else if (regValue.getType() instanceof IntegerType) {
             expr = expressions.makeAdd(regValue, e.getOperand());
-        }else {throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");}
+        } else {
+            throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");
+        }
         Store store = RISCV.newRMWStoreConditional(address, expr, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
 
         // TODO: Why does this use a different fake dep (from the load) than the other RMW events (from the store)?
@@ -617,7 +619,7 @@ class VisitorRISCV extends VisitorBase {
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
-        Local localOp = newLocal(dummy,expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
@@ -639,7 +641,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
+        IntegerType type = (IntegerType) e.getAccessType();
         Expression one = expressions.makeOne(type);
         Expression zero = expressions.makeZero(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -658,7 +660,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType) e.getAccessType()))
         );
     }
 }

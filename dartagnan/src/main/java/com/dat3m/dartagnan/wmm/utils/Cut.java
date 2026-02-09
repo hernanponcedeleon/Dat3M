@@ -50,9 +50,17 @@ public class Cut {
         this.upper = upper;
     }
 
-    public Wmm getMemoryModel() { return memoryModel; }
-    public Set<Constraint> getLower() { return lower; }
-    public Set<Constraint> getUpper() { return upper; }
+    public Wmm getMemoryModel() {
+        return memoryModel;
+    }
+
+    public Set<Constraint> getLower() {
+        return lower;
+    }
+
+    public Set<Constraint> getUpper() {
+        return upper;
+    }
 
     public Set<Relation> getLowerRelations() {
         return lower.stream().flatMap(c -> c.getConstrainedRelations().stream()).collect(Collectors.toSet());

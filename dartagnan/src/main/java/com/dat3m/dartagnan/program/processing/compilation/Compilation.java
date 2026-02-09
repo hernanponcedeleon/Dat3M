@@ -39,7 +39,10 @@ public class Compilation implements ProgramProcessor {
             toUppercase = true)
     private Arch target = Arch.C11;
 
-    public Arch getTarget() { return target; }
+    public Arch getTarget() {
+        return target;
+    }
+
     public void setTarget(Arch target) {
         this.target = target;
         compiler = getCompiler();

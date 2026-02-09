@@ -23,6 +23,7 @@ public enum PtrCmpOp implements ExpressionKind {
 //            case LT -> "<";
         };
     }
+
     public PtrCmpOp inverted() {
         return switch (this) {
             case EQ -> NEQ;
@@ -33,6 +34,7 @@ public enum PtrCmpOp implements ExpressionKind {
 //            case LT -> GTE;
         };
     }
+
     public PtrCmpOp reverse() {
         return switch (this) {
             case EQ, NEQ -> this;
@@ -42,6 +44,7 @@ public enum PtrCmpOp implements ExpressionKind {
 //            case LT -> GT;
         };
     }
+
     public boolean isStrict() {
         return switch (this) {
             case NEQ -> true;

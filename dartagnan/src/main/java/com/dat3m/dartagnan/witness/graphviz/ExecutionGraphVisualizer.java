@@ -47,9 +47,9 @@ public class ExecutionGraphVisualizer {
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
     private List<String> relsToShow;
 
-    @Option(name=WITNESS_SHOW,
-            description="Names of relations to show in the witness graph.",
-            secure=true)
+    @Option(name = WITNESS_SHOW,
+            description = "Names of relations to show in the witness graph.",
+            secure = true)
     private String relsToShowStr = String.format("%s,%s,%s,%s", PO, SI, CO, RF);
 
     public ExecutionGraphVisualizer() {
@@ -88,8 +88,8 @@ public class ExecutionGraphVisualizer {
 
     private void computeAddressMap(ExecutionModelNext model) {
         model.getMemoryLayoutMap().entrySet().stream()
-             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().value()))
-             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
+                .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().value()))
+                .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
     private List<List<EventModel>> getEventModelsToShow(ThreadModel tm) {
@@ -157,8 +157,8 @@ public class ExecutionGraphVisualizer {
 
     private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
         return model.getRelationModels().stream()
-                    .filter(rm -> rm.getRelation().hasName(name))
-                    .findFirst().orElse(null);
+                .filter(rm -> rm.getRelation().hasName(name))
+                .findFirst().orElse(null);
     }
 
     // Getting the correct relation to show is tricky.
@@ -177,13 +177,15 @@ public class ExecutionGraphVisualizer {
             for (String n : rm.getRelation().getNames()) {
                 if (n.startsWith(name + "#")) {
                     defIndex = tryParseInt(n).orElse(-1);
-                    if (defIndex > -1) { break; }
+                    if (defIndex > -1) {
+                        break;
+                    }
                 }
             }
             maxId = Math.max(maxId, defIndex);
         }
         return maxId != -1 ? getRelationModelByName(model, name + "#" + maxId)
-                           : getRelationModelByName(model, name);
+                : getRelationModelByName(model, name);
     }
 
     private void addRelations(ExecutionModelNext model) {
@@ -222,7 +224,9 @@ public class ExecutionGraphVisualizer {
         final BiPredicate<EventModel, EventModel> filter = getFilter(PO);
         for (ThreadModel tm : model.getThreadModels()) {
             final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) { continue; }
+            if (instructions.size() <= 1) {
+                continue;
+            }
             for (int i = 1; i < instructions.size(); i++) {
                 final List<EventModel> fromList = instructions.get(i - 1);
                 final List<EventModel> toList = instructions.get(i);
@@ -273,7 +277,9 @@ public class ExecutionGraphVisualizer {
         final BiPredicate<EventModel, EventModel> filter = getFilter(name);
         for (ThreadModel tm : model.getThreadModels()) {
             final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) { continue; }
+            if (instructions.size() <= 1) {
+                continue;
+            }
             for (List<EventModel> instruction : instructions) {
                 int end = instruction.size() - 1;
                 for (int i = 0; i < end; i++) {
@@ -322,25 +328,25 @@ public class ExecutionGraphVisualizer {
                     String.format("%s = R(%s%s)", value, address, moString);
         } else if (e instanceof LocalModel lm) {
             tag = String.format("%s(%s) <- %s",
-                lm.getEvent().getResultRegister(),
-                lm.getValue(),
-                lm.getEvent().getExpr()
+                    lm.getEvent().getResultRegister(),
+                    lm.getValue(),
+                    lm.getEvent().getExpr()
             );
         } else if (e instanceof AssertModel am) {
             tag = String.format("Assertion(%s)", am.getResult());
         }
         final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
-            synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
+                synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
         final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
         final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\\n%s",
-                e.getThreadModel().getName(),
-                e.getThreadModel().getId(),
-                scope,
-                e.getEvent().getGlobalId(),
-                callStack.isEmpty() ? callStack : callStack + " -> \\n",
-                getSourceLocationString(e.getEvent()),
-                tag)
+                        e.getThreadModel().getName(),
+                        e.getThreadModel().getId(),
+                        scope,
+                        e.getEvent().getGlobalId(),
+                        callStack.isEmpty() ? callStack : callStack + " -> \\n",
+                        getSourceLocationString(e.getEvent()),
+                        tag)
                 .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string
         return "label=\"" + nodeString + "\"";
@@ -370,11 +376,13 @@ public class ExecutionGraphVisualizer {
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-            if (config != null) { visualizer.setRelationsToShow(config); }
+            if (config != null) {
+                visualizer.setRelationsToShow(config);
+            }
             visualizer.setSyntacticContext(synContext)
-                      .setFilter(RF, rfFilter)
-                      .setFilter(CO, coFilter)
-                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+                    .setFilter(RF, rfFilter)
+                    .setFilter(CO, coFilter)
+                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
             if (convert) {
@@ -397,13 +405,13 @@ public class ExecutionGraphVisualizer {
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext) {
         generateGraphvizFile(model,
-                             iterationCount,
-                             rfFilter,
-                             coFilter,
-                             directoryName,
-                             fileNameBase,
-                             synContext,
-                             true,
-                             null);
+                iterationCount,
+                rfFilter,
+                coFilter,
+                directoryName,
+                fileNameBase,
+                synContext,
+                true,
+                null);
     }
 }

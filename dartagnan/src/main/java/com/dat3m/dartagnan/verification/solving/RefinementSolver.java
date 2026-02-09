@@ -95,20 +95,20 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Configuration
 
-    @Option(name=BASELINE,
-            description="Refinement starts from this baseline WMM.",
-            secure=true,
-            toUppercase=true)
+    @Option(name = BASELINE,
+            description = "Refinement starts from this baseline WMM.",
+            secure = true,
+            toUppercase = true)
     private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
 
-    @Option(name=COVERAGE,
-            description="Prints the coverage report (this option requires --method=caat).",
-            secure=true,
-            toUppercase=true)
+    @Option(name = COVERAGE,
+            description = "Prints the coverage report (this option requires --method=caat).",
+            secure = true,
+            toUppercase = true)
     private boolean printCovReport = false;
 
-    @Option(name=GRAPHVIZ_DEBUG_FILES,
-            description="This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
+    @Option(name = GRAPHVIZ_DEBUG_FILES,
+            description = "This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
                     " It is very expensive and should only be used for debugging purposes.")
     private boolean generateGraphvizDebugFiles = false;
 
@@ -132,12 +132,19 @@ public class RefinementSolver extends ModelChecker {
             DNF<CoreLiteral> inconsistencyReasons,
             List<Event> observedEvents
     ) {
-        public boolean isInconclusive() { return smtStatus == SMTStatus.SAT && caatStatus == INCONSISTENT; }
-        public boolean isConclusive() { return !isInconclusive(); }
+        public boolean isInconclusive() {
+            return smtStatus == SMTStatus.SAT && caatStatus == INCONSISTENT;
+        }
+
+        public boolean isConclusive() {
+            return !isInconclusive();
+        }
     }
 
     private record RefinementTrace(List<RefinementIteration> iterations) {
-        public RefinementIteration getFinalIteration() { return iterations.get(iterations.size() - 1); }
+        public RefinementIteration getFinalIteration() {
+            return iterations.get(iterations.size() - 1);
+        }
 
         public SMTStatus getFinalResult() {
             final RefinementIteration finalIteration = getFinalIteration();
@@ -150,9 +157,17 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
-        public long getNativeSmtTime() { return iterations.stream().mapToLong(RefinementIteration::nativeSmtTime).sum(); }
-        public long getCaatTime() { return iterations.stream().mapToLong(RefinementIteration::caatTime).sum(); }
-        public long getRefiningTime() { return iterations.stream().mapToLong(RefinementIteration::refineTime).sum(); }
+        public long getNativeSmtTime() {
+            return iterations.stream().mapToLong(RefinementIteration::nativeSmtTime).sum();
+        }
+
+        public long getCaatTime() {
+            return iterations.stream().mapToLong(RefinementIteration::caatTime).sum();
+        }
+
+        public long getRefiningTime() {
+            return iterations.stream().mapToLong(RefinementIteration::refineTime).sum();
+        }
 
         public Set<Event> getObservedEvents() {
             return iterations.stream().filter(iter -> iter.observedEvents != null)
@@ -177,7 +192,7 @@ public class RefinementSolver extends ModelChecker {
         task.getConfig().inject(this);
     }
 
-    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
+    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException {
         return new RefinementSolver(task);
     }
 
@@ -595,19 +610,19 @@ public class RefinementSolver extends ModelChecker {
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
-                rf,
-                co,
-                fr
+                    wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
+                    rf,
+                    co,
+                    fr
             ))));
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
             wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.getOrCreatePredefinedRelation(CTRL),
-                wmm.getOrCreatePredefinedRelation(DATA),
-                wmm.getOrCreatePredefinedRelation(ADDR),
-                rf)
+                    wmm.getOrCreatePredefinedRelation(CTRL),
+                    wmm.getOrCreatePredefinedRelation(DATA),
+                    wmm.getOrCreatePredefinedRelation(ADDR),
+                    rf)
             )));
         }
         if (biases.contains(Baseline.ATOMIC_RMW)) {
@@ -643,7 +658,8 @@ public class RefinementSolver extends ModelChecker {
         once with odd negations and once with even negations.
         It can also be neither, if the relation is dead (i.e., irrelevant for all axioms).
      */
-    private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
+    private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) {
+    }
 
     private PolaritySeparator computePolaritySeparator(Wmm wmm) {
         final Set<Constraint> positives = new HashSet<>();
@@ -846,14 +862,14 @@ public class RefinementSolver extends ModelChecker {
                 // TODO: Can we have events with source information but without oid?
                 .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());
-        
+
         // Track (covered) events and branches via oId
         final Set<OriginalId> branches = new HashSet<>();
         final Set<OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
-        
+
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
 
         for (Event e : programEvents) {
@@ -862,13 +878,13 @@ public class RefinementSolver extends ModelChecker {
             OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
             assert branchRepId != null;
 
-            if(coveredEvents.contains(e)) {
+            if (coveredEvents.contains(e)) {
                 coveredBranches.add(branchRepId);
             } else {
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
                 final String callStack = makeContextString(
-                            synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                        synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                 messageSet.add(String.format("%s: %s%s", threads,
                         callStack.isEmpty() ? callStack : callStack + " -> ",
                         getSourceLocationString(symmRep)));

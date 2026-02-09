@@ -28,12 +28,18 @@ public class MemoryExtract extends UnaryExpressionBase<MemoryType, ExpressionKin
     public boolean isExtractingLowBits() {
         return lowBit == 0;
     }
+
     public boolean isExtractingHighBits() {
         return operand.getType() instanceof MemoryType t && highBit + 1 == t.getBitWidth();
     }
 
-    public int getLowBit() { return lowBit; }
-    public int getHighBit() { return highBit; }
+    public int getLowBit() {
+        return lowBit;
+    }
+
+    public int getHighBit() {
+        return highBit;
+    }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {

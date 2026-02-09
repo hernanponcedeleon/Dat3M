@@ -21,7 +21,7 @@ public class PtrConcat extends NaryExpressionBase<PointerType, ExpressionKind.Ot
         int size = 0;
         for (Expression op : operands) {
             ExpressionHelper.checkExpectedType(op, PointerType.class);
-            size += ((PointerType)op.getType()).getBitWidth();
+            size += ((PointerType) op.getType()).getBitWidth();
         }
         return TypeFactory.getInstance().getPointerType(size);
     }

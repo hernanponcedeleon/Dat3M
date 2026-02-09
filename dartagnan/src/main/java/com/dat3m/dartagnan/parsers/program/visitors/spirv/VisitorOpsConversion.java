@@ -43,7 +43,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
 
         if (resultType instanceof ScopedPointerType scpPointerType1 && operandType instanceof ScopedPointerType scpPointerType2
                 && !(scpPointerType1.getScopeId().equals(scpPointerType2.getScopeId()))) {
-                throw new ParsingException("Storage class mismatch in OpBitcast between '%s' and '%s' for id '%s'", typeId, operand, id);
+            throw new ParsingException("Storage class mismatch in OpBitcast between '%s' and '%s' for id '%s'", typeId, operand, id);
         }
 
         Expression convertedExpr = expressions.makeCast(operandExpr, resultType);

@@ -114,9 +114,9 @@ public class PropertyEncoder implements Encoder {
         if (specType == Property.Type.MIXED) {
             final String warn = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                    "Cannot encode mixed properties into a single SMT-query. " +
-                    "You can select a different set of properties with option --property. " +
-                    "Defaulting to " + Property.PROGRAM_SPEC.asStringOption() + ".",
+                            "Cannot encode mixed properties into a single SMT-query. " +
+                            "You can select a different set of properties with option --property. " +
+                            "Defaulting to " + Property.PROGRAM_SPEC.asStringOption() + ".",
                     properties);
             logger.warn(warn);
             properties = EnumSet.of(Property.PROGRAM_SPEC);
@@ -366,25 +366,25 @@ public class PropertyEncoder implements Encoder {
         });
 
         BooleanFormula hasRace = bmgr.makeFalse();
-        for(Thread t1 : program.getThreads()) {
-            for(Thread t2 : program.getThreads()) {
-                if(t1 == t2) {
+        for (Thread t1 : program.getThreads()) {
+            for (Thread t2 : program.getThreads()) {
+                if (t1 == t2) {
                     continue;
                 }
                 for (Event e1 : t1.getEvents()) {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemoryCoreEvent w = (MemoryCoreEvent)e1;
+                    MemoryCoreEvent w = (MemoryCoreEvent) e1;
                     if (!canRace.test(w)) {
                         continue;
                     }
-                    for(Event e2 : t2.getEvents()) {
+                    for (Event e2 : t2.getEvents()) {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemoryCoreEvent m = (MemoryCoreEvent)e2;
-                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
+                        MemoryCoreEvent m = (MemoryCoreEvent) e2;
+                        if ((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
                             continue;
                         }
 
@@ -413,7 +413,8 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeTrackabilityViolations() {
         final var enc = new ArrayList<BooleanFormula>();
-        record Var(BooleanFormula leak, BooleanFormula track) {}
+        record Var(BooleanFormula leak, BooleanFormula track) {
+        }
         final Map<MemoryObject, Var> variables = program.getMemory().getObjects().stream()
                 .filter(MemoryObject::isHeapAllocated)
                 .collect(Collectors.toMap(o -> o, o -> new Var(context.leakVariable(o), context.trackVariable(o))));
@@ -451,20 +452,28 @@ public class PropertyEncoder implements Encoder {
         // Object A is reachable from another object B, if a co-maximal store writes an address pointing to A into B.
         for (Store store : program.getThreadEvents(Store.class)) {
             final List<Store> stores = instructions.getOrDefault(store, List.of(store));
-            if (!mayBeFinalAddressStore(store, stores)) { continue; }
+            if (!mayBeFinalAddressStore(store, stores)) {
+                continue;
+            }
             final Set<MemoryObject> communicableObjects = alias.communicableObjects(store).stream()
                     .filter(variables::containsKey)
                     .collect(Collectors.toSet());
-            if (communicableObjects.isEmpty()) { continue; }
+            if (communicableObjects.isEmpty()) {
+                continue;
+            }
             final BooleanFormula isFinal = bmgr.and(stores.stream().map(context::lastCoVar).toList());
             for (MemoryObject addressableObject : alias.addressableObjects(store)) {
                 final Var addressVariable = variables.get(addressableObject);
-                if (addressVariable == null && !addressableObject.isStaticallyAllocated()) { continue; }
+                if (addressVariable == null && !addressableObject.isStaticallyAllocated()) {
+                    continue;
+                }
                 final BooleanFormula addressed = referencesObject(stores, false, addressableObject);
                 final BooleanFormula addressTrack = addressVariable != null ? addressVariable.track : bmgr.makeTrue();
                 for (MemoryObject communicableObject : communicableObjects) {
                     final Var valueVariable = variables.get(communicableObject);
-                    if (valueVariable == null) { continue; }
+                    if (valueVariable == null) {
+                        continue;
+                    }
                     final BooleanFormula valueTrack = valueVariable.track;
                     final BooleanFormula communicated = referencesObject(stores, true, communicableObject);
                     enc.add(bmgr.not(bmgr.and(isFinal, addressed, addressTrack, communicated, bmgr.not(valueTrack))));
@@ -501,8 +510,8 @@ public class PropertyEncoder implements Encoder {
         if (isValue) {
             List<Expression> memVals = stores.stream().map(Store::getMemValue).toList();
             // assert memVals.get(0) instanceof MemoryType;
-            pointer = expressions.makeFromMemoryCast(expressions.makeMemoryConcat(memVals),object.getType());
-        }else{
+            pointer = expressions.makeFromMemoryCast(expressions.makeMemoryConcat(memVals), object.getType());
+        } else {
             pointer = stores.get(0).getAddress();
         }
         if (object.equals(pointer)) {

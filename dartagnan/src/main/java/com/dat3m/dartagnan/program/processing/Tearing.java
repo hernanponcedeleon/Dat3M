@@ -266,6 +266,7 @@ public final class Tearing implements ProgramProcessor {
         }
         throw new UnsupportedOperationException(String.format(message, event));
     }
+
     private PointerType checkPointerType(Type type, String message, Event event) {
         if (type instanceof PointerType t) {
             return t;
@@ -318,7 +319,7 @@ public final class Tearing implements ProgramProcessor {
             final int begin = value.getOffset();
             final int end = begin + types.getMemorySizeInBytes(value.getType());
             final List<Expression> result = new ArrayList<>();
-            for (int offset = begin; offset < end;) {
+            for (int offset = begin; offset < end; ) {
                 final Type t = typesByOffset.get(offset);
                 result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);

@@ -6,8 +6,10 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
+
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
+
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 import com.google.common.base.Preconditions;
 
@@ -33,11 +35,21 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
         this.accessType = other.accessType;
     }
 
-    public Expression getAddress() { return address; }
-    public void setAddress(Expression address) { this.address = address; }
+    public Expression getAddress() {
+        return address;
+    }
 
-    public Type getAccessType() { return accessType; }
-    public void setAccessType(Type type) { this.accessType = type; }
+    public void setAddress(Expression address) {
+        this.address = address;
+    }
+
+    public Type getAccessType() {
+        return accessType;
+    }
+
+    public void setAccessType(Type type) {
+        this.accessType = type;
+    }
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {

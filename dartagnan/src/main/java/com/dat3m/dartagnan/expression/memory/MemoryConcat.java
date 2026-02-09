@@ -21,7 +21,7 @@ public class MemoryConcat extends NaryExpressionBase<MemoryType, ExpressionKind>
         int size = 0;
         for (Expression op : operands) {
             ExpressionHelper.checkExpectedType(op, MemoryType.class);
-            size += ((MemoryType)op.getType()).getBitWidth();
+            size += ((MemoryType) op.getType()).getBitWidth();
         }
         return TypeFactory.getInstance().getMemoryType(size);
     }

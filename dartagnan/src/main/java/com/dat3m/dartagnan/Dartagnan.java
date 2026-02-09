@@ -144,7 +144,7 @@ public class Dartagnan extends BaseOptions {
                 final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
-                        () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
+                            () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
                 final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
@@ -204,19 +204,19 @@ public class Dartagnan extends BaseOptions {
     private static List<File> getProgramFilesFromArgs(String[] args) {
         final List<File> files = new ArrayList<>();
         Stream.of(args)
-            .map(File::new)
-            .forEach(file -> {
-                if (file.exists()) {
-                    final String path = file.getAbsolutePath();
-                    if (file.isDirectory()) {
-                        logger.info("Programs path: {}", path);
-                        files.addAll(getProgramFiles(path));
-                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
-                        logger.info("Program path: {}", path);
-                        files.add(file);
+                .map(File::new)
+                .forEach(file -> {
+                    if (file.exists()) {
+                        final String path = file.getAbsolutePath();
+                        if (file.isDirectory()) {
+                            logger.info("Programs path: {}", path);
+                            files.addAll(getProgramFiles(path));
+                        } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                            logger.info("Program path: {}", path);
+                            files.add(file);
+                        }
                     }
-                }
-            });
+                });
         if (files.isEmpty()) {
             throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
         }
@@ -227,10 +227,10 @@ public class Dartagnan extends BaseOptions {
         List<File> files = new ArrayList<File>();
         try (Stream<Path> stream = Files.walk(Paths.get(dirPath))) {
             files = stream.filter(Files::isRegularFile)
-                .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
-                .map(Path::toFile)
-                .sorted(Comparator.comparing(File::toString))
-                .toList();
+                    .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
+                    .map(Path::toFile)
+                    .sorted(Comparator.comparing(File::toString))
+                    .toList();
         } catch (IOException e) {
             logger.error("There was an I/O error when accessing path {}", dirPath);
             System.exit(UNKNOWN_ERROR.asInt());
@@ -246,7 +246,7 @@ public class Dartagnan extends BaseOptions {
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
-                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
+                (fileSuffixIndex == -1) ? progName : progName.substring(0, fileSuffixIndex);
         final ExecutionModelNext model = modelChecker.getExecutionGraph();
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
@@ -258,7 +258,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task,
-            ModelChecker modelChecker, String details) throws SolverException {
+                                              ModelChecker modelChecker, String details) throws SolverException {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -304,8 +304,8 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.PROGRAM_SPEC_REASON;
                 condition = getSpecificationString(p);
                 List<Assert> violations = p.getThreadEvents(Assert.class)
-                    .stream().filter(model::assertionViolated)
-                    .toList();
+                        .stream().filter(model::assertionViolated)
+                        .toList();
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
@@ -400,7 +400,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
-        if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
+        if (!config.hasProperty(BOUNDS_SAVE_PATH)) {
             return;
         }
         final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));
@@ -440,8 +440,8 @@ public class Dartagnan extends BaseOptions {
     private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
         p.getThreads().stream().filter(t ->
                 t.getEntry().isSpawned()
-                && model.isExecuted(t.getEntry().getCreator())
-                && !model.threadHasStarted(t)
+                        && model.isExecuted(t.getEntry().getCreator())
+                        && !model.threadHasStarted(t)
         ).forEach(t -> System.out.printf(
                 "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
                 t, OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS

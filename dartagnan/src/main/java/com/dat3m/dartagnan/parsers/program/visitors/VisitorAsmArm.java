@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
@@ -93,7 +94,10 @@ import static com.google.common.base.Preconditions.checkState;
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
 public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {
+    }
+
+    ;
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -139,7 +143,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         return events;
     }
 
-    private Expression toPtr(Register r){
+    private Expression toPtr(Register r) {
         return expressions.makeIntToPtrCast(r, pointerType);
     }
 
@@ -284,7 +288,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitCompareBranchNonZero(AsmArmParser.CompareBranchNonZeroContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
-        Expression zero = expressions.makeZero( (IntegerType) firstRegister.getType());
+        Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
@@ -335,8 +339,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
-            if (registerType instanceof PointerType pt) {registerType = typeFactory.getIntegerType(pt.bitWidth);}
+            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters, this.returnRegister, registerID);
+            if (registerType instanceof PointerType pt) {
+                registerType = typeFactory.getIntegerType(pt.bitWidth);
+            }
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
@@ -373,7 +379,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             if (!isOutputRegistersInitialized) {
                 isOutputRegistersInitialized = true;
                 if (i == 1) {
-                    outputAssignments.add(EventFactory.newLocal(returnRegister, expressions.makeCast(asmRegisters.get(0),returnRegister.getType())));
+                    outputAssignments.add(EventFactory.newLocal(returnRegister, expressions.makeCast(asmRegisters.get(0), returnRegister.getType())));
                 } else {
                     Type aggregateType = returnRegister.getType();
                     Expression finalAssignExpression = expressions.makeCompatibilityConstruct(aggregateType, this.pendingRegisters);
@@ -391,7 +397,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
                 inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue),
-                        expressions.makeCast(argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister)),asmRegisters.get(constraintValue).getType())
+                        expressions.makeCast(argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister)), asmRegisters.get(constraintValue).getType())
                 ));
             }
         }
@@ -400,15 +406,15 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        if (expectedType instanceof IntegerType t ) {
+        if (expectedType instanceof IntegerType t) {
             String valueString = ctx.Numbers().getText();
             BigInteger value = new BigInteger(valueString);
-            return expressions.makeValue(value, t );
+            return expressions.makeValue(value, t);
         }
-        if ( expectedType instanceof PointerType t) {
+        if (expectedType instanceof PointerType t) {
             String valueString = ctx.Numbers().getText();
             BigInteger value = new BigInteger(valueString);
-            return expressions.makeValue(value, typeFactory.getIntegerType(t.bitWidth) );
+            return expressions.makeValue(value, typeFactory.getIntegerType(t.bitWidth));
         }
         throw new RuntimeException("Unexpected type " + expectedType + " visited");
     }
@@ -420,26 +426,16 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         String option = ctx.FenceArmOpt().getText();
         String barrier = type + " " + option;
         Event fence = switch (barrier) {
-            case "dmb ish" ->
-                EventFactory.AArch64.DMB.newISHBarrier();
-            case "dmb ishld" ->
-                EventFactory.AArch64.DMB.newISHLDBarrier();
-            case "dmb sy" ->
-                EventFactory.AArch64.DMB.newSYBarrier();
-            case "dmb st" ->
-                EventFactory.AArch64.DMB.newSTBarrier();
-            case "dmb ishst" ->
-                EventFactory.AArch64.DMB.newISHSTBarrier();
-            case "dsb ish" ->
-                EventFactory.AArch64.DSB.newISHBarrier();
-            case "dsb ishld" ->
-                EventFactory.AArch64.DSB.newISHLDBarrier();
-            case "dsb sy" ->
-                EventFactory.AArch64.DSB.newSYBarrier();
-            case "dsb ishst" ->
-                EventFactory.AArch64.DSB.newISHSTBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
+            case "dmb ish" -> EventFactory.AArch64.DMB.newISHBarrier();
+            case "dmb ishld" -> EventFactory.AArch64.DMB.newISHLDBarrier();
+            case "dmb sy" -> EventFactory.AArch64.DMB.newSYBarrier();
+            case "dmb st" -> EventFactory.AArch64.DMB.newSTBarrier();
+            case "dmb ishst" -> EventFactory.AArch64.DMB.newISHSTBarrier();
+            case "dsb ish" -> EventFactory.AArch64.DSB.newISHBarrier();
+            case "dsb ishld" -> EventFactory.AArch64.DSB.newISHLDBarrier();
+            case "dsb sy" -> EventFactory.AArch64.DSB.newSYBarrier();
+            case "dsb ishst" -> EventFactory.AArch64.DSB.newISHSTBarrier();
+            default -> throw new ParsingException("Barrier not implemented");
         };
         asmInstructions.add(fence);
         return null;

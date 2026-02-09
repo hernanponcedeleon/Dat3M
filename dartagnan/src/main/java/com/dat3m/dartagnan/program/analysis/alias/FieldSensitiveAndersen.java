@@ -60,17 +60,17 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
-    ///When a pointer set gains new content, it is added to this queue
+    /// When a pointer set gains new content, it is added to this queue
     private final LinkedHashSet<Object> variables = new LinkedHashSet<>();
 
     private final Map<Object, Set<Offset<Object>>> edges = new HashMap<>();
     private final Map<Object, Set<Location>> addresses = new HashMap<>();
 
-    ///Maps registers to result registers of loads that use the register in their address
+    /// Maps registers to result registers of loads that use the register in their address
     private final Map<Object, List<Offset<Register>>> loads = new HashMap<>();
-    ///Maps registers to matched value expressions of stores that use the register in their address
+    /// Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
-    ///Result sets
+    /// Result sets
     private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
@@ -279,16 +279,18 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         eventAddressSpaceMap.put(e, addresses.build());
     }
 
-    private record Offset<Base>(Base base, int offset, int alignment) {}
+    private record Offset<Base>(Base base, int offset, int alignment) {
+    }
 
-    private record Location(MemoryObject base, int offset) {}
+    private record Location(MemoryObject base, int offset) {
+    }
 
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         final List<Location> result = new ArrayList<>();
         for (Location l : v) {
             if (!l.base.hasKnownSize()) {
                 throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
-                    "You can try the %s alias analysis", FIELD_SENSITIVE, FULL));
+                        "You can try the %s alias analysis", FIELD_SENSITIVE, FULL));
             }
             for (int i = 0; i < div(l.base.getKnownSize(), alignment); i++) {
                 int mapped = l.offset + offset + i * alignment;
@@ -414,14 +416,17 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return new Result(null, r.register, offset, min(l.alignment, r.alignment));
 
         }
+
         @Override
         public Result visitIntToPtrCastExpression(IntToPtrCast expr) {
             return expr.getOperand().accept(this);
         }
+
         @Override
         public Result visitPtrToIntCastExpression(PtrToIntCast expr) {
             return expr.getOperand().accept(this);
         }
+
         @Override
         public Result visitIntUnaryExpression(IntUnaryExpr x) {
             Result i = x.getOperand().accept(this);

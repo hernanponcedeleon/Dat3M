@@ -168,7 +168,7 @@ public class ExprSimplifier extends ExprTransformer {
                 case ULT -> IntegerHelper.ucmp(l1.getValue(), l2.getValue(), bitWidth) < 0;
                 case ULTE -> IntegerHelper.ucmp(l1.getValue(), l2.getValue(), bitWidth) <= 0;
                 default ->
-                    throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
+                        throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
             };
             return expressions.makeValue(cmpResult);
         }
@@ -184,7 +184,7 @@ public class ExprSimplifier extends ExprTransformer {
                 case LT, ULT -> sameObj ? false : null;
                 case LTE, ULTE -> sameObj ? true : null;
                 default ->
-                    throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
+                        throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
             };
 
             if (cmpResult != null) {
@@ -346,7 +346,9 @@ public class ExprSimplifier extends ExprTransformer {
 
         // Optimizations for "x op constant"
         if (offset instanceof IntLiteral lit) {
-            if(lit.isZero()){return base;}
+            if (lit.isZero()) {
+                return base;
+            }
         }
         return expressions.makePtrAdd(base, offset);
     }
@@ -357,31 +359,31 @@ public class ExprSimplifier extends ExprTransformer {
     @Override
     public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
         final Expression sub = expr.getOperand().accept(this);
-        if (sub instanceof IntToPtrCast subT){
+        if (sub instanceof IntToPtrCast subT) {
             final int originalBitWidth = subT.getSourceType().getBitWidth();
             final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
             final int finalBitWidth = expr.getType().getBitWidth();
 
-            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth) {
                 return subT.getOperand();
             }
         }
         if (sub instanceof NullLiteral) {
             return expressions.makeZero(expr.getType());
         }
-    return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
+        return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
     }
 
     // Simplifies (ptr(i) -> int(i)) -> ptr(i).
     @Override
     public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
         final Expression sub = expr.getOperand().accept(this);
-        if (sub instanceof PtrToIntCast subT){
+        if (sub instanceof PtrToIntCast subT) {
             final int originalBitWidth = subT.getSourceType().getBitWidth();
             final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
             final int finalBitWidth = expr.getType().getBitWidth();
 
-            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth) {
                 return subT.getOperand();
             }
         }
@@ -441,7 +443,7 @@ public class ExprSimplifier extends ExprTransformer {
 
         final ImmutableList<Integer> indices = expr.getIndices();
         int indexCursor = 0;
-        while(indexCursor < indices.size() && (inner instanceof ConstructExpr construct)) {
+        while (indexCursor < indices.size() && (inner instanceof ConstructExpr construct)) {
             inner = construct.getOperands().get(indices.get(indexCursor));
             indexCursor++;
         }

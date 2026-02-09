@@ -43,7 +43,7 @@ public class AsmUtils {
     }
 
     // Tells if the registerID is mapped to the returnRegister
-    public static boolean isPartOfReturnRegister(Register returnRegister,int registerID) {
+    public static boolean isPartOfReturnRegister(Register returnRegister, int registerID) {
         return registerID < getNumASMReturnRegisters(returnRegister);
     }
 

@@ -19,18 +19,24 @@ public class PtrExtract extends UnaryExpressionBase<PointerType, ExpressionKind.
                 ExpressionKind.Other.BV_EXTRACT,
                 operand);
         ExpressionHelper.checkExpectedType(operand, PointerType.class);
-        int originalWidth = ((PointerType)operand.getType()).getBitWidth();
+        int originalWidth = ((PointerType) operand.getType()).getBitWidth();
         Preconditions.checkArgument(0 <= lowBit && lowBit <= highBit && highBit < originalWidth);
         this.lowBit = lowBit;
         this.highBit = highBit;
     }
 
-    public int getLowBit() { return lowBit; }
-    public int getHighBit() { return highBit; }
+    public int getLowBit() {
+        return lowBit;
+    }
+
+    public int getHighBit() {
+        return highBit;
+    }
 
     public boolean isExtractingLowBits() {
         return lowBit == 0;
     }
+
     public boolean isExtractingHighBits() {
         return operand.getType() instanceof PointerType t && highBit + 1 == t.getBitWidth();
     }

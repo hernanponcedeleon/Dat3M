@@ -93,7 +93,7 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
-        }else if (type instanceof PointerType pointerType) {
+        } else if (type instanceof PointerType pointerType) {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(pointerType.getBitWidth(), name);
@@ -175,7 +175,6 @@ public class ExpressionEncoder {
     }
 
 
-
     // ====================================================================================
     // Private implementation
 
@@ -184,6 +183,7 @@ public class ExpressionEncoder {
     private class Visitor implements ExpressionVisitor<TypedFormula<?, ?>> {
 
         private Event event;
+
         public void setEvent(Event e) {
             this.event = e;
         }
@@ -584,7 +584,9 @@ public class ExpressionEncoder {
                     final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
                     final IntegerFormulaManager imgr = integerFormulaManager();
                     enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
-                }else{ enc = inner.formula(); }
+                } else {
+                    enc = inner.formula();
+                }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
@@ -592,8 +594,9 @@ public class ExpressionEncoder {
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
-                if (expr.sameWidth()) { enc = innerBv;}
-                else{
+                if (expr.sameWidth()) {
+                    enc = innerBv;
+                } else {
                     enc = expr.isExtension()
                             ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
                             : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
@@ -606,11 +609,11 @@ public class ExpressionEncoder {
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
             if (!context.useIntegers) {
-                int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
+                int ibw = ((IntegerType) expr.getOperand().getType()).getBitWidth();
                 int pbw = expr.getType().getBitWidth();
-                if (ibw<pbw){
+                if (ibw < pbw) {
                     return new TypedFormula<>(expr.getType(), fmgr.getBitvectorFormulaManager()
-                        .extend(((BitvectorFormula) address.formula()), pbw - ibw,false));
+                            .extend(((BitvectorFormula) address.formula()), pbw - ibw, false));
                 }
             }
             return new TypedFormula<>(expr.getType(), address.formula());
@@ -628,10 +631,10 @@ public class ExpressionEncoder {
                     case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
-            }else{
-                final int nullLocation = expr.getLeft() instanceof NullLiteral ? 1 : ( expr.getRight() instanceof NullLiteral ? 2 : 0); // 0 means no nullpointer
-                final BitvectorFormula left =  (BitvectorFormula) encodePointerExpr(expr.getLeft()).formula();
-                final BitvectorFormula right =  (BitvectorFormula) encodePointerExpr(expr.getRight()).formula();
+            } else {
+                final int nullLocation = expr.getLeft() instanceof NullLiteral ? 1 : (expr.getRight() instanceof NullLiteral ? 2 : 0); // 0 means no nullpointer
+                final BitvectorFormula left = (BitvectorFormula) encodePointerExpr(expr.getLeft()).formula();
+                final BitvectorFormula right = (BitvectorFormula) encodePointerExpr(expr.getRight()).formula();
                 final BitvectorFormulaManager bvgr = bitvectorFormulaManager();
                 final BooleanFormula result = switch (expr.getKind()) {
                     case EQ -> switch (nullLocation) {
@@ -648,8 +651,8 @@ public class ExpressionEncoder {
                     });
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
-        }
             }
+        }
 
         @Override
         public TypedFormula<PointerType, ?> visitNullLiteral(NullLiteral lit) {

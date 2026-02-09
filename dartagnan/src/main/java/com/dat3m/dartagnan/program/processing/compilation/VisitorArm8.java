@@ -104,7 +104,7 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()),dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, ARMv8.extractStoreMoFromCMo(mo));
@@ -517,11 +517,13 @@ class VisitorArm8 extends VisitorBase {
         Register regValue = e.getFunction().newRegister(type);
         Load load = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
         Expression expr;
-        if(regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+        if (regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
             expr = expressions.makePtrAdd(regValue, e.getOperand());
-        } else if( regValue.getType() instanceof IntegerType){
+        } else if (regValue.getType() instanceof IntegerType) {
             expr = expressions.makeAdd(regValue, e.getOperand());
-        }else {throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");}
+        } else {
+            throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");
+        }
         Store store = newRMWStoreExclusiveWithMo(address, expr, true, ARMv8.extractStoreMoFromLKMo(mo));
 
         Label label = newLabel("FakeDep");
@@ -535,7 +537,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeCast(expressions.makeBitwiseNEQ(regValue ,unless), dummy.getType())),
+                newLocal(dummy, expressions.makeCast(expressions.makeBitwiseNEQ(regValue, unless), dummy.getType())),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -599,7 +601,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
-        Expression zero = expressions.makeZero((IntegerType)e.getAccessType());
+        Expression zero = expressions.makeZero((IntegerType) e.getAccessType());
         return eventSequence(
                 newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
         );
