@@ -30,6 +30,6 @@ public final class MemoryExtend extends CastExpressionBase<MemoryType, MemoryTyp
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitMemoryExtend(this);
+        return visitor.visitMemoryExtendExpression(this);
     }
 }

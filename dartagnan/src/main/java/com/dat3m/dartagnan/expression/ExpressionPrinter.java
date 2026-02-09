@@ -151,7 +151,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     }
 
     @Override
-    public String visitMemoryExtend(MemoryExtend expr) {
+    public String visitMemoryExtendExpression(MemoryExtend expr) {
         return String.format("zext %s to %s", visit(expr.getOperand()), expr.getTargetType());
     }
 

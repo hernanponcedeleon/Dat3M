@@ -32,7 +32,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
 /*
@@ -105,7 +104,7 @@ public class ExpressionEncoder {
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
         } else if (type instanceof MemoryType memoryType) {
-            assert !context.useIntegers;
+            requireBVEncoding(null);
             variable = bitvectorFormulaManager().makeVariable(memoryType.getBitWidth(), name);
         } else if (type instanceof FloatType floatType) {
             variable = floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
@@ -148,7 +147,7 @@ public class ExpressionEncoder {
     public enum ConversionMode {
         STRICT,                     // No conversion, types must match exactly
         CAST,                       // Immediate cast
-        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory, but source/target type sizes must match
+        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory, but source/target type sizes must match (~bitcast)
         MEMORY_ROUND_TRIP_RELAXED,  // Round-trip over memory, source/target can have mismatching sizes
     }
 
@@ -182,10 +181,22 @@ public class ExpressionEncoder {
         return assignEqual(encodeAt(left, leftAt), encodeAt(right, rightAt));
     }
 
-
-
     // ====================================================================================
     // Private implementation
+
+    private void checkMemoryCastSupport(Type type) {
+        if (!(type instanceof IntegerType) && !(type instanceof FloatType)) {
+            throw new UnsupportedOperationException("Cannot cast between memory and type: " + type);
+        }
+    }
+
+    private void requireBVEncoding(Expression expr) {
+        if (expr != null) {
+            Preconditions.checkState(!context.useIntegers, "Bitvector encoding required for: ", expr);
+        } else {
+            Preconditions.checkState(!context.useIntegers, "Bitvector encoding required.");
+        }
+    }
 
     // TODO: We can probably just return plain formulas and let the outer class
     //  wrap them correctly.
@@ -211,10 +222,11 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<MemoryType, ?> encodeMemoryExpr(Expression expression) {
+            requireBVEncoding(expression);
             Preconditions.checkArgument(expression.getType() instanceof MemoryType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
-            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
+            assert typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<MemoryType, ?>) typedFormula;
         }
 
@@ -584,6 +596,7 @@ public class ExpressionEncoder {
             } else if (floatLiteral.isMinusInf()) {
                 result = fpmgr.makeMinusInfinity(fFType);
             } else {
+                assert floatLiteral.hasFiniteValue();
                 final FloatingPointFormula absVal = fpmgr.makeNumber(floatLiteral.getAbsValue(), fFType, context.roundingModeFloats);
                 result = floatLiteral.getSign() ? fpmgr.negate(absVal) : absVal;
             }
@@ -729,31 +742,29 @@ public class ExpressionEncoder {
         // ====================================================================================
         // Memory type
 
-        private void checkMemoryCastSupport(Type type) {
-            if (!(type instanceof IntegerType) && !(type instanceof FloatType)) {
-                throw new UnsupportedOperationException("Cannot cast between memory and type: " + type);
-            }
-        }
-
         @Override
         public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
-            Preconditions.checkState(!context.useIntegers);
+            requireBVEncoding(expr);
             checkMemoryCastSupport(expr.getSourceType());
 
             final TypedFormula<?, ?> inner = encode(expr.getOperand());
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
 
-            Formula enc = inner.formula();
+            final Formula enc;
             if (inner.getType() instanceof IntegerType iType) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
                 if (extBits > 0) {
                     enc = bvmgr.extend((BitvectorFormula) inner.formula(), extBits, false);
+                } else {
+                    enc = inner.formula();
                 }
             } else if (inner.getType() instanceof FloatType fType) {
                 assert targetType.getBitWidth() == fType.getBitWidth();
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
                 enc = fpmgr.toIeeeBitvector((FloatingPointFormula) inner.formula());
+            } else {
+                throw new UnsupportedOperationException("unreachable");
             }
 
             return new TypedFormula<>(targetType, enc);
@@ -761,21 +772,25 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
-            Preconditions.checkState(!context.useIntegers);
+            requireBVEncoding(expr);
             checkMemoryCastSupport(expr.getTargetType());
 
             final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
 
-            Formula enc = inner.formula();
+            final Formula enc;
             if (targetType instanceof IntegerType bvType) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final int targetSize = bvType.getBitWidth();
                 if (targetSize < expr.getSourceType().getBitWidth()) {
                     enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
+                } else {
+                    enc = inner.formula();
                 }
             } else if (targetType instanceof FloatType fType) {
                 enc = floatingPointFormulaManager().fromIeeeBitvector((BitvectorFormula) inner.formula(), getFloatFormulaType(fType));
+            } else {
+                throw new UnsupportedOperationException("unreachable");
             }
 
             return new TypedFormula<>(targetType, enc);
@@ -784,9 +799,8 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
             Preconditions.checkArgument(!expr.getOperands().isEmpty());
-            Preconditions.checkState(!context.useIntegers);
+            requireBVEncoding(expr);
 
-            // TODO: We just do normal bitvector concatenation for now
             final List<? extends TypedFormula<MemoryType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodeMemoryExpr)
                     .toList();
@@ -800,9 +814,8 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
-            Preconditions.checkState(!context.useIntegers);
+            requireBVEncoding(expr);
 
-            // TODO: We just do normal bitvector extraction for now
             final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
             final Formula enc = bitvectorFormulaManager().extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
 
@@ -810,8 +823,8 @@ public class ExpressionEncoder {
         }
 
         @Override
-        public TypedFormula<?, ?> visitMemoryExtend(MemoryExtend expr) {
-            Preconditions.checkState(!context.useIntegers);
+        public TypedFormula<?, ?> visitMemoryExtendExpression(MemoryExtend expr) {
+            requireBVEncoding(expr);
 
             final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
             final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
@@ -864,7 +877,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFinalMemoryValue(FinalMemoryValue val) {
-            checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
+            Preconditions.checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
             final MemoryObject base = val.getMemoryObject();
             final int offset = val.getOffset();
             Preconditions.checkArgument(base.isInRange(offset), "Array index out of bounds");
