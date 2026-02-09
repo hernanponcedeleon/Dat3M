@@ -209,7 +209,7 @@ public final class ExpressionFactory {
     // Floats
 
     public FloatLiteral makePlusZero(FloatType type) {
-        return makeValue(BigDecimal.ZERO, true, type);
+        return makeValue(BigDecimal.ZERO, false, type);
     }
 
     public FloatLiteral makePlusInf(FloatType type) {
