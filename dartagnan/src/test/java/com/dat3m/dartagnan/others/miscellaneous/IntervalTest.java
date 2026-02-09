@@ -94,6 +94,19 @@ public abstract class IntervalTest {
                     {2,5,-5,-2, IntUnaryOp.MINUS},
                     {-5,2,-2,5, IntUnaryOp.MINUS},
                     {127,129,LB_TOP,UB_TOP,IntUnaryOp.MINUS},
+
+                    // Trailing zeroes
+                    {-5,2,0,8, IntUnaryOp.CTTZ},
+
+                    // Population
+                    {-5,2,0,8, IntUnaryOp.CTPOP},
+
+                    // Leading zeroes
+                    {2,32,2,6, IntUnaryOp.CTLZ},
+                    {-5,-2,0,0, IntUnaryOp.CTLZ},
+                    {-5,2,0,8, IntUnaryOp.CTLZ},
+
+
             });
         }
 

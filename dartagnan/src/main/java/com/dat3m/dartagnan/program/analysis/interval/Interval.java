@@ -140,6 +140,8 @@ final public class Interval {
     private Supplier<Interval> selectUnaryOperatorMethod(IntUnaryOp op) {
         return switch (op) {
             case MINUS -> this::negate;
+            case CTPOP, CTTZ -> this::getBitwidthInterval;
+            case CTLZ -> this::ctlz;
             default -> {
                 unsupportedOperators.add(op);
                 yield null;
@@ -333,6 +335,18 @@ final public class Interval {
         } else {
             return new Interval(upperbound.negate(), lowerbound.negate(), type);
         }
+    }
+
+    private Interval ctlz() {
+        if (doesNotCrossZero()) {
+            return new Interval(IntegerHelper.ctlz(upperbound, type.getBitWidth()), IntegerHelper.ctlz(lowerbound, type.getBitWidth()), type);
+        } else {
+            return getBitwidthInterval();
+        }
+    }
+
+    private Interval getBitwidthInterval() {
+        return new Interval(BigInteger.ZERO, BigInteger.valueOf(type.getBitWidth()), type);
     }
 
     private Interval convertToSignedInterval() {
