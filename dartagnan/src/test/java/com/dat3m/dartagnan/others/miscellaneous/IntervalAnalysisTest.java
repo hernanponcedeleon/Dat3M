@@ -60,11 +60,7 @@ public class IntervalAnalysisTest {
         performStaticWmmAnalyses(task,context,config);
         performIntervalAnalysis(task,context,config);
         return context.get(IntervalAnalysis.class);
-
-
-
     }
-
 
     @Test
     public void straightlinePropagation() throws IOException, InvalidConfigurationException {
@@ -90,15 +86,12 @@ public class IntervalAnalysisTest {
         Interval i1 = new Interval(new BigInteger("42"),new BigInteger("42"),type);
         Interval i2 = new Interval(new BigInteger("7"),new BigInteger("7"),type);
 
-        // r0
         assertEquals(i0, analysis.getIntervalAt(assignment1,r0));
         assertEquals(i0, analysis.getIntervalAt(assignment2,r0));
         assertEquals(i0, analysis.getIntervalAt(exit,r0));
 
-
         assertEquals(i1, analysis.getIntervalAt(assignment2,r1));
         assertEquals(i1, analysis.getIntervalAt(exit,r1));
-
 
         assertEquals(i2, analysis.getIntervalAt(exit,r2));
 
@@ -107,7 +100,6 @@ public class IntervalAnalysisTest {
 
     @Test
     public void twoPredecessors() throws IOException, InvalidConfigurationException {
-
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         IntegerType type = types.getArchType();
@@ -136,14 +128,10 @@ public class IntervalAnalysisTest {
         IntervalAnalysis analysis = runIntervalAnalysis(p,IntervalAnalysisOptions.LOCAL);
         Interval i0 = new Interval(BigInteger.ZERO,new BigInteger("42"),type);
         assertEquals(i0,analysis.getIntervalAt(join,r0));
-
     }
-
-
 
     @Test
     public void threePredecessors() throws IOException, InvalidConfigurationException {
-
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         IntegerType type = types.getArchType();
@@ -177,7 +165,6 @@ public class IntervalAnalysisTest {
         b.addChild(0,exit);
 
         Program p = b.build();
-
         IntervalAnalysis analysis = runIntervalAnalysis(p,IntervalAnalysisOptions.LOCAL);
         Interval i0 = new Interval(BigInteger.ZERO,new BigInteger("42"),type);
         assertEquals(i0,analysis.getIntervalAt(join,r0));
@@ -197,6 +184,7 @@ public class IntervalAnalysisTest {
         Local loc3 = newLocal(r1,r2);
 
         Label exit = b.getOrCreateLabel(0,"exit");
+
         b.addChild(0,loc1);
         b.addChild(0,loc2);
         b.addChild(0,loc3);
@@ -208,9 +196,6 @@ public class IntervalAnalysisTest {
         assertEquals(analysis.getIntervalAt(loc2,r0),expected);
         assertEquals(analysis.getIntervalAt(loc3,r1),expected);
         assertEquals(analysis.getIntervalAt(exit,r1),Interval.getTop(type));
-
-
-
     }
     @Test
     public void evaluateBinaryExpressions() throws IOException, InvalidConfigurationException {
@@ -236,10 +221,7 @@ public class IntervalAnalysisTest {
         Interval r1Expected = new Interval(new BigInteger("2"),new BigInteger("2"),type);
         assertEquals(analysis.getIntervalAt(loc3,r0),r0Expected);
         assertEquals(analysis.getIntervalAt(exit,r1),r1Expected);
-
     }
-    // @Test
-    // public void
 
     @Test
     public void binaryExpressionsWithTopReturnsTop() throws IOException, InvalidConfigurationException {
@@ -265,12 +247,10 @@ public class IntervalAnalysisTest {
         Interval r1Expected = Interval.getTop(type);
         assertEquals(analysis.getIntervalAt(loc3,r0),r0Expected);
         assertEquals(analysis.getIntervalAt(exit,r1),r1Expected);
-
     }
 
     @Test
     public void castExpressionsAlwaysFit() throws IOException, InvalidConfigurationException {
-
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         IntegerType byteType = types.getByteType();
@@ -299,7 +279,6 @@ public class IntervalAnalysisTest {
 
     @Test
     public void truncationCausesOverflow() throws IOException, InvalidConfigurationException {
-
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         IntegerType wordType = types.getIntegerType(16);
@@ -350,11 +329,10 @@ public class IntervalAnalysisTest {
 
     @Test
     public void globalAnalysisFixpointIteration() throws IOException, InvalidConfigurationException {
-        // Create sample program
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         MemoryObject x = b.newMemoryObject("x", 1);
         MemoryObject y = b.newMemoryObject("y", 1);
-	IntegerType type = types.getArchType();
+        IntegerType type = types.getArchType();
         x.setInitialValue(0, expressions.makeZero(type));
         y.setInitialValue(0, expressions.makeZero(type));
         b.newThread(0);
@@ -376,7 +354,6 @@ public class IntervalAnalysisTest {
         Load l1 = newLoad(r1,y);
         Load l2 = newLoad(r2,y);
 
-
         Store s0 = newStore(x,r1);
         Store s1 = newStore(y,expressions.makeValue(1,type));
         Store s2 = newStore(y,expressions.makeValue(2,type));
@@ -385,7 +362,6 @@ public class IntervalAnalysisTest {
         Label exit0 =  b.getOrCreateLabel(0, "exit0");
         Label exit1 =  b.getOrCreateLabel(1, "exit1");
         Label exit2 =  b.getOrCreateLabel(2, "exit2");
-
 
         // T0
         b.addChild(0,l0);
@@ -404,17 +380,11 @@ public class IntervalAnalysisTest {
         b.addChild(2,s3);
         b.addChild(2,exit2);
 
-
-
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p,IntervalAnalysisOptions.GLOBAL);
         assertEquals(new Interval(BigInteger.ZERO,new BigInteger("3"),type), analysis.getIntervalAt(exit0,r0));
         assertEquals(new Interval(BigInteger.ZERO,new BigInteger("3"),type), analysis.getIntervalAt(exit0,r4));
         assertEquals(new Interval(BigInteger.ZERO,new BigInteger("3"),type), analysis.getIntervalAt(exit1,r1));
         assertEquals(new Interval(BigInteger.ZERO,BigInteger.ZERO,type), analysis.getIntervalAt(exit2,r2));
-
-
-
     }
-
 }

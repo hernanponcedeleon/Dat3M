@@ -783,4 +783,3 @@ public class ProgramEncoder implements Encoder {
         return bmgr.and(encoding);
     }
 }
-

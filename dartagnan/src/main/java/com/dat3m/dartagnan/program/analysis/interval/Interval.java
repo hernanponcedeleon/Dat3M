@@ -45,7 +45,6 @@ final public class Interval {
             this.lowerbound = lowerbound;
             this.upperbound = upperbound;
         }
-
     }
 
     public Interval(BigInteger value, IntegerType type) {
@@ -76,7 +75,6 @@ final public class Interval {
         return (this.upperbound.subtract(this.lowerbound)).add(BigInteger.ONE);
     }
 
-
     public Interval join(Interval other) {
         return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), this.getType());    }
 
@@ -84,13 +82,9 @@ final public class Interval {
         return this.equals(Interval.getTop(type));
     }
 
-
     public boolean isSignInsensitive() {
         return allNegative() || (allNonNegative() && !crossesSignBoundary());
     }
-
-
-
 
     public Interval applyOperator(IntBinaryOp op, Interval other) {
         UnaryOperator<Interval> opFunc = selectBinaryOperatorMethod(op);
@@ -169,9 +163,9 @@ final public class Interval {
         BigInteger mul2 =  lb1.multiply(ub2);
         BigInteger mul3 =  ub1.multiply(lb2);
         BigInteger mul4 =  ub1.multiply(ub2);
+
         return new Interval(mul1.min(mul2).min(mul3).min(mul4), mul1.max(mul2).max(mul3).max(mul4), type);
     }
-
 
     private Interval sdivide(Interval other) {
         if (this.isSignInsensitive() && other.isSignInsensitive()) {
@@ -188,7 +182,6 @@ final public class Interval {
         }
     }
 
-
     private Interval udivide(Interval other) {
         if (this.isSignInsensitive() && other.isSignInsensitive()) {
             Interval unsignedInterval1 = this.convertToUnsignedInterval();
@@ -200,7 +193,6 @@ final public class Interval {
     }
 
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
-
         if (denominatorInterval.doesNotCrossZero()) {
             BigInteger numLb = numeratorInterval.lowerbound;
             BigInteger numUb = numeratorInterval.upperbound;
@@ -218,8 +210,6 @@ final public class Interval {
         }
     }
 
-
-
     private BigInteger getBiggerBitLength(BigInteger x, BigInteger y) {
         int lengthX = (x.signum() > 0) ? x.bitLength() : x.bitLength() + 1;
         int lengthY = (y.signum() > 0) ? y.bitLength() : y.bitLength() + 1;
@@ -227,16 +217,15 @@ final public class Interval {
         return (lengthX >= lengthY) ? x : y;
     }
 
-
     // Algorithms and relations based on:
     // Hacker's Delight second edition
     // Author Henry S. Warren, Jr.
     // Chapter 4-3
     private BigInteger minOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
         BigInteger largestBitLength = getBiggerBitLength(lb1, lb2);
-
         BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
         BigInteger temp;
+
         while (!m.equals(BigInteger.ZERO)) {
             if (!(lb1.not().and(lb2).and(m).equals(BigInteger.ZERO))) {
                 temp = (lb1.or(m).and(m.negate()));
@@ -254,14 +243,13 @@ final public class Interval {
             m = m.shiftRight(1);
         }
         return lb1.or(lb2);
-
     }
-
 
     private BigInteger maxOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
         BigInteger largestBitLength = getBiggerBitLength(ub1, ub2);
         BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
         BigInteger temp;
+
         while (!m.equals(BigInteger.ZERO)) {
             if (!ub1.and(ub2).and(m).equals(BigInteger.ZERO)) {
                 temp = (ub1.subtract(m)).or(m.subtract(BigInteger.ONE));
@@ -294,7 +282,6 @@ final public class Interval {
         if (ub2.signum() > 0) {
             signs |= 0b0001;
         }
-
         return signs;
     }
 
@@ -320,8 +307,6 @@ final public class Interval {
         };
     }
 
-
-
     private Interval or(Interval other) {
         return doOR(this.lowerbound,
                 other.lowerbound,
@@ -329,13 +314,13 @@ final public class Interval {
                 other.upperbound);
     }
 
-
     private Interval and(Interval other) {
         Interval orInterval = doOR(
                 this.upperbound.not(),
                 other.upperbound.not(),
                 this.lowerbound.not(),
                 other.lowerbound.not());
+
         return new Interval(orInterval.upperbound.not(),
                 orInterval.lowerbound.not(),
                 type);
@@ -348,7 +333,6 @@ final public class Interval {
             return new Interval(upperbound.negate(), lowerbound.negate(), type);
         }
     }
-
 
     private Interval convertToSignedInterval() {
         int width = this.type.getBitWidth();
@@ -366,9 +350,6 @@ final public class Interval {
                 type);
     }
 
-
-
-
     @Override
     public boolean equals(Object other) {
         if (other == null) {
@@ -380,7 +361,6 @@ final public class Interval {
         final Interval otherInterval = (Interval) other;
         return (otherInterval.lowerbound.equals(this.lowerbound) && otherInterval.upperbound.equals(this.upperbound));
     }
-
 
     @Override
     public String toString() {

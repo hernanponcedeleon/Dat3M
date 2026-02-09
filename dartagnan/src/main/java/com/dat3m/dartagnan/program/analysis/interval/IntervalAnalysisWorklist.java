@@ -47,7 +47,6 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         this.program = program;
     }
 
-
     @Override
     public Interval getIntervalAt(Event event, Register r) throws RuntimeException {
         if (r.getType() instanceof IntegerType itype) {
@@ -73,6 +72,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     // Helper class to carry information about a register and its computed interval.
 
     static protected class RegisterState {
+
         public Register reg;
         public Interval interval;
 
@@ -138,6 +138,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     // Global analysis may require multiple
     protected void computeIntervals(Program program) {
         Map<Event, Map<Register, Interval>> prevEventStates;
+
         do {
             prevEventStates = new HashMap<>(eventStates);
             for (Thread thread : program.getThreads()) {
@@ -145,7 +146,6 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
                     computeIntervals(thread);
                 }
             }
-
         } while (!prevEventStates.equals(eventStates));
 
         if (!unsupportedExpressions.isEmpty() && logger.isWarnEnabled()) {
@@ -163,14 +163,10 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         for (Register r : parameters) {
             if (r.getType() instanceof IntegerType itype) {
                 paramRegisterStates.put(r, Interval.getTop(itype));
-
             }
         }
         eventStates.put(function.getEntry().getSuccessor(), paramRegisterStates);
         processControlFlow(flowList);
-
-
-
     }
 
     // Process the control flow of a thread.
@@ -187,12 +183,13 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
                     if (!currentEventState.containsKey(r) && r.getType() instanceof IntegerType itype) {
                         currentEventState.put(r, Interval.getTop(itype));
                     }
-
                 }
             }
+
             // Event State of the successor node
             // Modified state based on new information from the current node
             Map<Register, Interval> currentEventStateCopy = new HashMap<>(eventStates.get(current));
+
            // Apply transfer function
             RegisterState state = analyseEvent(current, currentEventStateCopy);
             if (state != null) {
@@ -203,10 +200,12 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             if (current instanceof CondJump cj) {
                 Label l = cj.getLabel();
                 Map<Register, Interval> labelState = eventStates.getOrDefault(l, new HashMap<>());
+
                 // Unconditional jump
                 if (cj.isGoto()) {
                     eventStates.put(l, joinStates(currentEventStateCopy, labelState));
                 } else {
+
                     // Conditional jump can take two paths
                     Event successor = cj.getSuccessor();
                     Map<Register, Interval> successorState = eventStates.getOrDefault(successor, new HashMap<>());
@@ -220,17 +219,15 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
                     eventStates.put(successor, joinStates(currentEventStateCopy, successorState));
                 }
             }
-
         }
-
     }
-
 
     // Visits expressions and has a final result interval as a field
     protected static final class AbstractExpressionEvaluator implements ExpressionVisitor<Interval> {
         private final Map<Register, Interval> eventState;
         private final Interval resultInterval;
         private final IntegerType type;
+
         public Interval getResultInterval() {
             return resultInterval;
         }
@@ -253,7 +250,6 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         @Override
         public Interval visitRegister(Register regExpr) {
             Interval registerInterval = eventState.getOrDefault(regExpr, Interval.getTop(type));
-            // Check for overflow
             return new Interval(registerInterval.getLowerbound(), registerInterval.getUpperbound(), type);
         }
 
@@ -261,9 +257,11 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         public Interval visitIntSizeCastExpression(IntSizeCast cast) {
             Interval operandInterval = cast.getOperand().accept(this);
             IntegerType targetType = cast.getTargetType();
+
             if (!cast.preservesSign() && cast.isExtension()) {
                 return Interval.getTop(targetType);
             } else {
+
                 // Interval constructor to return top with eventual overflow regarding truncation.
                 return new Interval(operandInterval.getLowerbound(), operandInterval.getUpperbound(), targetType);
             }
@@ -274,6 +272,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             IntBinaryOp op = binExpr.getKind();
             Interval intervalLeft = binExpr.getLeft().accept(this);
             Interval intervalRight = binExpr.getRight().accept(this);
+
             return intervalLeft.applyOperator(op, intervalRight);
         }
 
@@ -286,32 +285,34 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         public Interval visitITEExpression(ITEExpr ite) {
             Interval trueInterval = ite.getTrueCase().accept(this);
             Interval falseInterval = ite.getFalseCase().accept(this);
+
             return trueInterval.join(falseInterval);
         }
     }
-
-
 
     private Map<Register, Interval> joinStates(Map<Register, Interval> s1, Map<Register, Interval> s2) {
         Map<Register, Interval> lessIntervals = (s1.size() <= s2.size())
                 ? new HashMap<>(s1) : new HashMap<>(s2);
         Map<Register, Interval> moreIntervals = (s1.size() > s2.size())
                 ? new HashMap<>(s1) : new HashMap<>(s2);
+
         for (var pair : lessIntervals.entrySet()) {
             Register key = pair.getKey();
             if (moreIntervals.containsKey(key)) {
+
                 // Join same registers
                 lessIntervals.replace(key, pair.getValue().join(moreIntervals.get(key)));
                 moreIntervals.remove(key);
             }
         }
+
         // Add remaining registers
         lessIntervals.putAll(moreIntervals);
         return lessIntervals;
     }
 
-
     // For debugging
+    // TODO: Probably can be removed in final version
     @SuppressWarnings("unused")
     private void logIntervals() {
         for (Thread t : program.getThreads()) {
@@ -326,5 +327,4 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             System.out.println("===================================\n");
         }
     }
-
 }

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -30,14 +29,15 @@ public abstract class IntervalTest {
         @Test
         public void boundOrder() {
             assertThrows(IllegalArgumentException.class, () -> new Interval(BigInteger.ONE,BigInteger.ZERO,byteType));
-
         }
     }
 
     @RunWith(Parameterized.class)
     public static class IntervalInitialisationTest {
+
         Interval result;
         Interval expected;
+
         public IntervalInitialisationTest(int lb,
                                           int ub,
                                           int expectedLb,
@@ -47,18 +47,18 @@ public abstract class IntervalTest {
             this.expected = new Interval(BigInteger.valueOf(expectedLb), BigInteger.valueOf(expectedUb), byteType);
         }
 
-
-
         @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}")
         public static Iterable<Object[]> data() {
             return Arrays.asList(new Object[][]{
-                    // Simple success cases
                     {1, 5, 1, 5},
                     {-2, 2, -2, 2},
+
                     // Lowerbound does not fit in bitwidth
                     {-129, 0, LB_TOP, UB_TOP},
+
                     // Upperbound does not fit in bitwidth
                     {0, 256, LB_TOP, UB_TOP},
+
                     // Does not have a signed or unsigned interpretation
                     {-1, 128, LB_TOP, UB_TOP},
             });
@@ -69,7 +69,6 @@ public abstract class IntervalTest {
             assertEquals(result, expected);
         }
     }
-
 
     @RunWith(Parameterized.class)
     public static class IntervalUnaryOperationsTest {
@@ -106,10 +105,8 @@ public abstract class IntervalTest {
 
     }
 
-
     @RunWith(Parameterized.class)
     public static class IntervalBinaryOperationsTest {
-
 
         private final Interval operand1;
         private final Interval operand2;
@@ -133,6 +130,7 @@ public abstract class IntervalTest {
         @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}, {4}, {5}, {6}")
         public static Iterable<Object[]> data() {
             return Arrays.asList(new Object[][]{
+
                     // Addition
                     {1, 5, 2, 6, 3, 11, ADD},
 
@@ -152,25 +150,26 @@ public abstract class IntervalTest {
 
                     // Signed division
                     {1, 5, 2, 6, 0, 2, DIV},
+
                     // Signed division Asymmetry edge case
                     {-128, -128, -1, -1, LB_TOP, UB_TOP, DIV},
+
                     // Signed division by zero
                     {1, 5, -1, 1, LB_TOP, UB_TOP, DIV},
 
                     // Unsigned Division
                     {-1, -1, 1, 1, 255, 255, UDIV},
 
-
-                    //Overflow addition
+                    // Overflow addition
                     {-128, 127, 1, 1, LB_TOP, UB_TOP, ADD},
 
-                    //Overflow subtraction
+                    // Overflow subtraction
                     {-128, 127, 1, 1, LB_TOP, UB_TOP, SUB},
 
-                    //Overflow Multiplication
+                    // Overflow Multiplication
                     {-128, 127, 2, 2, LB_TOP, UB_TOP, MUL},
 
-                    //OR Cases
+                    // OR Cases
                     {2, 4, 9, 20, 10, 23, OR},
                     {-4, -2, -20, -9, -4, -1, OR},
                     {-4, -2, 9, 20, -4, -1, OR},
@@ -180,7 +179,7 @@ public abstract class IntervalTest {
                     {-4, 2, 9, 20, -4, 22, OR},
                     {2, 4, -9, 20, -9, 23, OR},
 
-                    //AND
+                    // AND
                     {2, 4, 9, 20, 0, 4, AND},
                     {-4, -2, 9, 20, 8, 20, AND},
                     {-4, -2, -9, 20, -12, 20, AND},

@@ -22,7 +22,6 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     private final RelationAnalysis relationAnalysis;
     private final VerificationTask task;
 
-    
     private IntervalAnalysisGlobal(Program program, Context analysisContext, VerificationTask task) {
         super(program);
         this.relationAnalysis = analysisContext.requires(RelationAnalysis.class);
@@ -53,7 +52,6 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
         }
     }
 
-
     // Use the Relation Analysis to calculate the possible store from which a load can read from.
     private Set<Store> getPotentialStores(Load event) {
         Set<Event> potentialStoreEvents =
@@ -82,6 +80,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     protected RegisterState analyseLoad(Load l, Map<Register, Interval> eventState) {
         Set<Store> stores = getPotentialStores(l);
         Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
+
         return new RegisterState(l.getResultRegister(), interval);
     }
 }

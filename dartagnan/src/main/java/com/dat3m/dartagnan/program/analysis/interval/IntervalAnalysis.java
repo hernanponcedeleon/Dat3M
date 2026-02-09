@@ -63,7 +63,6 @@ public interface IntervalAnalysis {
 
     Interval getIntervalAt(Event event, Register r) throws RuntimeException;
 
-
     /**
      *  Initialises an analysis instance based on configuration options (default: NAIVE)
      *
@@ -79,7 +78,6 @@ public interface IntervalAnalysis {
      *  A completed interval analysis.
      * @throws InvalidConfigurationException
      */
-
 
     static IntervalAnalysis fromConfig(Program program, Context analysisContext, VerificationTask task, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
@@ -98,7 +96,6 @@ public interface IntervalAnalysis {
         return analysis;
     }
 
-
     @Options
     class Config {
         @Option(
@@ -112,18 +109,16 @@ public interface IntervalAnalysis {
             config.inject(this);
         }
     }
-
-
-
+    // Iterate over the program.
+    // For each register check if their bound is reduced.
+    // Only executed if logger.isInfoEnabled = true
+    // Rounds half up for decimal values.
     private void computeAnalysisMetrics(Program program) {
-        // Iterate over the program.
-        // For each register check if their bound is reduced.
-        // Only executed if logger.isInfoEnabled = true
-        // Rounds half up for decimal values.
         double totalRegReads = 0;
         double totalRegWrites = 0;
         double totalIntervalsReduced = 0;
         double totalIntervalsTop = 0;
+
         BigDecimal totalReducedIntervalSize = BigDecimal.ZERO;
         for (Event e : program.getThreadEvents()) {
             if (e instanceof RegReader rr) {
@@ -143,7 +138,6 @@ public interface IntervalAnalysis {
                             totalReducedIntervalSize = totalReducedIntervalSize.add(new BigDecimal(computedInterval.size()));
                         }
                     }
-
                 }
             } else if (e instanceof RegWriter) {
                 totalRegWrites++;
@@ -181,14 +175,11 @@ public interface IntervalAnalysis {
             df.format(percentageIntervalsTop),
             averageReducedIntervalSize);
 
-
         Set<Object> unsupportedOperators = Interval.getUnsupportedOperatorsFound();
         if (!unsupportedOperators.isEmpty()) {
             if (logger.isWarnEnabled()) {
                 logger.warn("Unsupported operators found: {}", Interval.getUnsupportedOperatorsFound());
-
             }
-
         }
     }
 }
