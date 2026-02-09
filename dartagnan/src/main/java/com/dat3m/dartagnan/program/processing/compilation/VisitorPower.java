@@ -369,7 +369,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister,e.getOperator() ,e.getOperand()),dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister,e.getOperator() ,e.getOperand()));
 
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = Power.newRMWStoreConditional(address, dummyReg, true);
@@ -765,7 +765,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()),dummy.getType())),
+                newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
                 fakeCtrlDep,
@@ -784,7 +784,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()), true);
+        Store store = Power.newRMWStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -868,7 +868,7 @@ public class VisitorPower extends VisitorBase {
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address);
-        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
+        Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = Power.newRMWStoreConditional(address, dummy, true);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");

@@ -242,16 +242,6 @@ public final class ExpressionFactory {
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntBinaryfromInts(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntBinaryfromInts(makePtrToIntCast(leftOperand, archType), operator, rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeIntBinaryfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, archType));
-        }
-        return new IntBinaryExpr(leftOperand, operator, rightOperand);
-    }
-
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
         final Type sourceType = operand.getType();
 
