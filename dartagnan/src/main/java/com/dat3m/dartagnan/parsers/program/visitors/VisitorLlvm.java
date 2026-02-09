@@ -741,11 +741,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression comparator = visitTypeValue(ctx.typeValue(1));
         final Expression substitute = visitTypeValue(ctx.typeValue(2));
         check(comparator.getType().equals(substitute.getType()), "Type mismatch for comparator and new in %s.", ctx);
-        final boolean weak = ctx.weak != null;
+        final boolean strong = ctx.weak == null;
         final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
         final Register register = currentRegisterName == null ? null :
                 getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
-        block.events.add(Llvm.newCompareExchange(register, address, comparator, substitute, mo, weak));
+        block.events.add(Llvm.newCompareExchange(register, address, comparator, substitute, mo, strong));
         return register;
     }
 
