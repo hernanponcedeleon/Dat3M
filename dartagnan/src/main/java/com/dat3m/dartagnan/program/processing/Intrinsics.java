@@ -668,15 +668,15 @@ public class Intrinsics {
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type actualSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
         final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_wait", mutexType);
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_cond_wait", actualSuccessType);
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_wait", oldValueAndSuccessType);
         return eventSequence(
                 // Allow other threads to access the condition variable.
                 newPthreadUnlock(oldValueRegister, lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                newPthreadLock(actualSuccess, lockAddress),
+                newPthreadLock(oldValueAndSuccess, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -689,15 +689,15 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type actualSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
         final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", mutexType);
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", actualSuccessType);
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", oldValueAndSuccessType);
         return eventSequence(
                 // Allow other threads to access the condition variable.
                 newPthreadUnlock(oldValueRegister, lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                newPthreadLock(actualSuccess, lockAddress),
+                newPthreadLock(oldValueAndSuccess, lockAddress),
                 assignPosixError(errorRegister, PosixErrorCode.ETIMEDOUT)
         );
     }
@@ -791,11 +791,11 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type actualSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_lock", actualSuccessType);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_lock", oldValueAndSuccessType);
         final Expression lockAddress = call.getArguments().get(0);
         return eventSequence(
-                newPthreadLock(actualSuccess, lockAddress),
+                newPthreadLock(oldValueAndSuccess, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -804,12 +804,12 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final Type actualSuccessType = types.getAggregateType(List.of(getPthreadMutexType(), types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", actualSuccessType);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getPthreadMutexType(), types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", oldValueAndSuccessType);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression fail = expressions.makeNot(expressions.makeExtract(actualSuccess, 1));
+        final Expression fail = expressions.makeNot(expressions.makeExtract(oldValueAndSuccess, 1));
         return List.of(
-                newPthreadTryLock(actualSuccess, lockAddress),
+                newPthreadTryLock(oldValueAndSuccess, lockAddress),
                 EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
@@ -860,10 +860,10 @@ public class Intrinsics {
         return Arrays.asList(load, check, store);
     }
 
-    private Event newPthreadTryLock(Register actualSuccess, Expression lockAddress) {
+    private Event newPthreadTryLock(Register oldValueAndSuccess, Expression lockAddress) {
         final Expression unlocked = expressions.makeZero(getPthreadMutexType());
         final Expression locked = expressions.makeOne(getPthreadMutexType());
-        return Llvm.newCompareExchange(actualSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
+        return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> newPthreadLock(Register oldValueSuccessRegister, Expression address) {
@@ -914,12 +914,12 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_rwlock_wrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type actualSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newRegister(actualSuccessType);
-        final Expression successResult = expressions.makeExtract(actualSuccess, 1);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
+        final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
                 // Write-lock only if unlocked.
-                newRwlockTryWrlock(actualSuccess, lockAddress),
+                newRwlockTryWrlock(oldValueAndSuccess, lockAddress),
                 // Deadlock if a violation occurred in another thread.
                 EventFactory.newAbortIf(expressions.makeNot(successResult)),
                 assignSuccess(errorRegister)
@@ -930,41 +930,41 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_rwlock_trywrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type actualSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newRegister(actualSuccessType);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
-        final Expression successResult = expressions.makeExtract(actualSuccess, 1);
+        final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
                 // Write-lock only if unlocked.
-                newRwlockTryWrlock(actualSuccess, lockAddress),
+                newRwlockTryWrlock(oldValueAndSuccess, lockAddress),
                 // Indicate success by returning zero.
                 EventFactory.Svcomp.newNonDetChoice(errorRegister),
                 EventFactory.newAssume(expressions.makeEQ(successResult, expressions.makeEQ(errorRegister, success)))
         );
     }
 
-    private Event newRwlockTryWrlock(Register actualSuccess, Expression lockAddress) {
+    private Event newRwlockTryWrlock(Register oldValueAndSuccess, Expression lockAddress) {
         final Expression unlocked = getRwlockUnlockedValue();
         final Expression locked = getRwlockWriteLockedValue();
-        return Llvm.newCompareExchange(actualSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
+        return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_rdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type actualSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_rdlock", actualSuccessType);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_rdlock", oldValueAndSuccessType);
         final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression oldValueResult = expressions.makeExtract(actualSuccess, 0);
-        final Expression successResult = expressions.makeExtract(actualSuccess, 1);
+        final Expression oldValueResult = expressions.makeExtract(oldValueAndSuccess, 0);
+        final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         final Expression wasWriteLocked = expressions.makeEQ(oldValueResult, getRwlockWriteLockedValue());
         return List.of(
                 // Expect any other value than write-locked.
                 EventFactory.Svcomp.newNonDetChoice(expectedRegister),
                 EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(actualSuccess, lockAddress, expectedRegister),
+                newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successResult, wasWriteLocked)),
                 // Deadlock if a violation occurred in another thread.
@@ -976,20 +976,20 @@ public class Intrinsics {
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type actualSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
-        final Register actualSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_try_rdlock", actualSuccessType);
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
+        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_try_rdlock", oldValueAndSuccessType);
         final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
-        final Expression actualResult = expressions.makeExtract(actualSuccess, 0);
-        final Expression successResult = expressions.makeExtract(actualSuccess, 1);
+        final Expression actualResult = expressions.makeExtract(oldValueAndSuccess, 0);
+        final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         final Expression wasWriteLocked = expressions.makeEQ(actualResult, getRwlockWriteLockedValue());
         return List.of(
                 // Expect any other value than write-locked.
                 EventFactory.Svcomp.newNonDetChoice(expectedRegister),
                 EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(actualSuccess, lockAddress, expectedRegister),
+                newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successResult, wasWriteLocked)),
                 // Indicate success with zero.
@@ -998,12 +998,12 @@ public class Intrinsics {
         );
     }
 
-    private Event newRwlockTryRdlock(Register actualSuccess, Expression lockAddress, Expression expected) {
+    private Event newRwlockTryRdlock(Register oldValueAndSuccess, Expression lockAddress, Expression expected) {
         final Expression wasUnlocked = expressions.makeEQ(expected, getRwlockUnlockedValue());
         final Expression lockedOnce = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
         final Expression lockedMore = expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()));
         final Expression locked = expressions.makeITE(wasUnlocked, lockedOnce, lockedMore);
-        return Llvm.newCompareExchange(actualSuccess, lockAddress, expected, locked, Tag.C11.MO_ACQUIRE, true);
+        return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, expected, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {

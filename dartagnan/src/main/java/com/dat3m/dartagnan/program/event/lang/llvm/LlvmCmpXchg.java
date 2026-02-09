@@ -9,12 +9,12 @@ import com.google.common.base.Preconditions;
 
 public class LlvmCmpXchg extends RMWCmpXchgBase {
 
-    public LlvmCmpXchg(Register oldValueSuccessRegister, Expression address, Expression expectedValue,
+    public LlvmCmpXchg(Register oldValueAndSuccessRegister, Expression address, Expression expectedValue,
             Expression value, String mo, boolean isStrong) {
-        super(oldValueSuccessRegister, address, expectedValue, value, isStrong, mo);
+        super(oldValueAndSuccessRegister, address, expectedValue, value, isStrong, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
-        final var type = oldValueSuccessRegister.getType() instanceof AggregateType t ? t : null;
-        Preconditions.checkArgument(type != null && type.getFields().size() == 2,
+        Preconditions.checkArgument(oldValueAndSuccessRegister.getType() instanceof AggregateType t
+                        && t.getFields().size() == 2,
                 "Non-aggregate result register of LlvmCmpXchg.");
     }
 
