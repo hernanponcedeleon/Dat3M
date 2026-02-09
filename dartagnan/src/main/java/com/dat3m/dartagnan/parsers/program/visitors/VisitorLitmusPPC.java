@@ -197,7 +197,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Expression expr = cmp == null ?
             // In PPC, when there is no previous comparison instruction,
             // the value of r0 is used as the branching condition
-            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
+            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0",archType)) :
             expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
