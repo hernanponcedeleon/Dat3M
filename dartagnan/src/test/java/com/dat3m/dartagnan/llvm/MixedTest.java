@@ -67,6 +67,8 @@ public class MixedTest extends AbstractCTest {
             {"mixed-local1", ARM8, PASS},
             {"mixed-local2", ARM8, FAIL},
             {"store-to-load-forwarding1", ARM8, FAIL},
+            {"floats_msa_1", ARM8, PASS},
+            {"floats_msa_2", ARM8, PASS},
         });
     }
 

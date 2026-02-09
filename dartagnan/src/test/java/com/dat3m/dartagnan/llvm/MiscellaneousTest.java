@@ -108,12 +108,16 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"floats_6_f", IMM, FAIL, 1},
                 {"floats_7", IMM, PASS, 1},
                 {"floats_8", IMM, PASS, 1},
-                // {"floats_9", IMM, PASS, 1}, TODO: Z3 is wrong on fmax(-0.0, +0.0): it can return -0.0 and +0.0
+                {"floats_9", IMM, PASS, 1},
                 {"floats_10", IMM, PASS, 1},
                 {"floats_11", IMM, PASS, 1},
                 {"floats_12", IMM, PASS, 1},
                 {"floats_13", IMM, PASS, 1},
                 {"floats_14", IMM, PASS, 1},
+                {"floats_15", IMM, PASS, 1},
+                {"floats_15_f", IMM, FAIL, 1},
+                {"floats_16", IMM, PASS, 1},
+                {"floats_16_f", IMM, FAIL, 1},
         });
     }
 
