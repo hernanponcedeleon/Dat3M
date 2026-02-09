@@ -22,8 +22,8 @@ public abstract class IntervalTest {
 
     static TypeFactory types = TypeFactory.getInstance();
     static IntegerType byteType = types.getIntegerType(8);
-    final static BigInteger LB_TOP = Interval.getTop(byteType).getLowerbound();
-    final static BigInteger UB_TOP = Interval.getTop(byteType).getUpperbound();
+    final static int LB_TOP = Interval.getTop(byteType).getLowerbound().intValue();
+    final static int UB_TOP = Interval.getTop(byteType).getUpperbound().intValue();
 
     public static class IntervalInitialisationOrderingTest {
         @Test
