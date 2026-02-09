@@ -441,7 +441,6 @@ public final class ExpressionFactory {
     }
 
 
-
     public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
         return new PtrToIntCast(type, pointer);
     }

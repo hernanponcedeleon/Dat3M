@@ -465,7 +465,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getOptionalReturnRegister();
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = programBuilder.makeIntCmpWithIntOutput(v1, ctx.opCompare().op, v2);
+        Expression result = expressions.makeIntCmp(v1, ctx.opCompare().op, v2);
         return assignToReturnRegister(register, result);
     }
 

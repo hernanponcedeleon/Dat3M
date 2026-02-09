@@ -134,16 +134,6 @@ public class ProgramBuilder {
         program.setFilterSpecification(ass);
     }
 
-    public Expression makeIntCmpWithIntOutput(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpWithIntOutput(expressions.makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpWithIntOutput(leftOperand, operator, expressions.makePtrToIntCast(rightOperand, types.getArchType()));
-        }
-        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Threads and Functions
 
