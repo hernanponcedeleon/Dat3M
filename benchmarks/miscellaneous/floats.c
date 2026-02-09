@@ -90,14 +90,10 @@ int main(void) {
     }
 
 #elif TEST_ID == 9
-    /* --- fmin / fmax corner cases --- */
+    /* --- fmin / fmax and NaN --- */
     if (isnan(d)) {
         assert(fmin(d, 1.0) == 1.0);
         assert(fmax(d, 1.0) == 1.0);
-    }
-    if (d == 0.0 && signbit(d)) {
-        double m = fmax(d, +0.0);
-        assert(!signbit(m));
     }
 
 #elif TEST_ID == 10
@@ -147,6 +143,35 @@ int main(void) {
         double x = d / d;
         assert(isnan(x));
     }
+
+ #elif TEST_ID == 15
+     /* --- fmin vs. fmax and signed zero --- */
+     double d2 = __VERIFIER_nondet_double();
+     if (!isnan(d) && !isnan(d2)) {
+         double min = fmin(d, d2);
+         double max = fmax(d, d2);
+         assert (min <= max);
+
+         int maxNegImpliesMinNeg = !signbit(max) || signbit(min);
+         assert (min == 0 || maxNegImpliesMinNeg);
+         #ifdef FAIL
+             assert (maxNegImpliesMinNeg);
+         #endif
+     }
+
+#elif TEST_ID == 16
+    /* --- fmax and signed zero corner case --- */
+    double d2 = __VERIFIER_nondet_double();
+    if (!isnan(d) && !isnan(d2)) {
+        assert (fmax(d, d2) == fmax(d, d2));
+        assert (signbit(fmax(d, d2)) == signbit(fmax(d, d2)));
+
+        assert (fmax(d, d2) == fmax(d2, d));
+ #ifdef FAIL
+        assert (signbit(fmax(d, d2)) == signbit(fmax(d2, d)));
+ #endif
+    }
+
 
 #else
 #error "Unknown TEST_ID"
