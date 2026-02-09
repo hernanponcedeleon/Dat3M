@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.interval.Interval;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -770,11 +771,12 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeBounds() {
         List<BooleanFormula> encoding = new ArrayList<>();
+        IntervalAnalysis intervalAnalysis = context.getAnalysisContext().requires(IntervalAnalysis.class);
         for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             for (Register.Read read : e.getRegisterReads()) {
                 Register r = read.register();
                 if (r.getType() instanceof IntegerType) {
-                    Interval interval = context.getAnalysisContext().requires(IntervalAnalysis.class).getIntervalAt(e, r);
+                    Interval interval = intervalAnalysis.getIntervalAt(e, r);
                     encoding.addAll(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
                 }
             }
