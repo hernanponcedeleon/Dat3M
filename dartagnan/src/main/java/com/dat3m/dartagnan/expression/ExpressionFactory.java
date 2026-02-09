@@ -16,12 +16,11 @@ import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import java.util.Stack;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
@@ -330,36 +329,29 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
-    private List<Type> unpackTypeHelper(Type type){
-        if(type instanceof AggregateType ag){
-            return ag.getFields().stream().map(TypeOffset::type).toList();
-        }
-        if(type instanceof ArrayType ar){
-            return new ArrayList<>(Collections.nCopies(ar.getNumElements(),ar.getElementType()));
-        }
-        return List.of(type);
-    }
-    public List<Type> unpackTypes(List<Type> type){
-        List<Type> newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
-        List<Type> oldResult = type;
-        while(!newResult.equals(oldResult)){
-            // fixme way simpler using recursion!
-            oldResult = newResult;
-            newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
-        }
-        return newResult;
-    }
-    public List<Type> unpackType(Type type){
-        List<Type> list = List.of(type);
-        return unpackTypes(list);
-    }
-
     public Expression makeConstruct(Type type, List<? extends Expression> arguments) {
         return new ConstructExpr(type, arguments);
     }
     public Expression makeCompatibilityConstruct(Type type, List<? extends Expression> arguments) {
         assert ExpressionHelper.isAggregateLike(type);
-        List<Type> types = unpackType(type);
+        List<Type> types = new ArrayList<>();
+        Stack<Type> stack = new Stack<>();
+        stack.push(type);
+        while (!stack.isEmpty()) {
+            Type t = stack.pop();
+            if (t instanceof AggregateType ag) {
+                for (TypeOffset f : ag.getFields()) {
+                    stack.push(f.type());
+                }
+            } else if (t instanceof ArrayType ar) {
+                for (int i = 0; i < ar.getNumElements(); i++) {
+                    stack.push(ar.getElementType());
+                }
+            } else {
+                types.add(t);
+            }
+        }
+        Collections.reverse(types);
         List<Expression> newArguments = new ArrayList<>();
         assert types.size() == arguments.size();
         for (int i = 0; i < types.size(); ++i) {
