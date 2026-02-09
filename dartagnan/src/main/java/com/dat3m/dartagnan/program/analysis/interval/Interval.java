@@ -76,7 +76,8 @@ final public class Interval {
     }
 
     public Interval join(Interval other) {
-        return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), this.getType());    }
+        return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), this.getType());
+    }
 
     public boolean isTop() {
         return this.equals(Interval.getTop(type));
