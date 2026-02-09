@@ -82,7 +82,7 @@ class VisitorTso extends VisitorBase {
     }
 
     @Override
-    public List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 

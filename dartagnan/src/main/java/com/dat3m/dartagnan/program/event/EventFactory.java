@@ -480,9 +480,9 @@ public class EventFactory {
             return new LlvmXchg(register, address, value, mo);
         }
 
-        public static LlvmCmpXchg newCompareExchange(Register oldValueSuccess, Expression address, Expression expected,
+        public static LlvmCmpXchg newCompareExchange(Register actualSuccess, Expression address, Expression expected,
                 Expression newValue, String mo, boolean strong) {
-            return new LlvmCmpXchg(oldValueSuccess, address, expected, newValue, mo, strong);
+            return new LlvmCmpXchg(actualSuccess, address, expected, newValue, mo, strong);
         }
 
         public static LlvmRMW newRMW(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
