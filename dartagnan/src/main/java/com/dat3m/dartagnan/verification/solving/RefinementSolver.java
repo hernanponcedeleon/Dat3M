@@ -179,7 +179,6 @@ public class RefinementSolver extends ModelChecker {
         //  so we cannot perform property-aware transformation in those pipelines right now.
         removeFlaggedAxiomsIfNotNeeded(task);
 
-        memoryModel.configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);

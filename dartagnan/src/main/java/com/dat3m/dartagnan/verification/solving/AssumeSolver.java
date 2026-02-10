@@ -33,7 +33,6 @@ public class AssumeSolver extends ModelChecker {
 
     protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        task.getMemoryModel().configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
 

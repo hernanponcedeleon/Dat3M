@@ -28,7 +28,8 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
@@ -131,7 +132,6 @@ public class RelationAnalysisTest {
             Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
             Configuration baseConfig = Configuration.builder().build();
             VerificationTask baseTask = createTask(program, wmm, baseConfig);
-            wmm.configureAll(baseTask.getConfig());
             preprocessProgram(baseTask, baseTask.getConfig());
             preprocessMemoryModel(baseTask, baseTask.getConfig());
 

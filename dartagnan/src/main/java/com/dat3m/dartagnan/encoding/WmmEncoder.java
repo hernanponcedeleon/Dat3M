@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.LazyRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -54,6 +55,7 @@ public class WmmEncoder implements Encoder {
     private static final Logger logger = LoggerFactory.getLogger(WmmEncoder.class);
     private final EncodingContext context;
     private final RelationAnalysis ra;
+    private final Wmm memoryModel;
     Map<Relation, EventGraph> encodeSets;
     Map<Axiom, EventGraph> activeSets;
 
@@ -76,35 +78,47 @@ public class WmmEncoder implements Encoder {
             secure = true)
     private boolean allowMultiReads = false;
 
+    @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
+            description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
+                    " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
+            secure = true)
+    private boolean reduceAcyclicityEncoding = true;
+
     // =====================================================================
 
     private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
         this.context = ctx;
+        this.memoryModel = ctx.getTask().getMemoryModel();
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
 
         ctx.getTask().getConfig().inject(this);
+
+        long t0 = System.currentTimeMillis();
         initializeEncodeSets();
+        logStatistics(t0);
+    }
+
+    private void logStatistics(long startTime) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
+
+        logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSets);
+        logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
+        logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
+        logger.info("Number of unknown edges: {}", memoryModel.getRelations().stream()
+                .filter(r -> !r.isInternal())
+                .map(ra::getKnowledge)
+                .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
+                .sum());
+        logger.info("Number of encoded edges: {}", encodeSets.entrySet().stream()
+                .filter(e -> !e.getKey().isInternal())
+                .mapToLong(e -> e.getValue().size())
+                .sum());
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        long t0 = System.currentTimeMillis();
-        WmmEncoder encoder = new WmmEncoder(context);
-
-        if (logger.isInfoEnabled()) {
-            logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
-            logger.info("{}: {}", MEMORY_IS_ZEROED, encoder.memoryIsZeroed);
-            logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - t0));
-            logger.info("Number of unknown edges: {}", context.getTask().getMemoryModel().getRelations().stream()
-                    .filter(r -> !r.isInternal())
-                    .map(encoder.ra::getKnowledge)
-                    .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
-                    .sum());
-            logger.info("Number of encoded edges: {}", encoder.encodeSets.entrySet().stream()
-                    .filter(e -> !e.getKey().isInternal())
-                    .mapToLong(e -> e.getValue().size())
-                    .sum());
-        }
-        return encoder;
+        return new WmmEncoder(context);
     }
 
     // ==================================================================================================
@@ -112,7 +126,7 @@ public class WmmEncoder implements Encoder {
 
     public BooleanFormula encodeFullMemoryModel() {
         final Collection<Constraint> toEncode = context.constraintsToEncode;
-        final Collection<? extends Constraint> total = context.getTask().getMemoryModel().getConstraints();
+        final Collection<? extends Constraint> total = memoryModel.getConstraints();
         logger.info("Encoding {} of {} constraints.", toEncode.size(), total.size());
         final var encoder = new RelationEncoder();
         for (Constraint c : toEncode) {
@@ -129,7 +143,6 @@ public class WmmEncoder implements Encoder {
 
     private void encodeContradictions(List<BooleanFormula> enc) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
         ra.getContradictions().apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
     }
 
@@ -139,13 +152,13 @@ public class WmmEncoder implements Encoder {
     private void initializeEncodeSets() {
         activeSets = new HashMap<>();
         ActiveSets activeSetComputer = new ActiveSets();
-        for (Axiom axiom : context.getTask().getMemoryModel().getAxioms()) {
+        for (Axiom axiom : memoryModel.getAxioms()) {
             activeSets.put(axiom, axiom.accept(activeSetComputer));
         }
 
         if (logger.isInfoEnabled()) {
             logger.info("Number of active edges for acyclicity: {}",
-                    context.getTask().getMemoryModel().getAxioms().stream()
+                    memoryModel.getAxioms().stream()
                             .filter(Acyclicity.class::isInstance)
                             .mapToInt(a -> getEncodeGraph(a).size())
                             .sum());
@@ -161,7 +174,7 @@ public class WmmEncoder implements Encoder {
                         + ra.getClass().getSimpleName());
             }
         } else {
-            this.encodeSets = context.getTask().getMemoryModel().getRelations().stream()
+            this.encodeSets = memoryModel.getRelations().stream()
                     .collect(Collectors.toMap(r -> r, r -> ra.getKnowledge(r).getMaySet()));
         }
     }
@@ -172,12 +185,13 @@ public class WmmEncoder implements Encoder {
 
     private void initializeNativeEncodeSets(NativeRelationAnalysis nra) {
         logger.trace("Start");
-        Set<Relation> relations = context.getTask().getMemoryModel().getRelations();
-        List<Axiom> axioms = context.getTask().getMemoryModel().getAxioms();
-        Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
-        EncodeSets visitor = new EncodeSets(context.getAnalysisContext());
-        Map<Relation, List<EventGraph>> queue = new HashMap<>();
+        final Set<Relation> relations = memoryModel.getRelations();
+        final List<Axiom> axioms = memoryModel.getAxioms();
+
+        final Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
         relations.forEach(r -> mutableSets.put(r, new MapEventGraph()));
+
+        final Map<Relation, List<EventGraph>> queue = new HashMap<>();
         axioms.forEach(a -> {
             if (!(activeSets.get(a) instanceof MutableEventGraph mutable)) {
                 throw new IllegalArgumentException("Unexpected immutable event graph in " + nra.getClass().getSimpleName());
@@ -185,6 +199,8 @@ public class WmmEncoder implements Encoder {
             queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(mutable);
         });
         nra.populateQueue(queue, relations);
+
+        final EncodeSets visitor = new EncodeSets(context.getAnalysisContext());
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();
             logger.trace("Update encode set of '{}'", r);
@@ -203,10 +219,11 @@ public class WmmEncoder implements Encoder {
     }
 
     private void initializeLazyEncodeSets(LazyRelationAnalysis lra) {
-        Set<Relation> relations = context.getTask().getMemoryModel().getRelations();
-        List<Axiom> axioms = context.getTask().getMemoryModel().getAxioms();
-        Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
-        LazyEncodeSets visitor = new LazyEncodeSets(lra, mutableSets);
+        final Set<Relation> relations = memoryModel.getRelations();
+        final List<Axiom> axioms = memoryModel.getAxioms();
+
+        final Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
+        final LazyEncodeSets visitor = new LazyEncodeSets(lra, mutableSets);
         axioms.forEach(a -> {
             Relation r = a.getRelation();
             EventGraph eg = activeSets.get(a);
@@ -244,14 +261,8 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public EventGraph visitAcyclicity(Acyclicity axiom) {
-            ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
-            RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
-            RelationAnalysis.Knowledge k = ra.getKnowledge(axiom.getRelation());
-            return MutableEventGraph.difference(getEncodeGraph(axiom, exec, ra), k.getMustSet());
-        }
-
-        private EventGraph getEncodeGraph(Acyclicity axiom, ExecutionAnalysis exec, RelationAnalysis ra) {
             logger.info("Computing encodeGraph for {}", axiom);
+            ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
             // ====== Construct [Event -> Successor] mapping ======
             final Relation rel = axiom.getRelation();
             EventGraph maySet = ra.getKnowledge(rel).getMaySet();
@@ -273,12 +284,14 @@ public class WmmEncoder implements Encoder {
             }
 
             logger.info("encodeGraph size: {}", result.size());
-            if (context.getTask().getMemoryModel().getConfig().isReduceAcyclicityEncoding()) {
+            if (reduceAcyclicityEncoding) {
                 EventGraph obsolete = transitivelyDerivableMustEdges(exec, ra.getKnowledge(rel));
                 result.removeAll(obsolete);
                 logger.info("reduced encodeGraph size: {}", result.size());
             }
-            return result;
+
+            EventGraph mustSet = ra.getKnowledge(axiom.getRelation()).getMustSet();
+            return MutableEventGraph.difference(result, mustSet);
         }
 
         // Under-approximates the must-set of (rel+ ; rel).
@@ -344,7 +357,6 @@ public class WmmEncoder implements Encoder {
         ));
 
         final Program program = context.getTask().getProgram();
-        final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
@@ -936,9 +948,6 @@ public class WmmEncoder implements Encoder {
 
     public class AxiomEncoder implements Constraint.Visitor<BooleanFormula> {
 
-        private EventGraph getEncodeGraph(Axiom axiom) {
-            return WmmEncoder.this.getEncodeGraph(axiom).get(axiom.getRelation());
-        }
 
         @Override
         public BooleanFormula visitConstraint(Constraint constraint) {
@@ -952,7 +961,7 @@ public class WmmEncoder implements Encoder {
             final EncodingContext.EdgeEncoder edge = context.edge(relation);
 
             final List<BooleanFormula> edges = new ArrayList<>();
-            getEncodeGraph(axiom).apply((e1, e2) -> edges.add(edge.encode(e1, e2)));
+            activeSets.get(axiom).apply((e1, e2) -> edges.add(edge.encode(e1, e2)));
 
             return axiom.isNegated() ? bmgr.or(edges) : bmgr.and(edges.stream().map(bmgr::not).toList());
         }
@@ -964,7 +973,7 @@ public class WmmEncoder implements Encoder {
             final EncodingContext.EdgeEncoder edge = context.edge(relation);
 
             final List<BooleanFormula> edges = new ArrayList<>();
-            getEncodeGraph(axiom).apply((e1, e2) -> {
+            activeSets.get(axiom).apply((e1, e2) -> {
                 assert e1 == e2;
                 edges.add(edge.encode(e1, e2));
             });
@@ -974,9 +983,8 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public BooleanFormula visitAcyclicity(Acyclicity axiom) {
-            final RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
             final Relation relation = axiom.getRelation();
-            MutableEventGraph toBeEncoded = (MutableEventGraph) getEncodeGraph(axiom);
+            MutableEventGraph toBeEncoded = (MutableEventGraph) activeSets.get(axiom);
             toBeEncoded.addAll(ra.getKnowledge(axiom.getRelation()).getMustSet());
             final List<BooleanFormula> enc = axiom.isNegated()
                     ? cyclicSAT(relation, toBeEncoded) // There is no IDL-based encoding for inconsistency
@@ -1026,7 +1034,9 @@ public class WmmEncoder implements Encoder {
                     enc.add(bmgr.implication(edge.encode(e1, e2),
                             imgr.lessThan(
                                     context.clockVariable(clockVarName, e1),
-                                    context.clockVariable(clockVarName,e2))))
+                                    context.clockVariable(clockVarName,e2)
+                            )
+                    ))
             );
             return enc;
         }
@@ -1036,7 +1046,6 @@ public class WmmEncoder implements Encoder {
             final FormulaManagerExt fmgr = context.getFormulaManager();
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
             final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
-            final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
 
             // Build original graph G
             Map<Event, Set<Event>> inEdges = new HashMap<>();
