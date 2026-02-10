@@ -1,26 +1,18 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.Collection;
-import java.util.Map;
 
 public interface Constraint {
 
     Collection<? extends Relation> getConstrainedRelations();
 
     <T> T accept(Constraint.Visitor<? extends T> visitor);
-
-    default Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
-        return Map.of();
-    }
 
     interface Visitor<T> {
 

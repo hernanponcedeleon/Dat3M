@@ -39,7 +39,6 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -217,9 +216,9 @@ public class RefinementSolver extends ModelChecker {
 
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
-        final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
+        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
+        final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);

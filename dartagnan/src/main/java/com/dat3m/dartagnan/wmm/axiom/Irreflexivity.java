@@ -1,10 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 public class Irreflexivity extends Axiom {
 
@@ -14,11 +10,6 @@ public class Irreflexivity extends Axiom {
 
     public Irreflexivity(Relation rel) {
         this(rel, false, false);
-    }
-
-    @Override
-    protected EventGraph getEncodeGraph(Context analysisContext) {
-        return analysisContext.get(RelationAnalysis.class).getKnowledge(rel).getMaySet().filter(Tuple::isLoop);
     }
 
     @Override

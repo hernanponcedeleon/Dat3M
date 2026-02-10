@@ -56,6 +56,8 @@ public class PropertyEncoder implements Encoder {
     private final AliasAnalysis alias;
     private final RelationAnalysis ra;
 
+    private final WmmEncoder wmmEncoder;
+
     // We may want to make this configurable or just keep the option fixed.
     private final boolean doWeakTracking = true;
 
@@ -83,7 +85,7 @@ public class PropertyEncoder implements Encoder {
 
     // =====================================================================
 
-    private PropertyEncoder(EncodingContext c) {
+    private PropertyEncoder(EncodingContext c, WmmEncoder wmmEncoder) {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
@@ -93,10 +95,12 @@ public class PropertyEncoder implements Encoder {
         exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
         alias = c.getAnalysisContext().requires(AliasAnalysis.class);
         ra = c.getAnalysisContext().requires(RelationAnalysis.class);
+
+        this.wmmEncoder = wmmEncoder;
     }
 
-    public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        return new PropertyEncoder(context);
+    public static PropertyEncoder withContext(EncodingContext context, WmmEncoder wmmEncoder) throws InvalidConfigurationException {
+        return new PropertyEncoder(context, wmmEncoder);
     }
 
     public BooleanFormula encodeBoundEventExec() {
@@ -321,9 +325,8 @@ public class PropertyEncoder implements Encoder {
             logger.info("Encoding CAT specification");
         }
 
-        final WmmEncoder.AxiomEncoder axiomEncoder = new WmmEncoder.AxiomEncoder(ctx);
         final List<TrackableFormula> specViolations = flaggedAxioms.stream()
-                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), ax.accept(axiomEncoder)))
+                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), wmmEncoder.encodeAxiomConsistency(ax)))
                 .toList();
         return specViolations;
     }

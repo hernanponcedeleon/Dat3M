@@ -21,10 +21,8 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.collect.Iterables;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -32,13 +30,8 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
@@ -46,7 +39,7 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.*;
+import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
 @Options
 public final class EncodingContext {
@@ -131,13 +124,7 @@ public final class EncodingContext {
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         logger.info("{}: {}", ROUNDING_MODE_FLOATS, context.roundingModeFloats);
         context.initialize();
-        if (logger.isInfoEnabled()) {
-            logger.info("Number of encoded edges for acyclicity: {}",
-                    task.getMemoryModel().getAxioms().stream()
-                            .filter(Acyclicity.class::isInstance)
-                            .mapToInt(a -> ((Acyclicity) a).getEncodeGraphSize(analysisContext))
-                            .sum());
-        }
+
         return context;
     }
 
