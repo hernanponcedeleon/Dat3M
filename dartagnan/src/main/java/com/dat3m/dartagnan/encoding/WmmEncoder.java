@@ -764,6 +764,9 @@ public class WmmEncoder implements Encoder {
             return axiom.isNegated() ? bmgr.or(edges) : bmgr.and(edges.stream().map(bmgr::not).toList());
         }
 
+        // ------------------------------------------------------------------------
+        // Acyclicity
+
         @Override
         public BooleanFormula visitAcyclicity(Acyclicity axiom) {
             final Relation relation = axiom.getRelation();

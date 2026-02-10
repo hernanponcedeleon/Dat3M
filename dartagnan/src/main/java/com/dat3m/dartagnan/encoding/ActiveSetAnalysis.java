@@ -39,7 +39,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_AC
 
 /*
     Computes active sets for all memory model constraints and relations.
-    The active set describes what
+    The active set describes what relation members are relevant to determine
+    satisfaction of axioms and/or memory model consistency as a whole.
  */
 @Options
 public class ActiveSetAnalysis {
@@ -49,7 +50,8 @@ public class ActiveSetAnalysis {
     // ==============================================================================================
 
     @Option(name = ENABLE_ACTIVE_SETS,
-            description = "Propagate active sets from memory model constraints downward.",
+            description = "Propagate active sets from memory model constraints downwards to restrict" +
+                    "encoding only to consistency-relevant relations members.",
             secure = true)
     private boolean enableActiveSetPropagation = true;
 
