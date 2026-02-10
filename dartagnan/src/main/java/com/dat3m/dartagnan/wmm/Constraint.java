@@ -49,7 +49,6 @@ public interface Constraint {
         default T visitProjection(Projection def) { return visitDefinition(def); }
         default T visitInverse(Inverse def) { return visitDefinition(def); }
         default T visitTransitiveClosure(TransitiveClosure def) { return visitDefinition(def); }
-        // These three are semi-derived (they are derived from sets/filters and not from relations).
         default T visitSetIdentity(SetIdentity def) { return visitDefinition(def); }
         default T visitProduct(CartesianProduct def) { return visitDefinition(def); }
 
@@ -62,15 +61,16 @@ public interface Constraint {
         default T visitExternal(External ext) { return visitDefinition(ext); }
         default T visitInternal(Internal internal) { return visitDefinition(internal); }
         default T visitSameInstruction(SameInstruction si) { return visitDefinition(si); }
-        default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
-        default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
-        default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
         default T visitAMOPairs(AMOPairs amo) { return visitDefinition(amo); }
         default T visitLXSXPairs(LXSXPairs lxsx) { return visitDefinition(lxsx); }
         default T visitCoherence(Coherence co) { return visitDefinition(co); }
         default T visitSameLocation(SameLocation loc) { return visitDefinition(loc); }
         default T visitReadFrom(ReadFrom rf) { return visitDefinition(rf); }
-        // --- Target-specific definitions
+        // ----- Internal (not directly accessible from CAT)
+        default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
+        default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
+        default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
+        // ----- Target-specific definitions
         default T visitCASDependency(CASDependency casDep) { return visitDefinition(casDep); } // IMM
         default T visitLinuxCriticalSections(LinuxCriticalSections rscs) { return visitDefinition(rscs); } // Linux
         // ------ GPU definitions

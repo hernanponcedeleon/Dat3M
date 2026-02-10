@@ -27,7 +27,7 @@ public abstract class Definition implements Constraint {
         return getTerm(new Stack<>());
     }
 
-    // The first relation is always the defined relation.
+    // INVARIANT: The first relation is always the defined relation.
     @Override
     public List<Relation> getConstrainedRelations() {
         return List.of(definedRelation);

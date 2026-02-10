@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,16 +82,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
     @Override
     public void runExtended() {
         // TODO: Implementation
-    }
-
-    @Override
-    public long countMaySet() {
-        return lazyKnowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
-    }
-
-    @Override
-    public long countMustSet() {
-        return lazyKnowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
     }
 
     private class LazyInitializer implements Definition.Visitor<RelationAnalysis.Knowledge> {

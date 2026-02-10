@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +29,6 @@ public abstract class Axiom implements Constraint {
     public Relation getRelation() {
         return rel;
     }
-
-    public Wmm getMemoryModel() { return rel.getMemoryModel(); }
 
     public boolean isFlagged() {
         return flag;

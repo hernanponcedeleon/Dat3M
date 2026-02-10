@@ -184,7 +184,7 @@ public class PropertyEncoder implements Encoder {
         final List<Init> initEvents = program.getThreadEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
         // Find transitively implied coherences. We can use these to reduce the encoding.
-        final EventGraph transCo = ra.findTransitivelyImpliedCo(co);
+        final EventGraph transCo = wmmEncoder.findTransitivelyImpliedCo();
         // Find all writes that are never last, i.e., those that will always have a co-successor.
         Set<Event> dominatedWrites = new HashSet<>();
         knowledge.getMustSet().apply((e1, e2) -> {

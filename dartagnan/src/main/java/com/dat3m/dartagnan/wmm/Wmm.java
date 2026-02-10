@@ -151,6 +151,15 @@ public class Wmm {
         return Stream.of(a, r).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
+    public boolean isInternal(Relation rel) {
+        // TODO: This is an ugly method that should be replaced somehow.
+        final Definition def = rel.getDefinition();
+        return def instanceof DirectAddressDependency       // __addrDirect
+                || def instanceof DirectControlDependency   // __ctrlDirect
+                || def instanceof DirectDataDependency      // __idd
+                || rel.getDependencies().stream().allMatch(this::isInternal);
+    }
+
     // ========================================== Utility Methods ========================================
 
     private Relation makePredefinedRelation(String name) {

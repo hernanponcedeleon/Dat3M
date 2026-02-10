@@ -10,10 +10,7 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
-import com.dat3m.dartagnan.wmm.Constraint;
-import com.dat3m.dartagnan.wmm.Definition;
-import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -24,6 +21,8 @@ import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -104,6 +103,52 @@ public class WmmEncoder implements Encoder {
 
     public BooleanFormula encodeAxiomConsistency(Axiom axiom) {
         return axiom.accept(axiomEncoder);
+    }
+
+    /*
+        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
+        clock-constraints do not need to get encoded explicitly.
+        e.g. for co relation: (e1 = w1, e2 = w2)
+        The reason is that whenever we have co(w1,w2) then there exists an intermediary
+        w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
+        Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
+        whose execution is either implied by either w1 or w2.
+        Now, if co(w1, w3) is a must-edge and co(w2, w3) is impossible, then we can reason as follows.
+            - Suppose w1 and w2 get executed and their addresses match, then w3 must also get executed.
+            - Since co(w1, w3) is a must-edge, we have that w3 accesses the same address as w1 and w2,
+              and c(w1) < c(w3).
+            - Because addr(w2)==addr(w3), we must also have either co(w2, e3) or co(w3, w2).
+              The former is disallowed by assumption, so we have co(w3, w2) and hence c(w3) < c(w2).
+            - By transitivity, we have c(w1) < c(w3) < c(w2) as desired.
+            - Note that this reasoning has to be done inductively, because co(w1, w3) or co(w3, w2) may
+              not involve encoding a clock constraint (due to this optimization).
+        There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
+    */
+    public EventGraph findTransitivelyImpliedCo() {
+        if (context.useSATEncoding) {
+            return EventGraph.empty();
+        }
+
+        final Relation co = memoryModel.getRelation(RelationNameRepository.CO);
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(co);
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        MutableEventGraph transCo = new MapEventGraph();
+        Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
+        Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
+        k.getMaySet().apply((e1, e2) -> {
+            final MemoryEvent x = (MemoryEvent) e1;
+            final MemoryEvent z = (MemoryEvent) e2;
+            boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
+                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    !k.getMaySet().contains(z, y))
+                    || mustIn.getOrDefault(z, Set.of()).stream().anyMatch(y -> y != x && y != z &&
+                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    !k.getMaySet().contains(y, x));
+            if (hasIntermediary) {
+                transCo.add(e1, e2);
+            }
+        });
+        return transCo;
     }
 
     // ==================================================================================================
@@ -600,7 +645,7 @@ public class WmmEncoder implements Encoder {
             EncodingContext.EdgeEncoder edge = context.edge(co);
             EventGraph maySet = ra.getKnowledge(co).getMaySet();
             EventGraph mustSet = ra.getKnowledge(co).getMustSet();
-            EventGraph transCo = idl ? ra.findTransitivelyImpliedCo(co) : null;
+            EventGraph transCo = findTransitivelyImpliedCo();
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
             if (idl) {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----

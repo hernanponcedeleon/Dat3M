@@ -118,12 +118,12 @@ public class ActiveSetAnalysis {
 
         logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
         logger.info("Number of unknown edges: {}", memoryModel.getRelations().stream()
-                .filter(r -> !r.isInternal())
+                .filter(r -> !memoryModel.isInternal(r))
                 .map(ra::getKnowledge)
                 .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
                 .sum());
         logger.info("Number of active edge definitions: {}", definition2ActiveSets.entrySet().stream()
-                .filter(e -> !e.getKey().getDefinedRelation().isInternal())
+                .filter(e -> !memoryModel.isInternal(e.getKey().getDefinedRelation()))
                 .mapToLong(e -> e.getValue().size())
                 .sum());
         logger.info("Number of relevant edges for acyclicity: {}",

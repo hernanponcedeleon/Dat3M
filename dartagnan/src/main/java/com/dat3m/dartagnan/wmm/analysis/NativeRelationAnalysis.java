@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -32,7 +31,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -130,28 +128,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph mustDiff = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
             queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
         }
-    }
-
-    @Override
-    public EventGraph findTransitivelyImpliedCo(Relation co) {
-        final Knowledge k = getKnowledge(co);
-        MutableEventGraph transCo = new MapEventGraph();
-        Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
-        Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
-        k.getMaySet().apply((e1, e2) -> {
-            final MemoryEvent x = (MemoryEvent) e1;
-            final MemoryEvent z = (MemoryEvent) e2;
-            boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
-                    !k.getMaySet().contains(z, y))
-                    || mustIn.getOrDefault(z, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
-                    !k.getMaySet().contains(y, x));
-            if (hasIntermediary) {
-                transCo.add(e1, e2);
-            }
-        });
-        return transCo;
     }
 
     @Override
@@ -1491,16 +1467,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private static List<Event> visibleEvents(Thread t) {
         return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
-    }
-
-    @Override
-    public long countMaySet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
-    }
-
-    @Override
-    public long countMustSet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
     }
 
     protected static final class Delta {
