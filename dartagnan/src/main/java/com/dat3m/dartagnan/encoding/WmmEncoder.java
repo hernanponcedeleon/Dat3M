@@ -24,7 +24,6 @@ import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -115,8 +114,12 @@ public class WmmEncoder implements Encoder {
         ra.getContradictions().apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
     }
 
-    private EventGraph getActiveSet(Constraint constraint) {
-        return activeSetAnalysis.getActiveSet(constraint);
+    private EventGraph getActiveSet(Definition definition) {
+        return activeSetAnalysis.getActiveSet(definition);
+    }
+
+    private EventGraph getRelevantSet(Axiom axiom) {
+        return activeSetAnalysis.getRelevantSet(axiom);
     }
 
     // ================================================================================================
@@ -318,7 +321,6 @@ public class WmmEncoder implements Encoder {
                         if (e.getGlobalId() != e1.getGlobalId() && e.getGlobalId() != e2.getGlobalId() && relMaySet.contains(e, e2)) {
                             BooleanFormula tVar = relMustSet.contains(e1, e) ? enc0.encode(e1, e) : enc1.encode(e1, e);
                             orClause = bmgr.or(orClause, bmgr.and(tVar, enc0.encode(e, e2)));
-
                         }
                     }
                     enc.add(bmgr.equivalence(edge, orClause));
@@ -337,9 +339,11 @@ public class WmmEncoder implements Encoder {
             getActiveSet(id).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(
                             encSetId.encode(e1, e2),
-                            mustSet.contains(e1, e2) ?
-                                    execution(e1, e2) :
-                                    encDomain.encode(e1, e2))));
+                            mustSet.contains(e1, e2)
+                                    ? execution(e1, e2)
+                                    : encDomain.encode(e1, e2)
+                    ))
+            );
             return null;
         }
 
@@ -353,9 +357,11 @@ public class WmmEncoder implements Encoder {
             getActiveSet(inv).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(
                             enc0.encode(e1, e2),
-                            mustSet.contains(e1, e2) ?
-                                    execution(e1, e2) :
-                                    enc1.encode(e2, e1))));
+                            mustSet.contains(e1, e2)
+                                    ? execution(e1, e2)
+                                    : enc1.encode(e2, e1)
+                    ))
+            );
             return null;
         }
 
@@ -371,9 +377,11 @@ public class WmmEncoder implements Encoder {
             getActiveSet(cartesianProduct).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(
                             encProduct.encode(e1, e2),
-                            mustSet.contains(e1, e2) ?
-                                    execution(e1, e2) :
-                                    bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2)))));
+                            mustSet.contains(e1, e2)
+                                    ? execution(e1, e2)
+                                    : bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2))
+                    ))
+            );
             return null;
         }
 
@@ -507,9 +515,14 @@ public class WmmEncoder implements Encoder {
                             bmgr.makeTrue() : context.sameAddress(load, store);
                     enc.add(bmgr.equivalence(
                             edge.encode(load, store),
-                            k.getMustSet().contains(load, store) ? execution(load, store) :
-                                    // Relation between exclusive load and store
-                                    bmgr.and(context.execution(store), exclPair(siMap.getOrDefault(load, load), siMap.getOrDefault(store, store)), sameAddress)));
+                            k.getMustSet().contains(load, store) ?
+                                    execution(load, store) :
+                                    bmgr.and(
+                                            context.execution(store),
+                                            exclPair(siMap.getOrDefault(load, load), siMap.getOrDefault(store, store)),
+                                            sameAddress
+                                    )
+                    ));
                 }
             });
             enc.add(bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(context.getFormulaManager()), unpredictable));
@@ -527,7 +540,9 @@ public class WmmEncoder implements Encoder {
             getActiveSet(locDef).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
                             execution(e1, e2),
-                            context.sameAddress((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)))));
+                            context.sameAddress((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)
+                    )))
+            );
             return null;
         }
 
@@ -649,8 +664,8 @@ public class WmmEncoder implements Encoder {
                     condition = bmgr.and(condition, context.sync(b1));
                     if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
                         condition = bmgr.and(condition, context.getExpressionEncoder().equalAt(
-                                b1.getResourceId(), b1, b2.getResourceId(), b2)
-                        );
+                                b1.getResourceId(), b1, b2.getResourceId(), b2
+                        ));
                     }
                 }
                 enc.add(bmgr.equivalence(encoder.encode(e1, e2), condition));
@@ -744,7 +759,7 @@ public class WmmEncoder implements Encoder {
             final EncodingContext.EdgeEncoder edge = context.edge(relation);
 
             final List<BooleanFormula> edges = new ArrayList<>();
-            getActiveSet(axiom).apply((e1, e2) -> edges.add(edge.encode(e1, e2)));
+            getRelevantSet(axiom).apply((e1, e2) -> edges.add(edge.encode(e1, e2)));
 
             return axiom.isNegated() ? bmgr.or(edges) : bmgr.and(edges.stream().map(bmgr::not).toList());
         }
@@ -756,7 +771,7 @@ public class WmmEncoder implements Encoder {
             final EncodingContext.EdgeEncoder edge = context.edge(relation);
 
             final List<BooleanFormula> edges = new ArrayList<>();
-            getActiveSet(axiom).apply((e1, e2) -> {
+            getRelevantSet(axiom).apply((e1, e2) -> {
                 assert e1 == e2;
                 edges.add(edge.encode(e1, e2));
             });
@@ -770,53 +785,54 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitAcyclicity(Acyclicity axiom) {
             final Relation relation = axiom.getRelation();
-            MutableEventGraph activeEdges = (MutableEventGraph) getActiveSet(axiom);
-            activeEdges.addAll(ra.getKnowledge(axiom.getRelation()).getMustSet());
+            final EventGraph relevantEdges = getRelevantSet(axiom);
             final List<BooleanFormula> enc = axiom.isNegated()
-                    ? cyclicSAT(relation, activeEdges) // There is no IDL-based encoding for inconsistency
+                    ? cyclicSAT(relation, relevantEdges) // There is no IDL-based encoding for inconsistency
                     : context.usesSATEncoding()
-                    ? acyclicSAT(relation, activeEdges)
-                    : acyclicIDL(relation, activeEdges);
+                    ? acyclicSAT(relation, relevantEdges)
+                    : acyclicIDL(relation, relevantEdges);
             return context.getBooleanFormulaManager().and(enc);
         }
 
-        private List<BooleanFormula> cyclicSAT(Relation rel, EventGraph activeEdges) {
+        private List<BooleanFormula> cyclicSAT(Relation rel, EventGraph relevantEdges) {
             final FormulaManagerExt fmgr = context.getFormulaManager();
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
             List<BooleanFormula> enc = new ArrayList<>();
             List<BooleanFormula> eventsInCycle = new ArrayList<>();
             Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
             Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
-            activeEdges.apply((e1, e2) -> {
+            relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cycleVar = getSMTCycleVar(rel, e1, e2, fmgr);
                 inMap.computeIfAbsent(e2, k -> new ArrayList<>()).add(cycleVar);
                 outMap.computeIfAbsent(e1, k -> new ArrayList<>()).add(cycleVar);
             });
             // We use Boolean variables which guess the edges and nodes constituting the cycle.
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
-            for (Event e : activeEdges.getDomain()) {
+            for (Event e : relevantEdges.getDomain()) {
                 eventsInCycle.add(cycleVar(rel, e, fmgr));
                 // We ensure that for every event in the cycle, there should be at least one incoming
                 // edge and at least one outgoing edge that are also in the cycle.
                 enc.add(bmgr.implication(cycleVar(rel, e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
-                activeEdges.apply((e1, e2) ->
+                relevantEdges.apply((e1, e2) ->
                         // If an edge is guessed to be in a cycle, the edge must belong to relation,
                         // and both events must also be guessed to be on the cycle.
                         enc.add(bmgr.implication(getSMTCycleVar(rel, e1, e2, fmgr),
-                                bmgr.and(edge.encode(e1, e2), cycleVar(rel, e1, fmgr), cycleVar(rel, e2, fmgr)))));
+                                bmgr.and(edge.encode(e1, e2), cycleVar(rel, e1, fmgr), cycleVar(rel, e2, fmgr))
+                        ))
+                );
             }
             // A cycle exists if there is an event in the cycle.
             enc.add(bmgr.or(eventsInCycle));
             return enc;
         }
 
-        private List<BooleanFormula> acyclicIDL(Relation rel, EventGraph activeEdges) {
+        private List<BooleanFormula> acyclicIDL(Relation rel, EventGraph relevantEdges) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             final String clockVarName = rel.getNameOrTerm();
             List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
-            activeEdges.apply((e1, e2) ->
+            relevantEdges.apply((e1, e2) ->
                     enc.add(bmgr.implication(edge.encode(e1, e2),
                             imgr.lessThan(
                                     context.clockVariable(clockVarName, e1),
@@ -827,7 +843,7 @@ public class WmmEncoder implements Encoder {
             return enc;
         }
 
-        private List<BooleanFormula> acyclicSAT(Relation rel, EventGraph activeEdges) {
+        private List<BooleanFormula> acyclicSAT(Relation rel, EventGraph relevantEdges) {
             // We use a vertex-elimination graph based encoding.
             final FormulaManagerExt fmgr = context.getFormulaManager();
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
@@ -838,7 +854,7 @@ public class WmmEncoder implements Encoder {
             Map<Event, Set<Event>> outEdges = new HashMap<>();
             Set<Event> nodes = new HashSet<>();
             Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
-            activeEdges.apply((e1, e2) -> {
+            relevantEdges.apply((e1, e2) -> {
                 if (Tuple.isLoop(e1, e2)) {
                     selfloops.add(e1);
                 } else {
@@ -901,7 +917,7 @@ public class WmmEncoder implements Encoder {
             List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
             // Basic lifting
-            activeEdges.apply((e1, e2) -> {
+            relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
                 enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2, fmgr)));
             });

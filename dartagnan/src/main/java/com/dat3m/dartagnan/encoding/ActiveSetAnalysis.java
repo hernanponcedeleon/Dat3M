@@ -38,9 +38,15 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ACTIVE_SETS;
 
 /*
-    Computes active sets for all memory model constraints and relations.
-    The active set describes what relation members are relevant to determine
-    satisfaction of axioms and/or memory model consistency as a whole.
+    Computes active/relevant sets for all memory model constraints.
+
+    The active set of a (relation) definition describes the subset of the definition
+    that affects memory consistency and/or the satisfaction of other constraints.
+    On the formula level, the active set can be understood as a "subset of clauses".
+
+    The relevant set of a non-defining constraint (e.g. an axiom) describes the
+    subset of relation members that are relevant to determine satisfaction of the constraint.
+    On the formula level, the relevant set can be understood as a "subset of variables".
  */
 @Options
 public class ActiveSetAnalysis {
@@ -50,13 +56,12 @@ public class ActiveSetAnalysis {
     // ==============================================================================================
 
     @Option(name = ENABLE_ACTIVE_SETS,
-            description = "Propagate active sets from memory model constraints downwards to restrict" +
-                    "encoding only to consistency-relevant relations members.",
+            description = "Compute subset of memory model definitions that affect memory model consistency.",
             secure = true)
-    private boolean enableActiveSetPropagation = true;
+    private boolean enableActiveSetComputation = true;
 
     @Option(name = REDUCE_ACYCLICITY_ACTIVE_SETS,
-            description = "Reduce active sets of acyclicity axiom by removing transitively implied edges.",
+            description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
             secure = true)
     private boolean reduceAcyclicityActiveSets = true;
 
@@ -66,26 +71,17 @@ public class ActiveSetAnalysis {
     private final Context analysisContext;
     private final RelationAnalysis ra;
 
-    // The subset of relation members whose values are relevant for consistency checking or similar.
-    // If a member value is statically known, this set may or may not contain it (independent of relevancy).
-    private Map<Relation, EventGraph> relation2ActiveSets;
-
-    // The subset of relation members that are relevant to determine satisfaction of an axiom.
+    private Map<Definition, EventGraph> definition2ActiveSets;
     // TODO: Can be generalized to any non-defining constraint (we have only axioms right now)
-    private Map<Axiom, EventGraph> axiom2ActiveSets;
+    //  It could also be generalized to defining constraints
+    private Map<Axiom, EventGraph> axiom2RelevantSets;
 
-    public EventGraph getActiveSet(Constraint constraint) {
-        if (constraint instanceof Definition def) {
-            return relation2ActiveSets.get(def.getDefinedRelation());
-        } else if (constraint instanceof Axiom axiom) {
-            return axiom2ActiveSets.get(axiom);
-        }
-
-        throw new IllegalArgumentException("Unknown constraint type: " + constraint.getClass());
+    public EventGraph getActiveSet(Definition definition) {
+        return definition2ActiveSets.get(definition);
     }
 
-    public EventGraph getActiveSet(Relation relation) {
-        return relation2ActiveSets.get(relation);
+    public EventGraph getRelevantSet(Axiom axiom) {
+        return axiom2RelevantSets.get(axiom);
     }
 
     // ==============================================================================================
@@ -112,7 +108,7 @@ public class ActiveSetAnalysis {
     }
 
     private void logConfig() {
-        logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetPropagation);
+        logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
     }
 
     private void logStatistics(long startTime) {
@@ -126,14 +122,14 @@ public class ActiveSetAnalysis {
                 .map(ra::getKnowledge)
                 .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
                 .sum());
-        logger.info("Number of active edges: {}", relation2ActiveSets.entrySet().stream()
-                .filter(e -> !e.getKey().isInternal())
+        logger.info("Number of active edge definitions: {}", definition2ActiveSets.entrySet().stream()
+                .filter(e -> !e.getKey().getDefinedRelation().isInternal())
                 .mapToLong(e -> e.getValue().size())
                 .sum());
-        logger.info("Number of active edges for acyclicity: {}",
+        logger.info("Number of relevant edges for acyclicity: {}",
                 memoryModel.getAxioms().stream()
                         .filter(Acyclicity.class::isInstance)
-                        .mapToInt(a -> axiom2ActiveSets.get(a).size())
+                        .mapToInt(a -> axiom2RelevantSets.get(a).size())
                         .sum());
     }
 
@@ -142,15 +138,16 @@ public class ActiveSetAnalysis {
     private void runAnalysis() {
         logger.trace("Start");
 
-        final AxiomActiveSets axiomActiveSetsVisitor = new AxiomActiveSets();
-        axiom2ActiveSets = new HashMap<>();
+        final AxiomRelevantSets axiomRelevantSetsVisitor = new AxiomRelevantSets();
+        axiom2RelevantSets = new HashMap<>();
         for (Axiom axiom : memoryModel.getAxioms()) {
-            axiom2ActiveSets.put(axiom, axiom.accept(axiomActiveSetsVisitor));
+            axiom2RelevantSets.put(axiom, axiom.accept(axiomRelevantSetsVisitor));
         }
 
-        if (!enableActiveSetPropagation) {
-            this.relation2ActiveSets = memoryModel.getRelations().stream()
-                    .collect(Collectors.toMap(r -> r, r -> ra.getKnowledge(r).getMaySet()));
+        if (!enableActiveSetComputation) {
+            // FIXME: This is wrong if XRA was performed!
+            this.definition2ActiveSets = memoryModel.getRelations().stream()
+                    .collect(Collectors.toMap(Relation::getDefinition, r -> ra.getKnowledge(r).getMaySet()));
         } else if (ra instanceof LazyRelationAnalysis) {
             runLazy();
         } else if (ra instanceof NativeRelationAnalysis nra) {
@@ -163,14 +160,21 @@ public class ActiveSetAnalysis {
         logger.trace("End");
     }
 
-    // ================================================================================================
-    // Axiom active sets
+    private EventGraph filterUnknowns(EventGraph graph, Relation relation) {
+        RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
+        EventGraph may = k.getMaySet();
+        EventGraph must = k.getMustSet();
+        return graph.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
+    }
 
-    private final class AxiomActiveSets implements Constraint.Visitor<EventGraph> {
+    // ================================================================================================
+    // Axiom relevant sets
+
+    private final class AxiomRelevantSets implements Constraint.Visitor<EventGraph> {
 
         @Override
         public EventGraph visitConstraint(Constraint constraint) {
-            throw new UnsupportedOperationException("Active Set computation not supported for " + constraint.getClass().getSimpleName());
+            throw new UnsupportedOperationException("Relevant set computation not supported for " + constraint.getClass().getSimpleName());
         }
 
         @Override
@@ -185,7 +189,7 @@ public class ActiveSetAnalysis {
 
         @Override
         public EventGraph visitAcyclicity(Acyclicity axiom) {
-            logger.info("Computing active set for {}", axiom);
+            logger.info("Computing relevant set for {}", axiom);
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             // ====== Construct [Event -> Successor] mapping ======
             final Relation rel = axiom.getRelation();
@@ -213,13 +217,12 @@ public class ActiveSetAnalysis {
                 result.removeAll(obsolete);
                 final int reducedSize = result.size();
 
-                logger.info("Active set size original/reduced: {} / {}", originalSize, reducedSize);
+                logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
             } else {
-                logger.info("Active set size: {} ", originalSize);
+                logger.info("Relevant set size: {} ", originalSize);
             }
 
-            EventGraph mustSet = ra.getKnowledge(axiom.getRelation()).getMustSet();
-            return MutableEventGraph.difference(result, mustSet);
+            return result;
         }
 
         // Under-approximates the must-set of (rel+ ; rel).
@@ -273,29 +276,26 @@ public class ActiveSetAnalysis {
         final List<Axiom> axioms = memoryModel.getAxioms();
 
         final Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
-        final LazyEncodeSets visitor = new LazyEncodeSets(mutableSets);
+        final LazyActiveSets visitor = new LazyActiveSets(mutableSets);
         axioms.forEach(a -> {
             Relation r = a.getRelation();
-            EventGraph eg = axiom2ActiveSets.get(a);
+            EventGraph eg = axiom2RelevantSets.get(a);
             MutableEventGraph copy = new MapEventGraph(eg.getOutMap());
-            copy.retainAll(ra.getKnowledge(r).getMaySet());
+            copy = (MutableEventGraph) filterUnknowns(copy, r);
             visitor.add(r, copy);
-            // Force adding must edges to match the result of native analysis
-            // TODO: Is it really necessary? Method getEventGraph appends them anyway
-            mutableSets.get(r).addAll(eg);
         });
 
-        this.relation2ActiveSets = relations.stream()
-                .collect(Collectors.toMap(r -> r, r -> mutableSets.containsKey(r)
+        this.definition2ActiveSets = relations.stream()
+                .collect(Collectors.toMap(Relation::getDefinition, r -> mutableSets.containsKey(r)
                 ? mutableSets.get(r) : EventGraph.empty()));
     }
 
-    private final class LazyEncodeSets implements Constraint.Visitor<Boolean> {
+    private final class LazyActiveSets implements Constraint.Visitor<Boolean> {
 
         private final Map<Relation, MutableEventGraph> data;
         private MutableEventGraph update;
 
-        public LazyEncodeSets(Map<Relation, MutableEventGraph> data) {
+        public LazyActiveSets(Map<Relation, MutableEventGraph> data) {
             this.data = data;
         }
 
@@ -667,31 +667,31 @@ public class ActiveSetAnalysis {
 
         final Map<Relation, List<EventGraph>> queue = new HashMap<>();
         axioms.forEach(a -> {
-            if (!(axiom2ActiveSets.get(a) instanceof MutableEventGraph mutable)) {
-                throw new IllegalArgumentException("Unexpected immutable event graph in " + nra.getClass().getSimpleName());
-            }
-            queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(mutable);
+            final EventGraph relevant = filterUnknowns(getRelevantSet(a), a.getRelation());
+            queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(relevant);
         });
         nra.populateQueue(queue, relations);
 
-        final NativeEncodeSets visitor = new NativeEncodeSets();
+        final NativeActiveSets visitor = new NativeActiveSets();
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();
-            logger.trace("Update encode set of '{}'", r);
+            logger.trace("Update active set of '{}'", r);
             MutableEventGraph s = mutableSets.get(r);
             MutableEventGraph c = new MapEventGraph();
             queue.remove(r).forEach(news -> news.filter(s::add).apply(c::add));
             if (!c.isEmpty()) {
                 visitor.news = c;
-                r.getDefinition().accept(visitor)
-                        .forEach((key, value) -> queue.computeIfAbsent(key, k -> new ArrayList<>()).add(value));
+                r.getDefinition().accept(visitor).forEach((rel, value) ->
+                        queue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
+                );
             }
         }
 
-        this.relation2ActiveSets = relations.stream().collect(Collectors.toMap(r -> r, mutableSets::get));
+        this.definition2ActiveSets = relations.stream()
+                .collect(Collectors.toMap(Relation::getDefinition, mutableSets::get));
     }
 
-    private final class NativeEncodeSets implements Constraint.Visitor<Map<Relation, EventGraph>> {
+    private final class NativeActiveSets implements Constraint.Visitor<Map<Relation, EventGraph>> {
 
         EventGraph news;
 

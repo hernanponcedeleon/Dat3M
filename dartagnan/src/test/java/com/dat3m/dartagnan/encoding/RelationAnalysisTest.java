@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -15,8 +16,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +33,6 @@ import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
-import static org.sosy_lab.java_smt.SolverContextFactory.createSolverContext;
 
 @RunWith(Parameterized.class)
 public class RelationAnalysisTest {
@@ -126,49 +124,49 @@ public class RelationAnalysisTest {
     }
 
     private void doCompareSets(String path) throws Exception {
-        try(SolverContext ctx = createSolverContext(SolverContextFactory.Solvers.Z3)) {
-            // Base program and consistency model
-            Program program = new ProgramParser().parse(new File(path));
-            Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
-            Configuration baseConfig = Configuration.builder().build();
-            VerificationTask baseTask = createTask(program, wmm, baseConfig);
-            preprocessProgram(baseTask, baseTask.getConfig());
-            preprocessMemoryModel(baseTask, baseTask.getConfig());
+        // Base program and consistency model
+        Program program = new ProgramParser().parse(new File(path));
+        Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        Configuration baseConfig = Configuration.builder().build();
+        VerificationTask baseTask = createTask(program, wmm, baseConfig);
+        preprocessProgram(baseTask, baseTask.getConfig());
+        preprocessMemoryModel(baseTask, baseTask.getConfig());
 
-            // Native analysis
-            Context nativeContext = Context.create();
-            Configuration nativeConfig = Configuration.builder()
-                    .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
-                    .build();
-            VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
-            performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
-            performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
-            RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
+        // Native analysis
+        Context nativeContext = Context.create();
+        Configuration nativeConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.NATIVE.toString())
+                .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
+                .build();
+        VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
+        performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
 
-            // Lazy analysis
-            Context lazyContext = Context.create();
-            Configuration lazyConfig = Configuration.builder()
-                    .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
-                    .build();
-            VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
-            performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
-            performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
-            RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
+        // Lazy analysis
+        Context lazyContext = Context.create();
+        Configuration lazyConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
+                .build();
+        VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
+        performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
 
-            // Assert may and must sets are equal
-            for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
-                        lazyRa.getKnowledge(relation).getMaySet());
-                assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
-                        lazyRa.getKnowledge(relation).getMustSet());
-            }
+        // Assert may and must sets are equal
+        for (Relation relation : wmm.getRelations()) {
+            assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
+                    lazyRa.getKnowledge(relation).getMaySet());
+            assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
+                    lazyRa.getKnowledge(relation).getMustSet());
+        }
 
-            // Generate and assert encode sets
-            ActiveSetAnalysis nativeActiveSet = ActiveSetAnalysis.newInstance(nativeTask, nativeContext);
-            ActiveSetAnalysis lazyActiveSet = ActiveSetAnalysis.newInstance(lazyTask, lazyContext);
-            for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeActiveSet.getActiveSet(relation), lazyActiveSet.getActiveSet(relation));
-            }
+        // Generate and assert active sets
+        ActiveSetAnalysis nativeActiveSet = ActiveSetAnalysis.newInstance(nativeTask, nativeContext);
+        ActiveSetAnalysis lazyActiveSet = ActiveSetAnalysis.newInstance(lazyTask, lazyContext);
+        for (Relation relation : wmm.getRelations()) {
+            final Definition def = relation.getDefinition();
+            assertEquals(nativeActiveSet.getActiveSet(def), lazyActiveSet.getActiveSet(def));
         }
     }
 
