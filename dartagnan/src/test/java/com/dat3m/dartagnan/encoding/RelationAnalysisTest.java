@@ -167,8 +167,7 @@ public class RelationAnalysisTest {
             ActiveSetAnalysis nativeActiveSet = ActiveSetAnalysis.newInstance(nativeTask, nativeContext);
             ActiveSetAnalysis lazyActiveSet = ActiveSetAnalysis.newInstance(lazyTask, lazyContext);
             for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeActiveSet.getEncodeSets().get(relation),
-                        lazyActiveSet.getEncodeSets().get(relation));
+                assertEquals(nativeActiveSet.getActiveSet(relation), lazyActiveSet.getActiveSet(relation));
             }
         }
     }
