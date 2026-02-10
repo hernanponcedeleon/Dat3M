@@ -43,7 +43,7 @@ public class ProverWithTracker implements ProverEnvironment {
             }
             StringBuilder description = new StringBuilder();
             LocalDate currentDate = LocalDate.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-DD");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             description.append("Generated on: " + currentDate.format(formatter) + "\n");
             description.append("Generator: Dartagnan\n");
             description.append("Application: Bounded model checking for weak memory models\n");
