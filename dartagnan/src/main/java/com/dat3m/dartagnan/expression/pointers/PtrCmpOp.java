@@ -1,7 +1,11 @@
 package com.dat3m.dartagnan.expression.pointers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
-
+/* This operation is not recognised by the parsers.
+* IntCmpOp is transformed into ptrCmpOp in the visitors if the two operands are pointers and the operators are either EQ or NEQ.
+* If Operator is GTE, LTE, GT or LT, both operators are cast to integers and the operation remains IntCmpOp.
+* Otherwise, when an integer and a pointer are compared, the pointer gets cast to integer.
+*/
 public enum PtrCmpOp implements ExpressionKind {
     EQ, NEQ
     //, GTE, LTE, GT, LT

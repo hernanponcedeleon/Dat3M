@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -25,7 +24,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
-import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
 // The matching depends on what is specified in the constraints.
