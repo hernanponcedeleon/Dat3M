@@ -1679,8 +1679,12 @@ public class Intrinsics {
         final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makePtrAdd(src, castCountExpr), dest, false),
-                expressions.makeGT(expressions.makePtrAdd(dest, castCountExpr), src, false));
+                expressions.makeGT(
+                        expressions.makeCast(expressions.makePtrAdd(src, castCountExpr), archType)
+                        , expressions.makeCast(dest, archType), false),
+                expressions.makeGT(
+                        expressions.makeCast(expressions.makePtrAdd(dest, castCountExpr), archType)
+                        , expressions.makeCast(src, archType), false));
 
 
         final List<Event> replacement = new ArrayList<>();

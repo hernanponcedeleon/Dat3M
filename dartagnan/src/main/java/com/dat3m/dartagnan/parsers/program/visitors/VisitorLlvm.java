@@ -582,19 +582,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitICmpInst(ICmpInstContext ctx) {
-        final Expression left = visitTypeValue(ctx.typeValue());
-        final Expression right = checkExpression(left.getType(), ctx.value());
+        Expression left = visitTypeValue(ctx.typeValue());
+        Expression right = checkExpression(left.getType(), ctx.value());
         final String operator = ctx.iPred().getText();
+        assert left.getType() == right.getType(); // llvm requires this
+        if (left.getType() instanceof PointerType p) {
+            left = expressions.makeCast(left,types.getIntegerType(p.getBitWidth()));
+            right = expressions.makeCast(right,types.getIntegerType(p.getBitWidth()));
+        }
         final Expression compared = switch (operator) {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
-
-
-            // fixme :
-            // The two arguments must be integer, pointer ,or integer vector typed. They must also be of identical types.
-            // llvm doc: If the operands are pointer typed, the pointer values are compared as if they were integers.
-            // cmp should cast directly to int if both are pointers else normal int cmp
-
             case "slt", "ult" -> expressions.makeLT(left, right, operator.startsWith("s"));
             case "sle", "ule" -> expressions.makeLTE(left, right, operator.startsWith("s"));
             case "sgt", "ugt" -> expressions.makeGT(left, right, operator.startsWith("s"));

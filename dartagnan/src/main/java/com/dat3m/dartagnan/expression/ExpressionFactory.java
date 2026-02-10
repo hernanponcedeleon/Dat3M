@@ -136,30 +136,18 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(leftOperand, IntCmpOp.ULT, rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(leftOperand, IntCmpOp.UGT, rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(leftOperand, IntCmpOp.ULTE, rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(leftOperand, IntCmpOp.UGTE, rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
@@ -231,15 +219,6 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntCmpfromInts(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(makePtrToIntCast(leftOperand, archType), operator, rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType) {
-            return makeIntCmpfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, archType));
-        }
-        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
-    }
 
     public Expression makeIntBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
