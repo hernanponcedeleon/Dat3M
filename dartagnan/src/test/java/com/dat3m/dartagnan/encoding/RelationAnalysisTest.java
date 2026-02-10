@@ -164,11 +164,11 @@ public class RelationAnalysisTest {
             }
 
             // Generate and assert encode sets
-            WmmEncoder nativeEncoder = WmmEncoder.withContext(EncodingContext.of(nativeTask, nativeContext, ctx.getFormulaManager()));
-            WmmEncoder lazyEncoder = WmmEncoder.withContext(EncodingContext.of(lazyTask, lazyContext, ctx.getFormulaManager()));
+            ActiveSetAnalysis nativeActiveSet = ActiveSetAnalysis.newInstance(nativeTask, nativeContext);
+            ActiveSetAnalysis lazyActiveSet = ActiveSetAnalysis.newInstance(lazyTask, lazyContext);
             for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeEncoder.encodeSets.get(relation),
-                        lazyEncoder.encodeSets.get(relation));
+                assertEquals(nativeActiveSet.getEncodeSets().get(relation),
+                        lazyActiveSet.getEncodeSets().get(relation));
             }
         }
     }
