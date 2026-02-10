@@ -470,7 +470,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression v1 = (Expression) ctx.re(0).accept(this);
         Expression v2 = (Expression) ctx.re(1).accept(this);
         Expression result;
-        if ((v1.getType() instanceof PointerType || v2.getType() instanceof PointerType) && (ctx.opCompare().op == IntCmpOp.EQ ||  ctx.opCompare().op == IntCmpOp.NEQ) ) {
+        if (v1.getType() instanceof PointerType && v2.getType() instanceof PointerType && (ctx.opCompare().op == IntCmpOp.EQ ||  ctx.opCompare().op == IntCmpOp.NEQ) ) {
             var op = ctx.opCompare().op == IntCmpOp.EQ ? PtrCmpOp.EQ:PtrCmpOp.NEQ;
             result = expressions.makeCompare(v1,op,v2);
         }else if(!(v1.getType().equals(v2.getType()))){
