@@ -43,7 +43,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Verify.verify;
 
 @Options
-public class WmmEncoder implements Encoder {
+public class WmmEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(WmmEncoder.class);
     private final EncodingContext context;

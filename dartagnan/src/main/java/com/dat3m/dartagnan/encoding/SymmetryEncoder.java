@@ -33,7 +33,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SY
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
 @Options
-public class SymmetryEncoder implements Encoder {
+public class SymmetryEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(SymmetryEncoder.class);
 

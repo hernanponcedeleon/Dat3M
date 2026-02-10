@@ -45,7 +45,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
-public class PropertyEncoder implements Encoder {
+public class PropertyEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyEncoder.class);
 
