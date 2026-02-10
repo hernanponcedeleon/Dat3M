@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
 
 /*
     Computes active/relevant sets for all memory model constraints.
@@ -60,10 +60,10 @@ public class ActiveSetAnalysis {
             secure = true)
     private boolean enableActiveSetComputation = true;
 
-    @Option(name = REDUCE_ACYCLICITY_ACTIVE_SETS,
+    @Option(name = REDUCE_ACYCLICITY_RELEVANT_SETS,
             description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
             secure = true)
-    private boolean reduceAcyclicityActiveSets = true;
+    private boolean reduceAcyclicityRelevantSets = true;
 
     // ==============================================================================================
 
@@ -212,7 +212,7 @@ public class ActiveSetAnalysis {
             }
 
             final int originalSize = result.size();
-            if (reduceAcyclicityActiveSets) {
+            if (reduceAcyclicityRelevantSets) {
                 EventGraph obsolete = transitivelyDerivableMustEdges(exec, ra.getKnowledge(rel));
                 result.removeAll(obsolete);
                 final int reducedSize = result.size();
@@ -497,13 +497,15 @@ public class ActiveSetAnalysis {
                         Set<Event> range = update.getRange(e1);
                         next.put(e1, may.getRange(e1).stream()
                                 .filter(e -> may.getRange(e).stream().anyMatch(range::contains))
-                                .collect(Collectors.toSet()));
+                                .collect(Collectors.toSet())
+                        );
                     });
                     updateInverse.getDomain().forEach(e2 -> {
                         Set<Event> range = updateInverse.getRange(e2);
                         nextInverse.put(e2, mayInv.getRange(e2).stream()
                                 .filter(e -> mayInv.getRange(e).stream().anyMatch(range::contains))
-                                .collect(Collectors.toSet()));
+                                .collect(Collectors.toSet())
+                        );
                     });
                     nextInverse.forEach((e2, range) -> range.forEach(e1 -> next.computeIfAbsent(e1, x -> new HashSet<>()).add(e2)));
                     operandUpdate.addAll(update);
@@ -511,8 +513,8 @@ public class ActiveSetAnalysis {
                     update.removeAll(operandUpdate);
                     update.removeAll(must);
                 }
-                getEncodeKnowledge(definition.getDefinedRelation()).addAll(operandUpdate);
-                operandUpdate.retainAll(ra.getKnowledge(definition.getOperand().getDefinition().getDefinedRelation()).getMaySet());
+                getRelevantSet(definition.getDefinedRelation()).addAll(operandUpdate);
+                operandUpdate.retainAll(ra.getKnowledge(definition.getOperand()).getMaySet());
                 setUpdate(operandUpdate);
                 operandTime(definition, start, System.currentTimeMillis());
                 definition.getOperand().getDefinition().accept(this);
@@ -531,14 +533,14 @@ public class ActiveSetAnalysis {
                     long start = System.currentTimeMillis();
                     Relation operand = operands.get(i);
                     MutableEventGraph newUpdate = MapEventGraph.from(origUpdate);
-                    newUpdate.retainAll(ra.getKnowledge(operand.getDefinition().getDefinedRelation()).getMaySet());
+                    newUpdate.retainAll(ra.getKnowledge(operand).getMaySet());
                     setUpdate(newUpdate);
                     totalTime += System.currentTimeMillis() - start;
                     operand.getDefinition().accept(this);
                 }
                 long start = System.currentTimeMillis();
                 Relation operand = operands.get(operands.size() - 1);
-                origUpdate.retainAll(ra.getKnowledge(operand.getDefinition().getDefinedRelation()).getMaySet());
+                origUpdate.retainAll(ra.getKnowledge(operand).getMaySet());
                 setUpdate(origUpdate);
                 operandTime(definition, start, totalTime + System.currentTimeMillis());
                 operand.getDefinition().accept(this);
@@ -582,11 +584,11 @@ public class ActiveSetAnalysis {
                 totalTime += System.currentTimeMillis() - start;
                 definition.getMinuend().getDefinition().accept(this);
                 start = System.currentTimeMillis();
-                Relation subtrahend = definition.getSubtrahend().getDefinition().getDefinedRelation();
+                Relation subtrahend = definition.getSubtrahend();
                 origUpdate.retainAll(ra.getKnowledge(subtrahend).getMaySet());
                 setUpdate(origUpdate);
                 operandTime(definition, start, totalTime + System.currentTimeMillis());
-                definition.getSubtrahend().getDefinition().accept(this);
+                subtrahend.getDefinition().accept(this);
                 return true;
             }
             return false;
@@ -624,15 +626,18 @@ public class ActiveSetAnalysis {
         private boolean doUpdateSelf(Definition definition) {
             long start = System.currentTimeMillis();
             Relation relation = definition.getDefinedRelation();
-            MutableEventGraph encode = getEncodeKnowledge(relation);
+            MutableEventGraph relevant = getRelevantSet(relation);
             update.removeAll(ra.getKnowledge(relation).getMustSet());
-            update.removeAll(encode);
-            boolean result = encode.addAll(update);
+            update.removeAll(relevant);
+            boolean result = relevant.addAll(update);
             time(definition, start, System.currentTimeMillis(), update.size());
             return result;
         }
 
-        private MutableEventGraph getEncodeKnowledge(Relation relation) {
+        // TODO: Is this supposed to be the active set?
+        //  Notice that without XRA (which LazyRA does not do), active sets and relevant sets
+        //  coincide, so it is just a naming issue
+        private MutableEventGraph getRelevantSet(Relation relation) {
             return data.computeIfAbsent(relation, x -> new MapEventGraph());
         }
 
@@ -842,13 +847,6 @@ public class ActiveSetAnalysis {
                 }
             });
             return Map.of(rscs.getDefinedRelation(), queue);
-        }
-
-        private EventGraph filterUnknowns(EventGraph news, Relation relation) {
-            RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
-            EventGraph may = k.getMaySet();
-            EventGraph must = k.getMustSet();
-            return news.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
         }
 
         private static Map<Relation, EventGraph> map(Relation r1, EventGraph s1, Relation r2, EventGraph s2) {
