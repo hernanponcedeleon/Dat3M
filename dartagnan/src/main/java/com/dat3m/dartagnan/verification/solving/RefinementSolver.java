@@ -195,8 +195,8 @@ public class RefinementSolver extends ModelChecker {
         final Configuration config = task.getConfig();
 
         // ------------------------ Preprocessing / Analysis ------------------------
-        preprocess(task);
         final Collection<Constraint> biases = addBiases(memoryModel, baselines);
+        preprocess(task);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
@@ -531,7 +531,9 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static Collection<Constraint> addBiases(Wmm wmm, EnumSet<Baseline> biases) {
-        final var constraints = new ArrayList<Constraint>();
+        if (biases.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // Base relations
         final Relation rf = wmm.getRelation(RF);
@@ -557,6 +559,7 @@ public class RefinementSolver extends ModelChecker {
         // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
         final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
 
+        final List<Constraint> constraints = new ArrayList<>();
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
@@ -579,7 +582,7 @@ public class RefinementSolver extends ModelChecker {
             // ---- empty (rmw & fre;coe) ----
             final Relation amo = wmm.getOrCreatePredefinedRelation(AMO);
             final Relation lxsx = wmm.getOrCreatePredefinedRelation(LXSX);
-            final Relation rmw = wmm.addDefinition(new Union(amo, lxsx));
+            final Relation rmw = wmm.addDefinition(new Union(wmm.newRelation(), amo, lxsx));
             final Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
             final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
             final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
