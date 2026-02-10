@@ -90,9 +90,13 @@ public abstract class IntervalTest {
         @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}, {4}")
         public static Iterable<Object[]> data() {
             return Arrays.asList(new Object[][]{
+
+                    // Negation
                     {-5,-2,2,5, IntUnaryOp.MINUS},
                     {2,5,-5,-2, IntUnaryOp.MINUS},
                     {-5,2,-2,5, IntUnaryOp.MINUS},
+
+                    // Underflow
                     {127,129,LB_TOP,UB_TOP,IntUnaryOp.MINUS},
 
                     // Trailing zeroes
@@ -106,6 +110,13 @@ public abstract class IntervalTest {
                     {-5,-2,0,0, IntUnaryOp.CTLZ},
                     {-5,2,0,8, IntUnaryOp.CTLZ},
 
+                    // NOT
+                    {-1, 5, -6, 0, IntUnaryOp.NOT},
+                    {-128, -127, 126, 127, IntUnaryOp.NOT},
+                    {55, 75, -76, -56, IntUnaryOp.NOT},
+
+                    // Underflow
+                    {127, 200, LB_TOP, UB_TOP, IntUnaryOp.NOT},
 
             });
         }
@@ -113,7 +124,7 @@ public abstract class IntervalTest {
          @Test
         public void test() {
             Interval result = operand.applyOperator(operator);
-            assertEquals(result, expected);
+            assertEquals(expected, result);
          }
 
     }

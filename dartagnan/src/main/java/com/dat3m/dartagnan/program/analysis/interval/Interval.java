@@ -142,10 +142,7 @@ final public class Interval {
             case MINUS -> this::negate;
             case CTPOP, CTTZ -> this::getBitwidthInterval;
             case CTLZ -> this::ctlz;
-            default -> {
-                unsupportedOperators.add(op);
-                yield null;
-            }
+            case NOT -> this::not;
         };
     }
 
@@ -330,11 +327,7 @@ final public class Interval {
     }
 
     private Interval negate() {
-        if (upperbound.compareTo(type.getMinimumValue(true).negate()) > 0) {
-            return Interval.getTop(type);
-        } else {
             return new Interval(upperbound.negate(), lowerbound.negate(), type);
-        }
     }
 
     private Interval ctlz() {
@@ -348,7 +341,10 @@ final public class Interval {
     private Interval getBitwidthInterval() {
         return new Interval(BigInteger.ZERO, BigInteger.valueOf(type.getBitWidth()), type);
     }
-
+    private Interval not() {
+        return new Interval(upperbound.not(), lowerbound.not(), type);
+    }
+    
     private Interval convertToSignedInterval() {
         int width = this.type.getBitWidth();
         return new Interval(
