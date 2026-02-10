@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
@@ -351,7 +352,7 @@ public class PropertyEncoder implements Encoder {
                 "The provided WMM needs a happens-before relation 'hb' to encode data races.");
         final Relation hbRelation = memoryModel.getRelation("hb");
         Preconditions.checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
+                        ax instanceof Acyclicity && ax.getRelation().equals(hbRelation)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
 
         final EncodingContext ctx = this.context;

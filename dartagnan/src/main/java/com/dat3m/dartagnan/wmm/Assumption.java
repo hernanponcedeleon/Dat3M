@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
-import java.util.Set;
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -23,8 +23,8 @@ public final class Assumption implements Constraint {
     public EventGraph getMustSet() { return must; }
 
     @Override
-    public Set<Relation> getConstrainedRelations() {
-        return Set.of(rel);
+    public List<Relation> getConstrainedRelations() {
+        return List.of(rel);
     }
 
     @Override

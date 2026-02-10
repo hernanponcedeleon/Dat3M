@@ -70,18 +70,4 @@ public abstract class Axiom implements Constraint {
         return this.rel.equals(other.rel);
     }
 
-
-    // ===================== Utility methods ===================
-    
-    public boolean isEmptiness() {
-    	return this instanceof Emptiness;
-    }
-    
-    public boolean isAcyclicity() {
-    	return this instanceof Acyclicity;
-    }
-    
-    public boolean isIrreflexivity() {
-    	return this instanceof Irreflexivity;
-    }
 }

@@ -6,13 +6,16 @@ import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface Constraint {
 
-    Collection<? extends Relation> getConstrainedRelations();
+    // Note: Can contain the same relation multiple times
+    List<? extends Relation> getConstrainedRelations();
 
     <T> T accept(Constraint.Visitor<? extends T> visitor);
+
+
 
     interface Visitor<T> {
 

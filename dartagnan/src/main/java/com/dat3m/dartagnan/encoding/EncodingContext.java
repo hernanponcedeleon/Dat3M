@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.DirectAddressDependency;
+import com.dat3m.dartagnan.wmm.definition.DirectDataDependency;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -285,21 +287,28 @@ public final class EncodingContext {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
-        EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
+        EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
-            if (!may.contains(e1, e2)) {
-                return booleanFormulaManager.makeFalse();
-            }
-            if (must.contains(e1, e2)) {
-                return execution(e1, e2);
-            }
-            return variable.encode(e1, e2);
+            return !may.contains(e1, e2)
+                    ? booleanFormulaManager.makeFalse()
+                    : must.contains(e1, e2)
+                    ? execution(e1, e2)
+                    : variable.encode(e1, e2);
         };
     }
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation).encode(first, second);
+    }
+
+    private EdgeEncoder getEdgeVariableEncoder(Definition def) {
+        if (def instanceof DirectAddressDependency || def instanceof DirectDataDependency) {
+            return this::dependency;
+        } else {
+            final String name = def.getDefinedRelation().getNameOrTerm();
+            return (e1, e2) -> edgeVariable(name, e1, e2);
+        }
     }
 
     // ====================================================================================
@@ -314,9 +323,9 @@ public final class EncodingContext {
     // Private implementation
 
     private static Collection<? extends Constraint> computeConstraintDependencies(Constraint c) {
-        final List<Relation> r = c instanceof Definition d ? d.getConstrainedRelations() : null;
-        final Collection<? extends Relation> rels = r == null ? c.getConstrainedRelations() : r.subList(1, r.size());
-        return rels.stream().map(Relation::getDefinition).toList();
+        final List<? extends Relation> rels = c.getConstrainedRelations();
+        final List<? extends Relation> deps = c instanceof Definition ? rels.subList(1, rels.size()) : rels;
+        return deps.stream().map(Relation::getDefinition).toList();
     }
 
     private void initialize() {
