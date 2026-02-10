@@ -575,6 +575,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
+        assert leftOperand.getType().equals(rightOperand.getType());
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
             return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
@@ -596,6 +597,7 @@ public final class ExpressionFactory {
 
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
+        assert leftOperand.getType().equals(rightOperand.getType());
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
             return makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
@@ -611,18 +613,6 @@ public final class ExpressionFactory {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
-    }
-
-
-    public Expression makeBitwiseNEQ(Expression leftOperand, Expression rightOperand) {
-        // casts both operands to archtype and compares them
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeBitwiseNEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType) {
-            return makeBitwiseNEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
-        }
-        return makeNEQ(leftOperand, rightOperand);
     }
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
