@@ -6,7 +6,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
@@ -467,7 +469,15 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getOptionalReturnRegister();
         Expression v1 = (Expression) ctx.re(0).accept(this);
         Expression v2 = (Expression) ctx.re(1).accept(this);
-        Expression result = expressions.makeIntCmp(v1, ctx.opCompare().op, v2);
+        Expression result;
+        if ((v1.getType() instanceof PointerType || v2.getType() instanceof PointerType) && (ctx.opCompare().op == IntCmpOp.EQ ||  ctx.opCompare().op == IntCmpOp.NEQ) ) {
+            var op = ctx.opCompare().op == IntCmpOp.EQ ? PtrCmpOp.EQ:PtrCmpOp.NEQ;
+            result = expressions.makeCompare(v1,op,v2);
+        }else if(!(v1.getType().equals(v2.getType()))){
+            result = expressions.makeCompare(expressions.makeCast(v1, archType), ctx.opCompare().op, expressions.makeCast(v2, archType));
+        }else{
+            result = expressions.makeCompare(v1, ctx.opCompare().op, v2);
+        }
         return assignToReturnRegister(register, result);
     }
 

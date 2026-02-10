@@ -615,16 +615,6 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
-    public Expression makeBitwiseEQ(Expression leftOperand, Expression rightOperand) {
-
-        if (leftOperand.getType() instanceof PointerType) {
-            return makeBitwiseEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType) {
-            return makeBitwiseEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
-        }
-        return makeEQ(leftOperand, rightOperand);
-    }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
