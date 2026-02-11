@@ -60,12 +60,6 @@ public final class EncodingContext {
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
-    @Option(
-            name=IDL_TO_SAT,
-            description = "Use SAT-based encoding for totality and acyclicity.",
-            secure = true)
-    boolean useSATEncoding = false;
-
     @Option(name = MERGE_CF_VARS,
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
@@ -125,16 +119,11 @@ public final class EncodingContext {
             Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
-        logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         logger.info("{}: {}", ROUNDING_MODE_FLOATS, context.roundingModeFloats);
         context.initialize();
 
         return context;
-    }
-
-    public boolean usesSATEncoding() {
-        return useSATEncoding;
     }
 
     public VerificationTask getTask() {
@@ -257,14 +246,6 @@ public final class EncodingContext {
 
     public BooleanFormula dependency(Event first, Event second) {
         return bmgr.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
-    }
-
-    public IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.hasTag(INIT)) {
-            return fmgr.getIntegerFormulaManager().makeNumber(0);
-        }
-        return fmgr.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public IntegerFormula clockVariable(String name, Event event) {

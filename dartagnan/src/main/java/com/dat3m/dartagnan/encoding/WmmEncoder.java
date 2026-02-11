@@ -42,7 +42,9 @@ import java.util.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
 import static com.dat3m.dartagnan.configuration.OptionNames.MULTI_READS;
 import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 
 @Options
@@ -70,6 +72,12 @@ public class WmmEncoder {
             secure = true)
     private boolean allowMultiReads = false;
 
+    @Option(
+            name=IDL_TO_SAT,
+            description = "Use SAT-based encoding for totality and acyclicity.",
+            secure = true)
+    boolean useSATEncoding = false;
+
     // ==============================================================================================
 
     private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
@@ -80,6 +88,7 @@ public class WmmEncoder {
         ctx.getTask().getConfig().inject(this);
         logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
         logger.info("{}: {}", MULTI_READS, allowMultiReads);
+        logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
     }
@@ -221,7 +230,7 @@ public class WmmEncoder {
     There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
 */
     private EventGraph findTransitivelyImpliedCo() {
-        if (context.useSATEncoding) {
+        if (useSATEncoding) {
             return EventGraph.empty();
         }
 
@@ -258,6 +267,14 @@ public class WmmEncoder {
 
     private EventGraph getRelevantSet(Axiom axiom) {
         return activeSetAnalysis.getRelevantSet(axiom);
+    }
+
+    private NumeralFormula.IntegerFormula memoryOrderClock(Event write) {
+        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
+            return context.getFormulaManager().getIntegerFormulaManager().makeNumber(0);
+        }
+        return context.getFormulaManager().getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     // ================================================================================================
@@ -730,7 +747,7 @@ public class WmmEncoder {
         @Override
         public Void visitCoherence(Coherence coDef) {
             final Relation co = coDef.getDefinedRelation();
-            boolean idl = !context.useSATEncoding;
+            boolean idl = !useSATEncoding;
             List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
@@ -744,7 +761,7 @@ public class WmmEncoder {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----
                 NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
                 for (MemoryCoreEvent w : allWrites) {
-                    NumeralFormula.IntegerFormula clock = context.memoryOrderClock(w);
+                    NumeralFormula.IntegerFormula clock = memoryOrderClock(w);
                     enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
                 }
             }
@@ -770,9 +787,9 @@ public class WmmEncoder {
                     }
                     if (idl) {
                         enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z) ? bmgr.makeTrue()
-                                : imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
+                                : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))));
                         enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
-                                : imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
+                                : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!mustSet.contains(x, z) && !mustSet.contains(z, x)) {
@@ -814,7 +831,7 @@ public class WmmEncoder {
         @Override
         public Void visitSyncFence(SyncFence syncFenceDef) {
             final Relation syncFence = syncFenceDef.getDefinedRelation();
-            final boolean idl = !context.useSATEncoding;
+            final boolean idl = !useSATEncoding;
             final String relName = syncFence.getName().orElseThrow(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
             allFenceSC.removeIf(e -> !e.getThread().hasScope());
@@ -926,7 +943,7 @@ public class WmmEncoder {
             final EventGraph relevantEdges = getRelevantSet(axiom);
             final List<BooleanFormula> enc = axiom.isNegated()
                     ? cyclicSAT(relation, relevantEdges) // There is no IDL-based encoding for inconsistency
-                    : context.usesSATEncoding()
+                    : useSATEncoding
                     ? acyclicSAT(relation, relevantEdges)
                     : acyclicIDL(relation, relevantEdges);
             return context.getBooleanFormulaManager().and(enc);

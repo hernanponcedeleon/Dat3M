@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
@@ -374,28 +373,17 @@ public class ExecutionModel {
             final Object addr = addrWrites.getKey();
             final Set<EventData> writes = addrWrites.getValue();
 
-            List<EventData> coSortedWrites;
-            if (ctx.usesSATEncoding()) {
-                // --- Extracting co from SAT-based encoding ---
-                Map<EventData, List<EventData>> coEdges = new HashMap<>();
-                for (EventData w1 : writes) {
-                    coEdges.put(w1, new ArrayList<>());
-                    for (EventData w2 : writes) {
-                        if (irModel.hasEdge(co, w1.getEvent(), w2.getEvent())) {
-                            coEdges.get(w1).add(w2);
-                        }
+            Map<EventData, List<EventData>> coEdges = new HashMap<>();
+            for (EventData w1 : writes) {
+                coEdges.put(w1, new ArrayList<>());
+                for (EventData w2 : writes) {
+                    if (irModel.hasEdge(co, w1.getEvent(), w2.getEvent())) {
+                        coEdges.get(w1).add(w2);
                     }
                 }
-                DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
-                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
-            } else {
-                // --- Extracting co from IDL-based encoding using clock variables ---
-                Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
-                for (EventData w : writes) {
-                    writeClockMap.put(w, irModel.memoryOrderClock(w.getEvent()));
-                }
-                coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }
+            DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
+            final List<EventData> coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
 
             // --- Apply internal clock orders (we always start from 0) --
             int i = 0;
