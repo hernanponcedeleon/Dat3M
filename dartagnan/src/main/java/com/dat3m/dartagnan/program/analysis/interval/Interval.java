@@ -130,6 +130,9 @@ final public class Interval {
             case UDIV -> this::udivide;
             case OR -> this::or;
             case AND -> this::and;
+            case LSHIFT -> this::lshift;
+            case RSHIFT -> this::rshift;
+            case ARSHIFT -> this::arshift;
             default -> {
                 unsupportedOperators.add(op);
                 yield null;
@@ -343,6 +346,36 @@ final public class Interval {
     }
     private Interval not() {
         return new Interval(upperbound.not(), lowerbound.not(), type);
+    }
+
+    private Interval lshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+            return new Interval(
+                    IntegerHelper.lshift(lowerbound, shiftBy, type.getBitWidth()),
+                    IntegerHelper.lshift(upperbound, shiftBy, type.getBitWidth()),
+                    type);
+    }
+
+    private Interval rshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+        if (doesNotCrossZero()) {
+            return new Interval(
+                    IntegerHelper.rshift(lowerbound, shiftBy, type.getBitWidth()),
+                    IntegerHelper.rshift(upperbound, shiftBy, type.getBitWidth()),
+                    type
+            );
+        } else {
+            return Interval.getTop(type);
+        }
+    }
+
+    private Interval arshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+        return new Interval(
+                IntegerHelper.arshift(lowerbound, shiftBy, type.getBitWidth()),
+                IntegerHelper.arshift(upperbound, shiftBy, type.getBitWidth()),
+                type
+        );
     }
     
     private Interval convertToSignedInterval() {

@@ -212,6 +212,18 @@ public abstract class IntervalTest {
                     {-4, 2, -20, 9, -20, 9, AND},
                     {-4, 2, 9, 20, 0, 20, AND},
                     {2, 4, -9, 20, 0, 4, AND},
+
+                    // Left shift
+                    {1, 5, 1, 1, 2, 10, LSHIFT},
+                    {-1, 5, 1, 1, -2, 10, LSHIFT},
+
+                    // Right shift
+                    {1, 5, 1, 1, 0, 2, RSHIFT},
+                    {-1, 5, 1, 1, LB_TOP, UB_TOP, RSHIFT},
+
+                    // Arithmetic right shift
+                    {1, 5, 1, 1, 0, 2, ARSHIFT},
+                    {-1, 5, 1, 1, -1, 2, ARSHIFT},
             });
         }
 
