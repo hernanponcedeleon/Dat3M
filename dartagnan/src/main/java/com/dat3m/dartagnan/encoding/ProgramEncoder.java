@@ -748,7 +748,7 @@ public class ProgramEncoder implements Encoder {
 
     // ============= Bounds =============
 
-    private List<BooleanFormula> encodeRegisterBounds(Formula variable, Interval interval) {
+    private BooleanFormula encodeRegisterBounds(Formula variable, Interval interval) {
         List<BooleanFormula> encoding = new ArrayList<>();
         if (!interval.isTop()) {
             BigInteger lowerbound = interval.getLowerbound();
@@ -766,7 +766,7 @@ public class ProgramEncoder implements Encoder {
                 encoding.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
             }
         }
-        return encoding;
+        return context.getBooleanFormulaManager().and(encoding);
     }
 
     public BooleanFormula encodeBounds() {
@@ -777,7 +777,7 @@ public class ProgramEncoder implements Encoder {
                 Register r = read.register();
                 if (r.getType() instanceof IntegerType) {
                     Interval interval = intervalAnalysis.getIntervalAt(e, r);
-                    encoding.addAll(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
+                    encoding.add(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
                 }
             }
         }
