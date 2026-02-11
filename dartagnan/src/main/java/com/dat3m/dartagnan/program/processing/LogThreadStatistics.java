@@ -9,14 +9,15 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class LogThreadStatistics implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(LogThreadStatistics.class);
+    private static final Logger logger = LoggerFactory.getLogger(LogThreadStatistics.class);
 
     private LogThreadStatistics() { }
 
@@ -75,6 +76,6 @@ public class LogThreadStatistics implements ProgramProcessor {
                 .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n")
                 .append("\t#Unknown allocations: ").append(numUnknownSizedAllocations).append("\n");
         output.append("========================================");
-        logger.info(output);
+        logger.info(output.toString());
     }
 }

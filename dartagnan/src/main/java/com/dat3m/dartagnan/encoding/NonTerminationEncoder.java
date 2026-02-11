@@ -17,11 +17,12 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -112,7 +113,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
  */
 public class NonTerminationEncoder {
 
-    private static final Logger logger = LogManager.getLogger(NonTerminationEncoder.class);
+    private static final Logger logger = LoggerFactory.getLogger(NonTerminationEncoder.class);
 
     private final EncodingContext context;
     private final VerificationTask task;

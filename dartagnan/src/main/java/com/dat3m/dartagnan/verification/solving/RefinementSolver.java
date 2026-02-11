@@ -15,8 +15,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -35,16 +35,15 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.Cut;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -68,8 +67,6 @@ import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-;
-
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
     and iteratively refines it to perform a verification task.
@@ -83,9 +80,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 @Options
 public class RefinementSolver extends ModelChecker {
 
-    private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
-
-    private EncodingContext contextWithFullWmm;
+    private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
     // ================================================================================================================
     // Configuration
@@ -167,33 +162,18 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
-    private RefinementSolver() {
+    private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
+        super(task);
+        task.getConfig().inject(this);
     }
 
-    public EncodingContext getContextWithFullWmm() {
-        return contextWithFullWmm;
+    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
+        return new RefinementSolver(task);
     }
 
-    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
-    // constraints on hb, which is not encoded in Refinement.
-    //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        RefinementSolver solver = new RefinementSolver();
-        task.getConfig().inject(solver);
-        logger.info("{}: {}", BASELINE, solver.baselines);
-        solver.runInternal(ctx, prover, task);
-        return solver;
-    }
-
-    private void runInternal(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        final Program program = task.getProgram();
-        final Wmm memoryModel = task.getMemoryModel();
-        final Context analysisContext = Context.create();
+    protected void preprocess(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-
-        // ------------------------ Preprocessing / Analysis ------------------------
+        final Wmm memoryModel = task.getMemoryModel();
 
         // TODO: This is a reasonable transformation for all methods (eager/lazy), however,
         //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
@@ -204,42 +184,45 @@ public class RefinementSolver extends ModelChecker {
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);
+    }
 
+    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
+    // constraints on hb, which is not encoded in Refinement.
+    @Override
+    protected void runInternal()
+            throws InterruptedException, SolverException, InvalidConfigurationException {
+        final VerificationTask task = this.task;
+        final Program program = task.getProgram();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Configuration config = task.getConfig();
+
+        // ------------------------ Preprocessing / Analysis ------------------------
+        preprocess(task);
+        final Collection<Constraint> biases = addBiases(memoryModel, baselines);
+
+        final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
-        // Copy context without WMM analyses because we want to analyse a second model later
-        Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        // Encoding context with the original Wmm and the analysis context for relation extraction.
-        contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
-
         //  ------- Generate refinement model -------
-        final RefinementModel refinementModel = generateRefinementModel(memoryModel);
-        final Wmm baselineModel = refinementModel.getBaseModel();
-        addBiases(baselineModel, baselines);
-        baselineModel.configureAll(config); // Configure after cutting!
-        refinementModel.transferKnowledgeFromOriginal(analysisContext.requires(RelationAnalysis.class));
-        refinementModel.forceEncodeBoundary();
-
-        final VerificationTask baselineTask = VerificationTask.builder()
-                .withConfig(task.getConfig())
-                .withProgressModel(task.getProgressModel())
-                .build(program, baselineModel, task.getProperty());
-        performStaticWmmAnalyses(baselineTask, baselineContext, config);
+        final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
+        // The cut has to be encoded.
+        wmmConstraintsToEncode.addAll(generateCut(memoryModel));
 
         // ------------------------ Encoding ------------------------
+        initSMTSolver(config);
+        final SolverContext ctx = this.solverContext;
+        final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(baselineTask, baselineContext, ctx.getFormulaManager());
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
-        // We use the original memory model for symmetry breaking because we need axioms
-        // to compute the breaking order.
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext, config);
-        final Refiner refiner = new Refiner(refinementModel);
+        final WMMSolver solver = WMMSolver.withContext(context);
+        final Refiner refiner = Refiner.newInstance();
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using {}", ctx.getVersion());
@@ -310,7 +293,6 @@ public class RefinementSolver extends ModelChecker {
             }
         } else {
             res = FAIL;
-            saveFlaggedPairsOutput(baselineModel, prover, context, task.getProgram());
         }
 
         // -------------------------- Report statistics summary --------------------------
@@ -320,11 +302,7 @@ public class RefinementSolver extends ModelChecker {
         }
 
         if (logger.isDebugEnabled()) {
-            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-            for (String key : prover.getStatistics().keySet()) {
-                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-            }
-            logger.debug(smtStatistics.toString());
+            logProverStatistics(logger, prover);
         }
 
         if (printCovReport) {
@@ -358,7 +336,7 @@ public class RefinementSolver extends ModelChecker {
         }
         SyntacticContextAnalysis synContext = analysisContext.get(SyntacticContextAnalysis.class);
         if (synContext == null) {
-            synContext = newInstance(task.getProgram());
+            synContext = SyntacticContextAnalysis.newInstance(task.getProgram());
         }
 
         final Map<Object, Set<EventData>> addr2Events = new HashMap<>();
@@ -403,14 +381,14 @@ public class RefinementSolver extends ModelChecker {
         final List<RefinementIteration> trace = new ArrayList<>();
         boolean isFinalIteration = false;
         while (!isFinalIteration) {
-
+            checkForInterrupts();
             final RefinementIteration iteration = doRefinementIteration(prover, solver, refiner);
             trace.add(iteration);
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles && iteration.smtStatus == SMTStatus.SAT) {
-                try (IREvaluator evaluator = contextWithFullWmm.newEvaluator(prover)) {
+                try (IREvaluator evaluator = context.newEvaluator(prover)) {
                     final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
                     generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
                 }
@@ -423,7 +401,7 @@ public class RefinementSolver extends ModelChecker {
                     for (String key : prover.getStatistics().keySet()) {
                         smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
                     }
-                    logger.debug(smtStatistics);
+                    logger.debug(smtStatistics.toString());
                 }
 
                 // ---- Debug iteration stats ----
@@ -435,7 +413,7 @@ public class RefinementSolver extends ModelChecker {
                 if (!isFinalIteration) {
                     debugMessage.append(iteration.caatStats);
                 }
-                logger.debug(debugMessage);
+                logger.debug(debugMessage.toString());
 
                 // ---- Trace iteration stats ----
                 if (logger.isTraceEnabled() && !isFinalIteration) {
@@ -443,7 +421,7 @@ public class RefinementSolver extends ModelChecker {
                     for (Conjunction<CoreLiteral> cube : iteration.inconsistencyReasons.getCubes()) {
                         traceMessage.append(cube).append("\n");
                     }
-                    logger.trace(traceMessage);
+                    logger.trace(traceMessage.toString());
                 }
             }
         }
@@ -484,7 +462,7 @@ public class RefinementSolver extends ModelChecker {
             try (IREvaluator model = context.newEvaluator(prover)) {
                 solverResult = solver.check(model);
             } catch (SolverException e) {
-                logger.error(e);
+                logger.error(e.getMessage());
                 throw e;
             }
             caatTime = (System.currentTimeMillis() - lastTime);
@@ -523,12 +501,12 @@ public class RefinementSolver extends ModelChecker {
                 || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation;
     }
 
-    private static RefinementModel generateRefinementModel(Wmm original) {
+    private static Set<Constraint> generateCut(Wmm model) {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
         final Set<Constraint> constraintsToCut = new HashSet<>();
-        for (Constraint c : original.getConstraints()) {
+        for (Constraint c : model.getConstraints()) {
             if (c instanceof Axiom ax && ax.isNegated()) {
                 // (i) Negated axioms
                 constraintsToCut.add(ax);
@@ -547,11 +525,11 @@ public class RefinementSolver extends ModelChecker {
                 }
             }
         }
-
-        return RefinementModel.fromCut(Cut.computeInducedCut(original, constraintsToCut));
+        return constraintsToCut;
     }
 
-    private static void addBiases(Wmm wmm, EnumSet<Baseline> biases) {
+    private static Collection<Constraint> addBiases(Wmm wmm, EnumSet<Baseline> biases) {
+        final var constraints = new ArrayList<Constraint>();
 
         // Base relations
         final Relation rf = wmm.getRelation(RF);
@@ -579,7 +557,7 @@ public class RefinementSolver extends ModelChecker {
 
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
                 wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
                 rf,
                 co,
@@ -588,7 +566,7 @@ public class RefinementSolver extends ModelChecker {
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
                 wmm.getOrCreatePredefinedRelation(CTRL),
                 wmm.getOrCreatePredefinedRelation(DATA),
                 wmm.getOrCreatePredefinedRelation(ADDR),
@@ -604,8 +582,10 @@ public class RefinementSolver extends ModelChecker {
             final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
             final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
             final Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
-            wmm.addConstraint(new Emptiness(rmwANDfrecoe));
+            constraints.add(new Emptiness(rmwANDfrecoe));
         }
+        constraints.forEach(wmm::addConstraint);
+        return constraints;
     }
 
     private static void removeFlaggedAxiomsIfNotNeeded(VerificationTask task) {
@@ -768,7 +748,7 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Statistics & Debugging
 
-    private static CharSequence generateSummary(RefinementTrace trace, long boundCheckTime) {
+    private static String generateSummary(RefinementTrace trace, long boundCheckTime) {
         final List<WMMSolver.Statistics> statList = trace.iterations.stream()
                 .filter(iter -> iter.caatStats != null).map(RefinementIteration::caatStats).toList();
         final long totalNativeSolvingTime = trace.getNativeSmtTime();
@@ -818,7 +798,7 @@ public class RefinementSolver extends ModelChecker {
                     .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
 
-        return message;
+        return message.toString();
     }
 
     private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,
@@ -839,7 +819,7 @@ public class RefinementSolver extends ModelChecker {
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
         
-        final SyntacticContextAnalysis synContext = newInstance(program);
+        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
 
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());

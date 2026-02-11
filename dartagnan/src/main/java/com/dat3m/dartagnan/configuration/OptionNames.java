@@ -41,6 +41,7 @@ public class OptionNames {
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
     public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
     public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
+    public static final String ROUNDING_MODE_FLOATS = "encoding.roundingModeFloat";
 
     // Program Processing Options
     public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
@@ -83,6 +84,7 @@ public class OptionNames {
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";
+    public static final String NATIVE = "svcomp.native";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";

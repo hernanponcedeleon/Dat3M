@@ -118,6 +118,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
                 setInitialValue(offset + innerOffset, structElements.get(i));
             }
         } else if (value.getType() instanceof IntegerType
+                || value.getType() instanceof FloatType
                 || value.getType() instanceof BooleanType) {
             checkArgument(isInRange(offset), "array index out of bounds");
             initialValues.put(offset, value);

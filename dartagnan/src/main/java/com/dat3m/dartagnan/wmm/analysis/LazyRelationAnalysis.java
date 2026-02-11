@@ -22,11 +22,12 @@ import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.*;
@@ -40,7 +41,7 @@ import static java.util.stream.Collectors.toSet;
 
 public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(LazyRelationAnalysis.class);
+    private static final Logger logger = LoggerFactory.getLogger(LazyRelationAnalysis.class);
 
     private final Map<Relation, RelationAnalysis.Knowledge> lazyKnowledgeMap = new HashMap<>();
     private final LazyInitializer lazyInitializer;

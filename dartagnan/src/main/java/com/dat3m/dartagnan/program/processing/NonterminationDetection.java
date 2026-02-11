@@ -12,13 +12,14 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -43,7 +44,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.NONTERMINATION_INSTR
 @Options
 public class NonterminationDetection implements ProgramProcessor {
     
-    private static final Logger logger = LogManager.getLogger(NonterminationDetection.class);
+    private static final Logger logger = LoggerFactory.getLogger(NonterminationDetection.class);
 
     public enum Mode {
         ONLY_SPINLOOPS,

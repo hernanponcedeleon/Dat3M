@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.wmm.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -20,9 +19,10 @@ import java.util.List;
  */
 public class Refiner {
 
-    private final RefinementModel refinementModel;
-    public Refiner(RefinementModel refinementModel) {
-        this.refinementModel = refinementModel;
+    private Refiner() {}
+
+    public static Refiner newInstance() {
+        return new Refiner();
     }
 
     public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
@@ -54,8 +54,7 @@ public class Refiner {
         } else if (literal instanceof AddressLiteral loc) {
             enc = encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
         } else if (literal instanceof RelLiteral lit) {
-            final Relation rel = refinementModel.translateToBase(lit.getRelation());
-            enc = encoder.edge(rel, lit.getSource(), lit.getTarget());
+            enc = encoder.edge(lit.getRelation(), lit.getSource(), lit.getTarget());
         } else {
             throw new IllegalArgumentException("CoreLiteral " + literal + " is not supported");
         }

@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,8 +25,6 @@ public abstract class Axiom implements Constraint {
         this.negated = negated;
         this.flag = flag;
     }
-
-    public void configure(Configuration config) throws InvalidConfigurationException { }
 
     @Override
     public List<? extends Relation> getConstrainedRelations() {

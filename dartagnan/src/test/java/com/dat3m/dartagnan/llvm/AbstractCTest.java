@@ -1,29 +1,27 @@
 package com.dat3m.dartagnan.llvm;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.configuration.ProgressModel;
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.configuration.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCTest {
 
@@ -41,10 +39,18 @@ public abstract class AbstractCTest {
 
     protected abstract long getTimeout();
 
-    protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(OptionNames.USE_INTEGERS, "true")
-                .build();
+    protected final Configuration getBaseConfiguration() throws InvalidConfigurationException {
+        var configBase = Configuration.builder()
+                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
+                .setOption(OptionNames.BOUND, getBoundProvider().get().toString())
+                .setOption(OptionNames.TARGET, targetProvider.get().name())
+                .setOption(OptionNames.PHANTOM_REFERENCES, "true");
+
+        return additionalConfig(configBase).build();
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(OptionNames.USE_INTEGERS, "true");
     }
 
     protected Provider<String> getProgramPathProvider() {
@@ -67,10 +73,6 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(this::getConfiguration);
-    }
-
     protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
         return ProgressModel::defaultHierarchy;
     }
@@ -87,10 +89,8 @@ public abstract class AbstractCTest {
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configurationProvider);
-    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, solverProvider);
-    protected final Provider<ProverWithTracker> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
+    protected final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getBaseConfiguration);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configurationProvider);
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
@@ -100,7 +100,6 @@ public abstract class AbstractCTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
-            .around(configurationProvider)
             .around(filePathProvider)
             .around(boundProvider)
             .around(programProvider)
@@ -108,10 +107,17 @@ public abstract class AbstractCTest {
             .around(progressModelProvider)
             .around(solverProvider)
             .around(propertyProvider)
+            .around(configurationProvider)
             .around(taskProvider)
-            .around(timeout)
-            // Context/Prover need to be created inside test-thread spawned by <timeout>
-            .around(contextProvider)
-            .around(proverProvider);
+            .around(timeout);
+
+
+    protected void testModelChecker(Method method) throws Exception {
+        try (ModelChecker checker = ModelChecker.create(taskProvider.get(), method)) {
+            checker.setShutdownManager(shutdownManagerProvider.get());
+            checker.run();
+            assertEquals(expected, checker.getResult());
+        }
+    }
 
 }

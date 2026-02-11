@@ -9,11 +9,9 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.LazyRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -24,10 +22,11 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -47,9 +46,9 @@ import static com.google.common.base.Verify.verify;
 @Options
 public class WmmEncoder implements Encoder {
 
-    private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
-    final Map<Relation, EventGraph> encodeSets;
+    private static final Logger logger = LoggerFactory.getLogger(WmmEncoder.class);
     private final EncodingContext context;
+    Map<Relation, EventGraph> encodeSets;
 
     // =====================================================================
     @Option(name = ENABLE_ACTIVE_SETS,
@@ -75,13 +74,13 @@ public class WmmEncoder implements Encoder {
     private WmmEncoder(EncodingContext c) {
         context = c;
         c.getAnalysisContext().requires(RelationAnalysis.class);
-        encodeSets = initializeEncodeSets();
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         long t0 = System.currentTimeMillis();
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
+        encoder.encodeSets = encoder.initializeEncodeSets();
         if (logger.isInfoEnabled()) {
             logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
             logger.info("{}: {}", MEMORY_IS_ZEROED, encoder.memoryIsZeroed);
@@ -103,48 +102,22 @@ public class WmmEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFullMemoryModel() {
-        return context.getBooleanFormulaManager().and(
-                encodeRelations(),
-                encodeConsistency()
-        );
-    }
-
-    // Initializes everything just like encodeAnarchicSemantics but also encodes all
-    // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
-    // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
-    public BooleanFormula encodeRelations() {
-        logger.info("Encoding relations");
-        Wmm memoryModel = context.getTask().getMemoryModel();
-        final DependencyGraph<Relation> depGraph = DependencyGraph.from(
-                Iterables.concat(
-                        Iterables.transform(Wmm.ANARCHIC_CORE_RELATIONS, memoryModel::getRelation), // base relations
-                        Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
-                )
-        );
-        RelationEncoder v = new RelationEncoder();
-        for (Relation rel : depGraph.getNodeContents()) {
-            logger.trace("Encoding relation '{}'", rel);
-            rel.getDefinition().accept(v);
+        final Collection<Constraint> toEncode = context.constraintsToEncode;
+        final Collection<? extends Constraint> total = context.getTask().getMemoryModel().getConstraints();
+        logger.info("Encoding {} of {} constraints.", toEncode.size(), total.size());
+        final var encoder = new RelationEncoder();
+        for (Constraint c : toEncode) {
+            logger.trace("Encoding {} '{}'", c instanceof Definition ? "definition" : "axiom", c);
+            c.accept(encoder);
         }
-        return v.bmgr.and(v.enc);
+        encodeContradictions(encoder.enc);
+        return encoder.bmgr.and(encoder.enc);
     }
 
-    // Encodes all axioms. This should be called after <encodeRelations>
-    public BooleanFormula encodeConsistency() {
-        logger.info("Encoding consistency");
-        Wmm memoryModel = context.getTask().getMemoryModel();
+    private void encodeContradictions(List<BooleanFormula> enc) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
-        List<BooleanFormula> enc = new ArrayList<>();
-        for (Axiom a : memoryModel.getAxioms()) {
-            if (!a.isFlagged()) {
-                logger.trace("Encoding axiom '{}'", a);
-                enc.addAll(a.consistent(context));
-            }
-        }
-        ra.getContradictions()
-                .apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
-        return bmgr.and(enc);
+        final RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        ra.getContradictions().apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
     }
 
     private Map<Relation, EventGraph> initializeEncodeSets() {
@@ -798,6 +771,14 @@ public class WmmEncoder implements Encoder {
                         }
                     }
                 }
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitAxiom(Axiom axiom) {
+            if (!axiom.isFlagged()) {
+                enc.addAll(axiom.consistent(context));
             }
             return null;
         }

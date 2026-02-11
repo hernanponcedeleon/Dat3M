@@ -14,10 +14,11 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -32,7 +33,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
 class VisitorCat extends CatBaseVisitor<Object> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorCat.class);
+    private static final Logger logger = LoggerFactory.getLogger(VisitorCat.class);
 
     // The directory path used to resolve include statements.
     private final Path includePath;

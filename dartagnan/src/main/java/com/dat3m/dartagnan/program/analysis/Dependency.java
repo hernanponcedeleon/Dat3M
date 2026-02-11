@@ -8,10 +8,11 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.verification.Context;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -30,7 +31,7 @@ import static java.util.stream.IntStream.range;
  */
 public final class Dependency implements ReachingDefinitionsAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(Dependency.class);
+    private static final Logger logger = LoggerFactory.getLogger(Dependency.class);
 
     private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
     private final Map<Register, State> finalWriters = new HashMap<>();

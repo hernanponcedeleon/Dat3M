@@ -1,15 +1,13 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
@@ -18,7 +16,6 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class MiscellaneousTest extends AbstractCTest {
@@ -42,21 +39,18 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 10000;
+        return 20000;
     }
 
     @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> {
-            ConfigurationBuilder builder = Configuration.builder();
-            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
-                builder.setOption(OptionNames.USE_INTEGERS, "true");
-            }
-            if (name.equals("recursion")) {
-                builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
-            }
-            return builder.build();
-        });
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs") && !name.startsWith("floats")) {
+            builder.setOption(OptionNames.USE_INTEGERS, "true");
+        }
+        if (name.equals("recursion")) {
+            builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
+        }
+        return builder;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -104,18 +98,32 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"unknown_function", IMM, FAIL, 1},
                 {"ffs", IMM, PASS, 1},
                 {"zero-extension", IMM, PASS, 1},
+                {"floats_1", IMM, PASS, 1},
+                {"floats_2", IMM, PASS, 1},
+                // {"floats_3", IMM, PASS, 1}, // TODO we can enable this once we have proper support for bitcats, see #957
+                {"floats_4", IMM, PASS, 1},
+                {"floats_5", IMM, PASS, 1},
+                {"floats_5_f", IMM, FAIL, 1},
+                {"floats_6", IMM, PASS, 1},
+                {"floats_6_f", IMM, FAIL, 1},
+                {"floats_7", IMM, PASS, 1},
+                {"floats_8", IMM, PASS, 1},
+                {"floats_9", IMM, PASS, 1},
+                {"floats_10", IMM, PASS, 1},
+                {"floats_11", IMM, PASS, 1},
+                {"floats_12", IMM, PASS, 1},
+                {"floats_13", IMM, PASS, 1},
+                {"floats_14", IMM, PASS, 1},
         });
     }
 
     @Test
     public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.LAZY);
     }
 }

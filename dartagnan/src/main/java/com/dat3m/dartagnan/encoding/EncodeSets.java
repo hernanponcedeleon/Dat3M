@@ -128,7 +128,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
                 }
             }
         }
-        return Map.of(product.getDomain(), set1, product.getRange(), set2);
+        return map(product.getDomain(), set1, product.getRange(), set2);
     }
 
     @Override

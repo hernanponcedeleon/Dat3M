@@ -22,12 +22,13 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -47,7 +48,7 @@ import static java.util.stream.Collectors.toMap;
 @Options
 public class ProgramEncoder implements Encoder {
 
-    private static final Logger logger = LogManager.getLogger(ProgramEncoder.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProgramEncoder.class);
 
     // =========================== Configurables ===========================
 

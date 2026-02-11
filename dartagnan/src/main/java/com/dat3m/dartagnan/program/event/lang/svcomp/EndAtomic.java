@@ -7,10 +7,11 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -19,7 +20,7 @@ import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 
 public class EndAtomic extends AbstractEvent implements EventUser {
 
-    private static final Logger logger = LogManager.getLogger(EndAtomic.class);
+    private static final Logger logger = LoggerFactory.getLogger(EndAtomic.class);
 
     protected BeginAtomic begin;
     protected transient List<Event> enclosedEvents;

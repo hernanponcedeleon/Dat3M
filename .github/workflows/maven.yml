@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 0 * * 2'  # Run weekly
+    - cron: '0 0 * * 4'  # Run weekly
   workflow_dispatch:
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -65,7 +65,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -89,7 +89,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -113,7 +113,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -143,7 +143,7 @@ jobs:
       - name: Set up the Java JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'adopt'
           cache: maven
 
@@ -172,12 +172,14 @@ jobs:
           ref: badges
           path: badges
 
-      - name: Set up the Java JDK
-        uses: actions/setup-java@v3
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17'
-          distribution: 'adopt'
+          java-version: '25'
+          distribution: 'graalvm'
+          components: 'native-image'
           cache: maven
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
@@ -186,7 +188,7 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots install
+        run: mvn --batch-mode --update-snapshots -Pnative install
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile

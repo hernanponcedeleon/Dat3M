@@ -10,16 +10,17 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
 
-    private static final Logger logger = LogManager.getLogger(LazyEncodeSets.class);
+    private static final Logger logger = LoggerFactory.getLogger(LazyEncodeSets.class);
 
     private final RelationAnalysis ra;
     private final Map<Relation, MutableEventGraph> data;

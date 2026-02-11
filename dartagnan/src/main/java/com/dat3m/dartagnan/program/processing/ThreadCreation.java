@@ -28,11 +28,12 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -68,7 +69,7 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 @Options
 public class ThreadCreation implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(ThreadCreation.class);
+    private static final Logger logger = LoggerFactory.getLogger(ThreadCreation.class);
 
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
             description = "Calling pthread_create is guaranteed to succeed.",
