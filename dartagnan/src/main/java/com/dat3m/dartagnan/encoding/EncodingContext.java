@@ -53,8 +53,8 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final FormulaManagerExt formulaManager;
-    private final BooleanFormulaManager booleanFormulaManager;
+    private final FormulaManagerExt fmgr;
+    private final BooleanFormulaManager bmgr;
     final Collection<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
@@ -102,16 +102,19 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        formulaManager = new FormulaManagerExt(m);
-        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        fmgr = new FormulaManagerExt(m);
+        bmgr = fmgr.getBooleanFormulaManager();
+        exprEncoder = new ExpressionEncoder(this);
+
+
         // All anarchic relations have to be encoded.
         final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()
                 .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
                 .toList();
         final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
         constraintsToEncode = new LinkedHashSet<>(
-                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents());
-        exprEncoder = new ExpressionEncoder(this);
+                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents()
+        );
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -143,11 +146,11 @@ public final class EncodingContext {
     }
 
     public FormulaManagerExt getFormulaManager() {
-        return formulaManager;
+        return fmgr;
     }
 
     public BooleanFormulaManager getBooleanFormulaManager() {
-        return booleanFormulaManager;
+        return bmgr;
     }
 
     public boolean isEncoded(Constraint c) { return constraintsToEncode.contains(c); }
@@ -164,11 +167,11 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpTaken(CondJump jump) {
-        return booleanFormulaManager.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
+        return bmgr.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
     }
 
     public BooleanFormula blocked(BlockingEvent barrier) {
-        return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
+        return bmgr.and(controlFlow(barrier), bmgr.not(execution(barrier)));
     }
 
     public BooleanFormula unblocked(BlockingEvent barrier) {
@@ -193,7 +196,7 @@ public final class EncodingContext {
         if (executionAnalysis.isImplied(y, x)) {
             return execution(y);
         }
-        return booleanFormulaManager.and(execution(x), execution(y));
+        return bmgr.and(execution(x), execution(y));
     }
 
     // ====================================================================================
@@ -201,7 +204,7 @@ public final class EncodingContext {
 
     public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second)
-                ? booleanFormulaManager.makeTrue()
+                ? bmgr.makeTrue()
                 : exprEncoder.equal(address(first), address(second));
     }
 
@@ -232,13 +235,13 @@ public final class EncodingContext {
     /// Describes that {@code object} has been allocated, but has not been deallocated during the execution.
     public BooleanFormula leakVariable(MemoryObject object) {
         final int allocationSiteId = object.getAllocationSite().getGlobalId();
-        return booleanFormulaManager.makeVariable(formulaManager.escape("leak%d".formatted(allocationSiteId)));
+        return bmgr.makeVariable(fmgr.escape("leak%d".formatted(allocationSiteId)));
     }
 
     /// Describes that {@code object} is reachable from static memory at the end of the execution.
     public BooleanFormula trackVariable(MemoryObject object) {
         final int allocationSiteId = object.getAllocationSite().getGlobalId();
-        return booleanFormulaManager.makeVariable(formulaManager.escape("track%d".formatted(allocationSiteId)));
+        return bmgr.makeVariable(fmgr.escape("track%d".formatted(allocationSiteId)));
     }
 
     public TypedFormula<?, ?> value(MemoryCoreEvent event) {
@@ -253,29 +256,29 @@ public final class EncodingContext {
     // Relations
 
     public BooleanFormula dependency(Event first, Event second) {
-        return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
+        return bmgr.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     public IntegerFormula memoryOrderClock(Event write) {
         checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
         if (write.hasTag(INIT)) {
-            return formulaManager.getIntegerFormulaManager().makeNumber(0);
+            return fmgr.getIntegerFormulaManager().makeNumber(0);
         }
-        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
+        return fmgr.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public IntegerFormula clockVariable(String name, Event event) {
-        return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
+        return fmgr.getIntegerFormulaManager().makeVariable(fmgr.escape(name) + " " + event.getGlobalId());
     }
 
     // Careful: The semantics of this variable is currently only encoded when doing liveness checking
     //  or verifying litmus code.
     public BooleanFormula lastCoVar(Event write) {
-        return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
+        return bmgr.makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {
-        return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
+        return bmgr.makeVariable(fmgr.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     @FunctionalInterface
@@ -291,7 +294,7 @@ public final class EncodingContext {
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
             return !may.contains(e1, e2)
-                    ? booleanFormulaManager.makeFalse()
+                    ? bmgr.makeFalse()
                     : must.contains(e1, e2)
                     ? execution(e1, e2)
                     : variable.encode(e1, e2);
@@ -336,14 +339,14 @@ public final class EncodingContext {
         final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel().isFair();
         if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
-                BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
+                BooleanFormula v = bmgr.makeVariable("cf " + cls.getRepresentative().getGlobalId());
                 for (Event e : cls) {
                     controlFlowVariables.put(e, v);
                 }
             }
         } else {
             for (Event e : verificationTask.getProgram().getThreadEvents()) {
-                controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
+                controlFlowVariables.put(e, bmgr.makeVariable("cf " + e.getGlobalId()));
             }
         }
 
@@ -358,10 +361,10 @@ public final class EncodingContext {
         // ------- Event variables  -------
         for (Event e : verificationTask.getProgram().getThreadEvents()) {
             if (e instanceof NamedBarrier b) {
-                syncVariables.put(b, booleanFormulaManager.makeVariable("sync " + e.getGlobalId()));
+                syncVariables.put(b, bmgr.makeVariable("sync " + e.getGlobalId()));
             }
             if (!e.cfImpliesExec()) {
-                executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
+                executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
             }
             if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();
