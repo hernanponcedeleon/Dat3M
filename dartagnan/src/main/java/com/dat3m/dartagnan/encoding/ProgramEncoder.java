@@ -774,14 +774,11 @@ public class ProgramEncoder implements Encoder {
         IntervalAnalysis intervalAnalysis = context.getAnalysisContext().requires(IntervalAnalysis.class);
         for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             for (Register.Read read : e.getRegisterReads()) {
-                Register r = read.register();
-                if (r.getType() instanceof IntegerType) {
-                    Interval interval = intervalAnalysis.getIntervalAt(e, r);
-                    encoding.add(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
+                if (read.register().getType() instanceof IntegerType) {
+                    encoding.add(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
                 }
             }
         }
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return bmgr.and(encoding);
+        return context.getBooleanFormulaManager().and(encoding);
     }
 }

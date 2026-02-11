@@ -235,8 +235,7 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         // Bounds
         prover.writeComment("Bounds over variables");
-        BooleanFormula bounds = programEncoder.encodeBounds();
-        prover.addConstraint(bounds);
+        prover.addConstraint(programEncoder.encodeBounds());
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
