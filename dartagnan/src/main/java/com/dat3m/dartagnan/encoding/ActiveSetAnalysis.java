@@ -164,6 +164,7 @@ public class ActiveSetAnalysis {
         RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
+        // TODO: This returns a new graph, is this intended?
         return graph.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
     }
 
@@ -211,15 +212,14 @@ public class ActiveSetAnalysis {
                 }
             }
 
-            final int originalSize = result.size();
-            if (reduceAcyclicityRelevantSets) {
-                EventGraph obsolete = transitivelyDerivableMustEdges(exec, ra.getKnowledge(rel));
-                result.removeAll(obsolete);
-                final int reducedSize = result.size();
 
+            if (reduceAcyclicityRelevantSets) {
+                final int originalSize = result.size();
+                result.removeAll(transitivelyDerivableMustEdges(exec, ra.getKnowledge(rel)));
+                final int reducedSize = result.size();
                 logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
             } else {
-                logger.info("Relevant set size: {} ", originalSize);
+                logger.info("Relevant set size: {} ", result.size());
             }
 
             return result;

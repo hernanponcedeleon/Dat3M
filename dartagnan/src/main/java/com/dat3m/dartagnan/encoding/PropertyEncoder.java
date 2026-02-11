@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -16,14 +15,12 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -130,7 +127,7 @@ public class PropertyEncoder {
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
             //  that are relevant for the specification (e.g., only variables that are used in loops).
-            encoding = bmgr.and(encoding, encodeLastCoConstraints());
+            encoding = bmgr.and(encoding, wmmEncoder.encodeLastCoConstraints());
         }
         return encoding;
     }
@@ -175,86 +172,6 @@ public class PropertyEncoder {
         final TrackableFormula progSpec = encodeProgramSpecification();
         // NOTE: We have a single property to check, so the tracking becomes trivial.
         return bmgr.and(progSpec.trackingLiteral, progSpec.trackedFormula);
-    }
-
-    private BooleanFormula encodeLastCoConstraints() {
-        final Relation co = memoryModel.getRelation(CO);
-        final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
-        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
-        final List<Init> initEvents = program.getThreadEvents(Init.class);
-        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
-        // Find transitively implied coherences. We can use these to reduce the encoding.
-        final EventGraph transCo = wmmEncoder.findTransitivelyImpliedCo();
-        // Find all writes that are never last, i.e., those that will always have a co-successor.
-        Set<Event> dominatedWrites = new HashSet<>();
-        knowledge.getMustSet().apply((e1, e2) -> {
-            if (exec.isImplied(e1, e2)) {
-                dominatedWrites.add(e1);
-            }
-        });
-        // ---- Construct encoding ----
-        List<BooleanFormula> enc = new ArrayList<>();
-        Map<Event, Set<Event>> out = knowledge.getMaySet().getOutMap();
-        for (Store w1 : program.getThreadEvents(Store.class)) {
-            if (dominatedWrites.contains(w1)) {
-                enc.add(bmgr.not(context.lastCoVar(w1)));
-                continue;
-            }
-            BooleanFormula isLast = context.execution(w1);
-            // ---- Find all possibly overwriting writes ----
-            for (Event w2 : out.getOrDefault(w1, Set.of())) {
-                if (transCo.contains(w1, w2)) {
-                    // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
-                    // that already witnesses that w1 is not last.
-                    continue;
-                }
-                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(w1, w2) ? context.execution(w2) : coEncoder.encode(w1, w2));
-                isLast = bmgr.and(isLast, isAfter);
-            }
-            BooleanFormula lastCoExpr = context.lastCoVar(w1);
-            enc.add(bmgr.equivalence(lastCoExpr, isLast));
-            if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
-                // ---- Encode final values of addresses ----
-                final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-                for (Init init : initEvents) {
-                    if (!alias.mayAlias(w1, init)) {
-                        continue;
-                    }
-                    BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    final BooleanFormula sameValue = exprEncoder.assignEqual(
-                            new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
-                            context.value(w1),
-                            MEMORY_ROUND_TRIP_RELAXED
-                    );
-                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
-                }
-            }
-        }
-        if (doEncodeFinalAddressValues && !Arch.coIsTotal(program.getArch())) {
-            // Coherence is not guaranteed to be total in all models (e.g., PTX),
-            // but the final value of a location should always match that of some coLast event.
-            // lastCo(w) => (lastVal(w.address) = w.val)
-            //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
-            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-            for (Init init : program.getThreadEvents(Init.class)) {
-                BooleanFormula readLastStore = bmgr.makeFalse();
-                BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
-                for (Store w : program.getThreadEvents(Store.class)) {
-                    if (!alias.mayAlias(w, init)) {
-                        continue;
-                    }
-                    BooleanFormula isLast = context.lastCoVar(w);
-                    BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.assignEqual(finalValue, context.value(w), MEMORY_ROUND_TRIP_RELAXED);
-                    readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
-                    lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
-                }
-                BooleanFormula readInitValue = exprEncoder.assignEqual(finalValue, context.value(init), MEMORY_ROUND_TRIP_RELAXED);
-                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
-            }
-        }
-        return bmgr.and(enc);
     }
 
     // ======================================================================

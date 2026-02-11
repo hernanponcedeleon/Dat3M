@@ -6,8 +6,10 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
@@ -40,6 +42,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
 import static com.dat3m.dartagnan.configuration.OptionNames.MULTI_READS;
 import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.google.common.base.Verify.verify;
 
 @Options
@@ -105,26 +108,119 @@ public class WmmEncoder {
         return axiom.accept(axiomEncoder);
     }
 
+    public BooleanFormula encodeLastCoConstraints() {
+        final Program program = context.getTask().getProgram();
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
+
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Relation co = memoryModel.getRelation(CO);
+        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
+        final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
+        // Find transitively implied coherences. We can use these to reduce the encoding.
+        final EventGraph transCo = findTransitivelyImpliedCo();
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+
+        final List<Init> initWrites = program.getThreadEvents(Init.class);
+        // Find all writes that are never last, i.e., those that will always have a co-successor.
+        final Set<Event> dominatedWrites = new HashSet<>();
+        knowledge.getMustSet().apply((e1, e2) -> {
+            if (exec.isImplied(e1, e2)) {
+                dominatedWrites.add(e1);
+            }
+        });
+
+        // ---- Construct encoding ----
+        List<BooleanFormula> enc = new ArrayList<>();
+        Map<Event, Set<Event>> out = knowledge.getMaySet().getOutMap();
+        for (Store w1 : program.getThreadEvents(Store.class)) {
+            if (dominatedWrites.contains(w1)) {
+                enc.add(bmgr.not(context.lastCoVar(w1)));
+                continue;
+            }
+            BooleanFormula isLast = context.execution(w1);
+            // ---- Find all possibly overwriting writes ----
+            for (Event w2 : out.getOrDefault(w1, Set.of())) {
+                if (transCo.contains(w1, w2)) {
+                    // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
+                    // that already witnesses that w1 is not last.
+                    continue;
+                }
+                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(w1, w2) ? context.execution(w2) : coEncoder.encode(w1, w2));
+                isLast = bmgr.and(isLast, isAfter);
+            }
+            BooleanFormula lastCoExpr = context.lastCoVar(w1);
+            enc.add(bmgr.equivalence(lastCoExpr, isLast));
+
+            if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
+                // ---- Encode final values of addresses ----
+                for (Init init : initWrites) {
+                    if (!alias.mayAlias(w1, init)) {
+                        continue;
+                    }
+                    BooleanFormula sameAddress = context.sameAddress(init, w1);
+                    final BooleanFormula sameValue = exprEncoder.equal(
+                            new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
+                            context.value(w1),
+                            RIGHT_TO_LEFT
+                    );
+                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                }
+            }
+        }
+
+        if (doEncodeFinalAddressValues && !Arch.coIsTotal(program.getArch())) {
+            // Coherence is not guaranteed to be total in all models (e.g., PTX),
+            // but the final value of a location should always match that of some coLast event.
+            // lastCo(w) => (lastVal(w.address) = w.val)
+            //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
+            for (Init init : initWrites) {
+                BooleanFormula readLastStore = bmgr.makeFalse();
+                BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
+                Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
+                for (Store w : program.getThreadEvents(Store.class)) {
+                    if (!alias.mayAlias(w, init)) {
+                        continue;
+                    }
+                    BooleanFormula isLast = context.lastCoVar(w);
+                    BooleanFormula sameAddr = context.sameAddress(init, w);
+                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
+                    lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
+                }
+                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
+            }
+        }
+
+        return bmgr.and(enc);
+    }
+
+
+    // ==================================================================================================
+    // Internal
+
     /*
-        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
-        clock-constraints do not need to get encoded explicitly.
-        e.g. for co relation: (e1 = w1, e2 = w2)
-        The reason is that whenever we have co(w1,w2) then there exists an intermediary
-        w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
-        Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
-        whose execution is either implied by either w1 or w2.
-        Now, if co(w1, w3) is a must-edge and co(w2, w3) is impossible, then we can reason as follows.
-            - Suppose w1 and w2 get executed and their addresses match, then w3 must also get executed.
-            - Since co(w1, w3) is a must-edge, we have that w3 accesses the same address as w1 and w2,
-              and c(w1) < c(w3).
-            - Because addr(w2)==addr(w3), we must also have either co(w2, e3) or co(w3, w2).
-              The former is disallowed by assumption, so we have co(w3, w2) and hence c(w3) < c(w2).
-            - By transitivity, we have c(w1) < c(w3) < c(w2) as desired.
-            - Note that this reasoning has to be done inductively, because co(w1, w3) or co(w3, w2) may
-              not involve encoding a clock constraint (due to this optimization).
-        There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
-    */
-    public EventGraph findTransitivelyImpliedCo() {
+    Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
+    clock-constraints do not need to get encoded explicitly.
+    e.g. for co relation: (e1 = w1, e2 = w2)
+    The reason is that whenever we have co(w1,w2) then there exists an intermediary
+    w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
+    Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
+    whose execution is either implied by either w1 or w2.
+    Now, if co(w1, w3) is a must-edge and co(w2, w3) is impossible, then we can reason as follows.
+        - Suppose w1 and w2 get executed and their addresses match, then w3 must also get executed.
+        - Since co(w1, w3) is a must-edge, we have that w3 accesses the same address as w1 and w2,
+          and c(w1) < c(w3).
+        - Because addr(w2)==addr(w3), we must also have either co(w2, e3) or co(w3, w2).
+          The former is disallowed by assumption, so we have co(w3, w2) and hence c(w3) < c(w2).
+        - By transitivity, we have c(w1) < c(w3) < c(w2) as desired.
+        - Note that this reasoning has to be done inductively, because co(w1, w3) or co(w3, w2) may
+          not involve encoding a clock constraint (due to this optimization).
+    There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
+*/
+    private EventGraph findTransitivelyImpliedCo() {
         if (context.useSATEncoding) {
             return EventGraph.empty();
         }
@@ -150,9 +246,6 @@ public class WmmEncoder {
         });
         return transCo;
     }
-
-    // ==================================================================================================
-    // Internal
 
     private void encodeContradictions(List<BooleanFormula> enc) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();

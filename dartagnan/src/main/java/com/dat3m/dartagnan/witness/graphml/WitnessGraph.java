@@ -126,6 +126,10 @@ public class WitnessGraph extends ElemWithAttributes {
             if (!previous.isEmpty() && !events.isEmpty()) {
                 // This generates hb-constraints between events that might not be in the may-set.
                 // However, this is required to obtain the desired ordering constraint between non-neighboring events.
+                // TODO: Does this even make sense? Generating hb(x,y)-variables this way is bound to be
+                //  wrong/useless: statically known edges do not get a variable associated.
+                //  In this case, the hb(x,y)-variable is unconstrained since it is not used,
+                //  meaning the solver can just set it to true to satisfy the following witness constraint.
                 enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
                         .map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
                         .toArray(BooleanFormula[]::new)));
