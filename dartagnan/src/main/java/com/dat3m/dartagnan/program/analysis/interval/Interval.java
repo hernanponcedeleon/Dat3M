@@ -318,11 +318,7 @@ final public class Interval {
     }
 
     private Interval and(Interval other) {
-        Interval orInterval = doOR(
-                this.upperbound.not(),
-                other.upperbound.not(),
-                this.lowerbound.not(),
-                other.lowerbound.not());
+        Interval orInterval = this.not().or(other.not());
 
         return new Interval(orInterval.upperbound.not(),
                 orInterval.lowerbound.not(),
