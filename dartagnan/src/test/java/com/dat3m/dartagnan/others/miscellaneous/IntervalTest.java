@@ -22,13 +22,13 @@ public abstract class IntervalTest {
 
     static TypeFactory types = TypeFactory.getInstance();
     static IntegerType byteType = types.getIntegerType(8);
-    final static int LB_TOP = Interval.getTop(byteType).getLowerbound().intValue();
-    final static int UB_TOP = Interval.getTop(byteType).getUpperbound().intValue();
+    static final int LB_TOP = Interval.getTop(byteType).getLowerbound().intValue();
+    static final int UB_TOP = Interval.getTop(byteType).getUpperbound().intValue();
 
     public static class IntervalInitialisationOrderingTest {
         @Test
         public void boundOrder() {
-            assertThrows(IllegalArgumentException.class, () -> new Interval(BigInteger.ONE,BigInteger.ZERO,byteType));
+            assertThrows(IllegalArgumentException.class, () -> new Interval(BigInteger.ONE, BigInteger.ZERO, byteType));
         }
     }
 
@@ -83,7 +83,7 @@ public abstract class IntervalTest {
                 int expectedUb,
                 IntUnaryOp operator) {
             operand = new Interval(BigInteger.valueOf(lb), BigInteger.valueOf(ub), byteType);
-            expected = new Interval(BigInteger.valueOf(expectedLb),BigInteger.valueOf(expectedUb), byteType);
+            expected = new Interval(BigInteger.valueOf(expectedLb), BigInteger.valueOf(expectedUb), byteType);
             this.operator = operator;
         }
 
@@ -92,27 +92,33 @@ public abstract class IntervalTest {
             return Arrays.asList(new Object[][]{
 
                     // Negation
-                    {-5,-2,2,5, IntUnaryOp.MINUS},
-                    {2,5,-5,-2, IntUnaryOp.MINUS},
-                    {-5,2,-2,5, IntUnaryOp.MINUS},
+                    {-5, -2, 2, 5, IntUnaryOp.MINUS},
+                    {2, 5, -5, -2, IntUnaryOp.MINUS},
+                    {-5, 2, -2, 5, IntUnaryOp.MINUS},
 
-                    // Underflow
-                    {127,129,LB_TOP,UB_TOP,IntUnaryOp.MINUS},
+                    // Negation can Underflow
+                    {127, 129, LB_TOP, UB_TOP, IntUnaryOp.MINUS},
 
-                    // Trailing zeroes
-                    {-5,2,0,8, IntUnaryOp.CTTZ},
+                    // Trailing zeroes and population default to bitwidth-sized interval
+                    {-5, 2, 0, 8, IntUnaryOp.CTTZ},
 
                     // Population
-                    {-5,2,0,8, IntUnaryOp.CTPOP},
+                    {-5, 2, 0, 8, IntUnaryOp.CTPOP},
 
-                    // Leading zeroes
-                    {2,32,2,6, IntUnaryOp.CTLZ},
-                    {-5,-2,0,0, IntUnaryOp.CTLZ},
-                    {-5,2,0,8, IntUnaryOp.CTLZ},
+                    // Leading zeroes decrease with larger numbers
+                    {2, 32, 2, 6, IntUnaryOp.CTLZ},
+
+                    // Negative numbers have a sign bit and thus always 0 leading zeroes
+                    {-5, -2, 0, 0, IntUnaryOp.CTLZ},
+
+                    // Defaults to bitwidth sized intervals when crossing 0
+                    {-5, 2, 0, 8, IntUnaryOp.CTLZ},
 
                     // NOT
                     {-1, 5, -6, 0, IntUnaryOp.NOT},
                     {-128, -127, 126, 127, IntUnaryOp.NOT},
+
+                    // BigInteger NOT defaults to the signed interpretation
                     {55, 75, -76, -56, IntUnaryOp.NOT},
 
                     // Underflow
@@ -158,10 +164,10 @@ public abstract class IntervalTest {
                     // Addition
                     {1, 5, 2, 6, 3, 11, ADD},
 
-                    //Subtraction
+                    // Subtraction
                     {1, 5, 2, 6, -5, 3, SUB},
 
-                    //Multiplication
+                    // All Multiplication cases
                     {1, 5, 2, 6, 2, 30, MUL},
                     {-1, 5, 2, 6, -6, 30, MUL},
                     {-5, -1, 2, 6, -30, -2, MUL},
@@ -175,10 +181,10 @@ public abstract class IntervalTest {
                     // Signed division
                     {1, 5, 2, 6, 0, 2, DIV},
 
-                    // Signed division Asymmetry edge case
+                    // Signed division asymmetry edge case
                     {-128, -128, -1, -1, LB_TOP, UB_TOP, DIV},
 
-                    // Signed division by zero
+                    // Signed division by zero defaults to the top interval
                     {1, 5, -1, 1, LB_TOP, UB_TOP, DIV},
 
                     // Unsigned Division
@@ -193,7 +199,7 @@ public abstract class IntervalTest {
                     // Overflow Multiplication
                     {-128, 127, 2, 2, LB_TOP, UB_TOP, MUL},
 
-                    // OR
+                    // OR cases from Hackers' delight
                     {2, 4, 9, 20, 10, 23, OR},
                     {-4, -2, -20, 9, -4, -1, OR},
                     {-4, 2, -20, 9, -20, 11, OR},
@@ -201,7 +207,7 @@ public abstract class IntervalTest {
                     {2, 4, -9, 20, -9, 23, OR},
                     {-4, 2, -20, -9, -20, -1, OR},
 
-                    // AND
+                    // AND cases
                     {2, 4, 9, 20, 0, 4, AND},
                     {-4, -2, -9, 20, -12, 20, AND},
                     {-4, 2, -20, -9, -20, 2, AND},

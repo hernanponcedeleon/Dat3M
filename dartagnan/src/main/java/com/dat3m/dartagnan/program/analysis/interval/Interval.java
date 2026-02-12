@@ -16,13 +16,13 @@ import java.util.function.Supplier;
 
 
 
-//Class to represent closed integer intervals for registers.
+// Class to represent closed integer intervals for registers.
 // A closed interval [lb,ub] means that a register may be any value from lb to ub.
 // Since registers are represented by bit vectors, the values are bounded by the minimum and maximum value.
 // E.g. a register bv8 r0 has a lower bound of -128 (signed) and 255 (unsigned)
 // We do not assume anything about the signedness of a register associated with an interval.
 
-final public class Interval {
+public final class Interval {
 
     private final BigInteger lowerbound;
     private final BigInteger upperbound;
@@ -175,7 +175,8 @@ final public class Interval {
         if (this.isSignInsensitive() && other.isSignInsensitive()) {
             Interval signedInterval1 = this.convertToSignedInterval();
             Interval signedInterval2 = other.convertToSignedInterval();
-                // Asymmetric edge case
+
+            // Asymmetric edge case
             if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0) {
                 return Interval.getTop(type);
             } else {

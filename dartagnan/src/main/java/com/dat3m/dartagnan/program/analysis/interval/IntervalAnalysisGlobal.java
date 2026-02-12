@@ -29,7 +29,6 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
         computeIntervals(program);
     }
 
-    
     public static IntervalAnalysis fromConfig(Program program, Context analysisContext, VerificationTask task) {
         return new IntervalAnalysisGlobal(program, analysisContext, task);
     }
