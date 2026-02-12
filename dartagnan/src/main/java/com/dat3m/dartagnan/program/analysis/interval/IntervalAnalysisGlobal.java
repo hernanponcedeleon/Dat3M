@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
@@ -15,7 +14,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
@@ -32,6 +34,25 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     public static IntervalAnalysis fromConfig(Program program, Context analysisContext, Wmm memoryModel) {
         return new IntervalAnalysisGlobal(program, analysisContext, memoryModel);
+    }
+
+    @Override
+    protected RegisterStateVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
+        return new RegisterStateVisitorGlobal(event, eventState);
+    }
+
+    class RegisterStateVisitorGlobal extends RegisterStateVisitor {
+        RegisterStateVisitorGlobal(Event e, Map<Register, Interval> eventState) {
+            super(e, eventState);
+        }
+    }
+
+    @Override
+    public RegisterState visitLoad(Load l) {
+        Set<Store> stores = getPotentialStores(l);
+        Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
+
+        return new RegisterState(l.getResultRegister(), interval);
     }
 
     // Calculate the interval of a memory address.
@@ -54,7 +75,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     // Use the Relation Analysis to calculate the possible store from which a load can read from.
     private Set<Store> getPotentialStores(Load event) {
-       return relationAnalysis
+        return relationAnalysis
                 .getKnowledge(memoryModel.getRelation(RF))
                 .getMaySet()
                 .getInMap()
@@ -63,13 +84,5 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
                 .map(e -> (Store) e)
                 .collect(Collectors.toSet());
     }
-
-
-    @Override
-    protected RegisterState analyseLoad(Load l, Map<Register, Interval> eventState) {
-        Set<Store> stores = getPotentialStores(l);
-        Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
-
-        return new RegisterState(l.getResultRegister(), interval);
-    }
 }
+

@@ -1,28 +1,31 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.event.RegReader;
 
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-
+import com.dat3m.dartagnan.program.event.RegWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Label;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+
+
 
 /*
  * Forward Interval analysis
@@ -39,7 +42,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     // Associate an event with a map of registers to intervals
     protected Map<Event, Map<Register, Interval>> eventStates = new HashMap<>();
     static Logger logger = LoggerFactory.getLogger(IntervalAnalysis.class);
-    private static final Set<Object> unsupportedExpressions = new HashSet<>();
+    private static final Set<Expression> unsupportedExpressions = new HashSet<>();
 
 
     protected IntervalAnalysisWorklist() { }
@@ -68,64 +71,11 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
     // Helper class to carry information about a register and its computed interval.
 
-    static protected class RegisterState {
+    public record RegisterState(Register reg, Interval interval) {}
 
-        public Register reg;
-        public Interval interval;
-
-        public RegisterState(Register reg, Interval interval) {
-            this.reg = reg;
-            this.interval = interval;
-        }
-
-        @Override
-        public String toString() {
-            return "RegisterState{" +
-            "reg=" + reg +
-            ", interval=" + interval +
-            '}';
-        }
-    }
-
-
-
-    // Analyse an event to calculate an interval for a register (i.e. the transfer function).
-    // TODO: Maybe use the event visitor
-    RegisterState analyseEvent(Event e, Map<Register, Interval> eventState) {
-        if (e instanceof RegWriter rw) {
-            if ((rw.getResultRegister().getType() instanceof IntegerType)) {
-                if (rw instanceof Local lc) {
-                    return analyseLocal(lc, eventState);
-                } else if (rw instanceof Load ld) {
-                    return analyseLoad(ld, eventState);
-                } else if (rw instanceof ThreadArgument ta) {
-                    return analyseThreadArgument(ta, eventState);
-                } else {
-                    return analyseOther(rw);
-                }
-            }
-        }
-        return null;
-    }
-
-    // Transfer functions to be implemented by subclasses
-    protected abstract RegisterState analyseLoad(Load l, Map<Register, Interval> eventState);
-
-    protected RegisterState analyseLocal(Local l, Map<Register, Interval> eventState) {
-        Register result = l.getResultRegister();
-        Expression expr = l.getExpr();
-        return new RegisterState(result, new AbstractExpressionEvaluator((IntegerType) result.getType(), expr, eventState).getResultInterval());
-    }
-
-    protected RegisterState analyseThreadArgument(ThreadArgument ta, Map<Register, Interval> eventState) {
-        Expression arg = ta.getCreator().getArguments().get(ta.getIndex());
-        Register result = ta.getResultRegister();
-        return new RegisterState(result, new AbstractExpressionEvaluator((IntegerType) result.getType(), arg, eventState).getResultInterval());
-    }
-
-    protected RegisterState analyseOther(RegWriter other) {
-        Register reg = other.getResultRegister();
-        return new RegisterState(reg, Interval.getTop((IntegerType) reg.getType()));
+    // Visitor can be overidden by subclasses to handle certain events differently.
+    protected RegisterStateVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
+            return new RegisterStateVisitor(event, eventState);
     }
 
     // ============= Worklist Algorithm =============
@@ -188,9 +138,11 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             Map<Register, Interval> currentEventStateCopy = new HashMap<>(eventStates.get(current));
 
            // Apply transfer function
-            RegisterState state = analyseEvent(current, currentEventStateCopy);
-            if (state != null) {
-                currentEventStateCopy.put(state.reg, state.interval);
+            if (current instanceof RegWriter rw && rw.getResultRegister().getType() instanceof IntegerType) {
+                RegisterState state = runVisitor(current, currentEventStateCopy).getState();
+                if (state != null) {
+                    currentEventStateCopy.put(state.reg, state.interval);
+                }
             }
 
             // Propagate information
@@ -216,73 +168,6 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
                     eventStates.put(successor, joinStates(currentEventStateCopy, successorState));
                 }
             }
-        }
-    }
-
-    // Visits expressions and has a final result interval as a field
-    protected static final class AbstractExpressionEvaluator implements ExpressionVisitor<Interval> {
-        private final Map<Register, Interval> eventState;
-        private final Interval resultInterval;
-        private final IntegerType type;
-
-        public Interval getResultInterval() {
-            return resultInterval;
-        }
-        AbstractExpressionEvaluator(IntegerType type, Expression expr, Map<Register, Interval> eventState) {
-            this.eventState = eventState;
-            this.type = type;
-            resultInterval = expr.accept(this);
-        }
-
-        @Override
-        public Interval visitExpression(Expression expr) {
-            return Interval.getTop(type);
-        }
-
-        @Override
-        public Interval visitIntLiteral(IntLiteral lit) {
-            return new Interval(lit.getValue(), type);
-        }
-
-        @Override
-        public Interval visitRegister(Register regExpr) {
-            Interval registerInterval = eventState.getOrDefault(regExpr, Interval.getTop(type));
-            return new Interval(registerInterval.getLowerbound(), registerInterval.getUpperbound(), type);
-        }
-
-        @Override
-        public Interval visitIntSizeCastExpression(IntSizeCast cast) {
-            Interval operandInterval = cast.getOperand().accept(this);
-            IntegerType targetType = cast.getTargetType();
-
-            if (!cast.preservesSign() && cast.isExtension()) {
-                return Interval.getTop(targetType);
-            }
-
-            // Interval constructor to return top with eventual overflow regarding truncation.
-            return new Interval(operandInterval.getLowerbound(), operandInterval.getUpperbound(), targetType);
-        }
-
-        @Override
-        public Interval visitIntBinaryExpression(IntBinaryExpr binExpr) {
-            IntBinaryOp op = binExpr.getKind();
-            Interval intervalLeft = binExpr.getLeft().accept(this);
-            Interval intervalRight = binExpr.getRight().accept(this);
-
-            return intervalLeft.applyOperator(op, intervalRight);
-        }
-
-        @Override
-        public Interval visitIntUnaryExpression(IntUnaryExpr expr) {
-            return expr.getOperand().accept(this).applyOperator(expr.getKind());
-        }
-
-        @Override
-        public Interval visitITEExpression(ITEExpr ite) {
-            Interval trueInterval = ite.getTrueCase().accept(this);
-            Interval falseInterval = ite.getFalseCase().accept(this);
-
-            return trueInterval.join(falseInterval);
         }
     }
 
