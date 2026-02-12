@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
@@ -108,9 +107,6 @@ public class ProgramBuilder {
                     if (rw.getResultRegister().equals(zr)) {
                         Register dummy = rw.getThread().getOrNewRegister("__zeroRegDummy_" + zr.getName(), zr.getType());
                         rw.setResultRegister(dummy);
-                        if (rw.hasTag(Tag.VISIBLE)) {
-                            rw.addTags(Tag.ARMv8.NO_RET);
-                        }
                     }
                 }
                 // This comes after the loop to avoid the renaming in the initialization event

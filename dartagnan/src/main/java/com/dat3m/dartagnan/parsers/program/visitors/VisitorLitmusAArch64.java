@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
@@ -55,8 +57,20 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         Program prog = programBuilder.build();
-        replaceZeroRegisters(prog, Arrays.asList("XZR", "WZR"));
+
+        final List<String> zeroRegs = Arrays.asList("XZR", "WZR");
+        markLoadsIntoZeroRegisters(prog, zeroRegs);
+        replaceZeroRegisters(prog, zeroRegs);
         return prog;
+    }
+
+    private void markLoadsIntoZeroRegisters(Program prog, List<String> zeroRegs) {
+        for (MemoryEvent memEvent : prog.getThreadEvents(MemoryEvent.class)) {
+            if (memEvent instanceof RegWriter writer && zeroRegs.contains(writer.getResultRegister().getName())) {
+                memEvent.addTags(NO_RET);
+                memEvent.removeTags(MO_ACQ, MO_ACQ_PC);
+            }
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
