@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 #include <assert.h>
 // Issue: Store-to-Load Forwarding may cause mixed-size atomic accesses to appear non-atomic.
-// Expected: FAIL on ARMv8
+// Expected: PASS on ARMv8 (FAIL on older, unpatched version of ARMv8)
 
 union { atomic_ushort full; struct { atomic_uchar half0; atomic_uchar half1; }; } lock;
 

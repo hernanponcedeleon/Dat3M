@@ -66,7 +66,7 @@ public class MixedTest extends AbstractCTest {
             {"memtrack3-pass", ARM8, PASS},
             {"mixed-local1", ARM8, PASS},
             {"mixed-local2", ARM8, FAIL},
-            {"store-to-load-forwarding1", ARM8, FAIL},
+            {"store-to-load-forwarding1", ARM8, PASS}, // FAIL on the older version of aarch64.cat
             {"floats_msa_1", ARM8, PASS},
             {"floats_msa_2", ARM8, PASS},
         });
