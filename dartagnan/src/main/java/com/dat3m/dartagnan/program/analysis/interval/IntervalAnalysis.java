@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.configuration.IntervalAnalysisOptions;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.verification.VerificationTask;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
@@ -175,7 +177,7 @@ public interface IntervalAnalysis {
             df.format(percentageIntervalsTop),
             averageReducedIntervalSize);
 
-        Set<Object> unsupportedOperators = Interval.getUnsupportedOperatorsFound();
+        Set<ExpressionKind> unsupportedOperators = Interval.getUnsupportedOperatorsFound();
         if (!unsupportedOperators.isEmpty()) {
             if (logger.isWarnEnabled()) {
                 logger.warn("Unsupported operators found: {}", Interval.getUnsupportedOperatorsFound());

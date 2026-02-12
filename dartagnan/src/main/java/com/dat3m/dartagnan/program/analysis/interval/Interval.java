@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -27,7 +28,7 @@ final public class Interval {
     private final BigInteger upperbound;
     private final IntegerType type;
 
-    static Set<Object> unsupportedOperators = new HashSet<>();
+    static Set<ExpressionKind> unsupportedOperators = new HashSet<>();
 
 
     public Interval(BigInteger lowerbound, BigInteger upperbound, IntegerType type) {
@@ -63,7 +64,7 @@ final public class Interval {
         return type;
     }
 
-    public static Set<Object> getUnsupportedOperatorsFound() {
+    public static Set<ExpressionKind> getUnsupportedOperatorsFound() {
         return unsupportedOperators;
     }
 
