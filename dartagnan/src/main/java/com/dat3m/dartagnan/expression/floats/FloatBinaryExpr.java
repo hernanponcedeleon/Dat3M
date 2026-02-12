@@ -27,7 +27,9 @@ public final class FloatBinaryExpr extends BinaryExpressionBase<FloatType, Float
             case FSUB -> leftHash - rightHash;
             case FMUL -> leftHash * rightHash;
             case FDIV -> leftHash * (rightHash + 31);
-            case FREM -> leftHash * (rightHash + 127);
+            case FREM -> leftHash * (rightHash + 63);
+            case FMIN -> leftHash * (rightHash + 127);
+            case FMAX -> leftHash * (rightHash + 255);
         };
     }
 

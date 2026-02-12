@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
@@ -31,8 +28,10 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -604,10 +603,49 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFCmpInst(FCmpInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        final String operator = ctx.fPred().getText();
+        final Expression compared = switch (operator) {
+            case "oeq" -> expressions.makeFEQ(left, right, true);
+            case "one" -> expressions.makeFNEQ(left, right, true);
+            case "olt" -> expressions.makeOLT(left, right);
+            case "ole" -> expressions.makeOLTE(left, right);
+            case "ogt" -> expressions.makeOGT(left, right);
+            case "oge" -> expressions.makeOGTE(left, right);
+            case "ord" -> expressions.makeORD(left, right);
+            case "ueq" -> expressions.makeFEQ(left, right, false);
+            case "une" -> expressions.makeFNEQ(left, right, false);
+            case "ult" -> expressions.makeULT(left, right);
+            case "ule" -> expressions.makeULTE(left, right);
+            case "ugt" -> expressions.makeUGT(left, right);
+            case "uge" -> expressions.makeUGTE(left, right);
+            case "uno" -> expressions.makeUNO(left, right);
+            default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
+        };
+        // LLVM does not support a distinct boolean type.
+        return assignToRegister(expressions.makeIntegerCast(compared, getIntegerType(1), false));
+    }
+
+    @Override
+    public Expression visitFNegInst(FNegInstContext ctx) {
+        final Expression operand = visitTypeValue(ctx.typeValue());
+        return assignToRegister(expressions.makeFNeg(operand));
+    }
+
+    @Override
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeAdd(left, right));
+    }
+
+    @Override
+    public Expression visitFAddInst(FAddInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFAdd(left, right));
     }
 
     @Override
@@ -618,10 +656,24 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFSubInst(FSubInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFSub(left, right));
+    }
+
+    @Override
     public Expression visitMulInst(MulInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeMul(left, right));
+    }
+
+    @Override
+    public Expression visitFMulInst(FMulInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFMul(left, right));
     }
 
     @Override
@@ -682,6 +734,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFRemInst(FRemInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFRem(left, right));
+    }
+
+    @Override
     public Expression visitUDivInst(UDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
@@ -693,6 +752,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeDiv(left, right, true));
+    }
+
+    @Override
+    public Expression visitFDivInst(FDivInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeFDiv(left, right));
     }
 
     // Aggregate instructions
@@ -784,8 +850,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 case "or" -> IntBinaryOp.OR;
                 case "xor" -> IntBinaryOp.XOR;
                 //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
-                default ->
-                        throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
+                default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
             event = Llvm.newRMW(register, address, operand, op, mo);
         }
@@ -801,6 +866,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFpTruncInst(FpTruncInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
     public Expression visitZExtInst(ZExtInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
@@ -808,6 +878,31 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitSExtInst(SExtInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitFpExtInst(FpExtInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitFpToUiInst(FpToUiInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
+    }
+
+    @Override
+    public Expression visitFpToSiInst(FpToSiInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitSiToFpInst(SiToFpInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+    }
+
+    @Override
+    public Expression visitUiToFpInst(UiToFpInstContext ctx) {
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
@@ -837,7 +932,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
-
 
     // =================================================================================================================
     // Expressions
@@ -869,6 +963,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final BigInteger value = parseBigInteger(ctx.IntLit());
         checkState(expectedType instanceof IntegerType, "Expected non-integer type.");
         return expressions.makeValue(value, (IntegerType) expectedType);
+    }
+
+    @Override
+    public Expression visitFloatConst(FloatConstContext ctx) {
+        checkState(expectedType instanceof FloatType, "Expected float type.");
+        final FloatType fType = (FloatType) expectedType;
+        if (ctx.getText().startsWith("0x") || ctx.getText().startsWith("0X")) {
+            long bits = Long.parseUnsignedLong(ctx.getText().substring(2), 16);
+            double value = Double.longBitsToDouble(bits);
+
+            if (Double.isInfinite(value)) {
+                return value > 0 ? expressions.makePlusInf(fType) : expressions.makeMinusInf(fType);
+            } else if (Double.isNaN(value)) {
+                return expressions.makeNan(fType);
+            } else {
+                return expressions.makeValue(BigDecimal.valueOf(value), fType);
+            }
+        }
+        return expressions.makeValue(new BigDecimal(ctx.getText()), fType);
     }
 
     @Override
@@ -1091,6 +1204,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFloatType(FloatTypeContext ctx) {
+        parsedType = parseFloatType(ctx.floatKind());
+        return null;
+    }
+
+    @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
         parsedType = pointerType;
         return null;
@@ -1163,6 +1282,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Type parseIntType(TerminalNode t) {
         assert t.getText().startsWith("i");
         return getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
+    }
+
+    private Type parseFloatType(FloatKindContext ctx) {
+        return switch (ctx.getText()) {
+            case "half" -> types.getIEEEHalfType();
+            case "float" -> types.getIEEESingleType();
+            case "double" -> types.getIEEEDoubleType();
+            default -> throw new ParsingException("Unsupported float type %s", ctx.getText());
+        };
     }
 
     private Type parseType(ParserRuleContext context) {
@@ -1295,12 +1423,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitScopeField(ScopeFieldContext ctx) {
-        return new NamedMdNode("scope", (MdNode) visitMdField(ctx.mdField()));
+        return new NamedMdNode("scope", (MdNode)visitMdField(ctx.mdField()));
     }
 
     @Override
     public Expression visitFileField(FileFieldContext ctx) {
-        return new NamedMdNode("file", (MdNode) visitMdField(ctx.mdField()));
+        return new NamedMdNode("file", (MdNode)visitMdField(ctx.mdField()));
     }
 
     @Override
@@ -1346,12 +1474,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Prefix "u" is used to force interpreting them as hexa ints
         // https://stackoverflow.com/questions/16310509/is-it-possible-to-specify-a-hexadecimal-number-in-llvm-ir-code
         if (nodeString.startsWith("u0x")) {
-            radix = 16;
-            // Get rid of u0x prefix
-            valueString = nodeString.substring(3);
+           radix = 16;
+           // Get rid of u0x prefix
+           valueString = nodeString.substring(3);
         } else {
-            radix = 10;
-            valueString = nodeString;
+           radix = 10;
+           valueString = nodeString;
         }
         return new BigInteger(valueString, radix);
     }
@@ -1424,8 +1552,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return "r" + original;
     }
 
-    private record Block(String name, Label label, List<Event> events) {
-    }
+    private record Block(String name, Label label, List<Event> events) {}
 
     // ----------------------------------------------------------------------------------------------------------------
     // Metadata nodes that reflect LLVM's notion of metadata
@@ -1433,73 +1560,42 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private interface MdNode extends Expression {
 
         Type TYPE = new Type() {
-            @Override
-            public int hashCode() {
-                return -1;
-            }
+            @Override public int hashCode() { return -1; }
         };
         ExpressionKind MdKind = new ExpressionKind() {
             @Override
-            public String getSymbol() {
-                return "Md";
-            }
-
+            public String getSymbol() { return "Md"; }
             @Override
-            public String getName() {
-                return "Metadata";
-            }
-
+            public String getName() { return "Metadata"; }
             @Override
-            public String toString() {
-                return getName();
-            }
+            public String toString() { return getName(); }
         };
 
         @Override
-        default Type getType() {
-            return TYPE;
-        }
-
+        default Type getType() { return TYPE; }
         @Override
-        default ImmutableSet<Register> getRegs() {
-            throw new UnsupportedOperationException();
-        }
-
+        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException(); }
         @Override
-        default <T> T accept(ExpressionVisitor<T> visitor) {
-            throw new UnsupportedOperationException();
-        }
-
+        default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
         @Override
-        default ImmutableList<Expression> getOperands() {
-            return ImmutableList.of();
-        }
-
+        default ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
         @Override
-        default ExpressionKind getKind() {
-            return MdKind;
-        }
+        default ExpressionKind getKind() { return MdKind; }
     }
 
     private static final MdNode MD_NULL = new MdNode() {
         @Override
-        public String toString() {
-            return "NULL";
-        }
+        public String toString() { return "NULL"; }
     };
 
     private static final MdNode MD_NOT_PARSED = new MdNode() {
         @Override
-        public String toString() {
-            return "NOT PARSED";
-        }
+        public String toString() { return "NOT PARSED"; }
     };
 
     private record MdReference(String mdName) implements MdNode {
         @Override
-        public String toString() {
-            return mdName;
-        }
+        public String toString() { return mdName; }
     }
 
     private record MdGenericValue<T>(T value) implements MdNode {
@@ -1507,25 +1603,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // This node should only hold values external to the MdNode hierarchy.
             Preconditions.checkArgument(!(value instanceof MdNode));
         }
-
         @Override
-        public String toString() {
-            return value.toString();
-        }
+        public String toString() { return value.toString(); }
     }
 
     private record MdTuple(List<MdNode> mdFields) implements MdNode {
-        public String toString() {
-            return mdFields.stream().map(Object::toString)
-                    .collect(Collectors.joining(", ", "!{", "}"));
-        }
+        public String toString() { return mdFields.stream().map(Object::toString)
+                .collect(Collectors.joining(", ", "!{", "}")); }
     }
 
     private record NamedMdNode(String name, MdNode node) implements MdNode {
         @Override
-        public String toString() {
-            return String.format("%s: %s", name, node);
-        }
+        public String toString() { return String.format("%s: %s", name, node); }
     }
 
     private record SpecialMdTupleNode(Type nodeType, List<NamedMdNode> namedMDFields) implements MdNode {
@@ -1546,7 +1635,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         public <T extends MdNode> Optional<T> getField(String fieldName) {
             for (NamedMdNode field : namedMDFields) {
                 if (field.name().equals(fieldName)) {
-                    return Optional.of((T) field.node());
+                    return Optional.of((T)field.node());
                 }
             }
             return Optional.empty();
@@ -1555,12 +1644,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helper to parse inline asm code
-    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException {
-        try {
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
+        try{
             List<Event> events = parser.parse(asmCode);
             return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException e) {
-        }
+        } catch (ParsingException e){}
         return Optional.empty();
     }
 

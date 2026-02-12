@@ -27,10 +27,12 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
@@ -211,12 +213,7 @@ public class ExecutionModelManager {
         // Populate graphs of base relations.
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
             Relation r = predicateCache.inverse().get(basePred);
-            try {
-                r.getDefinition().accept(graphPopulator);
-            } catch (UnsupportedOperationException e) {
-                // Populate graph of relations unsupported by the visitor using default relation analysis.
-                graphPopulator.populateDynamicDefaultGraph(r);
-            }
+            r.getDefinition().accept(graphPopulator);
         }
 
         // Do the computation.
@@ -491,7 +488,45 @@ public class ExecutionModelManager {
             return null;
         }
 
+        @Override
+        public Void visitDefinition(Definition def) {
+            if (def.getDefinedRelation().isRelation()) {
+                populateDynamicDefaultGraph(def.getDefinedRelation());
+            } else {
+                populateDynamicDefaultSet(def.getDefinedRelation());
+            }
+            return null;
+        }
+
+        public void populateDynamicDefaultSet(Relation r) {
+            Preconditions.checkArgument(r.isSet());
+            SimpleSet set = (SimpleSet) predicateCache.get(r);
+            EncodingContext.EdgeEncoder element = context.edge(r);
+            RelationAnalysis.Knowledge k = context.getAnalysisContext()
+                    .get(RelationAnalysis.class)
+                    .getKnowledge(r);
+
+            if (k.getMaySet().size() < domain.size()) {
+                k.getMaySet().apply((e1, e2) -> {
+                    assert e1 == e2;
+                    EventModel x = executionModel.getEventModelByEvent(e1);
+                    if (x != null) {
+                        if (model.hasElement(element, e1)) {
+                            set.add(new Element(x.getId()));
+                        }
+                    }
+                });
+            } else {
+                for (EventModel x : executionModel.getEventModels()) {
+                    if (model.hasElement(element, x.getEvent())) {
+                        set.add(new Element(x.getId()));
+                    }
+                }
+            }
+        }
+
         public void populateDynamicDefaultGraph(Relation r) {
+            Preconditions.checkArgument(r.isRelation());
             SimpleGraph rg = (SimpleGraph) predicateCache.get(r);
             EncodingContext.EdgeEncoder edge = context.edge(r);
             RelationAnalysis.Knowledge k = context.getAnalysisContext()

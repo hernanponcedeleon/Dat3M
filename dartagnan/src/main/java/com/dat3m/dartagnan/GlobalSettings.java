@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,8 +11,7 @@ public class GlobalSettings {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalSettings.class);
 
-    private GlobalSettings() {
-    }
+    private GlobalSettings() {}
 
     private static final boolean USE_TEST_PATH = isJUnitTest();
 

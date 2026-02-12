@@ -48,80 +48,36 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
         this.allocationSite = allocationSite;
     }
 
-    public sealed interface ThreadLocalMode {
-    }
+    public sealed interface ThreadLocalMode {}
 
-    public record ThreadLocal() implements ThreadLocalMode {
-    }
+    public record ThreadLocal() implements ThreadLocalMode {}
 
-    public record PosixThreadLocal(MemoryObject destructor) implements ThreadLocalMode {
-    }
+    public record PosixThreadLocal(MemoryObject destructor) implements ThreadLocalMode {}
 
-    public boolean hasName() {
-        return name != null;
-    }
+    public boolean hasName() { return name != null; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public boolean isStaticallyAllocated() { return allocationSite == null; }
+    public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
+    public boolean isHeapAllocated() { return allocationSite != null && allocationSite.isHeapAllocation(); }
+    public Alloc getAllocationSite() { return allocationSite; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public boolean isThreadLocal() { return this.isThreadLocal; }
+    public void setIsThreadLocal(boolean value) { this.isThreadLocal = value; }
 
-    public boolean isStaticallyAllocated() {
-        return allocationSite == null;
-    }
+    public void addFeatureTag(String tag) { featureTags.add(tag); }
+    public Set<String> getFeatureTags() { return featureTags; }
 
-    public boolean isDynamicallyAllocated() {
-        return !isStaticallyAllocated();
-    }
-
-    public boolean isHeapAllocated() {
-        return allocationSite != null && allocationSite.isHeapAllocation();
-    }
-
-    public Alloc getAllocationSite() {
-        return allocationSite;
-    }
-
-    public boolean isThreadLocal() {
-        return this.isThreadLocal;
-    }
-
-    public void setIsThreadLocal(boolean value) {
-        this.isThreadLocal = value;
-    }
-
-    public void addFeatureTag(String tag) {
-        featureTags.add(tag);
-    }
-
-    public Set<String> getFeatureTags() {
-        return featureTags;
-    }
-
-    public Expression size() {
-        return size;
-    }
-
-    public boolean hasKnownSize() {
-        return size instanceof IntLiteral;
-    }
-
+    public Expression size() { return size; }
+    public boolean hasKnownSize() { return size instanceof IntLiteral; }
     public int getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
-        return ((IntLiteral) size).getValueAsInt();
+        return ((IntLiteral)size).getValueAsInt();
     }
 
-    public Expression alignment() {
-        return alignment;
-    }
-
-    public boolean hasKnownAlignment() {
-        return alignment instanceof IntLiteral;
-    }
-
+    public Expression alignment() { return alignment; }
+    public boolean hasKnownAlignment() { return alignment instanceof IntLiteral; }
     public int getKnownAlignment() {
         Preconditions.checkState(hasKnownAlignment());
         return ((IntLiteral) alignment).getValueAsInt();
@@ -164,7 +120,8 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
         } else if (value.getType() instanceof IntegerType
                 || value.getType() instanceof BooleanType
                 || value.getType() instanceof MemoryType
-                || value.getType() instanceof PointerType) {
+                || value.getType() instanceof PointerType
+                || value.getType() instanceof FloatType) {
             checkArgument(isInRange(offset), "array index out of bounds");
             initialValues.put(offset, value);
         } else {
@@ -179,9 +136,7 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
     }
 
     @Override
-    public int hashCode() {
-        return id;
-    }
+    public int hashCode() { return id; }
 
     @Override
     public ExpressionKind getKind() {
