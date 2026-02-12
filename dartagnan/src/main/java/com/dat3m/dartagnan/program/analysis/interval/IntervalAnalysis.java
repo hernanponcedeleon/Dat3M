@@ -100,7 +100,7 @@ public interface IntervalAnalysis {
     class Config {
         @Option(
             name = INTERVAL_ANALYSIS_METHOD,
-            description = "Indicates the desired precision of the interval analysis"
+            description = "General type of analysis that approximates bounds on integer registers"
         )
 
         IntervalAnalysisOptions method = IntervalAnalysisOptions.getDefault();
