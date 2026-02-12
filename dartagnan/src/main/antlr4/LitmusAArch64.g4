@@ -64,6 +64,7 @@ instruction
     |   storePair
     |   storeExclusive
     |   swap
+    |   cas
     |   cmp
     |   branch
     |   branchRegister
@@ -121,6 +122,11 @@ storeExclusive
 swap
     :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
     |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
+    ;
+
+cas
+    :   casInstruction rS32 = register32 Comma rT32 = register32 Comma LBracket address RBracket
+    |   casInstruction rS64 = register64 Comma rT64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -198,6 +204,21 @@ swapInstruction locals [boolean acquire, boolean release, boolean byteSize, bool
     | SWPAL {$acquire = true; $release = true;}
     | SWPALB {$acquire = true; $release = true; $byteSize = true;}
     | SWPALH {$acquire = true; $release = true; $halfWordSize = true;}
+    ;
+
+casInstruction locals [boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
+    : CAS
+    | CASB {$byteSize = true;}
+    | CASH {$halfWordSize = true;}
+    | CASA {$acquire = true;}
+    | CASAB {$acquire = true; $byteSize = true;}
+    | CASAH {$acquire = true; $halfWordSize = true;}
+    | CASL {$release = true;}
+    | CASLB {$release = true; $byteSize = true;}
+    | CASLH {$release = true; $halfWordSize = true;}
+    | CASAL {$acquire = true; $release = true;}
+    | CASALB {$acquire = true; $release = true; $byteSize = true;}
+    | CASALH {$acquire = true; $release = true; $halfWordSize = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -395,6 +416,21 @@ SWPLH  :   'SWPLH'  ;
 SWPAL  :   'SWPAL'  ;
 SWPALB :   'SWPALB' ;
 SWPALH :   'SWPALH' ;
+
+// CAS instructions
+
+CAS    :   'CAS'    ;
+CASB   :   'CASB'   ;
+CASH   :   'CASH'   ;
+CASA   :   'CASA'   ;
+CASAB  :   'CASAB'  ;
+CASAH  :   'CASAH'  ;
+CASL   :   'CASL'   ;
+CASLB  :   'CASLB'  ;
+CASLH  :   'CASLH'  ;
+CASAL  :   'CASAL'  ;
+CASALB :   'CASALB' ;
+CASALH :   'CASALH' ;
 
 MovInstruction
     :   'MOV'

@@ -7868,15 +7868,15 @@ litmus/AARCH64/mixed/WW+RR-variant.litmus,0
 litmus/AARCH64/mixed/CoRR+amo.swph0h0-posh0a.w0+w0.litmus,0
 litmus/AARCH64/mixed/CoRR+rmwh0h0-posh0a.w0+w0.litmus,0
 
-// Not yet supported due to grammar/parser limitations
-//litmus/AARCH64/NoRet/MP+rel+CAS-ok-dmb.ld.litmus,0
-//litmus/AARCH64/NoRet/MP+rel+CASnoret-ok-dmb.ld.litmus,1
-//litmus/AARCH64/NoRet/MP+rel+CASacq-noret-ok.litmus,1
-//litmus/AARCH64/NoRet/MP+rel+CASacq-ok.litmus,0
-//litmus/AARCH64/NoRet/MP+rel+LDADD-dmb.ld.litmus,0
-//litmus/AARCH64/NoRet/MP+rel+LDADDnoret-dmb.ld.litmus,1
-
+litmus/AARCH64/NoRet/MP+rel+CAS-ok-dmb.ld.litmus,0
+litmus/AARCH64/NoRet/MP+rel+CASnoret-ok-dmb.ld.litmus,1
+litmus/AARCH64/NoRet/MP+rel+CASacq-noret-ok.litmus,1
+litmus/AARCH64/NoRet/MP+rel+CASacq-ok.litmus,0
 litmus/AARCH64/NoRet/MP+rel+SWPacq.litmus,0
 litmus/AARCH64/NoRet/MP+rel+SWPacq-noret.litmus,1
 litmus/AARCH64/NoRet/MP+rel+SWP-dmb.ld.litmus,0
 litmus/AARCH64/NoRet/MP+rel+SWPnoret-dmb.ld.litmus,1
+
+// Not yet supported due to grammar/parser limitations
+//litmus/AARCH64/NoRet/MP+rel+LDADD-dmb.ld.litmus,0
+//litmus/AARCH64/NoRet/MP+rel+LDADDnoret-dmb.ld.litmus,1

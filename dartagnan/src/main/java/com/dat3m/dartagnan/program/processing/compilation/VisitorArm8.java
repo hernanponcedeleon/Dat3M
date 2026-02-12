@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.arch.CAS;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -53,6 +54,49 @@ class VisitorArm8 extends VisitorBase {
                 propagateNoRet(xchg, newRMWLoadExclusiveWithMo(resultRegister, address, loadMo)),
                 newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo)
         );
+    }
+
+    @Override
+    public List<Event> visitCas(CAS cas) {
+        final Register resultRegister = cas.getResultRegister();
+        final Expression address = cas.getAddress();
+
+        final String loadMo = cas.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
+        final String storeMo = cas.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
+
+        Expression cmpValue = cas.getExpectedValue();
+        Local captureCmpVal = null;
+        if (cmpValue.getRegs().contains(resultRegister)) {
+            Register tmpReg = cas.getFunction().newRegister(resultRegister.getType());
+            captureCmpVal = newLocal(tmpReg, cmpValue);
+            cmpValue = tmpReg;
+        }
+
+        Expression newValue = cas.getStoreValue();
+        Local captureNewVal = null;
+        if (newValue.getRegs().contains(resultRegister)) {
+            Register tmpReg = cas.getFunction().newRegister(resultRegister.getType());
+            captureNewVal = newLocal(tmpReg, newValue);
+            newValue = tmpReg;
+        }
+
+        Label casEnd = newLabel("CAS_end");
+        final Expression cmp = expressions.makeEQ(resultRegister, cmpValue);
+        CondJump branchOnCasCmpResult = newJumpUnless(cmp, casEnd);
+
+        Load load = propagateNoRet(cas, newRMWLoadWithMo(resultRegister, address, loadMo));
+        Store store = newRMWStoreWithMo(load, address, newValue, storeMo);
+
+        return eventSequence(
+                captureCmpVal,
+                captureNewVal,
+                load,
+                branchOnCasCmpResult,
+                store,
+                casEnd
+        );
+
+
     }
 
     private <T extends Load> T propagateNoRet(Event orig, T newEv) {

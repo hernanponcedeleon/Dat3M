@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.arch.CAS;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
@@ -277,8 +278,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return Optional.of(String.format("SWP%s%s %s, %s, [%s]", acq, rel, value, loadReg, address));
     };
 
-    // FIXME: SWP into a zero register (WZR or XZR) acts like a store, in particular SWPA(L) does not give
-    //  acquire semantics then.
     @Override
     public Object visitSwap(SwapContext ctx) {
         final SwapInstructionContext inst = ctx.swapInstruction();
@@ -304,6 +303,48 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
         add(xchg);
         addRegister64Update(r64, lReg);
+        return null;
+    }
+
+    private static final CustomPrinting CAS_PRINTER = e -> {
+        if (!(e instanceof CAS cas)) {
+            return Optional.empty();
+        }
+        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final Expression value = cas.getStoreValue();
+        final Register loadReg = cas.getResultRegister();
+        final Expression address = cas.getAddress();
+
+        return Optional.of(String.format("CAS%s%s %s, %s, [%s]", acq, rel, loadReg, value, address));
+    };
+
+    @Override
+    public Object visitCas(CasContext ctx) {
+        final CasInstructionContext inst = ctx.casInstruction();
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        final Register rt64 = parseRegister64(ctx.rT32, ctx.rT64);
+
+        final Register rs = shrinkRegister(rs64, ctx.rS32, inst.halfWordSize, inst.byteSize);
+        final Expression cmpVal = expressions.makeCast(rs64, rs.getType(), false);
+        final Expression val = expressions.makeCast(rt64, rs.getType(), false);
+        final Expression address = parseAddress(ctx.address());
+
+        final List<String> mo = new ArrayList<>();
+        if (inst.acquire) {
+            mo.add(MO_ACQ);
+        }
+        if (inst.release) {
+            mo.add(MO_REL);
+        }
+
+        final CAS cas = EventFactory.Common.newCAS(rs, address, cmpVal, val);
+        cas.addTags(mo);
+        cas.setMetadata(CAS_PRINTER);
+
+        add(cas);
+        addRegister64Update(rs64, rs);
         return null;
     }
 
@@ -442,16 +483,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return expressions.parseValue(ctx.getText(), type);
     }
 
-    private Register shrinkRegister(Register other, Register32Context ctx, boolean halfWordSize, boolean byteSize) {
-        checkArgument(other.getType().equals(i64), "Non-64-bit %s", other);
+    private Register shrinkRegister(Register r64, Register32Context ctx, boolean halfWordSize, boolean byteSize) {
+        checkArgument(r64.getType().equals(i64), "Non-64-bit %s", r64);
         checkArgument(!byteSize | !halfWordSize, "Inconclusive access size");
         if (byteSize) {
-            return programBuilder.getOrNewRegister(mainThread, "B" + other.getName().substring(1), i8);
+            return programBuilder.getOrNewRegister(mainThread, "B" + r64.getName().substring(1), i8);
+        } else if (halfWordSize) {
+            return programBuilder.getOrNewRegister(mainThread, "H" + r64.getName().substring(1), i16);
+        } else if (ctx != null) {
+            return programBuilder.getOrNewRegister(mainThread, "W" + r64.getName().substring(1), i32);
+        } else {
+            return r64;
         }
-        if (halfWordSize) {
-            return programBuilder.getOrNewRegister(mainThread, "H" + other.getName().substring(1), i16);
-        }
-        return ctx == null ? other : programBuilder.getOrNewRegister(mainThread, ctx.getText(), i32);
     }
 
     private void addRegister64Update(Register r64, Register value) {

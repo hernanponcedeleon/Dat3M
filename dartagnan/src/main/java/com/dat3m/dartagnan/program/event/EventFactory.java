@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.arch.CAS;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
@@ -25,7 +26,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
@@ -402,6 +402,10 @@ public class EventFactory {
 
         public static Xchg newXchg(Register register, Expression address, Expression storeValue) {
             return new Xchg(register, address, storeValue);
+        }
+
+        public static CAS newCAS(Register srcReg, Expression address, Expression cmpVal, Expression storeValue) {
+            return new CAS(srcReg, address, cmpVal, storeValue);
         }
     }
 
