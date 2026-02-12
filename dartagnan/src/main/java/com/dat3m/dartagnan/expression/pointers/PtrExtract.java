@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.base.Preconditions;
 
+/* Now that we have a memory type that supports tearing, this class is redundant */
+
 public class PtrExtract extends UnaryExpressionBase<PointerType, ExpressionKind.Other> {
 
     private final int lowBit;
