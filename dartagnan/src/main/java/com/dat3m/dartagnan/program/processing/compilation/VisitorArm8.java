@@ -50,9 +50,16 @@ class VisitorArm8 extends VisitorBase {
         String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
         return eventSequence(
-                newRMWLoadExclusiveWithMo(resultRegister, address, loadMo),
+                propagateNoRet(xchg, newRMWLoadExclusiveWithMo(resultRegister, address, loadMo)),
                 newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo)
         );
+    }
+
+    private <T extends Load> T propagateNoRet(Event orig, T newEv) {
+        if (orig.hasTag(ARMv8.NO_RET)) {
+            newEv.addTags(Tag.ARMv8.NO_RET);
+        }
+        return newEv;
     }
 
     // =============================================================================================

@@ -51,6 +51,7 @@ public final class Tag {
         public static final String MO_REL       = "L";
         public static final String MO_ACQ       = "A";
         public static final String MO_ACQ_PC    = "Q";
+        public static final String NO_RET       = "NoRet";
 
         public static String extractStoreMoFromCMo(String cMo) {
             return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
