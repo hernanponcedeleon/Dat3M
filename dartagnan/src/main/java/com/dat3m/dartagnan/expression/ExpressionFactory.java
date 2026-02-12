@@ -492,6 +492,9 @@ public final class ExpressionFactory {
     public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
         return new PtrToIntCast(type, pointer);
     }
+    public Expression makePtrToIntCast(Expression pointer) {
+        return makePtrToIntCast(pointer, archType);
+    }
 
 
     public Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
