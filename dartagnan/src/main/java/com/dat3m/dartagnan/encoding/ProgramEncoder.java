@@ -770,15 +770,16 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeBounds() {
-        List<BooleanFormula> encoding = new ArrayList<>();
+        List<BooleanFormula> enc = new ArrayList<>();
         IntervalAnalysis intervalAnalysis = context.getAnalysisContext().requires(IntervalAnalysis.class);
+        ExpressionEncoder exprEnc = context.getExpressionEncoder();
         for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             for (Register.Read read : e.getRegisterReads()) {
                 if (read.register().getType() instanceof IntegerType) {
-                    encoding.add(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
+                    enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
                 }
             }
         }
-        return context.getBooleanFormulaManager().and(encoding);
+        return context.getBooleanFormulaManager().and(enc);
     }
 }
