@@ -198,7 +198,7 @@ public class ProgramEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Thread t : program.getThreads()){
+        for (Thread t : program.getThreads()) {
             enc.add(encodeConsistentThreadCF(t));
             if (IRHelper.isInitThread(t)) {
                 // Init threads are always progressing
@@ -227,7 +227,7 @@ public class ProgramEncoder implements Encoder {
         enc.add(bmgr.implication(threadHasStarted(thread), threadIsEnabled(thread)));
         enc.add(startEvent.encodeExec(context));
 
-        for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
+        for (final Event cur : startEvent.getSuccessor().getSuccessors()) {
             final Event pred = cur.getPredecessor();
             // Immediate control flow
             BooleanFormula cfCond = context.controlFlow(pred);
@@ -427,7 +427,7 @@ public class ProgramEncoder implements Encoder {
         final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
-            final Expression addrVar = context.address(cur);
+            final Expression addrVar = exprs.makePtrToIntCast(context.address(cur), archType);
             final Expression sizeVar = context.size(cur);
 
             final Expression size;
@@ -448,29 +448,32 @@ public class ProgramEncoder implements Encoder {
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
 
-            final BiFunction<Expression, Expression, BooleanFormula> equate = (a, b) -> {
+            final BiFunction<Expression, Expression, BooleanFormula> assign = (a, b) -> {
                 final Event alloc = cur.getAllocationSite();
                 return cur.isStaticallyAllocated()
-                        ? exprEnc.equal(a, b)
-                        : exprEnc.equalAt(a, alloc, b, alloc);
+                        ? exprEnc.assignEqual(a, b)
+                        : exprEnc.assignEqualAt(a, alloc, b, alloc);
             };
 
             // Encode size
-            enc.add(equate.apply(sizeVar, size));
+            enc.add(assign.apply(sizeVar, size));
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             if (prev == null) {
                 // First object is placed at alignment
-                enc.add(equate.apply(addrVar, alignment));
+                enc.add(assign.apply(addrVar, alignment));
             } else {
-                final Expression nextAvailableAddr = exprs.makeAdd(context.address(prev), context.size(prev));
+                final Expression nextAvailableAddr = exprs.makeAdd(
+                        exprs.makePtrToIntCast(context.address(prev), archType),
+                        context.size(prev)
+                );
                 final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
+                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
                 );
 
                 // ... other objects are placed at the next well-aligned address that is available.
-                enc.add(equate.apply(addrVar, nextAlignedAddr));
+                enc.add(assign.apply(addrVar, nextAlignedAddr));
             }
         }
 
@@ -480,8 +483,7 @@ public class ProgramEncoder implements Encoder {
     // ====================================== Data flow ======================================
 
     /**
-     * @return
-     * Describes that for each pair of events, if the reader uses the result of the writer,
+     * @return Describes that for each pair of events, if the reader uses the result of the writer,
      * then the value the reader gets from the register is exactly the value that the writer computed.
      * Also, the reader may only use the value of the latest writer that is executed.
      * Also, if no fitting writer is executed, the reader uses 0.
@@ -515,15 +517,15 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    BooleanFormula equalValue = exprEncoder.equalAt(register, reader, context.result(writer), writer);
+                    BooleanFormula equalValue = exprEncoder.assignEqualAt(register, reader, context.result(writer), writer);
                     enc.add(bmgr.implication(edge, equalValue));
                     overwrite.add(context.execution(writer));
                 }
 
-                if(initializeRegisters && !reg.mustBeInitialized()) {
+                if (initializeRegisters && !reg.mustBeInitialized()) {
                     final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(exprEncoder.equalAt(register, reader, zero, reader));
+                    overwrite.add(exprEncoder.assignEqualAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
             }
@@ -556,7 +558,7 @@ public class ProgramEncoder implements Encoder {
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, exprs.makeGeneralZero(register.getType())));
+                clause.add(exprEncoder.assignEqual(register, exprs.makeGeneralZero(register.getType())));
                 for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
@@ -565,7 +567,7 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, context.result(writer)));
+                clause.add(exprEncoder.assignEqual(register, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
                 for (Event w : writers.subList(i + 1, writers.size())) {
                     if (!exec.areMutuallyExclusive(writer, w)) {
@@ -654,7 +656,7 @@ public class ProgramEncoder implements Encoder {
                         group.getChildren().stream()
                                 .map(c -> bmgr.and(hasForwardProgress(c), isSchedulable(c)))
                                 .reduce(bmgr.makeFalse(), bmgr::or)
-                        ));
+                ));
             }
 
             // (2.3 Base cases for threads)
@@ -726,7 +728,7 @@ public class ProgramEncoder implements Encoder {
                     for (int i = 0; i < sortedChildren.size(); i++) {
                         final ThreadHierarchy child = sortedChildren.get(i);
                         final BooleanFormula sameOrHigherIDThreadWasScheduledOnce =
-                                sortedChildren.subList(i , sortedChildren.size()).stream()
+                                sortedChildren.subList(i, sortedChildren.size()).stream()
                                         .map(this::wasScheduledOnce)
                                         .reduce(bmgr.makeFalse(), bmgr::or);
 

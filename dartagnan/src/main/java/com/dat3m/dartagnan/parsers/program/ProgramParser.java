@@ -94,7 +94,7 @@ public class ProgramParser {
             return new ParserLlvm();
         }
         if (name.endsWith(EXTENSION_SPV_DIS)) {
-                logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
+            logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
             return new ParserSpirv();
         }
         if (name.endsWith(EXTENSION_SPVASM)) {
@@ -119,7 +119,7 @@ public class ProgramParser {
             return new ParserLitmusRISCV();
         } else if (programText.indexOf(TYPE_LITMUS_PTX) == 0) {
             return new ParserLitmusPTX();
-        } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
+        } else if (programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
             return new ParserLitmusVulkan();
         }
         final int spaceIndex = programText.indexOf(" ");

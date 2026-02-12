@@ -31,6 +31,12 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
+import com.dat3m.dartagnan.parsers.CatParser.*;
+import com.dat3m.dartagnan.wmm.definition.*;
+import org.antlr.v4.runtime.*;
+
+import java.util.*;
+
 class VisitorCat extends CatBaseVisitor<Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(VisitorCat.class);
@@ -138,7 +144,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             nameOccurrenceCounter.putIfAbsent(name, 1);
         }
 
-        final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
+        final int occurrenceNumber = nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
         // If it is the first time we encounter this name, we return it as is.
         return occurrenceNumber == 1 ? name : name + "#" + occurrenceNumber;
     }
@@ -254,7 +260,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final Map<String, Object> curNamespace = namespace;
         namespace = functionNamespace;
         final CatParser parser = getParser(CharStreams.fromString(funcDef.expression));
-        Object result =  parser.expression().accept(this);
+        Object result = parser.expression().accept(this);
         namespace = curNamespace;
         return result;
     }
@@ -374,7 +380,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private void checkNoRecursion(ExpressionContext c) {
-        if(relationToBeDefined != null) {
+        if (relationToBeDefined != null) {
             throw new ParsingException("Unexpected recursive context at expression: " + c.getText());
         }
     }
@@ -414,7 +420,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
 
-        private ArityInspector() {}
+        private ArityInspector() {
+        }
 
         @Override
         public Relation.Arity visitExpr(ExprContext c) {

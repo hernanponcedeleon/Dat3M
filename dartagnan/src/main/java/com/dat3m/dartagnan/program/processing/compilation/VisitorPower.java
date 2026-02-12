@@ -2,8 +2,10 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -177,7 +179,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
@@ -658,7 +660,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, expressions.makeCast(e.getExpectedValue(), dummy.getType())), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
@@ -717,7 +719,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
+        Expression storeValue = expressions.makeCast(expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), dummy.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, storeValue, true);
@@ -817,7 +819,15 @@ public class VisitorPower extends VisitorBase {
         Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
+        Expression expr;
+        if (regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+            expr = expressions.makePtrAdd(regValue, e.getOperand());
+        } else if (regValue.getType() instanceof IntegerType) {
+            expr = expressions.makeAdd(regValue, e.getOperand());
+        } else {
+            throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless operand");
+        }
+        Store store = Power.newRMWStoreConditional(address, expr, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
@@ -888,7 +898,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
+        IntegerType type = (IntegerType) e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -909,7 +919,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType) e.getAccessType()))
         );
     }
 

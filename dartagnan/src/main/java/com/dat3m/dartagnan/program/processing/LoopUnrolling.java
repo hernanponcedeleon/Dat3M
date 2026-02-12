@@ -158,7 +158,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         // Merge with loaded bounds if those exist.
-        if(globalLoopBoundsMap.containsKey(func)) {
+        if (globalLoopBoundsMap.containsKey(func)) {
             final Map<CondJump, Integer> loopBoundsMapFromFile = globalLoopBoundsMap.get(func);
             loopBoundsMapFromFile.forEach((key, value) -> loopBoundsMap.merge(key, value, Math::max));
         }
@@ -213,7 +213,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 }
 
                 // Rename label of iteration.
-                final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
+                final Label loopBeginCopy = ((Label) copyCtx.get(loopBegin));
                 loopBeginCopy.setName(loopId);
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
@@ -282,7 +282,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
-        try (CSVPrinter csvPrinter = new CSVPrinter( new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
             for (Map<CondJump, Integer> loopBoundsMap : loopBounds.values()) {
                 for (Map.Entry<CondJump, Integer> entry : loopBoundsMap.entrySet()) {
                     final CondJump loopJump = entry.getKey();

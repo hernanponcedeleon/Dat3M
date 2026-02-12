@@ -80,7 +80,7 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean printAfterProcessing = false;
 
-// ======================================================================
+    // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         final Intrinsics intrinsics = Intrinsics.fromConfig(config, detectMixedSizeAccesses);
@@ -130,6 +130,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 simplifyFunction
                         ), Target.FUNCTIONS, true
                 ),
+
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,

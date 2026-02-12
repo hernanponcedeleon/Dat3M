@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+
 import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
@@ -85,20 +86,20 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Configuration
 
-    @Option(name=BASELINE,
-            description="Refinement starts from this baseline WMM.",
-            secure=true,
-            toUppercase=true)
+    @Option(name = BASELINE,
+            description = "Refinement starts from this baseline WMM.",
+            secure = true,
+            toUppercase = true)
     private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
 
-    @Option(name=COVERAGE,
-            description="Prints the coverage report (this option requires --method=caat).",
-            secure=true,
-            toUppercase=true)
+    @Option(name = COVERAGE,
+            description = "Prints the coverage report (this option requires --method=caat).",
+            secure = true,
+            toUppercase = true)
     private boolean printCovReport = false;
 
-    @Option(name=GRAPHVIZ_DEBUG_FILES,
-            description="This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
+    @Option(name = GRAPHVIZ_DEBUG_FILES,
+            description = "This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
                     " It is very expensive and should only be used for debugging purposes.")
     private boolean generateGraphvizDebugFiles = false;
 
@@ -167,7 +168,7 @@ public class RefinementSolver extends ModelChecker {
         task.getConfig().inject(this);
     }
 
-    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
+    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException {
         return new RefinementSolver(task);
     }
 
@@ -811,14 +812,14 @@ public class RefinementSolver extends ModelChecker {
                 // TODO: Can we have events with source information but without oid?
                 .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());
-        
+
         // Track (covered) events and branches via oId
         final Set<OriginalId> branches = new HashSet<>();
         final Set<OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
-        
+
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
 
         for (Event e : programEvents) {
@@ -827,13 +828,13 @@ public class RefinementSolver extends ModelChecker {
             OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
             assert branchRepId != null;
 
-            if(coveredEvents.contains(e)) {
+            if (coveredEvents.contains(e)) {
                 coveredBranches.add(branchRepId);
             } else {
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
                 final String callStack = makeContextString(
-                            synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                        synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                 messageSet.add(String.format("%s: %s%s", threads,
                         callStack.isEmpty() ? callStack : callStack + " -> ",
                         getSourceLocationString(symmRep)));

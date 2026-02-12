@@ -2,10 +2,14 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -37,7 +41,10 @@ public class Inlining implements ProgramProcessor {
             secure = true)
     private int bound = 1;
 
-    private Inlining() {}
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+    private Inlining() {
+    }
 
     public static Inlining fromConfig(Configuration config) throws InvalidConfigurationException {
         Inlining process = new Inlining();
@@ -64,7 +71,9 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers, boolean isVarArgs) {}
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers,
+                            boolean isVarArgs) {
+    }
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
@@ -103,10 +112,13 @@ public class Inlining implements ProgramProcessor {
         // Advance scope counter.
         for (Register r : function.getRegisters()) {
             final int i = r.getName().indexOf(":");
-            if (i == -1) { continue; }
+            if (i == -1) {
+                continue;
+            }
             try {
                 scope = Integer.max(scope, Integer.parseInt(r.getName().substring(0, i)));
-            } catch (NumberFormatException ignore) {}
+            } catch (NumberFormatException ignore) {
+            }
         }
         return scope;
     }
@@ -142,7 +154,14 @@ public class Inlining implements ProgramProcessor {
         final ArrayList<Event> parameterAssignments = new ArrayList<>();
         for (int j = 0; j < callTarget.parameters.size(); j++) {
             final Register register = registerMap.get(callTarget.parameters.get(j));
-            parameterAssignments.add(newLocal(register, arguments.get(j)));
+            if (register.getType() instanceof PointerType) {
+                Expression v = expressions.makeCast(arguments.get(j), (PointerType) register.getType());
+                parameterAssignments.add(newLocal(register, v));
+            } else {
+                Expression v = arguments.get(j);
+                parameterAssignments.add(newLocal(register, v));
+            }
+            // todo check
         }
 
         // --------- Inline call ---------

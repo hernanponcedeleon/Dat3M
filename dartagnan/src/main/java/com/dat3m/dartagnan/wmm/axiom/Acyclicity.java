@@ -232,10 +232,10 @@ public class Acyclicity extends Axiom {
             // edge and at least one outgoing edge that are also in the cycle.
             enc.add(bmgr.implication(cycleVar(e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
             toBeEncoded.apply((e1, e2) ->
-                // If an edge is guessed to be in a cycle, the edge must belong to relation,
-                // and both events must also be guessed to be on the cycle.
-                enc.add(bmgr.implication(getSMTCycleVar(e1, e2, fmgr),
-                        bmgr.and(edge.encode(e1, e2), cycleVar(e1, fmgr), cycleVar(e2, fmgr)))));
+                    // If an edge is guessed to be in a cycle, the edge must belong to relation,
+                    // and both events must also be guessed to be on the cycle.
+                    enc.add(bmgr.implication(getSMTCycleVar(e1, e2, fmgr),
+                            bmgr.and(edge.encode(e1, e2), cycleVar(e1, fmgr), cycleVar(e2, fmgr)))));
         }
         // A cycle exists if there is an event in the cycle.
         enc.add(bmgr.or(eventsInCycle));
@@ -250,10 +250,10 @@ public class Acyclicity extends Axiom {
         List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         toBeEncoded.apply((e1, e2) ->
-            enc.add(bmgr.implication(edge.encode(e1, e2),
-                    imgr.lessThan(
-                            context.clockVariable(clockVarName, e1),
-                            context.clockVariable(clockVarName,e2))))
+                enc.add(bmgr.implication(edge.encode(e1, e2),
+                        imgr.lessThan(
+                                context.clockVariable(clockVarName, e1),
+                                context.clockVariable(clockVarName, e2))))
         );
         return enc;
     }
@@ -356,7 +356,7 @@ public class Acyclicity extends Axiom {
         for (int i = 0; i < varOrderings.size(); i++) {
             Event e1 = varOrderings.get(i);
             Set<Event> out = vertEleOutEdges.get(e1);
-            for (Event e2: out) {
+            for (Event e2 : out) {
                 if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
                     BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(e1, e2, fmgr);
                     enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(e2, e1, fmgr))));

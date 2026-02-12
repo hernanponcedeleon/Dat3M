@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmRISCVParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -22,7 +23,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import static com.google.common.base.Preconditions.checkState;
+
 public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
 
     private final List<Local> inputAssignments = new ArrayList<>();
@@ -87,7 +88,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address, offset);
         asmInstructions.add(EventFactory.newLoad(register, newAddress));
         return null;
     }
@@ -143,7 +144,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address, offset);
         asmInstructions.add(EventFactory.newStore(newAddress, value));
         return null;
     }
@@ -204,28 +205,28 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitNegate(AsmRISCVParser.NegateContext ctx){
+    public Object visitNegate(AsmRISCVParser.NegateContext ctx) {
         // neg $0 $1 -> sub $0, #0, $1
         Register destinationRegister = (Register) ctx.register(0).accept(this);
         Register sourceRegister = (Register) ctx.register(1).accept(this);
         Expression zero = expressions.makeZero((IntegerType) sourceRegister.getType());
         Expression exp = expressions.makeSub(zero, sourceRegister);
-        asmInstructions.add(EventFactory.newLocal(destinationRegister,exp));
+        asmInstructions.add(EventFactory.newLocal(destinationRegister, exp));
         return null;
     }
 
     @Override
-    public Object visitAtomicAdd(AsmRISCVParser.AtomicAddContext ctx){
+    public Object visitAtomicAdd(AsmRISCVParser.AtomicAddContext ctx) {
         throw new UnsupportedOperationException(ctx.AtomicAdd().getText());
     }
-    
+
     @Override
-    public Object visitAtomicAddRelease(AsmRISCVParser.AtomicAddReleaseContext ctx){
+    public Object visitAtomicAddRelease(AsmRISCVParser.AtomicAddReleaseContext ctx) {
         throw new UnsupportedOperationException(ctx.AtomicAddRelease().getText());
     }
 
     @Override
-    public Object visitAtomicAddAcquireRelease(AsmRISCVParser.AtomicAddAcquireReleaseContext ctx){
+    public Object visitAtomicAddAcquireRelease(AsmRISCVParser.AtomicAddAcquireReleaseContext ctx) {
         throw new UnsupportedOperationException(ctx.AtomicAddAcquireRelease().getText());
     }
 
@@ -242,7 +243,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters, this.returnRegister, registerID);
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
@@ -304,7 +305,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     @Override
     public Object visitRiscvFence(AsmRISCVParser.RiscvFenceContext ctx) {
         String mo = ctx.fenceOptions().mode;
-        Event fence = switch(mo) {
+        Event fence = switch (mo) {
             case "r r" -> EventFactory.RISCV.newRRFence();
             case "r w" -> EventFactory.RISCV.newRWFence();
             case "r rw" -> EventFactory.RISCV.newRRWFence();
@@ -324,10 +325,16 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmRISCVParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.Numbers().getText();
-        BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, (IntegerType) expectedType);
+        } else if (expectedType instanceof PointerType) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, ((PointerType) expectedType).getBitWidth());
+        }
+        throw new RuntimeException("Unexpected type " + expectedType + " visited");
     }
 
 }

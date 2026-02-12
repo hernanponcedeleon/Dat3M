@@ -91,7 +91,7 @@ public class SymmetryEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EventGraph maySet;
         final EncodingContext.EdgeEncoder edgeEncoder;
-        switch(symmBreakTarget) {
+        switch (symmBreakTarget) {
             case "":
                 return bmgr.makeTrue();
             case "_cf":

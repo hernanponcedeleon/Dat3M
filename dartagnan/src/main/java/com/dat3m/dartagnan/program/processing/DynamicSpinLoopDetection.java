@@ -67,7 +67,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         AnalysisStats stats = new AnalysisStats(0);
         for (Function func : Iterables.concat(program.getFunctions(), program.getThreads())) {
             final List<LoopData> loops = computeLoopData(func, loopAnalysis);
-            final LiveRegistersAnalysis liveRegsAna =  LiveRegistersAnalysis.forFunction(func);
+            final LiveRegistersAnalysis liveRegsAna = LiveRegistersAnalysis.forFunction(func);
             loops.forEach(loop -> this.collectSideEffects(loop, liveRegsAna));
             loops.forEach(this::instrumentLoop);
             stats = stats.add(collectStats(loops));
@@ -212,8 +212,13 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             this.loopInfo = loopInfo;
         }
 
-        private Event getStart() { return loopInfo.iterations().get(0).getIterationStart(); }
-        private Event getEnd() { return loopInfo.iterations().get(0).getIterationEnd(); }
+        private Event getStart() {
+            return loopInfo.iterations().get(0).getIterationStart();
+        }
+
+        private Event getEnd() {
+            return loopInfo.iterations().get(0).getIterationEnd();
+        }
 
         @Override
         public String toString() {

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -103,7 +104,7 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, ARMv8.extractStoreMoFromCMo(mo));
@@ -515,7 +516,15 @@ class VisitorArm8 extends VisitorBase {
 
         Register regValue = e.getFunction().newRegister(type);
         Load load = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeAdd(regValue, e.getOperand()), true, ARMv8.extractStoreMoFromLKMo(mo));
+        Expression expr;
+        if (regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+            expr = expressions.makePtrAdd(regValue, e.getOperand());
+        } else if (regValue.getType() instanceof IntegerType) {
+            expr = expressions.makeAdd(regValue, e.getOperand());
+        } else {
+            throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");
+        }
+        Store store = newRMWStoreExclusiveWithMo(address, expr, true, ARMv8.extractStoreMoFromLKMo(mo));
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
@@ -592,7 +601,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
-        Expression zero = expressions.makeZero((IntegerType)e.getAccessType());
+        Expression zero = expressions.makeZero((IntegerType) e.getAccessType());
         return eventSequence(
                 newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
         );

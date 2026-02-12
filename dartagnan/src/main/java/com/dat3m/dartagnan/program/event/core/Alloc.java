@@ -62,20 +62,47 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     }
 
     @Override
-    public Register getResultRegister() { return resultRegister; }
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
     @Override
-    public void setResultRegister(Register reg) { this.resultRegister = reg; }
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
 
-    public Type getAllocationType() { return allocationType; }
-    public Expression getArraySize() { return arraySize; }
-    public Expression getAlignment() { return alignment; }
-    public boolean isHeapAllocation() { return isHeapAllocation; }
-    public boolean doesZeroOutMemory() { return doesZeroOutMemory; }
+    public Type getAllocationType() {
+        return allocationType;
+    }
 
-    public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
-    public boolean isArrayAllocation() { return !isSimpleAllocation(); }
+    public Expression getArraySize() {
+        return arraySize;
+    }
 
-    public void setAllocatedObject(MemoryObject obj) { this.allocatedObject = obj; }
+    public Expression getAlignment() {
+        return alignment;
+    }
+
+    public boolean isHeapAllocation() {
+        return isHeapAllocation;
+    }
+
+    public boolean doesZeroOutMemory() {
+        return doesZeroOutMemory;
+    }
+
+    public boolean isSimpleAllocation() {
+        return (arraySize instanceof IntLiteral size && size.isOne());
+    }
+
+    public boolean isArrayAllocation() {
+        return !isSimpleAllocation();
+    }
+
+    public void setAllocatedObject(MemoryObject obj) {
+        this.allocatedObject = obj;
+    }
+
     // WARNING: This should only be accessed after program processing.
     public MemoryObject getAllocatedObject() {
         Preconditions.checkState(allocatedObject != null,
@@ -122,7 +149,9 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     }
 
     @Override
-    public Alloc getCopy() { return new Alloc(this); }
+    public Alloc getCopy() {
+        return new Alloc(this);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
@@ -133,7 +162,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public BooleanFormula encodeExec(EncodingContext ctx) {
         return ctx.getBooleanFormulaManager().and(
                 super.encodeExec(ctx),
-                ctx.getExpressionEncoder().equalAt(ctx.result(this), this, getAllocatedObject(), this)
+                ctx.getExpressionEncoder().assignEqualAt(ctx.result(this), this, getAllocatedObject(), this)
         );
     }
 }

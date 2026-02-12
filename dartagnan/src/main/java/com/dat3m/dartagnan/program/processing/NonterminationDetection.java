@@ -43,7 +43,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.NONTERMINATION_INSTR
  */
 @Options
 public class NonterminationDetection implements ProgramProcessor {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(NonterminationDetection.class);
 
     public enum Mode {
@@ -57,7 +57,8 @@ public class NonterminationDetection implements ProgramProcessor {
             secure = true)
     private Mode mode = Mode.FULL;
 
-    private NonterminationDetection() { }
+    private NonterminationDetection() {
+    }
 
     public static NonterminationDetection newInstance() {
         return new NonterminationDetection();

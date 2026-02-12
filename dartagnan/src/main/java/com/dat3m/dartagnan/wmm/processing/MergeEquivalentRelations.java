@@ -59,7 +59,7 @@ public class MergeEquivalentRelations implements WmmProcessor {
     }
 
     private boolean areEquivalent(Relation r1, Relation r2) {
-        if (r1 == r2)  {
+        if (r1 == r2) {
             return true;
         }
         final Definition def1 = r1.getDefinition();

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -68,6 +69,15 @@ public class AnalysisTest {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
+    private Expression toPtr(Expression expr) {
+        return expressions.makePtrCast(expr, types.getPointerType());
+    }
+    private Expression toInt(Expression expr) {
+        return expressions.makeIntegerCast(expr, types.getArchType(),true);
+    }
+
+
+
     @Test
     public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
         reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.BACKWARD);
@@ -77,9 +87,9 @@ public class AnalysisTest {
     private void reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method method) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         b.newThread(0);
-        Register r0 = b.getOrNewRegister(0, "r0");
-        Register r1 = b.getOrNewRegister(0, "r1");
-        Register r2 = b.getOrNewRegister(0, "r2");
+        Register r0 = b.getOrNewRegister(0, "r0", types.getArchType());
+        Register r1 = b.getOrNewRegister(0, "r1", types.getArchType());
+        Register r2 = b.getOrNewRegister(0, "r2", types.getArchType());
         Label alt = b.getOrCreateLabel(0, "alt");
         b.addChild(0, newJump(b.newConstant(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
@@ -128,8 +138,6 @@ public class AnalysisTest {
         assertList(rd.getWriters(me5).ofRegister(r2).getMustWriters(), me4);
     }
 
-
-
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
@@ -153,7 +161,7 @@ public class AnalysisTest {
         Local r20 = newLocal(r2, r0);
         b.addChild(0, r20);
         //  r3 = 0
-        Local r30 = newLocal(r3, expressions.makeZero(types.getArchType()));
+        Local r30 = newLocal(r3, expressions.makeNullLiteral());
         b.addChild(0, r30);
         //  do {
         Label begin = b.getOrCreateLabel(0, "begin");
@@ -201,7 +209,10 @@ public class AnalysisTest {
         b.addChild(0, skip3);
         //  return (r0 + r1) ^ (r2 | r3)
         Return ret = newFunctionReturn(
-                expressions.makeIntXor(expressions.makeAdd(r0, r1), expressions.makeIntOr(r2, r3)));
+                expressions.makeIntXor(expressions.makeAdd(expressions.makeIntegerCast(r0, types.getArchType(),false),
+                        expressions.makeIntegerCast(r1, types.getArchType(),false)),
+                        expressions.makeIntOr(expressions.makeIntegerCast(r2, types.getArchType(),false),
+                                expressions.makeIntegerCast(r3, types.getArchType(),false))));
         b.addChild(0, ret);
 
         Program program = b.build();
@@ -266,9 +277,9 @@ public class AnalysisTest {
         MemoryObject y = b.newMemoryObject("y", 8);
 
         b.newThread(0);
-        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r0 = b.getOrNewRegister(0, "r0", types.getPointerType());
         //In C11, this is well-defined: ((uint64_t*) ((uintptr_t) x * 1))
-        b.addChild(0, newLocal(r0, mult(x, 1)));
+        b.addChild(0, newLocal(r0, toPtr(mult(toInt(x), 1))));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
         Store e1 = newStore(plus(r0, 8));
@@ -356,27 +367,25 @@ public class AnalysisTest {
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        IntegerType type = types.getArchType();
+        IntegerType itype = types.getArchType();
         MemoryObject x = b.newMemoryObject("x", 24);
 
         b.newThread(0);
-        Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, b.newConstant(type)));
+        Register r0 = b.getOrNewRegister(0, "r0", itype);
+        b.addChild(0, newLocal(r0, b.newConstant(itype)));
         Label l0 = b.getOrCreateLabel(0,"l0");
         b.addChild(0, newJump(expressions.makeOr(
-                expressions.makeGT(r0, expressions.makeOne(type), true),
-                expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
+                expressions.makeGT(r0, expressions.makeOne(itype), true),
+                expressions.makeLT(r0, expressions.makeZero(itype), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
         Store e1 = newStore(plus(x, 8));
         b.addChild(0, e1);
         Store e2 = newStore(plus(x, 16));
         b.addChild(0, e2);
-        Register r1 = b.getOrNewRegister(0, "r1");
-        b.addChild(0, newLocal(r1, expressions.makeZero(type)));
-        Store e3 = newStore(expressions.makeAdd(
-                expressions.makeAdd(x, mult(r0, 16)),
-                mult(r1, 32)));
+        Register r1 = b.getOrNewRegister(0, "r1", itype);
+        b.addChild(0, newLocal(r1, expressions.makeZero(itype)));
+        Store e3 = newStore(add(add(x, mult(r0, 16)), mult(r1, 32)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -464,7 +473,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, mult(x, 0)));
+        b.addChild(0, newLocal(r0, expressions.makePtrCast(mult(expressions.makeIntegerCast(x, types.getArchType(),false), 0), types.getPointerType())));
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
@@ -516,7 +525,7 @@ public class AnalysisTest {
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
-        b.addChild(0, newLocal(r0, mult(x, 0)));
+        b.addChild(0, newLocal(r0, toPtr(mult(toInt(x), 0))));
         Store e1 = newStore(x);
         b.addChild(0, e1);
         Store e2 = newStore(y);
@@ -639,8 +648,18 @@ public class AnalysisTest {
     private Expression value(long v) {
         return expressions.makeValue(v, types.getArchType());
     }
+    private Expression add(Expression lhs, Expression rhs) {
+        assert rhs.getType() instanceof IntegerType;
+        if (lhs.getType() instanceof PointerType){
+            return expressions.makePtrAdd(lhs,rhs);
+        }
+        return expressions.makeAdd(lhs, rhs);
+    }
 
     private Expression plus(Expression lhs, long rhs) {
+        if (lhs.getType() instanceof PointerType){
+            return expressions.makePtrAdd(lhs,value(rhs));
+        }
         return expressions.makeAdd(lhs, value(rhs));
     }
 
@@ -724,7 +743,7 @@ public class AnalysisTest {
     public void allKindsOfMixedSizeAccesses() throws Exception {
         TypeFactory types = TypeFactory.getInstance();
         ExpressionFactory expressions = ExpressionFactory.getInstance();
-        IntegerType pointerType = types.getArchType();
+        IntegerType archType = types.getArchType();
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         Register r8 = b.getOrNewRegister(0, "r8", types.getIntegerType(8));
@@ -741,7 +760,7 @@ public class AnalysisTest {
             final StringBuilder exp = new StringBuilder();
             for (int offset = 0; offset < 9; offset++) {
                 final MemoryObject x = b.getOrNewMemoryObject(String.format("x%d:%d", i, offset), OBJECT_SIZE);
-                final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, pointerType));
+                final Expression address = expressions.makePtrAdd(x, expressions.makeValue(offset, archType));
                 b.addChild(0, newLoad(r, x));
                 b.addChild(0, newLoad(s, address));
                 if (0 < offset && offset < rBytes) {

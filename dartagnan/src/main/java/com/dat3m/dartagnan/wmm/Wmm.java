@@ -33,7 +33,9 @@ public class Wmm {
                 secure = true)
         private boolean reduceAcyclicityEncoding = true;
 
-        public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
+        public boolean isReduceAcyclicityEncoding() {
+            return reduceAcyclicityEncoding;
+        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
@@ -53,7 +55,9 @@ public class Wmm {
         ANARCHIC_CORE_RELATIONS.forEach(this::getOrCreatePredefinedRelation);
     }
 
-    public Config getConfig() { return this.config; }
+    public Config getConfig() {
+        return this.config;
+    }
 
     public List<Constraint> getConstraints() {
         return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();

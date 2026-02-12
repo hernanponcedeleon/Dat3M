@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmArmParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -21,7 +23,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import static com.google.common.base.Preconditions.checkState;
+
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
 // The matching depends on what is specified in the constraints.
@@ -90,7 +92,10 @@ import static com.google.common.base.Preconditions.checkState;
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
 public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {
+    }
+
+    ;
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -109,6 +114,8 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     private Type expectedType;
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
+    private final TypeFactory typeFactory = TypeFactory.getInstance();
+    private final PointerType pointerType = typeFactory.getPointerType();
 
     public VisitorAsmArm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
@@ -132,6 +139,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         events.addAll(asmInstructions);
         events.addAll(outputAssignments);
         return events;
+    }
+
+    private Expression toPtr(Register r) {
+        return expressions.makeIntToPtrCast(r, pointerType);
     }
 
     // Tells if a constraint is a numeric one, e.g. '3'
@@ -158,7 +169,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoad(AsmArmParser.LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, address));
+        asmInstructions.add(EventFactory.newLoad(register, toPtr(address)));
         return null;
     }
 
@@ -166,7 +177,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadAcquire(AsmArmParser.LoadAcquireContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        asmInstructions.add(EventFactory.newLoadWithMo(register, toPtr(address), Tag.ARMv8.MO_ACQ));
         return null;
     }
 
@@ -174,7 +185,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadExclusive(AsmArmParser.LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
+        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, toPtr(address)));
         return null;
     }
 
@@ -182,7 +193,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadAcquireExclusive(AsmArmParser.LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, toPtr(address), Tag.ARMv8.MO_ACQ));
         return null;
     }
 
@@ -232,7 +243,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitStore(AsmArmParser.StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStore(address, value));
+        asmInstructions.add(EventFactory.newStore(toPtr(address), value));
         return null;
     }
 
@@ -240,7 +251,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitStoreRelease(AsmArmParser.StoreReleaseContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
+        asmInstructions.add(EventFactory.newStoreWithMo(toPtr(address), value, Tag.ARMv8.MO_REL));
         return null;
     }
 
@@ -249,7 +260,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, ""));
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, toPtr(address), value, ""));
         return null;
     }
 
@@ -258,7 +269,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_REL));
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, toPtr(address), value, Tag.ARMv8.MO_REL));
         return null;
     }
 
@@ -326,7 +337,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters, this.returnRegister, registerID);
+            if (registerType instanceof PointerType pt) {
+                registerType = typeFactory.getIntegerType(pt.bitWidth);
+            }
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
@@ -363,10 +377,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             if (!isOutputRegistersInitialized) {
                 isOutputRegistersInitialized = true;
                 if (i == 1) {
-                    outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
+                    outputAssignments.add(EventFactory.newLocal(returnRegister, expressions.makeCast(asmRegisters.get(0), returnRegister.getType())));
                 } else {
                     Type aggregateType = returnRegister.getType();
-                    Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
+                    Expression finalAssignExpression = expressions.makeCompatibilityConstruct(aggregateType, this.pendingRegisters);
                     outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                 }
             }
@@ -376,11 +390,13 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
                     continue;
                 }
                 Expression llvmRegister = argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister));
-                inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
+                inputAssignments.add(EventFactory.newLocal(asmRegister, expressions.makeCast(llvmRegister, asmRegister.getType())));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister))));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue),
+                        expressions.makeCast(argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister)), asmRegisters.get(constraintValue).getType())
+                ));
             }
         }
         return null;
@@ -388,10 +404,17 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.Numbers().getText();
-        BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType t) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, t);
+        }
+        if (expectedType instanceof PointerType t) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, typeFactory.getIntegerType(t.bitWidth));
+        }
+        throw new RuntimeException("Unexpected type " + expectedType + " visited");
     }
 
     @Override
@@ -401,26 +424,16 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         String option = ctx.FenceArmOpt().getText();
         String barrier = type + " " + option;
         Event fence = switch (barrier) {
-            case "dmb ish" ->
-                EventFactory.AArch64.DMB.newISHBarrier();
-            case "dmb ishld" ->
-                EventFactory.AArch64.DMB.newISHLDBarrier();
-            case "dmb sy" ->
-                EventFactory.AArch64.DMB.newSYBarrier();
-            case "dmb st" ->
-                EventFactory.AArch64.DMB.newSTBarrier();
-            case "dmb ishst" ->
-                EventFactory.AArch64.DMB.newISHSTBarrier();
-            case "dsb ish" ->
-                EventFactory.AArch64.DSB.newISHBarrier();
-            case "dsb ishld" ->
-                EventFactory.AArch64.DSB.newISHLDBarrier();
-            case "dsb sy" ->
-                EventFactory.AArch64.DSB.newSYBarrier();
-            case "dsb ishst" ->
-                EventFactory.AArch64.DSB.newISHSTBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
+            case "dmb ish" -> EventFactory.AArch64.DMB.newISHBarrier();
+            case "dmb ishld" -> EventFactory.AArch64.DMB.newISHLDBarrier();
+            case "dmb sy" -> EventFactory.AArch64.DMB.newSYBarrier();
+            case "dmb st" -> EventFactory.AArch64.DMB.newSTBarrier();
+            case "dmb ishst" -> EventFactory.AArch64.DMB.newISHSTBarrier();
+            case "dsb ish" -> EventFactory.AArch64.DSB.newISHBarrier();
+            case "dsb ishld" -> EventFactory.AArch64.DSB.newISHLDBarrier();
+            case "dsb sy" -> EventFactory.AArch64.DSB.newSYBarrier();
+            case "dsb ishst" -> EventFactory.AArch64.DSB.newISHSTBarrier();
+            default -> throw new ParsingException("Barrier not implemented");
         };
         asmInstructions.add(fence);
         return null;

@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -41,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -65,7 +69,7 @@ public final class EncodingContext {
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     @Option(
-            name=IDL_TO_SAT,
+            name = IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     boolean useSATEncoding = false;
@@ -219,19 +223,21 @@ public final class EncodingContext {
         return exprEncoder.equal(result(first), result(second));
     }
 
-    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
-        return exprEncoder.equal(value(first), value(second), cmode);
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
+        return exprEncoder.equal(value(first), value(second));
     }
 
-    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return sameValue(first, second, ExpressionEncoder.ConversionMode.NO);
+    public BooleanFormula assignValue(MemoryCoreEvent left, MemoryCoreEvent right) {
+        return exprEncoder.assignEqual(value(left), value(right), MEMORY_ROUND_TRIP_RELAXED);
     }
 
     public TypedFormula<?, ?> address(MemoryCoreEvent event) {
         return addresses.get(event);
     }
 
-    public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+    public TypedFormula<?, ?> address(MemoryObject memoryObject) {
+        return objAddress.get(memoryObject);
+    }
 
     // NOTE: This formula represents the size of successfully allocated memory objects.
     // For non-allocated memory objects, the size may be any non-negative value.

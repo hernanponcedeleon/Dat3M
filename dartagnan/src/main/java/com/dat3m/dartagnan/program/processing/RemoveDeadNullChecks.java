@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.NullLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrAddExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -42,11 +44,14 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
  */
 public class RemoveDeadNullChecks implements FunctionProcessor {
 
-    private final static Logger logger = LoggerFactory.getLogger(RemoveDeadNullChecks.class)
-;
-    private RemoveDeadNullChecks() { }
+    private final static Logger logger = LoggerFactory.getLogger(RemoveDeadNullChecks.class);
 
-    public static RemoveDeadNullChecks newInstance() { return new RemoveDeadNullChecks(); }
+    private RemoveDeadNullChecks() {
+    }
+
+    public static RemoveDeadNullChecks newInstance() {
+        return new RemoveDeadNullChecks();
+    }
 
     private enum Sign {
         UNKNOWN,
@@ -157,6 +162,11 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
         }
 
         @Override
+        public Sign visitNullLiteral(NullLiteral lit) {
+            return Sign.NON_NEG;
+        }
+
+        @Override
         public Sign visitIntBinaryExpression(IntBinaryExpr expr) {
             final Sign leftSign = expr.getLeft().accept(this);
             final Sign rightSign = expr.getRight().accept(this);
@@ -172,6 +182,19 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
                 return Sign.NON_NEG;
             }
             // TODO: We can add more cases for precision, but the above already works quite well
+            return Sign.UNKNOWN;
+        }
+
+        @Override
+        public Sign visitPtrAddExpression(PtrAddExpr expr) {
+            final Sign leftSign = expr.getBase().accept(this);
+            final Sign rightSign = expr.getOffset().accept(this);
+            if (leftSign == Sign.UNKNOWN || rightSign == Sign.UNKNOWN) {
+                return Sign.UNKNOWN;
+            }
+            if (leftSign == Sign.POS || rightSign == Sign.POS) {
+                return Sign.POS;
+            }
             return Sign.UNKNOWN;
         }
 

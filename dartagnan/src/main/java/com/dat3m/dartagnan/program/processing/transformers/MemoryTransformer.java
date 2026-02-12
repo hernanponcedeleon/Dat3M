@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.transformers;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -26,6 +27,7 @@ public class MemoryTransformer extends ExprTransformer {
     // Thread / Subgroup / Workgroup / QueueFamily / Device
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
     private static final Type archType = TypeFactory.getInstance().getArchType();
+    private static final Type pointerType = TypeFactory.getInstance().getPointerType();
 
     private final Program program;
     private final Function function;
@@ -66,10 +68,7 @@ public class MemoryTransformer extends ExprTransformer {
         tid = newTid;
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
-                toMap(r -> r, r -> {
-                    Type type = r.getType() instanceof ScopedPointerType ? archType : r.getType();
-                    return thread.getOrNewRegister(r.getName(), type);
-                }));
+                toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
         nonDetMapping = new HashMap<>();
     }
 
@@ -99,18 +98,18 @@ public class MemoryTransformer extends ExprTransformer {
         return switch (storageClass) {
             // Device-level memory (keep the same instance)
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
-                    Tag.Spirv.SC_UNIFORM,
-                    Tag.Spirv.SC_OUTPUT,
-                    Tag.Spirv.SC_CROSS_WORKGROUP,
-                    Tag.Spirv.SC_PUSH_CONSTANT,
-                    Tag.Spirv.SC_ATOMIC_COUNTER,
-                    Tag.Spirv.SC_IMAGE,
-                    Tag.Spirv.SC_STORAGE_BUFFER,
-                    Tag.Spirv.SC_PHYS_STORAGE_BUFFER -> memObj;
+                 Tag.Spirv.SC_UNIFORM,
+                 Tag.Spirv.SC_OUTPUT,
+                 Tag.Spirv.SC_CROSS_WORKGROUP,
+                 Tag.Spirv.SC_PUSH_CONSTANT,
+                 Tag.Spirv.SC_ATOMIC_COUNTER,
+                 Tag.Spirv.SC_IMAGE,
+                 Tag.Spirv.SC_STORAGE_BUFFER,
+                 Tag.Spirv.SC_PHYS_STORAGE_BUFFER -> memObj;
             // Private memory (copy for each new thread)
             case Tag.Spirv.SC_INPUT,
-                    Tag.Spirv.SC_PRIVATE,
-                    Tag.Spirv.SC_FUNCTION -> applyMapping(memObj, 0);
+                 Tag.Spirv.SC_PRIVATE,
+                 Tag.Spirv.SC_FUNCTION -> applyMapping(memObj, 0);
             // Workgroup-level memory (copy for each new workgroup)
             case Tag.Spirv.SC_WORKGROUP -> applyMapping(memObj, 2);
             default -> throw new UnsupportedOperationException(

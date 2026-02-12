@@ -19,9 +19,12 @@ public class LogThreadStatistics implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(LogThreadStatistics.class);
 
-    private LogThreadStatistics() { }
+    private LogThreadStatistics() {
+    }
 
-    public static LogThreadStatistics newInstance() { return new LogThreadStatistics(); }
+    public static LogThreadStatistics newInstance() {
+        return new LogThreadStatistics();
+    }
 
     @Override
     public void run(Program program) {
@@ -53,7 +56,7 @@ public class LogThreadStatistics implements ProgramProcessor {
             }
         }
 
-        int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
+        int numNonInitThreads = (int) threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
                 .filter(m -> m.isStaticallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()

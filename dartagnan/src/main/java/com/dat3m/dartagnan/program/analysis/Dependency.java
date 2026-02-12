@@ -66,7 +66,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
     /**
      * Queries the collection of providers for a variable, given a certain state of the program.
      *
-     * @param reader   Event containing some computation over values of the register space.
+     * @param reader Event containing some computation over values of the register space.
      * @return Local result of this analysis.
      */
     @Override
@@ -109,7 +109,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
             //collecting all register dependencies
             Set<Register> registers = new HashSet<>();
             if (event instanceof RegReader regReader) {
-                regReader.getRegisterReads().forEach( read -> registers.add(read.register()));
+                regReader.getRegisterReads().forEach(read -> registers.add(read.register()));
             }
 
             if (!registers.isEmpty()) {

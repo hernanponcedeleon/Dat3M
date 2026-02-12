@@ -438,7 +438,8 @@ public class NonTerminationEncoder {
                 totalEnc.add(bmgr.not(bmgr.and(isInSuffixVar(iter), isInInfixVar(iter))));
             }
 
-            final Iteration last = iters.get(iters.size() - 1);;
+            final Iteration last = iters.get(iters.size() - 1);
+            ;
             final BooleanFormula loopIsNonterminating = loop.nontermCases.stream()
                     .map(this::isNonterminating)
                     .reduce(bmgr.makeFalse(), bmgr::or);
@@ -677,7 +678,7 @@ public class NonTerminationEncoder {
             if (isPossiblySuffix(r)) {
                 enc.add(bmgr.implication(
                         bmgr.and(isInSuffix(r), context.edge(rf, w, r)),
-                        isSuffixReadable((Store)w)
+                        isSuffixReadable((Store) w)
                 ));
             }
         });
@@ -745,8 +746,13 @@ public class NonTerminationEncoder {
             this.loopInfo = loopInfo;
         }
 
-        public List<Iteration> getIterations() { return Lists.transform(loopInfo.iterations(), iterInfo2Iter::get); }
-        public boolean isAlwaysTerminating() { return nontermCases.isEmpty(); }
+        public List<Iteration> getIterations() {
+            return Lists.transform(loopInfo.iterations(), iterInfo2Iter::get);
+        }
+
+        public boolean isAlwaysTerminating() {
+            return nontermCases.isEmpty();
+        }
 
         @Override
         public String toString() {
@@ -763,16 +769,28 @@ public class NonTerminationEncoder {
                     containingFunc.getName(), containingFunc.getId());
         }
 
-        public String getUniqueId() { return toString(); }
-        public boolean isLast() { return loopIterInfo.isLast(); }
-        public int getIterationNumber() { return loopIterInfo().getIterationNumber(); }
+        public String getUniqueId() {
+            return toString();
+        }
+
+        public boolean isLast() {
+            return loopIterInfo.isLast();
+        }
+
+        public int getIterationNumber() {
+            return loopIterInfo().getIterationNumber();
+        }
     }
 
     private record NonterminationCase(CondJump nontermEvent, Iteration iteration) {
 
-        public boolean isSideEffectFree() { return nontermEvent.hasTag(Tag.SPINLOOP); }
+        public boolean isSideEffectFree() {
+            return nontermEvent.hasTag(Tag.SPINLOOP);
+        }
 
-        public Loop getLoop() { return iteration.loop; }
+        public Loop getLoop() {
+            return iteration.loop;
+        }
 
         @Override
         public String toString() {

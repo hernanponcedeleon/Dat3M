@@ -9,8 +9,9 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.AsmPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmPPCParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -20,11 +21,15 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {
+    }
+
+    ;
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -32,6 +37,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
@@ -41,6 +47,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final List<Expression> argsRegisters;
     // expected type of RHS of a comparison.
     private Type expectedType;
+
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
@@ -54,7 +61,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private boolean isConstraintNumeric(AsmPPCParser.ConstraintContext constraint) {
         return constraint.overlapInOutRegister() != null;
     }
-    
+
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
     private boolean isConstraintOutputConstraint(AsmPPCParser.ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
@@ -89,7 +96,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address, offset);
         asmInstructions.add(EventFactory.newRMWLoadExclusive(register, newAddress));
         return null;
     }
@@ -108,9 +115,9 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
-        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
-        this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
+        Expression newAddress = expressions.makePtrAdd(address, offset);
+        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", archType);
+        this.comparator = new CmpInstruction(resultRegister, expressions.makeZero(archType));
         asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
         return null;
     }
@@ -127,7 +134,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmPPCParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeNEQ(comparator.left(), comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -147,7 +154,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
-    
+
     @Override
     public Object visitAddImmediateCarry(AsmPPCParser.AddImmediateCarryContext ctx) {
         // TODO :
@@ -161,7 +168,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
-    
+
     @Override
     public Object visitSubtractFrom(AsmPPCParser.SubtractFromContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
@@ -183,12 +190,15 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmPPCParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+        checkState(expectedType instanceof IntegerType || expectedType instanceof PointerType, "Expected type is not an integer or pointer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType) {
+            return expressions.makeValue(value, (IntegerType) expectedType);
+        }
+        return expressions.makeValue(value, ((PointerType) expectedType).getBitWidth());
     }
-    
+
 
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.
@@ -203,7 +213,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters, this.returnRegister, registerID);
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
@@ -263,14 +273,10 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     public Object visitPpcFence(AsmPPCParser.PpcFenceContext ctx) {
         String barrier = ctx.PPCFence().getText();
         Event fence = switch (barrier) {
-            case "sync" ->
-                EventFactory.Power.newSyncBarrier();
-            case "isync" ->
-                EventFactory.Power.newISyncBarrier();
-            case "lwsync" ->
-                EventFactory.Power.newLwSyncBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
+            case "sync" -> EventFactory.Power.newSyncBarrier();
+            case "isync" -> EventFactory.Power.newISyncBarrier();
+            case "lwsync" -> EventFactory.Power.newLwSyncBarrier();
+            default -> throw new ParsingException("Barrier not implemented");
         };
         asmInstructions.add(fence);
         return null;

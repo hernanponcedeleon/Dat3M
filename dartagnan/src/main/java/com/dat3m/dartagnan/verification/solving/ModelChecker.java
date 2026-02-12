@@ -211,7 +211,7 @@ public abstract class ModelChecker implements AutoCloseable {
         ProcessingManager.fromConfig(config).run(program);
     }
 
-    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         final Wmm memoryModel = task.getMemoryModel();
         WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
@@ -227,8 +227,8 @@ public abstract class ModelChecker implements AutoCloseable {
         analysisContext.register(AliasAnalysis.class, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
 
-        for(Thread thread : program.getThreads()) {
-            for(Event e : thread.getEvents()) {
+        for (Thread thread : program.getThreads()) {
+            for (Event e : thread.getEvents()) {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
                 // which may rely on previous "global" analyses
                 e.runLocalAnalysis(program, analysisContext);

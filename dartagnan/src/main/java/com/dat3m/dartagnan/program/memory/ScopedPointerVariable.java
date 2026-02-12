@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 
 public class ScopedPointerVariable extends ScopedPointer {
-    public ScopedPointerVariable(String id, ScopedPointerType pointerType, MemoryObject address) {
-        super(id, pointerType, address);
+    public ScopedPointerVariable(String id, ScopedPointerType spt, MemoryObject address) {
+        super(id, spt, address);
     }
 
     @Override

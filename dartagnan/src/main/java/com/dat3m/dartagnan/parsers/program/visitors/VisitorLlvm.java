@@ -51,7 +51,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
+    private final PointerType pointerType = types.getPointerType();
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
@@ -272,8 +272,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final boolean isExternal = ctx.externalLinkage() != null;
         final boolean hasInitializer = ctx.constant() != null;
 
-        check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
-        check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
+        check(!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
+        check(isExternal || hasInitializer, "Global without initializer; %s", ctx);
 
         final Expression value;
         value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
@@ -298,7 +298,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final List<Metadata> metadata = new ArrayList<>();
         //FIXME: This code only looks for DILocation metadata,
         // and it only extracts the information needed to construct SourceLocation metadata
-        for (MetadataAttachmentContext metadataCtx:  metadataAttachmentContexts) {
+        for (MetadataAttachmentContext metadataCtx : metadataAttachmentContexts) {
             MdNode mdNode = (MdNode) metadataCtx.accept(this);
             assert mdNode instanceof MdReference;
             mdNode = metadataSymbolTable.get(((MdReference) mdNode).mdName());
@@ -389,18 +389,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             );
             Optional<List<Event>> events = Optional.empty();
             boolean unsupportedEncountered = false;
-            for(ParserAsm parser : parsers){
+            for (ParserAsm parser : parsers) {
                 // we have to generate the stream each time as the parser consumes it
                 CharStream charStream = CharStreams.fromString(asmCode);
                 try {
-                    events = tryParse(parser,charStream);
-                    if(events.isPresent()){
+                    events = tryParse(parser, charStream);
+                    if (events.isPresent()) {
                         block.events.addAll(events.get());
                         break;
                     }
                 } catch (UnsupportedOperationException e) {
                     logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
-                    if(resultRegister != null){
+                    if (resultRegister != null) {
                         Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
                         events = Optional.of(List.of(nonDeterministicValue));
                     }
@@ -408,9 +408,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     break;
                 }
             }
-            if(!unsupportedEncountered && events.isEmpty()){
+            if (!unsupportedEncountered && events.isEmpty()) {
                 String msg = "Ignoring call.";
-                if(resultRegister != null){
+                if (resultRegister != null) {
                     block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
@@ -538,7 +538,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
         final Event alloc;
-        if(ctx.align() != null) {
+        if (ctx.align() != null) {
             final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
             alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
         } else {
@@ -581,9 +581,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitICmpInst(ICmpInstContext ctx) {
-        final Expression left = visitTypeValue(ctx.typeValue());
-        final Expression right = checkExpression(left.getType(), ctx.value());
+        Expression left = visitTypeValue(ctx.typeValue());
+        Expression right = checkExpression(left.getType(), ctx.value());
         final String operator = ctx.iPred().getText();
+        assert left.getType() == right.getType(); // llvm requires this
+        if (left.getType() instanceof PointerType p) {
+            left = expressions.makeCast(left,types.getIntegerType(p.getBitWidth()));
+            right = expressions.makeCast(right,types.getIntegerType(p.getBitWidth()));
+        }
         final Expression compared = switch (operator) {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
@@ -923,8 +928,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        // checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target); // TODO we can enable this once we have proper support for bitcats, see #957
+        // checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
         final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
@@ -944,7 +948,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        // return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeNullLiteral();
     }
 
     @Override
@@ -1185,8 +1190,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType, "Non integer or pointer type %s.", target);
+        return expressions.makeCast(operandExpression, targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

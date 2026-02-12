@@ -54,7 +54,7 @@ public interface AliasAnalysis {
     List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event);
 
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config,
-            boolean detectMixedSizeAccesses) throws InvalidConfigurationException {
+                                    boolean detectMixedSizeAccesses) throws InvalidConfigurationException {
         Config c = new Config(config, detectMixedSizeAccesses);
         logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();

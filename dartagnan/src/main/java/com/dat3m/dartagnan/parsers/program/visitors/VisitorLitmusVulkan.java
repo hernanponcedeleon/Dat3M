@@ -69,7 +69,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusVulkanParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
@@ -332,7 +332,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (ctx.getRuleContext(LitmusVulkanParser.MoAcqContext.class, 0) != null) {
             return Tag.Vulkan.ACQUIRE;
         }
-        if(ctx.getRuleContext(LitmusVulkanParser.MoRelContext.class, 0) != null) {
+        if (ctx.getRuleContext(LitmusVulkanParser.MoRelContext.class, 0) != null) {
             return Tag.Vulkan.RELEASE;
         }
         if (ctx.getRuleContext(LitmusVulkanParser.MoAcqRelContext.class, 0) != null) {

@@ -37,7 +37,9 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     private NaiveDevirtualisation() {
     }
 
-    public static NaiveDevirtualisation newInstance() { return new NaiveDevirtualisation(); }
+    public static NaiveDevirtualisation newInstance() {
+        return new NaiveDevirtualisation();
+    }
 
     @Override
     public void run(Program program) {
