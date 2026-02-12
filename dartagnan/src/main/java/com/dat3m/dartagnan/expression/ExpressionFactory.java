@@ -653,7 +653,6 @@ public final class ExpressionFactory {
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
         } else if (type instanceof MemoryType) {
             return new MemoryEqualExpr(booleanType, leftOperand, rightOperand);
-            return makeFloatCmp(leftOperand, FloatCmpOp.EQ, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
