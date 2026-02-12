@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -45,7 +44,6 @@ public class IntervalAnalysisTest {
         final String modelPath = "cat/sc.cat";
         Configuration config = Configuration.builder()
                 .setOption(INTERVAL_ANALYSIS_METHOD, method.asStringOption())
-                .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();
         ProcessingManager.fromConfig(config).run(p);
         final Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
