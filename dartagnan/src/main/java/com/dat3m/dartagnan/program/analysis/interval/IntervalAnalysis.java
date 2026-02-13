@@ -1,11 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.configuration.IntervalAnalysisOptions;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.verification.VerificationTask;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.slf4j.Logger;
@@ -30,6 +27,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 
 /**
  * Interval Analysis computes intervals for registers at each program event.
@@ -116,7 +114,6 @@ public interface IntervalAnalysis {
     // Only executed if logger.isInfoEnabled = true
     // Rounds half up for decimal values.
     private void computeAnalysisMetrics(Program program) {
-        double totalRegReads = 0;
         double totalRegWrites = 0;
         double totalIntervalsReduced = 0;
         double totalIntervalsTop = 0;
@@ -128,7 +125,6 @@ public interface IntervalAnalysis {
                     totalRegWrites++;
                 }
                 Set<Register.Read> regReads = rr.getRegisterReads();
-                totalRegReads += regReads.stream().filter(read -> read.register().getType() instanceof IntegerType).count();
                 for (Register.Read read : regReads) {
                     Register r = read.register();
                     if (r.getType() instanceof IntegerType) {
@@ -148,6 +144,7 @@ public interface IntervalAnalysis {
         DecimalFormat df = new DecimalFormat("#.##");
         double percentageIntervalsReduced = 0;
         double percentageIntervalsTop = 0;
+        double totalRegReads = totalIntervalsReduced + totalIntervalsTop;
         if (totalRegReads != 0) {
             percentageIntervalsReduced = (totalIntervalsReduced / totalRegReads) * 100;
             percentageIntervalsTop = (totalIntervalsTop / totalRegReads) * 100;
@@ -158,19 +155,15 @@ public interface IntervalAnalysis {
         }
 
         logger.info("""
-
-            ============== Interval Analysis Summary ====================
-            Total register writes: {}
-            Total register reads: {}
-            Total register bounded {}
-            Total registers top {}
-            Percentage bounded: {}%
-            Percentage top: {}%
-            Average reduced interval size: {}
-            ============== Interval Analysis Summary End ================
-            """,
+            \n======== IntervalAnalysis Summary ========
+            \t#Register writes: {}
+            \t#Register bounded {}
+            \t#Registers top {}
+            \t%Bounded: {}
+            \t%Top: {}
+            \tAverage reduced interval size: {}
+            ===========================================""",
             totalRegWrites,
-            totalRegReads,
             totalIntervalsReduced,
             totalIntervalsTop,
             df.format(percentageIntervalsReduced),
