@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.configuration.IntervalAnalysisOptions;
 import com.dat3m.dartagnan.expression.ExpressionKind;
-import com.dat3m.dartagnan.verification.VerificationTask;
 
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +70,9 @@ public interface IntervalAnalysis {
      *  The program that is under analysis.
      * @param analysisContext
      *  Global analysis depends on {@link RelationAnalysis}.
-     * @param task
-     *  Verification task required to get the memory model when using the RelationAnalysis.
+     * @param memoryModel
+     *  Memory model required to get read-from relation
+     *  Used by relation analysis to return pairs that may be related in some execution of the program.
      * @param config
      * - Contains configuration options for choosing the desired analysis.
      * @return
@@ -79,14 +80,14 @@ public interface IntervalAnalysis {
      * @throws InvalidConfigurationException
      */
 
-    static IntervalAnalysis fromConfig(Program program, Context analysisContext, VerificationTask task, Configuration config) throws InvalidConfigurationException {
+    static IntervalAnalysis fromConfig(Program program, Context analysisContext, Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected interval analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
         IntervalAnalysis analysis = switch (c.method) {
             case NAIVE -> IntervalAnalysisNaive.fromConfig();
             case LOCAL -> IntervalAnalysisLocal.fromConfig(program);
-            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program, analysisContext, task);
+            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program, analysisContext, memoryModel);
         };
         long t1 = System.currentTimeMillis();
         logger.info("Finished interval analysis in {}", Utils.toTimeString(t1 - t0));

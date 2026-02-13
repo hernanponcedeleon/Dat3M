@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
@@ -20,17 +21,17 @@ import java.util.stream.Collectors;
 public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     private final RelationAnalysis relationAnalysis;
-    private final VerificationTask task;
+    private final Wmm memoryModel;
 
-    private IntervalAnalysisGlobal(Program program, Context analysisContext, VerificationTask task) {
+    private IntervalAnalysisGlobal(Program program, Context analysisContext, Wmm memoryModel) {
         super(program);
         this.relationAnalysis = analysisContext.requires(RelationAnalysis.class);
-        this.task = task;
+        this.memoryModel = memoryModel;
         computeIntervals(program);
     }
 
-    public static IntervalAnalysis fromConfig(Program program, Context analysisContext, VerificationTask task) {
-        return new IntervalAnalysisGlobal(program, analysisContext, task);
+    public static IntervalAnalysis fromConfig(Program program, Context analysisContext, Wmm memoryModel) {
+        return new IntervalAnalysisGlobal(program, analysisContext, memoryModel);
     }
 
     // Calculate the interval of a memory address.
@@ -56,8 +57,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
         Set<Event> potentialStoreEvents =
         relationAnalysis
         .getKnowledge(
-            task
-            .getMemoryModel()
+            memoryModel
             .getRelation(RF)
         )
         .getMaySet()
