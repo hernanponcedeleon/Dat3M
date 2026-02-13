@@ -310,21 +310,4 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         lessIntervals.putAll(moreIntervals);
         return lessIntervals;
     }
-
-    // For debugging
-    // TODO: Probably can be removed in final version
-    @SuppressWarnings("unused")
-    private void logIntervals() {
-        for (Thread t : program.getThreads()) {
-            String header = String.format("Intervals of thread: %s\n", t.getName());
-            System.out.println(header);
-            System.out.println("===================================\n");
-            for (Event e : t.getEvents()) {
-                Map<Register, Interval> eventState = eventStates.get(e);
-                String eventFormat = String.format("%d %s=%s\n", e.getGlobalId(), e, eventState);
-                System.out.println(eventFormat);
-            }
-            System.out.println("===================================\n");
-        }
-    }
 }
