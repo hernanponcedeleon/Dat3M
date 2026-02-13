@@ -119,6 +119,10 @@ public final class ExpressionFactory {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
+    public Expression makeIntNot(Expression operand) {
+        return makeIntUnary(IntUnaryOp.NOT, operand);
+    }
+
     public Expression makeNeg(Expression operand) {
         return makeIntUnary(IntUnaryOp.MINUS, operand);
     }

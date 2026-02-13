@@ -7876,7 +7876,5 @@ litmus/AARCH64/NoRet/MP+rel+SWPacq.litmus,0
 litmus/AARCH64/NoRet/MP+rel+SWPacq-noret.litmus,1
 litmus/AARCH64/NoRet/MP+rel+SWP-dmb.ld.litmus,0
 litmus/AARCH64/NoRet/MP+rel+SWPnoret-dmb.ld.litmus,1
-
-// Not yet supported due to grammar/parser limitations
-//litmus/AARCH64/NoRet/MP+rel+LDADD-dmb.ld.litmus,0
-//litmus/AARCH64/NoRet/MP+rel+LDADDnoret-dmb.ld.litmus,1
+litmus/AARCH64/NoRet/MP+rel+LDADD-dmb.ld.litmus,0
+litmus/AARCH64/NoRet/MP+rel+LDADDnoret-dmb.ld.litmus,1

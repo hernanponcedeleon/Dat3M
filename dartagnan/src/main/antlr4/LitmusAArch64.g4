@@ -63,6 +63,7 @@ instruction
     |   store
     |   storePair
     |   storeExclusive
+    |   loadOp
     |   swap
     |   cas
     |   cmp
@@ -119,6 +120,11 @@ storeExclusive
     |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
     ;
 
+loadOp
+    :   loadOpInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
+    |   loadOpInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
+    ;
+
 swap
     :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
     |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
@@ -171,6 +177,25 @@ loadExclusiveInstruction locals [boolean acquire, boolean byteSize, boolean half
     |   LDAXR    {$acquire = true;}
     |   LDAXRB   {$acquire = true; $byteSize = true;}
     |   LDAXRH   {$acquire = true; $halfWordSize = true;}
+    ;
+
+loadOpInstruction locals [IntBinaryOp op, boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
+    // ADD
+    :   LDADD | LDADDA | LDADDL | LDADDAL
+    |   LDADDH | LDADDAH | LDADDLH | LDADDALH
+    |   LDADDB | LDADDAB | LDADDLB | LDADDALB
+    // EOR
+    |   LDEOR | LDEORA | LDEORL | LDEORAL
+    |   LDEORH | LDEORAH | LDEORLH | LDEORALH
+    |   LDEORB | LDEORAB | LDEORLB | LDEORALB
+    // SET
+    |   LDSET | LDSETA | LDSETL | LDSETAL
+    |   LDSETH | LDSETAH | LDSETLH | LDSETALH
+    |   LDSETB | LDSETAB | LDSETLB | LDSETALB
+    // CLR
+    |   LDCLR | LDCLRA | LDCLRL | LDCLRAL
+    |   LDCLRH | LDCLRAH | LDCLRLH | LDCLRALH
+    |   LDCLRB | LDCLRAB | LDCLRLB | LDCLRALB
     ;
 
 storeInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
@@ -401,6 +426,64 @@ STXRH  :   'STXRH'  ;
 STLXR  :   'STLXR'  ;
 STLXRB :   'STLXRB' ;
 STLXRH :   'STLXRH' ;
+
+// Load Op instructions
+// Add
+LDADD        :   'LDADD'      ;
+LDADDA       :   'LDADDA'     ;
+LDADDL       :   'LDADDL'     ;
+LDADDAL      :   'LDADDAL'    ;
+LDADDH       :   'LDADDH'     ;
+LDADDAH      :   'LDADDAH'    ;
+LDADDLH      :   'LDADDLH'    ;
+LDADDALH     :   'LDADDALH'   ;
+LDADDB       :   'LDADDB'     ;
+LDADDAB      :   'LDADDAB'    ;
+LDADDLB      :   'LDADDLB'    ;
+LDADDALB     :   'LDADDALB'   ;
+
+// EOR (XOR)
+LDEOR        :   'LDEOR'      ;
+LDEORA       :   'LDEORA'     ;
+LDEORL       :   'LDEORL'     ;
+LDEORAL      :   'LDEORAL'    ;
+LDEORH       :   'LDEORH'     ;
+LDEORAH      :   'LDEORAH'    ;
+LDEORLH      :   'LDEORLH'    ;
+LDEORALH     :   'LDEORALH'   ;
+LDEORB       :   'LDEORB'     ;
+LDEORAB      :   'LDEORAB'    ;
+LDEORLB      :   'LDEORLB'    ;
+LDEORALB     :   'LDEORALB'   ;
+
+// SET (OR)
+LDSET        :   'LDSET'      ;
+LDSETA       :   'LDSETA'     ;
+LDSETL       :   'LDSETL'     ;
+LDSETAL      :   'LDSETAL'    ;
+LDSETH       :   'LDSETH'     ;
+LDSETAH      :   'LDSETAH'    ;
+LDSETLH      :   'LDSETLH'    ;
+LDSETALH     :   'LDSETALH'   ;
+LDSETB       :   'LDSETB'     ;
+LDSETAB      :   'LDSETAB'    ;
+LDSETLB      :   'LDSETLB'    ;
+LDSETALB     :   'LDSETALB'   ;
+
+// CLR (AND with complement)
+LDCLR        :   'LDCLR'      ;
+LDCLRA       :   'LDCLRA'     ;
+LDCLRL       :   'LDCLRL'     ;
+LDCLRAL      :   'LDCLRAL'    ;
+LDCLRH       :   'LDCLRH'     ;
+LDCLRAH      :   'LDCLRAH'    ;
+LDCLRLH      :   'LDCLRLH'    ;
+LDCLRALH     :   'LDCLRALH'   ;
+LDCLRB       :   'LDCLRB'     ;
+LDCLRAB      :   'LDCLRAB'    ;
+LDCLRLB      :   'LDCLRLB'    ;
+LDCLRALB     :   'LDCLRALB'   ;
+
 
 // Swap word instructions (~ Exchange)
 

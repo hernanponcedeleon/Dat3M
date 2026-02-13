@@ -9,13 +9,12 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.CAS;
-import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.Xchg;
+import com.dat3m.dartagnan.program.event.arch.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -95,8 +94,48 @@ class VisitorArm8 extends VisitorBase {
                 store,
                 casEnd
         );
+    }
 
+    @Override
+    public List<Event> visitRMWOp(RMWOp rmwOp) {
+        Preconditions.checkArgument(!rmwOp.hasTag(ARMv8.MO_ACQ), "Unexpected MO_ACQ tag for RMWOp");
 
+        final Register dummy = rmwOp.getFunction().newRegister(rmwOp.getAccessType());
+        final Expression address = rmwOp.getAddress();
+        final String storeMo = rmwOp.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
+
+        final Load load = propagateNoRet(rmwOp, newRMWLoad(dummy, address));
+        final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
+
+        return eventSequence(
+                propagateNoRet(rmwOp, load),
+                newRMWStoreWithMo(load, address, value, storeMo)
+        );
+    }
+
+    @Override
+    public List<Event> visitRMWFetchOp(RMWFetchOp rmwOp) {
+        final Register resultRegister = rmwOp.getResultRegister();
+        final Expression address = rmwOp.getAddress();
+        final String loadMo = rmwOp.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
+        final String storeMo = rmwOp.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
+
+        Expression operand = rmwOp.getOperand();
+        Local captureOperand = null;
+        if (operand.getRegs().contains(resultRegister)) {
+            final Register tmpReg = rmwOp.getFunction().newRegister(resultRegister.getType());
+            captureOperand = newLocal(tmpReg, operand);
+            operand = tmpReg;
+        }
+
+        final Load load = propagateNoRet(rmwOp, newRMWLoadWithMo(resultRegister, address, loadMo));
+        final Expression value = expressions.makeBinary(resultRegister, rmwOp.getOperator(), operand);
+
+        return eventSequence(
+                captureOperand,
+                propagateNoRet(rmwOp, load),
+                newRMWStoreWithMo(load, address, value, storeMo)
+        );
     }
 
     private <T extends Load> T propagateNoRet(Event orig, T newEv) {

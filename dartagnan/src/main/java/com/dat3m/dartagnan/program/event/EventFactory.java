@@ -407,6 +407,14 @@ public class EventFactory {
         public static CAS newCAS(Register srcReg, Expression address, Expression cmpVal, Expression storeValue) {
             return new CAS(srcReg, address, cmpVal, storeValue);
         }
+
+        public static RMWFetchOp newRmwFetchOp(Register resultReg, Expression address, IntBinaryOp op, Expression operand) {
+            return new RMWFetchOp(resultReg, address, op, operand);
+        }
+
+        public static RMWOp newRmwOp(Expression address, IntBinaryOp op, Expression operand) {
+            return new RMWOp(address, op, operand);
+        }
     }
 
     // =============================================================================================
