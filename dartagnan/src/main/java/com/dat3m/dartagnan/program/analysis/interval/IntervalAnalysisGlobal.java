@@ -54,24 +54,14 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     // Use the Relation Analysis to calculate the possible store from which a load can read from.
     private Set<Store> getPotentialStores(Load event) {
-        Set<Event> potentialStoreEvents =
-        relationAnalysis
-        .getKnowledge(
-            memoryModel
-            .getRelation(RF)
-        )
-        .getMaySet()
-        .getInMap()
-        .get(event);
-
-        if (potentialStoreEvents != null) {
-            return potentialStoreEvents
-            .stream()
-            .map(e -> (Store) e)
-            .collect(Collectors.toSet());
-        } else {
-            return Collections.emptySet();
-        }
+       return relationAnalysis
+                .getKnowledge(memoryModel.getRelation(RF))
+                .getMaySet()
+                .getInMap()
+                .getOrDefault(event, Collections.emptySet())
+                .stream()
+                .map(e -> (Store) e)
+                .collect(Collectors.toSet());
     }
 
 
