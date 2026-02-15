@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.lang.GenericRMWReturn;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -142,6 +144,45 @@ class VisitorRISCV extends VisitorBase {
                 branchOnCasCmpResult,
                 store,
                 casEnd
+        );
+    }
+
+    @Override
+    public List<Event> visitGenericRMWReturn(GenericRMWReturn e) {
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+        Type accessType = e.getAccessType();
+
+        Register loadReg = e.getFunction().newRegister(accessType);
+        Expression storeOp = ExprTransformer.replaceHole(e.getStoreTransformer(), loadReg);
+        Expression resultOp = ExprTransformer.replaceHole(e.getReturnTransformer(), loadReg);
+
+        Label condEnd = null;
+        CondJump condJump = null;
+        Label label = null;
+        Event fakeCtrlDep = null;
+        if (e.hasConditional()) {
+            Expression cond = ExprTransformer.replaceHole(e.getConditionalExpr(), loadReg);
+            condEnd = newLabel("Cond_end");
+            condJump = newJumpUnless(cond, condEnd);
+        } else {
+            label = newLabel("FakeDep");
+            fakeCtrlDep = newFakeCtrlDep(loadReg, label);
+        }
+
+        Load load = newRMWLoadExclusiveWithMo(loadReg, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, storeOp, true, Tag.RISCV.extractStoreMoFromCMo(mo));
+        Local result = newLocal(resultRegister, resultOp);
+
+        return eventSequence(
+                load,
+                fakeCtrlDep,
+                label,
+                condJump,
+                store,
+                condEnd,
+                result
         );
     }
 

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
+import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchangeAlt;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 
@@ -806,7 +806,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitCmpXchgInst(CmpXchgInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#cmpxchg-instruction
         // TODO LLVM has no distinguished boolean type.
-        final Expression address = visitTypeValue(ctx.typeValue(0));
+        /*final Expression address = visitTypeValue(ctx.typeValue(0));
         final Expression comparator = visitTypeValue(ctx.typeValue(1));
         final Expression substitute = visitTypeValue(ctx.typeValue(2));
         check(comparator.getType().equals(substitute.getType()), "Type mismatch for comparator and new in %s.", ctx);
@@ -823,6 +823,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Expression result = expressions.makeConstruct(type, List.of(value, cast));
             block.events.add(newLocal(register, result));
         }
+        return register;*/
+
+        // TODO: THIS IS JUST TEST CODE
+        final Expression address = visitTypeValue(ctx.typeValue(0));
+        final Expression comparator = visitTypeValue(ctx.typeValue(1));
+        final Expression substitute = visitTypeValue(ctx.typeValue(2));
+        check(comparator.getType().equals(substitute.getType()), "Type mismatch for comparator and new in %s.", ctx);
+        final boolean weak = ctx.weak != null;
+        final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
+
+        final Register register = currentRegisterName == null ? null :
+                getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
+
+        block.events.add(newCompareExchangeAlt(register, address, comparator, substitute, mo, weak));
         return register;
     }
 

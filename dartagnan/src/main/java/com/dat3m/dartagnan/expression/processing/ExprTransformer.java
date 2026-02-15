@@ -12,9 +12,11 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.misc.ExprHole;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 
@@ -22,6 +24,16 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+    public static Expression replaceHole(Expression exprTemplate, Expression replacement) {
+        return exprTemplate.accept(new ExprTransformer() {
+            @Override
+            public Expression visitExprHole(ExprHole hole) {
+                Preconditions.checkArgument(hole.getType().equals(replacement.getType()));
+                return replacement;
+            }
+        });
+    }
 
     @Override
     public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {

@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.lang.GenericRMWNoReturn;
+import com.dat3m.dartagnan.program.event.lang.GenericRMWReturn;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -53,7 +55,9 @@ public interface EventVisitor<T> {
 
     // ------------------ Common Events ------------------
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
-    default T visitXchg(Xchg xchg) { return visitMemEvent(xchg); };
+    default T visitXchg(Xchg xchg) { return visitMemEvent(xchg); }
+    default T visitGenericRMWReturn(GenericRMWReturn e) { return visitMemEvent(e); }
+    default T visitGenericRMWNoReturn(GenericRMWNoReturn e) { return visitMemEvent(e); }
 
     // ------------------ Linux Events ------------------
     default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }

@@ -25,17 +25,20 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
+import com.dat3m.dartagnan.program.event.lang.GenericRMWReturn;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -469,21 +472,57 @@ public class EventFactory {
             return new LlvmStore(address, value, mo);
         }
 
-        public static LlvmXchg newExchange(Register register, Expression address, Expression value, String mo) {
-            return new LlvmXchg(register, address, value, mo);
+        public static Event newExchange(Register register, Expression address, Expression value, String mo) {
+            return newExchangeAlt(register, address, value, mo);
+            //return new LlvmXchg(register, address, value, mo);
         }
 
-        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo, boolean isStrong) {
+        public static Event newExchangeAlt(Register register, Expression address, Expression value, String mo) {
+            final Expression hole = expressions.makeHole(value.getType());
+            final Expression cond = null;
+            final Expression storeVal = value;
+            final Expression retVal = hole;
+
+            return new GenericRMWReturn(register, address, storeVal, cond, retVal, mo);
+        }
+
+        public static Event newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo, boolean isStrong) {
+            // TODO: We don't forward this because the return signature has changed, and the
+            //  Intrinsics rely on the old one. However, the LLVM parse calls the new version directly.
+            //return newCompareExchangeAlt(oldValueRegister, address, expectedAddr, desiredValue, mo, isStrong);
             return new LlvmCmpXchg(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, isStrong);
         }
 
-        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo) {
+        public static Event newCompareExchangeAlt(Register resultRegister, Expression address, Expression expectedValue, Expression desiredValue, String mo, boolean isStrong) {
+            final Expression hole = expressions.makeHole(desiredValue.getType());
+            final Expression cond = expressions.makeEQ(hole, expectedValue);
+            final Expression storeVal = desiredValue;
+            final Expression retVal = expressions.makeConstruct(types.getAggregateType(
+                    List.of(expectedValue.getType(), types.getIntegerType(1))),
+                    List.of(hole, expressions.makeCast(cond, types.getIntegerType(1)))
+            );
+
+            return new GenericRMWReturn(resultRegister, address, storeVal, cond, retVal, mo);
+        }
+
+        public static Event newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo) {
             return newCompareExchange(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, false);
         }
 
-        public static LlvmRMW newRMW(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
-            return new LlvmRMW(register, address, op, value, mo);
+        public static Event newRMW(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
+            return newRMWAlt(register, address, value, op, mo);
+            //return new LlvmRMW(register, address, op, value, mo);
         }
+
+        public static Event newRMWAlt(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
+            final Expression hole = expressions.makeHole(value.getType());
+            final Expression cond = null;
+            final Expression storeVal = expressions.makeIntBinary(hole, op, value);
+            final Expression retVal = hole;
+
+            return new GenericRMWReturn(register, address, storeVal, cond, retVal, mo);
+        }
+
 
         public static LlvmFence newFence(String mo) {
             return new LlvmFence(mo);

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.lang.GenericRMWReturn;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
@@ -103,6 +105,38 @@ class VisitorTso extends VisitorBase {
                 branchOnCasCmpResult,
                 store,
                 casEnd
+        ));
+    }
+
+    @Override
+    public List<Event> visitGenericRMWReturn(GenericRMWReturn e) {
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        Type accessType = e.getAccessType();
+
+        Register loadReg = e.getFunction().newRegister(accessType);
+        Expression storeOp = ExprTransformer.replaceHole(e.getStoreTransformer(), loadReg);
+        Expression resultOp = ExprTransformer.replaceHole(e.getReturnTransformer(), loadReg);
+
+        Label condEnd = null;
+        CondJump condJump = null;
+        if (e.hasConditional()) {
+            Expression cond = ExprTransformer.replaceHole(e.getConditionalExpr(), loadReg);
+            condEnd = newLabel("Cond_end");
+            condJump = newJumpUnless(cond, condEnd);
+        }
+
+        // TODO: Distinguish between LL/SC and AMO implementations
+        Load load = newRMWLoad(loadReg, address);
+        Store store = newRMWStore(load, address, storeOp);
+        Local result = newLocal(resultRegister, resultOp);
+
+        return tagList(eventSequence(
+                load,
+                condJump,
+                store,
+                condEnd,
+                result
         ));
     }
 
