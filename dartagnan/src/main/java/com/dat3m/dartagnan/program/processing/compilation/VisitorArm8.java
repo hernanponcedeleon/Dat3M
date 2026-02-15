@@ -105,10 +105,11 @@ class VisitorArm8 extends VisitorBase {
         final String storeMo = rmwOp.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
         final Load load = propagateNoRet(rmwOp, newRMWLoad(dummy, address));
+        load.addTags(Tag.ARMv8.NO_RET);
         final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
 
         return eventSequence(
-                propagateNoRet(rmwOp, load),
+                load,
                 newRMWStoreWithMo(load, address, value, storeMo)
         );
     }

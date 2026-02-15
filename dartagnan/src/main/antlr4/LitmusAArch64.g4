@@ -63,9 +63,12 @@ instruction
     |   store
     |   storePair
     |   storeExclusive
+    // AMOs
     |   loadOp
+    |   storeOp
     |   swap
     |   cas
+    // -----
     |   cmp
     |   branch
     |   branchRegister
@@ -125,6 +128,11 @@ loadOp
     |   loadOpInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
     ;
 
+storeOp
+    :   storeOpInstruction rS32 = register32 Comma LBracket address RBracket
+    |   storeOpInstruction rS64 = register64 Comma LBracket address RBracket
+    ;
+
 swap
     :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
     |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
@@ -179,23 +187,42 @@ loadExclusiveInstruction locals [boolean acquire, boolean byteSize, boolean half
     |   LDAXRH   {$acquire = true; $halfWordSize = true;}
     ;
 
-loadOpInstruction locals [IntBinaryOp op, boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
+loadOpInstruction
     // ADD
-    :   LDADD | LDADDA | LDADDL | LDADDAL
+    :   LDADD  | LDADDA  | LDADDL  | LDADDAL
     |   LDADDH | LDADDAH | LDADDLH | LDADDALH
     |   LDADDB | LDADDAB | LDADDLB | LDADDALB
     // EOR
-    |   LDEOR | LDEORA | LDEORL | LDEORAL
+    |   LDEOR  | LDEORA  | LDEORL  | LDEORAL
     |   LDEORH | LDEORAH | LDEORLH | LDEORALH
     |   LDEORB | LDEORAB | LDEORLB | LDEORALB
     // SET
-    |   LDSET | LDSETA | LDSETL | LDSETAL
+    |   LDSET  | LDSETA  | LDSETL  | LDSETAL
     |   LDSETH | LDSETAH | LDSETLH | LDSETALH
     |   LDSETB | LDSETAB | LDSETLB | LDSETALB
     // CLR
-    |   LDCLR | LDCLRA | LDCLRL | LDCLRAL
+    |   LDCLR  | LDCLRA  | LDCLRL  | LDCLRAL
     |   LDCLRH | LDCLRAH | LDCLRLH | LDCLRALH
     |   LDCLRB | LDCLRAB | LDCLRLB | LDCLRALB
+    ;
+
+storeOpInstruction
+    // ADD
+    :   STADD  | STADDL
+    |   STADDH | STADDLH
+    |   STADDB | STADDLB
+    // EOR
+    |   STEOR  | STEORL
+    |   STEORH | STEORLH
+    |   STEORB | STEORLB
+    // SET
+    |   STSET  | STSETL
+    |   STSETH | STSETLH
+    |   STSETB | STSETLB
+    // CLR
+    |   STCLR  | STCLRL
+    |   STCLRH | STCLRLH
+    |   STCLRB | STCLRLB
     ;
 
 storeInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
@@ -441,7 +468,6 @@ LDADDB       :   'LDADDB'     ;
 LDADDAB      :   'LDADDAB'    ;
 LDADDLB      :   'LDADDLB'    ;
 LDADDALB     :   'LDADDALB'   ;
-
 // EOR (XOR)
 LDEOR        :   'LDEOR'      ;
 LDEORA       :   'LDEORA'     ;
@@ -455,7 +481,6 @@ LDEORB       :   'LDEORB'     ;
 LDEORAB      :   'LDEORAB'    ;
 LDEORLB      :   'LDEORLB'    ;
 LDEORALB     :   'LDEORALB'   ;
-
 // SET (OR)
 LDSET        :   'LDSET'      ;
 LDSETA       :   'LDSETA'     ;
@@ -469,7 +494,6 @@ LDSETB       :   'LDSETB'     ;
 LDSETAB      :   'LDSETAB'    ;
 LDSETLB      :   'LDSETLB'    ;
 LDSETALB     :   'LDSETALB'   ;
-
 // CLR (AND with complement)
 LDCLR        :   'LDCLR'      ;
 LDCLRA       :   'LDCLRA'     ;
@@ -483,6 +507,36 @@ LDCLRB       :   'LDCLRB'     ;
 LDCLRAB      :   'LDCLRAB'    ;
 LDCLRLB      :   'LDCLRLB'    ;
 LDCLRALB     :   'LDCLRALB'   ;
+
+// Store Op instructions
+// Add
+STADD        :   'STADD'      ;
+STADDL       :   'STADDL'     ;
+STADDH       :   'STADDH'     ;
+STADDLH      :   'STADDLH'    ;
+STADDB       :   'STADDB'     ;
+STADDLB      :   'STADDLB'    ;
+// EOR (XOR)
+STEOR        :   'STEOR'      ;
+STEORL       :   'STEORL'     ;
+STEORH       :   'STEORH'     ;
+STEORLH      :   'STEORLH'    ;
+STEORB       :   'STEORB'     ;
+STEORLB      :   'STEORLB'    ;
+// SET (OR)
+STSET        :   'STSET'      ;
+STSETL       :   'STSETL'     ;
+STSETH       :   'STSETH'     ;
+STSETLH      :   'STSETLH'    ;
+STSETB       :   'STSETB'     ;
+STSETLB      :   'STSETLB'    ;
+// CLR (AND with complement)
+STCLR        :   'STCLR'      ;
+STCLRL       :   'STCLRL'     ;
+STCLRH       :   'STCLRH'     ;
+STCLRLH      :   'STCLRLH'    ;
+STCLRB       :   'STCLRB'     ;
+STCLRLB      :   'STCLRLB'    ;
 
 
 // Swap word instructions (~ Exchange)
