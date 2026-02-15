@@ -47,7 +47,7 @@ import static com.dat3m.dartagnan.utils.Result.*;
 public abstract class ModelChecker implements AutoCloseable {
 
     @Options
-    protected static class SMTConfig {
+    public static class SMTConfig {
         @Option(
                 name = SOLVER,
                 description = "Uses the specified SMT solver as a backend.",

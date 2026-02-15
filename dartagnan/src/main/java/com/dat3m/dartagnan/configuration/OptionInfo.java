@@ -1,5 +1,34 @@
 package com.dat3m.dartagnan.configuration;
 
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
+import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
+import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.processing.BranchReordering;
+import com.dat3m.dartagnan.program.processing.Inlining;
+import com.dat3m.dartagnan.program.processing.Intrinsics;
+import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.processing.MemoryAllocation;
+import com.dat3m.dartagnan.program.processing.NonterminationDetection;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+
 import com.google.common.reflect.ClassPath;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -26,41 +55,35 @@ public final class OptionInfo implements Comparable<OptionInfo> {
 
     private static Stream<Class<?>> classes() {
         return Stream.of(
-                "com.dat3m.dartagnan.wmm.RelationNameRepository",
-                "com.dat3m.dartagnan.configuration.OptionNames",
-                "com.dat3m.dartagnan.wmm.axiom.Acyclicity",
-                "com.dat3m.dartagnan.wmm.axiom.Emptiness",
-                "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
-                "com.dat3m.dartagnan.Dartagnan",
-                "com.dat3m.dartagnan.encoding.EncodingContext",
-                "com.dat3m.dartagnan.encoding.ProgramEncoder",
-                "com.dat3m.dartagnan.encoding.SymmetryEncoder",
-                "com.dat3m.dartagnan.encoding.WmmEncoder",
-                "com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config",
-                "com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config",
-                "com.dat3m.dartagnan.program.processing.BranchReordering",
-                "com.dat3m.dartagnan.program.processing.Inlining",
-                "com.dat3m.dartagnan.program.processing.Intrinsics",
-                "com.dat3m.dartagnan.program.processing.LoopUnrolling",
-                "com.dat3m.dartagnan.program.processing.MemoryAllocation",
-                "com.dat3m.dartagnan.program.processing.NonterminationDetection",
-                "com.dat3m.dartagnan.program.processing.ProcessingManager",
-                "com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation",
-                "com.dat3m.dartagnan.program.processing.ThreadCreation",
-                "com.dat3m.dartagnan.program.processing.compilation.Compilation",
-                "com.dat3m.dartagnan.utils.options.BaseOptions",
-                "com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig",
-                "com.dat3m.dartagnan.wmm.Wmm$Config",
-                "com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config",
-                "com.dat3m.dartagnan.wmm.analysis.WmmAnalysis",
-                "com.dat3m.dartagnan.wmm.processing.WmmProcessingManager"
-        ).map(name -> {
-            try {
-                return Class.forName(name);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Cannot load class: " + name, e);
-            }
-        });
+                RelationNameRepository.class,
+                OptionNames.class,
+                Acyclicity.class,
+                Emptiness.class,
+                Irreflexivity.class,
+                Dartagnan.class,
+                EncodingContext.class,
+                ProgramEncoder.class,
+                SymmetryEncoder.class,
+                WmmEncoder.class,
+                ReachingDefinitionsAnalysis.Config.class,
+                AliasAnalysis.Config.class,
+                BranchReordering.class,
+                Inlining.class,
+                Intrinsics.class,
+                LoopUnrolling.class,
+                MemoryAllocation.class,
+                NonterminationDetection.class,
+                ProcessingManager.class,
+                SparseConditionalConstantPropagation.class,
+                ThreadCreation.class,
+                Compilation.class,
+                BaseOptions.class,
+                ModelChecker.SMTConfig.class,
+                Wmm.Config.class,
+                RelationAnalysis.Config.class,
+                WmmAnalysis.class,
+                WmmProcessingManager.class
+        );
     }
 
     private static Stream<OptionInfo> collectOptions(Class<?> c) {
