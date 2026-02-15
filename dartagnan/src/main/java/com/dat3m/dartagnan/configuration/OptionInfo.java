@@ -14,24 +14,10 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Verify.verify;
 
-/**
- * Collects all {@link Option}s of a program.
- * <p>
- * Mimics {@link org.sosy_lab.common.configuration.OptionCollector OptionCollector} with reduced functionality.
- */
 public final class OptionInfo implements Comparable<OptionInfo> {
 
-    private static final Pattern PROJECT_CLASSES = Pattern.compile("^com\\.dat3m\\..*$");
-
-    /**
-     * Traverses all options from all classes and outputs them.
-     * Each find is printed to {@link System#out}.
-     */
     public static void collectOptions() {
-
-        stream()
-                .sorted()
-                .forEach(System.out::print);
+        stream().sorted().forEach(System.out::print);
     }
 
     public static Stream<OptionInfo> stream() {
@@ -39,37 +25,48 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     }
 
     private static Stream<Class<?>> classes() {
-        ClassPath classPath;
-        try {
-            classPath = ClassPath.from(OptionInfo.class.getClassLoader());
-        } catch (IOException e) {
-            return Stream.empty();
-        }
-
-        return classPath.getAllClasses().stream().flatMap(OptionInfo::load);
+        return Stream.of(
+                "com.dat3m.dartagnan.wmm.RelationNameRepository",
+                "com.dat3m.dartagnan.configuration.OptionNames",
+                "com.dat3m.dartagnan.wmm.axiom.Acyclicity",
+                "com.dat3m.dartagnan.wmm.axiom.Emptiness",
+                "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
+                "com.dat3m.dartagnan.Dartagnan",
+                "com.dat3m.dartagnan.encoding.EncodingContext",
+                "com.dat3m.dartagnan.encoding.ProgramEncoder",
+                "com.dat3m.dartagnan.encoding.SymmetryEncoder",
+                "com.dat3m.dartagnan.encoding.WmmEncoder",
+                "com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config",
+                "com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config",
+                "com.dat3m.dartagnan.program.processing.BranchReordering",
+                "com.dat3m.dartagnan.program.processing.Inlining",
+                "com.dat3m.dartagnan.program.processing.Intrinsics",
+                "com.dat3m.dartagnan.program.processing.LoopUnrolling",
+                "com.dat3m.dartagnan.program.processing.MemoryAllocation",
+                "com.dat3m.dartagnan.program.processing.NonterminationDetection",
+                "com.dat3m.dartagnan.program.processing.ProcessingManager",
+                "com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation",
+                "com.dat3m.dartagnan.program.processing.ThreadCreation",
+                "com.dat3m.dartagnan.program.processing.compilation.Compilation",
+                "com.dat3m.dartagnan.utils.options.BaseOptions",
+                "com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig",
+                "com.dat3m.dartagnan.wmm.Wmm$Config",
+                "com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config",
+                "com.dat3m.dartagnan.wmm.analysis.WmmAnalysis",
+                "com.dat3m.dartagnan.wmm.processing.WmmProcessingManager"
+        ).map(name -> {
+            try {
+                return Class.forName(name);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Cannot load class: " + name, e);
+            }
+        });
     }
 
-    private static Stream<Class<?>> load(ClassPath.ClassInfo i) {
-        try {
-            return Stream.of(i.load());
-        } catch (LinkageError e) {
-            return Stream.empty();
-        }
-    }
-
-    /**
-     * This method collects every {@link Option} of a class.
-     *
-     * @param c class where to take the Option from
-     */
     private static Stream<OptionInfo> collectOptions(Class<?> c) {
 
         Options o = c.getAnnotation(Options.class);
         if (o == null) {
-            return Stream.empty();
-        }
-
-        if (!PROJECT_CLASSES.matcher(c.getCanonicalName()).matches()) {
             return Stream.empty();
         }
 
