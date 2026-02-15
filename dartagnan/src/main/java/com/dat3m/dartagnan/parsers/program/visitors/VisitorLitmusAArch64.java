@@ -355,37 +355,46 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     record RMWInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
 
-    // Used for LDXXX and STXXX instructions
+    // Used for LDXXX and STXXX instructions of shape
+    // ST/LD - XXX/XXXX - {A, L, AL}?  - {H, B}?
+    // Instr - op code  - memory order - access size
     private RMWInfo getInfoFromInstructionName(String instrName) {
         String instr = instrName.substring(2); // Skip LD/ST
 
+        // Access size
+        final boolean isHalfSize = instr.endsWith("H");
+        final boolean isByteSize = instr.endsWith("B");
+        if (isHalfSize || isByteSize) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+
+        // Memory order
+        final boolean release = instr.endsWith("L");
+        if (release) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+        final boolean acquire = instr.endsWith("A");
+        if (acquire) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+
+        // Only OpCode remains
+        assert 3 <= instr.length() && instr.length() <= 4;
         // TODO: Maybe the following logic can be implemented in the grammar without
         //  an explicit case distinction over all 48 (or more?) variants of LD
         // Operation
-        final String opCode = instr.substring(0, 3);
+        final String opCode = instr;
         final IntBinaryOp op = switch (opCode) {
             case "ADD" -> IntBinaryOp.ADD;
             case "EOR" -> IntBinaryOp.XOR;
             case "SET" -> IntBinaryOp.OR;
             case "CLR" -> IntBinaryOp.AND; // Actually & with complement!!!
+            case "SMIN" -> IntBinaryOp.SMIN;
+            case "SMAX" -> IntBinaryOp.SMAX;
+            case "UMIN" -> IntBinaryOp.UMIN;
+            case "UMAX" -> IntBinaryOp.UMAX;
             default -> throw new ParsingException("Invalid op " + opCode + " found in " + instrName);
         };
-        instr = instr.substring(3);
-
-        // Memory order
-        final boolean acquire = instr.startsWith("A");
-        if (acquire) {
-            instr = instr.substring(1);
-        }
-        final boolean release = instr.startsWith("L");
-        if (release) {
-            instr = instr.substring(1);
-        }
-
-        // Access size
-        assert instr.length() <= 1;
-        final boolean isHalfSize = instr.startsWith("H");
-        final boolean isByteSize = instr.startsWith("B");
 
         return new RMWInfo(op, isHalfSize, isByteSize, acquire, release);
     }
@@ -631,6 +640,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             case XOR -> "EOR";
             case OR -> "SET";
             case AND -> "CLR";
+            case SMIN -> "SMIN";
+            case SMAX -> "SMAX";
+            case UMIN -> "UMIN";
+            case UMAX -> "UMAX";
             default -> throw new RuntimeException("Invalid op: " + op);
         };
     }
