@@ -415,12 +415,6 @@ label
     :   Identifier
     ;
 
-assertionValue
-    :   location
-    |   threadId Colon register64
-    |   constant
-    ;
-
 Hexa
     :   '0x'
     ;
