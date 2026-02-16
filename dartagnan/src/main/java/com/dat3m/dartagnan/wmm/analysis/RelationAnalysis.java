@@ -106,7 +106,7 @@ public interface RelationAnalysis {
     }
 
     @Options
-    final class Config {
+    public final class Config {
         @Option(name = RELATION_ANALYSIS,
                 description = "Relation analysis engine.",
                 secure = true)

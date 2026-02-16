@@ -252,11 +252,11 @@
                             <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                         </buildArgs>
                         <initializeAtBuildTime>
+                            <!-- Every class should also be registered in OptionsInfo -->
                             <className>com.dat3m.dartagnan.wmm.RelationNameRepository</className>
                             <className>com.dat3m.dartagnan.configuration.OptionNames</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Acyclicity</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Emptiness</className>
-                            <className>com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Irreflexivity</className>
                             <className>com.dat3m.dartagnan.Dartagnan</className>
                             <className>com.dat3m.dartagnan.encoding.EncodingContext</className>

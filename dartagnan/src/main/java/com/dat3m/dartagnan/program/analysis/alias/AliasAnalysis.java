@@ -77,7 +77,7 @@ public interface AliasAnalysis {
     }
 
     @Options
-    final class Config {
+    public final class Config {
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Alias method = Alias.getDefault();

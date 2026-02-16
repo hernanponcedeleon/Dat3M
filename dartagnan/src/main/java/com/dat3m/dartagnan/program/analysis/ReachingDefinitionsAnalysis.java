@@ -98,7 +98,7 @@ public interface ReachingDefinitionsAnalysis {
     enum Method { BACKWARD, FORWARD }
 
     @Options
-    final class Config {
+    public final class Config {
 
         @Option(name = REACHING_DEFINITIONS_METHOD,
                 description = "Specifies the static analysis algorithm, that collects the relationship between"

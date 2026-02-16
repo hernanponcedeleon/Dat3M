@@ -162,6 +162,30 @@ public class IntegerHelper {
         return x.shiftRight(y.intValueExact());
     }
 
+    public static BigInteger smax(BigInteger x, BigInteger y, int bitWidth) {
+        final BigInteger sx = normalizeSigned(x, bitWidth);
+        final BigInteger sy = normalizeSigned(y, bitWidth);
+        return sx.max(sy);
+    }
+
+    public static BigInteger smin(BigInteger x, BigInteger y, int bitWidth) {
+        final BigInteger sx = normalizeSigned(x, bitWidth);
+        final BigInteger sy = normalizeSigned(y, bitWidth);
+        return sx.min(sy);
+    }
+
+    public static BigInteger umax(BigInteger x, BigInteger y, int bitWidth) {
+        final BigInteger ux = normalizeUnsigned(x, bitWidth);
+        final BigInteger uy = normalizeUnsigned(y, bitWidth);
+        return ux.max(uy);
+    }
+
+    public static BigInteger umin(BigInteger x, BigInteger y, int bitWidth) {
+        final BigInteger ux = normalizeUnsigned(x, bitWidth);
+        final BigInteger uy = normalizeUnsigned(y, bitWidth);
+        return ux.min(uy);
+    }
+
     public static BigInteger and(BigInteger x, BigInteger y, int bitWidth) {
         return x.and(y);
     }

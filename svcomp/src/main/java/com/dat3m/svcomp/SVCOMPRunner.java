@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.utils.ExitCode;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -106,8 +107,8 @@ public class SVCOMPRunner extends BaseOptions {
             }
         }
 
-        String result = "UNKNOWN";
-        while(result.contains("UNKNOWN")) {
+        int exitCode = ExitCode.BOUNDED_RESULT.asInt();
+        while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
             if (r.nativeExecution) {
                 cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
@@ -134,13 +135,17 @@ public class SVCOMPRunner extends BaseOptions {
             try {
                 Process proc = processBuilder.start();
                 BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-                proc.waitFor();
+                exitCode = proc.waitFor();
+                if (exitCode == ExitCode.UNKNOWN_ERROR.asInt()) {
+                    System.out.println("Unknown error in dartagnan");
+                    System.exit(0);
+                }
+                if (isExternalError(exitCode)) { // E.g., SMT solver crash
+                    System.out.println("Unknown external error");
+                    System.exit(0);
+                }
                 while(read.ready()) {
-                    String next = read.readLine();
-                    if(next.contains("Result:")) {
-                        result = next.substring(next.indexOf(' ') + 1);
-                    }
-                    System.out.println(next);
+                    System.out.println(read.readLine());
                 }
             } catch(Exception e) {
                 System.out.println(e.getMessage());
@@ -149,6 +154,12 @@ public class SVCOMPRunner extends BaseOptions {
         }
     }
     
+    private static boolean isExternalError(int exitCode) {
+        return Arrays.stream(ExitCode.values())
+                    .mapToInt(ExitCode::asInt)
+                    .noneMatch(code -> code == exitCode);
+    }
+
     private static List<String> filterOptions(Configuration config) {
     	
         List<String> skip = Arrays.asList(PROPERTYPATH, NATIVE);
