@@ -17,7 +17,7 @@ public class CAS extends RMWCmpXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s = cas(%s, %s)", resultRegister, address, storeValue);
+        return String.format("%s = cas(%s, %s, %s)", resultRegister, address, expectedValue, storeValue);
     }
 
     @Override

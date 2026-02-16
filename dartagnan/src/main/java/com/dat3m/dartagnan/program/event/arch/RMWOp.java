@@ -17,7 +17,7 @@ public class RMWOp extends RMWOpBase {
 
     @Override
     public String defaultString() {
-        return String.format("rmw_%s(%s, %s)", operator.getName(), operand, address);
+        return String.format("rmw_%s(%s, %s)", operator.getName().toLowerCase(), operand, address);
     }
 
     @Override

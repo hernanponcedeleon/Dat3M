@@ -714,7 +714,7 @@ FenceOpt
     |   'OSH'   |   'osh'       // Outer sharable domain only
     ;
 
-// Brancch conditions
+// Branch conditions
 
 EQ  :   'EQ';    // Equal
 NE  :   'NE';    // Not equal

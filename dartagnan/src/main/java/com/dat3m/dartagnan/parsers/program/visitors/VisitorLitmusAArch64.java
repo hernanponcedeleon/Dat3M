@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.program.event.arch.RMWOp;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
+import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
@@ -353,13 +354,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return null;
     }
 
-    record RMWInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
+
+    record LDSTAmoInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
 
     // Used for LDXXX and STXXX instructions of shape
     // ST/LD - XXX/XXXX - {A, L, AL}?  - {H, B}?
     // Instr - op code  - memory order - access size
-    private RMWInfo getInfoFromInstructionName(String instrName) {
+    private LDSTAmoInfo getLDSTInfoFromInstructionName(String instrName) {
+        Preconditions.checkArgument(instrName.startsWith("LD") || instrName.startsWith("ST"));
         String instr = instrName.substring(2); // Skip LD/ST
+
+        // TODO: Maybe the following logic can be implemented in the grammar without
+        //  an explicit case distinction over all 96 (or more?) variants of LD (and ST)
 
         // Access size
         final boolean isHalfSize = instr.endsWith("H");
@@ -380,8 +386,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
         // Only OpCode remains
         assert 3 <= instr.length() && instr.length() <= 4;
-        // TODO: Maybe the following logic can be implemented in the grammar without
-        //  an explicit case distinction over all 48 (or more?) variants of LD
         // Operation
         final String opCode = instr;
         final IntBinaryOp op = switch (opCode) {
@@ -396,7 +400,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             default -> throw new ParsingException("Invalid op " + opCode + " found in " + instrName);
         };
 
-        return new RMWInfo(op, isHalfSize, isByteSize, acquire, release);
+        return new LDSTAmoInfo(op, isHalfSize, isByteSize, acquire, release);
     }
 
     private static final CustomPrinting LDOP_PRINTER = e -> {
@@ -417,7 +421,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitLoadOp(LoadOpContext ctx) {
         final String instr = ctx.loadOpInstruction().getText();
-        final RMWInfo info = getInfoFromInstructionName(instr);
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
 
         final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
         final Register rt64 = parseRegister64(ctx.rD32, ctx.rD64);
@@ -454,7 +458,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreOp(StoreOpContext ctx) {
         final String instr = ctx.storeOpInstruction().getText();
-        final RMWInfo info = getInfoFromInstructionName(instr);
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
 
         final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
         // TODO: We don't actually care about the smaller register, but only its type!
