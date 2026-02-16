@@ -32,7 +32,6 @@ public class WMMSolver {
 
     public static WMMSolver withContext(EncodingContext context) throws InvalidConfigurationException {
         final var solver = new WMMSolver(context);
-        context.getTask().getConfig().inject(solver.reasoner);
         return solver;
     }
 
