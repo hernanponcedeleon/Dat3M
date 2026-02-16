@@ -405,6 +405,7 @@ register32 returns[String id]
 
 location
     :   Identifier
+    |   LBracket Identifier RBracket
     ;
 
 immediate
@@ -413,6 +414,12 @@ immediate
 
 label
     :   Identifier
+    ;
+
+assertionValue
+    :   location
+    |   threadId Colon register64
+    |   constant
     ;
 
 Hexa
