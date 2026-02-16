@@ -107,8 +107,8 @@ public class SVCOMPRunner extends BaseOptions {
             }
         }
 
-        int exitCode = 1; // UNKNOWN;
-        while(exitCode == 1) {
+        int exitCode = ExitCode.BOUNDED_RESULT.asInt();
+        while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
             if (r.nativeExecution) {
                 cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
@@ -136,7 +136,7 @@ public class SVCOMPRunner extends BaseOptions {
                 Process proc = processBuilder.start();
                 BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
                 exitCode = proc.waitFor();
-                if (exitCode == 30) { // UNKNOWN_ERROR
+                if (exitCode == ExitCode.UNKNOWN_ERROR.asInt()) {
                     System.out.println("Unknown error in dartagnan");
                     System.exit(0);
                 }
