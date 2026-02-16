@@ -62,7 +62,7 @@ public class CoreReasoner {
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
         this.symmGenerators = computeSymmetryGenerators(analysisContext.requires(ThreadSymmetry.class));
-        logger.info("Symmetry learning {}", symmetricLearning);
+        logger.info("Symmetric learning {}", symmetricLearning);
     }
 
     /*
