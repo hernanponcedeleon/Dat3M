@@ -43,7 +43,6 @@ import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 // Base class for SMT-based model checkers
-@Options
 public abstract class ModelChecker implements AutoCloseable {
 
     @Options
