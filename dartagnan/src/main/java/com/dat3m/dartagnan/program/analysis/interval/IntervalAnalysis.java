@@ -80,19 +80,19 @@ public interface IntervalAnalysis {
      * @throws InvalidConfigurationException
      */
 
-    static IntervalAnalysis fromConfig(Program program, Context analysisContext, Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
+    static Optional<IntervalAnalysis> fromConfig(Program program, Context analysisContext, Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected interval analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
-        IntervalAnalysis analysis = switch (c.method) {
-            case NAIVE -> IntervalAnalysisNaive.fromConfig();
-            case LOCAL -> IntervalAnalysisLocal.fromConfig(program);
-            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program, analysisContext, memoryModel);
+        Optional<IntervalAnalysis> analysis = switch (c.method) {
+            case NONE -> Optional.empty();
+            case LOCAL -> Optional.of(IntervalAnalysisLocal.fromConfig(program));
+            case GLOBAL -> Optional.of(IntervalAnalysisGlobal.fromConfig(program, analysisContext, memoryModel));
         };
-        long t1 = System.currentTimeMillis();
-        logger.info("Finished interval analysis in {}", Utils.toTimeString(t1 - t0));
-        if (logger.isInfoEnabled()) {
-            analysis.computeAnalysisMetrics(program);
+        if (logger.isInfoEnabled() && analysis.isPresent()) {
+            long t1 = System.currentTimeMillis();
+            logger.info("Finished interval analysis in {}", Utils.toTimeString(t1 - t0));
+            analysis.get().computeAnalysisMetrics(program);
         }
         return analysis;
     }

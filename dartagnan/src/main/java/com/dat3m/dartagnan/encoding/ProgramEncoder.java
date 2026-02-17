@@ -23,8 +23,8 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.verification.Context;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -771,12 +771,15 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeBounds() {
         List<BooleanFormula> enc = new ArrayList<>();
-        IntervalAnalysis intervalAnalysis = context.getAnalysisContext().requires(IntervalAnalysis.class);
-        ExpressionEncoder exprEnc = context.getExpressionEncoder();
-        for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
-            for (Register.Read read : e.getRegisterReads()) {
-                if (read.register().getType() instanceof IntegerType) {
-                    enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
+        Context analysisContext = context.getAnalysisContext();
+        if (analysisContext.has(IntervalAnalysis.class)) {
+            IntervalAnalysis intervalAnalysis = analysisContext.get(IntervalAnalysis.class);
+            ExpressionEncoder exprEnc = context.getExpressionEncoder();
+            for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+                for (Register.Read read : e.getRegisterReads()) {
+                    if (read.register().getType() instanceof IntegerType) {
+                        enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
+                    }
                 }
             }
         }

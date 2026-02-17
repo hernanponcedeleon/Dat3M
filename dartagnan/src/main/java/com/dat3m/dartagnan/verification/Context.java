@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.MutableClassToInstanceMap;
 
+import java.util.Optional;
+
 public class Context {
     private final ClassToInstanceMap<Object> metaDataMap;
 
@@ -40,6 +42,14 @@ public class Context {
             return false;
         }
         metaDataMap.putInstance(c, instance);
+        return true;
+    }
+
+    public <T> boolean registerOptional(Class<T> c, Optional<T> instance) {
+        if (has(c) || instance.isEmpty()) {
+            return false;
+        }
+        metaDataMap.putInstance(c, instance.get());
         return true;
     }
 
