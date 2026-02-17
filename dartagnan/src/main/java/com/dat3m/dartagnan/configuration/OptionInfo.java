@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.encoding.ActiveSetAnalysis;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -64,6 +65,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 Emptiness.class,
                 Irreflexivity.class,
                 Dartagnan.class,
+                ActiveSetAnalysis.class,
                 EncodingContext.class,
                 ProgramEncoder.class,
                 SymmetryEncoder.class,
@@ -85,7 +87,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 Printer.class,
                 ModelChecker.SMTConfig.class,
                 RefinementSolver.class,
-                Wmm.Config.class,
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
                 WmmProcessingManager.class
