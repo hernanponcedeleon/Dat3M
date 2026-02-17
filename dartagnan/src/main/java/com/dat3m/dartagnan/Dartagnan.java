@@ -179,7 +179,8 @@ public class Dartagnan extends BaseOptions {
                 }
                 // We only generate SVCOMP witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
+                    final String filename = o.hasWitnessFilename() ? o.getWitnessFilename() : "witness";
+                    generateWitnessIfAble(task, modelChecker, filename, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -261,7 +262,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task,
-            ModelChecker modelChecker, String details) throws SolverException {
+            ModelChecker modelChecker, String filename, String details) throws SolverException {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -270,7 +271,7 @@ public class Dartagnan extends BaseOptions {
             try (IREvaluator evaluator = modelChecker.getModel()) {
                 WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
                 if (w.canBeBuilt()) {
-                    w.build().write();
+                    w.build().write(filename);
                 }
             } catch (InvalidConfigurationException e) {
                 logger.warn(e.getMessage());

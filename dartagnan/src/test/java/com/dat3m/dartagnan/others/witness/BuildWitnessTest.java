@@ -51,7 +51,7 @@ public class BuildWitnessTest {
             // The file should not exist
             assertFalse(witnessFile.exists());
             // Write to file
-            graph.write();
+            graph.write("witness");
             // The file should exist now
             assertTrue(witnessFile.exists());
             // Delete the file
