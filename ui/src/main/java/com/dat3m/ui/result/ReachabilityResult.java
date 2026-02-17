@@ -67,7 +67,7 @@ public class ReachabilityResult {
                 verdict = Dartagnan.summaryFromResult(task, modelChecker, "", (endTime - startTime)).toUIString();
 
                 if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
-                    witnessFile = Dartagnan.generateExecutionGraphFile(task, modelChecker, WitnessType.PNG);
+                    witnessFile = Dartagnan.generateExecutionGraphFile(task, modelChecker, WitnessType.PNG, "dat3m");
                 }
             }
         } catch (InterruptedException e) {

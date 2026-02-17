@@ -23,16 +23,15 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    private WMMSolver(EncodingContext c) {
+    private WMMSolver(EncodingContext c) throws InvalidConfigurationException {
         this.executionGraph = new ExecutionGraph(c.getTask().getMemoryModel(), c::isEncoded);
         this.executionModel = ExecutionModel.withContext(c);
-        this.reasoner = new CoreReasoner(c.getAnalysisContext(), executionGraph);
+        this.reasoner = new CoreReasoner(c.getAnalysisContext(), executionGraph, c.getTask().getConfig());
         this.solver = CAATSolver.create();
     }
 
     public static WMMSolver withContext(EncodingContext context) throws InvalidConfigurationException {
         final var solver = new WMMSolver(context);
-        context.getTask().getConfig().inject(solver.reasoner);
         return solver;
     }
 

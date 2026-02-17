@@ -10,21 +10,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-@Options
 public class WmmProcessingManager implements WmmProcessor {
 
     private final List<WmmProcessor> processors = new ArrayList<>();
 
-    // =========================== Configurables ===========================
-
-
-    // =========================== Debugging options =======================
-
-
-    // =====================================================================
-
     private WmmProcessingManager(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
         processors.addAll(Arrays.asList(
                 RemoveDeadRelations.newInstance(),
                 MergeEquivalentRelations.newInstance(),

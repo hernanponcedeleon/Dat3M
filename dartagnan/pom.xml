@@ -275,8 +275,11 @@
                             <className>com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation</className>
                             <className>com.dat3m.dartagnan.program.processing.ThreadCreation</className>
                             <className>com.dat3m.dartagnan.program.processing.compilation.Compilation</className>
+                            <className>com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner</className>
                             <className>com.dat3m.dartagnan.utils.options.BaseOptions</className>
+                            <className>com.dat3m.dartagnan.utils.printer.Printer</className>
                             <className>com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig</className>
+                            <className>com.dat3m.dartagnan.verification.solving.RefinementSolver</className>
                             <className>com.dat3m.dartagnan.wmm.Wmm$Config</className>
                             <className>com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config</className>
                             <className>com.dat3m.dartagnan.wmm.analysis.WmmAnalysis</className>

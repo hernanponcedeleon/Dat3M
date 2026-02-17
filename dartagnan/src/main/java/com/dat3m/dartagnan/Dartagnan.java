@@ -168,11 +168,19 @@ public class Dartagnan extends BaseOptions {
                 // ----------- Generate output-----------
                 summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
                 if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
-                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType());
+                    final String progName = task.getProgram().getName();
+                    final int fileSuffixIndex = progName.lastIndexOf('.');
+                    final String name = o.hasWitnessFilename() ?
+                                        o.getWitnessFilename() :
+                                        progName.isEmpty() ?
+                                            "unnamed_program" :
+                                            (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
+                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType(), name);
                 }
                 // We only generate SVCOMP witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
+                    final String filename = o.hasWitnessFilename() ? o.getWitnessFilename() : "witness";
+                    generateWitnessIfAble(task, modelChecker, filename, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -238,15 +246,11 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType)
+    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType, String name)
             throws SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-        final String progName = task.getProgram().getName();
-        final int fileSuffixIndex = progName.lastIndexOf('.');
-        final String name = progName.isEmpty() ? "unnamed_program" :
-                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
         final ExecutionModelNext model = modelChecker.getExecutionGraph();
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
@@ -258,7 +262,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task,
-            ModelChecker modelChecker, String details) throws SolverException {
+            ModelChecker modelChecker, String filename, String details) throws SolverException {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -267,7 +271,7 @@ public class Dartagnan extends BaseOptions {
             try (IREvaluator evaluator = modelChecker.getModel()) {
                 WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
                 if (w.canBeBuilt()) {
-                    w.build().write();
+                    w.build().write(filename);
                 }
             } catch (InvalidConfigurationException e) {
                 logger.warn(e.getMessage());

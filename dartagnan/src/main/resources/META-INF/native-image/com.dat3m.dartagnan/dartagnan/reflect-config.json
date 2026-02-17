@@ -110,14 +110,29 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
         "name":"com.dat3m.dartagnan.utils.options.BaseOptions",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
       {
-      "name":"com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig",
-      "allDeclaredFields":true,
-      "queryAllDeclaredMethods":true
+        "name":"com.dat3m.dartagnan.utils.printer.Printer",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.verification.solving.RefinementSolver",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
       },
       {
         "name":"com.dat3m.dartagnan.witness.graphml.WitnessBuilder",
