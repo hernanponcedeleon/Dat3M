@@ -31,7 +31,7 @@ public class MemoryType implements Type {
 
     MemoryType(int bitWidth) {
         Preconditions.checkArgument(bitWidth > 0, "Size for memory type must be positive: %s", bitWidth);
-        Preconditions.checkArgument((bitWidth & 7) == 0, "Size must be a multiple of 8: %s", bitWidth);
+        Preconditions.checkArgument(bitWidth % 8 == 0, "Size must be a multiple of 8: %s", bitWidth);
         this.bitWidth = bitWidth;
     }
 

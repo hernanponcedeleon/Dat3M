@@ -8,22 +8,20 @@ import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
 
 /*
-    FIXME:
-     - This class cannot represent all floating point special values.
-     - It cannot do any computations: computations on BigDecimal do not align with computations on the true
-       floating-point type (as defined by IEEE 754).
+    NOTE: This class cannot represent all floating point special values, e.g., the various versions of NaN.
+          This aligns with the SMT floating point theory, which also only has a single unique NaN value.
  */
 public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
 
     private final BigDecimal absValue;
-    private final boolean sign;
+    private final boolean isNeg;
     private final boolean isNaN;
     private final boolean isInf;
 
-    public FloatLiteral(FloatType type, BigDecimal absValue, boolean sign, boolean isNaN, boolean isInf) {
+    public FloatLiteral(FloatType type, BigDecimal absValue, boolean isNegative, boolean isNaN, boolean isInf) {
         super(type);
         Preconditions.checkArgument(!(isNaN && isInf), "Cannot create NaN and Inf literal at the same time");
-        Preconditions.checkArgument(!(isNaN && sign), "Cannot create NaN literal with negative sign");
+        Preconditions.checkArgument(!(isNaN && isNegative), "Cannot create NaN literal with negative sign");
         Preconditions.checkArgument(
                 (absValue != null || isNaN || isInf)  // Has value, is NaN, or is Inf
                         && !(absValue != null && (isNaN || isInf)), // If it has value, then it is neither NaN nor Inf
@@ -34,7 +32,7 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
             absValue = absValue.abs();
         }
         this.absValue = absValue;
-        this.sign = sign;
+        this.isNeg = isNegative;
         this.isNaN = isNaN;
         this.isInf = isInf;
     }
@@ -45,10 +43,10 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
         return absValue;
     }
 
-    public boolean getSign() { return sign; }
+    public boolean isNegative() { return isNeg; }
     public boolean isNaN() { return isNaN; }
-    public boolean isPlusInf() { return isInf && !sign; }
-    public boolean isMinusInf() { return isInf && sign; }
+    public boolean isPlusInf() { return isInf && !isNeg; }
+    public boolean isMinusInf() { return isInf && isNeg; }
     public boolean hasFiniteValue() { return absValue != null; }
 
     @Override
@@ -68,7 +66,7 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
                 && absValue.equals(val.absValue)
                 && isNaN == val.isNaN
                 && isInf == val.isInf
-                && sign == val.sign);
+                && isNeg == val.isNeg);
     }
 
     @Override
@@ -80,6 +78,6 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
         } else if (isNaN()) {
             return "NaN";
         }
-        return String.format("%s(%s%s)", getType(), sign ? "-" : "", absValue);
+        return String.format("%s(%s%s)", getType(), isNeg ? "-" : "", absValue);
     }
 }

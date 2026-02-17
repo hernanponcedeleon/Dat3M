@@ -11,6 +11,7 @@
 int main(void) {
     float  f = __VERIFIER_nondet_float();
     double d = __VERIFIER_nondet_double();
+    double d2 = __VERIFIER_nondet_double();
 
 #if TEST_ID == 1
     /* --- NaN identity --- */
@@ -146,7 +147,6 @@ int main(void) {
 
  #elif TEST_ID == 15
      /* --- fmin vs. fmax and signed zero --- */
-     double d2 = __VERIFIER_nondet_double();
      if (!isnan(d) && !isnan(d2)) {
          double min = fmin(d, d2);
          double max = fmax(d, d2);
@@ -161,7 +161,6 @@ int main(void) {
 
 #elif TEST_ID == 16
     /* --- fmax and signed zero corner case --- */
-    double d2 = __VERIFIER_nondet_double();
     if (!isnan(d) && !isnan(d2)) {
         assert (fmax(d, d2) == fmax(d, d2));
         assert (signbit(fmax(d, d2)) == signbit(fmax(d, d2)));

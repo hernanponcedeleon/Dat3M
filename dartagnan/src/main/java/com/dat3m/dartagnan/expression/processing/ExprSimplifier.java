@@ -414,9 +414,10 @@ public class ExprSimplifier extends ExprTransformer {
     public Expression visitMemoryConcatExpression(MemoryConcat expr) {
         final List<Expression> inner = expr.getOperands().stream().map(e -> e.accept(this)).toList();
 
-        // (int x to mem) :: (int y to mem) == (int x::y) to mem
-        // TODO: only true if the int types sizes are byte-multiples
-        if (inner.stream().allMatch(e -> e instanceof ToMemoryCast cast && cast.getSourceType() instanceof IntegerType)) {
+        // (bvX x to mem) :: (bvY y to mem) == (bv(X+Y) x::y) to mem   [ if bvX/bvY map to memX/memY ]
+        if (inner.stream().allMatch(e -> e instanceof ToMemoryCast cast
+                && cast.getSourceType() instanceof IntegerType intType
+                && intType.getBitWidth() == cast.getTargetType().getBitWidth())) {
             final List<Expression> intConcat = inner.stream().map(e -> ((ToMemoryCast) e).getOperand()).toList();
             return expressions.makeToMemoryCast(expressions.makeIntConcat(intConcat).accept(this));
         }
@@ -432,9 +433,10 @@ public class ExprSimplifier extends ExprTransformer {
             return inner;
         }
 
-        // (int x to mem)[a..b] == (int x[a..b]) to mem
-        // TODO: only true if the int types sizes are byte-multiples
-        if (inner instanceof ToMemoryCast cast && cast.getSourceType() instanceof IntegerType) {
+        // (int x to mem)[a..b] == (int x[a..b]) to mem   [ if [a..b] is in the range of the int type ]
+        if (inner instanceof ToMemoryCast cast
+                && cast.getSourceType() instanceof IntegerType intType
+                && expr.getHighBit() < intType.getBitWidth()) {
             return expressions.makeToMemoryCast(
                     expressions.makeIntExtract(cast.getOperand(), expr.getLowBit(), expr.getHighBit()).accept(this)
             );

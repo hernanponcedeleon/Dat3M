@@ -604,7 +604,7 @@ public class ExpressionEncoder {
             } else {
                 assert floatLiteral.hasFiniteValue();
                 final FloatingPointFormula absVal = fpmgr.makeNumber(floatLiteral.getAbsValue(), fFType, context.roundingModeFloats);
-                result = floatLiteral.getSign() ? fpmgr.negate(absVal) : absVal;
+                result = floatLiteral.isNegative() ? fpmgr.negate(absVal) : absVal;
             }
             return new TypedFormula<>(floatLiteral.getType(), result);
         }
@@ -754,10 +754,11 @@ public class ExpressionEncoder {
             checkMemoryCastSupport(expr.getSourceType());
 
             final TypedFormula<?, ?> inner = encode(expr.getOperand());
+            final Type type = inner.type();
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
 
             final Formula enc;
-            if (inner.getType() instanceof IntegerType iType) {
+            if (type instanceof IntegerType iType) {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
                 if (extBits > 0) {
@@ -765,7 +766,7 @@ public class ExpressionEncoder {
                 } else {
                     enc = inner.formula();
                 }
-            } else if (inner.getType() instanceof FloatType fType) {
+            } else if (type instanceof FloatType fType) {
                 assert targetType.getBitWidth() == fType.getBitWidth();
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
                 enc = fpmgr.toIeeeBitvector((FloatingPointFormula) inner.formula());
@@ -794,6 +795,7 @@ public class ExpressionEncoder {
                     enc = inner.formula();
                 }
             } else if (targetType instanceof FloatType fType) {
+                assert fType.getBitWidth() == expr.getSourceType().getBitWidth();
                 enc = floatingPointFormulaManager().fromIeeeBitvector((BitvectorFormula) inner.formula(), getFloatFormulaType(fType));
             } else {
                 throw new UnsupportedOperationException("unreachable");
@@ -810,10 +812,10 @@ public class ExpressionEncoder {
             final List<? extends TypedFormula<MemoryType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodeMemoryExpr)
                     .toList();
-            Formula enc = operands.get(0).formula();
+            BitvectorFormula enc = (BitvectorFormula) operands.get(0).formula();
             final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
             for (TypedFormula<MemoryType, ?> op : operands.subList(1, operands.size())) {
-                enc = bvmgr.concat((BitvectorFormula) op.formula(), (BitvectorFormula) enc);
+                enc = bvmgr.concat((BitvectorFormula) op.formula(), enc);
             }
             return new TypedFormula<>(expr.getType(), enc);
         }
@@ -822,8 +824,8 @@ public class ExpressionEncoder {
         public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
             requireBVEncoding(expr);
 
-            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
-            final Formula enc = bitvectorFormulaManager().extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+            final BitvectorFormula operand = (BitvectorFormula) encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc = bitvectorFormulaManager().extract(operand, expr.getHighBit(), expr.getLowBit());
 
             return new TypedFormula<>(expr.getType(), enc);
         }
@@ -832,9 +834,9 @@ public class ExpressionEncoder {
         public TypedFormula<?, ?> visitMemoryExtendExpression(MemoryExtend expr) {
             requireBVEncoding(expr);
 
-            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
+            final BitvectorFormula operand = (BitvectorFormula) encodeMemoryExpr(expr.getOperand()).formula();
             final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
-            final Formula enc = bitvectorFormulaManager().extend((BitvectorFormula) operand, extendedBits, false);
+            final Formula enc = bitvectorFormulaManager().extend(operand, extendedBits, false);
 
             return new TypedFormula<>(expr.getType(), enc);
 
