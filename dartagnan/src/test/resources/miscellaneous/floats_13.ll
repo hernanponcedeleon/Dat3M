@@ -12,29 +12,33 @@ define dso_local i32 @main() #0 !dbg !12 {
   %1 = alloca i32, align 4
   %2 = alloca float, align 4
   %3 = alloca double, align 8
-  %4 = alloca float, align 4
+  %4 = alloca double, align 8
+  %5 = alloca float, align 4
   store i32 0, i32* %1, align 4
   call void @llvm.dbg.declare(metadata float* %2, metadata !18, metadata !DIExpression()), !dbg !19
-  %5 = call float @__VERIFIER_nondet_float(), !dbg !20
-  store float %5, float* %2, align 4, !dbg !19
+  %6 = call float @__VERIFIER_nondet_float(), !dbg !20
+  store float %6, float* %2, align 4, !dbg !19
   call void @llvm.dbg.declare(metadata double* %3, metadata !21, metadata !DIExpression()), !dbg !23
-  %6 = call double @__VERIFIER_nondet_double(), !dbg !24
-  store double %6, double* %3, align 8, !dbg !23
-  call void @llvm.dbg.declare(metadata float* %4, metadata !25, metadata !DIExpression()), !dbg !27
-  store float 0.000000e+00, float* %4, align 4, !dbg !27
-  %7 = load float, float* %4, align 4, !dbg !28
-  %8 = fcmp oeq float %7, 0.000000e+00, !dbg !28
-  br i1 %8, label %9, label %10, !dbg !31
+  %7 = call double @__VERIFIER_nondet_double(), !dbg !24
+  store double %7, double* %3, align 8, !dbg !23
+  call void @llvm.dbg.declare(metadata double* %4, metadata !25, metadata !DIExpression()), !dbg !26
+  %8 = call double @__VERIFIER_nondet_double(), !dbg !27
+  store double %8, double* %4, align 8, !dbg !26
+  call void @llvm.dbg.declare(metadata float* %5, metadata !28, metadata !DIExpression()), !dbg !30
+  store float 0.000000e+00, float* %5, align 4, !dbg !30
+  %9 = load float, float* %5, align 4, !dbg !31
+  %10 = fcmp oeq float %9, 0.000000e+00, !dbg !31
+  br i1 %10, label %11, label %12, !dbg !34
 
-9:                                                ; preds = %0
-  br label %11, !dbg !31
+11:                                               ; preds = %0
+  br label %13, !dbg !34
 
-10:                                               ; preds = %0
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([54 x i8], [54 x i8]* @.str.1, i64 0, i64 0), i32 noundef 137, i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #4, !dbg !28
-  unreachable, !dbg !28
+12:                                               ; preds = %0
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([54 x i8], [54 x i8]* @.str.1, i64 0, i64 0), i32 noundef 134, i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #4, !dbg !31
+  unreachable, !dbg !31
 
-11:                                               ; preds = %9
-  ret i32 0, !dbg !32
+13:                                               ; preds = %11
+  ret i32 0, !dbg !35
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
@@ -58,7 +62,7 @@ attributes #4 = { noreturn nounwind }
 !llvm.ident = !{!11}
 
 !0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "Ubuntu clang version 14.0.0-1ubuntu1.1", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !2, splitDebugInlining: false, nameTableKind: None)
-!1 = !DIFile(filename: "/home/drc/git/Dat3M/benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "4723053dddf493d2cabef543d9d3ad92")
+!1 = !DIFile(filename: "/home/drc/git/Dat3M/benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "655be55c9424586b3c1ea9b9681db180")
 !2 = !{!3}
 !3 = !DIBasicType(name: "float", size: 32, encoding: DW_ATE_float)
 !4 = !{i32 7, !"Dwarf Version", i32 5}
@@ -70,7 +74,7 @@ attributes #4 = { noreturn nounwind }
 !10 = !{i32 7, !"frame-pointer", i32 2}
 !11 = !{!"Ubuntu clang version 14.0.0-1ubuntu1.1"}
 !12 = distinct !DISubprogram(name: "main", scope: !13, file: !13, line: 11, type: !14, scopeLine: 11, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !17)
-!13 = !DIFile(filename: "benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "4723053dddf493d2cabef543d9d3ad92")
+!13 = !DIFile(filename: "benchmarks/miscellaneous/floats.c", directory: "/home/drc/git/Dat3M", checksumkind: CSK_MD5, checksum: "655be55c9424586b3c1ea9b9681db180")
 !14 = !DISubroutineType(types: !15)
 !15 = !{!16}
 !16 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
@@ -82,11 +86,14 @@ attributes #4 = { noreturn nounwind }
 !22 = !DIBasicType(name: "double", size: 64, encoding: DW_ATE_float)
 !23 = !DILocation(line: 13, column: 12, scope: !12)
 !24 = !DILocation(line: 13, column: 16, scope: !12)
-!25 = !DILocalVariable(name: "ff", scope: !26, file: !13, line: 136, type: !3)
-!26 = distinct !DILexicalBlock(scope: !12, file: !13, line: 135, column: 5)
-!27 = !DILocation(line: 136, column: 15, scope: !26)
-!28 = !DILocation(line: 137, column: 9, scope: !29)
-!29 = distinct !DILexicalBlock(scope: !30, file: !13, line: 137, column: 9)
-!30 = distinct !DILexicalBlock(scope: !26, file: !13, line: 137, column: 9)
-!31 = !DILocation(line: 137, column: 9, scope: !30)
-!32 = !DILocation(line: 155, column: 5, scope: !12)
+!25 = !DILocalVariable(name: "d2", scope: !12, file: !13, line: 14, type: !22)
+!26 = !DILocation(line: 14, column: 12, scope: !12)
+!27 = !DILocation(line: 14, column: 17, scope: !12)
+!28 = !DILocalVariable(name: "ff", scope: !29, file: !13, line: 133, type: !3)
+!29 = distinct !DILexicalBlock(scope: !12, file: !13, line: 132, column: 5)
+!30 = !DILocation(line: 133, column: 15, scope: !29)
+!31 = !DILocation(line: 134, column: 9, scope: !32)
+!32 = distinct !DILexicalBlock(scope: !33, file: !13, line: 134, column: 9)
+!33 = distinct !DILexicalBlock(scope: !29, file: !13, line: 134, column: 9)
+!34 = !DILocation(line: 134, column: 9, scope: !33)
+!35 = !DILocation(line: 179, column: 5, scope: !12)
