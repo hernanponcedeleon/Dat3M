@@ -72,6 +72,19 @@ public abstract class BaseOptions {
         return witnessType;
     }
 
+    @Option(name=WITNESS_FILENAME,
+            description="Name for the witness graph file.",
+            secure=true)
+    private String witnessFilename = "";
+
+    public boolean hasWitnessFilename() {
+        return !witnessFilename.isEmpty();
+    }
+
+    public String getWitnessFilename() {
+        return witnessFilename;
+    }
+
     @Option(
             name = CAT_INCLUDE,
             description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
