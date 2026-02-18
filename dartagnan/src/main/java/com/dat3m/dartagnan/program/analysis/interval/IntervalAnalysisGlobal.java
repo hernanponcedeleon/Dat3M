@@ -37,12 +37,12 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     }
 
     @Override
-    protected RegisterStateVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
-        return new RegisterStateVisitorGlobal(event, eventState);
+    protected RegWriterVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
+        return new RegWriterVisitorGlobal(event, eventState);
     }
 
-    class RegisterStateVisitorGlobal extends RegisterStateVisitor {
-        RegisterStateVisitorGlobal(Event e, Map<Register, Interval> eventState) {
+    class RegWriterVisitorGlobal extends RegWriterVisitor {
+        RegWriterVisitorGlobal(Event e, Map<Register, Interval> eventState) {
             super(e, eventState);
         }
 

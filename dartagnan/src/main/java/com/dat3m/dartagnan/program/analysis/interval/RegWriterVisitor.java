@@ -10,35 +10,35 @@ import com.dat3m.dartagnan.program.event.core.Local;
 
 import java.util.Map;
 
-public class RegisterStateVisitor implements EventVisitor<IntervalAnalysisWorklist.RegisterState> {
+public class RegWriterVisitor implements EventVisitor<RegisterState> {
 
     private final Map<Register, Interval> eventState;
-    private final IntervalAnalysisWorklist.RegisterState state;
+    private final RegisterState state;
 
-    public IntervalAnalysisWorklist.RegisterState getState() {
+    public RegisterState getState() {
         return state;
     }
 
-    public RegisterStateVisitor(Event e, Map<Register, Interval> eventState) {
+    public RegWriterVisitor(Event e, Map<Register, Interval> eventState) {
         this.eventState = eventState;
         state = e.accept(this);
     }
 
     @Override
-    public IntervalAnalysisWorklist.RegisterState visitEvent(Event e) {
+    public RegisterState visitEvent(Event e) {
         if (e instanceof RegWriter rw) {
             Register reg = rw.getResultRegister();
             if (reg.getType() instanceof IntegerType regType) {
-                return new IntervalAnalysisWorklist.RegisterState(reg, Interval.getTop(regType));
+                return new RegisterState(reg, Interval.getTop(regType));
             }
         }
         return null;
     }
 
     @Override
-    public IntervalAnalysisWorklist.RegisterState visitLocal(Local l) {
+    public RegisterState visitLocal(Local l) {
         Register result = l.getResultRegister();
         Expression expr = l.getExpr();
-        return new IntervalAnalysisWorklist.RegisterState(result, new AbstractExpressionEvaluator((IntegerType) result.getType(), expr, eventState).getResultInterval());
+        return new RegisterState(result, new AbstractExpressionEvaluator((IntegerType) result.getType(), expr, eventState).getResultInterval());
     }
 }

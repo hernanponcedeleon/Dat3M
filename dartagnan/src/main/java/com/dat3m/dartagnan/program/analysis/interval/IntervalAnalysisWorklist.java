@@ -68,14 +68,10 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         }
     }
 
-
-    // Helper class to carry information about a register and its computed interval.
-
-    public record RegisterState(Register reg, Interval interval) {}
-
+    // Factory method
     // Visitor can be overidden by subclasses to handle certain events differently.
-    protected RegisterStateVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
-            return new RegisterStateVisitor(event, eventState);
+    protected RegWriterVisitor runVisitor(Event event, Map<Register, Interval> eventState) {
+            return new RegWriterVisitor(event, eventState);
     }
 
     // ============= Worklist Algorithm =============
@@ -141,7 +137,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             if (current instanceof RegWriter rw && rw.getResultRegister().getType() instanceof IntegerType) {
                 RegisterState state = runVisitor(current, currentEventStateCopy).getState();
                 if (state != null) {
-                    currentEventStateCopy.put(state.reg, state.interval);
+                    currentEventStateCopy.put(state.reg(), state.interval());
                 }
             }
 
