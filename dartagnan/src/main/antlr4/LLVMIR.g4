@@ -159,7 +159,7 @@ invokeTerm:
 		'[' (operandBundle ',')+ ']'
 	)? 'to' label 'unwind' label;
 callBrTerm:
-	'callbr' callingConv? returnAttribute* addrSpace? type value '(' args ')' funcAttribute* (
+	'callbr' callingConv? returnAttribute* addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
 		'[' (operandBundle ',')+ ']'
 	)? 'to' label '[' (label (',' label)*)? ']';
 catchSwitchTerm:
@@ -347,11 +347,14 @@ paramAttribute:
 	| alignStack
 	| byRefAttr
 	| byval
+	| captures
 	| dereferenceable
 	| elementType
 	| inAlloca
+	| initializes
 	| paramAttr
 	| preallocated
+	| range
 	| structRetAttr;
 attrString: StringLit;
 attrPair: StringLit '=' StringLit;
@@ -394,6 +397,17 @@ paramAttr:
 	| 'writeonly'
 	| 'zeroext';
 preallocated: 'preallocated' '(' type ')';
+captures: 'captures' '(' components ')';
+components: component;
+component:
+    | 'none'
+    | 'address'
+    | 'address_is_null'
+    | 'provenance'
+    | 'read_provenance';
+initializes: 'initializes' '(' initRange (',' initRange)* ')';
+initRange: '(' intConst ',' intConst ')';
+range: 'range' '(' type intConst ',' intConst ')';
 structRetAttr: 'sret' '(' type ')';
 
 // funcType: type '(' params ')';
@@ -433,7 +447,7 @@ metadataType: 'metadata';
 // expr
 bitCastExpr: 'bitcast' '(' typeConst 'to' type ')';
 getElementPtrExpr:
-	'getelementptr' inBounds? '(' type ',' typeConst (
+	'getelementptr' (inBounds | overflowFlag)* '(' type ',' typeConst (
 		',' gepIndex
 	)* ')';
 gepIndex: inRange = 'inrange'? typeConst;
@@ -460,7 +474,7 @@ insertElementExpr:
 	'insertelement' '(' typeConst ',' typeConst ',' typeConst ')';
 shuffleVectorExpr:
 	'shufflevector' '(' typeConst ',' typeConst ',' typeConst ')';
-shlExpr: 'shl' overflowFlag* '(' typeConst ',' typeConst ')';
+shlExpr: 'shl' '(' typeConst ',' typeConst ')';
 lShrExpr:
 	'lshr' exact = 'exact'? '(' typeConst ',' typeConst ')';
 aShrExpr:
@@ -468,9 +482,9 @@ aShrExpr:
 andExpr: 'and' '(' typeConst ',' typeConst ')';
 orExpr: 'or' '(' typeConst ',' typeConst ')';
 xorExpr: 'xor' '(' typeConst ',' typeConst ')';
-addExpr: 'add' overflowFlag* '(' typeConst ',' typeConst ')';
-subExpr: 'sub' overflowFlag* '(' typeConst ',' typeConst ')';
-mulExpr: 'mul' overflowFlag* '(' typeConst ',' typeConst ')';
+addExpr: 'add' '(' typeConst ',' typeConst ')';
+subExpr: 'sub' '(' typeConst ',' typeConst ')';
+mulExpr: 'mul' '(' typeConst ',' typeConst ')';
 fNegExpr: 'fneg' '(' typeConst ')';
 
 // instructions
@@ -578,7 +592,7 @@ lShrInst:
 aShrInst:
 	'ashr' exact = 'exact'? typeValue ',' value;
 andInst: 'and' typeValue ',' value;
-orInst: 'or' typeValue ',' value;
+orInst: 'or' 'disjoint'? typeValue ',' value;
 xorInst: 'xor' typeValue ',' value;
 extractElementInst:
 	'extractelement' typeValue ',' typeValue;
@@ -607,10 +621,10 @@ atomicRMWInst:
 		',' align
 	)?;
 getElementPtrInst:
-	'getelementptr' inBounds? type ',' typeValue (',' typeValue)*;
+	'getelementptr' (inBounds | overflowFlag)* type ',' typeValue (',' typeValue)*;
 truncInst:
-	'trunc' typeValue 'to' type;
-zExtInst: 'zext' typeValue 'to' type;
+	'trunc' overflowFlag* typeValue 'to' type;
+zExtInst: 'zext' 'nneg'? typeValue 'to' type;
 sExtInst: 'sext' typeValue 'to' type;
 fpTruncInst:
 	'fptrunc' typeValue 'to' type;
@@ -621,7 +635,7 @@ fpToUiInst:
 fpToSiInst:
 	'fptosi' typeValue 'to' type;
 uiToFpInst:
-	'uitofp' typeValue 'to' type;
+	'uitofp' 'nneg'? typeValue 'to' type;
 siToFpInst:
 	'sitofp' typeValue 'to' type;
 ptrToIntInst:
@@ -633,7 +647,7 @@ bitCastInst:
 addrSpaceCastInst:
 	'addrspacecast' typeValue 'to' type;
 iCmpInst:
-	'icmp' iPred typeValue ',' value;
+	'icmp' 'samesign'? iPred typeValue ',' value;
 fCmpInst:
 	'fcmp' fastMathFlag* fPred typeValue ',' value;
 phiInst:
@@ -749,7 +763,7 @@ funcAttr:
 	| 'strictfp'
 	| 'willreturn'
 	| 'writeonly'
-	| 'memory(' memoryEffect+ ')';
+	| 'memory(' memoryEffect (',' memoryEffect )* ')';
 memoryEffect
 	: accessKind
 	| 'argmem:' accessKind
@@ -767,7 +781,10 @@ returnAttr:
 	| 'nonnull'
 	| 'noundef'
 	| 'signext'
-	| 'zeroext';
+	| 'zeroext'
+	| customAttr
+	| range;
+customAttr: StringLit;
 overflowFlag: 'nsw' | 'nuw';
 iPred:
 	'eq'
@@ -886,7 +903,8 @@ floatKind:
 	| 'ppc_fp128';
 /*看不懂，直接抄过来的 */
 specializedMDNode:
-	diBasicType
+	diAssignId
+	| diBasicType
 	| diCommonBlock // not in spec as of 2019-12-05
 	| diCompileUnit
 	| diCompositeType
@@ -915,6 +933,8 @@ specializedMDNode:
 	| diTemplateValueParameter
 	| genericDiNode; // not in spec as of 2018-02-21, still not in spec as of 2019-12-05
 
+diAssignId:
+	'!DIAssignID()';
 diBasicType:
 	'!DIBasicType' '(' (diBasicTypeField (',' diBasicTypeField)*)? ')';
 diCommonBlock:
@@ -1019,7 +1039,7 @@ diImportedEntityField:
 	| elementsField;
 
 diLabel: '!DILabel' '(' (diLabelField (',' diLabelField)*)? ')';
-diLabelField: scopeField | nameField | fileField | lineField;
+diLabelField: scopeField | nameField | fileField | lineField | columnField;
 diLexicalBlock:
 	'!DILexicalBlock' '(' (
 		diLexicalBlockField (',' diLexicalBlockField)*
