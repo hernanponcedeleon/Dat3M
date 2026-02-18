@@ -45,14 +45,14 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
         RegisterStateVisitorGlobal(Event e, Map<Register, Interval> eventState) {
             super(e, eventState);
         }
-    }
 
-    @Override
-    public RegisterState visitLoad(Load l) {
-        Set<Store> stores = getPotentialStores(l);
-        Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
+        @Override
+        public RegisterState visitLoad(Load l) {
+            Set<Store> stores = getPotentialStores(l);
+            Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
 
-        return new RegisterState(l.getResultRegister(), interval);
+            return new RegisterState(l.getResultRegister(), interval);
+        }
     }
 
     // Calculate the interval of a memory address.
