@@ -749,40 +749,48 @@ public class ProgramEncoder implements Encoder {
     // ============= Bounds =============
 
     private BooleanFormula encodeRegisterBounds(Formula variable, Interval interval) {
-        List<BooleanFormula> encoding = new ArrayList<>();
-        if (!interval.isTop()) {
-            BigInteger lowerbound = interval.getLowerbound();
-            BigInteger upperbound = interval.getUpperbound();
-            if (variable instanceof BitvectorFormula bvar) {
-                if (interval.isSignInsensitive()) {
-                    BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
-                    int bitWidth = bvmgr.getLength(bvar);
-                    encoding.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
-                    encoding.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
-                }
-            } else if (variable instanceof IntegerFormula ivar) {
-                IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-                encoding.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
-                encoding.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
-            }
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        if (interval.isTop()) {
+            return bmgr.makeTrue();
         }
-        return context.getBooleanFormulaManager().and(encoding);
+        List<BooleanFormula> enc = new ArrayList<>();
+        BigInteger lowerbound = interval.getLowerbound();
+        BigInteger upperbound = interval.getUpperbound();
+
+        if (variable instanceof BitvectorFormula bvar) {
+            if (interval.isSignInsensitive()) {
+                BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                int bitWidth = bvmgr.getLength(bvar);
+                enc.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
+                enc.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
+            }
+        } else if (variable instanceof IntegerFormula ivar) {
+            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+            enc.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
+            enc.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
+        }
+        return bmgr.and(enc);
     }
 
     public BooleanFormula encodeBounds() {
-        List<BooleanFormula> enc = new ArrayList<>();
         Context analysisContext = context.getAnalysisContext();
-        if (analysisContext.has(IntervalAnalysis.class)) {
-            IntervalAnalysis intervalAnalysis = analysisContext.get(IntervalAnalysis.class);
-            ExpressionEncoder exprEnc = context.getExpressionEncoder();
-            for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
-                for (Register.Read read : e.getRegisterReads()) {
-                    if (read.register().getType() instanceof IntegerType) {
-                        enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
-                    }
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        if (!analysisContext.has(IntervalAnalysis.class)) {
+            return bmgr.makeTrue();
+        }
+        List<BooleanFormula> enc = new ArrayList<>();
+        IntervalAnalysis intervalAnalysis = analysisContext.get(IntervalAnalysis.class);
+        ExpressionEncoder exprEnc = context.getExpressionEncoder();
+
+        for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+            for (Register.Read read : e.getRegisterReads()) {
+                if (read.register().getType() instanceof IntegerType) {
+                    enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
                 }
             }
         }
-        return context.getBooleanFormulaManager().and(enc);
+        return bmgr.and(enc);
     }
 }

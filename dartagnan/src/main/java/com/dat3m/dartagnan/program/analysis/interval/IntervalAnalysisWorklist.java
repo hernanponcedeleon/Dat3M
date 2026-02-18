@@ -260,11 +260,10 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
             if (!cast.preservesSign() && cast.isExtension()) {
                 return Interval.getTop(targetType);
-            } else {
-
-                // Interval constructor to return top with eventual overflow regarding truncation.
-                return new Interval(operandInterval.getLowerbound(), operandInterval.getUpperbound(), targetType);
             }
+
+            // Interval constructor to return top with eventual overflow regarding truncation.
+            return new Interval(operandInterval.getLowerbound(), operandInterval.getUpperbound(), targetType);
         }
 
         @Override
