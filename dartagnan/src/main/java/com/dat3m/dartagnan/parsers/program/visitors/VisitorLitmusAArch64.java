@@ -409,7 +409,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
         final String acq = e.hasTag(MO_ACQ) ? "A" : "";
         final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String op = OpToArmOpCode(ldop.getOperator());
+        final String op = opToArmOpCode(ldop.getOperator());
         final String size = getArmSizeSuffix(ldop.getAccessType());
         final Expression operand = ldop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : ldop.getOperand();
         final Register loadReg = ldop.getResultRegister();
@@ -417,6 +417,32 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
         return Optional.of(String.format("LD%s%s%s%s %s, %s, [%s]", op, acq, rel, size, loadReg, operand, address));
     };
+    private static final CustomPrinting STOP_PRINTER = e -> {
+        if (!(e instanceof RMWOp stop)) {
+            return Optional.empty();
+        }
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final String op = opToArmOpCode(stop.getOperator());
+        final String size = getArmSizeSuffix(stop.getAccessType());
+        final Expression operand = stop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : stop.getOperand();
+        final Expression address = stop.getAddress();
+
+        return Optional.of(String.format("ST%s%s%s %s, [%s]", op, rel, size, operand, address));
+    };
+
+    private static String opToArmOpCode(IntBinaryOp op) {
+        return switch (op) {
+            case ADD -> "ADD";
+            case XOR -> "EOR";
+            case OR -> "SET";
+            case AND -> "CLR";
+            case SMIN -> "SMIN";
+            case SMAX -> "SMAX";
+            case UMIN -> "UMIN";
+            case UMAX -> "UMAX";
+            default -> throw new RuntimeException("Invalid op: " + op);
+        };
+    }
 
     @Override
     public Object visitLoadOp(LoadOpContext ctx) {
@@ -432,49 +458,21 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             operand = expressions.makeIntNot(operand);
         }
 
+        final List<String> mo = new ArrayList<>();
+        if (info.acquire) {
+            mo.add(MO_ACQ);
+        }
+        if (info.release) {
+            mo.add(MO_REL);
+        }
+
         final Expression address = parseAddress(ctx.address());
         final RMWFetchOp ldOp = EventFactory.Common.newRmwFetchOp(rt, address, info.op, operand);
-        ldOp.addTags(info.release ? MO_REL : null, info.acquire ? MO_ACQ : null);
+        ldOp.addTags(mo);
         ldOp.setMetadata(LDOP_PRINTER);
 
         add(ldOp);
         addRegister64Update(rt64, rt);
-        return null;
-    }
-
-    private static final CustomPrinting STOP_PRINTER = e -> {
-        if (!(e instanceof RMWOp stop)) {
-            return Optional.empty();
-        }
-        final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String op = OpToArmOpCode(stop.getOperator());
-        final String size = getArmSizeSuffix(stop.getAccessType());
-        final Expression operand = stop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : stop.getOperand();
-        final Expression address = stop.getAddress();
-
-        return Optional.of(String.format("ST%s%s%s %s, [%s]", op, rel, size, operand, address));
-    };
-
-    @Override
-    public Object visitStoreOp(StoreOpContext ctx) {
-        final String instr = ctx.storeOpInstruction().getText();
-        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
-
-        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
-        // TODO: We don't actually care about the smaller register, but only its type!
-        final Register rs = shrinkRegister(rs64, ctx.rS32, info.isHalfSize, info.isByteSize);
-        Expression operand = expressions.makeCast(rs64, rs.getType(), false);
-        if (info.op == IntBinaryOp.AND) {
-            // This was a CLR instruction
-            operand = expressions.makeIntNot(operand);
-        }
-
-        final Expression address = parseAddress(ctx.address());
-        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
-        stOp.addTags(info.release ? MO_REL : null);
-        stOp.setMetadata(STOP_PRINTER);
-
-        add(stOp);
         return null;
     }
 
@@ -638,18 +636,29 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return null;
     }
 
-    private static String OpToArmOpCode(IntBinaryOp op) {
-        return switch (op) {
-            case ADD -> "ADD";
-            case XOR -> "EOR";
-            case OR -> "SET";
-            case AND -> "CLR";
-            case SMIN -> "SMIN";
-            case SMAX -> "SMAX";
-            case UMIN -> "UMIN";
-            case UMAX -> "UMAX";
-            default -> throw new RuntimeException("Invalid op: " + op);
-        };
+    @Override
+    public Object visitStoreOp(StoreOpContext ctx) {
+        final String instr = ctx.storeOpInstruction().getText();
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        // TODO: We don't actually care about the smaller register, but only its type!
+        final Register rs = shrinkRegister(rs64, ctx.rS32, info.isHalfSize, info.isByteSize);
+        Expression operand = expressions.makeCast(rs64, rs.getType(), false);
+        if (info.op == IntBinaryOp.AND) {
+            // This was a CLR instruction
+            operand = expressions.makeIntNot(operand);
+        }
+
+        final Expression address = parseAddress(ctx.address());
+        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
+        if (info.release) {
+            stOp.addTags(MO_REL);
+        }
+        stOp.setMetadata(STOP_PRINTER);
+
+        add(stOp);
+        return null;
     }
 
     private static String getArmSizeSuffix(Type type) {
