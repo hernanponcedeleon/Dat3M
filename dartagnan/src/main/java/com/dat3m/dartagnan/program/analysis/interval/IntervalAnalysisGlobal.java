@@ -24,7 +24,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     private final Wmm memoryModel;
 
     private IntervalAnalysisGlobal(Program program, Context analysisContext, Wmm memoryModel) {
-        super(program);
+        super();
         this.relationAnalysis = analysisContext.requires(RelationAnalysis.class);
         this.memoryModel = memoryModel;
         computeIntervals(program);

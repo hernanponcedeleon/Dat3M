@@ -13,7 +13,7 @@ public class IntervalAnalysisLocal extends IntervalAnalysisWorklist {
     
     private IntervalAnalysisLocal(Program program) {
 
-        super(program);
+        super();
         computeIntervals(program);
     }
 

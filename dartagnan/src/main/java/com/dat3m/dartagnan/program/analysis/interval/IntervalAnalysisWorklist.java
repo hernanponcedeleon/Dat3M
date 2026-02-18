@@ -38,14 +38,11 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
     // Associate an event with a map of registers to intervals
     protected Map<Event, Map<Register, Interval>> eventStates = new HashMap<>();
-    private final Program program;
     static Logger logger = LoggerFactory.getLogger(IntervalAnalysis.class);
     private static final Set<Object> unsupportedExpressions = new HashSet<>();
 
 
-    protected IntervalAnalysisWorklist(Program program) {
-        this.program = program;
-    }
+    protected IntervalAnalysisWorklist() { }
 
     @Override
     public Interval getIntervalAt(Event event, Register r) throws RuntimeException {
