@@ -37,6 +37,7 @@ public final class Interval {
         BigInteger minBound = type.getMinimumValue(true);
         BigInteger maxBoundU = type.getMaximumValue(false);
         BigInteger maxBoundS = type.getMaximumValue(true);
+
         // Values do not fit target type or the interval contains both signed and unsigned values
         if ((lowerbound.compareTo(minBound) < 0 || upperbound.compareTo(maxBoundU) > 0)
                 || (lowerbound.compareTo(BigInteger.ZERO) < 0 && upperbound.compareTo(maxBoundS) > 0)) {

@@ -118,8 +118,8 @@ public interface IntervalAnalysis {
         double totalRegWrites = 0;
         double totalIntervalsReduced = 0;
         double totalIntervalsTop = 0;
-
         BigDecimal totalReducedIntervalSize = BigDecimal.ZERO;
+
         for (Event e : program.getThreadEvents()) {
             if (e instanceof RegReader rr) {
                 if (e instanceof RegWriter) {
@@ -152,7 +152,7 @@ public interface IntervalAnalysis {
         }
         BigDecimal averageReducedIntervalSize = BigDecimal.ZERO;
         if (totalIntervalsReduced != 0) {
-            averageReducedIntervalSize = totalReducedIntervalSize.divide(BigDecimal.valueOf((long) totalIntervalsReduced), RoundingMode.HALF_UP);
+            averageReducedIntervalSize = totalReducedIntervalSize.divide(BigDecimal.valueOf(totalIntervalsReduced), 2, RoundingMode.HALF_UP);
         }
 
         logger.info("""

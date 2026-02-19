@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,15 +60,18 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     // Takes into account all stores from a load can read from.
     // Join the intervals of all possible stores.
     private Interval calculatePossibleInterval(Set<Store> stores, Register r) {
+        Preconditions.checkArgument(r.getType() instanceof IntegerType);
+        IntegerType registerType = (IntegerType) r.getType();
+
         if (stores.isEmpty()) {
-            return Interval.getTop((IntegerType) r.getType());
+            return Interval.getTop(registerType);
         }
 
         Interval interval = null;
         for (Store s : stores) {
             Map<Register, Interval> eventState = eventStates.getOrDefault(s, new HashMap<>());
             Expression value = s.getMemValue();
-            Interval resultInterval = new AbstractExpressionEvaluator((IntegerType) r.getType(), value, eventState).getResultInterval();
+            Interval resultInterval = new AbstractExpressionEvaluator(registerType, value, eventState).getResultInterval();
             interval = interval == null ? resultInterval : interval.join(resultInterval);
         }
         return interval;
