@@ -133,6 +133,10 @@ public final class Interval {
             case LSHIFT -> this::lshift;
             case RSHIFT -> this::rshift;
             case ARSHIFT -> this::arshift;
+            case SMIN -> this::smin;
+            case SMAX -> this::smax;
+            case UMIN -> this::umin;
+            case UMAX -> this::umax;
             default -> {
                 unsupportedOperators.add(op);
                 yield null;
@@ -318,6 +322,41 @@ public final class Interval {
         return new Interval(orInterval.upperbound.not(),
                 orInterval.lowerbound.not(),
                 type);
+    }
+
+    private Interval min(Interval other) {
+        return new Interval(lowerbound.min(other.lowerbound), upperbound.min(other.upperbound), type);
+    }
+
+    private Interval max(Interval other) {
+        return new Interval(lowerbound.max(other.lowerbound), upperbound.max(other.upperbound), type);
+    }
+
+    private Interval doMinMax(Interval other, boolean isMin, boolean signed) {
+        if (!(isSignInsensitive() && other.isSignInsensitive())) {
+            return Interval.getTop(type);
+        }
+
+        Interval convertedInterval = signed ? convertToSignedInterval() : convertToUnsignedInterval();
+        Interval convertedIntervalOther =  signed ? other.convertToSignedInterval() : other.convertToUnsignedInterval();
+
+        return isMin ? convertedInterval.min(convertedIntervalOther) : convertedInterval.max(convertedIntervalOther);
+    }
+
+    private Interval smin(Interval other) {
+        return doMinMax(other, true, true);
+    }
+
+    private Interval smax(Interval other) {
+       return doMinMax(other, false, true);
+    }
+
+    private Interval umin(Interval other) {
+       return doMinMax(other, true, false);
+    }
+
+    private Interval umax(Interval other) {
+        return doMinMax(other, false, false);
     }
 
     private Interval negate() {

@@ -226,6 +226,20 @@ public abstract class IntervalTest {
                     // Arithmetic right shift
                     {1, 5, 1, 1, 0, 2, ARSHIFT},
                     {-1, 5, 1, 1, -1, 2, ARSHIFT},
+
+                    // Signed max
+                    {-3, -1, -4, -2, -3, -1, SMAX},
+
+                    // Unsigned max
+                    {-3, -1, -2, -1, 254, 255, UMAX},
+
+                    // Signed min
+                    {-3, -1, -4, -2, -4, -2, SMIN},
+
+                    // Unsigned max
+                    {-3, -1, -2, -1, 253, 255, UMIN},
+
+
             });
         }
 
