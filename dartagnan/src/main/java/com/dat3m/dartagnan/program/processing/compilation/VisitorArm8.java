@@ -34,7 +34,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
-        RMWStoreExclusive store = newRMWStoreExclusiveWithMo(e.getAddress(), e.getMemValue(), false, e.getMo());
+        final RMWStoreExclusive store = newRMWStoreExclusiveWithMo(e.getAddress(), e.getMemValue(), false, e.getMo());
 
         return eventSequence(
                 store,
@@ -44,14 +44,17 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitXchg(Xchg xchg) {
-        Register resultRegister = xchg.getResultRegister();
-        Expression address = xchg.getAddress();
-        String loadMo = xchg.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
-        String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
+        final Register resultRegister = xchg.getResultRegister();
+        final Expression address = xchg.getAddress();
+        final String loadMo = xchg.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
+        final String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
+
+        final Register dummy = xchg.getFunction().newRegister(resultRegister.getType());
 
         return eventSequence(
-                propagateNoRet(xchg, newRMWLoadExclusiveWithMo(resultRegister, address, loadMo)),
-                newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo)
+                propagateNoRet(xchg, newRMWLoadExclusiveWithMo(dummy, address, loadMo)),
+                newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo),
+                newLocal(resultRegister, dummy)
         );
     }
 
@@ -63,36 +66,20 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = cas.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
         final String storeMo = cas.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
-        Expression cmpValue = cas.getExpectedValue();
-        Local captureCmpVal = null;
-        if (cmpValue.getRegs().contains(resultRegister)) {
-            Register tmpReg = cas.getFunction().newRegister(resultRegister.getType());
-            captureCmpVal = newLocal(tmpReg, cmpValue);
-            cmpValue = tmpReg;
-        }
 
-        Expression newValue = cas.getStoreValue();
-        Local captureNewVal = null;
-        if (newValue.getRegs().contains(resultRegister)) {
-            Register tmpReg = cas.getFunction().newRegister(resultRegister.getType());
-            captureNewVal = newLocal(tmpReg, newValue);
-            newValue = tmpReg;
-        }
-
-        Label casEnd = newLabel("CAS_end");
-        final Expression cmp = expressions.makeEQ(resultRegister, cmpValue);
-        CondJump branchOnCasCmpResult = newJumpUnless(cmp, casEnd);
-
-        Load load = propagateNoRet(cas, newRMWLoadWithMo(resultRegister, address, loadMo));
-        Store store = newRMWStoreWithMo(load, address, newValue, storeMo);
+        final Register dummy = cas.getFunction().newRegister(resultRegister.getType());
+        final Load load = propagateNoRet(cas, newRMWLoadWithMo(dummy, address, loadMo));
+        final Store store = newRMWStoreWithMo(load, address, cas.getStoreValue(), storeMo);
+        final Expression cmp = expressions.makeEQ(dummy, cas.getExpectedValue());
+        final Label casEnd = newLabel("CAS_end");
+        final CondJump branchOnCasCmpResult = newJumpUnless(cmp, casEnd);
 
         return eventSequence(
-                captureCmpVal,
-                captureNewVal,
                 load,
                 branchOnCasCmpResult,
                 store,
-                casEnd
+                casEnd,
+                newLocal(resultRegister, dummy)
         );
     }
 
@@ -100,10 +87,10 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitRMWOp(RMWOp rmwOp) {
         Preconditions.checkArgument(!rmwOp.hasTag(ARMv8.MO_ACQ), "Unexpected MO_ACQ tag for RMWOp");
 
-        final Register dummy = rmwOp.getFunction().newRegister(rmwOp.getAccessType());
         final Expression address = rmwOp.getAddress();
         final String storeMo = rmwOp.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
+        final Register dummy = rmwOp.getFunction().newRegister(rmwOp.getAccessType());
         final Load load = newRMWLoad(dummy, address);
         load.addTags(Tag.ARMv8.NO_RET);
         final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
@@ -121,21 +108,14 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = rmwOp.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
         final String storeMo = rmwOp.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
-        Expression operand = rmwOp.getOperand();
-        Local captureOperand = null;
-        if (operand.getRegs().contains(resultRegister)) {
-            final Register tmpReg = rmwOp.getFunction().newRegister(resultRegister.getType());
-            captureOperand = newLocal(tmpReg, operand);
-            operand = tmpReg;
-        }
-
-        final Load load = propagateNoRet(rmwOp, newRMWLoadWithMo(resultRegister, address, loadMo));
-        final Expression value = expressions.makeBinary(resultRegister, rmwOp.getOperator(), operand);
+        final Register dummy = rmwOp.getFunction().newRegister(resultRegister.getType());
+        final Load load = propagateNoRet(rmwOp, newRMWLoadWithMo(dummy, address, loadMo));
+        final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
 
         return eventSequence(
-                captureOperand,
                 propagateNoRet(rmwOp, load),
-                newRMWStoreWithMo(load, address, value, storeMo)
+                newRMWStoreWithMo(load, address, value, storeMo),
+                newLocal(resultRegister, dummy)
         );
     }
 
