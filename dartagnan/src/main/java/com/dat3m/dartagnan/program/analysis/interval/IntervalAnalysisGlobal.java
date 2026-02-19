@@ -1,18 +1,17 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.expression.type.IntegerType;
-
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
-
-import com.dat3m.dartagnan.verification.Context;
-
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.verification.Context;
+
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,18 +58,18 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
     // Takes into account all stores from a load can read from.
     // Join the intervals of all possible stores.
     private Interval calculatePossibleInterval(Set<Store> stores, Register r) {
-        if (!stores.isEmpty()) {
-            Interval interval = null;
-            for (Store s : stores) {
-                Map<Register, Interval> eventState = eventStates.getOrDefault(s, new HashMap<>());
-                Expression value = s.getMemValue();
-                Interval resultInterval = new AbstractExpressionEvaluator((IntegerType) r.getType(), value, eventState).getResultInterval();
-                interval = interval == null ? resultInterval : interval.join(resultInterval);
-            }
-            return interval;
-        } else {
+        if (stores.isEmpty()) {
             return Interval.getTop((IntegerType) r.getType());
         }
+
+        Interval interval = null;
+        for (Store s : stores) {
+            Map<Register, Interval> eventState = eventStates.getOrDefault(s, new HashMap<>());
+            Expression value = s.getMemValue();
+            Interval resultInterval = new AbstractExpressionEvaluator((IntegerType) r.getType(), value, eventState).getResultInterval();
+            interval = interval == null ? resultInterval : interval.join(resultInterval);
+        }
+        return interval;
     }
 
     // Use the Relation Analysis to calculate the possible store from which a load can read from.
