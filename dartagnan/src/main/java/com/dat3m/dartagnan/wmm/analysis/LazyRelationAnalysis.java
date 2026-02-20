@@ -133,6 +133,15 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
+        public RelationAnalysis.Knowledge visitEmpty(Empty definition) {
+            long start = System.currentTimeMillis();
+            EventGraph may = ImmutableEventGraph.empty();
+            EventGraph must = ImmutableEventGraph.empty();
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
         public RelationAnalysis.Knowledge visitProduct(CartesianProduct definition) {
             final RelationAnalysis.Knowledge domain = getKnowledge(definition.getDomain());
             final RelationAnalysis.Knowledge range = getKnowledge(definition.getRange());
