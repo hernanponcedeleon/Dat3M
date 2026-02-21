@@ -168,20 +168,17 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
-                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
+                // We only generate witnesses if we are not validating one and depending on the result.
+                if (!o.runValidator() &&
+                    (modelChecker.getResult() == FAIL || (modelChecker.getResult() == UNKNOWN && o.generateWitnessForUnknown()))) {
                     final String progName = task.getProgram().getName();
                     final int fileSuffixIndex = progName.lastIndexOf('.');
-                    final String name = o.hasWitnessFilename() ?
+                    final String filename = o.hasWitnessFilename() ?
                                         o.getWitnessFilename() :
                                         progName.isEmpty() ?
                                             "unnamed_program" :
                                             (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType(), name);
-                }
-                // We only generate SVCOMP witnesses if we are not validating one.
-                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    final String filename = o.hasWitnessFilename() ? o.getWitnessFilename() : "witness";
-                    generateWitnessIfAble(task, modelChecker, filename, summary.reason() + "\n" + summary.details());
+                    generateWitnessIfAble(task, modelChecker, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -247,37 +244,40 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType, String name)
-            throws SolverException, IOException {
-        Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
-
-        final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-        final ExecutionModelNext model = modelChecker.getExecutionGraph();
-        // RF edges give both ordering and data flow information, thus even when the pair is in PO
-        // we get some data flow information by observing the edge
-        // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(model, 1, (x, y) -> true,
-                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng(), task.getConfig());
-    }
-
-    private static void generateWitnessIfAble(VerificationTask task,
-            ModelChecker modelChecker, String filename, String details) throws SolverException {
-        // ------------------ Generate Witness, if possible ------------------
-        final EnumSet<Property> properties = task.getProperty();
-        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM))
-                && modelChecker.getResult() != UNKNOWN) {
-            try (IREvaluator evaluator = modelChecker.getModel()) {
-                WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
-                if (w.canBeBuilt()) {
-                    w.build().write(filename);
-                }
-            } catch (InvalidConfigurationException e) {
-                logger.warn(e.getMessage());
+    public static File generateWitnessIfAble(VerificationTask task, ModelChecker modelChecker,
+        WitnessType witnessType, String filename, String details) throws SolverException, IOException {
+            if (!modelChecker.hasModel()) {
+                return null;
             }
-        }
+            switch (witnessType) {
+                case NONE:
+                    // Nothing to be done
+                    break;
+                case GRAPHML:
+                    assert modelChecker.getResult() != UNKNOWN;
+                    if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) & requiresSvcompWitness(task.getProperty())) {
+                        try (IREvaluator evaluator = modelChecker.getModel()) {
+                            WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
+                            if (w.canBeBuilt()) {
+                                w.build().write(filename);
+                            }
+                        } catch (InvalidConfigurationException e) {
+                            logger.warn(e.getMessage());
+                        }
+                    }
+                    break;
+                case DOT, PNG:
+                    final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
+                    final ExecutionModelNext model = modelChecker.getExecutionGraph();
+                    // RF edges give both ordering and data flow information, thus even when the pair is in PO
+                    // we get some data flow information by observing the edge
+                    // CO edges only give ordering information which is known if the pair is also in PO
+                    return generateGraphvizFile(model, 1, (x, y) -> true,
+                            (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                            getOrCreateOutputDirectory() + "/", filename,
+                            synContext, witnessType.convertToPng(), task.getConfig());
+            }
+            return null;
     }
 
     public static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, String path, long time) throws SolverException {

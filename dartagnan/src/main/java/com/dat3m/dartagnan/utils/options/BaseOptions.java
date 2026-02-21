@@ -85,6 +85,15 @@ public abstract class BaseOptions {
         return witnessFilename;
     }
 
+    @Option(name=WITNESS_UNKNOWN,
+            description="Generate witness graph even if result is UNKNOWN.",
+            secure=true)
+    private boolean generateWitnessForUnknown = false;
+
+    public boolean generateWitnessForUnknown() {
+        return generateWitnessForUnknown;
+    }
+
     @Option(
             name = CAT_INCLUDE,
             description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
