@@ -168,9 +168,8 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
-                // We only generate witnesses if we are not validating one and depending on the result.
-                if (!o.runValidator() &&
-                    (modelChecker.getResult() == FAIL || (modelChecker.getResult() == UNKNOWN && o.generateWitnessForUnknown()))) {
+                // We only generate witnesses if we are not validating one.
+                if (!o.runValidator()) {
                     final String progName = task.getProgram().getName();
                     final int fileSuffixIndex = progName.lastIndexOf('.');
                     final String filename = o.hasWitnessFilename() ?
@@ -178,7 +177,7 @@ public class Dartagnan extends BaseOptions {
                                         progName.isEmpty() ?
                                             "unnamed_program" :
                                             (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-                    generateWitnessIfAble(task, modelChecker, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details());
+                    generateWitnessIfAble(task, modelChecker, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -245,8 +244,9 @@ public class Dartagnan extends BaseOptions {
     }
 
     public static File generateWitnessIfAble(VerificationTask task, ModelChecker modelChecker,
-        WitnessType witnessType, String filename, String details) throws SolverException, IOException {
-            if (!modelChecker.hasModel()) {
+        WitnessType witnessType, String filename, String details, boolean generateWitnessForUnknown) throws SolverException, IOException {
+            if (!modelChecker.hasModel() ||
+                (modelChecker.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
                 return null;
             }
             switch (witnessType) {
