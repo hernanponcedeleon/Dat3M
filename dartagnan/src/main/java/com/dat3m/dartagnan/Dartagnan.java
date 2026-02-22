@@ -251,11 +251,10 @@ public class Dartagnan extends BaseOptions {
             }
             switch (witnessType) {
                 case NONE:
-                    // Nothing to be done
                     break;
                 case GRAPHML:
                     assert modelChecker.getResult() != UNKNOWN;
-                    if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) & requiresSvcompWitness(task.getProperty())) {
+                    if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && requiresSvcompWitness(task.getProperty())) {
                         try (IREvaluator evaluator = modelChecker.getModel()) {
                             WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
                             if (w.canBeBuilt()) {
