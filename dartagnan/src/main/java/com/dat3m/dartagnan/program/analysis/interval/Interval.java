@@ -61,10 +61,6 @@ public final class Interval {
         return upperbound;
     }
 
-    public IntegerType getType() {
-        return type;
-    }
-
     public static Set<ExpressionKind> getUnsupportedOperatorsFound() {
         return unsupportedOperators;
     }
@@ -78,7 +74,7 @@ public final class Interval {
     }
 
     public Interval join(Interval other) {
-        return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), this.getType());
+        return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), type);
     }
 
     public boolean isTop() {
@@ -105,6 +101,11 @@ public final class Interval {
         return opFunc.get();
     }
 
+    // ====================================================================================
+    // Private implementation
+
+    // Predicates
+
     private boolean crossesZero() {
         return lowerbound.compareTo(BigInteger.ZERO) <= 0 && upperbound.compareTo(BigInteger.ZERO) >= 0;
     }
@@ -120,6 +121,8 @@ public final class Interval {
     private boolean crossesSignBoundary() {
         return (lowerbound.signum() >= 0 && lowerbound.compareTo(type.getMaximumValue(true)) <= 0) && upperbound.compareTo(type.getMaximumValue(true)) > 0;
     }
+
+    // Operators
 
     private UnaryOperator<Interval> selectBinaryOperatorMethod(IntBinaryOp op) {
         return switch (op) {
@@ -154,11 +157,11 @@ public final class Interval {
     }
 
     private Interval subtract(Interval other) {
-        return new Interval(this.lowerbound.subtract(other.upperbound), this.upperbound.subtract(other.lowerbound), this.getType());
+        return new Interval(this.lowerbound.subtract(other.upperbound), this.upperbound.subtract(other.lowerbound), type);
     }
 
     private Interval add(Interval other) {
-        return new Interval(this.lowerbound.add(other.lowerbound), this.upperbound.add(other.upperbound), this.getType());
+        return new Interval(this.lowerbound.add(other.lowerbound), this.upperbound.add(other.upperbound), type);
     }
 
     private Interval multiply(Interval other) {
@@ -190,6 +193,95 @@ public final class Interval {
         Interval unsignedInterval = this.convertToUnsignedInterval();
         Interval unsignedIntervalOther = other.convertToUnsignedInterval();
         return divide(unsignedInterval, unsignedIntervalOther);
+    }
+
+    private Interval or(Interval other) {
+        return doOR(this.lowerbound,
+                other.lowerbound,
+                this.upperbound,
+                other.upperbound);
+    }
+
+    private Interval and(Interval other) {
+        Interval orInterval = this.not().or(other.not());
+        return new Interval(orInterval.upperbound.not(),
+                orInterval.lowerbound.not(),
+                type);
+    }
+
+    private Interval min(Interval other) {
+        return new Interval(lowerbound.min(other.lowerbound), upperbound.min(other.upperbound), type);
+    }
+
+    private Interval max(Interval other) {
+        return new Interval(lowerbound.max(other.lowerbound), upperbound.max(other.upperbound), type);
+    }
+
+    private Interval smin(Interval other) {
+        return doMinMax(other, true, true);
+    }
+
+    private Interval smax(Interval other) {
+       return doMinMax(other, false, true);
+    }
+
+    private Interval umin(Interval other) {
+       return doMinMax(other, true, false);
+    }
+
+    private Interval umax(Interval other) {
+        return doMinMax(other, false, false);
+    }
+
+    private Interval negate() {
+        return new Interval(upperbound.negate(), lowerbound.negate(), type);
+    }
+
+    private Interval ctlz() {
+        if (crossesZero()) {
+            return getBitwidthInterval();
+        }
+        return new Interval(IntegerHelper.ctlz(upperbound, type.getBitWidth()), IntegerHelper.ctlz(lowerbound, type.getBitWidth()), type);
+    }
+
+    private Interval not() {
+        return new Interval(upperbound.not(), lowerbound.not(), type);
+    }
+
+    private Interval lshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+        return new Interval(
+                IntegerHelper.lshift(lowerbound, shiftBy, type.getBitWidth()),
+                IntegerHelper.lshift(upperbound, shiftBy, type.getBitWidth()),
+                type);
+    }
+
+    private Interval rshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+
+        if (crossesZero()) {
+            return Interval.getTop(type);
+        }
+        return new Interval(
+                IntegerHelper.rshift(lowerbound, shiftBy, type.getBitWidth()),
+                IntegerHelper.rshift(upperbound, shiftBy, type.getBitWidth()),
+                type
+        );
+    }
+
+    private Interval arshift(Interval shiftInterval) {
+        BigInteger shiftBy = shiftInterval.lowerbound;
+        return new Interval(
+                IntegerHelper.arshift(lowerbound, shiftBy, type.getBitWidth()),
+                IntegerHelper.arshift(upperbound, shiftBy, type.getBitWidth()),
+                type
+        );
+    }
+
+    // Helpers
+
+    private Interval getBitwidthInterval() {
+        return new Interval(BigInteger.ZERO, BigInteger.valueOf(type.getBitWidth()), type);
     }
 
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
@@ -300,104 +392,6 @@ public final class Interval {
         };
     }
 
-    private Interval or(Interval other) {
-        return doOR(this.lowerbound,
-                other.lowerbound,
-                this.upperbound,
-                other.upperbound);
-    }
-
-    private Interval and(Interval other) {
-        Interval orInterval = this.not().or(other.not());
-        return new Interval(orInterval.upperbound.not(),
-                orInterval.lowerbound.not(),
-                type);
-    }
-
-    private Interval min(Interval other) {
-        return new Interval(lowerbound.min(other.lowerbound), upperbound.min(other.upperbound), type);
-    }
-
-    private Interval max(Interval other) {
-        return new Interval(lowerbound.max(other.lowerbound), upperbound.max(other.upperbound), type);
-    }
-
-    private Interval doMinMax(Interval other, boolean isMin, boolean signed) {
-        if (!(isSignInsensitive() && other.isSignInsensitive())) {
-            return Interval.getTop(type);
-        }
-
-        Interval convertedInterval = signed ? convertToSignedInterval() : convertToUnsignedInterval();
-        Interval convertedIntervalOther =  signed ? other.convertToSignedInterval() : other.convertToUnsignedInterval();
-
-        return isMin ? convertedInterval.min(convertedIntervalOther) : convertedInterval.max(convertedIntervalOther);
-    }
-
-    private Interval smin(Interval other) {
-        return doMinMax(other, true, true);
-    }
-
-    private Interval smax(Interval other) {
-       return doMinMax(other, false, true);
-    }
-
-    private Interval umin(Interval other) {
-       return doMinMax(other, true, false);
-    }
-
-    private Interval umax(Interval other) {
-        return doMinMax(other, false, false);
-    }
-
-    private Interval negate() {
-        return new Interval(upperbound.negate(), lowerbound.negate(), type);
-    }
-
-    private Interval ctlz() {
-        if (crossesZero()) {
-            return getBitwidthInterval();
-        }
-        return new Interval(IntegerHelper.ctlz(upperbound, type.getBitWidth()), IntegerHelper.ctlz(lowerbound, type.getBitWidth()), type);
-    }
-
-    private Interval getBitwidthInterval() {
-        return new Interval(BigInteger.ZERO, BigInteger.valueOf(type.getBitWidth()), type);
-    }
-
-    private Interval not() {
-        return new Interval(upperbound.not(), lowerbound.not(), type);
-    }
-
-    private Interval lshift(Interval shiftInterval) {
-        BigInteger shiftBy = shiftInterval.lowerbound;
-        return new Interval(
-                IntegerHelper.lshift(lowerbound, shiftBy, type.getBitWidth()),
-                IntegerHelper.lshift(upperbound, shiftBy, type.getBitWidth()),
-                type);
-    }
-
-    private Interval rshift(Interval shiftInterval) {
-        BigInteger shiftBy = shiftInterval.lowerbound;
-
-        if (crossesZero()) {
-            return Interval.getTop(type);
-        }
-        return new Interval(
-                IntegerHelper.rshift(lowerbound, shiftBy, type.getBitWidth()),
-                IntegerHelper.rshift(upperbound, shiftBy, type.getBitWidth()),
-                type
-        );
-    }
-
-    private Interval arshift(Interval shiftInterval) {
-        BigInteger shiftBy = shiftInterval.lowerbound;
-        return new Interval(
-                IntegerHelper.arshift(lowerbound, shiftBy, type.getBitWidth()),
-                IntegerHelper.arshift(upperbound, shiftBy, type.getBitWidth()),
-                type
-        );
-    }
-
     private Interval convertToSignedInterval() {
         int width = this.type.getBitWidth();
         return new Interval(
@@ -412,6 +406,17 @@ public final class Interval {
                 IntegerHelper.normalizeUnsigned(this.lowerbound, width),
                 IntegerHelper.normalizeUnsigned(this.upperbound, width),
                 type);
+    }
+
+    private Interval doMinMax(Interval other, boolean isMin, boolean signed) {
+        if (!(isSignInsensitive() && other.isSignInsensitive())) {
+            return Interval.getTop(type);
+        }
+
+        Interval convertedInterval = signed ? convertToSignedInterval() : convertToUnsignedInterval();
+        Interval convertedIntervalOther =  signed ? other.convertToSignedInterval() : other.convertToUnsignedInterval();
+
+        return isMin ? convertedInterval.min(convertedIntervalOther) : convertedInterval.max(convertedIntervalOther);
     }
 
     @Override
