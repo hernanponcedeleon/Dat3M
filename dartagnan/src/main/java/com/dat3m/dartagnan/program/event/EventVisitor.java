@@ -15,8 +15,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
-import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 
 public interface EventVisitor<T> {
 
@@ -95,6 +94,8 @@ public interface EventVisitor<T> {
     // ------------------ SVCOMP Events ------------------
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
+    default T visitLoopBound(LoopBound e) { return visitCodeAnnotation(e); }
+    default T visitNonDetChoice(NonDetChoice e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }

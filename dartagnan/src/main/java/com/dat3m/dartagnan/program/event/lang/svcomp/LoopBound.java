@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
@@ -58,5 +59,10 @@ public class LoopBound extends CodeAnnotation implements RegReader {
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         this.bound = bound.accept(exprTransformer);
+    }
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLoopBound(this);
     }
 }
