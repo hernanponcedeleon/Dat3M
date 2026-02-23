@@ -162,62 +162,54 @@ public final class Interval {
     }
 
     private Interval multiply(Interval other) {
-        BigInteger lb1 = this.lowerbound;
-        BigInteger ub1 = this.upperbound;
-        BigInteger lb2 = other.lowerbound;
-        BigInteger ub2 = other.upperbound;
-        BigInteger mul1 =  lb1.multiply(lb2);
-        BigInteger mul2 =  lb1.multiply(ub2);
-        BigInteger mul3 =  ub1.multiply(lb2);
-        BigInteger mul4 =  ub1.multiply(ub2);
+        BigInteger ll =  lowerbound.multiply(other.lowerbound);
+        BigInteger lu =  lowerbound.multiply(other.upperbound);
+        BigInteger ul =  upperbound.multiply(other.lowerbound);
+        BigInteger uu =  upperbound.multiply(other.upperbound);
 
-        return new Interval(mul1.min(mul2).min(mul3).min(mul4), mul1.max(mul2).max(mul3).max(mul4), type);
+        return new Interval(ll.min(lu).min(ul).min(uu), ll.max(lu).max(ul).max(uu), type);
     }
 
     private Interval sdivide(Interval other) {
         if (!(isSignInsensitive() && other.isSignInsensitive())) {
             return Interval.getTop(type);
         }
-        Interval signedInterval1 = this.convertToSignedInterval();
-        Interval signedInterval2 = other.convertToSignedInterval();
+        Interval signedInterval = this.convertToSignedInterval();
+        Interval signedIntervalOther = other.convertToSignedInterval();
 
-        if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0) {
+        if (signedInterval.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedIntervalOther.upperbound.compareTo(BigInteger.ONE.negate()) == 0) {
             return Interval.getTop(type);
         }
-        return divide(signedInterval1, signedInterval2);
+        return divide(signedInterval, signedIntervalOther);
     }
 
     private Interval udivide(Interval other) {
         if (!(isSignInsensitive() && other.isSignInsensitive())) {
             return Interval.getTop(type);
         }
-        Interval unsignedInterval1 = this.convertToUnsignedInterval();
-        Interval unsignedInterval2 = other.convertToUnsignedInterval();
-        return divide(unsignedInterval1, unsignedInterval2);
+        Interval unsignedInterval = this.convertToUnsignedInterval();
+        Interval unsignedIntervalOther = other.convertToUnsignedInterval();
+        return divide(unsignedInterval, unsignedIntervalOther);
     }
 
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
         if (denominatorInterval.crossesZero()) {
             return Interval.getTop(type);
         }
-        BigInteger numLb = numeratorInterval.lowerbound;
-        BigInteger numUb = numeratorInterval.upperbound;
-        BigInteger denomLb = denominatorInterval.lowerbound;
-        BigInteger denomUb = denominatorInterval.upperbound;
-        BigInteger div1 = numLb.divide(denomLb);
-        BigInteger div2 = numLb.divide(denomUb);
-        BigInteger div3 = numUb.divide(denomLb);
-        BigInteger div4 = numUb.divide(denomUb);
+        BigInteger llDiv = numeratorInterval.lowerbound.divide(denominatorInterval.lowerbound);
+        BigInteger luDiv = numeratorInterval.lowerbound.divide(denominatorInterval.upperbound);
+        BigInteger ulDiv = numeratorInterval.upperbound.divide(denominatorInterval.lowerbound);
+        BigInteger uuDiv = numeratorInterval.upperbound.divide(denominatorInterval.upperbound);
 
-        return new Interval(div1.min(div2).min(div3).min(div4),
-                div1.max(div2).max(div3).max(div4),
+        return new Interval(llDiv.min(luDiv).min(ulDiv).min(uuDiv),
+                llDiv.max(luDiv).max(ulDiv).max(uuDiv),
                 type);
     }
 
-    private BigInteger getBiggerBitLength(BigInteger x, BigInteger y) {
+    private int getBiggerBitLength(BigInteger x, BigInteger y) {
         int lengthX = (x.signum() > 0) ? x.bitLength() : x.bitLength() + 1;
         int lengthY = (y.signum() > 0) ? y.bitLength() : y.bitLength() + 1;
-        return (lengthX >= lengthY) ? x : y;
+        return Math.max(lengthX, lengthY);
     }
 
     // Algorithms and relations based on:
@@ -225,8 +217,7 @@ public final class Interval {
     // Author Henry S. Warren, Jr.
     // Chapter 4-3
     private BigInteger minOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
-        BigInteger largestBitLength = getBiggerBitLength(lb1, lb2);
-        BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
+        BigInteger m = BigInteger.TWO.pow((getBiggerBitLength(lb1, lb2)));
         BigInteger temp;
 
         while (!m.equals(BigInteger.ZERO)) {
@@ -249,8 +240,7 @@ public final class Interval {
     }
 
     private BigInteger maxOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
-        BigInteger largestBitLength = getBiggerBitLength(ub1, ub2);
-        BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
+        BigInteger m = BigInteger.TWO.pow(getBiggerBitLength(ub1, ub2));
         BigInteger temp;
 
         while (!m.equals(BigInteger.ZERO)) {
