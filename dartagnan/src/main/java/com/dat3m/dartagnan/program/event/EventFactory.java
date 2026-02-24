@@ -267,18 +267,6 @@ public class EventFactory {
         return new Assert(expr, errorMessage);
     }
 
-    public static LoopBegin newLoopBegin() {
-        return new LoopBegin();
-    }
-
-    public static SpinStart newSpinStart() {
-        return new SpinStart();
-    }
-
-    public static SpinEnd newSpinEnd() {
-        return new SpinEnd();
-    }
-
     public static LoopBound newLoopBound(Expression bound) {
         return new LoopBound(bound);
     }
