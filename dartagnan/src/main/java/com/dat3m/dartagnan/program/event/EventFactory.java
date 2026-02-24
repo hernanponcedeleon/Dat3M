@@ -218,6 +218,14 @@ public class EventFactory {
         return new Local(register, expr);
     }
 
+    public static NonDetChoice newNonDetChoice(Register register) {
+        return new NonDetChoice(register, false);
+    }
+
+    public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
+        return new NonDetChoice(register, isSigned);
+    }
+
     public static Label newLabel(String name) {
         return new Label(name);
     }
@@ -257,6 +265,22 @@ public class EventFactory {
 
     public static Assert newAssert(Expression expr, String errorMessage) {
         return new Assert(expr, errorMessage);
+    }
+
+    public static LoopBegin newLoopBegin() {
+        return new LoopBegin();
+    }
+
+    public static SpinStart newSpinStart() {
+        return new SpinStart();
+    }
+
+    public static SpinEnd newSpinEnd() {
+        return new SpinEnd();
+    }
+
+    public static LoopBound newLoopBound(Expression bound) {
+        return new LoopBound(bound);
     }
 
     // ------------------------------------------ RMW events ------------------------------------------
@@ -505,30 +529,6 @@ public class EventFactory {
 
         public static EndAtomic newEndAtomic(BeginAtomic begin) {
             return new EndAtomic(begin);
-        }
-
-        public static LoopBegin newLoopBegin() {
-            return new LoopBegin();
-        }
-
-        public static SpinStart newSpinStart() {
-            return new SpinStart();
-        }
-
-        public static SpinEnd newSpinEnd() {
-            return new SpinEnd();
-        }
-
-        public static LoopBound newLoopBound(Expression bound) {
-            return new LoopBound(bound);
-        }
-
-        public static NonDetChoice newNonDetChoice(Register register) {
-            return new NonDetChoice(register, false);
-        }
-
-        public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
-            return new NonDetChoice(register, isSigned);
         }
     }
 

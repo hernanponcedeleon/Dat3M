@@ -35,7 +35,7 @@ public class VisitorLKMM extends VisitorBase {
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                EventFactory.newNonDetChoice(havocRegister),
                 newJump(havocRegister, success),
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
@@ -64,7 +64,7 @@ public class VisitorLKMM extends VisitorBase {
         loadFail.addTags(Tag.RMW);
         Load loadSuccess;
         return eventSequence(
-                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                EventFactory.newNonDetChoice(havocRegister),
                 newJump(havocRegister, success),
                 // Cas failure branch
                 loadFail,

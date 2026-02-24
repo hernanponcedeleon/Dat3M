@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.core;
+package com.dat3m.dartagnan.program.event.lang.dat3m;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;

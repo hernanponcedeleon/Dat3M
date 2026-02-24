@@ -401,7 +401,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 } catch (UnsupportedOperationException e) {
                     logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
                     if(resultRegister != null){
-                        Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
+                        Event nonDeterministicValue = EventFactory.newNonDetChoice(resultRegister);
                         events = Optional.of(List.of(nonDeterministicValue));
                     }
                     unsupportedEncountered = true;
@@ -411,7 +411,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if(!unsupportedEncountered && events.isEmpty()){
                 String msg = "Ignoring call.";
                 if(resultRegister != null){
-                    block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                    block.events.add(EventFactory.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
                 logger.warn("None of the parsers succeeded for inline assembly." + msg);
