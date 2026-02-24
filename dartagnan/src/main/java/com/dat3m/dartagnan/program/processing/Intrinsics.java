@@ -180,9 +180,9 @@ public class Intrinsics {
         VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", false, false, true, true, Intrinsics::inlineAtomicBegin),
         VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", false, false, true, true, Intrinsics::inlineAtomicEnd),
         // --------------------------- __VERIFIER ---------------------------
-        VERIFIER_LOOP_BEGIN("__VERIFIER_loop_begin", false, false, true, true, Intrinsics::inlineNoOp),
-        VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineNoOp),
-        VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineNoOp),
+        VERIFIER_LOOP_BEGIN("__VERIFIER_loop_begin", false, false, true, true, Intrinsics::inlineAsZero),
+        VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineAsZero),
+        VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineAsZero),
         VERIFIER_LOOP_BOUND("__VERIFIER_loop_bound", false, false, true, true, Intrinsics::inlineLoopBound),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
         VERIFIER_ASSERT("__VERIFIER_assert", false, false, true, true, Intrinsics::inlineUserAssert),
@@ -383,10 +383,6 @@ public class Intrinsics {
     private List<Event> inlineLoopBound(FunctionCall call) {
         final Expression boundExpression = call.getArguments().get(0);
         return List.of(EventFactory.newLoopBound(boundExpression));
-    }
-
-    private List<Event> inlineNoOp(FunctionCall ignored) {
-        return List.of();
     }
 
     private List<Event> inlineAssume(FunctionCall call) {
