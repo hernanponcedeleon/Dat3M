@@ -94,7 +94,6 @@ public interface EventVisitor<T> {
     // ------------------ SVCOMP Events ------------------
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
-    default T visitLoopBound(LoopBound e) { return visitCodeAnnotation(e); }
     default T visitNonDetChoice(NonDetChoice e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
