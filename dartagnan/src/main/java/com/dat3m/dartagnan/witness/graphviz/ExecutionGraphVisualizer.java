@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
@@ -127,14 +128,14 @@ public class ExecutionGraphVisualizer {
 
     private void addEvents(ExecutionModelNext model) {
         for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) {
-                // This skips init threads.
-                return;
+
+            if (IRHelper.isInitThread(tm.getThread())) {
+                continue;
             }
 
             graphviz.beginSubgraph("T" + tm.getId());
 
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             for (List<EventModel> instruction : instructions) {
                 for (EventModel event : instruction) {
                     appendNode(event, nodeLabel(event));
