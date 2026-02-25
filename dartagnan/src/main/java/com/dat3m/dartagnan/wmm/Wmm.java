@@ -157,7 +157,8 @@ public class Wmm {
         return def instanceof DirectAddressDependency       // __addrDirect
                 || def instanceof DirectControlDependency   // __ctrlDirect
                 || def instanceof DirectDataDependency      // __idd
-                || rel.getDependencies().stream().allMatch(this::isInternal);
+                || (!rel.getDependencies().isEmpty()
+                && rel.getDependencies().stream().allMatch(this::isInternal));
     }
 
     // ========================================== Utility Methods ========================================
