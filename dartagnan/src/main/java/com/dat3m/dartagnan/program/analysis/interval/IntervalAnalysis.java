@@ -115,9 +115,9 @@ public interface IntervalAnalysis {
     // Only executed if logger.isInfoEnabled = true
     // Rounds half up for decimal values.
     private void computeAnalysisMetrics(Program program) {
-        double totalRegWrites = 0;
-        double totalIntervalsReduced = 0;
-        double totalIntervalsTop = 0;
+        int totalRegWrites = 0;
+        int totalIntervalsReduced = 0;
+        int totalIntervalsTop = 0;
         BigDecimal totalReducedIntervalSize = BigDecimal.ZERO;
 
         for (Event e : program.getThreadEvents()) {
@@ -157,9 +157,9 @@ public interface IntervalAnalysis {
 
         logger.info("""
             \n======== IntervalAnalysis Summary ========
-            \t#Register writes: {}
-            \t#Register bounded {}
-            \t#Registers top {}
+            \t#Register Writes: {}
+            \t#Register-Reads bounded: {}
+            \t#Register-Reads top: {}
             \t%Bounded: {}
             \t%Top: {}
             \tAverage reduced interval size: {}
