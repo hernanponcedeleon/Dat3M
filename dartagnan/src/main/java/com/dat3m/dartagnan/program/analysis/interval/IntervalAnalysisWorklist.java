@@ -1,10 +1,13 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.google.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,24 +51,19 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     protected IntervalAnalysisWorklist() { }
 
     @Override
-    public Interval getIntervalAt(Event event, Register r) throws RuntimeException {
-        if (r.getType() instanceof IntegerType itype) {
-            if (eventStates.containsKey(event)) {
-                Map<Register, Interval> registerStates = eventStates.get(event);
-                if (registerStates.containsKey(r)) {
-                    return registerStates.get(r);
-                } else {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("No interval found at event {} for register {}. Defaulting to top interval", event.toString(), r.getName());
-                    }
-                    return Interval.getTop(itype);
-                }
-            } else {
-                throw new EventNotFoundException(event);
+    public Interval getIntervalAt(Event event, Register r) {
+        Type type = r.getType();
+        Preconditions.checkArgument(type instanceof IntegerType, "Intervals not supported for type " + type);
+        Preconditions.checkArgument(eventStates.containsKey(event), String.format("Event %s is not found", event));
+        Map<Register, Interval> registerStates = eventStates.get(event);
+
+        if (!registerStates.containsKey(r)) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("No interval found at event {} for register {}. Defaulting to top interval", event.toString(), r.getName());
             }
-        } else {
-            throw new InvalidRegisterTypeException(r.getType());
+            return Interval.getTop((IntegerType) type);
         }
+        return registerStates.get(r);
     }
 
     // Factory method
