@@ -43,7 +43,8 @@ public class ExecutionGraphVisualizer {
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     private final Map<String, BiPredicate<EventModel, EventModel>> filter = new HashMap<>();
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private List<String> relsToShow;
+    private final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
+    private Set<String> relsToShow;
 
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
@@ -77,7 +78,7 @@ public class ExecutionGraphVisualizer {
 
     private void setRelationsToShow(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
+        relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
@@ -188,7 +189,9 @@ public class ExecutionGraphVisualizer {
         for (String name : relsToShow) {
             RelationModel rm = getRelationModel(model, name);
             if (rm == null) {
-                logger.warn("Relation with the name {} does not exist", name);
+                if (!OPTIONAL_RELATIONS.contains(name)) {
+                    logger.warn("Relation with the name {} does not exist", name);
+                }
                 continue;
             }
             // For PO and CO we do not show the transitive edges in witness.
