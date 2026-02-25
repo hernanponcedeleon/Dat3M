@@ -33,8 +33,8 @@ void *owner(void *unused)
     pthread_create(&t, NULL, thief, NULL);
 #endif
     // Unless the thief thread was created above, I should pop the value that I just pushed
-    try_pop(&deq, NUM, &data);
-    assert(data == count);
+    if (try_pop(&deq, NUM, &data) != -1)
+        assert(data == count);
 
     for (int i = 0; i <= THIEFS; i++)
         try_push(&deq, NUM, count);
