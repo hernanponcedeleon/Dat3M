@@ -500,7 +500,7 @@
                                     We can enable this option in the manifest file so the user does not
                                     need to specify it.
                                 -->
-                                <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                                <argLine>@{argLine} --enable-native-access=ALL-UNNAMED</argLine>
                             </configuration>
                         </plugin>
                     </plugins>
