@@ -43,7 +43,7 @@ public class ExecutionGraphVisualizer {
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     private final Map<String, BiPredicate<EventModel, EventModel>> filter = new HashMap<>();
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
+    private static final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
     private Set<String> relsToShow;
 
     @Option(name=WITNESS_SHOW,
