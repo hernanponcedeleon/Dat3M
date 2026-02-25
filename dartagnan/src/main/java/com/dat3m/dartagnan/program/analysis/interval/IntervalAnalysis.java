@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
-import com.dat3m.dartagnan.configuration.IntervalAnalysisOptions;
+import com.dat3m.dartagnan.configuration.IntervalAnalysisMethod;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -104,7 +104,7 @@ public interface IntervalAnalysis {
             description = "General type of analysis that approximates bounds on integer registers"
         )
 
-        IntervalAnalysisOptions method = IntervalAnalysisOptions.getDefault();
+        IntervalAnalysisMethod method = IntervalAnalysisMethod.getDefault();
 
         Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);

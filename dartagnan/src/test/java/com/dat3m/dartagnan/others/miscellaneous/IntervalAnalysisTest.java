@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.IntervalAnalysisOptions;
+import com.dat3m.dartagnan.configuration.IntervalAnalysisMethod;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 public class IntervalAnalysisTest {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private IntervalAnalysis runIntervalAnalysis(Program p, IntervalAnalysisOptions method) throws InvalidConfigurationException, IOException {
+    private IntervalAnalysis runIntervalAnalysis(Program p, IntervalAnalysisMethod method) throws InvalidConfigurationException, IOException {
         final String modelPath = "cat/sc.cat";
         Configuration config = Configuration.builder()
                 .setOption(INTERVAL_ANALYSIS_METHOD, method.asStringOption())
@@ -79,7 +79,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval i0 = new Interval(BigInteger.ZERO, BigInteger.ZERO, type);
         Interval i1 = new Interval(new BigInteger("42"), new BigInteger("42"), type);
         Interval i2 = new Interval(new BigInteger("7"), new BigInteger("7"), type);
@@ -123,7 +123,7 @@ public class IntervalAnalysisTest {
 
         Program p = b.build();
 
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval i0 = new Interval(BigInteger.ZERO, new BigInteger("42"), type);
         assertEquals(i0, analysis.getIntervalAt(join, r0));
     }
@@ -163,7 +163,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval i0 = new Interval(BigInteger.ZERO, new BigInteger("42"), type);
         assertEquals(i0, analysis.getIntervalAt(join, r0));
 
@@ -189,7 +189,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval expected = new Interval(BigInteger.ZERO, BigInteger.ZERO, type);
         assertEquals(analysis.getIntervalAt(loc2, r0), expected);
         assertEquals(analysis.getIntervalAt(loc3, r1), expected);
@@ -214,7 +214,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval r0Expected = new Interval(BigInteger.ONE, BigInteger.ONE, type);
         Interval r1Expected = new Interval(new BigInteger("2"), new BigInteger("2"), type);
         assertEquals(analysis.getIntervalAt(loc3, r0), r0Expected);
@@ -240,7 +240,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval r0Expected = new Interval(BigInteger.ONE, BigInteger.ONE, type);
         Interval r1Expected = Interval.getTop(type);
         assertEquals(analysis.getIntervalAt(loc3, r0), r0Expected);
@@ -268,7 +268,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval truncExpected = new Interval(new BigInteger("200"), new BigInteger("200"), byteType);
         Interval extExpected = new Interval(new BigInteger("200"), new BigInteger("200"), intType);
         assertEquals(analysis.getIntervalAt(loc3, r1), truncExpected);
@@ -292,7 +292,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, loc2);
         b.addChild(0, exit);
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval expected = Interval.getTop(byteType);
         assertEquals(expected, analysis.getIntervalAt(exit, r1));
 
@@ -314,7 +314,7 @@ public class IntervalAnalysisTest {
         b.addChild(0, exit);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.LOCAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
 
         Interval expected = new Interval(BigInteger.ZERO, BigInteger.ONE, type);
         assertEquals(expected, analysis.getIntervalAt(exit, r0));
@@ -379,7 +379,7 @@ public class IntervalAnalysisTest {
         b.addChild(2, exit2);
 
         Program p = b.build();
-        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisOptions.GLOBAL);
+        IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.GLOBAL);
         assertEquals(new Interval(BigInteger.ZERO, new BigInteger("3"), type), analysis.getIntervalAt(exit0, r0));
         assertEquals(new Interval(BigInteger.ZERO, new BigInteger("3"), type), analysis.getIntervalAt(exit0, r4));
         assertEquals(new Interval(BigInteger.ZERO, new BigInteger("3"), type), analysis.getIntervalAt(exit1, r1));
