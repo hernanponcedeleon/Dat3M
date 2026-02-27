@@ -37,8 +37,6 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
@@ -99,7 +97,6 @@ public final class EncodingContext {
         fmgr = new FormulaManagerExt(m);
         bmgr = fmgr.getBooleanFormulaManager();
         exprEncoder = new ExpressionEncoder(this);
-
 
         // All anarchic relations have to be encoded.
         final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()

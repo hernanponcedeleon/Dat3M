@@ -109,6 +109,7 @@ public class ActiveSetAnalysis {
 
     private void logConfig() {
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
+        logger.info("{}: {}", REDUCE_ACYCLICITY_RELEVANT_SETS, reduceAcyclicityRelevantSets);
     }
 
     private void logStatistics(long startTime) {
@@ -211,7 +212,6 @@ public class ActiveSetAnalysis {
                     }
                 }
             }
-
 
             if (reduceAcyclicityRelevantSets) {
                 final int originalSize = result.size();
