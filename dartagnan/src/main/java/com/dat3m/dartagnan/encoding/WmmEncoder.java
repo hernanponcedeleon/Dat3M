@@ -39,10 +39,10 @@ import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
-import static com.dat3m.dartagnan.configuration.OptionNames.MULTI_READS;
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
@@ -169,10 +169,10 @@ public class WmmEncoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    final BooleanFormula sameValue = exprEncoder.equal(
+                    final BooleanFormula sameValue = exprEncoder.assignEqual(
                             new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
                             context.value(w1),
-                            RIGHT_TO_LEFT
+                            MEMORY_ROUND_TRIP_RELAXED
                     );
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
@@ -194,11 +194,11 @@ public class WmmEncoder {
                     }
                     BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    BooleanFormula sameValue = exprEncoder.assignEqual(finalValue, context.value(w), MEMORY_ROUND_TRIP_RELAXED);
                     readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                BooleanFormula readInitValue = exprEncoder.assignEqual(finalValue, context.value(init), MEMORY_ROUND_TRIP_RELAXED);
                 enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
             }
         }
