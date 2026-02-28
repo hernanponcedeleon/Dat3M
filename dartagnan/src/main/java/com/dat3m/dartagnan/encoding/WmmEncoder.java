@@ -104,12 +104,23 @@ public class WmmEncoder {
         final Collection<Constraint> toEncode = context.constraintsToEncode;
         final Collection<? extends Constraint> total = memoryModel.getConstraints();
         logger.info("Encoding {} of {} constraints.", toEncode.size(), total.size());
+
         final var encoder = new ConstraintEncoder();
         for (Constraint c : toEncode) {
             logger.trace("Encoding {} '{}'", c instanceof Definition ? "definition" : "axiom", c);
             c.accept(encoder);
         }
         encodeContradictions(encoder.enc);
+
+        // FIXME: This is slightly off for base relations like rf and co
+        //  where we ignore the active set during encoding (we encode slightly more than
+        //  what is active)
+        final int totalEncodedEdgeDefs = toEncode.stream()
+                .filter(Definition.class::isInstance)
+                .map(Definition.class::cast)
+                .mapToInt(def -> getActiveSet(def).size()).sum();
+        logger.info("#Encoded edges: {}", totalEncodedEdgeDefs);
+
         return encoder.bmgr.and(encoder.enc);
     }
 

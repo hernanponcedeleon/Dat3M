@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,16 +119,14 @@ public class ActiveSetAnalysis {
         }
 
         logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
-        logger.info("Number of unknown edges: {}", memoryModel.getRelations().stream()
-                .filter(r -> !memoryModel.isInternal(r))
+        logger.info("#Unknown edges: {}", memoryModel.getRelations().stream()
                 .map(ra::getKnowledge)
                 .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
                 .sum());
-        logger.info("Number of active edge definitions: {}", definition2ActiveSets.entrySet().stream()
-                .filter(e -> !memoryModel.isInternal(e.getKey().getDefinedRelation()))
-                .mapToLong(e -> e.getValue().size())
+        logger.info("#Active edge definitions: {}", definition2ActiveSets.values().stream()
+                .mapToLong(EventGraph::size)
                 .sum());
-        logger.info("Number of relevant edges for acyclicity: {}",
+        logger.info("#Relevant edges for acyclicity: {}",
                 memoryModel.getAxioms().stream()
                         .filter(Acyclicity.class::isInstance)
                         .mapToInt(a -> axiom2RelevantSets.get(a).size())
@@ -161,12 +160,13 @@ public class ActiveSetAnalysis {
         logger.trace("End");
     }
 
-    private EventGraph filterUnknowns(EventGraph graph, Relation relation) {
+    @SuppressWarnings("unchecked")
+    private <T extends EventGraph> T filterUnknowns(T graph, Relation relation) {
         RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
         // TODO: This returns a new graph, is this intended?
-        return graph.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
+        return (T) graph.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
     }
 
     // ================================================================================================
@@ -284,16 +284,57 @@ public class ActiveSetAnalysis {
         final LazyActiveSets visitor = new LazyActiveSets(mutableSets);
         axioms.forEach(a -> {
             Relation r = a.getRelation();
-            EventGraph eg = axiom2RelevantSets.get(a);
-            MutableEventGraph copy = new MapEventGraph(eg.getOutMap());
-            copy = (MutableEventGraph) filterUnknowns(copy, r);
-            visitor.add(r, copy);
+            MutableEventGraph relevantSet = new MapEventGraph(axiom2RelevantSets.get(a).getOutMap());
+            relevantSet = filterUnknowns(relevantSet, r);
+            visitor.add(r, relevantSet);
         });
 
+        final MutableEventGraph empty = new MapEventGraph();
         this.definition2ActiveSets = relations.stream()
-                .collect(Collectors.toMap(Relation::getDefinition, r -> mutableSets.containsKey(r)
-                ? mutableSets.get(r) : EventGraph.empty()));
+                .collect(Collectors.toMap(Relation::getDefinition,
+                        r -> mutableSets.getOrDefault(r, empty))
+                );
     }
+
+    private void runNative(NativeRelationAnalysis nra) {
+        final Set<Relation> relations = memoryModel.getRelations();
+        final List<Axiom> axioms = memoryModel.getAxioms();
+
+        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
+        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
+
+        final Map<Relation, List<EventGraph>> queue = new HashMap<>();
+        axioms.forEach(a -> {
+            final EventGraph relevant = filterUnknowns(getRelevantSet(a), a.getRelation());
+            queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(relevant);
+        });
+        nra.populateQueue(queue, relations);
+
+        final NativeActiveSets visitor = new NativeActiveSets();
+        while (!queue.isEmpty()) {
+            final Relation r = queue.keySet().iterator().next();
+            logger.trace("Update active set of '{}'", r);
+            MutableEventGraph active = activeSets.get(r.getDefinition());
+            MutableEventGraph update = new MapEventGraph();
+            queue.remove(r).forEach(news -> news.filter(active::add).apply(update::add));
+            if (!update.isEmpty()) {
+                visitor.news = update;
+                r.getDefinition().accept(visitor).forEach((rel, value) ->
+                        queue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
+                );
+            }
+        }
+
+        this.definition2ActiveSets = relations.stream()
+                .collect(ImmutableMap.toImmutableMap(Relation::getDefinition,
+                        r -> activeSets.get(r.getDefinition())));
+    }
+
+
+
+    // ===============================================================================================
+    // ================================== For standard RA ============================================
+    // ===============================================================================================
 
     private final class LazyActiveSets implements Constraint.Visitor<Boolean> {
 
@@ -518,7 +559,7 @@ public class ActiveSetAnalysis {
                     update.removeAll(operandUpdate);
                     update.removeAll(must);
                 }
-                getRelevantSet(definition.getDefinedRelation()).addAll(operandUpdate);
+                getActiveSet(definition.getDefinedRelation()).addAll(operandUpdate);
                 operandUpdate.retainAll(ra.getKnowledge(definition.getOperand()).getMaySet());
                 setUpdate(operandUpdate);
                 operandTime(definition, start, System.currentTimeMillis());
@@ -631,18 +672,15 @@ public class ActiveSetAnalysis {
         private boolean doUpdateSelf(Definition definition) {
             long start = System.currentTimeMillis();
             Relation relation = definition.getDefinedRelation();
-            MutableEventGraph relevant = getRelevantSet(relation);
+            MutableEventGraph active = getActiveSet(relation);
             update.removeAll(ra.getKnowledge(relation).getMustSet());
-            update.removeAll(relevant);
-            boolean result = relevant.addAll(update);
+            update.removeAll(active);
+            boolean result = active.addAll(update);
             time(definition, start, System.currentTimeMillis(), update.size());
             return result;
         }
 
-        // TODO: Is this supposed to be the active set?
-        //  Notice that without XRA (which LazyRA does not do), active sets and relevant sets
-        //  coincide, so it is just a naming issue
-        private MutableEventGraph getRelevantSet(Relation relation) {
+        private MutableEventGraph getActiveSet(Relation relation) {
             return data.computeIfAbsent(relation, x -> new MapEventGraph());
         }
 
@@ -663,47 +701,6 @@ public class ActiveSetAnalysis {
                         definition.getDefinedRelation().getNameOrTerm()));
             }
         }
-    }
-
-
-
-    // ===============================================================================================
-    // ================================== For standard RA ============================================
-    // ===============================================================================================
-
-
-
-    private void runNative(NativeRelationAnalysis nra) {
-        final Set<Relation> relations = memoryModel.getRelations();
-        final List<Axiom> axioms = memoryModel.getAxioms();
-
-        final Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
-        relations.forEach(r -> mutableSets.put(r, new MapEventGraph()));
-
-        final Map<Relation, List<EventGraph>> queue = new HashMap<>();
-        axioms.forEach(a -> {
-            final EventGraph relevant = filterUnknowns(getRelevantSet(a), a.getRelation());
-            queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(relevant);
-        });
-        nra.populateQueue(queue, relations);
-
-        final NativeActiveSets visitor = new NativeActiveSets();
-        while (!queue.isEmpty()) {
-            Relation r = queue.keySet().iterator().next();
-            logger.trace("Update active set of '{}'", r);
-            MutableEventGraph s = mutableSets.get(r);
-            MutableEventGraph c = new MapEventGraph();
-            queue.remove(r).forEach(news -> news.filter(s::add).apply(c::add));
-            if (!c.isEmpty()) {
-                visitor.news = c;
-                r.getDefinition().accept(visitor).forEach((rel, value) ->
-                        queue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
-                );
-            }
-        }
-
-        this.definition2ActiveSets = relations.stream()
-                .collect(Collectors.toMap(Relation::getDefinition, mutableSets::get));
     }
 
     private final class NativeActiveSets implements Constraint.Visitor<Map<Relation, EventGraph>> {
