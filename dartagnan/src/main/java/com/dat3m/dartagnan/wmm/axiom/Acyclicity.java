@@ -13,9 +13,7 @@ public class Acyclicity extends Axiom {
     }
 
     @Override
-    public String toString() {
-        return (flag ? "flag " : "") + (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
-    }
+    protected String getAxiomName() { return "acyclic"; }
 
     @Override
     public <T> T accept(Visitor<? extends T> visitor) {

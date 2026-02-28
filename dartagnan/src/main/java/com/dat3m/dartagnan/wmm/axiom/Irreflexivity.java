@@ -13,12 +13,11 @@ public class Irreflexivity extends Axiom {
     }
 
     @Override
+    protected String getAxiomName() { return "irreflexive"; }
+
+    @Override
     public <T> T accept(Visitor<? extends T> visitor) {
         return visitor.visitIrreflexivity(this);
     }
 
-    @Override
-    public String toString() {
-        return (flag ? "flag " : "") + (negated ? "~" : "") + "irreflexive " + rel.getNameOrTerm();
-    }
 }

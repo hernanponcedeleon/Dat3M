@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public abstract class Axiom implements Constraint {
 
@@ -48,23 +47,12 @@ public abstract class Axiom implements Constraint {
         return name != null ? name : toString();
     }
 
-    @Override
-    public abstract String toString();
+    protected abstract String getAxiomName();
 
     @Override
-    public int hashCode() {
-        return Objects.hash(rel);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        Axiom other = (Axiom)obj;
-        return this.rel.equals(other.rel);
+    public String toString() {
+        return (flag ? "flag " : "") + (negated ? "~" : "") + getAxiomName() + " " + rel.getNameOrTerm()
+                + (name != null ? " as " + name : "");
     }
 
 }

@@ -13,12 +13,11 @@ public class Emptiness extends Axiom {
     }
 
     @Override
+    protected String getAxiomName() { return "empty"; }
+
+    @Override
     public <T> T accept(Visitor<? extends T> visitor) {
         return visitor.visitEmptiness(this);
     }
 
-    @Override
-    public String toString() {
-        return (flag ? "flag " : "") + (negated ? "~" : "") + "empty " + rel.getNameOrTerm();
-    }
 }
