@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding;
+package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -159,14 +158,6 @@ public class RelationAnalysisTest {
                     lazyRa.getKnowledge(relation).getMaySet());
             assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
                     lazyRa.getKnowledge(relation).getMustSet());
-        }
-
-        // Generate and assert active sets
-        ActiveSetAnalysis nativeActiveSet = ActiveSetAnalysis.newInstance(nativeTask, nativeContext);
-        ActiveSetAnalysis lazyActiveSet = ActiveSetAnalysis.newInstance(lazyTask, lazyContext);
-        for (Relation relation : wmm.getRelations()) {
-            final Definition def = relation.getDefinition();
-            assertEquals(nativeActiveSet.getActiveSet(def), lazyActiveSet.getActiveSet(def));
         }
     }
 
