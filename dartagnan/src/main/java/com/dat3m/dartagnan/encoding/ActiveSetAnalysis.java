@@ -115,11 +115,11 @@ public class ActiveSetAnalysis {
         }
 
         logger.info("Computed active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
-        logger.info("#Unknown edges: {}", memoryModel.getRelations().stream()
+        logger.info("#Unknown elements: {}", memoryModel.getRelations().stream()
                 .map(ra::getKnowledge)
                 .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
                 .sum());
-        logger.info("#Active edge definitions: {}", definition2ActiveSets.values().stream()
+        logger.info("#Active constraints: {}", definition2ActiveSets.values().stream()
                 .mapToLong(EventGraph::size)
                 .sum());
         logger.info("#Relevant edges for acyclicity: {}",
@@ -155,6 +155,8 @@ public class ActiveSetAnalysis {
             propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
                     MutableEventGraph.from(relevant));
         });
+        // FIXME: This method is the most expensive one to compute (80% of runtime)
+        //  Bottom-up computation of NativeRA is just implemented inefficiently
         ra.collectDiscrepancies(relations, propagationQueue);
 
         // ---- Compute active sets----
@@ -180,17 +182,15 @@ public class ActiveSetAnalysis {
     private void initToMaximalActiveSets() {
         final Set<Relation> relations = memoryModel.getRelations();
 
-        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
-        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
-
         final Map<Relation, List<EventGraph>> discrepancies = new HashMap<>();
         ra.collectDiscrepancies(relations, discrepancies);
 
+        final Map<Definition, MutableEventGraph> activeSets = Maps.newHashMapWithExpectedSize(relations.size());
         for (Relation rel : relations) {
-            final MutableEventGraph active = activeSets.get(rel.getDefinition());
-
-            active.addAll(getUnknowns(rel));
+            final MutableEventGraph active = MapEventGraph.from(getUnknowns(rel));
             discrepancies.get(rel).forEach(active::addAll);
+
+            activeSets.put(rel.getDefinition(), active);
         }
 
         this.definition2ActiveSets = ImmutableMap.copyOf(activeSets);
