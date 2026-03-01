@@ -102,7 +102,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     @Override
-    public void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations) {
+    public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
         Propagator p = new Propagator();
         Initializer init = getInitializer();
         for (Relation r : relations) {
@@ -126,7 +126,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             may.removeAll(getKnowledge(r).getMaySet());
             MutableEventGraph mayDiff = may;
             MutableEventGraph mustDiff = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
+            discrepancies.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
         }
     }
 

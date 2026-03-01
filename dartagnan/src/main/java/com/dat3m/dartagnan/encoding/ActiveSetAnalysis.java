@@ -10,8 +10,6 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.LazyRelationAnalysis;
-import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -20,11 +18,10 @@ import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -33,7 +30,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
@@ -96,7 +92,7 @@ public class ActiveSetAnalysis {
         logConfig();
 
         final long t0 = System.currentTimeMillis();
-        runAnalysis();
+        run();
         logStatistics(t0);
     }
 
@@ -118,7 +114,7 @@ public class ActiveSetAnalysis {
             return;
         }
 
-        logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
+        logger.info("Computed active sets in {}", Utils.toTimeString(System.currentTimeMillis() - startTime));
         logger.info("#Unknown edges: {}", memoryModel.getRelations().stream()
                 .map(ra::getKnowledge)
                 .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
@@ -135,29 +131,73 @@ public class ActiveSetAnalysis {
 
     // ==============================================================================================
 
-    private void runAnalysis() {
+    private void run() {
         logger.trace("Start");
 
+        final Set<Relation> relations = memoryModel.getRelations();
+        final List<Axiom> axioms = memoryModel.getAxioms();
+
+        // ---- Compute relevant sets ----
+        //  TODO: Do we consider this as part of the active set computation?
+        //   Should we also do a "worst-case" here if active sets are disabled?
         final AxiomRelevantSets axiomRelevantSetsVisitor = new AxiomRelevantSets();
-        axiom2RelevantSets = new HashMap<>();
-        for (Axiom axiom : memoryModel.getAxioms()) {
-            axiom2RelevantSets.put(axiom, axiom.accept(axiomRelevantSetsVisitor));
-        }
+        axiom2RelevantSets = Maps.toMap(axioms, a -> a.accept(axiomRelevantSetsVisitor));
 
         if (!enableActiveSetComputation) {
-            // FIXME: This is wrong if XRA was performed!
-            this.definition2ActiveSets = memoryModel.getRelations().stream()
-                    .collect(Collectors.toMap(Relation::getDefinition, r -> ra.getKnowledge(r).getMaySet()));
-        } else if (ra instanceof LazyRelationAnalysis) {
-            runLazy();
-        } else if (ra instanceof NativeRelationAnalysis nra) {
-            runNative(nra);
-        } else {
-            throw new UnsupportedOperationException("Active set computation is not supported by "
-                    + ra.getClass().getSimpleName());
+            initToMaximalActiveSets();
+            return;
         }
 
+        // ---- Initialize active set propagation queue ----
+        final Map<Relation, List<EventGraph>> propagationQueue = new HashMap<>();
+        axioms.forEach(a -> {
+            final EventGraph relevant = filterUnknowns(axiom2RelevantSets.get(a), a.getRelation());
+            propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
+                    MutableEventGraph.from(relevant));
+        });
+        ra.collectDiscrepancies(relations, propagationQueue);
+
+        // ---- Compute active sets----
+        final ActiveSetPropagator propagator = new ActiveSetPropagator();
+        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
+        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
+
+        while (!propagationQueue.isEmpty()) {
+            final Relation r = propagationQueue.keySet().iterator().next();
+            logger.trace("Update active set of '{}'", r);
+            final MutableEventGraph active = activeSets.get(r.getDefinition());
+            final MutableEventGraph update = new MapEventGraph();
+
+            propagationQueue.remove(r).forEach(news -> news.filter(active::add).apply(update::add));
+            propagator.propagateAndUpdateQueue(r.getDefinition(), update, propagationQueue);
+        }
+
+        this.definition2ActiveSets = ImmutableMap.copyOf(activeSets);
+
         logger.trace("End");
+    }
+
+    private void initToMaximalActiveSets() {
+        final Set<Relation> relations = memoryModel.getRelations();
+
+        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
+        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
+
+        final Map<Relation, List<EventGraph>> discrepancies = new HashMap<>();
+        ra.collectDiscrepancies(relations, discrepancies);
+
+        for (Relation rel : relations) {
+            final MutableEventGraph active = activeSets.get(rel.getDefinition());
+
+            active.addAll(getUnknowns(rel));
+            discrepancies.get(rel).forEach(active::addAll);
+        }
+
+        this.definition2ActiveSets = ImmutableMap.copyOf(activeSets);
+    }
+
+    private EventGraph getUnknowns(Relation rel) {
+        return EventGraph.difference(ra.getKnowledge(rel).getMaySet(), ra.getKnowledge(rel).getMustSet());
     }
 
     @SuppressWarnings("unchecked")
@@ -268,444 +308,24 @@ public class ActiveSetAnalysis {
         }
     }
 
+    // ================================================================================================
+    // Active sets
 
+    private final class ActiveSetPropagator implements Constraint.Visitor<Map<Relation, EventGraph>> {
 
-    // ===============================================================================================
-    // =================================== For lazy RA  ==============================================
-    // ===============================================================================================
+        private EventGraph news;
 
-
-
-    private void runLazy() {
-        final Set<Relation> relations = memoryModel.getRelations();
-        final List<Axiom> axioms = memoryModel.getAxioms();
-
-        final Map<Relation, MutableEventGraph> mutableSets = new HashMap<>();
-        final LazyActiveSets visitor = new LazyActiveSets(mutableSets);
-        axioms.forEach(a -> {
-            Relation r = a.getRelation();
-            MutableEventGraph relevantSet = new MapEventGraph(axiom2RelevantSets.get(a).getOutMap());
-            relevantSet = filterUnknowns(relevantSet, r);
-            visitor.add(r, relevantSet);
-        });
-
-        final MutableEventGraph empty = new MapEventGraph();
-        this.definition2ActiveSets = relations.stream()
-                .collect(Collectors.toMap(Relation::getDefinition,
-                        r -> mutableSets.getOrDefault(r, empty))
-                );
-    }
-
-    private void runNative(NativeRelationAnalysis nra) {
-        final Set<Relation> relations = memoryModel.getRelations();
-        final List<Axiom> axioms = memoryModel.getAxioms();
-
-        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
-        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
-
-        final Map<Relation, List<EventGraph>> queue = new HashMap<>();
-        axioms.forEach(a -> {
-            final EventGraph relevant = filterUnknowns(getRelevantSet(a), a.getRelation());
-            queue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(relevant);
-        });
-        nra.populateQueue(queue, relations);
-
-        final NativeActiveSets visitor = new NativeActiveSets();
-        while (!queue.isEmpty()) {
-            final Relation r = queue.keySet().iterator().next();
-            logger.trace("Update active set of '{}'", r);
-            MutableEventGraph active = activeSets.get(r.getDefinition());
-            MutableEventGraph update = new MapEventGraph();
-            queue.remove(r).forEach(news -> news.filter(active::add).apply(update::add));
-            if (!update.isEmpty()) {
-                visitor.news = update;
-                r.getDefinition().accept(visitor).forEach((rel, value) ->
-                        queue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
-                );
+        public void propagateAndUpdateQueue(Definition def, EventGraph update, Map<Relation, List<EventGraph>> propagationQueue) {
+            if (update.isEmpty()) {
+                return;
             }
+
+            this.news = update;
+            def.accept(this).forEach((rel, value) ->
+                    propagationQueue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
+            );
+            this.news = null;
         }
-
-        this.definition2ActiveSets = relations.stream()
-                .collect(ImmutableMap.toImmutableMap(Relation::getDefinition,
-                        r -> activeSets.get(r.getDefinition())));
-    }
-
-
-
-    // ===============================================================================================
-    // ================================== For standard RA ============================================
-    // ===============================================================================================
-
-    private final class LazyActiveSets implements Constraint.Visitor<Boolean> {
-
-        private final Map<Relation, MutableEventGraph> data;
-        private MutableEventGraph update;
-
-        public LazyActiveSets(Map<Relation, MutableEventGraph> data) {
-            this.data = data;
-        }
-
-        public void add(Relation relation, MutableEventGraph eventGraph) {
-            setUpdate(eventGraph);
-            relation.getDefinition().accept(this);
-        }
-
-        @Override
-        public Boolean visitDefinition(Definition definition) {
-            throw new UnsupportedOperationException("Unsupported definition "
-                    + definition.getDefinedRelation().getNameOrTerm() + " " + definition.getClass().getSimpleName());
-        }
-
-        @Override
-        public Boolean visitTagSet(TagSet definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitFree(Free definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitExternal(External definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitInternal(Internal definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitProgramOrder(ProgramOrder definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSameInstruction(SameInstruction definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitControlDependency(DirectControlDependency definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitAddressDependency(DirectAddressDependency definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitInternalDataDependency(DirectDataDependency definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitCASDependency(CASDependency definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitLinuxCriticalSections(LinuxCriticalSections definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitAMOPairs(AMOPairs definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitLXSXPairs(LXSXPairs definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitCoherence(Coherence definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitReadFrom(ReadFrom definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSameLocation(SameLocation definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSameScope(SameScope definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSyncBarrier(SyncBar definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSyncFence(SyncFence definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSameVirtualLocation(SameVirtualLocation definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitSyncWith(SyncWith definition) {
-            return doUpdateSelf(definition);
-        }
-
-        @Override
-        public Boolean visitProduct(CartesianProduct definition) {
-            if (doUpdateSelf(definition)) {
-                long start = System.currentTimeMillis();
-                MutableEventGraph domainUpdate = new MapEventGraph();
-                MutableEventGraph rangeUpdate = new MapEventGraph();
-                update.getDomain().forEach(e1 -> domainUpdate.add(e1, e1));
-                update.getRange().forEach(e2 -> rangeUpdate.add(e2, e2));
-                operandTime(definition, start, System.currentTimeMillis());
-                setUpdate(domainUpdate);
-                definition.getDomain().getDefinition().accept(this);
-                setUpdate(rangeUpdate);
-                definition.getRange().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitSetIdentity(SetIdentity definition) {
-            if (doUpdateSelf(definition)) {
-                long start = System.currentTimeMillis();
-                MutableEventGraph domainUpdate = new MapEventGraph();
-                update.apply((e1, e2) -> domainUpdate.add(e1, e1));
-                operandTime(definition, start, System.currentTimeMillis());
-                setUpdate(domainUpdate);
-                definition.getDomain().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitProjection(Projection definition) {
-            if (doUpdateSelf(definition)) {
-                final long start = System.currentTimeMillis();
-                final MutableEventGraph operandUpdate = new MapEventGraph();
-                final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
-                final EventGraph maySet = ra.getKnowledge(definition.getOperand()).getMaySet();
-                final Map<Event, Set<Event>> altMap = dom ? maySet.getOutMap() : maySet.getInMap();
-                if (dom) {
-                    update.getDomain().forEach(e1 -> operandUpdate.addRange(e1, altMap.get(e1)));
-                } else {
-                    update.getDomain().forEach(e2 -> altMap.get(e2).forEach(e1 -> operandUpdate.add(e1, e2)));
-                }
-                setUpdate(operandUpdate);
-                operandTime(definition, start, System.currentTimeMillis());
-                definition.getOperand().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitInverse(Inverse definition) {
-            if (doUpdateSelf(definition)) {
-                long start = System.currentTimeMillis();
-                setUpdate(update.inverse());
-                operandTime(definition, start, System.currentTimeMillis());
-                definition.getOperand().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitTransitiveClosure(TransitiveClosure definition) {
-            if (doUpdateSelf(definition)) {
-                long start = System.currentTimeMillis();
-                MutableEventGraph operandUpdate = new MapEventGraph();
-                RelationAnalysis.Knowledge knowledge = ra.getKnowledge(definition.getDefinedRelation());
-                EventGraph may = ImmutableMapEventGraph.from(knowledge.getMaySet());
-                EventGraph must = ImmutableMapEventGraph.from(knowledge.getMustSet());
-                EventGraph mayInv = may.inverse();
-                while (!update.isEmpty()) {
-                    Map<Event, Set<Event>> next = new HashMap<>();
-                    Map<Event, Set<Event>> nextInverse = new HashMap<>();
-                    EventGraph updateInverse = update.inverse();
-                    update.getDomain().forEach(e1 -> {
-                        Set<Event> range = update.getRange(e1);
-                        next.put(e1, may.getRange(e1).stream()
-                                .filter(e -> may.getRange(e).stream().anyMatch(range::contains))
-                                .collect(Collectors.toSet())
-                        );
-                    });
-                    updateInverse.getDomain().forEach(e2 -> {
-                        Set<Event> range = updateInverse.getRange(e2);
-                        nextInverse.put(e2, mayInv.getRange(e2).stream()
-                                .filter(e -> mayInv.getRange(e).stream().anyMatch(range::contains))
-                                .collect(Collectors.toSet())
-                        );
-                    });
-                    nextInverse.forEach((e2, range) -> range.forEach(e1 -> next.computeIfAbsent(e1, x -> new HashSet<>()).add(e2)));
-                    operandUpdate.addAll(update);
-                    update = new MapEventGraph(next);
-                    update.removeAll(operandUpdate);
-                    update.removeAll(must);
-                }
-                getActiveSet(definition.getDefinedRelation()).addAll(operandUpdate);
-                operandUpdate.retainAll(ra.getKnowledge(definition.getOperand()).getMaySet());
-                setUpdate(operandUpdate);
-                operandTime(definition, start, System.currentTimeMillis());
-                definition.getOperand().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitUnion(Union definition) {
-            if (doUpdateSelf(definition)) {
-                long totalTime = 0;
-                List<Relation> operands = definition.getOperands();
-                MutableEventGraph origUpdate = update;
-                for (int i = 0; i < operands.size() - 1; i++) {
-                    long start = System.currentTimeMillis();
-                    Relation operand = operands.get(i);
-                    MutableEventGraph newUpdate = MapEventGraph.from(origUpdate);
-                    newUpdate.retainAll(ra.getKnowledge(operand).getMaySet());
-                    setUpdate(newUpdate);
-                    totalTime += System.currentTimeMillis() - start;
-                    operand.getDefinition().accept(this);
-                }
-                long start = System.currentTimeMillis();
-                Relation operand = operands.get(operands.size() - 1);
-                origUpdate.retainAll(ra.getKnowledge(operand).getMaySet());
-                setUpdate(origUpdate);
-                operandTime(definition, start, totalTime + System.currentTimeMillis());
-                operand.getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitIntersection(Intersection definition) {
-            if (doUpdateSelf(definition)) {
-                long totalTime = 0;
-                List<Relation> operands = definition.getOperands();
-                MutableEventGraph origUpdate = update;
-                for (int i = 0; i < operands.size() - 1; i++) {
-                    long start = System.currentTimeMillis();
-                    Relation operand = operands.get(i);
-                    MutableEventGraph newUpdate = MapEventGraph.from(origUpdate);
-                    setUpdate(newUpdate);
-                    totalTime += System.currentTimeMillis() - start;
-                    operand.getDefinition().accept(this);
-                }
-                long start = System.currentTimeMillis();
-                Relation operand = operands.get(operands.size() - 1);
-                setUpdate(origUpdate);
-                operandTime(definition, start, totalTime + System.currentTimeMillis());
-                operand.getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitDifference(Difference definition) {
-            if (doUpdateSelf(definition)) {
-                long totalTime = 0;
-                long start = System.currentTimeMillis();
-                MutableEventGraph origUpdate = update;
-                MutableEventGraph newUpdate = MapEventGraph.from(origUpdate);
-                setUpdate(newUpdate);
-                totalTime += System.currentTimeMillis() - start;
-                definition.getMinuend().getDefinition().accept(this);
-                start = System.currentTimeMillis();
-                Relation subtrahend = definition.getSubtrahend();
-                origUpdate.retainAll(ra.getKnowledge(subtrahend).getMaySet());
-                setUpdate(origUpdate);
-                operandTime(definition, start, totalTime + System.currentTimeMillis());
-                subtrahend.getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Boolean visitComposition(Composition definition) {
-            if (doUpdateSelf(definition)) {
-                long start = System.currentTimeMillis();
-                MapEventGraph leftUpdate = new MapEventGraph();
-                MapEventGraph rightUpdate = new MapEventGraph();
-                RelationAnalysis.Knowledge leftKnowledge = ra.getKnowledge(definition.getLeftOperand());
-                RelationAnalysis.Knowledge rightKnowledge = ra.getKnowledge(definition.getRightOperand());
-                EventGraph mayLeft = ImmutableMapEventGraph.from(leftKnowledge.getMaySet());
-                EventGraph mayRightInverse = ImmutableMapEventGraph.from(rightKnowledge.getMaySet()).inverse();
-                for (Event e1 : update.getDomain()) {
-                    for (Event e2 : update.getRange(e1)) {
-                        Set<Event> intermediate = Sets.intersection(mayLeft.getRange(e1), mayRightInverse.getRange(e2));
-                        for (Event e : intermediate) {
-                            leftUpdate.add(e1, e);
-                            rightUpdate.add(e, e2);
-                        }
-                    }
-                }
-                operandTime(definition, start, System.currentTimeMillis());
-                setUpdate(leftUpdate);
-                definition.getLeftOperand().getDefinition().accept(this);
-                setUpdate(rightUpdate);
-                definition.getRightOperand().getDefinition().accept(this);
-                return true;
-            }
-            return false;
-        }
-
-        private boolean doUpdateSelf(Definition definition) {
-            long start = System.currentTimeMillis();
-            Relation relation = definition.getDefinedRelation();
-            MutableEventGraph active = getActiveSet(relation);
-            update.removeAll(ra.getKnowledge(relation).getMustSet());
-            update.removeAll(active);
-            boolean result = active.addAll(update);
-            time(definition, start, System.currentTimeMillis(), update.size());
-            return result;
-        }
-
-        private MutableEventGraph getActiveSet(Relation relation) {
-            return data.computeIfAbsent(relation, x -> new MapEventGraph());
-        }
-
-        private void setUpdate(MutableEventGraph update) {
-            this.update = update;
-        }
-
-        private void time(Definition definition, long start, long end, int size) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(String.format("%6s ms : %6s edges : %s", end - start, size,
-                        definition.getDefinedRelation().getNameOrTerm()));
-            }
-        }
-
-        private void operandTime(Definition definition, long start, long end) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(String.format("%6s ms : %s", end - start,
-                        definition.getDefinedRelation().getNameOrTerm()));
-            }
-        }
-    }
-
-    private final class NativeActiveSets implements Constraint.Visitor<Map<Relation, EventGraph>> {
-
-        EventGraph news;
 
         @Override
         public Map<Relation, EventGraph> visitDefinition(Definition def) {

@@ -313,7 +313,7 @@ public class WmmEncoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
-        // ASSUMPTION: The encode-set of the static relation is a subset of the most precise may-set.
+        // ASSUMPTION: The active set of a static relation is a subset of the most precise may-set.
         //             This holds true as long as our RA computes the most precise may-set for static relations.
         private void visitStatic(Definition def) {
             final Relation rel = def.getDefinedRelation();
@@ -961,29 +961,28 @@ public class WmmEncoder {
         }
 
         private List<BooleanFormula> cyclicSAT(Relation rel, EventGraph relevantEdges) {
-            final FormulaManagerExt fmgr = context.getFormulaManager();
-            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             List<BooleanFormula> enc = new ArrayList<>();
             List<BooleanFormula> eventsInCycle = new ArrayList<>();
             Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
             Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
             relevantEdges.apply((e1, e2) -> {
-                BooleanFormula cycleVar = getSMTCycleVar(rel, e1, e2, fmgr);
+                BooleanFormula cycleVar = getSMTCycleVar(rel, e1, e2);
                 inMap.computeIfAbsent(e2, k -> new ArrayList<>()).add(cycleVar);
                 outMap.computeIfAbsent(e1, k -> new ArrayList<>()).add(cycleVar);
             });
-            // We use Boolean variables which guess the edges and nodes constituting the cycle.
+            // We use Boolean variables, which guess the edges and nodes constituting the cycle.
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
             for (Event e : relevantEdges.getDomain()) {
-                eventsInCycle.add(cycleVar(rel, e, fmgr));
+                eventsInCycle.add(cycleVar(rel, e));
                 // We ensure that for every event in the cycle, there should be at least one incoming
                 // edge and at least one outgoing edge that are also in the cycle.
-                enc.add(bmgr.implication(cycleVar(rel, e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
+                enc.add(bmgr.implication(cycleVar(rel, e), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
                 relevantEdges.apply((e1, e2) ->
                         // If an edge is guessed to be in a cycle, the edge must belong to relation,
                         // and both events must also be guessed to be on the cycle.
-                        enc.add(bmgr.implication(getSMTCycleVar(rel, e1, e2, fmgr),
-                                bmgr.and(edge.encode(e1, e2), cycleVar(rel, e1, fmgr), cycleVar(rel, e2, fmgr))
+                        enc.add(bmgr.implication(getSMTCycleVar(rel, e1, e2),
+                                bmgr.and(edge.encode(e1, e2), cycleVar(rel, e1), cycleVar(rel, e2))
                         ))
                 );
             }
@@ -1002,7 +1001,7 @@ public class WmmEncoder {
                     enc.add(bmgr.implication(edge.encode(e1, e2),
                             imgr.lessThan(
                                     context.clockVariable(clockVarName, e1),
-                                    context.clockVariable(clockVarName,e2)
+                                    context.clockVariable(clockVarName, e2)
                             )
                     ))
             );
@@ -1010,9 +1009,8 @@ public class WmmEncoder {
         }
 
         private List<BooleanFormula> acyclicSAT(Relation rel, EventGraph relevantEdges) {
-            // We use a vertex-elimination graph based encoding.
-            final FormulaManagerExt fmgr = context.getFormulaManager();
-            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            // We use a vertex-elimination graph-based encoding.
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
 
             // Build original graph G
@@ -1085,15 +1083,15 @@ public class WmmEncoder {
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2, fmgr)));
+                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2)));
             });
 
             // Encode triangle rules
             for (Event[] tri : triangles) {
                 BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
                         context.execution(tri[0], tri[2])
-                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1], fmgr), getSMTCycleVar(rel, tri[1], tri[2], fmgr));
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2], fmgr)));
+                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1]), getSMTCycleVar(rel, tri[1], tri[2]));
+                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2])));
             }
 
             //  --- Encode inconsistent assignments ---
@@ -1107,8 +1105,8 @@ public class WmmEncoder {
                 Set<Event> out = vertEleOutEdges.get(e1);
                 for (Event e2: out) {
                     if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
-                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(rel, e1, e2, fmgr);
-                        enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(rel, e2, e1, fmgr))));
+                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(rel, e1, e2);
+                        enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(rel, e2, e1))));
                     }
                 }
             }
@@ -1116,12 +1114,14 @@ public class WmmEncoder {
             return enc;
         }
 
-        private BooleanFormula cycleVar(Relation rel, Event event, FormulaManagerExt m) {
+        private BooleanFormula cycleVar(Relation rel, Event event) {
+            FormulaManagerExt m = context.getFormulaManager();
             return m.getBooleanFormulaManager()
                     .makeVariable(String.format("cycle %s %d", m.escape(rel.getNameOrTerm()), event.getGlobalId()));
         }
 
-        private BooleanFormula getSMTCycleVar(Relation rel, Event e1, Event e2, FormulaManagerExt m) {
+        private BooleanFormula getSMTCycleVar(Relation rel, Event e1, Event e2) {
+            FormulaManagerExt m = context.getFormulaManager();
             return m.getBooleanFormulaManager()
                     .makeVariable(String.format("cycle %s %d %d", m.escape(rel.getNameOrTerm()), e1.getGlobalId(), e2.getGlobalId()));
         }

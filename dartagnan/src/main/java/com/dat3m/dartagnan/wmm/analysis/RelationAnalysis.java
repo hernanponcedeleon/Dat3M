@@ -106,22 +106,14 @@ public interface RelationAnalysis {
         return a;
     }
 
-    @Options
-    public final class Config {
-        @Option(name = RELATION_ANALYSIS,
-                description = "Relation analysis engine.",
-                secure = true)
-        private RelationAnalysisMethod method = RelationAnalysisMethod.getDefault();
-
-        @Option(name = ENABLE_EXTENDED_RELATION_ANALYSIS,
-                description = "Marks relationships as trivially false, if they alone would violate a consistency property of the target memory model.",
-                secure = true)
-        private boolean enableExtended = true;
-
-        private Config(Configuration config) throws InvalidConfigurationException {
-            config.inject(this);
-        }
-    }
+    /*
+        Consider a relation definition "let c = a op b".
+        A "discrepancy" is an element c(x,y) that is statically known but not implied
+        by the static information we have about "a" and "b".
+        This can only happen if we obtain information about "c(x,y)" from other constraints
+        besides its definition, e.g., when we perform XRA.
+     */
+    void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancyCollector);
     
     private static long countMaySet(Wmm memoryModel, RelationAnalysis ra) {
         return memoryModel.getRelations().stream()
@@ -158,7 +150,22 @@ public interface RelationAnalysis {
      */
     void runExtended();
 
-    void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations);
+    @Options
+    final class Config {
+        @Option(name = RELATION_ANALYSIS,
+                description = "Relation analysis engine.",
+                secure = true)
+        private RelationAnalysisMethod method = RelationAnalysisMethod.getDefault();
+
+        @Option(name = ENABLE_EXTENDED_RELATION_ANALYSIS,
+                description = "Marks relationships as trivially false, if they alone would violate a consistency property of the target memory model.",
+                secure = true)
+        private boolean enableExtended = true;
+
+        private Config(Configuration config) throws InvalidConfigurationException {
+            config.inject(this);
+        }
+    }
 
     class Knowledge {
         protected final EventGraph may;
