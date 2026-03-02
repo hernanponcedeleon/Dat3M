@@ -1737,31 +1737,39 @@ public class Intrinsics {
         final Expression src2 = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
+        // On big-endian systems, multi-byte integers can be compared directly.
+        final boolean bigEndian = caller.getProgram().getMemory().isBigEndian();
+        assert bigEndian != caller.getProgram().getMemory().isLittleEndian();
 
         final IntegerType resultType = returnReg.getType() instanceof IntegerType t ? t : null;
         final Expression zero = expressions.makeZero(resultType);
         final Expression returnNegative = expressions.makeLT(returnReg, zero, true);
         final Expression returnPositive = expressions.makeGT(returnReg, zero, true);
+        final Event choice = EventFactory.newNonDetChoice(returnReg);
 
         final List<Event> replacement = new ArrayList<>();
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
+        replacement.add(choice);
         forEachMemSpan(replacement, countExpr, call, (i, type) -> {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression src1Addr = expressions.makeAdd(src1, offset);
             final Expression src2Addr = expressions.makeAdd(src2, offset);
             final Register regSrc1 = caller.newUniqueRegister("__memcmp_src1", type);
             final Register regSrc2 = caller.newUniqueRegister("__memcmp_src2", type);
-            final Expression checkNegative = expressions.makeLT(regSrc1, regSrc2, false);
-            final Expression checkPositive = expressions.makeGT(regSrc1, regSrc2, false);
             final Event load1 = EventFactory.newLoad(regSrc1, src1Addr);
             final Event load2 = EventFactory.newLoad(regSrc2, src2Addr);
-            load1.addTags(Tag.NO_INSTRUCTION);
-            load2.addTags(Tag.NO_INSTRUCTION);
-            final Event choice = EventFactory.newNonDetChoice(returnReg);
-            final Event constrainNegative = EventFactory.newAssume(expressions.makeEQ(checkNegative, returnNegative));
-            final Event constrainPositive = EventFactory.newAssume(expressions.makeEQ(checkPositive, returnPositive));
-            final Event breakIfNonzero = EventFactory.newJump(expressions.makeNEQ(returnReg, zero), endCmp);
-            replacement.addAll(List.of(load1, load2, choice, constrainNegative, constrainPositive, breakIfNonzero));
+            replacement.addAll(List.of(load1, load2));
+            final int byteSize = bigEndian ? type.getBitWidth() : 8;
+            for (int cmpByte = 0; cmpByte < type.getBitWidth(); cmpByte += byteSize) {
+                final Expression byte1 = expressions.makeIntExtract(regSrc1, cmpByte, cmpByte + byteSize - 1);
+                final Expression byte2 = expressions.makeIntExtract(regSrc2, cmpByte, cmpByte + byteSize - 1);
+                final Expression nonNegative = expressions.makeGTE(byte1, byte2, false);
+                final Expression nonPositive = expressions.makeLTE(byte1, byte2, false);
+                final Event constrainNegative = EventFactory.newAssume(expressions.makeOr(nonNegative, returnNegative));
+                final Event constrainPositive = EventFactory.newAssume(expressions.makeOr(nonPositive, returnPositive));
+                final Event breakIfNonzero = EventFactory.newJump(expressions.makeNEQ(byte1, byte2), endCmp);
+                replacement.addAll(List.of(constrainNegative, constrainPositive, breakIfNonzero));
+            }
         });
         replacement.add(endCmp);
 
