@@ -1611,6 +1611,7 @@ public class Intrinsics {
     // For proper support, we need at least alias information and most likely also proper support for mixed-sized accesses
 
     // Handles both std.memcpy and llvm.memcpy
+    // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpy(FunctionCall call) {
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
@@ -1618,31 +1619,8 @@ public class Intrinsics {
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
 
-        if (!(countExpr instanceof IntLiteral countValue)) {
-            final String error = "Cannot handle memcpy with dynamic count argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
-        final int count = countValue.getValueAsInt();
-
-        final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        //FIXME without MSA detection, each byte is treated as a 64-bit value.
-        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
-        final int typeSize = detectMixedSizeAccesses ? count : 1;
-        for (int i = 0; i < count; i += typeSize) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
-
-            final Event load = EventFactory.newLoad(reg, srcAddr);
-            final Event store = EventFactory.newStore(destAddr, reg);
-
-            // communicate to Tearing to not create same-instruction blocks
-            load.addTags(Tag.NO_INSTRUCTION);
-            store.addTags(Tag.NO_INSTRUCTION);
-
-            replacement.addAll(List.of(load, store));
-        }
+        final List<Event> replacement = new ArrayList<>();
+        insertMemCopy(replacement, src, dest, countExpr, caller, call);
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
@@ -1660,18 +1638,6 @@ public class Intrinsics {
         final Expression destszExpr = call.getArguments().get(1);
         final Expression src = call.getArguments().get(2);
         final Expression countExpr = call.getArguments().get(3);
-
-        // TODO remove these two checks once we support dynamically-sized memcpy
-        if (!(countExpr instanceof IntLiteral countValue)) {
-            final String error = "Cannot handle memcpy_s with dynamic count argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
-        final int count = countValue.getValueAsInt();
-        if (!(destszExpr instanceof IntLiteral destszValue)) {
-            final String error = "Cannot handle memcpy_s with dynamic destsz argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
-        final int destsz = destszValue.getValueAsInt();
 
         // Runtime checks
         final Expression nullExpr = expressions.makeZero(types.getArchType());
@@ -1733,14 +1699,12 @@ public class Intrinsics {
             check2part3,
             check2fail
         ));
-        for (int i = 0; i < destsz; i++) {
+        forEachMemSpan(replacement, destszExpr, call, (i, type) -> {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
-            final Expression zero = expressions.makeZero(types.getArchType());
-            replacement.add(
-                newStore(destAddr, zero)
-            );
-        }
+            final Expression zero = expressions.makeZero(type);
+            replacement.add(EventFactory.newStore(destAddr, zero));
+        });
         replacement.addAll(List.of(
             retError2,
             skipRest2
@@ -1748,19 +1712,8 @@ public class Intrinsics {
 
         // Else ----> return error = 0 and do the actual copy
         Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
-        replacement.add(success);        
-        for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
-
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    newStore(destAddr, reg)
-            ));
-        }
+        replacement.add(success);
+        insertMemCopy(replacement, src, dest, countExpr, caller, call);
         replacement.addAll(List.of(
             retSuccess,
             end
@@ -1769,37 +1722,52 @@ public class Intrinsics {
         return replacement;
     }
 
+    private void insertMemCopy(List<Event> replacement, Expression src, Expression dest, Expression count,
+            Function caller, FunctionCall call) {
+        forEachMemSpan(replacement, count, call, (i, type) -> {
+            final Expression offset = expressions.makeValue(i, types.getArchType());
+            final Expression srcAddr = expressions.makeAdd(src, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Register register = caller.newUniqueRegister("__memcpy", type);
+            final Event load = EventFactory.newLoad(register, srcAddr);
+            final Event store = EventFactory.newStore(destAddr, register);
+            replacement.addAll(List.of(load, store));
+        });
+    }
+
+    // https://en.cppreference.com/w/c/string/byte/memcmp
     private List<Event> inlineMemCmp(FunctionCall call) {
         final Function caller = call.getFunction();
         final Expression src1 = call.getArguments().get(0);
         final Expression src2 = call.getArguments().get(1);
-        final Expression numExpr = call.getArguments().get(2);
+        final Expression countExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
 
-        if (!(numExpr instanceof IntLiteral numValue)) {
-            final String error = "Cannot handle memcmp with dynamic num argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
-        final int count = numValue.getValueAsInt();
+        final IntegerType resultType = returnReg.getType() instanceof IntegerType t ? t : null;
+        final Expression zero = expressions.makeZero(resultType);
+        final Expression returnNegative = expressions.makeLT(returnReg, zero, true);
+        final Expression returnPositive = expressions.makeGT(returnReg, zero, true);
 
-        final List<Event> replacement = new ArrayList<>(4 * count + 1);
+        final List<Event> replacement = new ArrayList<>();
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
-        for (int i = 0; i < count; i++) {
+        forEachMemSpan(replacement, countExpr, call, (i, type) -> {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression src1Addr = expressions.makeAdd(src1, offset);
             final Expression src2Addr = expressions.makeAdd(src2, offset);
-            //FIXME: This method should properly load byte chunks and compare them (unsigned).
-            // This requires proper mixed-size support though
-            final Register regSrc1 = caller.getOrNewRegister("__memcmp_src1_" + i, returnReg.getType());
-            final Register regSrc2 = caller.getOrNewRegister("__memcmp_src2_" + i, returnReg.getType());
-
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(regSrc1, src1Addr),
-                    EventFactory.newLoad(regSrc2, src2Addr),
-                    EventFactory.newLocal(returnReg, expressions.makeSub(src1, src2)),
-                    EventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
-            ));
-        }
+            final Register regSrc1 = caller.newUniqueRegister("__memcmp_src1", type);
+            final Register regSrc2 = caller.newUniqueRegister("__memcmp_src2", type);
+            final Expression checkNegative = expressions.makeLT(regSrc1, regSrc2, false);
+            final Expression checkPositive = expressions.makeGT(regSrc1, regSrc2, false);
+            final Event load1 = EventFactory.newLoad(regSrc1, src1Addr);
+            final Event load2 = EventFactory.newLoad(regSrc2, src2Addr);
+            load1.addTags(Tag.NO_INSTRUCTION);
+            load2.addTags(Tag.NO_INSTRUCTION);
+            final Event choice = EventFactory.newNonDetChoice(returnReg);
+            final Event constrainNegative = EventFactory.newAssume(expressions.makeEQ(checkNegative, returnNegative));
+            final Event constrainPositive = EventFactory.newAssume(expressions.makeEQ(checkPositive, returnPositive));
+            final Event breakIfNonzero = EventFactory.newJump(expressions.makeNEQ(returnReg, zero), endCmp);
+            replacement.addAll(List.of(load1, load2, choice, constrainNegative, constrainPositive, breakIfNonzero));
+        });
         replacement.add(endCmp);
 
         return replacement;
@@ -1820,34 +1788,74 @@ public class Intrinsics {
             logger.warn("Treating call to \"__memset_chk\" as call to \"memset\": skipping bound checks.");
         }
 
-        if (!(countExpr instanceof IntLiteral countValue)) {
-            final String error = "Cannot handle memset with dynamic count argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
         if (!(fillExpr instanceof IntLiteral fillValue && fillValue.isZero())) {
             //FIXME: We can soundly handle only 0 (and possibly -1) because the concatenation of
             // byte-sized 0's results in 0's of larger types. This makes the value robust against mixed-sized accesses.
             final String error = "Cannot handle memset with non-zero fill argument: " + call;
             throw new UnsupportedOperationException(error);
         }
-        final int count = countValue.getValueAsInt();
         final int fill = fillValue.getValueAsInt();
         assert fill == 0;
 
         final Expression zero = expressions.makeValue(fill, types.getByteType());
-        final List<Event> replacement = new ArrayList<>( count + 1);
-        for (int i = 0; i < count; i++) {
+        final List<Event> replacement = new ArrayList<>();
+        forEachMemSpan(replacement, countExpr, call, (i, type) -> {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
 
             replacement.add(newStore(destAddr, zero));
-        }
+        });
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memset returns the destination address, llvm.memset has no return value
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
         }
 
         return replacement;
+    }
+
+    private record Slice(int min, int max, int step) {}
+
+    private interface MemAction { void run(int offset, IntegerType accessType); }
+
+    private Slice toSlice(Expression expression, FunctionCall call) {
+        if (expression instanceof IntLiteral literal) {
+            final int value = literal.getValueAsInt();
+            return new Slice(value, value, value);
+        }
+        throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
+    }
+
+    private void forEachMemSpan(List<Event> replacement, Expression countExpr, FunctionCall call, MemAction action) {
+        final Slice count = toSlice(countExpr, call);
+        checkArgument(0 <= count.min && count.min <= count.max && 0 < count.step, "Invalid count %s: %s", count,  call);
+        final IntegerType countType = countExpr.getType() instanceof IntegerType t ? t : noIntegerType();
+        final Label end = EventFactory.newLabel("__end");
+        // FIXME Unsound optimization.  This should always be one.
+        final int bytes = 4;
+        final int firstBytes = detectMixedSizeAccesses ? count.min : bytes;
+        final int restBytes = detectMixedSizeAccesses ? count.step : bytes;
+        final IntegerType firstType = types.getIntegerType(8 * firstBytes);
+        final IntegerType restType = types.getIntegerType(8 * restBytes);
+        for (int offset = 0; offset < count.min; offset += firstBytes) {
+            action.run(offset, firstType);
+        }
+        for (int offset = count.min; offset < count.max; offset += restBytes) {
+            if (offset - count.min % count.step == 0) {
+                final Expression offsetValue = expressions.makeValue(offset, countType);
+                replacement.add(EventFactory.newJump(expressions.makeLTE(countExpr, offsetValue, false), end));
+            }
+            action.run(offset, restType);
+        }
+        replacement.add(end);
+        for (Event event : replacement) {
+            if (event.hasTag(Tag.MEMORY)) {
+                event.addTags(Tag.NO_INSTRUCTION);
+            }
+        }
+    }
+
+    private <T> T noIntegerType() {
+        throw new IllegalArgumentException("Non-integer type");
     }
 
     private List<Event> inlineLLVMThreadLocal(FunctionCall call) {
