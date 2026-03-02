@@ -86,7 +86,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
     @Override
     public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
-        // Without XRA, there are no discrepancies
+        // Without XRA (runExtended() is currently no implemented), there are no discrepancies
     }
 
     private class LazyInitializer implements Definition.Visitor<RelationAnalysis.Knowledge> {

@@ -72,8 +72,7 @@ public class WmmEncoder {
             secure = true)
     private boolean allowMultiReads = false;
 
-    @Option(
-            name=IDL_TO_SAT,
+    @Option(name=IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     boolean useSATEncoding = false;
