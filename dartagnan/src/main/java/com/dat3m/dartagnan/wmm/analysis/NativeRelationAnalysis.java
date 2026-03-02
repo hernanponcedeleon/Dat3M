@@ -1644,12 +1644,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void computeCartesianProduct(MutableEventGraph target, EventGraph domain, EventGraph range) {
+            final List<Event> newRange = new ArrayList<>(range.getDomain().size());
+            range.getDomain().stream()
+                    .filter(x -> range.contains(x, x))
+                    .forEach(newRange::add);
+
             for (Event e1 : domain.getDomain()) {
                 if (domain.contains(e1, e1)) {
-                    final Set<Event> newRange = new HashSet<>(range.getDomain());
-                    newRange.removeIf(e2 -> !range.contains(e2, e2));
-                    newRange.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
-                    target.addRange(e1, newRange);
+                    for (Event e2 : newRange) {
+                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                            target.add(e1, e2);
+                        }
+                    }
                 }
             }
         }
