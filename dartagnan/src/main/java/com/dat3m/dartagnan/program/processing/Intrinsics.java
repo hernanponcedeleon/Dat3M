@@ -1695,7 +1695,9 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>();
         
         Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
+        Label check1fail = EventFactory.newLabel("__memcpy_s_fail_1");
         Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
+        Label check2fail = EventFactory.newLabel("__memcpy_s_fail_2");
         Label success = EventFactory.newLabel("__memcpy_s_success");
         Label end = EventFactory.newLabel("__memcpy_s_end");
 
@@ -1703,13 +1705,15 @@ public class Intrinsics {
         Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
 
         // Condition 1: dest == NULL or destsz > RSIZE_MAX ----> return error > 0
-        final Expression cond1 = expressions.makeOr(destIsNull, invalidDestsz);
-        CondJump skipE1 = EventFactory.newJump(expressions.makeNot(cond1), check2);
+        CondJump check1part1 = EventFactory.newJump(destIsNull, check1fail);
+        CondJump check1part2 = EventFactory.newJumpUnless(invalidDestsz, check2);
         CondJump skipRest1 = EventFactory.newGoto(end);
         Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check1,
-            skipE1,
+            check1part1,
+            check1part2,
+            check1fail,
             retError1,
             skipRest1
         ));
@@ -1717,13 +1721,17 @@ public class Intrinsics {
         // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
         // ----> return error > 0 and zero out [dest, dest+destsz)
         // The first two are guaranteed by not matching cond1
-        final Expression cond2 = expressions.makeOr(expressions.makeOr(srcIsNull, invalidCount), overlap);
-        CondJump skipE2 = EventFactory.newJump(expressions.makeNot(cond2), success);
+        CondJump check2part1 = EventFactory.newJump(srcIsNull, check2fail);
+        CondJump check2part2 = EventFactory.newJump(invalidCount, check2fail);
+        CondJump check2part3 = EventFactory.newJumpUnless(overlap, success);
         CondJump skipRest2 = EventFactory.newGoto(end);
         Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check2,
-            skipE2
+            check2part1,
+            check2part2,
+            check2part3,
+            check2fail
         ));
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
