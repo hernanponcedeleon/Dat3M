@@ -873,6 +873,7 @@ public class Intrinsics {
         final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
         final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
+                Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType())),
                 spinLoopHead,
                 newPthreadTryLock(oldValueSuccessRegister, address),
                 EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),

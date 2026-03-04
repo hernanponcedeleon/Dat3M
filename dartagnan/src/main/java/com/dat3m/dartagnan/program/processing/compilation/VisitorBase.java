@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -92,8 +93,9 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public final List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-        final var type = e.getResultRegister().getType() instanceof AggregateType t ? t : null;
-        verify(type != null && type.getFields().size() == 2, "Invalid result type of '%s'", e);
+        final Type resultType = e.getResultRegister().getType();
+        verify(resultType instanceof AggregateType t && t.getFields().size() == 2, "Invalid result type of '%s'", e);
+        final AggregateType type = (AggregateType) resultType;
         final Register oldValue = e.getFunction().newUniqueRegister("LlvmCmpXchg.oldValue", e.getExpectedValue().getType());
         final Register success = e.getFunction().newUniqueRegister("LlvmCmpXchg.success", types.getBooleanType());
         final Expression r0 = expressions.makeCast(oldValue, type.getFields().get(0).type());
