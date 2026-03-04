@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
@@ -18,8 +19,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
 public final class ExpressionFactory {
 
@@ -120,6 +119,10 @@ public final class ExpressionFactory {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
+    public Expression makeIntNot(Expression operand) {
+        return makeIntUnary(IntUnaryOp.NOT, operand);
+    }
+
     public Expression makeNeg(Expression operand) {
         return makeIntUnary(IntUnaryOp.MINUS, operand);
     }
@@ -209,24 +212,24 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Floats
 
-    public FloatLiteral makeZero(FloatType type) {
-        return makeValue(BigDecimal.ZERO, type);
+    public FloatLiteral makePlusZero(FloatType type) {
+        return makeValue(BigDecimal.ZERO, false, type);
     }
 
     public FloatLiteral makePlusInf(FloatType type) {
-        return new FloatLiteral(type, BigDecimal.valueOf(1), false, true);
+        return new FloatLiteral(type, null, false, false, true);
     }
 
     public FloatLiteral makeMinusInf(FloatType type) {
-        return new FloatLiteral(type, BigDecimal.valueOf(-1), false, true);
+        return new FloatLiteral(type, null, true, false, true);
     }
 
     public FloatLiteral makeNan(FloatType type) {
-        return new FloatLiteral(type, null, true, false);
+        return new FloatLiteral(type, null, false, true, false);
     }
 
-    public FloatLiteral makeValue(BigDecimal value, FloatType type) {
-        return new FloatLiteral(type, value, false, false);
+    public FloatLiteral makeValue(BigDecimal absValue, boolean sign, FloatType type) {
+        return new FloatLiteral(type, absValue.abs(), sign, false, false);
     }
 
     public Expression makeOLT(Expression leftOperand, Expression rightOperand) {
@@ -343,7 +346,7 @@ public final class ExpressionFactory {
             long distinctSubtypesCount = items.stream().map(Expression::getType).distinct().count();
             Preconditions.checkArgument(distinctSubtypesCount == 1,
                     "All elements in an array must have the same type.");
-            Preconditions.checkArgument(isStaticTypeOf(items.get(0).getType(), type.getElementType()),
+            Preconditions.checkArgument(types.isStaticTypeOf(items.get(0).getType(), type.getElementType()),
                     "Array elements must match expected type");
         }
         return new ConstructExpr(type, items);
@@ -402,7 +405,69 @@ public final class ExpressionFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Misc
+    // Memory
+
+    public Expression makeToMemoryCast(Expression operand) {
+        if (operand.getType() instanceof MemoryType) {
+            return operand;
+        }
+        return new ToMemoryCast(types.getMemoryTypeFor(operand.getType()), operand);
+    }
+
+    public Expression makeFromMemoryCast(Expression operand, Type type) {
+        Preconditions.checkArgument(types.getMemorySizeInBits(operand.getType()) == types.getMemorySizeInBits(type));
+        if (operand.getType().equals(type)) {
+            return operand;
+        }
+        return new FromMemoryCast(type, operand);
+    }
+
+    public Expression makeMemoryConcat(List<? extends Expression> operands) {
+        return new MemoryConcat(operands);
+    }
+
+    public Expression makeMemoryExtract(Expression operand, int lowBit, int highBit) {
+        return new MemoryExtract(operand, lowBit, highBit);
+    }
+
+    public Expression makeMemoryExtend(Expression operand, MemoryType targetType) {
+        return new MemoryExtend(targetType, operand);
+    }
+
+    // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".
+    // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
+    // "source type < target type": a zero-extension is performed before converting to the target type
+    // "source type > target type": only the lowest bits of <expr> are used for the conversion.
+    public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict) {
+        final Type sourceType = expr.getType();
+        if (sourceType.equals(targetType)) {
+            return expr;
+        }
+
+        final int targetSize = types.getMemorySizeInBits(targetType);
+        final int sourceSize = types.getMemorySizeInBits(sourceType);
+
+        Preconditions.checkArgument(!strict || (targetSize == sourceSize),
+                "Strict memory cast from %s to %s not possible: " +
+                        "mismatching memory sizes.", sourceType, targetType);
+
+        Expression exprMem = makeToMemoryCast(expr);
+        if (targetSize < sourceSize) {
+            exprMem = makeMemoryExtract(exprMem, 0, targetSize - 1);
+        } else if (targetSize > sourceSize) {
+            exprMem = makeMemoryExtend(exprMem, types.getMemoryTypeFor(targetType));
+        }
+        exprMem = makeFromMemoryCast(exprMem, targetType);
+
+        return exprMem;
+    }
+
+    public Expression makeBitcast(Expression expr, Type targetType) {
+        return makeCastOverMemory(expr, targetType, true);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
 
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
@@ -423,7 +488,9 @@ public final class ExpressionFactory {
         } else if (type instanceof BooleanType) {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
-            return makeZero(floatType);
+            return makePlusZero(floatType);
+        } else if (type instanceof MemoryType memoryType) {
+            return makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
@@ -460,6 +527,8 @@ public final class ExpressionFactory {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
             return makeFloatCmp(leftOperand, FloatCmpOp.EQ, rightOperand);
+        } else if (type instanceof MemoryType) {
+            return new MemoryEqualExpr(booleanType, leftOperand, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
@@ -522,4 +591,5 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
+
 }

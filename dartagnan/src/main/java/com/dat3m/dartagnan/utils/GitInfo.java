@@ -35,4 +35,8 @@ public class GitInfo {
         return properties.getProperty("git.commit.id", "unknown");
     }
 
+    public static String getGitTags() {
+        return properties.getProperty("git.tags", "unknown");
+    }
+
 }

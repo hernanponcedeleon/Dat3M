@@ -4,14 +4,16 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 
@@ -19,6 +21,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
     private final ProgramBuilder builder;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final TypeFactory types = TypeFactory.getInstance();
 
     public VisitorOpsComposite(ProgramBuilder builder) {
         this.builder = builder;
@@ -52,7 +55,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 .map(Integer::parseUnsignedInt)
                 .toList();
         Expression insertion = getInsertion(compositeExpression, objectExpr, indexes, id);
-        if (TypeFactory.isStaticTypeOf(compositeExpression.getType(), type)) {
+        if (types.isStaticTypeOf(compositeExpression.getType(), type)) {
             builder.addExpression(id, insertion);
             return null;
         }
@@ -122,14 +125,14 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
                 String idCtx = vCtx.idRef().getText();
                 Expression elem = builder.getExpression(idCtx);
-                if (!TypeFactory.isStaticTypeOf(elem.getType(), arrayType.getElementType())) {
+                if (!types.isStaticTypeOf(elem.getType(), arrayType.getElementType())) {
                     throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
                         "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
                 }
                 elements.add(elem);
             }
             Expression array = getArray(arrayType, elements, id);
-            if (!TypeFactory.isStaticTypeOf(array.getType(), type)) {
+            if (!types.isStaticTypeOf(array.getType(), type)) {
                 throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
                         "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
             }

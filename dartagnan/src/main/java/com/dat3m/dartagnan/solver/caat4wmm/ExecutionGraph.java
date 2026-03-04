@@ -10,13 +10,19 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.*;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.DifferenceSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.IntersectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.UnionSet;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
@@ -175,11 +181,11 @@ public class ExecutionGraph {
         CAATPredicate innerPred = inner.isSet() ?
             getOrCreateSetFromRelation(inner) :
             getOrCreateGraphFromRelation(inner);
-        if (axiom.isAcyclicity()) {
+        if (axiom instanceof Acyclicity) {
             constraint = new AcyclicityConstraint((RelationGraph) innerPred);
-        } else if (axiom.isEmptiness()) {
+        } else if (axiom instanceof Emptiness) {
             constraint = new EmptinessConstraint(innerPred);
-        } else if (axiom.isIrreflexivity()) {
+        } else if (axiom instanceof Irreflexivity) {
             constraint = new IrreflexivityConstraint((RelationGraph) innerPred);
         } else {
             throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");

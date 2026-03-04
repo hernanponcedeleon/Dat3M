@@ -16,7 +16,7 @@ public final class EdgeLiteral extends CAATLiteralBase<RelationGraph, Edge> {
 
     @Override
     public String toString() {
-        return getName() + data;
+        return (isNegative() ? "!" : "") + getName() + data;
     }
 
 }

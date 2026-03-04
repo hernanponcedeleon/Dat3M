@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.Interval;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -22,6 +24,7 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.verification.Context;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -32,8 +35,9 @@ import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -46,7 +50,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
 @Options
-public class ProgramEncoder implements Encoder {
+public class ProgramEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(ProgramEncoder.class);
 
@@ -448,21 +452,21 @@ public class ProgramEncoder implements Encoder {
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
 
-            final BiFunction<Expression, Expression, BooleanFormula> equate = (a, b) -> {
+            final BiFunction<Expression, Expression, BooleanFormula> assign = (a, b) -> {
                 final Event alloc = cur.getAllocationSite();
                 return cur.isStaticallyAllocated()
-                        ? exprEnc.equal(a, b)
-                        : exprEnc.equalAt(a, alloc, b, alloc);
+                        ? exprEnc.assignEqual(a, b)
+                        : exprEnc.assignEqualAt(a, alloc, b, alloc);
             };
 
             // Encode size
-            enc.add(equate.apply(sizeVar, size));
+            enc.add(assign.apply(sizeVar, size));
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             if (prev == null) {
                 // First object is placed at alignment
-                enc.add(equate.apply(addrVar, alignment));
+                enc.add(assign.apply(addrVar, alignment));
             } else {
                 final Expression nextAvailableAddr = exprs.makeAdd(context.address(prev), context.size(prev));
                 final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
@@ -470,7 +474,7 @@ public class ProgramEncoder implements Encoder {
                 );
 
                 // ... other objects are placed at the next well-aligned address that is available.
-                enc.add(equate.apply(addrVar, nextAlignedAddr));
+                enc.add(assign.apply(addrVar, nextAlignedAddr));
             }
         }
 
@@ -515,7 +519,7 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    BooleanFormula equalValue = exprEncoder.equalAt(register, reader, context.result(writer), writer);
+                    BooleanFormula equalValue = exprEncoder.assignEqualAt(register, reader, context.result(writer), writer);
                     enc.add(bmgr.implication(edge, equalValue));
                     overwrite.add(context.execution(writer));
                 }
@@ -523,7 +527,7 @@ public class ProgramEncoder implements Encoder {
                 if(initializeRegisters && !reg.mustBeInitialized()) {
                     final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(exprEncoder.equalAt(register, reader, zero, reader));
+                    overwrite.add(exprEncoder.assignEqualAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
             }
@@ -556,7 +560,7 @@ public class ProgramEncoder implements Encoder {
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, exprs.makeGeneralZero(register.getType())));
+                clause.add(exprEncoder.assignEqual(register, exprs.makeGeneralZero(register.getType())));
                 for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
@@ -565,7 +569,7 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, context.result(writer)));
+                clause.add(exprEncoder.assignEqual(register, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
                 for (Event w : writers.subList(i + 1, writers.size())) {
                     if (!exec.areMutuallyExclusive(writer, w)) {
@@ -741,5 +745,52 @@ public class ProgramEncoder implements Encoder {
             return bmgr.implication(hasForwardProgress(group), bmgr.and(enc));
         }
     }
-}
 
+    // ============= Bounds =============
+
+    private BooleanFormula encodeRegisterBounds(Formula variable, Interval interval) {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        if (interval.isTop()) {
+            return bmgr.makeTrue();
+        }
+        List<BooleanFormula> enc = new ArrayList<>();
+        BigInteger lowerbound = interval.getLowerbound();
+        BigInteger upperbound = interval.getUpperbound();
+
+        if (variable instanceof BitvectorFormula bvar) {
+            if (interval.isSignInsensitive()) {
+                BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                int bitWidth = bvmgr.getLength(bvar);
+                enc.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
+                enc.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
+            }
+        } else if (variable instanceof IntegerFormula ivar) {
+            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+            enc.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
+            enc.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
+        }
+        return bmgr.and(enc);
+    }
+
+    public BooleanFormula encodeBounds() {
+        Context analysisContext = context.getAnalysisContext();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        if (!analysisContext.has(IntervalAnalysis.class)) {
+            return bmgr.makeTrue();
+        }
+        List<BooleanFormula> enc = new ArrayList<>();
+        IntervalAnalysis intervalAnalysis = analysisContext.get(IntervalAnalysis.class);
+        ExpressionEncoder exprEnc = context.getExpressionEncoder();
+
+        for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+            for (Register.Read read : e.getRegisterReads()) {
+                if (read.register().getType() instanceof IntegerType) {
+                    enc.add(encodeRegisterBounds(exprEnc.encodeAt(read.register(), e).formula(), intervalAnalysis.getIntervalAt(e, read.register())));
+                }
+            }
+        }
+        return bmgr.and(enc);
+    }
+}

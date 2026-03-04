@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -68,6 +68,7 @@ public interface RelationAnalysis {
             logger.info(configSummary.toString());
         }
 
+        final Wmm wmm = task.getMemoryModel();
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
@@ -75,28 +76,28 @@ public interface RelationAnalysis {
         if (logger.isInfoEnabled()) {
             logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
             summary.append("\n======== RelationAnalysis summary ======== \n");
-            summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
-            summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
+            summary.append("\t#Relations: ").append(wmm.getRelations().size()).append("\n");
+            summary.append("\t#Axioms: ").append(wmm.getAxioms().size()).append("\n");
         }
         if (c.enableExtended) {
             long mayCount = -1;
             long mustCount = -1;
             if (logger.isInfoEnabled()) {
-                mayCount = a.countMaySet();
-                mustCount = a.countMustSet();
+                mayCount = countMaySet(wmm, a);
+                mustCount = countMustSet(wmm, a);
             }
             a.runExtended();
             if (logger.isInfoEnabled()) {
                 logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
-                summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
-                summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
+                summary.append("\t#may-edges removed (extended): ").append(mayCount - countMaySet(wmm, a)).append("\n");
+                summary.append("\t#must-edges added (extended): ").append(countMustSet(wmm, a) - mustCount).append("\n");
             }
         }
         if (logger.isInfoEnabled()) {
-            Knowledge rf = a.getKnowledge(task.getMemoryModel().getRelation(RF));
-            Knowledge co = a.getKnowledge(task.getMemoryModel().getRelation(CO));
+            Knowledge rf = a.getKnowledge(wmm.getRelation(RF));
+            Knowledge co = a.getKnowledge(wmm.getRelation(CO));
             summary.append("\ttotal #must|may|exclusive edges: ")
-                    .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.getContradictions().size()).append("\n");
+                    .append(countMustSet(wmm, a)).append("|").append(countMaySet(wmm, a)).append("|").append(a.getContradictions().size()).append("\n");
             summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
             summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
             summary.append("===========================================");
@@ -104,6 +105,50 @@ public interface RelationAnalysis {
         }
         return a;
     }
+
+    /*
+        Consider a relation definition "let c = a op b".
+        A "discrepancy" is an element c(x,y) that is statically known but not implied
+        by the static information we have about "a" and "b".
+        This can only happen if we obtain information about "c(x,y)" from other constraints
+        besides its definition, e.g., when we perform XRA.
+     */
+    void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancyCollector);
+    
+    private static long countMaySet(Wmm memoryModel, RelationAnalysis ra) {
+        return memoryModel.getRelations().stream()
+                .mapToLong(rel -> ra.getKnowledge(rel).getMaySet().size())
+                .sum();
+    }
+
+    private static long countMustSet(Wmm memoryModel, RelationAnalysis ra) {
+        return memoryModel.getRelations().stream()
+                .mapToLong(rel -> ra.getKnowledge(rel).getMustSet().size())
+                .sum();
+    }
+
+    /**
+     * Fetches results of this analysis.
+     *
+     * @param relation Some element in the associated task's memory model.
+     * @return Pairs of events of the program that may be related in some execution or even must be related in all executions.
+     */
+    Knowledge getKnowledge(Relation relation);
+
+    /**
+     * Iterates those event pairs that, if both executed, violate some axiom of the memory model.
+     */
+    EventGraph getContradictions();
+
+    /**
+     * Runs the relation analysis.
+     */
+    void run();
+
+    /**
+     * Runs the extended relation analysis.
+     */
+    void runExtended();
 
     @Options
     final class Config {
@@ -121,62 +166,6 @@ public interface RelationAnalysis {
             config.inject(this);
         }
     }
-
-    /**
-     * Fetches results of this analysis.
-     *
-     * @param relation Some element in the associated task's memory model.
-     * @return Pairs of events of the program that may be related in some execution or even must be related in all executions.
-     */
-    Knowledge getKnowledge(Relation relation);
-
-    /**
-     * Iterates those event pairs that, if both executed, violate some axiom of the memory model.
-     */
-    EventGraph getContradictions();
-
-    /*
-        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
-        clock-constraints do not need to get encoded explicitly.
-        e.g. for co relation: (e1 = w1, e2 = w2)
-        The reason is that whenever we have co(w1,w2) then there exists an intermediary
-        w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
-        Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
-        whose execution is either implied by either w1 or w2.
-        Now, if co(w1, w3) is a must-edge and co(w2, w3) is impossible, then we can reason as follows.
-            - Suppose w1 and w2 get executed and their addresses match, then w3 must also get executed.
-            - Since co(w1, w3) is a must-edge, we have that w3 accesses the same address as w1 and w2,
-              and c(w1) < c(w3).
-            - Because addr(w2)==addr(w3), we must also have either co(w2, e3) or co(w3, w2).
-              The former is disallowed by assumption, so we have co(w3, w2) and hence c(w3) < c(w2).
-            - By transitivity, we have c(w1) < c(w3) < c(w2) as desired.
-            - Note that this reasoning has to be done inductively, because co(w1, w3) or co(w3, w2) may
-              not involve encoding a clock constraint (due to this optimization).
-        There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
-     */
-    EventGraph findTransitivelyImpliedCo(Relation co);
-
-    /**
-     * Runs the relation analysis.
-     */
-    void run();
-
-    /**
-     * Runs the extended relation analysis.
-     */
-    void runExtended();
-
-    /**
-     * Returns the may set size.
-     */
-    long countMaySet();
-
-    /**
-     * Returns the must set size.
-     */
-    long countMustSet();
-
-    void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations);
 
     class Knowledge {
         protected final EventGraph may;

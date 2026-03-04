@@ -79,4 +79,10 @@ public enum Property implements OptionInterface {
                 .reduce((x, y) -> x == y ? x : Type.MIXED)
                 .orElse(Type.SAFETY); // In the odd case that the properties are empty, we consider it a safety spec
     }
+
+    public static boolean requiresSvcompWitness(EnumSet<Property> properties) {
+        return properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM)
+            || properties.contains(TRACKABILITY);
+    }
+
 }

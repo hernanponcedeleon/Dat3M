@@ -100,7 +100,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"zero-extension", IMM, PASS, 1},
                 {"floats_1", IMM, PASS, 1},
                 {"floats_2", IMM, PASS, 1},
-                // {"floats_3", IMM, PASS, 1}, // TODO we can enable this once we have proper support for bitcats, see #957
+                {"floats_3", IMM, PASS, 1},
                 {"floats_4", IMM, PASS, 1},
                 {"floats_5", IMM, PASS, 1},
                 {"floats_5_f", IMM, FAIL, 1},
@@ -114,6 +114,10 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"floats_12", IMM, PASS, 1},
                 {"floats_13", IMM, PASS, 1},
                 {"floats_14", IMM, PASS, 1},
+                {"floats_15", IMM, PASS, 1},
+                {"floats_15_f", IMM, FAIL, 1},
+                {"floats_16", IMM, PASS, 1},
+                {"floats_16_f", IMM, FAIL, 1},
         });
     }
 

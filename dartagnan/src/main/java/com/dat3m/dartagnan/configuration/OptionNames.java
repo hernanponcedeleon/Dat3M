@@ -34,7 +34,7 @@ public class OptionNames {
     // Encoding Options
     public static final String USE_INTEGERS = "encoding.integers";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
-    public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
+    public static final String REDUCE_ACYCLICITY_RELEVANT_SETS = "encoding.wmm.reduceAcyclicityRelevantSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
     public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
     public static final String IGNORE_FILTER_SPECIFICATION = "encoding.ignoreFilterSpecification";
@@ -61,8 +61,7 @@ public class OptionNames {
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
     public static final String ALIAS_GRAPHVIZ_SHOW_ALL = "program.analysis.generateAliasGraph.showAllEvents";
     public static final String ALIAS_GRAPHVIZ_INTERNAL = "program.analysis.generateAliasGraph.internal";
-    public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
-    public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
+    public static final String INTERVAL_ANALYSIS_METHOD = "program.analysis.interval";
 
     // Memory Model Options
     public static final String WMM_ATOMICITY = "wmm.analysis.assumeAtomicity";
@@ -81,6 +80,8 @@ public class OptionNames {
     // Witness Options
     public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
     public static final String WITNESS_SHOW = "witness.show";
+    public static final String WITNESS_FILENAME = "witness.filename";
+    public static final String WITNESS_UNKNOWN = "witness.unknown";
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";

@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.CAST;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
@@ -71,7 +71,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         return bmgr.and(
                 super.encodeExec(context),
-                context.getExpressionEncoder().equal(context.result(this), notExec, RIGHT_TO_LEFT)
+                context.getExpressionEncoder().assignEqual(context.result(this), notExec, CAST)
         );
     }
 

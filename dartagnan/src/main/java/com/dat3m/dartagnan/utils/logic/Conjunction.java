@@ -97,7 +97,6 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     private void computeHash() {
         // We increase the hashCode by 1 to avoid a 0 hashcode for non-empty conjunctions
         hashCode = literals.hashCode() + (literals.isEmpty() ? 0 : 1);
-        assert (isTrue() || isFalse() || hashCode != 0);
     }
 
     @Override

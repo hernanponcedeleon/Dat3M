@@ -5,36 +5,21 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.Xchg;
-import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
+import com.dat3m.dartagnan.program.event.arch.*;
+import com.dat3m.dartagnan.program.event.arch.ptx.*;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
-import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
+import com.dat3m.dartagnan.program.event.core.annotations.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -233,6 +218,14 @@ public class EventFactory {
         return new Local(register, expr);
     }
 
+    public static NonDetChoice newNonDetChoice(Register register) {
+        return new NonDetChoice(register, false);
+    }
+
+    public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
+        return new NonDetChoice(register, isSigned);
+    }
+
     public static Label newLabel(String name) {
         return new Label(name);
     }
@@ -272,6 +265,10 @@ public class EventFactory {
 
     public static Assert newAssert(Expression expr, String errorMessage) {
         return new Assert(expr, errorMessage);
+    }
+
+    public static LoopBound newLoopBound(Expression bound) {
+        return new LoopBound(bound);
     }
 
     // ------------------------------------------ RMW events ------------------------------------------
@@ -406,6 +403,18 @@ public class EventFactory {
         public static Xchg newXchg(Register register, Expression address, Expression storeValue) {
             return new Xchg(register, address, storeValue);
         }
+
+        public static CAS newCAS(Register srcReg, Expression address, Expression cmpVal, Expression storeValue) {
+            return new CAS(srcReg, address, cmpVal, storeValue);
+        }
+
+        public static RMWFetchOp newRmwFetchOp(Register resultReg, Expression address, IntBinaryOp op, Expression operand) {
+            return new RMWFetchOp(resultReg, address, op, operand);
+        }
+
+        public static RMWOp newRmwOp(Expression address, IntBinaryOp op, Expression operand) {
+            return new RMWOp(address, op, operand);
+        }
     }
 
     // =============================================================================================
@@ -454,10 +463,6 @@ public class EventFactory {
 
         public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new AtomicXchg(register, address, value, mo);
-        }
-
-        public static OpenCLRMWExtremum newRMWExtremum(Register register, Expression address, IntCmpOp op, Expression value, String mo) {
-            return new OpenCLRMWExtremum(register, address, op, value, mo);
         }
     }
     // =============================================================================================
@@ -509,30 +514,6 @@ public class EventFactory {
 
         public static EndAtomic newEndAtomic(BeginAtomic begin) {
             return new EndAtomic(begin);
-        }
-
-        public static LoopBegin newLoopBegin() {
-            return new LoopBegin();
-        }
-
-        public static SpinStart newSpinStart() {
-            return new SpinStart();
-        }
-
-        public static SpinEnd newSpinEnd() {
-            return new SpinEnd();
-        }
-
-        public static LoopBound newLoopBound(Expression bound) {
-            return new LoopBound(bound);
-        }
-
-        public static NonDetChoice newNonDetChoice(Register register) {
-            return new NonDetChoice(register, false);
-        }
-
-        public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
-            return new NonDetChoice(register, isSigned);
         }
     }
 
@@ -827,11 +808,6 @@ public class EventFactory {
             return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
 
-        public static VulkanRMWExtremum newRMWExtremum(Expression address, Register register, IntCmpOp op,
-                                                       Expression value, String mo, String scope) {
-            return new VulkanRMWExtremum(register, address, op, value, mo, scope);
-        }
-
         public static VulkanCmpXchg newVulkanCmpXchg(Expression address, Register register, Expression expected,
                                                      Expression value, String mo, String scope) {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
@@ -876,11 +852,6 @@ public class EventFactory {
         public static SpirvCmpXchg newSpirvCmpXchg(Register register, Expression address, Expression cmp, Expression value,
                                                    String scope, Set<String> eqTags, Set<String> neqTags) {
             return new SpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
-        }
-
-        public static SpirvRmwExtremum newSpirvRmwExtremum(Register register, Expression address, IntCmpOp op, Expression value,
-                                                           String scope, Set<String> tags) {
-            return new SpirvRmwExtremum(register, address, op, value, scope, tags);
         }
     }
 }

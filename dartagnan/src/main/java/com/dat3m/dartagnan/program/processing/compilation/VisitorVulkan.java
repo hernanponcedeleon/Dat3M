@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
 
@@ -71,25 +70,6 @@ public class VisitorVulkan extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.Vulkan.storeMO(e.getMo()));
-        propagateLoadTags(e, load);
-        propagateStoreTags(e, store);
-        return eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummy)
-        );
-    }
-
-    @Override
-    public List<Event> visitVulkanRMWExtremum(VulkanRMWExtremum e) {
-        replaceAcqRelMemoryOrder(e);
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(e.getMo()));
-        Expression cmpExpr = expressions.makeIntCmp(dummy, e.getOperator(), e.getValue());
-        Expression ite =  expressions.makeITE(cmpExpr, dummy, e.getValue());
-        RMWStore store = newRMWStoreWithMo(load, address, ite, Tag.Vulkan.storeMO(e.getMo()));
         propagateLoadTags(e, load);
         propagateStoreTags(e, store);
         return eventSequence(

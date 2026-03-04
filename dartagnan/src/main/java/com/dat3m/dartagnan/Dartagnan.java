@@ -113,7 +113,8 @@ public class Dartagnan extends BaseOptions {
         if (Arrays.asList(args).contains("--version")) {
             final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
             final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
-            final String version = String.format("%s (commit %s)", mvnReader.read(fileReader).getVersion(), getGitId());
+            final String base = mvnReader.read(fileReader).getVersion();
+            final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
             return;
         }
@@ -167,12 +168,16 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
-                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
-                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType());
-                }
-                // We only generate SVCOMP witnesses if we are not validating one.
-                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
+                // We only generate witnesses if we are not validating one.
+                if (!o.runValidator()) {
+                    final String progName = task.getProgram().getName();
+                    final int fileSuffixIndex = progName.lastIndexOf('.');
+                    final String filename = o.hasWitnessFilename() ?
+                                        o.getWitnessFilename() :
+                                        progName.isEmpty() ?
+                                            "unnamed_program" :
+                                            (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
+                    generateWitnessIfAble(task, modelChecker, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -238,41 +243,40 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType)
-            throws SolverException, IOException {
-        Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
-
-        final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-        final String progName = task.getProgram().getName();
-        final int fileSuffixIndex = progName.lastIndexOf('.');
-        final String name = progName.isEmpty() ? "unnamed_program" :
-                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        final ExecutionModelNext model = modelChecker.getExecutionGraph();
-        // RF edges give both ordering and data flow information, thus even when the pair is in PO
-        // we get some data flow information by observing the edge
-        // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(model, 1, (x, y) -> true,
-                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng(), task.getConfig());
-    }
-
-    private static void generateWitnessIfAble(VerificationTask task,
-            ModelChecker modelChecker, String details) throws SolverException {
-        // ------------------ Generate Witness, if possible ------------------
-        final EnumSet<Property> properties = task.getProperty();
-        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM))
-                && modelChecker.getResult() != UNKNOWN) {
-            try (IREvaluator evaluator = modelChecker.getModel()) {
-                WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
-                if (w.canBeBuilt()) {
-                    w.build().write();
-                }
-            } catch (InvalidConfigurationException e) {
-                logger.warn(e.getMessage());
+    public static File generateWitnessIfAble(VerificationTask task, ModelChecker modelChecker,
+        WitnessType witnessType, String filename, String details, boolean generateWitnessForUnknown) throws SolverException, IOException {
+            if (!modelChecker.hasModel() ||
+                (modelChecker.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
+                return null;
             }
-        }
+            switch (witnessType) {
+                case NONE:
+                    break;
+                case GRAPHML:
+                    assert modelChecker.getResult() != UNKNOWN;
+                    if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && requiresSvcompWitness(task.getProperty())) {
+                        try (IREvaluator evaluator = modelChecker.getModel()) {
+                            WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
+                            if (w.canBeBuilt()) {
+                                w.build().write(filename);
+                            }
+                        } catch (InvalidConfigurationException e) {
+                            logger.warn(e.getMessage());
+                        }
+                    }
+                    break;
+                case DOT, PNG:
+                    final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
+                    final ExecutionModelNext model = modelChecker.getExecutionGraph();
+                    // RF edges give both ordering and data flow information, thus even when the pair is in PO
+                    // we get some data flow information by observing the edge
+                    // CO edges only give ordering information which is known if the pair is also in PO
+                    return generateGraphvizFile(model, 1, (x, y) -> true,
+                            (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                            getOrCreateOutputDirectory() + "/", filename,
+                            synContext, witnessType.convertToPng(), task.getConfig());
+            }
+            return null;
     }
 
     public static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, String path, long time) throws SolverException {

@@ -400,7 +400,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 } catch (UnsupportedOperationException e) {
                     logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
                     if(resultRegister != null){
-                        Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
+                        Event nonDeterministicValue = EventFactory.newNonDetChoice(resultRegister);
                         events = Optional.of(List.of(nonDeterministicValue));
                     }
                     unsupportedEncountered = true;
@@ -410,7 +410,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if(!unsupportedEncountered && events.isEmpty()){
                 String msg = "Ignoring call.";
                 if(resultRegister != null){
-                    block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                    block.events.add(EventFactory.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
                 logger.warn("None of the parsers succeeded for inline assembly." + msg);
@@ -835,7 +835,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 case "and" -> IntBinaryOp.AND;
                 case "or" -> IntBinaryOp.OR;
                 case "xor" -> IntBinaryOp.XOR;
-                //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
+                case "max" -> IntBinaryOp.SMAX;
+                case "min" -> IntBinaryOp.SMIN;
+                case "umax" -> IntBinaryOp.UMAX;
+                case "umin" -> IntBinaryOp.UMIN;
+                //TODO nand, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
                 default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
             event = Llvm.newRMW(register, address, operand, op, mo);
@@ -903,7 +907,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitBitCastInst(BitCastInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        final Expression operandExpression = visitTypeValue(ctx.typeValue());
+        final Type targetType = parseType(ctx.type());
+        checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", ctx.type());
+        final Expression result = expressions.makeBitcast(operandExpression, targetType);
+        return assignToRegister(result);
     }
 
     @Override
@@ -914,8 +922,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        // checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target); // TODO we can enable this once we have proper support for bitcats, see #957
+        checkSupport(targetType instanceof IntegerType || targetType instanceof FloatType, "Neither integer nor float in %s.", target);
         final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
@@ -964,10 +971,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             } else if (Double.isNaN(value)) {
                 return expressions.makeNan(fType);
             } else {
-                return expressions.makeValue(BigDecimal.valueOf(value), fType);
+                final boolean sign = Double.compare(value, 0.0) < 0; // -0.0 < +0.0
+                return expressions.makeValue(BigDecimal.valueOf(value), sign, fType);
             }
+        } else {
+            final String text = ctx.getText();
+            final boolean sign = text.startsWith("-");
+            return expressions.makeValue(new BigDecimal(text), sign, fType);
         }
-        return expressions.makeValue(new BigDecimal(ctx.getText()), fType);
     }
 
     @Override

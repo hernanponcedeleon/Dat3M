@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
+import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 

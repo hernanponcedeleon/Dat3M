@@ -32,29 +32,6 @@ import org.sosy_lab.java_smt.api.Formula;
     type of tuple formula. However, as in point (2), their bitwise representation is different which may affect
     the semantics of MSA, or generally, the conversion to a BV type
 
-    TODO:
-        The above examples showcase that IR Types should have a unifying bitwise(?) representation which becomes relevant
-        when communicating over memory.
-        We can give this representation an IR Type M = AbstractBytes<size> parametric in the bitsize.
-        Then this type should satisfy the following properties:
-            - Every standard IR Type T should be convertable to an appropriately-sized M
-            - M should be convertable to other IR types (not necessarily all?)
-            - A round trip T->M->T should be lossless.
-        ======
-        Stores of type T conceptually store Convert(T->M) in memory and loads of type T load sizeof(T) bits
-        of type M and then convert them to T via Convert(M->T).
-        The lossless roundtrip property guarantees that a T-load of a T-store reads precisely the correct value.
-        For type-mismatches, i.e. T1-load reads T2-store, the intermediate M type gives the conversion T2 -> M -> T1.
-        ======
-        The type M should allow for only two operations: extraction and concatenation
-        ======
-        Values of type M<X> represent an X-bit value, but their underlying representations are allowed to carry arbitrary
-        metadata, i.e., they may be of shape (metadata, bvX).
-        This might be necessary to preserve metadata like pointer provenance over memory:
-        PT (bv64 base, bv64 offset) would get converted to M (bv64 base, bv64 base + offset) so that a conversion back to
-        PT is lossless.
-        Similarly, the metadata could even carry the original type from which M was constructed if it helps in any way.
-        Metadata then needs to be preserved even over extract/concatenation operations.
  */
 public record TypedFormula<TType extends Type, TFormula extends Formula>(TType type, TFormula formula)
     implements LeafExpression {

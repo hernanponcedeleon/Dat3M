@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -132,24 +131,6 @@ public class VisitorC11 extends VisitorBase {
         Event barrier = EventFactory.newControlBarrier(e.getName(), e.getInstanceId(), e.getExecScope());
         barrier.addTags(C11.MO_ACQUIRE_RELEASE);
         return tagList(e, eventSequence(barrier));
-    }
-
-    @Override
-    public List<Event> visitOpenCLRMWExtremum(OpenCLRMWExtremum e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.C11.loadMO(mo));
-        Expression cmpExpr = expressions.makeIntCmp(dummy, e.getOperator(), e.getValue());
-        Expression ite = expressions.makeITE(cmpExpr, dummy, e.getValue());
-        RMWStore store = newRMWStoreWithMo(load, address, ite, Tag.C11.storeMO(mo));
-
-        return tagList(e, eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummy)
-        ));
     }
 
     // =============================================================================================

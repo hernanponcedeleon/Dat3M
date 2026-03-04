@@ -16,7 +16,7 @@ public final class ElementLiteral extends CAATLiteralBase<SetPredicate, Element>
 
     @Override
     public String toString() {
-        return getName() + "(" + data + ")";
+        return (isNegative() ? "!" : "") + getName() + "(" + data + ")";
     }
 
 }

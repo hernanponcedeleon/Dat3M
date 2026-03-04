@@ -143,10 +143,6 @@ public class IREvaluator implements AutoCloseable {
         return TRUE.equals(smtModel.evaluate(edgeEncoder.encode(a, b)));
     }
 
-    public BigInteger memoryOrderClock(Event write) {
-        return smtModel.evaluate(ctx.memoryOrderClock(write));
-    }
-
     public BigInteger clock(String name, Event e) {
         return smtModel.evaluate(ctx.clockVariable(name, e));
     }

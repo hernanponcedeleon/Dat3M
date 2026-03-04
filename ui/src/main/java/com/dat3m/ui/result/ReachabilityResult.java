@@ -65,10 +65,7 @@ public class ReachabilityResult {
                 modelChecker.run();
                 long endTime = System.currentTimeMillis();
                 verdict = Dartagnan.summaryFromResult(task, modelChecker, "", (endTime - startTime)).toUIString();
-
-                if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
-                    witnessFile = Dartagnan.generateExecutionGraphFile(task, modelChecker, WitnessType.PNG);
-                }
+                witnessFile = Dartagnan.generateWitnessIfAble(task, modelChecker, WitnessType.PNG, "dat3m", "", false);
             }
         } catch (InterruptedException e) {
             verdict = "TIMEOUT";

@@ -63,7 +63,12 @@ instruction
     |   store
     |   storePair
     |   storeExclusive
+    // AMOs
+    |   loadOp
+    |   storeOp
     |   swap
+    |   cas
+    // -----
     |   cmp
     |   branch
     |   branchRegister
@@ -118,9 +123,24 @@ storeExclusive
     |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
     ;
 
+loadOp
+    :   loadOpInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
+    |   loadOpInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
+    ;
+
+storeOp
+    :   storeOpInstruction rS32 = register32 Comma LBracket address RBracket
+    |   storeOpInstruction rS64 = register64 Comma LBracket address RBracket
+    ;
+
 swap
     :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
     |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
+    ;
+
+cas
+    :   casInstruction rS32 = register32 Comma rT32 = register32 Comma LBracket address RBracket
+    |   casInstruction rS64 = register64 Comma rT64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -167,6 +187,76 @@ loadExclusiveInstruction locals [boolean acquire, boolean byteSize, boolean half
     |   LDAXRH   {$acquire = true; $halfWordSize = true;}
     ;
 
+loadOpInstruction
+    // ADD
+    :   LDADD  | LDADDA  | LDADDL  | LDADDAL
+    |   LDADDH | LDADDAH | LDADDLH | LDADDALH
+    |   LDADDB | LDADDAB | LDADDLB | LDADDALB
+    // EOR
+    |   LDEOR  | LDEORA  | LDEORL  | LDEORAL
+    |   LDEORH | LDEORAH | LDEORLH | LDEORALH
+    |   LDEORB | LDEORAB | LDEORLB | LDEORALB
+    // SET
+    |   LDSET  | LDSETA  | LDSETL  | LDSETAL
+    |   LDSETH | LDSETAH | LDSETLH | LDSETALH
+    |   LDSETB | LDSETAB | LDSETLB | LDSETALB
+    // CLR
+    |   LDCLR  | LDCLRA  | LDCLRL  | LDCLRAL
+    |   LDCLRH | LDCLRAH | LDCLRLH | LDCLRALH
+    |   LDCLRB | LDCLRAB | LDCLRLB | LDCLRALB
+    // SMIN
+    |   LDSMIN  | LDSMINA  | LDSMINL  | LDSMINAL
+    |   LDSMINH | LDSMINAH | LDSMINLH | LDSMINALH
+    |   LDSMINB | LDSMINAB | LDSMINLB | LDSMINALB
+    // UMIN
+    |   LDUMIN  | LDUMINA  | LDUMINL  | LDUMINAL
+    |   LDUMINH | LDUMINAH | LDUMINLH | LDUMINALH
+    |   LDUMINB | LDUMINAB | LDUMINLB | LDUMINALB
+    // SMAX
+    |   LDSMAX  | LDSMAXA  | LDSMAXL  | LDSMAXAL
+    |   LDSMAXH | LDSMAXAH | LDSMAXLH | LDSMAXALH
+    |   LDSMAXB | LDSMAXAB | LDSMAXLB | LDSMAXALB
+    // UMAX
+    |   LDUMAX  | LDUMAXA  | LDUMAXL  | LDUMAXAL
+    |   LDUMAXH | LDUMAXAH | LDUMAXLH | LDUMAXALH
+    |   LDUMAXB | LDUMAXAB | LDUMAXLB | LDUMAXALB
+    ;
+
+storeOpInstruction
+    // ADD
+    :   STADD  | STADDL
+    |   STADDH | STADDLH
+    |   STADDB | STADDLB
+    // EOR
+    |   STEOR  | STEORL
+    |   STEORH | STEORLH
+    |   STEORB | STEORLB
+    // SET
+    |   STSET  | STSETL
+    |   STSETH | STSETLH
+    |   STSETB | STSETLB
+    // CLR
+    |   STCLR  | STCLRL
+    |   STCLRH | STCLRLH
+    |   STCLRB | STCLRLB
+    // SMIN
+    |   STSMIN  | STSMINL
+    |   STSMINH | STSMINLH
+    |   STSMINB | STSMINLB
+    // UMIN
+    |   STUMIN  | STUMINL
+    |   STUMINH | STUMINLH
+    |   STUMINB | STUMINLB
+    // SMAX
+    |   STSMAX  | STSMAXL
+    |   STSMAXH | STSMAXLH
+    |   STSMAXB | STSMAXLB
+    // UMAX
+    |   STUMAX  | STUMAXL
+    |   STUMAXH | STUMAXLH
+    |   STUMAXB | STUMAXLB
+    ;
+
 storeInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
     :   STR
     |   STRB    {$byteSize = true;}
@@ -198,6 +288,21 @@ swapInstruction locals [boolean acquire, boolean release, boolean byteSize, bool
     | SWPAL {$acquire = true; $release = true;}
     | SWPALB {$acquire = true; $release = true; $byteSize = true;}
     | SWPALH {$acquire = true; $release = true; $halfWordSize = true;}
+    ;
+
+casInstruction locals [boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
+    : CAS
+    | CASB {$byteSize = true;}
+    | CASH {$halfWordSize = true;}
+    | CASA {$acquire = true;}
+    | CASAB {$acquire = true; $byteSize = true;}
+    | CASAH {$acquire = true; $halfWordSize = true;}
+    | CASL {$release = true;}
+    | CASLB {$release = true; $byteSize = true;}
+    | CASLH {$release = true; $halfWordSize = true;}
+    | CASAL {$acquire = true; $release = true;}
+    | CASALB {$acquire = true; $release = true; $byteSize = true;}
+    | CASALH {$acquire = true; $release = true; $halfWordSize = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -300,6 +405,7 @@ register32 returns[String id]
 
 location
     :   Identifier
+    |   LBracket Identifier RBracket
     ;
 
 immediate
@@ -381,6 +487,171 @@ STLXR  :   'STLXR'  ;
 STLXRB :   'STLXRB' ;
 STLXRH :   'STLXRH' ;
 
+// Load Op instructions
+// Add
+LDADD        :   'LDADD'      ;
+LDADDA       :   'LDADDA'     ;
+LDADDL       :   'LDADDL'     ;
+LDADDAL      :   'LDADDAL'    ;
+LDADDH       :   'LDADDH'     ;
+LDADDAH      :   'LDADDAH'    ;
+LDADDLH      :   'LDADDLH'    ;
+LDADDALH     :   'LDADDALH'   ;
+LDADDB       :   'LDADDB'     ;
+LDADDAB      :   'LDADDAB'    ;
+LDADDLB      :   'LDADDLB'    ;
+LDADDALB     :   'LDADDALB'   ;
+// EOR (XOR)
+LDEOR        :   'LDEOR'      ;
+LDEORA       :   'LDEORA'     ;
+LDEORL       :   'LDEORL'     ;
+LDEORAL      :   'LDEORAL'    ;
+LDEORH       :   'LDEORH'     ;
+LDEORAH      :   'LDEORAH'    ;
+LDEORLH      :   'LDEORLH'    ;
+LDEORALH     :   'LDEORALH'   ;
+LDEORB       :   'LDEORB'     ;
+LDEORAB      :   'LDEORAB'    ;
+LDEORLB      :   'LDEORLB'    ;
+LDEORALB     :   'LDEORALB'   ;
+// SET (OR)
+LDSET        :   'LDSET'      ;
+LDSETA       :   'LDSETA'     ;
+LDSETL       :   'LDSETL'     ;
+LDSETAL      :   'LDSETAL'    ;
+LDSETH       :   'LDSETH'     ;
+LDSETAH      :   'LDSETAH'    ;
+LDSETLH      :   'LDSETLH'    ;
+LDSETALH     :   'LDSETALH'   ;
+LDSETB       :   'LDSETB'     ;
+LDSETAB      :   'LDSETAB'    ;
+LDSETLB      :   'LDSETLB'    ;
+LDSETALB     :   'LDSETALB'   ;
+// CLR (AND with complement)
+LDCLR        :   'LDCLR'      ;
+LDCLRA       :   'LDCLRA'     ;
+LDCLRL       :   'LDCLRL'     ;
+LDCLRAL      :   'LDCLRAL'    ;
+LDCLRH       :   'LDCLRH'     ;
+LDCLRAH      :   'LDCLRAH'    ;
+LDCLRLH      :   'LDCLRLH'    ;
+LDCLRALH     :   'LDCLRALH'   ;
+LDCLRB       :   'LDCLRB'     ;
+LDCLRAB      :   'LDCLRAB'    ;
+LDCLRLB      :   'LDCLRLB'    ;
+LDCLRALB     :   'LDCLRALB'   ;
+// SMIN
+LDSMIN        :   'LDSMIN'      ;
+LDSMINA       :   'LDSMINA'     ;
+LDSMINL       :   'LDSMINL'     ;
+LDSMINAL      :   'LDSMINAL'    ;
+LDSMINH       :   'LDSMINH'     ;
+LDSMINAH      :   'LDSMINAH'    ;
+LDSMINLH      :   'LDSMINLH'    ;
+LDSMINALH     :   'LDSMINALH'   ;
+LDSMINB       :   'LDSMINB'     ;
+LDSMINAB      :   'LDSMINAB'    ;
+LDSMINLB      :   'LDSMINLB'    ;
+LDSMINALB     :   'LDSMINALB'   ;
+// UMIN
+LDUMIN        :   'LDUMIN'      ;
+LDUMINA       :   'LDUMINA'     ;
+LDUMINL       :   'LDUMINL'     ;
+LDUMINAL      :   'LDUMINAL'    ;
+LDUMINH       :   'LDUMINH'     ;
+LDUMINAH      :   'LDUMINAH'    ;
+LDUMINLH      :   'LDUMINLH'    ;
+LDUMINALH     :   'LDUMINALH'   ;
+LDUMINB       :   'LDUMINB'     ;
+LDUMINAB      :   'LDUMINAB'    ;
+LDUMINLB      :   'LDUMINLB'    ;
+LDUMINALB     :   'LDUMINALB'   ;
+// SMAX
+LDSMAX        :   'LDSMAX'      ;
+LDSMAXA       :   'LDSMAXA'     ;
+LDSMAXL       :   'LDSMAXL'     ;
+LDSMAXAL      :   'LDSMAXAL'    ;
+LDSMAXH       :   'LDSMAXH'     ;
+LDSMAXAH      :   'LDSMAXAH'    ;
+LDSMAXLH      :   'LDSMAXLH'    ;
+LDSMAXALH     :   'LDSMAXALH'   ;
+LDSMAXB       :   'LDSMAXB'     ;
+LDSMAXAB      :   'LDSMAXAB'    ;
+LDSMAXLB      :   'LDSMAXLB'    ;
+LDSMAXALB     :   'LDSMAXALB'   ;
+// UMAX
+LDUMAX        :   'LDUMAX'      ;
+LDUMAXA       :   'LDUMAXA'     ;
+LDUMAXL       :   'LDUMAXL'     ;
+LDUMAXAL      :   'LDUMAXAL'    ;
+LDUMAXH       :   'LDUMAXH'     ;
+LDUMAXAH      :   'LDUMAXAH'    ;
+LDUMAXLH      :   'LDUMAXLH'    ;
+LDUMAXALH     :   'LDUMAXALH'   ;
+LDUMAXB       :   'LDUMAXB'     ;
+LDUMAXAB      :   'LDUMAXAB'    ;
+LDUMAXLB      :   'LDUMAXLB'    ;
+LDUMAXALB     :   'LDUMAXALB'   ;
+
+// Store Op instructions
+// Add
+STADD        :   'STADD'      ;
+STADDL       :   'STADDL'     ;
+STADDH       :   'STADDH'     ;
+STADDLH      :   'STADDLH'    ;
+STADDB       :   'STADDB'     ;
+STADDLB      :   'STADDLB'    ;
+// EOR (XOR)
+STEOR        :   'STEOR'      ;
+STEORL       :   'STEORL'     ;
+STEORH       :   'STEORH'     ;
+STEORLH      :   'STEORLH'    ;
+STEORB       :   'STEORB'     ;
+STEORLB      :   'STEORLB'    ;
+// SET (OR)
+STSET        :   'STSET'      ;
+STSETL       :   'STSETL'     ;
+STSETH       :   'STSETH'     ;
+STSETLH      :   'STSETLH'    ;
+STSETB       :   'STSETB'     ;
+STSETLB      :   'STSETLB'    ;
+// CLR (AND with complement)
+STCLR        :   'STCLR'      ;
+STCLRL       :   'STCLRL'     ;
+STCLRH       :   'STCLRH'     ;
+STCLRLH      :   'STCLRLH'    ;
+STCLRB       :   'STCLRB'     ;
+STCLRLB      :   'STCLRLB'    ;
+// SMIN
+STSMIN        :   'STSMIN'      ;
+STSMINL       :   'STSMINL'     ;
+STSMINH       :   'STSMINH'     ;
+STSMINLH      :   'STSMINLH'    ;
+STSMINB       :   'STSMINB'     ;
+STSMINLB      :   'STSMINLB'    ;
+// UMIN
+STUMIN        :   'STUMIN'      ;
+STUMINL       :   'STUMINL'     ;
+STUMINH       :   'STUMINH'     ;
+STUMINLH      :   'STUMINLH'    ;
+STUMINB       :   'STUMINB'     ;
+STUMINLB      :   'STUMINLB'    ;
+// SMAX
+STSMAX        :   'STSMAX'      ;
+STSMAXL       :   'STSMAXL'     ;
+STSMAXH       :   'STSMAXH'     ;
+STSMAXLH      :   'STSMAXLH'    ;
+STSMAXB       :   'STSMAXB'     ;
+STSMAXLB      :   'STSMAXLB'    ;
+// UMAX
+STUMAX        :   'STUMAX'      ;
+STUMAXL       :   'STUMAXL'     ;
+STUMAXH       :   'STUMAXH'     ;
+STUMAXLH      :   'STUMAXLH'    ;
+STUMAXB       :   'STUMAXB'     ;
+STUMAXLB      :   'STUMAXLB'    ;
+
+
 // Swap word instructions (~ Exchange)
 
 SWP    :   'SWP'    ;
@@ -395,6 +666,21 @@ SWPLH  :   'SWPLH'  ;
 SWPAL  :   'SWPAL'  ;
 SWPALB :   'SWPALB' ;
 SWPALH :   'SWPALH' ;
+
+// CAS instructions
+
+CAS    :   'CAS'    ;
+CASB   :   'CASB'   ;
+CASH   :   'CASH'   ;
+CASA   :   'CASA'   ;
+CASAB  :   'CASAB'  ;
+CASAH  :   'CASAH'  ;
+CASL   :   'CASL'   ;
+CASLB  :   'CASLB'  ;
+CASLH  :   'CASLH'  ;
+CASAL  :   'CASAL'  ;
+CASALB :   'CASALB' ;
+CASALH :   'CASALH' ;
 
 MovInstruction
     :   'MOV'
@@ -429,7 +715,7 @@ FenceOpt
     |   'OSH'   |   'osh'       // Outer sharable domain only
     ;
 
-// Bracnch conditions
+// Branch conditions
 
 EQ  :   'EQ';    // Equal
 NE  :   'NE';    // Not equal
@@ -437,7 +723,7 @@ CS  :   'CS';    // Carry set
 HS  :   'HS';    // Identical to CS
 CC  :   'CC';    // Carry clear
 LO  :   'LO';    // Identical to CC
-MI  :   'MI';	 // Minus or negative result
+MI  :   'MI';    // Minus or negative result
 PL  :   'PL';    // Positive or zero result
 VS  :   'VS';    // Overflow
 VC  :   'VC';    // No overflow

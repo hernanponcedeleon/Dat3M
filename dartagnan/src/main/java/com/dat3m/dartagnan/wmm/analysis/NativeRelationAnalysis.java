@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -32,7 +31,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -104,7 +102,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     @Override
-    public void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations) {
+    public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
         Propagator p = new Propagator();
         Initializer init = getInitializer();
         for (Relation r : relations) {
@@ -128,30 +126,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             may.removeAll(getKnowledge(r).getMaySet());
             MutableEventGraph mayDiff = may;
             MutableEventGraph mustDiff = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
+            discrepancies.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
         }
-    }
-
-    @Override
-    public EventGraph findTransitivelyImpliedCo(Relation co) {
-        final Knowledge k = getKnowledge(co);
-        MutableEventGraph transCo = new MapEventGraph();
-        Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
-        Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
-        k.getMaySet().apply((e1, e2) -> {
-            final MemoryEvent x = (MemoryEvent) e1;
-            final MemoryEvent z = (MemoryEvent) e2;
-            boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
-                    !k.getMaySet().contains(z, y))
-                    || mustIn.getOrDefault(z, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
-                    !k.getMaySet().contains(y, x));
-            if (hasIntermediary) {
-                transCo.add(e1, e2);
-            }
-        });
-        return transCo;
     }
 
     @Override
@@ -1493,16 +1469,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
     }
 
-    @Override
-    public long countMaySet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
-    }
-
-    @Override
-    public long countMustSet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
-    }
-
     protected static final class Delta {
         public static final Delta EMPTY = new Delta(new MapEventGraph(), new MapEventGraph());
 
@@ -1678,12 +1644,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void computeCartesianProduct(MutableEventGraph target, EventGraph domain, EventGraph range) {
+            final List<Event> newRange = new ArrayList<>(range.getDomain().size());
+            range.getDomain().stream()
+                    .filter(x -> range.contains(x, x))
+                    .forEach(newRange::add);
+
             for (Event e1 : domain.getDomain()) {
                 if (domain.contains(e1, e1)) {
-                    final Set<Event> newRange = new HashSet<>(range.getDomain());
-                    newRange.removeIf(e2 -> !range.contains(e2, e2));
-                    newRange.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
-                    target.addRange(e1, newRange);
+                    for (Event e2 : newRange) {
+                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                            target.add(e1, e2);
+                        }
+                    }
                 }
             }
         }

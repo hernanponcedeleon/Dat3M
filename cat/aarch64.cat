@@ -65,8 +65,8 @@ let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
 (* Flag any use of shareability options, due to the restrictions above. *)
 (*
 flag ~empty (dmb.full | dmb.ld | dmb.st) \
-	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
-	    as Assuming-common-inner-shareable-domain
+        (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
+        as Assuming-common-inner-shareable-domain
 *)
 
 (* Coherence-after *)
@@ -83,29 +83,33 @@ let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
 let dob = (addr | data)
-	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
-	| addr; po; [W]
-	| (addr | data); lrs
+    | ctrl; [W]
+    | (ctrl | (addr; po)); [ISB]; po; [R]
+    | addr; po; [W]
+    | (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
-	| [range(rmw)]; lrs; [A | Q]
+    | [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
-	| po; ([A];amo;[L]); po
-	| [L]; po; [A]
-	| [R]; po; [dmb.ld]; po
-	| [A | Q]; po
-	| [W]; po; [dmb.st]; po; [W]
-	| po; [L]
+    | po; ([A];amo;[L]); po
+    | [L]; po; [A]
+    | [R \ NoRet]; po; [dmb.ld]; po
+    | [A | Q]; po
+    | [W]; po; [dmb.st]; po; [W]
+    | po; [L]
 
 (* Locally-ordered-before *)
 let lob = lws; si | dob | aob | bob
 
+(** Hazard-ordered-before **)
+let haz-ob =
+  [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
+
 (* Ordered-before *)
-let ob = obs; si | lob
+let ob = obs; si | lob | haz-ob
 
 (* Internal visibility requirement *)
 acyclic po-loc | ca | rf as internal

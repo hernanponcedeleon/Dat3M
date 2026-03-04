@@ -11,7 +11,9 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -30,8 +32,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
 /*
@@ -44,6 +44,7 @@ public class ExpressionEncoder {
     private final EncodingContext context;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
+    private final ExprSimplifier simplifier = new ExprSimplifier(true);
     private final Visitor visitor = new Visitor();
 
     ExpressionEncoder(EncodingContext context) {
@@ -102,6 +103,9 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+        } else if (type instanceof MemoryType memoryType) {
+            requireBVEncoding(null);
+            variable = bitvectorFormulaManager().makeVariable(memoryType.getBitWidth(), name);
         } else if (type instanceof FloatType floatType) {
             variable = floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
         } else if (type instanceof AggregateType aggType) {
@@ -131,42 +135,68 @@ public class ExpressionEncoder {
     // ====================================================================================
     // Utility
 
-    // TODO: For conversion operations, we might want to have an universal intermediate type T with the following properties:
-    //  (1) every other type has a lossless conversion to T
-    //  (2) T can be converted to every other type (possibly with loss)
-    //  (3) A round-trip through T is always lossless.
-    //  See comments on TypedFormula class for more details.
-    public enum ConversionMode {
-        NO,
-        LEFT_TO_RIGHT,
-        RIGHT_TO_LEFT,
-    }
-
-    public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
-        final ExpressionFactory exprs = context.getExpressionFactory();
-        switch (cMode) {
-            case NO -> {}
-            case LEFT_TO_RIGHT -> left = exprs.makeCast(left, right.getType());
-            case RIGHT_TO_LEFT -> right = exprs.makeCast(right, left.getType());
-        }
-
-        return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
-    }
-
     public BooleanFormula equal(Expression left, Expression right) {
-        return equal(left, right, ConversionMode.NO);
-    }
-
-    public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt, ConversionMode cMode) {
-        return equal(encodeAt(left, leftAt), encodeAt(right, rightAt), cMode);
+        Preconditions.checkArgument(left.getType().equals(right.getType()));
+        return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
     }
 
     public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt) {
         return equal(encodeAt(left, leftAt), encodeAt(right, rightAt));
     }
 
+    public enum ConversionMode {
+        STRICT,                     // No conversion, types must match exactly
+        CAST,                       // Immediate cast
+        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory, but source/target type sizes must match (~bitcast)
+        MEMORY_ROUND_TRIP_RELAXED,  // Round-trip over memory, source/target can have mismatching sizes
+    }
+
+    // Encodes assignment equality "left := right" with a possible conversion applied to the rhs.
+    public BooleanFormula assignEqual(Expression left, Expression right, ConversionMode conversion) {
+        final ExpressionFactory exprs = context.getExpressionFactory();
+
+        final Expression value = switch (conversion) {
+            case STRICT -> {
+                Preconditions.checkArgument(left.getType().equals(right.getType()));
+                yield right;
+            }
+            case CAST -> {
+                yield exprs.makeCast(right, left.getType());
+            }
+            case MEMORY_ROUND_TRIP_STRICT, MEMORY_ROUND_TRIP_RELAXED -> {
+                final boolean strict = conversion == ConversionMode.MEMORY_ROUND_TRIP_STRICT;
+                yield exprs.makeCastOverMemory(right, left.getType(), strict);
+            }
+        };
+
+        return equal(left, value.accept(simplifier));
+    }
+
+
+    public BooleanFormula assignEqual(Expression left, Expression right) {
+        return assignEqual(left, right, ConversionMode.STRICT);
+    }
+
+    public BooleanFormula assignEqualAt(Expression left, Event leftAt, Expression right, Event rightAt) {
+        return assignEqual(encodeAt(left, leftAt), encodeAt(right, rightAt));
+    }
+
     // ====================================================================================
     // Private implementation
+
+    private void checkMemoryCastSupport(Type type) {
+        if (!(type instanceof IntegerType) && !(type instanceof FloatType)) {
+            throw new UnsupportedOperationException("Cannot cast between memory and type: " + type);
+        }
+    }
+
+    private void requireBVEncoding(Expression expr) {
+        if (expr != null) {
+            Preconditions.checkState(!context.useIntegers, "Bitvector encoding required for: ", expr);
+        } else {
+            Preconditions.checkState(!context.useIntegers, "Bitvector encoding required.");
+        }
+    }
 
     // TODO: We can probably just return plain formulas and let the outer class
     //  wrap them correctly.
@@ -188,6 +218,16 @@ public class ExpressionEncoder {
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TypedFormula<MemoryType, ?> encodeMemoryExpr(Expression expression) {
+            requireBVEncoding(expression);
+            Preconditions.checkArgument(expression.getType() instanceof MemoryType);
+            final TypedFormula<?, ?> typedFormula = encode(expression);
+            assert typedFormula.getType() == expression.getType();
+            assert typedFormula.formula() instanceof BitvectorFormula;
+            return (TypedFormula<MemoryType, ?>) typedFormula;
         }
 
         @SuppressWarnings("unchecked")
@@ -320,6 +360,8 @@ public class ExpressionEncoder {
                         );
                         yield fmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
                     }
+                    case SMAX, UMAX -> fmgr.ifThenElse(imgr.greaterOrEquals(i1, i2), i1, i2);
+                    case SMIN, UMIN -> fmgr.ifThenElse(imgr.lessOrEquals(i1, i2), i1, i2);
                 };
 
                 return new TypedFormula<>(type, result);
@@ -342,6 +384,10 @@ public class ExpressionEncoder {
                     case LSHIFT -> bvmgr.shiftLeft(bv1, bv2);
                     case RSHIFT -> bvmgr.shiftRight(bv1, bv2, false);
                     case ARSHIFT -> bvmgr.shiftRight(bv1, bv2, true);
+                    case SMAX -> bmgr.ifThenElse(bvmgr.greaterOrEquals(bv1, bv2, true), bv1, bv2);
+                    case SMIN -> bmgr.ifThenElse(bvmgr.lessOrEquals(bv1, bv2, true), bv1, bv2);
+                    case UMAX -> bmgr.ifThenElse(bvmgr.greaterOrEquals(bv1, bv2, false), bv1, bv2);
+                    case UMIN -> bmgr.ifThenElse(bvmgr.lessOrEquals(bv1, bv2, false), bv1, bv2);
                 };
 
                 return new TypedFormula<>(type, result);
@@ -547,15 +593,18 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
             final FloatingPointType fFType = getFloatFormulaType(floatLiteral.getType());
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             final Formula result;
             if (floatLiteral.isNaN()) {
-                result = floatingPointFormulaManager().makeNaN(fFType);
+                result = fpmgr.makeNaN(fFType);
             } else if (floatLiteral.isPlusInf()) {
-                result = floatingPointFormulaManager().makePlusInfinity(fFType);
+                result = fpmgr.makePlusInfinity(fFType);
             } else if (floatLiteral.isMinusInf()) {
-                result = floatingPointFormulaManager().makeMinusInfinity(fFType);
+                result = fpmgr.makeMinusInfinity(fFType);
             } else {
-                result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType, context.roundingModeFloats);
+                assert floatLiteral.hasFiniteValue();
+                final FloatingPointFormula absVal = fpmgr.makeNumber(floatLiteral.getAbsValue(), fFType, context.roundingModeFloats);
+                result = floatLiteral.isNegative() ? fpmgr.negate(absVal) : absVal;
             }
             return new TypedFormula<>(floatLiteral.getType(), result);
         }
@@ -652,7 +701,7 @@ public class ExpressionEncoder {
             // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
             final FloatingPointFormula inner = (FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula();
             final Formula enc = floatingPointFormulaManager().castTo(
-                    inner, expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO);
+                    inner, expr.isSigned(), targetFormulaType, FloatingPointRoundingMode.TOWARD_ZERO);
             return new TypedFormula<>(expr.getTargetType(), enc);
         }
 
@@ -697,6 +746,111 @@ public class ExpressionEncoder {
         }
 
         // ====================================================================================
+        // Memory type
+
+        @Override
+        public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
+            requireBVEncoding(expr);
+            checkMemoryCastSupport(expr.getSourceType());
+
+            final TypedFormula<?, ?> inner = encode(expr.getOperand());
+            final Type type = inner.type();
+            final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
+
+            final Formula enc;
+            if (type instanceof IntegerType iType) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
+                if (extBits > 0) {
+                    enc = bvmgr.extend((BitvectorFormula) inner.formula(), extBits, false);
+                } else {
+                    enc = inner.formula();
+                }
+            } else if (type instanceof FloatType fType) {
+                assert targetType.getBitWidth() == fType.getBitWidth();
+                final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+                enc = fpmgr.toIeeeBitvector((FloatingPointFormula) inner.formula());
+            } else {
+                throw new UnsupportedOperationException("unreachable");
+            }
+
+            return new TypedFormula<>(targetType, enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
+            requireBVEncoding(expr);
+            checkMemoryCastSupport(expr.getTargetType());
+
+            final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
+            final Type targetType = expr.getTargetType();
+
+            final Formula enc;
+            if (targetType instanceof IntegerType bvType) {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final int targetSize = bvType.getBitWidth();
+                if (targetSize < expr.getSourceType().getBitWidth()) {
+                    enc = bvmgr.extract((BitvectorFormula) inner.formula(), targetSize - 1, 0);
+                } else {
+                    enc = inner.formula();
+                }
+            } else if (targetType instanceof FloatType fType) {
+                assert fType.getBitWidth() == expr.getSourceType().getBitWidth();
+                enc = floatingPointFormulaManager().fromIeeeBitvector((BitvectorFormula) inner.formula(), getFloatFormulaType(fType));
+            } else {
+                throw new UnsupportedOperationException("unreachable");
+            }
+
+            return new TypedFormula<>(targetType, enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
+            requireBVEncoding(expr);
+
+            final List<? extends TypedFormula<MemoryType, ?>> operands = expr.getOperands().stream()
+                    .map(this::encodeMemoryExpr)
+                    .toList();
+            BitvectorFormula enc = (BitvectorFormula) operands.get(0).formula();
+            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            for (TypedFormula<MemoryType, ?> op : operands.subList(1, operands.size())) {
+                enc = bvmgr.concat((BitvectorFormula) op.formula(), enc);
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
+            requireBVEncoding(expr);
+
+            final BitvectorFormula operand = (BitvectorFormula) encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc = bitvectorFormulaManager().extract(operand, expr.getHighBit(), expr.getLowBit());
+
+            return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryExtendExpression(MemoryExtend expr) {
+            requireBVEncoding(expr);
+
+            final BitvectorFormula operand = (BitvectorFormula) encodeMemoryExpr(expr.getOperand()).formula();
+            final int extendedBits = expr.getTargetType().getBitWidth() - expr.getSourceType().getBitWidth();
+            final Formula enc = bitvectorFormulaManager().extend(operand, extendedBits, false);
+
+            return new TypedFormula<>(expr.getType(), enc);
+
+        }
+
+        @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitMemoryEqualExpression(MemoryEqualExpr expr) {
+            final Formula left = expr.getLeft().accept(this).formula();
+            final Formula right = expr.getRight().accept(this).formula();
+
+            return new TypedFormula<>(types.getBooleanType(), fmgr.equal(left, right));
+        }
+
+        // ====================================================================================
         // Misc
 
         @Override
@@ -731,10 +885,10 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFinalMemoryValue(FinalMemoryValue val) {
-            checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
+            Preconditions.checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
             final MemoryObject base = val.getMemoryObject();
             final int offset = val.getOffset();
-            checkArgument(base.isInRange(offset), "Array index out of bounds");
+            Preconditions.checkArgument(base.isInRange(offset), "Array index out of bounds");
             final String name = String.format("last_val_at_%s_%d", base, offset);
             return makeVariable(name, val.getType());
         }

@@ -20,10 +20,14 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.SYMMETRIC_LEARNING;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
@@ -31,6 +35,8 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 // The CoreReasoner transforms base reasons of the CAATSolver to core reasons of the WMMSolver.
 @Options
 public class CoreReasoner {
+
+    private static final Logger logger = LoggerFactory.getLogger(CoreReasoner.class);
 
     // An upper bound on the number of reasons computed per iteration,
     // This is mostly used to limit "reason explosion" for highly symmetric benchmarks.
@@ -50,11 +56,13 @@ public class CoreReasoner {
     private final RelationAnalysis ra;
     private final List<Function<Event, Event>> symmGenerators;
 
-    public CoreReasoner(Context analysisContext, ExecutionGraph executionGraph) {
+    public CoreReasoner(Context analysisContext, ExecutionGraph executionGraph, Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
         this.executionGraph = executionGraph;
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
         this.symmGenerators = computeSymmetryGenerators(analysisContext.requires(ThreadSymmetry.class));
+        logger.info("Symmetric learning {}", symmetricLearning);
     }
 
     /*

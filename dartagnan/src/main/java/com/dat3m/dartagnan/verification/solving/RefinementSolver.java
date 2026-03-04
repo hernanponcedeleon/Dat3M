@@ -39,7 +39,6 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -180,7 +179,6 @@ public class RefinementSolver extends ModelChecker {
         //  so we cannot perform property-aware transformation in those pipelines right now.
         removeFlaggedAxiomsIfNotNeeded(task);
 
-        memoryModel.configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);
@@ -197,12 +195,13 @@ public class RefinementSolver extends ModelChecker {
         final Configuration config = task.getConfig();
 
         // ------------------------ Preprocessing / Analysis ------------------------
-        preprocess(task);
         final Collection<Constraint> biases = addBiases(memoryModel, baselines);
+        preprocess(task);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task, analysisContext, config);
 
         //  ------- Generate refinement model -------
         final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
@@ -216,9 +215,9 @@ public class RefinementSolver extends ModelChecker {
 
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
-        final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
+        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
+        final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
@@ -232,6 +231,9 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        // Bounds
+        prover.writeComment("Bounds over variables");
+        prover.addConstraint(programEncoder.encodeBounds());
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
@@ -529,7 +531,9 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static Collection<Constraint> addBiases(Wmm wmm, EnumSet<Baseline> biases) {
-        final var constraints = new ArrayList<Constraint>();
+        if (biases.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // Base relations
         final Relation rf = wmm.getRelation(RF);
@@ -555,6 +559,7 @@ public class RefinementSolver extends ModelChecker {
         // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
         final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
 
+        final List<Constraint> constraints = new ArrayList<>();
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
@@ -577,7 +582,7 @@ public class RefinementSolver extends ModelChecker {
             // ---- empty (rmw & fre;coe) ----
             final Relation amo = wmm.getOrCreatePredefinedRelation(AMO);
             final Relation lxsx = wmm.getOrCreatePredefinedRelation(LXSX);
-            final Relation rmw = wmm.addDefinition(new Union(amo, lxsx));
+            final Relation rmw = wmm.addDefinition(new Union(wmm.newRelation(), amo, lxsx));
             final Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
             final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
             final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));

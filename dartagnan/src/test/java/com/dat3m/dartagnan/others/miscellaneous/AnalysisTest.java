@@ -696,7 +696,6 @@ public class AnalysisTest {
                 .withBound(1)
                 .withTarget(Arch.C11)
                 .build(program, wmm, EnumSet.of(PROGRAM_SPEC));
-        wmm.configureAll(task.getConfig());
         preprocessProgram(task, task.getConfig());
         final Relation loc = wmm.getRelation(LOC);
         final List<Integer> sizes = new LinkedList<>();

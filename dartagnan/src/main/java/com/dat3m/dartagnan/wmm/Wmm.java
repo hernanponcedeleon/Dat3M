@@ -4,37 +4,18 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class Wmm {
-
-    @Options
-    public static class Config {
-
-        @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
-                description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
-                        " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
-                secure = true)
-        private boolean reduceAcyclicityEncoding = true;
-
-        public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
 
@@ -47,13 +28,9 @@ public class Wmm {
     // Guarantees deterministic iteration order, even though Relation is not value-based.
     private final Set<Relation> relations = new LinkedHashSet<>();
 
-    private final Config config = new Config();
-
     public Wmm() {
         ANARCHIC_CORE_RELATIONS.forEach(this::getOrCreatePredefinedRelation);
     }
-
-    public Config getConfig() { return this.config; }
 
     public List<Constraint> getConstraints() {
         return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
@@ -174,12 +151,17 @@ public class Wmm {
         return Stream.of(a, r).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
-    // ========================================== Utility Methods ========================================
-
-    public void configureAll(Configuration config) throws InvalidConfigurationException {
-        config.inject(this.config);
-        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
+    public boolean isInternal(Relation rel) {
+        // TODO: This is an ugly method that should be replaced somehow.
+        final Definition def = rel.getDefinition();
+        return def instanceof DirectAddressDependency       // __addrDirect
+                || def instanceof DirectControlDependency   // __ctrlDirect
+                || def instanceof DirectDataDependency      // __idd
+                || (!rel.getDependencies().isEmpty()
+                && rel.getDependencies().stream().allMatch(this::isInternal));
     }
+
+    // ========================================== Utility Methods ========================================
 
     private Relation makePredefinedRelation(String name) {
         /*

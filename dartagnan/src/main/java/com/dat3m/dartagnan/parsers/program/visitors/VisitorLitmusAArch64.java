@@ -4,7 +4,10 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -14,9 +17,15 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.arch.CAS;
+import com.dat3m.dartagnan.program.event.arch.RMWFetchOp;
+import com.dat3m.dartagnan.program.event.arch.RMWOp;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
+import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
@@ -55,8 +64,20 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         Program prog = programBuilder.build();
-        replaceZeroRegisters(prog, Arrays.asList("XZR", "WZR"));
+
+        final List<String> zeroRegs = Arrays.asList("XZR", "WZR");
+        markLoadsIntoZeroRegisters(prog, zeroRegs);
+        replaceZeroRegisters(prog, zeroRegs);
         return prog;
+    }
+
+    private void markLoadsIntoZeroRegisters(Program prog, List<String> zeroRegs) {
+        for (MemoryEvent memEvent : prog.getThreadEvents(MemoryEvent.class)) {
+            if (memEvent instanceof RegWriter writer && zeroRegs.contains(writer.getResultRegister().getName())) {
+                memEvent.addTags(NO_RET);
+                memEvent.removeTags(MO_ACQ, MO_ACQ_PC);
+            }
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -263,8 +284,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return Optional.of(String.format("SWP%s%s %s, %s, [%s]", acq, rel, value, loadReg, address));
     };
 
-    // FIXME: SWP into a zero register (WZR or XZR) acts like a store, in particular SWPA(L) does not give
-    //  acquire semantics then.
     @Override
     public Object visitSwap(SwapContext ctx) {
         final SwapInstructionContext inst = ctx.swapInstruction();
@@ -293,6 +312,169 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return null;
     }
 
+    private static final CustomPrinting CAS_PRINTER = e -> {
+        if (!(e instanceof CAS cas)) {
+            return Optional.empty();
+        }
+        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final Expression value = cas.getStoreValue();
+        final Register loadReg = cas.getResultRegister();
+        final Expression address = cas.getAddress();
+
+        return Optional.of(String.format("CAS%s%s %s, %s, [%s]", acq, rel, loadReg, value, address));
+    };
+
+    @Override
+    public Object visitCas(CasContext ctx) {
+        final CasInstructionContext inst = ctx.casInstruction();
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        final Register rt64 = parseRegister64(ctx.rT32, ctx.rT64);
+
+        final Register rs = shrinkRegister(rs64, ctx.rS32, inst.halfWordSize, inst.byteSize);
+        final Expression cmpVal = expressions.makeCast(rs64, rs.getType(), false);
+        final Expression val = expressions.makeCast(rt64, rs.getType(), false);
+        final Expression address = parseAddress(ctx.address());
+
+        final List<String> mo = new ArrayList<>();
+        if (inst.acquire) {
+            mo.add(MO_ACQ);
+        }
+        if (inst.release) {
+            mo.add(MO_REL);
+        }
+
+        final CAS cas = EventFactory.Common.newCAS(rs, address, cmpVal, val);
+        cas.addTags(mo);
+        cas.setMetadata(CAS_PRINTER);
+
+        add(cas);
+        addRegister64Update(rs64, rs);
+        return null;
+    }
+
+
+    record LDSTAmoInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
+
+    // Used for LDXXX and STXXX instructions of shape
+    // ST/LD - XXX/XXXX - {A, L, AL}?  - {H, B}?
+    // Instr - op code  - memory order - access size
+    private LDSTAmoInfo getLDSTInfoFromInstructionName(String instrName) {
+        Preconditions.checkArgument(instrName.startsWith("LD") || instrName.startsWith("ST"));
+        String instr = instrName.substring(2); // Skip LD/ST
+
+        // TODO: Maybe the following logic can be implemented in the grammar without
+        //  an explicit case distinction over all 96 (or more?) variants of LD (and ST)
+
+        // Access size
+        final boolean isHalfSize = instr.endsWith("H");
+        final boolean isByteSize = instr.endsWith("B");
+        if (isHalfSize || isByteSize) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+
+        // Memory order
+        final boolean release = instr.endsWith("L");
+        if (release) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+        final boolean acquire = instr.endsWith("A");
+        if (acquire) {
+            instr = instr.substring(0, instr.length() - 1);
+        }
+
+        // Only OpCode remains
+        assert 3 <= instr.length() && instr.length() <= 4;
+        // Operation
+        final String opCode = instr;
+        final IntBinaryOp op = switch (opCode) {
+            case "ADD" -> IntBinaryOp.ADD;
+            case "EOR" -> IntBinaryOp.XOR;
+            case "SET" -> IntBinaryOp.OR;
+            case "CLR" -> IntBinaryOp.AND; // Actually & with complement!!!
+            case "SMIN" -> IntBinaryOp.SMIN;
+            case "SMAX" -> IntBinaryOp.SMAX;
+            case "UMIN" -> IntBinaryOp.UMIN;
+            case "UMAX" -> IntBinaryOp.UMAX;
+            default -> throw new ParsingException("Invalid op " + opCode + " found in " + instrName);
+        };
+
+        return new LDSTAmoInfo(op, isHalfSize, isByteSize, acquire, release);
+    }
+
+    private static final CustomPrinting LDOP_PRINTER = e -> {
+        if (!(e instanceof RMWFetchOp ldop)) {
+            return Optional.empty();
+        }
+        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final String op = opToArmOpCode(ldop.getOperator());
+        final String size = getArmSizeSuffix(ldop.getAccessType());
+        final Expression operand = ldop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : ldop.getOperand();
+        final Register loadReg = ldop.getResultRegister();
+        final Expression address = ldop.getAddress();
+
+        return Optional.of(String.format("LD%s%s%s%s %s, %s, [%s]", op, acq, rel, size, loadReg, operand, address));
+    };
+    private static final CustomPrinting STOP_PRINTER = e -> {
+        if (!(e instanceof RMWOp stop)) {
+            return Optional.empty();
+        }
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final String op = opToArmOpCode(stop.getOperator());
+        final String size = getArmSizeSuffix(stop.getAccessType());
+        final Expression operand = stop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : stop.getOperand();
+        final Expression address = stop.getAddress();
+
+        return Optional.of(String.format("ST%s%s%s %s, [%s]", op, rel, size, operand, address));
+    };
+
+    private static String opToArmOpCode(IntBinaryOp op) {
+        return switch (op) {
+            case ADD -> "ADD";
+            case XOR -> "EOR";
+            case OR -> "SET";
+            case AND -> "CLR";
+            case SMIN -> "SMIN";
+            case SMAX -> "SMAX";
+            case UMIN -> "UMIN";
+            case UMAX -> "UMAX";
+            default -> throw new RuntimeException("Invalid op: " + op);
+        };
+    }
+
+    @Override
+    public Object visitLoadOp(LoadOpContext ctx) {
+        final String instr = ctx.loadOpInstruction().getText();
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        final Register rt64 = parseRegister64(ctx.rD32, ctx.rD64);
+        final Register rt = shrinkRegister(rt64, ctx.rD32, info.isHalfSize, info.isByteSize);
+        Expression operand = expressions.makeCast(rs64, rt.getType(), false);
+        if (info.op == IntBinaryOp.AND) {
+            // This was a CLR instruction
+            operand = expressions.makeIntNot(operand);
+        }
+
+        final List<String> mo = new ArrayList<>();
+        if (info.acquire) {
+            mo.add(MO_ACQ);
+        }
+        if (info.release) {
+            mo.add(MO_REL);
+        }
+
+        final Expression address = parseAddress(ctx.address());
+        final RMWFetchOp ldOp = EventFactory.Common.newRmwFetchOp(rt, address, info.op, operand);
+        ldOp.addTags(mo);
+        ldOp.setMetadata(LDOP_PRINTER);
+
+        add(ldOp);
+        addRegister64Update(rt64, rt);
+        return null;
+    }
 
     @Override
     public Object visitBranch(BranchContext ctx) {
@@ -428,16 +610,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return expressions.parseValue(ctx.getText(), type);
     }
 
-    private Register shrinkRegister(Register other, Register32Context ctx, boolean halfWordSize, boolean byteSize) {
-        checkArgument(other.getType().equals(i64), "Non-64-bit %s", other);
+    private Register shrinkRegister(Register r64, Register32Context ctx, boolean halfWordSize, boolean byteSize) {
+        checkArgument(r64.getType().equals(i64), "Non-64-bit %s", r64);
         checkArgument(!byteSize | !halfWordSize, "Inconclusive access size");
         if (byteSize) {
-            return programBuilder.getOrNewRegister(mainThread, "B" + other.getName().substring(1), i8);
+            return programBuilder.getOrNewRegister(mainThread, "B" + r64.getName().substring(1), i8);
+        } else if (halfWordSize) {
+            return programBuilder.getOrNewRegister(mainThread, "H" + r64.getName().substring(1), i16);
+        } else if (ctx != null) {
+            return programBuilder.getOrNewRegister(mainThread, "W" + r64.getName().substring(1), i32);
+        } else {
+            return r64;
         }
-        if (halfWordSize) {
-            return programBuilder.getOrNewRegister(mainThread, "H" + other.getName().substring(1), i16);
-        }
-        return ctx == null ? other : programBuilder.getOrNewRegister(mainThread, ctx.getText(), i32);
     }
 
     private void addRegister64Update(Register r64, Register value) {
@@ -450,5 +634,38 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private Void add(Event event) {
         programBuilder.addChild(mainThread, event);
         return null;
+    }
+
+    @Override
+    public Object visitStoreOp(StoreOpContext ctx) {
+        final String instr = ctx.storeOpInstruction().getText();
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        // TODO: We don't actually care about the smaller register, but only its type!
+        final Register rs = shrinkRegister(rs64, ctx.rS32, info.isHalfSize, info.isByteSize);
+        Expression operand = expressions.makeCast(rs64, rs.getType(), false);
+        if (info.op == IntBinaryOp.AND) {
+            // This was a CLR instruction
+            operand = expressions.makeIntNot(operand);
+        }
+
+        final Expression address = parseAddress(ctx.address());
+        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
+        if (info.release) {
+            stOp.addTags(MO_REL);
+        }
+        stOp.setMetadata(STOP_PRINTER);
+
+        add(stOp);
+        return null;
+    }
+
+    private static String getArmSizeSuffix(Type type) {
+        return switch (((IntegerType) type).getBitWidth()) {
+            case 16 -> "H";
+            case 8 -> "B";
+            default -> "";
+        };
     }
 }

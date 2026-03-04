@@ -6,9 +6,7 @@ import com.google.common.math.IntMath;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -18,37 +16,70 @@ public final class TypeFactory {
 
     private static final TypeFactory instance = new TypeFactory();
 
-    private final VoidType voidType = new VoidType();
-    private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerDifferenceType;
-
-    private final Normalizer typeNormalizer = new Normalizer();
-
-    private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
-    }
-
-
     //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
     }
 
-    public BooleanType getBooleanType() {
-        return booleanType;
+    private final Normalizer typeNormalizer = new Normalizer();
+
+    private final VoidType voidType = new VoidType();
+    private final Type unitType = getAggregateType(List.of());
+    private final BooleanType booleanType = new BooleanType();
+    private final IntegerType pointerType = getIntegerType(64); //TODO add proper pointer type
+
+    private TypeFactory() {
     }
+
+    // ==================================================================================================
+    // Basic types
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getUnitType() { return getAggregateType(List.of()); }
+    public Type getUnitType() { return unitType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public BooleanType getBooleanType() {
+        return booleanType;
     }
 
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
+    }
+
+    public IntegerType getArchType() {
+        return pointerType;
+    }
+
+    public IntegerType getByteType() {
+        return getIntegerType(8);
+    }
+
+    public MemoryType getMemoryType(int bitWidth) {
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new MemoryType(bitWidth));
+    }
+
+    public MemoryType getMemoryTypeFor(Type other) {
+        if (other instanceof MemoryType memType) {
+            return memType;
+        }
+        return getMemoryType(getMemorySizeInBits(other));
+    }
+
+    public FloatType getFloatType(int mantissaBits, int exponentBits) {
+        checkArgument(mantissaBits > 0 && exponentBits > 0,
+                "Cannot construct floating-point type with mantissa %s and exponent %s",
+                mantissaBits, exponentBits);
+        return typeNormalizer.normalize(new FloatType(mantissaBits, exponentBits));
+    }
+
+    public FloatType getIEEEHalfType() { return getFloatType(10, 5); }
+    public FloatType getIEEESingleType() { return getFloatType(23, 8); }
+    public FloatType getIEEEDoubleType() { return getFloatType(52, 11); }
+
+    public Type getPointerType() {
+        return pointerType;
     }
 
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
@@ -62,16 +93,8 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new ScopedPointerType(scopeId, pointedType, stride));
     }
 
-    public FloatType getFloatType(int mantissaBits, int exponentBits) {
-        checkArgument(mantissaBits > 0 && exponentBits > 0,
-                "Cannot construct floating-point type with mantissa %s and exponent %s",
-                mantissaBits, exponentBits);
-        return typeNormalizer.normalize(new FloatType(mantissaBits, exponentBits));
-    }
-
-    public FloatType getIEEEHalfType() { return getFloatType(10, 5); }
-    public FloatType getIEEESingleType() { return getFloatType(23, 8); }
-    public FloatType getIEEEDoubleType() { return getFloatType(52, 11); }
+    // ==================================================================================================
+    // Derived types
 
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {
         return getFunctionType(returnType, parameterTypes, false);
@@ -146,12 +169,13 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new ArrayType(element, size, stride, alignment));
     }
 
-    public IntegerType getArchType() {
-        return pointerDifferenceType;
-    }
+    // ==================================================================================================
+    // Type layout utility
 
-    public IntegerType getByteType() {
-        return getIntegerType(8);
+    public boolean hasKnownSize(Type type) { return getMemorySizeInBytes(type) >= 0; }
+
+    public int getMemorySizeInBits(Type type) {
+        return getMemorySizeInBytes(type) * 8;
     }
 
     public int getMemorySizeInBytes(Type type) {
@@ -161,31 +185,29 @@ public final class TypeFactory {
     private int getMemorySizeInBytes(Type type, boolean padded) {
         if (type instanceof BooleanType) {
             return 1;
-        }
-        if (type instanceof IntegerType integerType) {
+        } else if (type instanceof MemoryType memType) {
+            return IntMath.divide(memType.getBitWidth(), 8, RoundingMode.CEILING);
+        } else if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-        }
-        if (type instanceof FloatType floatType) {
+        } else if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
-        }
-        if (type instanceof ArrayType arrayType) {
-            if (arrayType.hasKnownNumElements()) {
-                Integer stride = arrayType.getStride();
-                if (stride != null) {
-                    return stride * arrayType.getNumElements();
-                }
-                int elSize = getMemorySizeInBytes(arrayType.getElementType());
-                if (elSize >= 0) {
-                    int size = elSize * arrayType.getNumElements();
-                    if (arrayType.getAlignment() != null) {
-                        return paddedSize(size, arrayType.getAlignment());
-                    }
-                    return size;
-                }
+        } else if (type instanceof ArrayType arrayType) {
+            if (!arrayType.hasKnownNumElements()) {
+                return -1;
             }
-            return -1;
-        }
-        if (type instanceof AggregateType aType) {
+            Integer stride = arrayType.getStride();
+            if (stride != null) {
+                return stride * arrayType.getNumElements();
+            }
+            int elSize = getMemorySizeInBytes(arrayType.getElementType());
+            if (elSize >= 0) {
+                int size = elSize * arrayType.getNumElements();
+                if (arrayType.getAlignment() != null) {
+                    return paddedSize(size, arrayType.getAlignment());
+                }
+                return size;
+            }
+        } else if (type instanceof AggregateType aType) {
             List<TypeOffset> typeOffsets = aType.getFields();
             if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
@@ -220,57 +242,14 @@ public final class TypeFactory {
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
 
-    public static int paddedSize(int size, int alignment) {
-        int mod = size % alignment;
-        if (mod > 0) {
-            return size + alignment - mod;
-        }
-        return size;
-    }
-
-    public boolean hasKnownSize(Type type) { return getMemorySizeInBytes(type) >= 0; }
-
-    public int getMemorySizeInBits(Type type) {
-        return getMemorySizeInBytes(type) * 8;
-    }
-
     public int getOffsetInBytes(Type type, int index) {
         return TypeOffset.of(type, index).offset();
     }
 
-    public Map<Integer, Type> decomposeIntoPrimitives(Type type) {
-        final Map<Integer, Type> decomposition = new LinkedHashMap<>();
-        if (type instanceof ArrayType arrayType) {
-            final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(arrayType.getElementType());
-            if (!arrayType.hasKnownNumElements() || innerDecomposition == null) {
-                return null;
-            }
-            Integer stride = arrayType.getStride();
-            final int size = stride != null ? stride : getMemorySizeInBytes(arrayType.getElementType());
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
-                    decomposition.put(entry.getKey() + i * size, entry.getValue());
-                }
-            }
-        } else if (type instanceof AggregateType aggregateType) {
-            for (TypeOffset typeOffset : aggregateType.getFields()) {
-                final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(typeOffset.type());
-                if (innerDecomposition == null) {
-                    return null;
-                }
-                for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
-                    decomposition.put(typeOffset.offset() + entry.getKey(), entry.getValue());
-                }
-            }
-        } else {
-            // Primitive type
-            decomposition.put(0, type);
-        }
+    // ==================================================================================================
+    // Other
 
-        return decomposition;
-    }
-
-    public static boolean isStaticType(Type type) {
+    public boolean isStaticType(Type type) {
         if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
             return true;
         }
@@ -283,7 +262,7 @@ public final class TypeFactory {
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
 
-    public static boolean isStaticTypeOf(Type staticType, Type runtimeType) {
+    public boolean isStaticTypeOf(Type staticType, Type runtimeType) {
         if (staticType.equals(runtimeType)) {
             return true;
         }
@@ -314,5 +293,16 @@ public final class TypeFactory {
             return isStaticTypeOf(pStaticType.getPointedType(), pRuntimeType.getPointedType());
         }
         return false;
+    }
+
+    // ==================================================================================================
+    // Static utility
+
+    private static int paddedSize(int size, int alignment) {
+        int mod = size % alignment;
+        if (mod > 0) {
+            return size + alignment - mod;
+        }
+        return size;
     }
 }

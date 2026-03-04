@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -118,37 +117,26 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpAtomicSMax(SpirvParser.OpAtomicSMaxContext ctx) {
-        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.GT);
+        return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.SMAX);
     }
 
     @Override
     public Event visitOpAtomicSMin(SpirvParser.OpAtomicSMinContext ctx) {
-        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.LT);
+        return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.SMIN);
     }
 
-    private Event visitOpAtomicExtremum(
-            SpirvParser.IdResultContext idCtx,
-            SpirvParser.IdResultTypeContext typeCtx,
-            SpirvParser.PointerContext ptrCtx,
-            SpirvParser.MemoryContext scopeCtx,
-            SpirvParser.SemanticsContext tagsCtx,
-            SpirvParser.ValueIdRefContext valCtx,
-            IntCmpOp kind
-    ) {
-        Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
-        Expression ptr = builder.getExpression(ptrCtx.getText());
-        Expression value = builder.getExpression(valCtx.getText());
-        String scope = getScopeTag(scopeCtx.getText());
-        Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
-        tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
-        if (!(ptr.getType() instanceof IntegerType) || !(value.getType() instanceof IntegerType)) {
-            throw new ParsingException("Unexpected type at '%s' or '%s', expected integer but received '%s' and '%s'",
-                    ptrCtx.getText(), valCtx.getText(), ptr.getType(), value.getType());
-        }
-        SpirvRmwExtremum event = newSpirvRmwExtremum(register, ptr, kind, value, scope, tags);
-        return builder.addEvent(event);
+    @Override
+    public Event visitOpAtomicUMax(SpirvParser.OpAtomicUMaxContext ctx) {
+        return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.UMAX);
+    }
+
+    @Override
+    public Event visitOpAtomicUMin(SpirvParser.OpAtomicUMinContext ctx) {
+        return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.UMIN);
     }
 
     private Event visitOpAtomicCompareExchange(

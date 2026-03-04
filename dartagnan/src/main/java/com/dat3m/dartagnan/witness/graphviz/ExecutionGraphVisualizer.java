@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
@@ -43,7 +44,8 @@ public class ExecutionGraphVisualizer {
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     private final Map<String, BiPredicate<EventModel, EventModel>> filter = new HashMap<>();
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private List<String> relsToShow;
+    private static final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
+    private Set<String> relsToShow;
 
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
@@ -77,7 +79,7 @@ public class ExecutionGraphVisualizer {
 
     private void setRelationsToShow(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
+        relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
@@ -126,14 +128,14 @@ public class ExecutionGraphVisualizer {
 
     private void addEvents(ExecutionModelNext model) {
         for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) {
-                // This skips init threads.
-                return;
+
+            if (IRHelper.isInitThread(tm.getThread())) {
+                continue;
             }
 
             graphviz.beginSubgraph("T" + tm.getId());
 
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             for (List<EventModel> instruction : instructions) {
                 for (EventModel event : instruction) {
                     appendNode(event, nodeLabel(event));
@@ -188,7 +190,9 @@ public class ExecutionGraphVisualizer {
         for (String name : relsToShow) {
             RelationModel rm = getRelationModel(model, name);
             if (rm == null) {
-                logger.warn("Relation with the name {} does not exist", name);
+                if (!OPTIONAL_RELATIONS.contains(name)) {
+                    logger.warn("Relation with the name {} does not exist", name);
+                }
                 continue;
             }
             // For PO and CO we do not show the transitive edges in witness.
