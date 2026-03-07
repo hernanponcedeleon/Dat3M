@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
@@ -15,7 +14,6 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.math.BigInteger;
 import java.util.HashSet;
@@ -129,11 +127,4 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         return visitor.visitAlloc(this);
     }
 
-    @Override
-    public BooleanFormula encodeExec(EncodingContext ctx) {
-        return ctx.getBooleanFormulaManager().and(
-                super.encodeExec(ctx),
-                ctx.getExpressionEncoder().assignEqualAt(ctx.result(this), this, getAllocatedObject(), this)
-        );
-    }
 }

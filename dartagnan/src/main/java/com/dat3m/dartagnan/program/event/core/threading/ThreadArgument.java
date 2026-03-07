@@ -1,14 +1,11 @@
 package com.dat3m.dartagnan.program.event.core.threading;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Map;
 import java.util.Set;
@@ -54,17 +51,6 @@ public class ThreadArgument extends AbstractEvent implements RegWriter, EventUse
     public String defaultString() {
         return String.format("%s = Argument(%s) from %s", register, argIndex, creator);
     }
-
-    @Override
-    public BooleanFormula encodeExec(EncodingContext context) {
-        final Expression equalValue = context.getExpressionFactory()
-                .makeEQ(context.result(this), creator.getArguments().get(argIndex));
-        return context.getBooleanFormulaManager().and(
-                super.encodeExec(context),
-                context.getExpressionEncoder().encodeBooleanAt(equalValue, creator).formula()
-        );
-    }
-
 
     @Override
     public ThreadArgument getCopy() {
