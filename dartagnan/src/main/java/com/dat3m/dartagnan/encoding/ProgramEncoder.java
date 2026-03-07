@@ -597,50 +597,46 @@ public class ProgramEncoder {
     // ============================================ Event semantics ============================================
     private class EventEncoder implements EventVisitor<BooleanFormula> {
 
+        private final ExpressionEncoder exprEnc = context.getExpressionEncoder();
+        private final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
         @Override
         public BooleanFormula visitEvent(Event e) {
-            return context.getBooleanFormulaManager().makeTrue();
+            return bmgr.makeTrue();
         }
 
         @Override
         public BooleanFormula visitAssume(Assume e) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-            return bmgr.implication(context.execution(e),
-                    context.getExpressionEncoder().encodeBooleanAt(e.getExpr(), e).formula()
+            return bmgr.implication(
+                    context.execution(e),
+                    exprEnc.encodeBooleanAt(e.getExpr(), e).formula()
             );
         }
 
         @Override
         public BooleanFormula visitLocal(Local e) {
-            return context.getExpressionEncoder().
-                    assignEqualAt(context.result(e), e, e.getExpr(), e);
+            return exprEnc.assignEqualAt(context.result(e), e, e.getExpr(), e);
         }
 
         @Override
         public BooleanFormula visitAlloc(Alloc e) {
-            return context.getExpressionEncoder()
-                    .assignEqualAt(context.result(e), e, e.getAllocatedObject(), e);
+            return exprEnc.assignEqualAt(context.result(e), e, e.getAllocatedObject(), e);
         }
 
         @Override
         public BooleanFormula visitExecutionStatus(ExecutionStatus e) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-
             //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
             // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
             // However, this is very counterintuitive and I think we should return 1/true on success and instead
             // change the compilation of Store-Conditional to invert the value.
-            final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(e.getStatusEvent())));
-            return context.getExpressionEncoder().assignEqual(context.result(e), notExec, CAST);
+            final Expression notExec = exprEnc.wrap(bmgr.not(context.execution(e.getStatusEvent())));
+            return exprEnc.assignEqual(context.result(e), notExec, CAST);
         }
 
         @Override
         public BooleanFormula visitThreadArgument(ThreadArgument e) {
             final Expression arg = e.getCreator().getArguments().get(e.getIndex());
-            return context.getExpressionEncoder().assignEqualAt(
-                    context.result(e), e, arg, e.getCreator()
-            );
+            return exprEnc.assignEqualAt(context.result(e), e, arg, e.getCreator());
         }
     }
 
