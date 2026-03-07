@@ -637,9 +637,10 @@ public class ProgramEncoder {
 
         @Override
         public BooleanFormula visitThreadArgument(ThreadArgument e) {
-            final Expression equalValue = context.getExpressionFactory()
-                    .makeEQ(context.result(e), e.getCreator().getArguments().get(e.getIndex()));
-            return context.getExpressionEncoder().encodeBooleanAt(equalValue, e.getCreator()).formula();
+            final Expression arg = e.getCreator().getArguments().get(e.getIndex());
+            return context.getExpressionEncoder().assignEqualAt(
+                    context.result(e), e, arg, e.getCreator()
+            );
         }
     }
 
