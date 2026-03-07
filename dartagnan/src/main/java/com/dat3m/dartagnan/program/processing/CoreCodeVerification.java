@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -53,6 +54,31 @@ public class CoreCodeVerification implements FunctionProcessor {
                 msg.append(String.format("\t%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName()));
             }
             throw new MalformedProgramException("Found non-core events.\n" + msg);
+        }
+
+        validateCoreEvents(function);
+    }
+
+    private void validateCoreEvents(Function function) {
+        StringBuilder msg = new StringBuilder();
+
+        for (Event e : function.getEvents()) {
+            // Check: Control barriers execution scopes match thread hierarchy
+            if (e instanceof ControlBarrier cb) {
+                ScopeHierarchy hierarchy = cb.getThread().getScopeHierarchy();
+                if (hierarchy == null) {
+                    msg.append(String.format("\t%2s: %-30s is not inside hierarchical thread %n", e.getGlobalId(), e));
+                } else {
+                    final int id = hierarchy.getScopeId(cb.getExecScope());
+                    if (id < 0) {
+                        msg.append(String.format("\t%2s: %-30s execution scope does not match thread hierarchy %n", e.getGlobalId(), e));
+                    }
+                }
+            }
+        }
+
+        if (!msg.isEmpty()) {
+            throw new MalformedProgramException("Found errors in program.\n" + msg);
         }
     }
 }

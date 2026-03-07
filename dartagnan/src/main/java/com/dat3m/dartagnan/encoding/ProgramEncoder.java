@@ -177,19 +177,6 @@ public class ProgramEncoder {
                 .reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    private int getWorkgroupId(Thread thread) {
-        ScopeHierarchy hierarchy = thread.getScopeHierarchy();
-        if (hierarchy != null) {
-            int id = hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP);
-            if (id < 0) {
-                id = hierarchy.getScopeId(Tag.PTX.CTA);
-            }
-            return id;
-        }
-        throw new IllegalArgumentException("Attempt to compute workgroup ID " +
-                "for a non-hierarchical thread");
-    }
-
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow with progress model {}", context.getTask().getProgressModel());
 
@@ -311,6 +298,13 @@ public class ProgramEncoder {
         return bmgr.and(enc);
     }
 
+    private String getScopeId(ControlBarrier barrier) {
+        final ScopeHierarchy hierarchy = barrier.getThread().getScopeHierarchy();
+        final int id = hierarchy.getScopeId(barrier.getExecScope());
+        assert id >= 0;
+        return barrier.getExecScope() + id;
+    }
+
     private BooleanFormula encodeControlBarriers() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
@@ -318,7 +312,7 @@ public class ProgramEncoder {
 
         Map<String, List<ControlBarrier>> barriers = context.getTask().getProgram().getThreadEvents(ControlBarrier.class).stream()
                 .filter(b -> !(b instanceof NamedBarrier))
-                .collect(groupingBy(b -> "all_barriers_" + getWorkgroupId(b.getThread()) + "@" + b.getInstanceId()));
+                .collect(groupingBy(b -> "all_barriers_" + getScopeId(b) + "@" + b.getInstanceId()));
 
         Map<String, BooleanFormula> allCfConjunctions = barriers.entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> bmgr.and(e.getValue().stream().map(context::controlFlow).toList())));
@@ -343,7 +337,7 @@ public class ProgramEncoder {
         BooleanFormula enc = bmgr.makeTrue();
 
         Map<String, List<NamedBarrier>> barriers = context.getTask().getProgram().getThreadEvents(NamedBarrier.class).stream()
-                .collect(groupingBy(b -> getWorkgroupId(b.getThread()) + "@" + b.getInstanceId()));
+                .collect(groupingBy(b -> getScopeId(b) + "@" + b.getInstanceId()));
 
         for (List<NamedBarrier> events : barriers.values()) {
             for (NamedBarrier e1 : events) {
