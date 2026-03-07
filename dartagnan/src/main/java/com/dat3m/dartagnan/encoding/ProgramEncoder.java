@@ -631,7 +631,7 @@ public class ProgramEncoder {
             // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
             // However, this is very counterintuitive and I think we should return 1/true on success and instead
             // change the compilation of Store-Conditional to invert the value.
-            final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(e)));
+            final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(e.getStatusEvent())));
             return context.getExpressionEncoder().assignEqual(context.result(e), notExec, CAST);
         }
 
