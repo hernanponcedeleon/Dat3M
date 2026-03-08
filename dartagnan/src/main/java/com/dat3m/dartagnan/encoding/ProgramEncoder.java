@@ -125,20 +125,11 @@ public class ProgramEncoder {
 
     /*
         A thread is enabled if it has no creator or the corresponding ThreadCreate
-        event was executed (and didn't fail spuriously).
-        // TODO: We could make ThreadCreate "not executed" if it fails rather than guessing the success state here.
-        // FIXME: The guessing allows for mismatches: the spawning may succeed but the guess says it doesn't.
+        event was executed.
      */
     private BooleanFormula threadIsEnabled(Thread thread) {
         final ThreadStart start = thread.getEntry();
-        if (!start.isSpawned()) {
-            return bmgr.makeTrue();
-        } else if (!start.mayFailSpuriously()) {
-            return context.execution(start.getCreator());
-        } else {
-            final String spawnSuccessVarName = "__spawnSuccess#" + thread.getId();
-            return bmgr.and(context.execution(start.getCreator()), bmgr.makeVariable(spawnSuccessVarName));
-        }
+        return !start.isSpawned() ? bmgr.makeTrue() : context.execution(start.getCreator());
     }
 
     private BooleanFormula threadHasStarted(Thread thread) {

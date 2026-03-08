@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
+import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.INVALID_TID;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
@@ -59,6 +60,12 @@ public class Intrinsics {
             toUppercase=true,
             secure = true)
     private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
+
+    @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
+            description = "Calling pthread_create is guaranteed to succeed (default true).",
+            secure = true,
+            toUppercase = true)
+    private boolean pthreadCreateAlwaysSucceeds = true;
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
@@ -420,7 +427,18 @@ public class Intrinsics {
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
 
+        final Register failureRegister = call.getFunction().getOrNewRegister("__pthread_create_fail", types.getBooleanType());
+        final Event decideFailure = pthreadCreateAlwaysSucceeds
+                ? EventFactory.newLocal(failureRegister, expressions.makeFalse())
+                : EventFactory.newNonDetChoice(failureRegister);
+        final Label pthreadFailCase = newLabel("__pthread_create_fail");
+        final CondJump checkIfFail = newJump(failureRegister, pthreadFailCase);
+        final Label endOfPthreadCreate = newLabel("__pthread_create_end");
+
         return eventSequence(
+                decideFailure,
+                checkIfFail,
+                // ----- SUCCESS -----
                 createEvent,
                 newJump(expressions.makeEQ(attributes, expressions.makeGeneralZero(attributes.getType())), skipAttrLabel),
                 newLoad(attributesRegister, attributes),
@@ -434,7 +452,13 @@ public class Intrinsics {
                 skipAttrLabel,
                 newStore(pidResultAddress, tidReg),
                 // TODO: Allow to return failure value (!= 0)
-                newLocal(resultRegister, expressions.makeGeneralZero(resultRegister.getType()))
+                newLocal(resultRegister, expressions.makeGeneralZero(resultRegister.getType())),
+                newGoto(endOfPthreadCreate),
+                // ----- FAIL -----
+                pthreadFailCase,
+                newLocal(resultRegister, expressions.makeValue(PosixErrorCode.EAGAIN.getValue(),
+                        (IntegerType) resultRegister.getType())),
+                endOfPthreadCreate
         );
     }
 
