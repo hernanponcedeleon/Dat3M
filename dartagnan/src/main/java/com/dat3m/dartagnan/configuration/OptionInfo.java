@@ -1,47 +1,29 @@
 package com.dat3m.dartagnan.configuration;
 
-import com.dat3m.dartagnan.wmm.RelationNameRepository;
-import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.encoding.ActiveSetAnalysis;
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.Inlining;
-import com.dat3m.dartagnan.program.processing.Intrinsics;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.program.processing.MemoryAllocation;
-import com.dat3m.dartagnan.program.processing.NonterminationDetection;
-import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation;
-import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.program.processing.*;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
-
-import com.google.common.reflect.ClassPath;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
 import java.lang.reflect.*;
+import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -157,26 +139,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
 
     public Class<?> getDomain() {
         return domain;
-    }
-
-    public Stream<String> getAvailableValues() {
-        if (domain.isEnum()) {
-            return Stream.of(domain.getEnumConstants()).map(Object::toString);
-        }
-        if (domain.equals(Class.class)) {
-            verify(type instanceof ParameterizedType);
-            Type[] argument = ((ParameterizedType) type).getActualTypeArguments();
-            verify(argument.length == 1);
-            verify(argument[0] instanceof WildcardType);
-            WildcardType variable = (WildcardType) argument[0];
-            verify(variable.getLowerBounds().length == 0);
-            Type[] bound = variable.getUpperBounds();
-            verify(bound.length == 1);
-            verify(bound[0] instanceof Class);
-            Class<?> base = (Class<?>) bound[0];
-            return classes().filter(base::isAssignableFrom).filter(c -> !Modifier.isAbstract(c.getModifiers())).map(Class::getName);
-        }
-        return Stream.empty();
     }
 
     @Override

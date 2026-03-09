@@ -35,8 +35,6 @@ import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
 import org.apache.commons.csv.CSVFormat;
@@ -69,7 +67,6 @@ import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -229,7 +226,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static List<File> getProgramFiles(String dirPath) {
-        List<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
         try (Stream<Path> stream = Files.walk(Paths.get(dirPath))) {
             files = stream.filter(Files::isRegularFile)
                 .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))

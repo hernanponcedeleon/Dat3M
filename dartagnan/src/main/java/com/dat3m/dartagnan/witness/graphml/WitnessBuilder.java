@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -228,13 +227,12 @@ public class WitnessBuilder {
 
             // Create byte array to read data in chunks
             byte[] byteArray = new byte[1024];
-            int bytesCount = 0;
+            int bytesCount;
 
             // Read file data and update in message digest
             while ((bytesCount = fis.read(byteArray)) != -1) {
                 digest.update(byteArray, 0, bytesCount);
             }
-            ;
 
             // close the stream; We don't need it now.
             fis.close();
@@ -245,8 +243,8 @@ public class WitnessBuilder {
             // This bytes[] has bytes in decimal format;
             // Convert it to hexadecimal format
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < bytes.length; i++) {
-                sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+            for (byte aByte : bytes) {
+                sb.append(Integer.toString((aByte & 0xff) + 0x100, 16).substring(1));
             }
 
             // return complete hash

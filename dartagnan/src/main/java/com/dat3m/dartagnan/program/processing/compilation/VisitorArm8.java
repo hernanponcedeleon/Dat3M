@@ -382,45 +382,29 @@ class VisitorArm8 extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier;
-        switch (e.getName()) {
+        Event optionalMemoryBarrier = switch (e.getName()) {
             // mb()
-            case Tag.Linux.MO_MB:
-                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
-                break;
+            case Tag.Linux.MO_MB -> AArch64.DSB.newISHBarrier();
             // rmb()
-            case Tag.Linux.MO_RMB:
-                optionalMemoryBarrier = AArch64.DSB.newISHLDBarrier();
-                break;
+            case Tag.Linux.MO_RMB -> AArch64.DSB.newISHLDBarrier();
             // wmb()
-            case Tag.Linux.MO_WMB:
-                optionalMemoryBarrier = AArch64.DSB.newISHSTBarrier();
-                break;
+            case Tag.Linux.MO_WMB -> AArch64.DSB.newISHSTBarrier();
             // __smp_mb()
             // 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
-            case Tag.Linux.BEFORE_ATOMIC:
-            case Tag.Linux.AFTER_ATOMIC:
-                optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
-                break;
+            case Tag.Linux.BEFORE_ATOMIC, Tag.Linux.AFTER_ATOMIC -> AArch64.DMB.newISHBarrier();
             // #define smp_mb__after_spinlock()	smp_mb()
             //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
-            case Tag.Linux.AFTER_SPINLOCK:
-                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
-                break;
+            case Tag.Linux.AFTER_SPINLOCK -> AArch64.DSB.newISHBarrier();
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             //              https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
-            case Tag.Linux.AFTER_UNLOCK_LOCK:
-                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
-                break;
+            case Tag.Linux.AFTER_UNLOCK_LOCK -> AArch64.DSB.newISHBarrier();
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
-            case Tag.Linux.BARRIER:
-                optionalMemoryBarrier = null;
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
+            case Tag.Linux.BARRIER -> null;
+            default ->
+                    throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+        };
 
         return eventSequence(
                 optionalMemoryBarrier
@@ -513,8 +497,6 @@ class VisitorArm8 extends VisitorBase {
         );
     }
 
-    ;
-
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L56
     @Override
@@ -540,8 +522,6 @@ class VisitorArm8 extends VisitorBase {
                 optionalMemoryBarrierAfter
         );
     }
-
-    ;
 
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L78
@@ -607,8 +587,6 @@ class VisitorArm8 extends VisitorBase {
         );
     }
 
-    ;
-
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
@@ -639,8 +617,6 @@ class VisitorArm8 extends VisitorBase {
                 testOp
         );
     }
-
-    ;
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {

@@ -66,14 +66,10 @@ public final class SimpleGraph extends AbstractBaseGraph {
     }
 
     private DataItem getItem(int e, EdgeDirection dir) {
-        switch (dir) {
-            case OUTGOING:
-                return outgoing[e];
-            case INGOING:
-                return ingoing[e];
-            default:
-                return null;
-        }
+        return switch (dir) {
+            case OUTGOING -> outgoing[e];
+            case INGOING -> ingoing[e];
+        };
     }
 
     public Collection<Edge> getEdges(int e, EdgeDirection dir) {

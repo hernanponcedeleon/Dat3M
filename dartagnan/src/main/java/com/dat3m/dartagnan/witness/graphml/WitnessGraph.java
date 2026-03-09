@@ -150,7 +150,7 @@ public class WitnessGraph extends ElemWithAttributes {
 
     public EventGraph getReadFromKnowledge(Program program, AliasAnalysis alias) {
         MutableEventGraph k = new MapEventGraph();
-        MemoryCoreEvent current = null;
+        MemoryCoreEvent current;
         MemoryCoreEvent last = null;
         List<MemoryCoreEvent> currents;
         for (Edge e : getPathToViolation()) {

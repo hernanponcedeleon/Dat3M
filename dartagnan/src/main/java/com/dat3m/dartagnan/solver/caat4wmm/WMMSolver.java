@@ -31,8 +31,7 @@ public class WMMSolver {
     }
 
     public static WMMSolver withContext(EncodingContext context) throws InvalidConfigurationException {
-        final var solver = new WMMSolver(context);
-        return solver;
+        return new WMMSolver(context);
     }
 
     public ExecutionModel getExecution() {

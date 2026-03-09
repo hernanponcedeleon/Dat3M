@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -21,6 +16,12 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
@@ -90,7 +91,7 @@ import static com.google.common.base.Preconditions.checkState;
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
 public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {}
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();

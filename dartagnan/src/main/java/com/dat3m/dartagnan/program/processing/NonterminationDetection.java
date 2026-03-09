@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,11 +124,8 @@ public class NonterminationDetection implements ProgramProcessor {
         //  If it is not, we assume the loop is unrolled and do not instrument it.
         //  This, however, only results in incompleteness of non-termination detection but causes no soundness issues.
         final Event bound = lastEvent.getSuccessor().getSuccessor();
-        if (bound instanceof CondJump && bound.hasTag(Tag.BOUND)) {
-            // Loop is not fully unrolled and thus might be non-terminating
-            return true;
-        }
-        return false;
+        // Loop is not fully unrolled and thus might be non-terminating
+        return bound instanceof CondJump && bound.hasTag(Tag.BOUND);
     }
 
 

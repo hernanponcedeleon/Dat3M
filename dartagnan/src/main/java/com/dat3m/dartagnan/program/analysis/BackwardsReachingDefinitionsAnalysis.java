@@ -13,16 +13,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Collects all direct usage relationships between {@link RegWriter} and {@link RegReader}.
@@ -154,31 +145,23 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
         }
     }
 
-    private static final class RegisterWritersView implements RegisterWriters {
-
-        private final ReaderInfo info;
-        private final Register register;
-
-        private RegisterWritersView(ReaderInfo info, Register register) {
-            this.info = info;
-            this.register = register;
-        }
+    private record RegisterWritersView(ReaderInfo info, Register register) implements RegisterWriters {
 
         @Override
-        public List<RegWriter> getMayWriters() {
-            return info.mayWriters.stream().filter(w -> w.getResultRegister().equals(register)).toList();
-        }
+            public List<RegWriter> getMayWriters() {
+                return info.mayWriters.stream().filter(w -> w.getResultRegister().equals(register)).toList();
+            }
 
-        @Override
-        public List<RegWriter> getMustWriters() {
-            return info.mustWriters.stream().filter(w -> w.getResultRegister().equals(register)).toList();
-        }
+            @Override
+            public List<RegWriter> getMustWriters() {
+                return info.mustWriters.stream().filter(w -> w.getResultRegister().equals(register)).toList();
+            }
 
-        @Override
-        public boolean mustBeInitialized() {
-            return !info.uninitialized.contains(register);
+            @Override
+            public boolean mustBeInitialized() {
+                return !info.uninitialized.contains(register);
+            }
         }
-    }
 
     /**
      * Local information for either a {@link RegWriter} or the initial state of the program.

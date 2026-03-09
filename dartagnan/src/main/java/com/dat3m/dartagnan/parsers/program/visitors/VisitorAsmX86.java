@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.AsmX86BaseVisitor;
@@ -11,6 +8,9 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class VisitorAsmX86 extends AsmX86BaseVisitor<Object> {
 
@@ -21,9 +21,7 @@ public class VisitorAsmX86 extends AsmX86BaseVisitor<Object> {
     @Override
     public List<Event> visitAsm(AsmX86Parser.AsmContext ctx) {
         visitChildren(ctx);
-        List<Event> events = new ArrayList<>();
-        events.addAll(asmInstructions);
-        return events;
+        return new ArrayList<>(asmInstructions);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.util.Arrays;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -17,6 +16,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+
+import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
 
@@ -42,7 +43,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         Program prog = programBuilder.build();
-        replaceZeroRegisters(prog, Arrays.asList("x0"));
+        replaceZeroRegisters(prog, List.of("x0"));
         return prog;
     }
 

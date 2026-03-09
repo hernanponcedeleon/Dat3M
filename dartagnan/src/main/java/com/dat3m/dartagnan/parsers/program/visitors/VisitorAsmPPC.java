@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -20,11 +15,17 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {}
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();

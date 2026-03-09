@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
@@ -21,12 +20,6 @@ public interface MemoryCoreEvent extends MemoryEvent {
     default Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new HashSet<>());
     }
-
-    @Override
-    default <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitMemEvent(this);
-    }
-
 
     /*
         Convenience implementation to set the MemoryOrder metadata + add a corresponding tag.

@@ -586,34 +586,23 @@ public class VisitorPower extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier;
-        switch (e.getName()) {
-            case Tag.Linux.MO_MB:
-            case Tag.Linux.MO_RMB:
-            case Tag.Linux.MO_WMB:
-            case Tag.Linux.BEFORE_ATOMIC:
-            case Tag.Linux.AFTER_ATOMIC:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+        Event optionalMemoryBarrier = switch (e.getName()) {
+            case Tag.Linux.MO_MB, Tag.Linux.MO_RMB, Tag.Linux.MO_WMB,
+                 Tag.Linux.BEFORE_ATOMIC, Tag.Linux.AFTER_ATOMIC ->
+                    Power.newSyncBarrier();
             // #define smp_mb__after_spinlock()	smp_mb()
             // 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
-            case Tag.Linux.AFTER_SPINLOCK:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+            case Tag.Linux.AFTER_SPINLOCK -> Power.newSyncBarrier();
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
-            case Tag.Linux.AFTER_UNLOCK_LOCK:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+            case Tag.Linux.AFTER_UNLOCK_LOCK -> Power.newSyncBarrier();
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
-            case Tag.Linux.BARRIER:
-                optionalMemoryBarrier = null;
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
+            case Tag.Linux.BARRIER -> null;
+            default ->
+                    throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+        };
 
         return eventSequence(
                 optionalMemoryBarrier
@@ -738,8 +727,6 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    ;
-
     @Override
     public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
@@ -769,8 +756,6 @@ public class VisitorPower extends VisitorBase {
                 optionalMemoryBarrierAfter
         );
     }
-
-    ;
 
     @Override
     public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
@@ -843,8 +828,6 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    ;
-
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
@@ -882,8 +865,6 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    ;
-
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
         IntegerType type = (IntegerType)e.getAccessType();
@@ -912,8 +893,6 @@ public class VisitorPower extends VisitorBase {
     }
 
     public enum PowerScheme {
-
-        LEADING_SYNC, TRAILING_SYNC;
-
+        LEADING_SYNC, TRAILING_SYNC
     }
 }

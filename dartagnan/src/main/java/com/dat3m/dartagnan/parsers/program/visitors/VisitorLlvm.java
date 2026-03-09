@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
@@ -314,7 +313,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
                 // Field "line" is optional. When missing we assume value 0
                 final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
-                        .orElse(new MdGenericValue<BigInteger>(BigInteger.ZERO)).value().intValue();
+                        .orElse(new MdGenericValue<>(BigInteger.ZERO)).value().intValue();
                 metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
             }
         }
@@ -413,7 +412,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     block.events.add(EventFactory.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
-                logger.warn("None of the parsers succeeded for inline assembly." + msg);
+                logger.warn("None of the parsers succeeded for inline assembly. {}", msg);
             }
             return resultRegister;
         }
@@ -1641,12 +1640,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helper to parse inline asm code
-    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) {
         try{
             List<Event> events = parser.parse(asmCode);
             return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException e){}
-        return Optional.empty();
+        } catch (ParsingException ignored) {
+            return Optional.empty();
+        }
     }
 
 }

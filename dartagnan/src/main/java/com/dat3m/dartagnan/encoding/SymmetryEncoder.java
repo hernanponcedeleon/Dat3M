@@ -44,10 +44,11 @@ public class SymmetryEncoder {
     private final RelationAnalysis ra;
 
     @Option(name = BREAK_SYMMETRY_ON,
-            description = "The target to break symmetry on. Allowed options are:\n" +
-                    "- A relation name to break symmetry on.\n" +
-                    "- The special value \"_cf\" to break symmetry on the control flow.\n" +
-                    "- The empty string to disable symmetry breaking.",
+            description = """
+                    The target to break symmetry on. Allowed options are:
+                    - A relation name to break symmetry on.
+                    - The special value "_cf" to break symmetry on the control flow.
+                    - The empty string to disable symmetry breaking.""",
             secure = true)
     private String symmBreakTarget = "";
 

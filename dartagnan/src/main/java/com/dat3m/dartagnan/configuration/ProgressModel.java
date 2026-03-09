@@ -98,7 +98,7 @@ public enum ProgressModel {
 
     public static final TypeConverter HIERARCHY_CONVERTER = new TypeConverter() {
         @Override
-        public @Nullable Hierarchy convert(String optName, String value, TypeToken<?> type, @Nullable Annotation annotation, @Nullable Path path, LogManager logManager) throws InvalidConfigurationException {
+        public Hierarchy convert(String optName, String value, TypeToken<?> type, @Nullable Annotation annotation, @Nullable Path path, LogManager logManager) throws InvalidConfigurationException {
             Preconditions.checkArgument(type.isSubtypeOf(Hierarchy.class));
 
             // Dictionary-style specification

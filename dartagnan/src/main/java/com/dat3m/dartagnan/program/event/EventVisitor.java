@@ -12,11 +12,12 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.dat3m.*;
+import com.dat3m.dartagnan.program.event.lang.dat3m.NonDetChoice;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
-import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
 public interface EventVisitor<T> {
 
@@ -54,8 +55,8 @@ public interface EventVisitor<T> {
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
     default T visitXchg(Xchg xchg) { return visitMemEvent(xchg); }
     default T visitCas(CAS cas) { return visitMemEvent(cas); }
-    default T visitRMWOp(RMWOp rmwOp) { return visitMemEvent(rmwOp); };
-    default T visitRMWFetchOp(RMWFetchOp rmwOp) { return visitMemEvent(rmwOp); };
+    default T visitRMWOp(RMWOp rmwOp) { return visitMemEvent(rmwOp); }
+    default T visitRMWFetchOp(RMWFetchOp rmwOp) { return visitMemEvent(rmwOp); }
 
     // ------------------ Linux Events ------------------
     default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }

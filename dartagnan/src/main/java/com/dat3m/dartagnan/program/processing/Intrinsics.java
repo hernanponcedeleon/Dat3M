@@ -317,8 +317,8 @@ public class Intrinsics {
             }
         }
         if (!missingSymbols.isEmpty()) {
-            logger.warn(missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")) +
-                ". Detecting calls to unknown functions requires --property=program_spec.");
+            logger.warn("{}. Detecting calls to unknown functions requires --property=program_spec.",
+                    missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
         }
     }
 
@@ -1565,34 +1565,39 @@ public class Intrinsics {
 
         final Type nonDetType;
         final boolean signed;
-        if (suffix.equals("bool")) {
-            // Nondeterministic booleans
-            signed = false;
-            nonDetType = types.getBooleanType();
-        } else if (suffix.equals("float")) {
-            // Nondeterministic floats (32 bits)
-            signed = true;
-            nonDetType = types.getIEEESingleType();
-        } else if (suffix.equals("double")) {
-            // Nondeterministic floats (64 bits)
-            signed = true;
-            nonDetType = types.getIEEEDoubleType();
-        } else {
-            // Nondeterministic integers
-            final int bits = switch (suffix) {
-                case "longlong", "ulonglong" -> 64;
-                case "long", "ulong" -> 64;
-                case "int", "uint", "unsigned_int" -> 32;
-                case "short", "ushort", "unsigned_short" -> 16;
-                case "char", "uchar" -> 8;
-                default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
-            };
+        switch (suffix) {
+            case "bool" -> {
+                // Nondeterministic booleans
+                signed = false;
+                nonDetType = types.getBooleanType();
+            }
+            case "float" -> {
+                // Nondeterministic floats (32 bits)
+                signed = true;
+                nonDetType = types.getIEEESingleType();
+            }
+            case "double" -> {
+                // Nondeterministic floats (64 bits)
+                signed = true;
+                nonDetType = types.getIEEEDoubleType();
+            }
+            default -> {
+                // Nondeterministic integers
+                final int bits = switch (suffix) {
+                    case "longlong", "ulonglong" -> 64;
+                    case "long", "ulong" -> 64;
+                    case "int", "uint", "unsigned_int" -> 32;
+                    case "short", "ushort", "unsigned_short" -> 16;
+                    case "char", "uchar" -> 8;
+                    default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
+                };
 
-            signed = switch (suffix) {
-                case "int", "short", "long", "longlong", "char" -> true;
-                default -> false;
-            };
-            nonDetType = types.getIntegerType(bits);
+                signed = switch (suffix) {
+                    case "int", "short", "long", "longlong", "char" -> true;
+                    default -> false;
+                };
+                nonDetType = types.getIntegerType(bits);
+            }
         }
 
         final Register nonDetReg = call.getFunction().getOrNewRegister("__r_nondet_" + suffix, nonDetType);

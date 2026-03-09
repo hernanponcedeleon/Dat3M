@@ -12,20 +12,32 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.*;
-import com.dat3m.dartagnan.program.event.arch.ptx.*;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.*;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.*;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
+import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
-import com.dat3m.dartagnan.program.event.functions.*;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
-import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -190,6 +202,8 @@ public class EventFactory {
 
     // ------------------------------------------ Local events ------------------------------------------
 
+    // TODO: Unused, but "new Skip()" calls are used in several unit tests
+    //  Generally, this event is pointless and could be deleted entirely
     public static Skip newSkip() {
         return new Skip();
     }
@@ -529,10 +543,6 @@ public class EventFactory {
             private DMB() {
             }
 
-            public static GenericVisibleEvent newBarrier() {
-                return newSYBarrier(); // Default barrier
-            }
-
             public static GenericVisibleEvent newSYBarrier() {
                 return newFence("DMB.SY");
             }
@@ -556,10 +566,6 @@ public class EventFactory {
 
         public static class DSB {
             private DSB() {
-            }
-
-            public static GenericVisibleEvent newBarrier() {
-                return newSYBarrier(); // Default barrier
             }
 
             public static GenericVisibleEvent newSYBarrier() {

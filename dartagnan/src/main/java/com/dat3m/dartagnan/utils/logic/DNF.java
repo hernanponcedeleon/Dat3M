@@ -69,10 +69,6 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
         this(new HashSet<>(reasons), true);
     }
 
-    public DNF(Conjunction<T>... reasons) {
-        this(Arrays.asList(reasons));
-    }
-
     protected DNF(Set<Conjunction<T>> reasons) {
         this(reasons, true);
     }
