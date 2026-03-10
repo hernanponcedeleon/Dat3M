@@ -206,10 +206,10 @@ public final class Tag {
 
         public static String toText(String mo) {
             return switch (mo) {
-                case MO_ONCE -> "_relaxed"; // The Linux kernel often uses "relaxed" to refer to "once"
+                case MO_ONCE    -> "_relaxed"; // The Linux kernel often uses "relaxed" to refer to "once"
                 case MO_ACQUIRE -> "_acquire";
                 case MO_RELEASE -> "_release";
-                case MO_MB -> "";
+                case MO_MB      -> "";
                 default -> throw new IllegalArgumentException("Unrecognised memory order " + mo);
             };
         }
@@ -237,16 +237,16 @@ public final class Tag {
         public static String extractStoreMo(String cMo) {
             return switch (cMo) {
                 case C11.MO_ACQUIRE_RELEASE -> C11.MO_RELEASE;
-                case C11.MO_ACQUIRE -> C11.MO_RELAXED;
-                default -> cMo;
+                case C11.MO_ACQUIRE         -> C11.MO_RELAXED;
+                default                     -> cMo;
             };
         }
 
         public static String extractLoadMo(String cMo) {
             return switch (cMo) {
                 case C11.MO_ACQUIRE_RELEASE -> C11.MO_ACQUIRE;
-                case C11.MO_RELEASE -> C11.MO_RELAXED;
-                default -> cMo;
+                case C11.MO_RELEASE         -> C11.MO_RELAXED;
+                default                     -> cMo;
             };
         }
     }

@@ -442,14 +442,13 @@ public class RefinementSolver extends ModelChecker {
 
     private static boolean isUnknownDefinitionForCAAT(Definition def) {
         // TODO: We should probably automatically cut all "unknown relation",
-        //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
-        return def instanceof LinuxCriticalSections // LKMM
-                || def instanceof AMOPairs || def instanceof SameInstruction
+        //  i.e., use a white list of known relations instead of a black list of unknown one's.
+        return def instanceof AMOPairs || def instanceof SameInstruction || def instanceof Free // Basic
+                || def instanceof LinuxCriticalSections // LKMM
                 || def instanceof CASDependency // IMM
                 // GPUs
                 || def instanceof SameScope || def instanceof SyncWith
-                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation
-                || def instanceof Free;
+                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation;
     }
 
     // ================================================================================================================

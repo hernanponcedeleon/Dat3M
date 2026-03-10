@@ -391,7 +391,8 @@ class VisitorArm8 extends VisitorBase {
             case Tag.Linux.MO_WMB -> AArch64.DSB.newISHSTBarrier();
             // __smp_mb()
             // 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
-            case Tag.Linux.BEFORE_ATOMIC, Tag.Linux.AFTER_ATOMIC -> AArch64.DMB.newISHBarrier();
+            case Tag.Linux.BEFORE_ATOMIC,
+                 Tag.Linux.AFTER_ATOMIC -> AArch64.DMB.newISHBarrier();
             // #define smp_mb__after_spinlock()	smp_mb()
             //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
             case Tag.Linux.AFTER_SPINLOCK -> AArch64.DSB.newISHBarrier();

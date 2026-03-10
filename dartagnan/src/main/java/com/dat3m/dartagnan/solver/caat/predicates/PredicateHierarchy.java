@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 
 /*
-    A PredicateHiearchy has the following uses:
+    A PredicateHierarchy has the following uses:
         - it maintains the dependency structure of CAATPredicates
         - it initializes/populates derived CAATPredicates
         - it propagates changes topologically along the dependency structure

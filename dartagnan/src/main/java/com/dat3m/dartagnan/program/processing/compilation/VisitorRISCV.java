@@ -144,10 +144,10 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE -> RISCV.newRRWFence();
-            case Tag.C11.MO_RELEASE -> RISCV.newRWWFence();
+            case Tag.C11.MO_ACQUIRE         -> RISCV.newRRWFence();
+            case Tag.C11.MO_RELEASE         -> RISCV.newRWWFence();
             case Tag.C11.MO_ACQUIRE_RELEASE -> RISCV.newTsoFence();
-            case Tag.C11.MO_SC -> RISCV.newRWRWFence();
+            case Tag.C11.MO_SC              -> RISCV.newRWRWFence();
             default -> null;
         };
 
@@ -256,10 +256,10 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE -> RISCV.newRRWFence();
-            case Tag.C11.MO_RELEASE -> RISCV.newRWWFence();
+            case Tag.C11.MO_ACQUIRE         -> RISCV.newRRWFence();
+            case Tag.C11.MO_RELEASE         -> RISCV.newRWWFence();
             case Tag.C11.MO_ACQUIRE_RELEASE -> RISCV.newTsoFence();
-            case Tag.C11.MO_SC -> RISCV.newRWRWFence();
+            case Tag.C11.MO_SC              -> RISCV.newRWRWFence();
             default -> null;
         };
 
@@ -324,7 +324,9 @@ class VisitorRISCV extends VisitorBase {
             // smp_mb()
             // https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
             // https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h
-            case Tag.Linux.MO_MB, Tag.Linux.BEFORE_ATOMIC, Tag.Linux.AFTER_ATOMIC -> RISCV.newRWRWFence();
+            case Tag.Linux.MO_MB,
+                 Tag.Linux.BEFORE_ATOMIC,
+                 Tag.Linux.AFTER_ATOMIC -> RISCV.newRWRWFence();
             // smp_rmb()
             case Tag.Linux.MO_RMB -> RISCV.newRRFence();
             // smp_wmb()
@@ -558,9 +560,9 @@ class VisitorRISCV extends VisitorBase {
     }
 
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
