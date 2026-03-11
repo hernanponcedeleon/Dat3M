@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
@@ -332,6 +333,7 @@ public class ExecutionGraphVisualizer {
             tag = String.format("Assertion(%s)", am.getResult());
         }
         final Thread thread = e.getThreadModel().getThread();
+        final boolean isLitmus = thread.getProgram().getFormat().equals(SourceLanguage.LITMUS);
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
         final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
@@ -341,7 +343,7 @@ public class ExecutionGraphVisualizer {
                 scope,
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
-                getSourceLocationString(e.getEvent()),
+                isLitmus ? getLitmusLocationString(e.getEvent(), false) : getSourceLocationString(e.getEvent()),
                 tag)
                 .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string

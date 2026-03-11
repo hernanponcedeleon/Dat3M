@@ -390,10 +390,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void appendTo(StringBuilder details, Event event, SyntacticContextAnalysis synContext) {
-        final String callStack = makeContextString(synContext.getContextInfo(event).getContextOfType(CallContext.class), " -> ");
-        details.append("\tE").append(event.getGlobalId())
-                .append(":\t").append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                .append(getSourceLocationString(event));
+        details.append("\t").append(synContext.getSourceLocationWithContext(event, true));
         if (event instanceof Assert ass) {
             details.append(": ").append(ass.getErrorMessage());
         }
@@ -469,6 +466,7 @@ public class Dartagnan extends BaseOptions {
 
         final Wmm wmm = task.getMemoryModel();
         final Program program = task.getProgram();
+        final boolean isLitmus = program.getFormat().equals(SourceLanguage.LITMUS);
         final StringBuilder output = new StringBuilder();
         final SyntacticContextAnalysis synContext = newInstance(program);
         for (Axiom ax : wmm.getAxioms()) {
@@ -484,12 +482,12 @@ public class Dartagnan extends BaseOptions {
                             callSeparator);
 
                     violatingPairs
-                            .append("\tE").append(e1.getGlobalId())
-                            .append(" / E").append(e2.getGlobalId())
                             .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e1))
+                            .append(isLitmus ? getLitmusLocationString(e1, true) : getSourceLocationString(e1))
                             .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e2))
+                            .append(isLitmus ? getLitmusLocationString(e2, true) : getSourceLocationString(e2))
+                            .append("\t(E").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId()).append(")")
                             .append("\n");
                 });
                 output.append(violatingPairs);

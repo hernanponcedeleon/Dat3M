@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.metadata;
 import java.util.Collection;
 import java.util.List;
 
-public record SourceLocation(String sourceCodeFilePath, int lineNumber) implements Metadata {
+public record SourceLocation(String sourceCodeFilePath, int lineNumber) implements DebugInfo {
 
     public String getSourceCodeFileName() {
         return getSourceCodeFileName(sourceCodeFilePath);

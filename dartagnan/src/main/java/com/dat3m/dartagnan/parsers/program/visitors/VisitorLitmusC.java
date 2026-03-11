@@ -444,7 +444,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         Load event = EventFactory.newLoadWithMo(register, address, C11.NONATOMIC);
-        programBuilder.addChild(currentThread, event);
+        programBuilder.addChildWithMetadata(currentThread, event, ctx.getStart().getLine());
         return register;
     }
 
@@ -584,7 +584,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             if (isOpenCL) {
                 event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
             }
-            return programBuilder.addChild(currentThread, event);
+            return programBuilder.addChildWithMetadata(currentThread, event, ctx.getStart().getLine());
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }

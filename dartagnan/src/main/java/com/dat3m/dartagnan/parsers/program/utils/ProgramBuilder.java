@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
+import com.dat3m.dartagnan.program.event.metadata.LineNumber;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -193,6 +194,13 @@ public class ProgramBuilder {
         return child;
     }
 
+    // TODO: make this the default addChild implementation
+    public Event addChildWithMetadata(int fid, Event child, int ln) {
+        Event e = addChild(fid, child);
+        e.setMetadata(new LineNumber(ln));
+        return e;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Memory & Constants
 
@@ -322,7 +330,7 @@ public class ProgramBuilder {
     }
 
     public void newScopedThread(Arch arch, int id, int ...ids) {
-        newScopedThread(arch, String.valueOf(id), id, ids);
+        newScopedThread(arch, "P" + String.valueOf(id), id, ids);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

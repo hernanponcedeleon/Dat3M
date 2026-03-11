@@ -188,7 +188,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             store.addTags(Tag.Vulkan.SEM_AVAILABLE);
         }
         store.addTags(ctx.semSc().stream().map(c -> c.content).toList());
-        return programBuilder.addChild(mainThread, store);
+        return programBuilder.addChildWithMetadata(mainThread, store, ctx.getStart().getLine());
     }
 
     @Override
@@ -208,7 +208,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             load.addTags(Tag.Vulkan.SEM_VISIBLE);
         }
         load.addTags(ctx.semSc().stream().map(c -> c.content).toList());
-        return programBuilder.addChild(mainThread, load);
+        return programBuilder.addChildWithMetadata(mainThread, load, ctx.getStart().getLine());
     }
 
     @Override
