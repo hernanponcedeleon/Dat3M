@@ -94,14 +94,24 @@ public class ExpressionEncoder {
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
     }
 
+    // TODO: TEST CODE
+    public int bitWidthBound = 8;
+
+    public TypedFormula<BooleanType, BooleanFormula> wrap(BooleanFormula formula) {
+        return new TypedFormula<>(types.getBooleanType(), formula);
+    }
+
+    // ====================================================================================
+    // Utility
+
     public <TType extends Type> TypedFormula<TType, ?> makeVariable(String name, TType type) {
         final Formula variable;
         if (type instanceof BooleanType) {
             variable = bmgr.makeVariable(name);
         } else if (type instanceof IntegerType integerType) {
-            variable = bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+            variable = bitvectorFormulaManager().makeVariable(getBitWidth(integerType), name);
         } else if (type instanceof MemoryType memoryType) {
-            variable = bitvectorFormulaManager().makeVariable(memoryType.getBitWidth(), name);
+            variable = bitvectorFormulaManager().makeVariable(getBitWidth(memoryType), name);
         } else if (type instanceof FloatType floatType) {
             variable = floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
         } else if (type instanceof AggregateType aggType) {
@@ -124,12 +134,14 @@ public class ExpressionEncoder {
         return new TypedFormula<>(type, variable);
     }
 
-    public TypedFormula<BooleanType, BooleanFormula> wrap(BooleanFormula formula) {
-        return new TypedFormula<>(types.getBooleanType(), formula);
+    public int getBitWidth(Type type) {
+        if (type instanceof IntegerType integerType) {
+            return Math.min(bitWidthBound, integerType.getBitWidth());
+        } else if (type instanceof MemoryType memoryType) {
+            return Math.min(bitWidthBound, memoryType.getBitWidth());
+        }
+        throw new UnsupportedOperationException("Cannot get bit width of type: " + type);
     }
-
-    // ====================================================================================
-    // Utility
 
     public BooleanFormula equal(Expression left, Expression right) {
         Preconditions.checkArgument(left.getType().equals(right.getType()));
@@ -284,7 +296,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitIntLiteral(IntLiteral intLiteral) {
-            final Formula result = bitvectorFormulaManager().makeBitvector(intLiteral.getType().getBitWidth(), intLiteral.getValue());
+            final Formula result = bitvectorFormulaManager().makeBitvector(getBitWidth(intLiteral.getType()), intLiteral.getValue());
             return new TypedFormula<>(intLiteral.getType(), result);
         }
 
@@ -293,7 +305,7 @@ public class ExpressionEncoder {
             final TypedFormula<IntegerType, ?> lhs = encodeIntegerExpr(iBin.getLeft());
             final TypedFormula<IntegerType, ?> rhs = encodeIntegerExpr(iBin.getRight());
             final IntegerType type = iBin.getType();
-            final int bitWidth = type.getBitWidth();
+            final int bitWidth = getBitWidth(type);
 
             final BitvectorFormula bv1 = (BitvectorFormula) lhs.formula();
             final BitvectorFormula bv2 = (BitvectorFormula) rhs.formula();
@@ -334,8 +346,8 @@ public class ExpressionEncoder {
 
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
-                final int targetBitWidth = expr.getTargetType().getBitWidth();
-                final int sourceBitWidth = expr.getSourceType().getBitWidth();
+                final int targetBitWidth = getBitWidth(expr.getTargetType());
+                final int sourceBitWidth = getBitWidth(expr.getSourceType());
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
 
                 enc = expr.isExtension()
