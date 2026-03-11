@@ -537,11 +537,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         Expression value = (Expression)ctx.value.accept(this);
-        if(ctx.mo.equals(Tag.Linux.MO_MB)){
-            Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
-            programBuilder.addChild(currentThread, event);
-            return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
-        }
         Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
         return programBuilder.addChild(currentThread, event);
     }
