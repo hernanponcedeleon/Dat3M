@@ -1605,9 +1605,6 @@ public class Intrinsics {
         );
     }
 
-    //FIXME: The following support for memcpy, memcmp, and memset is unsound
-    // For proper support, we need at least alias information and most likely also proper support for mixed-sized accesses
-
     // Handles both std.memcpy and llvm.memcpy
     // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpy(FunctionCall call) {
@@ -1658,21 +1655,22 @@ public class Intrinsics {
 
         final List<Event> replacement = new ArrayList<>();
         
-        Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
-        Label check1fail = EventFactory.newLabel("__memcpy_s_fail_1");
-        Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
-        Label check2fail = EventFactory.newLabel("__memcpy_s_fail_2");
-        Label success = EventFactory.newLabel("__memcpy_s_success");
-        Label end = EventFactory.newLabel("__memcpy_s_end");
+        final Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
+        final Label check1fail = EventFactory.newLabel("__memcpy_s_fail_1");
+        final Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
+        final Label check2fail = EventFactory.newLabel("__memcpy_s_fail_2");
+        final Label success = EventFactory.newLabel("__memcpy_s_success");
+        final Label end = EventFactory.newLabel("__memcpy_s_end");
 
-        Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
-        Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
+        final Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
+        final Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
 
-        // Condition 1: dest == NULL or destsz > RSIZE_MAX ----> return error > 0
-        CondJump check1part1 = EventFactory.newJump(destIsNull, check1fail);
-        CondJump check1part2 = EventFactory.newJumpUnless(invalidDestsz, check2);
-        CondJump skipRest1 = EventFactory.newGoto(end);
-        Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        // If dest == NULL or destsz > RSIZE_MAX,
+        // return error > 0.
+        final CondJump check1part1 = EventFactory.newJump(destIsNull, check1fail);
+        final CondJump check1part2 = EventFactory.newJumpUnless(invalidDestsz, check2);
+        final CondJump skipRest1 = EventFactory.newGoto(end);
+        final Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check1,
             check1part1,
@@ -1682,14 +1680,13 @@ public class Intrinsics {
             skipRest1
         ));
 
-        // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
-        // ----> return error > 0 and zero out [dest, dest+destsz)
-        // The first two are guaranteed by not matching cond1
-        CondJump check2part1 = EventFactory.newJump(srcIsNull, check2fail);
-        CondJump check2part2 = EventFactory.newJump(invalidCount, check2fail);
-        CondJump check2part3 = EventFactory.newJumpUnless(overlap, success);
-        CondJump skipRest2 = EventFactory.newGoto(end);
-        Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        // Otherwise, if src == NULL || count > destsz || overlap(src, dest),
+        // return error > 0 and zero out [dest, dest+destsz).
+        final CondJump check2part1 = EventFactory.newJump(srcIsNull, check2fail);
+        final CondJump check2part2 = EventFactory.newJump(invalidCount, check2fail);
+        final CondJump check2part3 = EventFactory.newJumpUnless(overlap, success);
+        final CondJump skipRest2 = EventFactory.newGoto(end);
+        final Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check2,
             check2part1,
@@ -1697,6 +1694,8 @@ public class Intrinsics {
             check2part3,
             check2fail
         ));
+
+        // Otherwise, return error = 0 and do the actual copy.
         forEachMemSpan(replacement, destszExpr, call, (i, type) -> {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
@@ -1708,8 +1707,7 @@ public class Intrinsics {
             skipRest2
         ));
 
-        // Else ----> return error = 0 and do the actual copy
-        Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
+        final Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
         replacement.add(success);
         insertMemCopy(replacement, src, dest, countExpr, caller, call);
         replacement.addAll(List.of(
@@ -1823,7 +1821,7 @@ public class Intrinsics {
     private Slice toSlice(Expression expression, FunctionCall call) {
         if (expression instanceof IntLiteral literal) {
             final int value = literal.getValueAsInt();
-            return new Slice(value, value, value);
+            return new Slice(value, value + 1, 1);
         }
         throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
     }
@@ -1835,7 +1833,10 @@ public class Intrinsics {
     // The resulting program takes the form of an unrolled loop.
     private void forEachMemSpan(List<Event> replacement, Expression countExpr, FunctionCall call, MemAction action) {
         final Slice count = toSlice(countExpr, call);
-        checkArgument(0 <= count.start && count.start <= count.end && 0 < count.step, "Invalid count %s: %s", count,  call);
+        checkArgument(0 <= count.start && count.start <= count.end && 0 < count.step, "Invalid count %s: %s", count, call);
+        if ((count.end - count.start) % count.step != 0) {
+            logger.warn("Suspicious count {}: {}", count, call);
+        }
         final IntegerType countType = countExpr.getType() instanceof IntegerType t ? t : noIntegerType();
         final Label end = EventFactory.newLabel("__end");
         // The span from 0 to count.start does not need any checks for `countExpr`.
