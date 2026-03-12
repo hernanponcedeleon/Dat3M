@@ -1794,7 +1794,7 @@ public class Intrinsics {
         forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
             final Expression destAddr = expressions.makeAdd(dest, offset);
             final Expression fill = fillByBitWidth.computeIfAbsent(type.getBitWidth(),
-                    n -> expressions.makeIntConcat(IntStream.range(0, n).mapToObj(x -> fillByte).toList()));
+                    n -> expressions.makeIntConcat(IntStream.range(0, n / 8).mapToObj(x -> fillByte).toList()));
 
             replacement.add(newStore(destAddr, fill));
         });
