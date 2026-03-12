@@ -372,9 +372,11 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Store store = newStoreWithMo(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : "");
+        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? AArch64.DSB.newISHBarrier() : null;
 
         return eventSequence(
-                store
+                store,
+                optionalMemoryBarrier
         );
     }
 

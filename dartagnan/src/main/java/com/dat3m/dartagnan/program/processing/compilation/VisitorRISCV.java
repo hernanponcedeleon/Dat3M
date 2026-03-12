@@ -309,11 +309,14 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMStore(LKMMStore e) {
         String mo = e.getMo();
-        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : null;
 
         return eventSequence(
-                optionalMemoryBarrier,
-                newStore(e.getAddress(), e.getMemValue())
+                optionalMemoryBarrierBefore,
+                newStore(e.getAddress(), e.getMemValue()),
+                optionalMemoryBarrierAfter
         );
 
     }
