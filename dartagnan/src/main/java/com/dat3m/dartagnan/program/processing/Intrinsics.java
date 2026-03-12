@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -1742,41 +1743,37 @@ public class Intrinsics {
         final Expression src2 = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
-        // On big-endian systems, multi-byte integers can be compared directly.
+        // Stores the result in eight bits.
+        final Register cmpReg = caller.newUniqueRegister("__memcmp_cmp", types.getByteType());
+        // When this intrinsics is implemented with multibyte accesses, this determines the comparison order.
         final boolean bigEndian = caller.getProgram().getMemory().isBigEndian();
         assert bigEndian != caller.getProgram().getMemory().isLittleEndian();
 
-        final IntegerType resultType = returnReg.getType() instanceof IntegerType t ? t : null;
-        final Expression zero = expressions.makeZero(resultType);
-        final Expression returnNegative = expressions.makeLT(returnReg, zero, true);
-        final Expression returnPositive = expressions.makeGT(returnReg, zero, true);
-        final Event choice = EventFactory.newNonDetChoice(returnReg);
-
         final List<Event> replacement = new ArrayList<>();
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
-        replacement.add(choice);
-        forEachMemSpan(replacement, countExpr, call, (i, type) -> {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression src1Addr = expressions.makeAdd(src1, offset);
-            final Expression src2Addr = expressions.makeAdd(src2, offset);
+        // Initialize the register for when `countExpr` is zero.
+        replacement.add(EventFactory.newLocal(cmpReg, expressions.makeZero(types.getByteType())));
+        // Compare all bytes in order.
+        forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
+            final Expression offsetExpr = expressions.makeValue(offset, types.getArchType());
+            final Expression src1Addr = expressions.makeAdd(src1, offsetExpr);
+            final Expression src2Addr = expressions.makeAdd(src2, offsetExpr);
             final Register regSrc1 = caller.newUniqueRegister("__memcmp_src1", type);
             final Register regSrc2 = caller.newUniqueRegister("__memcmp_src2", type);
-            final Event load1 = EventFactory.newLoad(regSrc1, src1Addr);
-            final Event load2 = EventFactory.newLoad(regSrc2, src2Addr);
-            replacement.addAll(List.of(load1, load2));
-            final int byteSize = bigEndian ? type.getBitWidth() : 8;
-            for (int cmpByte = 0; cmpByte < type.getBitWidth(); cmpByte += byteSize) {
-                final Expression byte1 = expressions.makeIntExtract(regSrc1, cmpByte, cmpByte + byteSize - 1);
-                final Expression byte2 = expressions.makeIntExtract(regSrc2, cmpByte, cmpByte + byteSize - 1);
-                final Expression nonNegative = expressions.makeGTE(byte1, byte2, false);
-                final Expression nonPositive = expressions.makeLTE(byte1, byte2, false);
-                final Event constrainNegative = EventFactory.newAssume(expressions.makeOr(nonNegative, returnNegative));
-                final Event constrainPositive = EventFactory.newAssume(expressions.makeOr(nonPositive, returnPositive));
-                final Event breakIfNonzero = EventFactory.newJump(expressions.makeNEQ(byte1, byte2), endCmp);
-                replacement.addAll(List.of(constrainNegative, constrainPositive, breakIfNonzero));
+            replacement.add(EventFactory.newLoad(regSrc1, src1Addr));
+            replacement.add(EventFactory.newLoad(regSrc2, src2Addr));
+            // Iterate in byte order.
+            final int bitWidth = type.getBitWidth();
+            for (int cmpByte = 0; cmpByte < bitWidth; cmpByte += 8) {
+                final int cmpOffset = bigEndian ? bitWidth - 8 - cmpByte : cmpByte;
+                final Expression byte1 = expressions.makeIntExtract(regSrc1, cmpOffset, cmpOffset + 8 - 1);
+                final Expression byte2 = expressions.makeIntExtract(regSrc2, cmpOffset, cmpOffset + 8 - 1);
+                replacement.add(EventFactory.newLocal(cmpReg, expressions.makeSub(byte1, byte2)));
+                replacement.add(EventFactory.newJump(expressions.makeNEQ(byte1, byte2), endCmp));
             }
         });
         replacement.add(endCmp);
+        replacement.add(EventFactory.newLocal(returnReg, expressions.makeCast(cmpReg, returnReg.getType())));
 
         return replacement;
     }
@@ -1796,23 +1793,21 @@ public class Intrinsics {
             logger.warn("Treating call to \"__memset_chk\" as call to \"memset\": skipping bound checks.");
         }
 
-        if (!(fillExpr instanceof IntLiteral fillValue && fillValue.isZero())) {
-            //FIXME: We can soundly handle only 0 (and possibly -1) because the concatenation of
-            // byte-sized 0's results in 0's of larger types. This makes the value robust against mixed-sized accesses.
-            final String error = "Cannot handle memset with non-zero fill argument: " + call;
-            throw new UnsupportedOperationException(error);
-        }
-        final int fill = fillValue.getValueAsInt();
-        assert fill == 0;
-
-        final Expression zero = expressions.makeValue(fill, types.getByteType());
         final List<Event> replacement = new ArrayList<>();
-        forEachMemSpan(replacement, countExpr, call, (i, type) -> {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
 
-            replacement.add(newStore(destAddr, zero));
+        // Generate stores
+        final Expression fillByte = expressions.makeIntegerCast(fillExpr, types.getByteType(), false);
+        final Map<Integer, Expression> fillByBitWidth = new HashMap<>();
+        fillByBitWidth.put(8, fillByte);
+        forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
+            final Expression offsetExpr = expressions.makeValue(offset, types.getArchType());
+            final Expression destAddr = expressions.makeAdd(dest, offsetExpr);
+            final Expression fill = fillByBitWidth.computeIfAbsent(type.getBitWidth(),
+                    n -> expressions.makeIntConcat(IntStream.range(0, n).mapToObj(x -> fillByte).toList()));
+
+            replacement.add(newStore(destAddr, fill));
         });
+
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memset returns the destination address, llvm.memset has no return value
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
@@ -1821,10 +1816,13 @@ public class Intrinsics {
         return replacement;
     }
 
-    private record Slice(int min, int max, int step) {}
+    // Represents a value space for size expressions, as usually occurring in memory operations with dynamic size.
+    private record Slice(int start, int end, int step) {}
 
+    // To be performed
     private interface MemAction { void run(int offset, IntegerType accessType); }
 
+    // Extracts relevant information from a size expression.
     private Slice toSlice(Expression expression, FunctionCall call) {
         if (expression instanceof IntLiteral literal) {
             final int value = literal.getValueAsInt();
@@ -1833,28 +1831,39 @@ public class Intrinsics {
         throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
     }
 
+    // Used for memory operations with dynamic size.
+    // Uses `countExpr` to divide the maximal byte range of the operation into consecutive smaller spans.
+    // Performs `action` for either each span, or each byte, depending on the support for mixed size accesses.
+    // Checks `countExpr` dynamically at the start of each next span.
+    // The resulting program takes the form of an unrolled loop.
     private void forEachMemSpan(List<Event> replacement, Expression countExpr, FunctionCall call, MemAction action) {
         final Slice count = toSlice(countExpr, call);
-        checkArgument(0 <= count.min && count.min <= count.max && 0 < count.step, "Invalid count %s: %s", count,  call);
+        checkArgument(0 <= count.start && count.start <= count.end && 0 < count.step, "Invalid count %s: %s", count,  call);
         final IntegerType countType = countExpr.getType() instanceof IntegerType t ? t : noIntegerType();
         final Label end = EventFactory.newLabel("__end");
-        // FIXME Unsound optimization.  This should always be one.
-        final int bytes = 4;
-        final int firstBytes = detectMixedSizeAccesses ? count.min : bytes;
-        final int restBytes = detectMixedSizeAccesses ? count.step : bytes;
-        final IntegerType firstType = types.getIntegerType(8 * firstBytes);
-        final IntegerType restType = types.getIntegerType(8 * restBytes);
-        for (int offset = 0; offset < count.min; offset += firstBytes) {
-            action.run(offset, firstType);
+        // The span from 0 to count.start does not need any checks for `countExpr`.
+        if (count.start > 0) {
+            final int firstBytes = detectMixedSizeAccesses ? count.start : 1;
+            final IntegerType firstType = types.getIntegerType(8 * firstBytes);
+            for (int offset = 0; offset < count.start; offset += firstBytes) {
+                action.run(offset, firstType);
+            }
         }
-        for (int offset = count.min; offset < count.max; offset += restBytes) {
-            if (offset - count.min % count.step == 0) {
+        // Each span from count.start to count.end needs one check for `countExpr`.
+        final int restBytes = detectMixedSizeAccesses ? count.step : 1;
+        final IntegerType restType = types.getIntegerType(8 * restBytes);
+        for (int offset = count.start; offset < count.end; offset += restBytes) {
+            // Continue only if `countExpr` allows it.  Check this only when needed.
+            if ((offset - count.start) % count.step == 0) {
                 final Expression offsetValue = expressions.makeValue(offset, countType);
-                replacement.add(EventFactory.newJump(expressions.makeLTE(countExpr, offsetValue, false), end));
+                final Expression countReached = expressions.makeLTE(countExpr, offsetValue, false);
+                replacement.add(EventFactory.newIfJump(countReached, end, end));
             }
             action.run(offset, restType);
         }
+        // This is where the loop exits.
         replacement.add(end);
+        // Mark all events to not generate `si`-pairs if torn with mixed-sized accesses.
         for (Event event : replacement) {
             if (event.hasTag(Tag.MEMORY)) {
                 event.addTags(Tag.NO_INSTRUCTION);
