@@ -1662,15 +1662,15 @@ public class Intrinsics {
         final Label success = EventFactory.newLabel("__memcpy_s_success");
         final Label end = EventFactory.newLabel("__memcpy_s_end");
 
-        final Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
-        final Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
+        final Expression returnCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
+        final Expression returnCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
 
         // If dest == NULL or destsz > RSIZE_MAX,
         // return error > 0.
         final CondJump check1part1 = EventFactory.newJump(destIsNull, check1fail);
         final CondJump check1part2 = EventFactory.newJumpUnless(invalidDestsz, check2);
         final CondJump skipRest1 = EventFactory.newGoto(end);
-        final Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        final Local retError1 = EventFactory.newLocal(resultRegister, returnCodeFail);
         replacement.addAll(List.of(
             check1,
             check1part1,
@@ -1686,7 +1686,7 @@ public class Intrinsics {
         final CondJump check2part2 = EventFactory.newJump(invalidCount, check2fail);
         final CondJump check2part3 = EventFactory.newJumpUnless(overlap, success);
         final CondJump skipRest2 = EventFactory.newGoto(end);
-        final Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        final Local retError2 = EventFactory.newLocal(resultRegister, returnCodeFail);
         replacement.addAll(List.of(
             check2,
             check2part1,
@@ -1706,7 +1706,7 @@ public class Intrinsics {
             skipRest2
         ));
 
-        final Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
+        final Local retSuccess = EventFactory.newLocal(resultRegister, returnCodeSuccess);
         replacement.add(success);
         insertMemCopy(replacement, src, dest, countExpr, caller, call);
         replacement.addAll(List.of(
