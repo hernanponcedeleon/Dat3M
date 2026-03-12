@@ -1696,8 +1696,7 @@ public class Intrinsics {
         ));
 
         // Otherwise, return error = 0 and do the actual copy.
-        forEachMemSpan(replacement, destszExpr, call, (i, type) -> {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
+        forEachMemSpan(replacement, destszExpr, call, (offset, type) -> {
             final Expression destAddr = expressions.makeAdd(dest, offset);
             final Expression zero = expressions.makeZero(type);
             replacement.add(EventFactory.newStore(destAddr, zero));
@@ -1720,8 +1719,7 @@ public class Intrinsics {
 
     private void insertMemCopy(List<Event> replacement, Expression src, Expression dest, Expression count,
             Function caller, FunctionCall call) {
-        forEachMemSpan(replacement, count, call, (i, type) -> {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
+        forEachMemSpan(replacement, count, call, (offset, type) -> {
             final Expression srcAddr = expressions.makeAdd(src, offset);
             final Expression destAddr = expressions.makeAdd(dest, offset);
             final Register register = caller.newUniqueRegister("__memcpy", type);
@@ -1750,9 +1748,8 @@ public class Intrinsics {
         replacement.add(EventFactory.newLocal(cmpReg, expressions.makeZero(types.getByteType())));
         // Compare all bytes in order.
         forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
-            final Expression offsetExpr = expressions.makeValue(offset, types.getArchType());
-            final Expression src1Addr = expressions.makeAdd(src1, offsetExpr);
-            final Expression src2Addr = expressions.makeAdd(src2, offsetExpr);
+            final Expression src1Addr = expressions.makeAdd(src1, offset);
+            final Expression src2Addr = expressions.makeAdd(src2, offset);
             final Register regSrc1 = caller.newUniqueRegister("__memcmp_src1", type);
             final Register regSrc2 = caller.newUniqueRegister("__memcmp_src2", type);
             replacement.add(EventFactory.newLoad(regSrc1, src1Addr));
@@ -1795,8 +1792,7 @@ public class Intrinsics {
         final Map<Integer, Expression> fillByBitWidth = new HashMap<>();
         fillByBitWidth.put(8, fillByte);
         forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
-            final Expression offsetExpr = expressions.makeValue(offset, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offsetExpr);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
             final Expression fill = fillByBitWidth.computeIfAbsent(type.getBitWidth(),
                     n -> expressions.makeIntConcat(IntStream.range(0, n).mapToObj(x -> fillByte).toList()));
 
@@ -1815,7 +1811,7 @@ public class Intrinsics {
     private record Slice(int start, int end, int step) {}
 
     // To be performed
-    private interface MemAction { void run(int offset, IntegerType accessType); }
+    private interface MemAction { void run(Expression offsetBytes, IntegerType accessType); }
 
     // Extracts relevant information from a size expression.
     private Slice toSlice(Expression expression, FunctionCall call) {
@@ -1823,6 +1819,7 @@ public class Intrinsics {
             final int value = literal.getValueAsInt();
             return new Slice(value, value + 1, 1);
         }
+        //TODO: Perform loop unrolling after these intrinsics, when adding support for this.
         throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
     }
 
@@ -1838,29 +1835,44 @@ public class Intrinsics {
             logger.warn("Suspicious count {}: {}", count, call);
         }
         final IntegerType countType = countExpr.getType() instanceof IntegerType t ? t : noIntegerType();
-        final Label end = EventFactory.newLabel("__end");
-        // The span from 0 to count.start does not need any checks for `countExpr`.
+        // Process the first span [0,count.start-1].
+        // If `countExpr` is a positive constant, this is enabled.
+        // The span does not need any checks for `countExpr`.
         if (count.start > 0) {
+            // This is either byte-wise or just one big step.
             final int firstBytes = detectMixedSizeAccesses ? count.start : 1;
             final IntegerType firstType = types.getIntegerType(8 * firstBytes);
             for (int offset = 0; offset < count.start; offset += firstBytes) {
-                action.run(offset, firstType);
+                action.run(expressions.makeValue(offset, countType), firstType);
             }
         }
-        // Each span from count.start to count.end needs one check for `countExpr`.
-        final int restBytes = detectMixedSizeAccesses ? count.step : 1;
-        final IntegerType restType = types.getIntegerType(8 * restBytes);
-        for (int offset = count.start; offset < count.end; offset += restBytes) {
-            // Continue only if `countExpr` allows it.  Check this only when needed.
-            if ((offset - count.start) % count.step == 0) {
-                final Expression offsetValue = expressions.makeValue(offset, countType);
-                final Expression countReached = expressions.makeLTE(countExpr, offsetValue, false);
-                replacement.add(EventFactory.newIfJump(countReached, end, end));
+        // Each remaining span [o,o+count.step-1] for o in {o.start,...,} needs one check for `countExpr`.
+        // If `countExpr` is a constant, this is disabled.
+        // This is implemented as a loop.
+        if (count.start + count.step < count.end) {
+            final Register offsetRegister = call.getFunction().newUniqueRegister("__offset", countType);
+            final Expression stepExpr = expressions.makeValue(count.step, countType);
+            final Expression countReached = expressions.makeLTE(countExpr, offsetRegister, false);
+            final Expression loopBound = expressions.makeValue((count.end - count.start) / count.step, countType);
+            final Label loopEntry = EventFactory.newLabel("__start");
+            final Label loopExit = EventFactory.newLabel("__end");
+            // Loop entry and loop exit condition.
+            replacement.add(EventFactory.newLocal(offsetRegister, expressions.makeValue(count.start, countType)));
+            replacement.add(EventFactory.newLoopBound(loopBound));
+            replacement.add(loopEntry);
+            replacement.add(EventFactory.newIfJump(countReached, loopExit, loopExit));
+            // This is either byte-wise or just one big step.
+            final int restBytes = detectMixedSizeAccesses ? count.step : 1;
+            final IntegerType restType = types.getIntegerType(8 * restBytes);
+            for (int offset = 0; offset < count.step; offset += restBytes) {
+                final Expression offsetBytes = expressions.makeValue(offset, countType);
+                action.run(expressions.makeAdd(offsetRegister, offsetBytes), restType);
             }
-            action.run(offset, restType);
+            // Loop back-jump and loop exit.
+            replacement.add(EventFactory.newLocal(offsetRegister, expressions.makeAdd(offsetRegister, stepExpr)));
+            replacement.add(EventFactory.newGoto(loopEntry));
+            replacement.add(loopExit);
         }
-        // This is where the loop exits.
-        replacement.add(end);
         // Mark all events to not generate `si`-pairs if torn with mixed-sized accesses.
         for (Event event : replacement) {
             if (event.hasTag(Tag.MEMORY)) {
