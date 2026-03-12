@@ -333,7 +333,6 @@ public class ExecutionGraphVisualizer {
             tag = String.format("Assertion(%s)", am.getResult());
         }
         final Thread thread = e.getThreadModel().getThread();
-        final boolean isLitmus = thread.getProgram().getFormat().equals(SourceLanguage.LITMUS);
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
         final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
@@ -343,7 +342,7 @@ public class ExecutionGraphVisualizer {
                 scope,
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
-                isLitmus ? getLitmusLocationString(e.getEvent(), false) : getSourceLocationString(e.getEvent()),
+                getSourceLocationString(e.getEvent()),
                 tag)
                 .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string

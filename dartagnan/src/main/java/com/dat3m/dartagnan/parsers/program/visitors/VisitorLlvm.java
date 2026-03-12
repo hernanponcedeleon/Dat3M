@@ -314,7 +314,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 // Field "line" is optional. When missing we assume value 0
                 final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
                         .orElse(new MdGenericValue<>(BigInteger.ZERO)).value().intValue();
-                metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
+                metadata.add(new SourceLocation.Generic((directory + "/" + filename).intern(), lineNumber));
             }
         }
 

@@ -466,7 +466,6 @@ public class Dartagnan extends BaseOptions {
 
         final Wmm wmm = task.getMemoryModel();
         final Program program = task.getProgram();
-        final boolean isLitmus = program.getFormat().equals(SourceLanguage.LITMUS);
         final StringBuilder output = new StringBuilder();
         final SyntacticContextAnalysis synContext = newInstance(program);
         for (Axiom ax : wmm.getAxioms()) {
@@ -483,9 +482,9 @@ public class Dartagnan extends BaseOptions {
 
                     violatingPairs
                             .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(isLitmus ? getLitmusLocationString(e1, true) : getSourceLocationString(e1))
+                            .append(getSourceLocationString(e1, true))
                             .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(isLitmus ? getLitmusLocationString(e2, true) : getSourceLocationString(e2))
+                            .append(getSourceLocationString(e2, true))
                             .append("\t(E").append(e1.getGlobalId())
                             .append(" / E").append(e2.getGlobalId()).append(")")
                             .append("\n");

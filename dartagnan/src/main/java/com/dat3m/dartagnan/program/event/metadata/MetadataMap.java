@@ -11,7 +11,7 @@ public class MetadataMap {
     private final List<Metadata> metadataList = new ArrayList<>();
 
     public boolean contains(Class<? extends Metadata> metadataClass) {
-        return metadataList.stream().anyMatch(m -> m.getClass() == metadataClass);
+        return metadataList.stream().anyMatch(m -> metadataClass.isAssignableFrom(m.getClass()));
     }
 
     @SuppressWarnings("unchecked") // The class guarantees that the unchecked cast is valid.

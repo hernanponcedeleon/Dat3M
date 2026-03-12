@@ -5,9 +5,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.event.metadata.LineNumber;
 
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -217,15 +216,14 @@ public class SyntacticContextAnalysis {
     // ============================================================================
 
     public static String getSourceLocationString(Event ev) {
-        SourceLocation loc = ev.getMetadata(SourceLocation.class);
-        return loc != null ? String.format("@%s#%s", loc.getSourceCodeFileName(), loc.lineNumber()) : "@unknown";
+        return getSourceLocationString(ev, false);
     }
 
-    public static String getLitmusLocationString(Event ev, boolean showThread) {
-        final String prefix = showThread ? ev.getThread().getName() : "";
-        return ev.hasMetadata(LineNumber.class) ?
-            String.format("%s#%s", prefix, ev.getMetadata(LineNumber.class).lineNumber()) :
-            "@unknown";
+    public static String getSourceLocationString(Event ev, boolean showThread) {
+        final SourceLocation loc = ev.getMetadata(SourceLocation.class);
+        // We generate the thread prefix only for litmus for now
+        final String prefix = (showThread && loc instanceof SourceLocation.Litmus) ? ev.getThread().getName() : "";
+        return String.format("@%s%s", prefix, loc != null ? loc : "unknown");
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {
