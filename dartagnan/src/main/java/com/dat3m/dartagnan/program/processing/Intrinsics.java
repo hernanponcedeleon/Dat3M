@@ -1800,28 +1800,14 @@ public class Intrinsics {
         });
 
         if (call instanceof ValueFunctionCall valueCall) {
-            // std.memset returns the destination address, llvm.memset has no return value
+            // `std.memset` returns the destination address, `llvm.memset` has no return value.
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
         }
 
         return replacement;
     }
 
-    // Represents a value space for size expressions, as usually occurring in memory operations with dynamic size.
-    private record Slice(int start, int end, int step) {}
-
-    // To be performed
     private interface MemAction { void run(Expression offsetBytes, IntegerType accessType); }
-
-    // Extracts relevant information from a size expression.
-    private Slice toSlice(Expression expression, FunctionCall call) {
-        if (expression instanceof IntLiteral literal) {
-            final int value = literal.getValueAsInt();
-            return new Slice(value, value + 1, 1);
-        }
-        //TODO: Perform loop unrolling after these intrinsics, when adding support for this.
-        throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
-    }
 
     // Used for memory operations with dynamic size.
     // Uses `countExpr` to divide the maximal byte range of the operation into consecutive smaller spans.
@@ -1829,24 +1815,20 @@ public class Intrinsics {
     // Checks `countExpr` dynamically at the start of each next span.
     // The resulting program takes the form of an unrolled loop.
     private void forEachMemSpan(List<Event> replacement, Expression countExpr, FunctionCall call, MemAction action) {
-        final Slice count = toSlice(countExpr, call);
+        final Slice count = computeValueSpace(countExpr, call);
         checkArgument(0 <= count.start && count.start <= count.end && 0 < count.step, "Invalid count %s: %s", count, call);
+        checkArgument(countExpr.getType() instanceof IntegerType, "Non-integer count expression: %s", call);
         if ((count.end - count.start) % count.step != 0) {
             logger.warn("Suspicious count {}: {}", count, call);
         }
-        final IntegerType countType = countExpr.getType() instanceof IntegerType t ? t : noIntegerType();
+        final IntegerType countType = (IntegerType) countExpr.getType();
         // Process the first span [0,count.start-1].
         // If `countExpr` is a positive constant, this is enabled.
         // The span does not need any checks for `countExpr`.
         if (count.start > 0) {
-            // This is either byte-wise or just one big step.
-            final int firstBytes = detectMixedSizeAccesses ? count.start : 1;
-            final IntegerType firstType = types.getIntegerType(8 * firstBytes);
-            for (int offset = 0; offset < count.start; offset += firstBytes) {
-                action.run(expressions.makeValue(offset, countType), firstType);
-            }
+            translateMemSpan(expressions.makeZero(countType), count.start, countType, action);
         }
-        // Each remaining span [o,o+count.step-1] for o in {o.start,...,} needs one check for `countExpr`.
+        // Each remaining span needs one check for `countExpr`.
         // If `countExpr` is a constant, this is disabled.
         // This is implemented as a loop.
         if (count.start + count.step < count.end) {
@@ -1856,19 +1838,11 @@ public class Intrinsics {
             final Expression loopBound = expressions.makeValue((count.end - count.start) / count.step, countType);
             final Label loopEntry = EventFactory.newLabel("__start");
             final Label loopExit = EventFactory.newLabel("__end");
-            // Loop entry and loop exit condition.
             replacement.add(EventFactory.newLocal(offsetRegister, expressions.makeValue(count.start, countType)));
             replacement.add(EventFactory.newLoopBound(loopBound));
             replacement.add(loopEntry);
             replacement.add(EventFactory.newIfJump(countReached, loopExit, loopExit));
-            // This is either byte-wise or just one big step.
-            final int restBytes = detectMixedSizeAccesses ? count.step : 1;
-            final IntegerType restType = types.getIntegerType(8 * restBytes);
-            for (int offset = 0; offset < count.step; offset += restBytes) {
-                final Expression offsetBytes = expressions.makeValue(offset, countType);
-                action.run(expressions.makeAdd(offsetRegister, offsetBytes), restType);
-            }
-            // Loop back-jump and loop exit.
+            translateMemSpan(offsetRegister, count.step, countType, action);
             replacement.add(EventFactory.newLocal(offsetRegister, expressions.makeAdd(offsetRegister, stepExpr)));
             replacement.add(EventFactory.newGoto(loopEntry));
             replacement.add(loopExit);
@@ -1881,8 +1855,27 @@ public class Intrinsics {
         }
     }
 
-    private <T> T noIntegerType() {
-        throw new IllegalArgumentException("Non-integer type");
+    // Describes the sums of `start` with some multiple of `step`, that are lower than `end`.
+    private record Slice(int start, int end, int step) {}
+
+    // Over-approximates the set of possible values for a count argument of a dynamic-sized memory operation.
+    private Slice computeValueSpace(Expression countExpr, FunctionCall call) {
+        if (countExpr instanceof IntLiteral literal) {
+            final int value = literal.getValueAsInt();
+            return new Slice(value, value + 1, 1);
+        }
+        //TODO: Perform loop unrolling after these intrinsics, when adding support for this.
+        throw new UnsupportedOperationException("Cannot handle dynamic count argument: %s".formatted(call));
+    }
+
+    private void translateMemSpan(Expression initialOffset, int bytes, IntegerType countType, MemAction action) {
+        // Perform `action` either byte-wise or for the entire byte span.
+        final int restBytes = detectMixedSizeAccesses ? bytes : 1;
+        final IntegerType restType = types.getIntegerType(8 * restBytes);
+        for (int offset = 0; offset < bytes; offset += restBytes) {
+            final Expression offsetBytes = expressions.makeValue(offset, countType);
+            action.run(expressions.makeAdd(initialOffset, offsetBytes), restType);
+        }
     }
 
     private List<Event> inlineLLVMThreadLocal(FunctionCall call) {
