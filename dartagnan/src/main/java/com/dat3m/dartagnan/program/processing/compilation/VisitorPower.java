@@ -574,11 +574,13 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Store store = newStore(address, value);
-        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier() : null;
 
         return eventSequence(
-                optionalMemoryBarrier,
-                store
+                optionalMemoryBarrierBefore,
+                store,
+                optionalMemoryBarrierAfter
         );
     }
 

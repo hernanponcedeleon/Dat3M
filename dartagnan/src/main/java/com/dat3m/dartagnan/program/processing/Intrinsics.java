@@ -1434,10 +1434,7 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p3);
                 final Expression value = expressions.makeCast(p2, bytes);
-                result.add(EventFactory.Linux.newLKMMStore(p0, value, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
-                if (mo.equals(Tag.Linux.MO_MB)) {
-                    result.add(EventFactory.Linux.newMemoryBarrier());
-                }
+                result.add(EventFactory.Linux.newLKMMStore(p0, value, mo));
             }
             case "__LKMM_xchg" -> {
                 checkArguments(4, call);
