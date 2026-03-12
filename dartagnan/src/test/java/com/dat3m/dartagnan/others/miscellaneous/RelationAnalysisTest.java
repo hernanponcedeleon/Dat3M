@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding;
+package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
@@ -15,8 +15,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,12 +26,12 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
-import static org.sosy_lab.java_smt.SolverContextFactory.createSolverContext;
 
 @RunWith(Parameterized.class)
 public class RelationAnalysisTest {
@@ -125,51 +123,41 @@ public class RelationAnalysisTest {
     }
 
     private void doCompareSets(String path) throws Exception {
-        try(SolverContext ctx = createSolverContext(SolverContextFactory.Solvers.Z3)) {
-            // Base program and consistency model
-            Program program = new ProgramParser().parse(new File(path));
-            Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
-            Configuration baseConfig = Configuration.builder().build();
-            VerificationTask baseTask = createTask(program, wmm, baseConfig);
-            wmm.configureAll(baseTask.getConfig());
-            preprocessProgram(baseTask, baseTask.getConfig());
-            preprocessMemoryModel(baseTask, baseTask.getConfig());
+        // Base program and consistency model
+        Program program = new ProgramParser().parse(new File(path));
+        Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        Configuration baseConfig = Configuration.builder().build();
+        VerificationTask baseTask = createTask(program, wmm, baseConfig);
+        preprocessProgram(baseTask, baseTask.getConfig());
+        preprocessMemoryModel(baseTask, baseTask.getConfig());
 
-            // Native analysis
-            Context nativeContext = Context.create();
-            Configuration nativeConfig = Configuration.builder()
-                    .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
-                    .build();
-            VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
-            performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
-            performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
-            RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
+        // Native analysis
+        Context nativeContext = Context.create();
+        Configuration nativeConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.NATIVE.toString())
+                .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
+                .build();
+        VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
+        performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
 
-            // Lazy analysis
-            Context lazyContext = Context.create();
-            Configuration lazyConfig = Configuration.builder()
-                    .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
-                    .build();
-            VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
-            performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
-            performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
-            RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
+        // Lazy analysis
+        Context lazyContext = Context.create();
+        Configuration lazyConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
+                .build();
+        VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
+        performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
 
-            // Assert may and must sets are equal
-            for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
-                        lazyRa.getKnowledge(relation).getMaySet());
-                assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
-                        lazyRa.getKnowledge(relation).getMustSet());
-            }
-
-            // Generate and assert encode sets
-            WmmEncoder nativeEncoder = WmmEncoder.withContext(EncodingContext.of(nativeTask, nativeContext, ctx.getFormulaManager()));
-            WmmEncoder lazyEncoder = WmmEncoder.withContext(EncodingContext.of(lazyTask, lazyContext, ctx.getFormulaManager()));
-            for (Relation relation : nativeTask.getMemoryModel().getRelations()) {
-                assertEquals(nativeEncoder.encodeSets.get(relation),
-                        lazyEncoder.encodeSets.get(relation));
-            }
+        // Assert may and must sets are equal
+        for (Relation relation : wmm.getRelations()) {
+            assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
+                    lazyRa.getKnowledge(relation).getMaySet());
+            assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
+                    lazyRa.getKnowledge(relation).getMustSet());
         }
     }
 

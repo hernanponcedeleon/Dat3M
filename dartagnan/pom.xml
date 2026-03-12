@@ -252,13 +252,14 @@
                             <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                         </buildArgs>
                         <initializeAtBuildTime>
-                            <!-- Every class should also be registered in OptionsInfo -->
+                            <!-- Every class should also be registered in OptionsInfo and reflect-config.json -->
                             <className>com.dat3m.dartagnan.wmm.RelationNameRepository</className>
                             <className>com.dat3m.dartagnan.configuration.OptionNames</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Acyclicity</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Emptiness</className>
                             <className>com.dat3m.dartagnan.wmm.axiom.Irreflexivity</className>
                             <className>com.dat3m.dartagnan.Dartagnan</className>
+                            <className>com.dat3m.dartagnan.encoding.ActiveSetAnalysis</className>
                             <className>com.dat3m.dartagnan.encoding.EncodingContext</className>
                             <className>com.dat3m.dartagnan.encoding.ProgramEncoder</className>
                             <className>com.dat3m.dartagnan.encoding.SymmetryEncoder</className>
@@ -281,7 +282,6 @@
                             <className>com.dat3m.dartagnan.utils.printer.Printer</className>
                             <className>com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig</className>
                             <className>com.dat3m.dartagnan.verification.solving.RefinementSolver</className>
-                            <className>com.dat3m.dartagnan.wmm.Wmm$Config</className>
                             <className>com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config</className>
                             <className>com.dat3m.dartagnan.wmm.analysis.WmmAnalysis</className>
                             <className>com.dat3m.dartagnan.wmm.processing.WmmProcessingManager</className>

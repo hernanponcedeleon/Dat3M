@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class AbstractPredicateSetView<T extends Derivable> implements Set<T> {
@@ -48,7 +47,7 @@ public abstract class AbstractPredicateSetView<T extends Derivable> implements S
 
     @Override
     public <T1> T1[] toArray(T1[] a) {
-        return stream().collect(Collectors.toList()).toArray(a);
+        return stream().toList().toArray(a);
     }
 
     @Override

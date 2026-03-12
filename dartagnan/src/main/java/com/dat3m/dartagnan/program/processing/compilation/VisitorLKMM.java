@@ -222,10 +222,6 @@ public class VisitorLKMM extends VisitorBase {
         for example, with custom printing capabilities.
      */
 
-    private static Event newCoreMemoryBarrier() {
-        return newFence(Tag.Linux.MO_MB);
-    }
-
     private static Load newCoreLoad(Register reg, Expression addr, String mo) {
         return EventFactory.newLoadWithMo(reg, addr, mo);
     }

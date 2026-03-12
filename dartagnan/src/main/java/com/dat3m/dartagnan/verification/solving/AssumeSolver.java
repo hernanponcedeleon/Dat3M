@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,7 +33,6 @@ public class AssumeSolver extends ModelChecker {
 
     protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        task.getMemoryModel().configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
 
@@ -55,8 +53,8 @@ public class AssumeSolver extends ModelChecker {
 
         context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using {}", solverContext.getVersion());

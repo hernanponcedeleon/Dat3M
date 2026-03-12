@@ -21,10 +21,10 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.definition.DirectAddressDependency;
+import com.dat3m.dartagnan.wmm.definition.DirectDataDependency;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.collect.Iterables;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -32,21 +32,14 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.*;
+import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
 @Options
 public final class EncodingContext {
@@ -58,18 +51,12 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final FormulaManagerExt formulaManager;
-    private final BooleanFormulaManager booleanFormulaManager;
+    private final FormulaManagerExt fmgr;
+    private final BooleanFormulaManager bmgr;
     final Collection<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
-
-    @Option(
-            name=IDL_TO_SAT,
-            description = "Use SAT-based encoding for totality and acyclicity.",
-            secure = true)
-    boolean useSATEncoding = false;
 
     @Option(name = MERGE_CF_VARS,
             description = "Merges control flow variables of events with identical control-flow behaviour.",
@@ -107,16 +94,18 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        formulaManager = new FormulaManagerExt(m);
-        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        fmgr = new FormulaManagerExt(m);
+        bmgr = fmgr.getBooleanFormulaManager();
+        exprEncoder = new ExpressionEncoder(this);
+
         // All anarchic relations have to be encoded.
         final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()
                 .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
                 .toList();
         final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
         constraintsToEncode = new LinkedHashSet<>(
-                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents());
-        exprEncoder = new ExpressionEncoder(this);
+                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents()
+        );
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -127,22 +116,11 @@ public final class EncodingContext {
             Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
-        logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         logger.info("{}: {}", ROUNDING_MODE_FLOATS, context.roundingModeFloats);
         context.initialize();
-        if (logger.isInfoEnabled()) {
-            logger.info("Number of encoded edges for acyclicity: {}",
-                    task.getMemoryModel().getAxioms().stream()
-                            .filter(Acyclicity.class::isInstance)
-                            .mapToInt(a -> ((Acyclicity) a).getEncodeGraphSize(analysisContext))
-                            .sum());
-        }
-        return context;
-    }
 
-    public boolean usesSATEncoding() {
-        return useSATEncoding;
+        return context;
     }
 
     public VerificationTask getTask() {
@@ -154,11 +132,11 @@ public final class EncodingContext {
     }
 
     public FormulaManagerExt getFormulaManager() {
-        return formulaManager;
+        return fmgr;
     }
 
     public BooleanFormulaManager getBooleanFormulaManager() {
-        return booleanFormulaManager;
+        return bmgr;
     }
 
     public boolean isEncoded(Constraint c) { return constraintsToEncode.contains(c); }
@@ -175,11 +153,11 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpTaken(CondJump jump) {
-        return booleanFormulaManager.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
+        return bmgr.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
     }
 
     public BooleanFormula blocked(BlockingEvent barrier) {
-        return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
+        return bmgr.and(controlFlow(barrier), bmgr.not(execution(barrier)));
     }
 
     public BooleanFormula unblocked(BlockingEvent barrier) {
@@ -204,7 +182,7 @@ public final class EncodingContext {
         if (executionAnalysis.isImplied(y, x)) {
             return execution(y);
         }
-        return booleanFormulaManager.and(execution(x), execution(y));
+        return bmgr.and(execution(x), execution(y));
     }
 
     // ====================================================================================
@@ -212,7 +190,7 @@ public final class EncodingContext {
 
     public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second)
-                ? booleanFormulaManager.makeTrue()
+                ? bmgr.makeTrue()
                 : exprEncoder.equal(address(first), address(second));
     }
 
@@ -243,13 +221,13 @@ public final class EncodingContext {
     /// Describes that {@code object} has been allocated, but has not been deallocated during the execution.
     public BooleanFormula leakVariable(MemoryObject object) {
         final int allocationSiteId = object.getAllocationSite().getGlobalId();
-        return booleanFormulaManager.makeVariable(formulaManager.escape("leak%d".formatted(allocationSiteId)));
+        return bmgr.makeVariable(fmgr.escape("leak%d".formatted(allocationSiteId)));
     }
 
     /// Describes that {@code object} is reachable from static memory at the end of the execution.
     public BooleanFormula trackVariable(MemoryObject object) {
         final int allocationSiteId = object.getAllocationSite().getGlobalId();
-        return booleanFormulaManager.makeVariable(formulaManager.escape("track%d".formatted(allocationSiteId)));
+        return bmgr.makeVariable(fmgr.escape("track%d".formatted(allocationSiteId)));
     }
 
     public TypedFormula<?, ?> value(MemoryCoreEvent event) {
@@ -264,29 +242,21 @@ public final class EncodingContext {
     // Relations
 
     public BooleanFormula dependency(Event first, Event second) {
-        return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
-    }
-
-    public IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.hasTag(INIT)) {
-            return formulaManager.getIntegerFormulaManager().makeNumber(0);
-        }
-        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
+        return bmgr.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     public IntegerFormula clockVariable(String name, Event event) {
-        return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
+        return fmgr.getIntegerFormulaManager().makeVariable(fmgr.escape(name) + " " + event.getGlobalId());
     }
 
     // Careful: The semantics of this variable is currently only encoded when doing liveness checking
     //  or verifying litmus code.
     public BooleanFormula lastCoVar(Event write) {
-        return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
+        return bmgr.makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {
-        return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
+        return bmgr.makeVariable(fmgr.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     @FunctionalInterface
@@ -298,21 +268,28 @@ public final class EncodingContext {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
-        EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
+        EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
-            if (!may.contains(e1, e2)) {
-                return booleanFormulaManager.makeFalse();
-            }
-            if (must.contains(e1, e2)) {
-                return execution(e1, e2);
-            }
-            return variable.encode(e1, e2);
+            return !may.contains(e1, e2)
+                    ? bmgr.makeFalse()
+                    : must.contains(e1, e2)
+                    ? execution(e1, e2)
+                    : variable.encode(e1, e2);
         };
     }
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation).encode(first, second);
+    }
+
+    private EdgeEncoder getEdgeVariableEncoder(Definition def) {
+        if (def instanceof DirectAddressDependency || def instanceof DirectDataDependency) {
+            return this::dependency;
+        } else {
+            final String name = def.getDefinedRelation().getNameOrTerm();
+            return (e1, e2) -> edgeVariable(name, e1, e2);
+        }
     }
 
     // ====================================================================================
@@ -327,9 +304,9 @@ public final class EncodingContext {
     // Private implementation
 
     private static Collection<? extends Constraint> computeConstraintDependencies(Constraint c) {
-        final List<Relation> r = c instanceof Definition d ? d.getConstrainedRelations() : null;
-        final Collection<? extends Relation> rels = r == null ? c.getConstrainedRelations() : r.subList(1, r.size());
-        return rels.stream().map(Relation::getDefinition).toList();
+        final List<? extends Relation> rels = c.getConstrainedRelations();
+        final List<? extends Relation> deps = c instanceof Definition ? rels.subList(1, rels.size()) : rels;
+        return deps.stream().map(Relation::getDefinition).toList();
     }
 
     private void initialize() {
@@ -340,14 +317,14 @@ public final class EncodingContext {
         final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel().isFair();
         if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
-                BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
+                BooleanFormula v = bmgr.makeVariable("cf " + cls.getRepresentative().getGlobalId());
                 for (Event e : cls) {
                     controlFlowVariables.put(e, v);
                 }
             }
         } else {
             for (Event e : verificationTask.getProgram().getThreadEvents()) {
-                controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
+                controlFlowVariables.put(e, bmgr.makeVariable("cf " + e.getGlobalId()));
             }
         }
 
@@ -362,10 +339,10 @@ public final class EncodingContext {
         // ------- Event variables  -------
         for (Event e : verificationTask.getProgram().getThreadEvents()) {
             if (e instanceof NamedBarrier b) {
-                syncVariables.put(b, booleanFormulaManager.makeVariable("sync " + e.getGlobalId()));
+                syncVariables.put(b, bmgr.makeVariable("sync " + e.getGlobalId()));
             }
             if (!e.cfImpliesExec()) {
-                executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
+                executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
             }
             if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();

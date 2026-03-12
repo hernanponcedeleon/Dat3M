@@ -9,12 +9,12 @@ import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SY
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
 @Options
-public class SymmetryEncoder implements Encoder {
+public class SymmetryEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(SymmetryEncoder.class);
 
@@ -44,10 +44,11 @@ public class SymmetryEncoder implements Encoder {
     private final RelationAnalysis ra;
 
     @Option(name = BREAK_SYMMETRY_ON,
-            description = "The target to break symmetry on. Allowed options are:\n" +
-                    "- A relation name to break symmetry on.\n" +
-                    "- The special value \"_cf\" to break symmetry on the control flow.\n" +
-                    "- The empty string to disable symmetry breaking.",
+            description = """
+                    The target to break symmetry on. Allowed options are:
+                    - A relation name to break symmetry on.
+                    - The special value "_cf" to break symmetry on the control flow.
+                    - The empty string to disable symmetry breaking.""",
             secure = true)
     private String symmBreakTarget = "";
 
@@ -62,7 +63,7 @@ public class SymmetryEncoder implements Encoder {
     private SymmetryEncoder(EncodingContext c, Configuration config) throws InvalidConfigurationException {
         context = c;
         memoryModel = c.getTask().getMemoryModel();
-        acycAxioms = memoryModel.getAxioms().stream().filter(Axiom::isAcyclicity).collect(Collectors.toList());
+        acycAxioms = memoryModel.getAxioms().stream().filter(Acyclicity.class::isInstance).collect(Collectors.toList());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
         ra = c.getAnalysisContext().requires(RelationAnalysis.class);
         config.inject(this);

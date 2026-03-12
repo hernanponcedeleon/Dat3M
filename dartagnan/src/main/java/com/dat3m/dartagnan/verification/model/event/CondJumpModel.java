@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import java.util.List;
+import java.util.Objects;
 
 
 public class CondJumpModel extends DefaultEventModel implements RegReaderModel {
@@ -15,20 +16,17 @@ public class CondJumpModel extends DefaultEventModel implements RegReaderModel {
     }
 
     public List<EventModel> getDependentEvents(ExecutionModelNext executionModel) {
-        List<Event> dependents;
-        if (((CondJump) event).isGoto() || ((CondJump) event).isDead()) {
+        final CondJump jump = (CondJump) this.getEvent();
+        if (jump.isGoto() || jump.isDead()) {
             return List.of();
         }
 
-        if (event instanceof IfAsJump jump) {
-            dependents = jump.getBranchesEvents();
-        } else {
-            dependents = ((CondJump) event).getSuccessor().getSuccessors();
-        }
-
+        final List<Event> dependents = jump instanceof IfAsJump ifJump
+                ? ifJump.getBranchesEvents()
+                : jump.getSuccessor().getSuccessors();
         return dependents.stream()
-                         .map(e -> executionModel.getEventModelByEvent(e))
-                         .filter(m -> m != null)
+                         .map(executionModel::getEventModelByEvent)
+                         .filter(Objects::nonNull)
                          .toList();
     }
 }

@@ -1,36 +1,21 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.axiom.*;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public interface Constraint {
 
-    Collection<? extends Relation> getConstrainedRelations();
+    // Note: Can contain the same relation multiple times
+    List<? extends Relation> getConstrainedRelations();
 
     <T> T accept(Constraint.Visitor<? extends T> visitor);
 
-    default Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
-        return Map.of();
-    }
 
-    /**
-     * Encodes the relational information of this constraint.
-     *
-     * @param context Provides shared elements of the current verification problem and their encoding representations.
-     * @return Each model representing a consistent execution has to meet all of those assumptions.
-     */
-    default Collection<BooleanFormula> consistent(EncodingContext context) {
-        return Set.of();
-    }
 
     interface Visitor<T> {
 
@@ -64,7 +49,6 @@ public interface Constraint {
         default T visitProjection(Projection def) { return visitDefinition(def); }
         default T visitInverse(Inverse def) { return visitDefinition(def); }
         default T visitTransitiveClosure(TransitiveClosure def) { return visitDefinition(def); }
-        // These three are semi-derived (they are derived from sets/filters and not from relations).
         default T visitSetIdentity(SetIdentity def) { return visitDefinition(def); }
         default T visitProduct(CartesianProduct def) { return visitDefinition(def); }
 
@@ -77,15 +61,16 @@ public interface Constraint {
         default T visitExternal(External ext) { return visitDefinition(ext); }
         default T visitInternal(Internal internal) { return visitDefinition(internal); }
         default T visitSameInstruction(SameInstruction si) { return visitDefinition(si); }
-        default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
-        default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
-        default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
         default T visitAMOPairs(AMOPairs amo) { return visitDefinition(amo); }
         default T visitLXSXPairs(LXSXPairs lxsx) { return visitDefinition(lxsx); }
         default T visitCoherence(Coherence co) { return visitDefinition(co); }
         default T visitSameLocation(SameLocation loc) { return visitDefinition(loc); }
         default T visitReadFrom(ReadFrom rf) { return visitDefinition(rf); }
-        // --- Target-specific definitions
+        // ----- Internal (not directly accessible from CAT)
+        default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
+        default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
+        default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
+        // ----- Target-specific definitions
         default T visitCASDependency(CASDependency casDep) { return visitDefinition(casDep); } // IMM
         default T visitLinuxCriticalSections(LinuxCriticalSections rscs) { return visitDefinition(rscs); } // Linux
         // ------ GPU definitions

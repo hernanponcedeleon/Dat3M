@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -13,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface Event extends Encoder, Comparable<Event> {
+public interface Event extends Comparable<Event> {
     int PRINT_PAD_EXTRA = 50;
 
     int getGlobalId();

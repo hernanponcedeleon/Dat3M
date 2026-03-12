@@ -1,11 +1,10 @@
 package com.dat3m.dartagnan.parsers.witness;
 
+import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
-import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
-
 import org.antlr.v4.runtime.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +15,10 @@ import java.io.IOException;
 
 public class ParserWitness {
 
-	private static final Logger logger = LoggerFactory.getLogger(ParserWitness.class);  
+    private static final Logger logger = LoggerFactory.getLogger(ParserWitness.class);
 
     public WitnessGraph parse(CharStream charStream) {
-    	XMLLexer lexer = new XMLLexer(charStream);
+        XMLLexer lexer = new XMLLexer(charStream);
         lexer.addErrorListener(new AbortErrorListener());
         lexer.addErrorListener(new DiagnosticErrorListener(true));
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -31,19 +30,19 @@ public class ParserWitness {
         VisitorXML visitor = new VisitorXML();
 
         WitnessGraph graph = (WitnessGraph) parserEntryPoint.accept(visitor);
-		if(graph.hasAttributed("producer")) {
-			logger.info("Witness graph produced by " + graph.getAttributed("producer"));
-		}
-		logger.info("Witness graph stats: #Nodes " + graph.getNodes().size());
-		logger.info("Witness graph stats: #Edges " + graph.getEdges().size());
+        if (graph.hasAttributed("producer")) {
+            logger.info("Witness graph produced by {}", graph.getAttributed("producer"));
+        }
+        logger.info("Witness graph stats: #Nodes {}", graph.getNodes().size());
+        logger.info("Witness graph stats: #Edges {}", graph.getEdges().size());
 
         return graph;
     }
-    
+
     public WitnessGraph parse(String raw) {
-    	return parse(CharStreams.fromString(raw));
+        return parse(CharStreams.fromString(raw));
     }
-    
+
     public WitnessGraph parse(File file) throws IOException {
         CharStream charStream;
         try (FileInputStream stream = new FileInputStream(file)) {

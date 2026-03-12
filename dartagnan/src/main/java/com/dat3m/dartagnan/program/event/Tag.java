@@ -37,7 +37,6 @@ public final class Tag {
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
-    public static final String STARTLOAD        = "__STARTLOAD";
     public static final String NO_INSTRUCTION   = "__NO_INSTRUCTION";
 
     // =============================================================================================
@@ -132,19 +131,6 @@ public final class Tag {
 
         public static final String DEFAULT_MO = MO_SC;
 
-        public static String intToMo(int i) {
-            switch (i) {
-                case 0: return MO_RELAXED;
-                case 1: return MO_CONSUME;
-                case 2: return MO_ACQUIRE;
-                case 3: return MO_RELEASE;
-                case 4: return MO_ACQUIRE_RELEASE;
-                case 5: return MO_SC;
-                default:
-                    throw new UnsupportedOperationException("The memory order is not recognized");
-            }
-        }
-
         public static String loadMO(String mo) {
             return switch (mo) {
                 case MO_ACQUIRE         -> MO_ACQUIRE;
@@ -220,10 +206,10 @@ public final class Tag {
 
         public static String toText(String mo) {
             return switch (mo) {
-                case MO_ONCE -> "_relaxed"; // The Linux kernel often uses "relaxed" to refer to "once"
+                case MO_ONCE    -> "_relaxed"; // The Linux kernel often uses "relaxed" to refer to "once"
                 case MO_ACQUIRE -> "_acquire";
                 case MO_RELEASE -> "_release";
-                case MO_MB -> "";
+                case MO_MB      -> "";
                 default -> throw new IllegalArgumentException("Unrecognised memory order " + mo);
             };
         }
@@ -249,19 +235,19 @@ public final class Tag {
         public static final String CASDEPORIGIN = "__CASDEPORIGIN";
 
         public static String extractStoreMo(String cMo) {
-            switch (cMo) {
-                case C11.MO_ACQUIRE_RELEASE:    return C11.MO_RELEASE;
-                case C11.MO_ACQUIRE:            return C11.MO_RELAXED;
-                default:                        return cMo;
-            }
+            return switch (cMo) {
+                case C11.MO_ACQUIRE_RELEASE -> C11.MO_RELEASE;
+                case C11.MO_ACQUIRE         -> C11.MO_RELAXED;
+                default                     -> cMo;
+            };
         }
 
         public static String extractLoadMo(String cMo) {
-            switch (cMo) {
-                case C11.MO_ACQUIRE_RELEASE:    return C11.MO_ACQUIRE;
-                case C11.MO_RELEASE:            return C11.MO_RELAXED;
-                default:                        return cMo;
-            }
+            return switch (cMo) {
+                case C11.MO_ACQUIRE_RELEASE -> C11.MO_ACQUIRE;
+                case C11.MO_RELEASE         -> C11.MO_RELAXED;
+                default                     -> cMo;
+            };
         }
     }
 

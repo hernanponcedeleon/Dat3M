@@ -49,10 +49,6 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
         computeHash();
     }
 
-    public Conjunction(T ...literals) {
-        this(Arrays.asList(literals));
-    }
-
     public Conjunction(Collection<T> literals) {
         this(new HashSet<>(literals), true);
     }

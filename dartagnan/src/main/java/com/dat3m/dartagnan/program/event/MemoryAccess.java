@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.Type;
 
 public record MemoryAccess(Expression address, Type accessType, Mode mode) {
     public enum Mode {
-        LOAD, STORE, RMW, OTHER;
+        LOAD, STORE, RMW, OTHER
     }
 
 }

@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import java.util.HashMap;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
@@ -13,6 +10,9 @@ import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+
+import java.util.HashMap;
+import java.util.List;
 
 // this class contains common functions which are independent from the asm grammar
 // and are used in every asm visitor
@@ -42,7 +42,7 @@ public class AsmUtils {
     // Tells if the returnRegister is an AggregateType
     public static boolean isReturnRegisterAggregate(Register returnRegister) {
         Type returnRegisterType = returnRegister.getType();
-        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
+        return returnRegisterType instanceof AggregateType;
     }
 
     // Tells if the registerID is mapped to the returnRegister

@@ -119,49 +119,37 @@ class VisitorRISCV extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-        Register oldValueRegister = e.getStructRegister(0);
-        Register resultRegister = e.getStructRegister(1);
-        verify(resultRegister.getType() instanceof BooleanType);
+    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+            Expression newValue, String mo, boolean strong) {
+        verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-        Expression expectedValue = e.getExpectedValue();
-
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
+        Local casCmpResult = newLocal(success, expressions.makeEQ(oldValue, expected));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
+        CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, Tag.RISCV.extractStoreMoFromCMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(oldValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, Tag.RISCV.extractStoreMoFromCMo(mo));
 
-        //TODO: We only do strong CAS here?
         return eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd
         );
     }
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        Event fence = null;
-        switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE:
-                fence = RISCV.newRRWFence();
-                break;
-            case Tag.C11.MO_RELEASE:
-                fence = RISCV.newRWWFence();
-                break;
-            case Tag.C11.MO_ACQUIRE_RELEASE:
-                fence = RISCV.newTsoFence();
-                break;
-            case Tag.C11.MO_SC:
-                fence = RISCV.newRWRWFence();
-                break;
-        }
+        Event fence = switch (e.getMo()) {
+            case Tag.C11.MO_ACQUIRE         -> RISCV.newRRWFence();
+            case Tag.C11.MO_RELEASE         -> RISCV.newRWWFence();
+            case Tag.C11.MO_ACQUIRE_RELEASE -> RISCV.newTsoFence();
+            case Tag.C11.MO_SC              -> RISCV.newRWRWFence();
+            default -> null;
+        };
 
         return eventSequence(
                 fence
@@ -267,21 +255,13 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        Event fence = null;
-        switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE:
-                fence = RISCV.newRRWFence();
-                break;
-            case Tag.C11.MO_RELEASE:
-                fence = RISCV.newRWWFence();
-                break;
-            case Tag.C11.MO_ACQUIRE_RELEASE:
-                fence = RISCV.newTsoFence();
-                break;
-            case Tag.C11.MO_SC:
-                fence = RISCV.newRWRWFence();
-                break;
-        }
+        Event fence = switch (e.getMo()) {
+            case Tag.C11.MO_ACQUIRE         -> RISCV.newRRWFence();
+            case Tag.C11.MO_RELEASE         -> RISCV.newRWWFence();
+            case Tag.C11.MO_ACQUIRE_RELEASE -> RISCV.newTsoFence();
+            case Tag.C11.MO_SC              -> RISCV.newRWRWFence();
+            default -> null;
+        };
 
         return eventSequence(
                 fence
@@ -340,47 +320,34 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier;
-        switch (e.getName()) {
+        Event optionalMemoryBarrier = switch (e.getName()) {
             // smp_mb()
-            case Tag.Linux.MO_MB:
-                // https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
-                // https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h
-            case Tag.Linux.BEFORE_ATOMIC:
-            case Tag.Linux.AFTER_ATOMIC:
-                optionalMemoryBarrier = RISCV.newRWRWFence();
-                break;
+            // https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
+            // https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h
+            case Tag.Linux.MO_MB,
+                 Tag.Linux.BEFORE_ATOMIC,
+                 Tag.Linux.AFTER_ATOMIC -> RISCV.newRWRWFence();
             // smp_rmb()
-            case Tag.Linux.MO_RMB:
-                optionalMemoryBarrier = RISCV.newRRFence();
-                break;
+            case Tag.Linux.MO_RMB -> RISCV.newRRFence();
             // smp_wmb()
-            case Tag.Linux.MO_WMB:
-                optionalMemoryBarrier = RISCV.newWWFence();
-                break;
+            case Tag.Linux.MO_WMB -> RISCV.newWWFence();
             // ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)
             // 		https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
             // RISCV_FENCE(iorw,iorw) imposes ordering both on devices and memory
             // 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
             // Since the memory model says nothing about devices, we use RISCV_FENCE(rw,rw) which I think
             // gives the ordering we want wrt. memory
-            case Tag.Linux.AFTER_SPINLOCK:
-                optionalMemoryBarrier = RISCV.newRWRWFence();
-                break;
+            case Tag.Linux.AFTER_SPINLOCK -> RISCV.newRWRWFence();
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
-            case Tag.Linux.AFTER_UNLOCK_LOCK:
-                optionalMemoryBarrier = RISCV.newRWRWFence();
-                break;
+            case Tag.Linux.AFTER_UNLOCK_LOCK -> RISCV.newRWRWFence();
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
-            case Tag.Linux.BARRIER:
-                optionalMemoryBarrier = null;
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
+            case Tag.Linux.BARRIER -> null;
+            default ->
+                    throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+        };
 
         return eventSequence(
                 optionalMemoryBarrier
@@ -480,8 +447,6 @@ class VisitorRISCV extends VisitorBase {
         );
     }
 
-    ;
-
     // The linux kernel uses AMO instructions which we don't yet support
     // The scheme is not described in
     // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
@@ -554,8 +519,6 @@ class VisitorRISCV extends VisitorBase {
         );
     }
 
-    ;
-
     // This is a simplified version that should be correct according to the instruction's semantics.
     // The implementation from the kernel is overly complicated, but since it relies on several macros
     // (atomic_add_unless -> atomic_fetch_add_unless -> atomic_try_cmpxchg -> atomic_cmpxchg)
@@ -596,12 +559,10 @@ class VisitorRISCV extends VisitorBase {
         );
     }
 
-    ;
-
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
-    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+    //     https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
@@ -628,8 +589,6 @@ class VisitorRISCV extends VisitorBase {
                 testOp
         );
     }
-
-    ;
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {

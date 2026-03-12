@@ -17,10 +17,6 @@
         "allDeclaredConstructors": true
     },
     {
-        "name": "com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom",
-        "allDeclaredConstructors": true
-    },
-    {
         "name": "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
         "allDeclaredConstructors": true
     },
@@ -46,6 +42,11 @@
       },
       {
         "name":"com.dat3m.dartagnan.encoding.WmmEncoder",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.encoding.ActiveSetAnalysis",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
@@ -141,11 +142,6 @@
       },
       {
         "name":"com.dat3m.dartagnan.witness.graphml.WitnessBuilder",
-        "allDeclaredFields":true,
-        "queryAllDeclaredMethods":true
-      },
-      {
-        "name":"com.dat3m.dartagnan.wmm.Wmm$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },

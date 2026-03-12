@@ -48,12 +48,6 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         this.allocationSite = allocationSite;
     }
 
-    public sealed interface ThreadLocalMode {}
-
-    public record ThreadLocal() implements ThreadLocalMode {}
-
-    public record PosixThreadLocal(MemoryObject destructor) implements ThreadLocalMode {}
-
     public boolean hasName() { return name != null; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -16,14 +15,12 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -45,7 +42,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
-public class PropertyEncoder implements Encoder {
+public class PropertyEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyEncoder.class);
 
@@ -56,6 +53,8 @@ public class PropertyEncoder implements Encoder {
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
     private final RelationAnalysis ra;
+
+    private final WmmEncoder wmmEncoder;
 
     // We may want to make this configurable or just keep the option fixed.
     private final boolean doWeakTracking = true;
@@ -84,7 +83,7 @@ public class PropertyEncoder implements Encoder {
 
     // =====================================================================
 
-    private PropertyEncoder(EncodingContext c) {
+    private PropertyEncoder(EncodingContext c, WmmEncoder wmmEncoder) {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
@@ -94,10 +93,12 @@ public class PropertyEncoder implements Encoder {
         exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
         alias = c.getAnalysisContext().requires(AliasAnalysis.class);
         ra = c.getAnalysisContext().requires(RelationAnalysis.class);
+
+        this.wmmEncoder = wmmEncoder;
     }
 
-    public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        return new PropertyEncoder(context);
+    public static PropertyEncoder withContext(EncodingContext context, WmmEncoder wmmEncoder) throws InvalidConfigurationException {
+        return new PropertyEncoder(context, wmmEncoder);
     }
 
     public BooleanFormula encodeBoundEventExec() {
@@ -126,7 +127,7 @@ public class PropertyEncoder implements Encoder {
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
             //  that are relevant for the specification (e.g., only variables that are used in loops).
-            encoding = bmgr.and(encoding, encodeLastCoConstraints());
+            encoding = bmgr.and(encoding, wmmEncoder.encodeLastCoConstraints());
         }
         return encoding;
     }
@@ -171,86 +172,6 @@ public class PropertyEncoder implements Encoder {
         final TrackableFormula progSpec = encodeProgramSpecification();
         // NOTE: We have a single property to check, so the tracking becomes trivial.
         return bmgr.and(progSpec.trackingLiteral, progSpec.trackedFormula);
-    }
-
-    private BooleanFormula encodeLastCoConstraints() {
-        final Relation co = memoryModel.getRelation(CO);
-        final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
-        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
-        final List<Init> initEvents = program.getThreadEvents(Init.class);
-        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
-        // Find transitively implied coherences. We can use these to reduce the encoding.
-        final EventGraph transCo = ra.findTransitivelyImpliedCo(co);
-        // Find all writes that are never last, i.e., those that will always have a co-successor.
-        Set<Event> dominatedWrites = new HashSet<>();
-        knowledge.getMustSet().apply((e1, e2) -> {
-            if (exec.isImplied(e1, e2)) {
-                dominatedWrites.add(e1);
-            }
-        });
-        // ---- Construct encoding ----
-        List<BooleanFormula> enc = new ArrayList<>();
-        Map<Event, Set<Event>> out = knowledge.getMaySet().getOutMap();
-        for (Store w1 : program.getThreadEvents(Store.class)) {
-            if (dominatedWrites.contains(w1)) {
-                enc.add(bmgr.not(context.lastCoVar(w1)));
-                continue;
-            }
-            BooleanFormula isLast = context.execution(w1);
-            // ---- Find all possibly overwriting writes ----
-            for (Event w2 : out.getOrDefault(w1, Set.of())) {
-                if (transCo.contains(w1, w2)) {
-                    // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
-                    // that already witnesses that w1 is not last.
-                    continue;
-                }
-                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(w1, w2) ? context.execution(w2) : coEncoder.encode(w1, w2));
-                isLast = bmgr.and(isLast, isAfter);
-            }
-            BooleanFormula lastCoExpr = context.lastCoVar(w1);
-            enc.add(bmgr.equivalence(lastCoExpr, isLast));
-            if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
-                // ---- Encode final values of addresses ----
-                final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-                for (Init init : initEvents) {
-                    if (!alias.mayAlias(w1, init)) {
-                        continue;
-                    }
-                    BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    final BooleanFormula sameValue = exprEncoder.assignEqual(
-                            new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
-                            context.value(w1),
-                            MEMORY_ROUND_TRIP_RELAXED
-                    );
-                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
-                }
-            }
-        }
-        if (doEncodeFinalAddressValues && !Arch.coIsTotal(program.getArch())) {
-            // Coherence is not guaranteed to be total in all models (e.g., PTX),
-            // but the final value of a location should always match that of some coLast event.
-            // lastCo(w) => (lastVal(w.address) = w.val)
-            //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
-            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-            for (Init init : program.getThreadEvents(Init.class)) {
-                BooleanFormula readLastStore = bmgr.makeFalse();
-                BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
-                for (Store w : program.getThreadEvents(Store.class)) {
-                    if (!alias.mayAlias(w, init)) {
-                        continue;
-                    }
-                    BooleanFormula isLast = context.lastCoVar(w);
-                    BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.assignEqual(finalValue, context.value(w), MEMORY_ROUND_TRIP_RELAXED);
-                    readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
-                    lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
-                }
-                BooleanFormula readInitValue = exprEncoder.assignEqual(finalValue, context.value(init), MEMORY_ROUND_TRIP_RELAXED);
-                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
-            }
-        }
-        return bmgr.and(enc);
     }
 
     // ======================================================================
@@ -323,8 +244,8 @@ public class PropertyEncoder implements Encoder {
         }
 
         final List<TrackableFormula> specViolations = flaggedAxioms.stream()
-                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), bmgr.and(ax.consistent(ctx))))
-                .collect(Collectors.toList());
+                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), wmmEncoder.encodeAxiomConsistency(ax)))
+                .toList();
         return specViolations;
     }
 
@@ -348,7 +269,7 @@ public class PropertyEncoder implements Encoder {
                 "The provided WMM needs a happens-before relation 'hb' to encode data races.");
         final Relation hbRelation = memoryModel.getRelation("hb");
         Preconditions.checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
+                        ax instanceof Acyclicity && ax.getRelation().equals(hbRelation)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
 
         final EncodingContext ctx = this.context;

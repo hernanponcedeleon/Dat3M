@@ -50,7 +50,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
 @Options
-public class ProgramEncoder implements Encoder {
+public class ProgramEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(ProgramEncoder.class);
 

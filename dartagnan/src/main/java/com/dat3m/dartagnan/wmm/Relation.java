@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.wmm.definition.Composition;
-import com.dat3m.dartagnan.wmm.definition.Union;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
@@ -10,7 +8,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -44,16 +41,6 @@ public final class Relation implements Dependent<Relation> {
         return arity == Arity.BINARY;
     }
 
-    public static Relation checkIsSet(Relation relation) {
-        Preconditions.checkArgument(relation.isSet(), "Non-unary relation %s.", relation);
-        return relation;
-    }
-
-    public static Relation checkIsRelation(Relation relation) {
-        Preconditions.checkArgument(relation.isRelation(), "Non-binary relation %s.", relation);
-        return relation;
-    }
-
     public void checkEqualArityRelation(Collection<Relation> others) {
         Preconditions.checkArgument(!isSet() || others.stream().allMatch(Relation::isSet),
                 "Non-unary relation in %s", others);
@@ -84,8 +71,6 @@ public final class Relation implements Dependent<Relation> {
         return relations.subList(1, relations.size());
     }
 
-    public Wmm getMemoryModel() { return this.wmm; }
-
     public List<String> getNames() { return names; }
 
     public Optional<String> getName() {
@@ -102,16 +87,22 @@ public final class Relation implements Dependent<Relation> {
         return names.isEmpty() ? getDefinition().getTerm() : names.get(0);
     }
 
-    public boolean isInternal() {
-        // TODO: This is an ugly method that should be replaced somehow.
-        return hasName(ADDRDIRECT) || hasName(CTRLDIRECT) || hasName(IDD) || hasName(IDDTRANS) ||
-                definition instanceof Composition && getDependencies().get(0).hasName(IDDTRANS) ||
-                definition instanceof Union && getDependencies().get(0).hasName(ADDRDIRECT);
-    }
-
     @Override
     public String toString() {
         return names + " := " + getDefinition().getTerm();
+    }
+
+    // ================================================================================================
+    // Utility
+
+    public static Relation checkIsSet(Relation relation) {
+        Preconditions.checkArgument(relation.isSet(), "Non-unary relation %s.", relation);
+        return relation;
+    }
+
+    public static Relation checkIsRelation(Relation relation) {
+        Preconditions.checkArgument(relation.isRelation(), "Non-binary relation %s.", relation);
+        return relation;
     }
 
 }

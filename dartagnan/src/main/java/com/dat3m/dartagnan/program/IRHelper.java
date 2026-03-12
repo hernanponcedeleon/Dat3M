@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
@@ -126,10 +125,7 @@ public class IRHelper {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(regSubstitutor);
             }
-            if (event instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, (Register)xchg.getStructRegister(0).accept(regSubstitutor));
-                xchg.setStructRegister(1, (Register)xchg.getStructRegister(1).accept(regSubstitutor));
-            } else if (event instanceof RegWriter regWriter) {
+            if (event instanceof RegWriter regWriter) {
                 regWriter.setResultRegister((Register) regWriter.getResultRegister().accept(regSubstitutor));
             }
         };
