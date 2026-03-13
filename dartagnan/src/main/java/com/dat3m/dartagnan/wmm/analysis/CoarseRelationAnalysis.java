@@ -70,18 +70,23 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
     }
 
     private final class EmptyInitializer extends NativeRelationAnalysis.Initializer {
-        final MutableKnowledge defaultKnowledge;
+        final MutableKnowledge defaultBinaryKnowledge;
+        final MutableKnowledge defaultUnaryKnowledge;
 
         EmptyInitializer() {
-            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph mayBin = new MapEventGraph();
+            MutableEventGraph mayUn = new MapEventGraph();
             Set<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toSet());
-            events.forEach(x -> may.addRange(x, events));
-            defaultKnowledge = new MutableKnowledge(may, new MapEventGraph());
+            events.forEach(x -> mayBin.addRange(x, events));
+            events.forEach(x -> mayUn.add(x, x));
+            defaultBinaryKnowledge = new MutableKnowledge(mayBin, new MapEventGraph());
+            defaultUnaryKnowledge = new MutableKnowledge(mayUn, new MapEventGraph());
         }
 
         @Override
         public MutableKnowledge visitDefinition(Definition def) {
-            return !task.getMemoryModel().isInternal(def.getDefinedRelation()) ? defaultKnowledge
+            return !task.getMemoryModel().isInternal(def.getDefinedRelation())
+                    ? (def.getDefinedRelation().isSet() ? defaultUnaryKnowledge : defaultBinaryKnowledge)
                     : new MutableKnowledge(new MapEventGraph(), new MapEventGraph());
         }
     }
