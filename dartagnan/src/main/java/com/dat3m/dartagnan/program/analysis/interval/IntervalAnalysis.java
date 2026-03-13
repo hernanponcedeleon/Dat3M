@@ -41,6 +41,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_ME
  * Register can be queried for further use.
  * Metrics about the analysis are printed if the appropriate log level is enabled.
  */
+
+
 public interface IntervalAnalysis {
 
     Logger logger = LoggerFactory.getLogger(IntervalAnalysis.class);
@@ -58,6 +60,7 @@ public interface IntervalAnalysis {
      * @throws RuntimeException
      *  If the event was not encountered during analysis or if the register is not of the IntegerType type.
      */
+
     Interval getIntervalAt(Event event, Register r) throws RuntimeException;
 
     /**
@@ -76,19 +79,20 @@ public interface IntervalAnalysis {
      *  A completed interval analysis.
      * @throws InvalidConfigurationException
      */
-    static IntervalAnalysis fromConfig(Program program, Context analysisContext, Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
+
+    static Optional<IntervalAnalysis> fromConfig(Program program, Context analysisContext, Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected interval analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
-        IntervalAnalysis analysis = switch (c.method) {
-            case NONE -> new IntervalAnalysisNone();
-            case LOCAL -> IntervalAnalysisLocal.fromConfig(program);
-            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program, analysisContext, memoryModel);
+        Optional<IntervalAnalysis> analysis = switch (c.method) {
+            case NONE -> Optional.empty();
+            case LOCAL -> Optional.of(IntervalAnalysisLocal.fromConfig(program));
+            case GLOBAL -> Optional.of(IntervalAnalysisGlobal.fromConfig(program, analysisContext, memoryModel));
         };
-        if (logger.isInfoEnabled() && !(analysis instanceof IntervalAnalysisNone)) {
+        if (logger.isInfoEnabled() && analysis.isPresent()) {
             long t1 = System.currentTimeMillis();
             logger.info("Finished interval analysis in {}", Utils.toTimeString(t1 - t0));
-            analysis.computeAnalysisMetrics(program);
+            analysis.get().computeAnalysisMetrics(program);
         }
         return analysis;
     }
@@ -97,14 +101,15 @@ public interface IntervalAnalysis {
     class Config {
         @Option(
             name = INTERVAL_ANALYSIS_METHOD,
-            description = "General type of analysis that approximates bounds on integer registers")
+            description = "General type of analysis that approximates bounds on integer registers"
+        )
+
         IntervalAnalysisMethod method = IntervalAnalysisMethod.getDefault();
 
         Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);
         }
     }
-
     // Iterate over the program.
     // For each register check if their bound is reduced.
     // Only executed if logger.isInfoEnabled = true
