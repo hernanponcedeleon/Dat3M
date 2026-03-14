@@ -194,10 +194,9 @@ public class ProgramBuilder {
         return child;
     }
 
-    // TODO: make this the default addChild implementation
-    public Event addChildWithMetadata(int fid, Event child, int ln) {
+    public Event addChildWithSourceLocation(int fid, Event child, int lineOfCode) {
         Event e = addChild(fid, child);
-        e.setMetadata(new SourceLocation.Litmus(ln));
+        e.setMetadata(new SourceLocation.Litmus(lineOfCode));
         return e;
     }
 
