@@ -482,9 +482,9 @@ public class Dartagnan extends BaseOptions {
 
                     violatingPairs
                             .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e1, true))
+                            .append(getSourceLocationString(e1))
                             .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e2, true))
+                            .append(getSourceLocationString(e2))
                             .append("\t(E").append(e1.getGlobalId())
                             .append(" / E").append(e2.getGlobalId()).append(")")
                             .append("\n");
