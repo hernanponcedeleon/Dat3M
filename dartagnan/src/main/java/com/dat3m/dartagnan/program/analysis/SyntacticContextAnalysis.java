@@ -217,7 +217,8 @@ public class SyntacticContextAnalysis {
 
     public static String getSourceLocationString(Event ev) {
         final SourceLocation loc = ev.getMetadata(SourceLocation.class);
-        final String prefix = ev.getThread().getName();
+        // We generate the thread prefix only for litmus for now
+        final String prefix = loc instanceof SourceLocation.Litmus ? ev.getThread().getName() : "";
         return String.format("@%s%s", prefix, loc != null ? loc : "#unknown");
     }
 
