@@ -196,7 +196,8 @@ public class ProgramBuilder {
 
     public Event addChildWithSourceLocation(int fid, Event child, int lineOfCode) {
         Event e = addChild(fid, child);
-        e.setMetadata(new SourceLocation.Litmus(lineOfCode));
+        final String threadName = child.getThread().getName();
+        e.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
         return e;
     }
 

@@ -4,13 +4,13 @@ public sealed interface SourceLocation extends Metadata {
 
     int getLineNumber();
 
-    record Litmus(int lineNumber) implements SourceLocation {
+    record Litmus(String threadName, int lineNumber) implements SourceLocation {
         @Override
         public int getLineNumber() { return lineNumber; }
 
         @Override
         public String toString() {
-            return "#" + lineNumber;
+            return threadName + "#" + lineNumber;
         }
     }
 
