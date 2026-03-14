@@ -218,7 +218,7 @@ public class SyntacticContextAnalysis {
     public static String getSourceLocationString(Event ev) {
         final SourceLocation loc = ev.getMetadata(SourceLocation.class);
         final String prefix = ev.getThread().getName();
-        return String.format("@%s%s", prefix, loc != null ? loc : "unknown");
+        return String.format("@%s%s", prefix, loc != null ? loc : "#unknown");
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {
