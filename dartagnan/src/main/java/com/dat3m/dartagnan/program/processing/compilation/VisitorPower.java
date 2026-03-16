@@ -338,8 +338,8 @@ public class VisitorPower extends VisitorBase {
 
     private Event optionalBarrierBefore(String mo) {
         return switch (mo) {
-            case C11.MO_SC -> leadingSync() ? Power.newISyncBarrier() : Power.newSyncBarrier();
-            case C11.MO_ACQUIRE, C11.MO_ACQUIRE_RELEASE -> Power.newISyncBarrier();
+            case C11.MO_SC -> leadingSync() ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+            case C11.MO_RELEASE, C11.MO_ACQUIRE_RELEASE -> Power.newLwSyncBarrier();
             default -> null;
         };
     }
