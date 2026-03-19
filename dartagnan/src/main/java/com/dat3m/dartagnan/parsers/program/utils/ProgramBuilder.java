@@ -254,20 +254,20 @@ public class ProgramBuilder {
         getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type, int lineOfCode) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg, object));
+        addChildWithSourceLocation(regThread, EventFactory.newLocal(reg, object), lineOfCode);
     }
 
-    public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocVal(int regThread, String regName, String locName, Type type, int lineOfCode) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
+        addChildWithSourceLocation(regThread, EventFactory.newLocal(reg,getInitialValue(locName)), lineOfCode);
     }
 
-    public void initRegEqConst(int regThread, String regName, Expression value){
+    public void initRegEqConst(int regThread, String regName, Expression value, int lineOfCode){
         Preconditions.checkArgument(value.getRegs().isEmpty());
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
+        addChildWithSourceLocation(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value), lineOfCode);
     }
 
     private Expression getInitialValue(String name) {

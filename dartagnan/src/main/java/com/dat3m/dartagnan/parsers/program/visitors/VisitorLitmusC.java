@@ -77,7 +77,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
             IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
-            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value, ctx.getStart().getLine());
         }
         return null;
     }
@@ -102,14 +102,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         // FIXME: We visit declarators before threads, so we need to create threads early
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, ctx.getStart().getLine());
         } else {
             String rightName = ctx.varName(1).getText();
             MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
-                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
+                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object, ctx.getStart().getLine());
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, ctx.getStart().getLine());
             }
         }
         return null;

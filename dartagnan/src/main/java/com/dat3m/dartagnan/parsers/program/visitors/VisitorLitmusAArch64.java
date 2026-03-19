@@ -111,7 +111,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), i64));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), i64), ctx.getStart().getLine());
         return null;
     }
 
@@ -122,14 +122,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if (ctx.constant() == null) {
             programBuilder.getOrNewRegister(ctx.threadId().id, ctx.register64().id, type);
         } else {
-            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type));
+            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type), ctx.getStart().getLine());
         }
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), i64);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), i64, ctx.getStart().getLine());
         return null;
     }
 
