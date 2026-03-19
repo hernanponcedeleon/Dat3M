@@ -101,15 +101,16 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         // FIXME: We visit declarators before threads, so we need to create threads early
+        final int lineOfCode = ctx.getStart().getLine();
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, ctx.getStart().getLine());
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, lineOfCode);
         } else {
             String rightName = ctx.varName(1).getText();
             MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
-                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object, ctx.getStart().getLine());
+                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object, lineOfCode);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, ctx.getStart().getLine());
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType, lineOfCode);
             }
         }
         return null;
@@ -215,6 +216,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
+        final int lineOfCode = ctx.getStart().getLine();
         Expression expr = (Expression) ctx.re().accept(this);
 
         ifId++;
@@ -222,38 +224,39 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + ifId);
 
         IfAsJump ifEvent = EventFactory.newIfJumpUnless(expressions.makeBooleanCast(expr), elseL, endL);
-        programBuilder.addChild(currentThread, ifEvent, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, ifEvent, lineOfCode);
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
         CondJump jumpToEnd = EventFactory.newGoto(endL);
-        programBuilder.addChild(currentThread, jumpToEnd, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, jumpToEnd, lineOfCode);
 
-        programBuilder.addChild(currentThread, elseL, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, elseL, lineOfCode);
         if(ctx.elseExpression() != null){
             ctx.elseExpression().accept(this);
         }
-        programBuilder.addChild(currentThread, endL, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, endL, lineOfCode);
         return null;
     }
 
 	@Override
     public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
+        final int = ctx.getStart().getLine();
         whileId++;
         Label headL = programBuilder.getOrCreateLabel(currentThread,"head_" + whileId);
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + whileId);
 
-        programBuilder.addChild(currentThread, headL, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, headL, lineOfCode);
         Expression expr = (Expression) ctx.re().accept(this);
 
-        programBuilder.addChild(currentThread, EventFactory.newJumpUnless(expr, endL), ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, EventFactory.newJumpUnless(expr, endL), lineOfCode);
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }
 
-        programBuilder.addChild(currentThread, EventFactory.newGoto(headL), ctx.getStart().getLine());
-        programBuilder.addChild(currentThread, endL, ctx.getStart().getLine());
+        programBuilder.addChild(currentThread, EventFactory.newGoto(headL), lineOfCode);
+        programBuilder.addChild(currentThread, endL, lineOfCode);
         return null;
     }
 
