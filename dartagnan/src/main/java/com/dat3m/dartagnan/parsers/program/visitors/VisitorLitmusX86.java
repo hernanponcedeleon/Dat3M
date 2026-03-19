@@ -105,7 +105,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(register, constant);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 
     @Override
@@ -113,7 +113,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Event event = EventFactory.newLoad(register, object);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 
     @Override
@@ -121,7 +121,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newStore(object, constant);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 
     @Override
@@ -129,7 +129,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Event event = EventFactory.newStore(object, register);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 
     @Override
@@ -137,7 +137,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Event event = EventFactory.X86.newExchange(object, register);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 
     @Override
@@ -175,7 +175,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         String name = ctx.getText().toLowerCase();
         if(fences.contains(name)) {
             Event event = EventFactory.newFence(name);
-            return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+            return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
         }
         throw new ParsingException("Unrecognised fence " + name);
     }

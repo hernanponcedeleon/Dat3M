@@ -185,20 +185,19 @@ public class ProgramBuilder {
         throw new MalformedProgramException("Function or Thread with id " + fid + " does not exist");
     }
 
-    public Event addChild(int fid, Event child) {
+    public Event addChild(int fid, Event child, int lineOfCode) {
         // Every event in litmus tests is non-optimisable
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
             child.addTags(NOOPT);
         }
         getFunctionOrError(fid).append(child);
+        final String threadName = child.getThread().getName();
+        child.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
         return child;
     }
 
-    public Event addChildWithSourceLocation(int fid, Event child, int lineOfCode) {
-        Event e = addChild(fid, child);
-        final String threadName = child.getThread().getName();
-        e.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
-        return e;
+    public Event addChild(int fid, Event child) {
+        return addChild(fid, child, -1);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -257,17 +256,17 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type, int lineOfCode) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChildWithSourceLocation(regThread, EventFactory.newLocal(reg, object), lineOfCode);
+        addChild(regThread, EventFactory.newLocal(reg, object), lineOfCode);
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type, int lineOfCode) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChildWithSourceLocation(regThread, EventFactory.newLocal(reg,getInitialValue(locName)), lineOfCode);
+        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)), lineOfCode);
     }
 
     public void initRegEqConst(int regThread, String regName, Expression value, int lineOfCode){
         Preconditions.checkArgument(value.getRegs().isEmpty());
-        addChildWithSourceLocation(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value), lineOfCode);
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value), lineOfCode);
     }
 
     private Expression getInitialValue(String name) {

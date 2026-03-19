@@ -107,7 +107,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(register, constant);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         Event event = EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 
 	}
 
@@ -126,7 +126,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         Event event = EventFactory.newLocal(r1, expressions.makeIntAnd(r2, r3));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 
 	}
 
@@ -136,7 +136,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         Event event = EventFactory.newLocal(r1, expressions.makeIntOr(r2, r3));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 
 	}
 
@@ -146,7 +146,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         Event event = EventFactory.newLocal(r1, expressions.makeAdd(r2, r3));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 
 	}
 
@@ -156,7 +156,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -165,7 +165,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(r1, expressions.makeIntAnd(r2, constant));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -174,7 +174,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(r1, expressions.makeIntOr(r2, constant));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -183,7 +183,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         Event event = EventFactory.newLocal(r1, expressions.makeAdd(r2, constant));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -191,7 +191,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Event event = EventFactory.newLoadWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -199,7 +199,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Event event = EventFactory.newStoreWithMo(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1)));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -207,7 +207,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Event event = EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -216,13 +216,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         Event event = EventFactory.Common.newExclusiveStore(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1)));
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
 	public Object visitLabel(LitmusRISCVParser.LabelContext ctx) {
         Event event = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-		return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+		return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -232,7 +232,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Expression expr = expressions.makeIntCmp(r1, ctx.cond().op, r2);
         Event event = EventFactory.newJump(expr, label);
-        return programBuilder.addChildWithSourceLocation(mainThread, event, ctx.getStart().getLine());
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
 	}
 
 	@Override
@@ -252,7 +252,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
             case "i" -> EventFactory.RISCV.newSynchronizeFence();
             default -> throw new ParsingException("Invalid fence mode " + mo);
         };
-		return programBuilder.addChildWithSourceLocation(mainThread, fence, ctx.getStart().getLine());
+		return programBuilder.addChild(mainThread, fence, ctx.getStart().getLine());
 	}
 
 	@Override
