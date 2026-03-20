@@ -241,7 +241,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
 	@Override
     public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
-        final int = ctx.getStart().getLine();
+        final int lineOfCode = ctx.getStart().getLine();
         whileId++;
         Label headL = programBuilder.getOrCreateLabel(currentThread,"head_" + whileId);
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + whileId);

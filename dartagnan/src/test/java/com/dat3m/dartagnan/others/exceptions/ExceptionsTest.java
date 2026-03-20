@@ -33,7 +33,7 @@ public class ExceptionsTest {
     public void noThread() {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         // Thread 1 does not exist
-        pb.addChild(1, new Skip());
+        pb.addChildWithoutSourceLoc(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)

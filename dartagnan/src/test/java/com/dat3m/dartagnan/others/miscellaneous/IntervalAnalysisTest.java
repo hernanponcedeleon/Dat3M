@@ -70,10 +70,10 @@ public class IntervalAnalysisTest {
         Local assignment2 = new Local(r2, expressions.makeValue(7, type));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, assignment0);
-        b.addChild(0, assignment1);
-        b.addChild(0, assignment2);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, assignment0);
+        b.addChildWithoutSourceLoc(0, assignment1);
+        b.addChildWithoutSourceLoc(0, assignment2);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -109,14 +109,14 @@ public class IntervalAnalysisTest {
         Local assignment0 = new Local(r0, expressions.makeZero(type));
         Local assignment1 = new Local(r0, expressions.makeValue(42, type));
 
-        b.addChild(0, jump);
-        b.addChild(0, assignment0);
-        b.addChild(0, goto1);
-        b.addChild(0, trueb);
-        b.addChild(0, assignment1);
-        b.addChild(0, goto2);
-        b.addChild(0, join);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, jump);
+        b.addChildWithoutSourceLoc(0, assignment0);
+        b.addChildWithoutSourceLoc(0, goto1);
+        b.addChildWithoutSourceLoc(0, trueb);
+        b.addChildWithoutSourceLoc(0, assignment1);
+        b.addChildWithoutSourceLoc(0, goto2);
+        b.addChildWithoutSourceLoc(0, join);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
 
@@ -146,18 +146,18 @@ public class IntervalAnalysisTest {
         Local assignment1 = new Local(r0, expressions.makeValue(42, type));
         Local assignment2 = new Local(r0, expressions.makeValue(7, type));
 
-        b.addChild(0, jump1);
-        b.addChild(0, jump2);
-        b.addChild(0, assignment0);
-        b.addChild(0, goto1);
-        b.addChild(0, branch1);
-        b.addChild(0, assignment1);
-        b.addChild(0, goto2);
-        b.addChild(0, branch2);
-        b.addChild(0, assignment2);
-        b.addChild(0, goto3);
-        b.addChild(0, join);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, jump1);
+        b.addChildWithoutSourceLoc(0, jump2);
+        b.addChildWithoutSourceLoc(0, assignment0);
+        b.addChildWithoutSourceLoc(0, goto1);
+        b.addChildWithoutSourceLoc(0, branch1);
+        b.addChildWithoutSourceLoc(0, assignment1);
+        b.addChildWithoutSourceLoc(0, goto2);
+        b.addChildWithoutSourceLoc(0, branch2);
+        b.addChildWithoutSourceLoc(0, assignment2);
+        b.addChildWithoutSourceLoc(0, goto3);
+        b.addChildWithoutSourceLoc(0, join);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -180,10 +180,10 @@ public class IntervalAnalysisTest {
 
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, loc2);
-        b.addChild(0, loc3);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, loc2);
+        b.addChildWithoutSourceLoc(0, loc3);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -205,10 +205,10 @@ public class IntervalAnalysisTest {
         Local loc3 = newLocal(r1, expressions.makeAdd(r0, r0));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, loc2);
-        b.addChild(0, loc3);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, loc2);
+        b.addChildWithoutSourceLoc(0, loc3);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -231,10 +231,10 @@ public class IntervalAnalysisTest {
         Local loc3 = newLocal(r1, expressions.makeAdd(r0, r1));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, loc2);
-        b.addChild(0, loc3);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, loc2);
+        b.addChildWithoutSourceLoc(0, loc3);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -259,10 +259,10 @@ public class IntervalAnalysisTest {
         Local loc3 = newLocal(r2, expressions.makeIntegerCast(r0, intType, true));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, loc2);
-        b.addChild(0, loc3);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, loc2);
+        b.addChildWithoutSourceLoc(0, loc3);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -285,9 +285,9 @@ public class IntervalAnalysisTest {
         Local loc2  = newLocal(r1, expressions.makeIntegerCast(r0, byteType, true));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, loc2);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, loc2);
+        b.addChildWithoutSourceLoc(0, exit);
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
         Interval expected = Interval.getTop(byteType);
@@ -307,8 +307,8 @@ public class IntervalAnalysisTest {
         Local loc1 = newLocal(r0, expressions.makeITE(b.newConstant(types.getBooleanType()), expressions.makeZero(type), expressions.makeOne(type)));
         Label exit = b.getOrCreateLabel(0, "exit");
 
-        b.addChild(0, loc1);
-        b.addChild(0, exit);
+        b.addChildWithoutSourceLoc(0, loc1);
+        b.addChildWithoutSourceLoc(0, exit);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.LOCAL);
@@ -359,21 +359,21 @@ public class IntervalAnalysisTest {
         Label exit2 =  b.getOrCreateLabel(2, "exit2");
 
         // T0
-        b.addChild(0, l0);
-        b.addChild(0, loc0);
-        b.addChild(0, exit0);
+        b.addChildWithoutSourceLoc(0, l0);
+        b.addChildWithoutSourceLoc(0, loc0);
+        b.addChildWithoutSourceLoc(0, exit0);
 
         // T1
-        b.addChild(1, l1);
-        b.addChild(1, s0);
-        b.addChild(1, exit1);
+        b.addChildWithoutSourceLoc(1, l1);
+        b.addChildWithoutSourceLoc(1, s0);
+        b.addChildWithoutSourceLoc(1, exit1);
 
         // T2
-        b.addChild(2, l2);
-        b.addChild(2, s1);
-        b.addChild(2, s2);
-        b.addChild(2, s3);
-        b.addChild(2, exit2);
+        b.addChildWithoutSourceLoc(2, l2);
+        b.addChildWithoutSourceLoc(2, s1);
+        b.addChildWithoutSourceLoc(2, s2);
+        b.addChildWithoutSourceLoc(2, s3);
+        b.addChildWithoutSourceLoc(2, exit2);
 
         Program p = b.build();
         IntervalAnalysis analysis = runIntervalAnalysis(p, IntervalAnalysisMethod.GLOBAL);

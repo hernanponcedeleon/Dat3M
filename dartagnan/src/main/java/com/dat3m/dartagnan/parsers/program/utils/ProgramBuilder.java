@@ -185,19 +185,20 @@ public class ProgramBuilder {
         throw new MalformedProgramException("Function or Thread with id " + fid + " does not exist");
     }
 
-    public Event addChild(int fid, Event child, int lineOfCode) {
+    public Event addChildWithoutSourceLoc(int fid, Event child) {
         // Every event in litmus tests is non-optimisable
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
             child.addTags(NOOPT);
         }
         getFunctionOrError(fid).append(child);
-        final String threadName = child.getThread().getName();
-        child.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
         return child;
     }
 
-    public Event addChild(int fid, Event child) {
-        return addChild(fid, child, -1);
+    public Event addChild(int fid, Event child, int lineOfCode) {
+        Event e = addChildWithoutSourceLoc(fid, child);
+        final String threadName = e.getThread().getName();
+        e.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
+        return e;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
