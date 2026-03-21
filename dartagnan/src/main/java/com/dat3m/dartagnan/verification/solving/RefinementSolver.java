@@ -344,7 +344,6 @@ public class RefinementSolver extends ModelChecker {
         final Map<Object, Set<EventData>> addr2Events = new HashMap<>();
         model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
         model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
-        model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
 
         for (Set<EventData> sameLocEvents : addr2Events.values()) {
             final List<EventData> events = sameLocEvents.stream().sorted().toList();
