@@ -26,6 +26,8 @@ import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -377,6 +379,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         if (ctx.inlineAsm() != null) {
             String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
+            //  ASM seems to be case-insensitive, but our current grammars/lexers
+            //  support only lower case, so we force it here.
+            asmCode = asmCode.toLowerCase();
+
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
             final List<ParserAsm> parsers = List.of(
@@ -412,7 +418,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     block.events.add(EventFactory.newNonDetChoice(resultRegister));
                     msg = "Setting non deterministic value.";
                 }
-                logger.warn("None of the parsers succeeded for inline assembly. {}", msg);
+                logger.warn("None of the parsers succeeded for inline assembly '{}'. {}", getSourceTextForContext(ctx), msg);
             }
             return resultRegister;
         }
@@ -1439,6 +1445,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helpers
+
+    // This method returns the original source code string associated to "ctx" including
+    // white spaces (ctx.getText() removes white spaces)
+    private String getSourceTextForContext(ParserRuleContext ctx) {
+        final Token startToken = (ctx.start instanceof TerminalNode start) ? start.getSymbol() : ctx.start;
+        final Token stopToken = (ctx.stop instanceof TerminalNode stop) ? stop.getSymbol() : ctx.stop;
+
+        final CharStream cs = startToken.getTokenSource().getInputStream();
+        int stopIndex = stopToken != null ? stopToken.getStopIndex() : -1;
+        return cs.getText(new Interval(startToken.getStartIndex(), stopIndex));
+    }
 
     private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {
