@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.IRHelper;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
@@ -14,7 +13,6 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SameInstruction;
-
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +54,8 @@ public class ExecutionGraphVisualizer {
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
         this.colorMap = new ColorMap();
+
+        relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
     public ExecutionGraphVisualizer setSyntacticContext(SyntacticContextAnalysis synContext) {
@@ -373,7 +373,7 @@ public class ExecutionGraphVisualizer {
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-            if (config != null) { visualizer.setRelationsToShow(config); }
+            visualizer.setRelationsToShow(config);
             visualizer.setSyntacticContext(synContext)
                       .setFilter(RF, rfFilter)
                       .setFilter(CO, coFilter)
@@ -407,6 +407,7 @@ public class ExecutionGraphVisualizer {
                              fileNameBase,
                              synContext,
                              true,
-                             null);
+                             Configuration.defaultConfiguration()
+        );
     }
 }
