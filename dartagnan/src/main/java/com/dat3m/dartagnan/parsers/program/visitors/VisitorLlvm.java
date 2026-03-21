@@ -378,11 +378,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewRegister(currentRegisterName, returnType);
 
         if (ctx.inlineAsm() != null) {
-            String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
-            //  ASM seems to be case-insensitive, but our current grammars/lexers
-            //  support only lower case, so we force it here.
-            asmCode = asmCode.toLowerCase();
-
+            final String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
             final List<ParserAsm> parsers = List.of(
