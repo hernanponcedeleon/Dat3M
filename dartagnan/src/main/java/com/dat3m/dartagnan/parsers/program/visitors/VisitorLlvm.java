@@ -1453,8 +1453,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Token stopToken = (ctx.stop instanceof TerminalNode stop) ? stop.getSymbol() : ctx.stop;
 
         final CharStream cs = startToken.getTokenSource().getInputStream();
-        int stopIndex = stopToken != null ? stopToken.getStopIndex() : -1;
-        return cs.getText(new Interval(startToken.getStartIndex(), stopIndex));
+        final int startIndex = startToken.getStartIndex();
+        final int stopIndex = stopToken != null ? stopToken.getStopIndex() : -1;
+
+        return cs.getText(new Interval(startIndex, stopIndex));
     }
 
     private void check(boolean condition, String message, ParserRuleContext context) {
