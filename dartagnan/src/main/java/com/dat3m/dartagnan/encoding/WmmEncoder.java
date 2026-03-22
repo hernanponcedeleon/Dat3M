@@ -37,6 +37,7 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
@@ -263,6 +264,29 @@ public class WmmEncoder {
             }
         });
         return transCo;
+    }
+
+    /*
+        The returned predicate checks whether a pair of events (x, y) in a given relation <rel>
+        can be unconditionally ordered.
+        Used to optimize encodings of "acyclic <rel>" and "co".
+    */
+    private BiPredicate<Event, Event> getIsUnconditionallyOrderablePredicate(Relation rel) {
+        // NOTE: This optimization tries to omit the guards of certain must-edges, i.e.,
+        //  it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)"
+        // We can only do this when for a must-edge (x,y) we have
+        //     (i)  exec(y) => exec(x)
+        // OR  (ii) for all z: must(z,x) => must(z,y)
+        final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+        final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        return (x, y) -> {
+            if (!mustSet.contains(x, y)) {
+                return false;
+            }
+            return exec.isImplied(y, x) ||
+                    mustIn.getOrDefault(x, Set.of()).stream().allMatch(z -> mustSet.contains(z, y));
+        };
     }
 
     private void encodeContradictions(List<BooleanFormula> enc) {
@@ -756,22 +780,25 @@ public class WmmEncoder {
         @Override
         public Void visitCoherence(Coherence coDef) {
             final Relation co = coDef.getDefinedRelation();
-            boolean idl = !useSATEncoding;
-            List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
+            final BiPredicate<Event, Event> alwaysOrdered = getIsUnconditionallyOrderablePredicate(co);
+            final boolean idl = !useSATEncoding;
+            final EventGraph maySet = ra.getKnowledge(co).getMaySet();
+            final EventGraph mustSet = ra.getKnowledge(co).getMustSet();
+            final EventGraph transCo = findTransitivelyImpliedCo();
+
+            final List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();
-            EncodingContext.EdgeEncoder edge = context.edge(co);
-            EventGraph maySet = ra.getKnowledge(co).getMaySet();
-            EventGraph mustSet = ra.getKnowledge(co).getMustSet();
-            EventGraph transCo = findTransitivelyImpliedCo();
-            IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            final IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            final EncodingContext.EdgeEncoder edge = context.edge(co);
+
             if (idl) {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----
                 NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
                 for (MemoryCoreEvent w : allWrites) {
                     NumeralFormula.IntegerFormula clock = memoryOrderClock(w);
-                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
+                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.lessThan(zero, clock));
                 }
             }
             // ---- Encode coherences ----
@@ -795,10 +822,17 @@ public class WmmEncoder {
                         enc.add(bmgr.implication(bmgr.or(coF, coB), pairingCond));
                     }
                     if (idl) {
-                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z) ? bmgr.makeTrue()
-                                : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))));
-                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
-                                : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))));
+                        if (alwaysOrdered.test(x, z)) {
+                            enc.add(imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z)));
+                        } else if (alwaysOrdered.test(z, x)) {
+                            enc.add(imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x)));
+                        } else {
+                            enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z)
+                                    ? bmgr.makeTrue()
+                                    : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))));
+                            enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
+                                    : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))));
+                        }
                     } else {
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!mustSet.contains(x, z) && !mustSet.contains(z, x)) {
@@ -993,16 +1027,20 @@ public class WmmEncoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             final String clockVarName = rel.getNameOrTerm();
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderablePredicate(rel);
+
             List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
             relevantEdges.apply((e1, e2) ->
-                    enc.add(bmgr.implication(edge.encode(e1, e2),
-                            imgr.lessThan(
-                                    context.clockVariable(clockVarName, e1),
-                                    context.clockVariable(clockVarName, e2)
-                            )
-                    ))
+                enc.add(bmgr.implication(
+                        alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2),
+                        imgr.lessThan(
+                                context.clockVariable(clockVarName, e1),
+                                context.clockVariable(clockVarName, e2)
+                        )
+                ))
             );
+
             return enc;
         }
 
