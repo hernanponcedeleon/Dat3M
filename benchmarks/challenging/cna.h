@@ -50,7 +50,7 @@ void cna_lock(lock_t *lock, lock_handle_t *handle)
        node->locked = true;
        previous->next = node;
        while (atomic_load(&node->locked)) {
-           //asm("PAUSE"); // Reduce CPU load
+           asm("PAUSE"); // Reduce CPU load
        }
    }
 }
@@ -82,7 +82,7 @@ void cna_unlock(lock_t *lock, lock_handle_t *handle)
        // There is at least one more waiter in the primary queue.
        // Wait until he updated our next pointer if not already done.
        while (atomic_load(&node->next) == NULL) {
-           //asm("PAUSE"); // Reduce CPU load
+           asm("PAUSE"); // Reduce CPU load
        }
 
        cna_node_t *waiter = node->next;
@@ -146,7 +146,7 @@ void cna_unlock(lock_t *lock, lock_handle_t *handle)
             // Someone tried to get the lock in the meantime
             // Wait until he updated our next pointer
             while (atomic_load(&node->next) == NULL) {
-                //asm("PAUSE"); // Reduce CPU load
+                asm("PAUSE"); // Reduce CPU load
             }
         }
 
