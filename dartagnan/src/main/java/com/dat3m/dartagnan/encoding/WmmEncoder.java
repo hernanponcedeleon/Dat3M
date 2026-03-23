@@ -270,13 +270,14 @@ public class WmmEncoder {
         The returned predicate checks whether a pair of events (x, y) in a given relation <rel>
         can be unconditionally ordered.
         Used to optimize encodings of "acyclic <rel>" and "co".
+
+        This optimization tries to omit the guards of certain must-edges, i.e.,
+        it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)"
+        We can only do this when for a must-edge (x,y) we have
+            (i)  exec(y) => exec(x)
+        OR  (ii) for all z: must(z,x) => must(z,y)
     */
     private BiPredicate<Event, Event> getIsUnconditionallyOrderablePredicate(Relation rel) {
-        // NOTE: This optimization tries to omit the guards of certain must-edges, i.e.,
-        //  it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)"
-        // We can only do this when for a must-edge (x,y) we have
-        //     (i)  exec(y) => exec(x)
-        // OR  (ii) for all z: must(z,x) => must(z,y)
         final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
         final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
         final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
@@ -284,8 +285,11 @@ public class WmmEncoder {
             if (!mustSet.contains(x, y)) {
                 return false;
             }
+            // NOTE: The implication "exec(y) => exec(x)" can also be inverted, but we cannot check both directions!
+            // The direction "exec(y) => exec(x)" holds more often for unfair progress models.
             return exec.isImplied(y, x) ||
-                    mustIn.getOrDefault(x, Set.of()).stream().allMatch(z -> mustSet.contains(z, y));
+                    mustIn.getOrDefault(x, Set.of()).stream()
+                            .allMatch(z -> exec.isImplied(z, x) || mustSet.contains(z, y));
         };
     }
 
@@ -821,19 +825,24 @@ public class WmmEncoder {
                     } else {
                         enc.add(bmgr.implication(bmgr.or(coF, coB), pairingCond));
                     }
+
                     if (idl) {
                         if (alwaysOrdered.test(x, z)) {
                             enc.add(imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z)));
                         } else if (alwaysOrdered.test(z, x)) {
                             enc.add(imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x)));
-                        } else {
-                            enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z)
-                                    ? bmgr.makeTrue()
-                                    : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))));
-                            enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
-                                    : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))));
                         }
+
+                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z)
+                                ? bmgr.makeTrue()
+                                : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))
+                        ));
+                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x)
+                                ? bmgr.makeTrue()
+                                : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))
+                        ));
                     } else {
+                        // SAT encoding
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!mustSet.contains(x, z) && !mustSet.contains(z, x)) {
                             for (MemoryEvent y : allWrites) {
@@ -1116,17 +1125,24 @@ public class WmmEncoder {
             final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
             List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderablePredicate(rel);
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
-                BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
+                BooleanFormula cond = alwaysOrder.test(e1, e2)
+                        ? bmgr.makeTrue()
+                        : minSet.contains(e1, e2)
+                        ? context.execution(e1, e2)
+                        : edge.encode(e1, e2);
                 enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2)));
             });
 
             // Encode triangle rules
             for (Event[] tri : triangles) {
-                BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
-                        context.execution(tri[0], tri[2])
-                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1]), getSMTCycleVar(rel, tri[1], tri[2]));
+                BooleanFormula cond = alwaysOrder.test(tri[0], tri[2])
+                        ? bmgr.makeTrue()
+                        : minSet.contains(tri[0], tri[2])
+                        ? context.execution(tri[0], tri[2])
+                        : edge.encode(tri[0], tri[2]);
                 enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2])));
             }
 
