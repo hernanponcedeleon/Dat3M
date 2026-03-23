@@ -1128,11 +1128,7 @@ public class WmmEncoder {
             final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderablePredicate(rel);
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
-                BooleanFormula cond = alwaysOrder.test(e1, e2)
-                        ? bmgr.makeTrue()
-                        : minSet.contains(e1, e2)
-                        ? context.execution(e1, e2)
-                        : edge.encode(e1, e2);
+                BooleanFormula cond = alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2);
                 enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2)));
             });
 
@@ -1142,7 +1138,7 @@ public class WmmEncoder {
                         ? bmgr.makeTrue()
                         : minSet.contains(tri[0], tri[2])
                         ? context.execution(tri[0], tri[2])
-                        : edge.encode(tri[0], tri[2]);
+                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1]), getSMTCycleVar(rel, tri[1], tri[2]));
                 enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2])));
             }
 
