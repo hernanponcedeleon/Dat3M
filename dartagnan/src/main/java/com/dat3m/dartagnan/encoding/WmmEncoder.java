@@ -505,7 +505,7 @@ public class WmmEncoder {
                             encSetId.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
-                                    : encDomain.encode(e1, e2)
+                                    : e1 == e2 ? encDomain.encode(e1, e2) : bmgr.makeFalse()
                     ))
             );
             return null;

@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -184,13 +185,20 @@ public class ProgramBuilder {
         throw new MalformedProgramException("Function or Thread with id " + fid + " does not exist");
     }
 
-    public Event addChild(int fid, Event child) {
+    public Event addChildWithoutSourceLoc(int fid, Event child) {
         // Every event in litmus tests is non-optimisable
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
             child.addTags(NOOPT);
         }
         getFunctionOrError(fid).append(child);
         return child;
+    }
+
+    public Event addChild(int fid, Event child, int lineOfCode) {
+        Event e = addChildWithoutSourceLoc(fid, child);
+        final String threadName = e.getThread().getName();
+        e.setMetadata(new SourceLocation.Litmus(threadName, lineOfCode));
+        return e;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -246,20 +254,20 @@ public class ProgramBuilder {
         getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type, int lineOfCode) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg, object));
+        addChild(regThread, EventFactory.newLocal(reg, object), lineOfCode);
     }
 
-    public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocVal(int regThread, String regName, String locName, Type type, int lineOfCode) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
+        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)), lineOfCode);
     }
 
-    public void initRegEqConst(int regThread, String regName, Expression value){
+    public void initRegEqConst(int regThread, String regName, Expression value, int lineOfCode){
         Preconditions.checkArgument(value.getRegs().isEmpty());
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value), lineOfCode);
     }
 
     private Expression getInitialValue(String name) {
@@ -322,7 +330,7 @@ public class ProgramBuilder {
     }
 
     public void newScopedThread(Arch arch, int id, int ...ids) {
-        newScopedThread(arch, String.valueOf(id), id, ids);
+        newScopedThread(arch, "P" + String.valueOf(id), id, ids);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

@@ -390,10 +390,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void appendTo(StringBuilder details, Event event, SyntacticContextAnalysis synContext) {
-        final String callStack = makeContextString(synContext.getContextInfo(event).getContextOfType(CallContext.class), " -> ");
-        details.append("\tE").append(event.getGlobalId())
-                .append(":\t").append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                .append(getSourceLocationString(event));
+        details.append("\t").append(synContext.getSourceLocationWithContext(event, true));
         if (event instanceof Assert ass) {
             details.append(": ").append(ass.getErrorMessage());
         }
@@ -484,12 +481,12 @@ public class Dartagnan extends BaseOptions {
                             callSeparator);
 
                     violatingPairs
-                            .append("\tE").append(e1.getGlobalId())
-                            .append(" / E").append(e2.getGlobalId())
                             .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
                             .append(getSourceLocationString(e1))
                             .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
                             .append(getSourceLocationString(e2))
+                            .append("\t(E").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId()).append(")")
                             .append("\n");
                 });
                 output.append(violatingPairs);

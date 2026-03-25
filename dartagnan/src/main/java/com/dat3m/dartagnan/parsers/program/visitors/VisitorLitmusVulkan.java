@@ -65,13 +65,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
-                (IntLiteral) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this), ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
         return null;
     }
 
@@ -153,7 +153,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             store.addTags(Tag.Vulkan.AVAILABLE);
             store.addTags(ctx.scope().content);
         }
-        return append(store);
+        return append(store, ctx);
     }
 
     @Override
@@ -170,7 +170,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             load.addTags(Tag.Vulkan.VISIBLE);
             load.addTags(ctx.scope().content);
         }
-        return append(load);
+        return append(load, ctx);
     }
 
     @Override
@@ -190,7 +190,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             store.addTags(Tag.Vulkan.SEM_AVAILABLE);
         }
         store.addTags(ctx.semSc().stream().map(c -> c.content).toList());
-        return append(store);
+        return append(store, ctx);
     }
 
     @Override
@@ -210,7 +210,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             load.addTags(Tag.Vulkan.SEM_VISIBLE);
         }
         load.addTags(ctx.semSc().stream().map(c -> c.content).toList());
-        return append(load);
+        return append(load, ctx);
     }
 
     @Override
@@ -235,7 +235,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             rmw.addTags(Tag.Vulkan.SEM_VISIBLE);
         }
         rmw.addTags(ctx.semSc().stream().map(c -> c.content).toList());
-        return append(rmw);
+        return append(rmw, ctx);
     }
 
     @Override
@@ -250,7 +250,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             case Tag.Vulkan.ACQ_REL -> EventFactory.Vulkan.newAcqRelBarrier(scope, semantics, av, vis);
             default -> throw new ParsingException("Unknown barrier type");
         };
-        return append(fence);
+        return append(fence, ctx);
     }
 
     @Override
@@ -282,7 +282,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             }
             barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         }
-        return append(barrier);
+        return append(barrier, ctx);
     }
 
     @Override
@@ -291,18 +291,18 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeIntBinary(lhs, ctx.operation().op, rhs);
-        return append(EventFactory.newLocal(rd, exp));
+        return append(EventFactory.newLocal(rd, exp), ctx);
     }
 
     @Override
     public Object visitLabelInstruction(LabelInstructionContext ctx) {
-        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
     }
 
     @Override
     public Object visitJumpInstruction(JumpInstructionContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        return append(EventFactory.newGoto(label));
+        return append(EventFactory.newGoto(label), ctx);
     }
 
     @Override
@@ -311,7 +311,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression expr = expressions.makeIntCmp(lhs, ctx.cond().op, rhs);
-        return append(EventFactory.newJump(expr, label));
+        return append(EventFactory.newJump(expr, label), ctx);
     }
 
     @Override
@@ -324,7 +324,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         } else {
             throw new ParsingException("Unknown device operation");
         }
-        return append(e);
+        return append(e, ctx);
     }
 
     private String getMemoryOrderOrDefault(ParserRuleContext ctx, String defaultMo) {
@@ -340,7 +340,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return defaultMo;
     }
 
-    private Object append(Event event) {
-        return programBuilder.addChild(mainThread, event);
+    private Object append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

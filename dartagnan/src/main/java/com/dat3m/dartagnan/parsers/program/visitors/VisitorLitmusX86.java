@@ -13,7 +13,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
@@ -53,13 +55,13 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value, ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
         return null;
     }
 
@@ -99,35 +101,35 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     public Object visitLoadValueToRegister(LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return append(EventFactory.newLocal(register, constant));
+        return append(EventFactory.newLocal(register, constant), ctx);
     }
 
     @Override
     public Object visitLoadLocationToRegister(LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return append(EventFactory.newLoad(register, object));
+        return append(EventFactory.newLoad(register, object), ctx);
     }
 
     @Override
     public Object visitStoreValueToLocation(StoreValueToLocationContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return append(EventFactory.newStore(object, constant));
+        return append(EventFactory.newStore(object, constant), ctx);
     }
 
     @Override
     public Object visitStoreRegisterToLocation(StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return append(EventFactory.newStore(object, register));
+        return append(EventFactory.newStore(object, register), ctx);
     }
 
     @Override
     public Object visitExchangeRegisterLocation(ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return append(EventFactory.X86.newExchange(object, register));
+        return append(EventFactory.X86.newExchange(object, register), ctx);
     }
 
     @Override
@@ -168,10 +170,10 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
             case "sfence" -> EventFactory.X86.newStoreFence();
             default -> throw new ParsingException("Unrecognised fence '%s'", ctx.getText());
         };
-        return append(fence);
+        return append(fence, ctx);
     }
 
-    private Object append(Event event) {
-        return programBuilder.addChild(mainThread, event);
+    private Object append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

@@ -55,7 +55,7 @@ DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 
 
-Literal                     : [a-z]+;
+Literal                     : [a-zA-Z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

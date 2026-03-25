@@ -108,7 +108,7 @@ public class WitnessGraph extends ElemWithAttributes {
         return edge.hasCline() ?
             program.getThreadEvents(MemoryCoreEvent.class).stream()
                 .filter(e -> e.hasMetadata(SourceLocation.class))
-                .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline())
+                .filter(e -> e.getMetadata(SourceLocation.class).getLineNumber() == edge.getCline())
                 .toList() :
             Collections.emptyList();
     }

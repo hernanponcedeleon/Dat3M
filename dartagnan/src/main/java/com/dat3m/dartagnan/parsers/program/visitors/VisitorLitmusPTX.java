@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.PTX);
@@ -55,14 +56,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
-                (IntLiteral) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this), ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
         programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(),
-                archType);
+                archType, ctx.getStart().getLine());
         return null;
     }
 
@@ -137,14 +138,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
         store.addTags(ctx.store().storeProxy);
-        return append(store);
+        return append(store, ctx);
     }
 
     @Override
     public Object visitLocalValue(LocalValueContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         Expression value = (Expression) ctx.value().accept(this);
-        return append(EventFactory.newLocal(register, value));
+        return append(EventFactory.newLocal(register, value), ctx);
     }
 
     @Override
@@ -153,7 +154,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeAdd(lhs, rhs);
-        return append(EventFactory.newLocal(rd, exp));
+        return append(EventFactory.newLocal(rd, exp), ctx);
     }
 
     @Override
@@ -162,7 +163,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeSub(lhs, rhs);
-        return append(EventFactory.newLocal(rd, exp));
+        return append(EventFactory.newLocal(rd, exp), ctx);
     }
 
     @Override
@@ -171,7 +172,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeMul(lhs, rhs);
-        return append(EventFactory.newLocal(rd, exp));
+        return append(EventFactory.newLocal(rd, exp), ctx);
     }
 
     @Override
@@ -180,7 +181,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeDiv(lhs, rhs, true);
-        return append(EventFactory.newLocal(rd, exp));
+        return append(EventFactory.newLocal(rd, exp), ctx);
     }
 
     @Override
@@ -199,7 +200,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
             default -> throw new ParsingException("Load instruction doesn't support mo: " + mo);
         }
         load.addTags(ctx.load().loadProxy);
-        return append(load);
+        return append(load, ctx);
     }
 
     @Override
@@ -215,7 +216,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         Event atom = EventFactory.PTX.newAtomOp(object, register_destination, value, op, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
-        return append(atom);
+        return append(atom, ctx);
     }
 
     @Override
@@ -231,7 +232,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         Event atom = EventFactory.PTX.newAtomCAS(object, register_destination, expected, value, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
-        return append(atom);
+        return append(atom, ctx);
     }
 
     @Override 
@@ -246,7 +247,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         Event atom = EventFactory.PTX.newAtomExch(object, register_destination, value, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
-        return append(atom);
+        return append(atom, ctx);
     }
 
     @Override
@@ -261,7 +262,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         Event red = EventFactory.PTX.newRedOp(object, value, op, mo, scope);
         red.addTags(ctx.red().redProxy);
-        return append(red);
+        return append(red, ctx);
     }
 
     @Override
@@ -273,21 +274,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(mo, scope, Tag.PTX.GEN);
-        return append(fence);
+        return append(fence, ctx);
     }
 
     @Override
     public Object visitFenceProxy(FenceProxyContext ctx) {
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(ctx.proxyType().content);
-        return append(fence);
+        return append(fence, ctx);
     }
 
     @Override
     public Object visitFenceAlias(FenceAliasContext ctx) {
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(Tag.PTX.ALIAS);
-        return append(fence);
+        return append(fence, ctx);
     }
 
     @Override
@@ -308,12 +309,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if(ctx.barrierMode().Arrive() != null) {
             barrier.addTags(Tag.PTX.ARRIVE);
         }
-        return append(barrier);
+        return append(barrier, ctx);
     }
 
     @Override
     public Object visitLabel(LabelContext ctx) {
-        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
     }
 
     @Override
@@ -322,16 +323,16 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression expr = expressions.makeIntCmp(lhs, ctx.cond().op, rhs);
-        return append(EventFactory.newJump(expr, label));
+        return append(EventFactory.newJump(expr, label), ctx);
     }
 
     @Override
     public Object visitJump(JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        return append(EventFactory.newGoto(label));
+        return append(EventFactory.newGoto(label), ctx);
     }
 
-    private Object append(Event event) {
-        return programBuilder.addChild(mainThread, event);
+    private Object append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

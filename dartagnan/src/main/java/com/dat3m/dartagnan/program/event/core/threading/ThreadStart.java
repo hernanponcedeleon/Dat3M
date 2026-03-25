@@ -9,16 +9,12 @@ import java.util.Set;
 
 public class ThreadStart extends AbstractEvent implements EventUser {
 
-    // May be NULL, if this thread is not spawned.
+    // May be NULL if this thread is not spawned.
     private ThreadCreate creator;
-    //TODO: It is probably better to make the ThreadCreate conditional rather than
-    // allow ThreadStart to fail spuriously.
-    private boolean mayFailSpuriously;
 
     public ThreadStart(ThreadCreate creator) {
         this.creator = creator;
 
-        mayFailSpuriously = (creator != null);
         if (creator != null) {
             creator.registerUser(this);
         }
@@ -27,20 +23,18 @@ public class ThreadStart extends AbstractEvent implements EventUser {
     protected ThreadStart(ThreadStart other) {
         super(other);
         this.creator = other.creator;
-        this.mayFailSpuriously = other.mayFailSpuriously;
 
-        creator.registerUser(this);
+        if (creator != null) {
+            creator.registerUser(this);
+        }
     }
-
-    public boolean mayFailSpuriously() { return mayFailSpuriously; }
-    public void setMayFailSpuriously(boolean value) { this.mayFailSpuriously = value;}
 
     public boolean isSpawned() { return creator != null; }
     public ThreadCreate getCreator() { return creator; }
 
     @Override
     public String defaultString() {
-        if ( isSpawned()) {
+        if (isSpawned()) {
             return String.format("ThreadStart by %s::%s", creator.getThread(), creator);
         } else {
             return "ThreadStart";

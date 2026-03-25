@@ -29,7 +29,7 @@ QCapitalLiteral             : 'Q';
 X86Fence                    : 'mfence';
 
 // misc
-Literal                     : [a-z]+;
+Literal                     : [a-zA-Z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

@@ -10,13 +10,9 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 //EventData represents all data associated with an event in a concrete model.
 public class EventData implements Comparable<EventData> {
     private final Event event;
-    private EventData readFrom;
     private int id = -1;
     private int localId = -1;
-    private Object value;
     private Object accessedAddress;
-    private int coIndex = Integer.MIN_VALUE;
-    private boolean wasExecuted;
 
     EventData(Event e) {
         this.event = e;
@@ -49,30 +45,6 @@ public class EventData implements Comparable<EventData> {
     void setAccessedAddress(Object address) {
         accessedAddress = address;
     }
-
-    public Object getValue() {
-    	return value;
-    }
-    void setValue(Object val) {
-    	value = val;
-    }
-
-    public EventData getReadFrom() {
-    	return readFrom;
-    }
-    void setReadFrom(EventData store) {
-    	readFrom = store;
-    }
-
-    public boolean wasExecuted() {
-    	return wasExecuted;
-    }
-    void setWasExecuted(boolean flag) {
-    	wasExecuted = flag;
-    }
-
-    public int getCoherenceIndex() { return coIndex; }
-    void setCoherenceIndex(int index) { coIndex = index; }
 
     public boolean isMemoryEvent() { return event.hasTag(MEMORY); }
     public boolean isInit() {

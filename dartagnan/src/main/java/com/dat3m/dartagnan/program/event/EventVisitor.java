@@ -6,12 +6,14 @@ import com.dat3m.dartagnan.program.event.arch.tso.*;
 import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.NonDetChoice;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
-import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
 public interface EventVisitor<T> {
 
@@ -40,6 +42,8 @@ public interface EventVisitor<T> {
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
+    // Threading
+    default T visitThreadArgument(ThreadArgument e) { return visitEvent(e); }
     // Annotations
     default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
 

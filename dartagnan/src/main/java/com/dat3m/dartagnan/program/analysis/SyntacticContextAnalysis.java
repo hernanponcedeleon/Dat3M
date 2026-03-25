@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -132,13 +132,11 @@ public class SyntacticContextAnalysis {
     public String getSourceLocationWithContext(Event e, boolean addGlobalId) {
         final StringBuilder builder = new StringBuilder();
         final String ctx = makeContextString(this.getContextInfo(e).getContextStack(), " -> ");
-        if (addGlobalId) {
-            builder.append("E").append(e.getGlobalId()).append(": \t");
-        }
-        builder
-                .append(ctx.isEmpty() ? ctx : ctx + " -> ")
+        builder.append(ctx.isEmpty() ? ctx : ctx + " -> ")
                 .append(getSourceLocationString(e));
-
+        if (addGlobalId) {
+            builder.append("\t(E").append(e.getGlobalId()).append(")");
+        }
         return builder.toString();
     }
 
@@ -218,8 +216,8 @@ public class SyntacticContextAnalysis {
     // ============================================================================
 
     public static String getSourceLocationString(Event ev) {
-        SourceLocation loc = ev.getMetadata(SourceLocation.class);
-        return loc != null ? String.format("@%s#%s", loc.getSourceCodeFileName(), loc.lineNumber()) : "@unknown";
+        final SourceLocation loc = ev.getMetadata(SourceLocation.class);
+        return String.format("@%s", loc != null ? loc : "unknown");
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {

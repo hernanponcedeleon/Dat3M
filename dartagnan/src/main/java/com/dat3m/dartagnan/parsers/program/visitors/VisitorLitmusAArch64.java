@@ -111,7 +111,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), i64));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), i64), ctx.getStart().getLine());
         return null;
     }
 
@@ -122,14 +122,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if (ctx.constant() == null) {
             programBuilder.getOrNewRegister(ctx.threadId().id, ctx.register64().id, type);
         } else {
-            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type));
+            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type), ctx.getStart().getLine());
         }
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), i64);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), i64, ctx.getStart().getLine());
         return null;
     }
 
@@ -167,7 +167,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitMov(MovContext ctx) {
         final Register r64 = parseRegister64(ctx.r32, ctx.r64);
         final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
-        return add(EventFactory.newLocal(r64, expressions.makeIntegerCast(expr, i64, false)));
+        return add(EventFactory.newLocal(r64, expressions.makeIntegerCast(expr, i64, false)), ctx.getStart().getLine());
     }
 
     @Override
@@ -190,7 +190,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression left = expressions.makeIntegerCast(operand, type, false);
         final Expression right = expressions.makeIntegerCast(expr, type, false);
         final Expression result = expressions.makeIntBinary(left, ctx.arithmeticInstruction().op, right);
-        add(EventFactory.newLocal(r64, expressions.makeIntegerCast(result, i64, false)));
+        add(EventFactory.newLocal(r64, expressions.makeIntegerCast(result, i64, false)), ctx.getStart().getLine());
         return null;
     }
 
@@ -201,8 +201,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
-        add(EventFactory.newLoadWithMo(register, address, mo));
-        addRegister64Update(r64, register);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(EventFactory.newLoadWithMo(register, address, mo), lineOfCode);
+        addRegister64Update(r64, register, lineOfCode);
         return null;
     }
 
@@ -215,10 +216,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register value1 = extended ? r164 : shrinkRegister(r164, ctx.rD132, false, false);
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
-        add(EventFactory.newLoad(value0, address0));
-        add(EventFactory.newLoad(value1, address1));
-        addRegister64Update(r064, value0);
-        addRegister64Update(r164, value1);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(EventFactory.newLoad(value0, address0), lineOfCode);
+        add(EventFactory.newLoad(value1, address1), lineOfCode);
+        addRegister64Update(r064, value0, lineOfCode);
+        addRegister64Update(r164, value1, lineOfCode);
         return null;
     }
 
@@ -229,8 +231,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
-        add(EventFactory.AArch64.newRMWLoadExclusive(register, address, mo));
-        addRegister64Update(r64, register);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(EventFactory.AArch64.newRMWLoadExclusive(register, address, mo), lineOfCode);
+        addRegister64Update(r64, register, lineOfCode);
         return null;
     }
 
@@ -242,7 +245,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
         final String mo = ctx.storeInstruction().release ? MO_REL : "";
-        return add(EventFactory.newStoreWithMo(address, value, mo));
+        return add(EventFactory.newStoreWithMo(address, value, mo), ctx.getStart().getLine());
     }
 
     @Override
@@ -255,8 +258,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value1 = expressions.makeIntegerCast(s64, type, false);
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
-        add(EventFactory.newStore(address0, value0));
-        return add(EventFactory.newStore(address1, value1));
+        final int lineOfCode = ctx.getStart().getLine();
+        add(EventFactory.newStore(address0, value0), lineOfCode);
+        return add(EventFactory.newStore(address1, value1), lineOfCode);
     }
 
     @Override
@@ -268,7 +272,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
         final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : "";
-        return add(EventFactory.Common.newExclusiveStore(status, address, value, mo));
+        return add(EventFactory.Common.newExclusiveStore(status, address, value, mo), ctx.getStart().getLine());
     }
 
     private static final CustomPrinting SWP_PRINTER = e -> {
@@ -307,8 +311,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         xchg.addTags(mo);
         xchg.setMetadata(SWP_PRINTER);
 
-        add(xchg);
-        addRegister64Update(r64, lReg);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(xchg, lineOfCode);
+        addRegister64Update(r64, lReg, lineOfCode);
         return null;
     }
 
@@ -349,8 +354,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         cas.addTags(mo);
         cas.setMetadata(CAS_PRINTER);
 
-        add(cas);
-        addRegister64Update(rs64, rs);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(cas, lineOfCode);
+        addRegister64Update(rs64, rs, lineOfCode);
         return null;
     }
 
@@ -471,8 +477,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         ldOp.addTags(mo);
         ldOp.setMetadata(LDOP_PRINTER);
 
-        add(ldOp);
-        addRegister64Update(rt64, rt);
+        final int lineOfCode = ctx.getStart().getLine();
+        add(ldOp, lineOfCode);
+        addRegister64Update(rt64, rt, lineOfCode);
         return null;
     }
 
@@ -480,14 +487,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitBranch(BranchContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         if(ctx.branchCondition() == null){
-            return add(EventFactory.newGoto(label));
+            return add(EventFactory.newGoto(label), ctx.getStart().getLine());
         }
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Expression expr = expressions.makeIntCmp(cmp.left, ctx.branchCondition().op, cmp.right);
-        return add(EventFactory.newJump(expr, label));
+        return add(EventFactory.newJump(expr, label), ctx.getStart().getLine());
     }
 
     @Override
@@ -499,23 +506,23 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         IntLiteral zero = expressions.makeZero(integerType);
         Expression expr = expressions.makeIntCmp(register, ctx.branchRegInstruction().op, zero);
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
-        return add(EventFactory.newJump(expr, label));
+        return add(EventFactory.newJump(expr, label), ctx.getStart().getLine());
     }
 
     @Override
     public Object visitBranchLabel(BranchLabelContext ctx) {
-        return add(programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()));
+        return add(programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()), ctx.getStart().getLine());
     }
 
     @Override
     public Object visitFence(FenceContext ctx) {
-        return add(EventFactory.AArch64.newBarrier(ctx.Fence().getText(), ctx.opt));
+        return add(EventFactory.AArch64.newBarrier(ctx.Fence().getText(), ctx.opt), ctx.getStart().getLine());
     }
 
     @Override
     public Object visitReturn(ReturnContext ctx) {
         Label end = programBuilder.getEndOfThreadLabel(mainThread);
-        return add(EventFactory.newGoto(end));
+        return add(EventFactory.newGoto(end), ctx.getStart().getLine());
     }
 
     @Override
@@ -624,15 +631,15 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
     }
 
-    private void addRegister64Update(Register r64, Register value) {
+    private void addRegister64Update(Register r64, Register value, int lineOfCode) {
         checkArgument(r64.getType().equals(i64), "Unexpectedly-typed register %s", r64);
         if (r64 != value) {
-            add(EventFactory.newLocal(r64, expressions.makeIntegerCast(value, i64, false)));
+            add(EventFactory.newLocal(r64, expressions.makeIntegerCast(value, i64, false)), lineOfCode);
         }
     }
 
-    private Void add(Event event) {
-        programBuilder.addChild(mainThread, event);
+    private Void add(Event event, int lineOfCode) {
+        programBuilder.addChild(mainThread, event, lineOfCode);
         return null;
     }
 
@@ -657,7 +664,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
         stOp.setMetadata(STOP_PRINTER);
 
-        add(stOp);
+        add(stOp, ctx.getStart().getLine());
         return null;
     }
 

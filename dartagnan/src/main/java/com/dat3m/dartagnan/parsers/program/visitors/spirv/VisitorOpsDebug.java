@@ -30,7 +30,7 @@ public class VisitorOpsDebug extends SpirvBaseVisitor<Void> {
     public Void visitOpLine(SpirvParser.OpLineContext ctx) {
         String file = builder.getDebugInfo(ctx.file().getText());
         int line = Integer.parseInt(ctx.line().getText());
-        SourceLocation loc = new SourceLocation(file, line);
+        SourceLocation loc = new SourceLocation.Generic(file, line);
         cfBuilder.setCurrentLocation(loc);
         return null;
     }

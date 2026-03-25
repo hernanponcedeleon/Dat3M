@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,13 +61,13 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value, ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
         return null;
     }
 
@@ -106,14 +107,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitLi(LiContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return append(EventFactory.newLocal(register, constant));
+        return append(EventFactory.newLocal(register, constant), ctx);
     }
 
     @Override
     public Object visitLwz(LwzContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.newLoad(r1, ra));
+        return append(EventFactory.newLoad(r1, ra), ctx);
     }
 
     @Override
@@ -127,14 +128,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.Power.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)));
+        return append(EventFactory.Power.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)), ctx);
     }
 
     @Override
     public Object visitStw(StwContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.newStore(ra, r1));
+        return append(EventFactory.newStore(ra, r1), ctx);
     }
 
     @Override
@@ -152,14 +153,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""));
+        return append(EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""), ctx);
     }
 
     @Override
     public Object visitMr(MrContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.newLocal(r1, r2));
+        return append(EventFactory.newLocal(r1, r2), ctx);
     }
 
     @Override
@@ -167,7 +168,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)));
+        return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)), ctx);
     }
 
     @Override
@@ -175,7 +176,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
         Register r3 = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)), ctx);
     }
 
     @Override
@@ -195,22 +196,23 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
             // the value of r0 is used as the branching condition
             expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
             expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
-        return append(EventFactory.newJump(expr, label));
+        return append(EventFactory.newJump(expr, label), ctx);
     }
 
     @Override
     public Object visitLabel(LabelContext ctx) {
-        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
     }
 
     @Override
     public Object visitFence(FenceContext ctx) {
-        return append(switch (ctx.getText().toLowerCase()) {
+        final Event barrier = switch (ctx.getText().toLowerCase()) {
             case "sync" -> EventFactory.Power.newSyncBarrier();
             case "lwsync" -> EventFactory.Power.newLwSyncBarrier();
             case "isync" -> EventFactory.Power.newISyncBarrier();
             default -> throw new ParsingException("Unrecognised fence %s", ctx.getText());
-        });
+        };
+        return append(barrier, ctx);
     }
 
     @Override
@@ -218,7 +220,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
     }
 
-    private Object append(Event event) {
-        return programBuilder.addChild(mainThread, event);
+    private Object append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }
