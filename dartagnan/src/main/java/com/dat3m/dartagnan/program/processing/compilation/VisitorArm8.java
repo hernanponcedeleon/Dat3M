@@ -213,7 +213,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_RELEASE, Tag.C11.MO_SC -> AArch64.newDmbIshBarrier();
+            case Tag.C11.MO_RELEASE, Tag.C11.MO_ACQUIRE_RELEASE, Tag.C11.MO_SC -> AArch64.newDmbIshBarrier();
             case Tag.C11.MO_ACQUIRE -> AArch64.newDsbIshLdBarrier();
             default -> null;
         };
