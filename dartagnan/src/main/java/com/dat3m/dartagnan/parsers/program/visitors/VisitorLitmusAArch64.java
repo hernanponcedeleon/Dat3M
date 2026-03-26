@@ -241,7 +241,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         final Register r64 = parseRegister64(ctx.rV32, ctx.rV64);
         final StoreInstructionContext inst = ctx.storeInstruction();
-        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : ctx.rV64 == null ? i32 : i64;
+        final IntegerType type = type(ctx.rV32, inst.halfWordSize, inst.byteSize);
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
         final String mo = ctx.storeInstruction().release ? MO_REL : "";
@@ -267,7 +267,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitStoreExclusive(StoreExclusiveContext ctx) {
         final Register r64 = parseRegister64(ctx.rV32, ctx.rV64);
         final StoreExclusiveInstructionContext inst = ctx.storeExclusiveInstruction();
-        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : ctx.rV64 == null ? i32 : i64;
+        final IntegerType type = type(ctx.rV32, inst.halfWordSize, inst.byteSize);
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
@@ -285,7 +285,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register loadReg = xchg.getResultRegister();
         final Expression address = xchg.getAddress();
 
-        return Optional.of(String.format("SWP%s%s %s, %s, [%s]", acq, rel, value, loadReg, address));
+        return Optional.of(String.format("SWP%s%s%s %s, %s, [%s]", acq, rel, size, value, loadReg, address));
     };
 
     @Override
@@ -327,7 +327,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register loadReg = cas.getResultRegister();
         final Expression address = cas.getAddress();
 
-        return Optional.of(String.format("CAS%s%s %s, %s, [%s]", acq, rel, loadReg, value, address));
+        return Optional.of(String.format("CAS%s%s%s %s, %s, [%s]", acq, rel, size, loadReg, value, address));
     };
 
     @Override
@@ -359,7 +359,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         addRegister64Update(rs64, rs, lineOfCode);
         return null;
     }
-
 
     record LDSTAmoInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
 
@@ -423,6 +422,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
         return Optional.of(String.format("LD%s%s%s%s %s, %s, [%s]", op, acq, rel, size, loadReg, operand, address));
     };
+
     private static final CustomPrinting STOP_PRINTER = e -> {
         if (!(e instanceof RMWOp stop)) {
             return Optional.empty();
@@ -480,6 +480,30 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final int lineOfCode = ctx.getStart().getLine();
         add(ldOp, lineOfCode);
         addRegister64Update(rt64, rt, lineOfCode);
+        return null;
+    }
+
+    @Override
+    public Object visitStoreOp(StoreOpContext ctx) {
+        final String instr = ctx.storeOpInstruction().getText();
+        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
+
+        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
+        final IntegerType type = type(ctx.rS32, info.isHalfSize, info.isByteSize);
+        Expression operand = expressions.makeCast(rs64, type, false);
+        if (info.op == IntBinaryOp.AND) {
+            // This was a CLR instruction
+            operand = expressions.makeIntNot(operand);
+        }
+
+        final Expression address = parseAddress(ctx.address());
+        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
+        if (info.release) {
+            stOp.addTags(MO_REL);
+        }
+        stOp.setMetadata(STOP_PRINTER);
+
+        add(stOp, ctx.getStart().getLine());
         return null;
     }
 
@@ -631,6 +655,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
     }
 
+    private IntegerType type(Register32Context ctx, boolean halfWordSize, boolean byteSize) {
+        return byteSize ? i8 : halfWordSize ? i16 : ctx != null ? i32 : i64;
+    }
+
     private void addRegister64Update(Register r64, Register value, int lineOfCode) {
         checkArgument(r64.getType().equals(i64), "Unexpectedly-typed register %s", r64);
         if (r64 != value) {
@@ -640,31 +668,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     private Void add(Event event, int lineOfCode) {
         programBuilder.addChild(mainThread, event, lineOfCode);
-        return null;
-    }
-
-    @Override
-    public Object visitStoreOp(StoreOpContext ctx) {
-        final String instr = ctx.storeOpInstruction().getText();
-        final LDSTAmoInfo info = getLDSTInfoFromInstructionName(instr);
-
-        final Register rs64 = parseRegister64(ctx.rS32, ctx.rS64);
-        // TODO: We don't actually care about the smaller register, but only its type!
-        final Register rs = shrinkRegister(rs64, ctx.rS32, info.isHalfSize, info.isByteSize);
-        Expression operand = expressions.makeCast(rs64, rs.getType(), false);
-        if (info.op == IntBinaryOp.AND) {
-            // This was a CLR instruction
-            operand = expressions.makeIntNot(operand);
-        }
-
-        final Expression address = parseAddress(ctx.address());
-        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
-        if (info.release) {
-            stOp.addTags(MO_REL);
-        }
-        stOp.setMetadata(STOP_PRINTER);
-
-        add(stOp, ctx.getStart().getLine());
         return null;
     }
 
