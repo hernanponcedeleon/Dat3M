@@ -128,7 +128,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.Power.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)), ctx);
+        return append(EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)), ctx);
     }
 
     @Override

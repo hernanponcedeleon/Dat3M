@@ -196,7 +196,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	public Object visitLr(LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.RISCV.newRMWLoadExclusive(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
+        return append(EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
 	}
 
 	@Override

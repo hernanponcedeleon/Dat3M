@@ -232,7 +232,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.AArch64.newRMWLoadExclusive(register, address, mo), lineOfCode);
+        add(EventFactory.newRMWLoadExclusiveWithMo(register, address, mo), lineOfCode);
         addRegister64Update(r64, register, lineOfCode);
         return null;
     }

@@ -105,7 +105,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.RISCV.newRMWLoadExclusive(register, address, ""));
+        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
         return null;
     }
 
@@ -113,7 +113,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     public Object visitLoadAcquireExclusive(LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.RISCV.newRMWLoadExclusive(register, address, Tag.RISCV.MO_ACQ));
+        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ));
         return null;
     }
 
