@@ -551,14 +551,6 @@ public class EventFactory {
         private AArch64() {
         }
 
-        public static Load newRMWLoadExclusive(Register register, Expression address, String mo) {
-            return newRMWLoadExclusiveWithMo(register, address, mo);
-        }
-
-        public static Store newRMWStoreExclusive(Expression address, Expression value, boolean strong, String mo) {
-            return newRMWStoreExclusiveWithMo(address, value, strong, false, mo);
-        }
-
         public static GenericVisibleEvent newDmbBarrier() {
             return newBarrier("DMB", "SY");
         }
@@ -715,16 +707,6 @@ public class EventFactory {
         private RISCV() {
         }
 
-        public static Load newRMWLoadExclusive(Register register, Expression value, String mo) {
-            return EventFactory.newRMWLoadExclusiveWithMo(register, value, mo);
-        }
-
-        public static Store newRMWStoreConditional(Expression address, Expression value, boolean strong, String mo) {
-            Store store = newRMWStoreExclusiveWithMo(address, value, strong, true, mo);
-            store.addTags(Tag.RISCV.STCOND);
-            return store;
-        }
-
         public static GenericVisibleEvent newRRFence() {
             return newFence("Fence.r.r");
         }
@@ -775,14 +757,6 @@ public class EventFactory {
     // =============================================================================================
     public static class Power {
         private Power() {
-        }
-
-        public static Load newRMWLoadExclusive(Register register, Expression address) {
-            return EventFactory.newRMWLoadExclusive(register, address);
-        }
-
-        public static Store newRMWStoreConditional(Expression address, Expression value, boolean isStrong) {
-            return newRMWStoreExclusive(address, value, isStrong, true);
         }
 
         public static GenericVisibleEvent newISyncBarrier() {

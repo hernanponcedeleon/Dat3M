@@ -33,7 +33,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
-        Store store = AArch64.newRMWStoreExclusive(e.getAddress(), e.getMemValue(), false, e.getMo());
+        Store store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), false, e.getMo());
 
         return eventSequence(
                 store,
@@ -51,8 +51,8 @@ class VisitorArm8 extends VisitorBase {
         final Register dummy = xchg.getFunction().newRegister(resultRegister.getType());
 
         return eventSequence(
-                propagateNoRet(xchg, AArch64.newRMWLoadExclusive(dummy, address, loadMo)),
-                AArch64.newRMWStoreExclusive(address, xchg.getValue(), true, storeMo),
+                propagateNoRet(xchg, newRMWLoadExclusive(dummy, address, loadMo)),
+                newRMWStoreExclusive(address, xchg.getValue(), true, storeMo),
                 newLocal(resultRegister, dummy)
         );
     }
@@ -151,8 +151,8 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = AArch64.newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
+        Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -173,8 +173,8 @@ class VisitorArm8 extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = AArch64.newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
+        Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -196,8 +196,8 @@ class VisitorArm8 extends VisitorBase {
         final Label casEnd = newLabel("CAS_end");
         final CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        final Load load = AArch64.newRMWLoadExclusive(oldValue, address, extractLoadMoFromCMo(mo));
-        final Store store = AArch64.newRMWStoreExclusive(address, newValue, strong, extractStoreMoFromCMo(mo));
+        final Load load = newRMWLoadExclusive(oldValue, address, extractLoadMoFromCMo(mo));
+        final Store store = newRMWStoreExclusive(address, newValue, strong, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -213,8 +213,8 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_RELEASE, Tag.C11.MO_ACQUIRE_RELEASE, Tag.C11.MO_SC -> AArch64.newDmbIshBarrier();
-            case Tag.C11.MO_ACQUIRE -> AArch64.newDsbIshLdBarrier();
+            case Tag.C11.MO_RELEASE, Tag.C11.MO_ACQUIRE_RELEASE, Tag.C11.MO_SC -> newDmbIsh();
+            case Tag.C11.MO_ACQUIRE -> newDsbIshLd();
             default -> null;
         };
 
@@ -249,8 +249,8 @@ class VisitorArm8 extends VisitorBase {
         Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
         CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = AArch64.newRMWLoadExclusive(regValue, address, extractLoadMoFromCMo(mo));
-        Store storeValue = AArch64.newRMWStoreExclusive(address, value, strong, extractStoreMoFromCMo(mo));
+        Load loadValue = newRMWLoadExclusive(regValue, address, extractLoadMoFromCMo(mo));
+        Store storeValue = newRMWStoreExclusive(address, value, strong, extractStoreMoFromCMo(mo));
         Register statusReg = strong ? null : e.getFunction().newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
         ExecutionStatus optionalExecStatus = strong ? null : newExecutionStatus(statusReg, storeValue);
         Local optionalUpdateCasCmpResult = strong ? null : newLocal(booleanResultRegister, expressions.makeNot(statusReg));
@@ -278,9 +278,9 @@ class VisitorArm8 extends VisitorBase {
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
 
-        Load load = AArch64.newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
+        Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-        Store store = AArch64.newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -310,8 +310,8 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_RELEASE, Tag.C11.MO_ACQUIRE_RELEASE, Tag.C11.MO_SC -> AArch64.newDmbIshBarrier();
-            case Tag.C11.MO_ACQUIRE -> AArch64.newDsbIshLdBarrier();
+            case Tag.C11.MO_RELEASE, Tag.C11.MO_ACQUIRE_RELEASE, Tag.C11.MO_SC -> newDmbIsh();
+            case Tag.C11.MO_ACQUIRE -> newDsbIshLd();
             default -> null;
         };
 
@@ -326,8 +326,8 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = AArch64.newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
+        Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -367,7 +367,7 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Store store = newStoreWithMo(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? MO_REL : "");
-        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDsbIshBarrier() : null;
+        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? newDsbIsh() : null;
 
         return eventSequence(
                 store,
@@ -381,23 +381,23 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitLKMMFence(LKMMFence e) {
         Event optionalMemoryBarrier = switch (e.getName()) {
             // mb()
-            case Tag.Linux.MO_MB -> AArch64.newDsbIshBarrier();
+            case Tag.Linux.MO_MB -> newDsbIsh();
             // rmb()
-            case Tag.Linux.MO_RMB -> AArch64.newDsbIshLdBarrier();
+            case Tag.Linux.MO_RMB -> newDsbIshLd();
             // wmb()
-            case Tag.Linux.MO_WMB -> AArch64.newDsbIshStBarrier();
+            case Tag.Linux.MO_WMB -> newDsbIshSt();
             // __smp_mb()
             // 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
             case Tag.Linux.BEFORE_ATOMIC,
-                 Tag.Linux.AFTER_ATOMIC -> AArch64.newDmbIshBarrier();
+                 Tag.Linux.AFTER_ATOMIC -> newDmbIsh();
             // #define smp_mb__after_spinlock()	smp_mb()
             //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
-            case Tag.Linux.AFTER_SPINLOCK -> AArch64.newDsbIshBarrier();
+            case Tag.Linux.AFTER_SPINLOCK -> newDsbIsh();
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             //              https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
-            case Tag.Linux.AFTER_UNLOCK_LOCK -> AArch64.newDsbIshBarrier();
+            case Tag.Linux.AFTER_UNLOCK_LOCK -> newDsbIsh();
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
             case Tag.Linux.BARRIER -> null;
             default -> throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
@@ -430,11 +430,11 @@ class VisitorArm8 extends VisitorBase {
         // equivalent and XOR harms performance substantially.
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, e.getStoreValue(), true, extractStoreMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getStoreValue(), true, extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -457,11 +457,11 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -481,8 +481,8 @@ class VisitorArm8 extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, "");
-        Store store = AArch64.newRMWStoreExclusive(address, storeValue, true, "");
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = newRMWStoreExclusive(address, storeValue, true, "");
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -503,11 +503,11 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -530,11 +530,11 @@ class VisitorArm8 extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -560,8 +560,8 @@ class VisitorArm8 extends VisitorBase {
 
         Register regValue = e.getFunction().newRegister(type);
         Expression value = expressions.makeAdd(regValue, e.getOperand());
-        Load load = AArch64.newRMWLoadExclusive(regValue, address, extractLoadMoFromLKMo(mo));
-        Store store = AArch64.newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(regValue, address, extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
@@ -570,7 +570,7 @@ class VisitorArm8 extends VisitorBase {
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -597,13 +597,13 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
-        Load load = AArch64.newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
+        Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
-        Store store = AArch64.newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.newDmbIshBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
@@ -626,9 +626,9 @@ class VisitorArm8 extends VisitorBase {
         // With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.
         return eventSequence(
-                AArch64.newRMWLoadExclusive(dummy, e.getLock(), MO_ACQ),
+                newRMWLoadExclusive(dummy, e.getLock(), MO_ACQ),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                AArch64.newRMWStoreExclusive(e.getLock(), one, true, "")
+                newRMWStoreExclusive(e.getLock(), one, true, "")
         );
     }
 
@@ -638,5 +638,29 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newStoreWithMo(e.getAddress(), zero, MO_REL)
         );
+    }
+
+    private Load newRMWLoadExclusive(Register value, Expression address, String mo) {
+        return newRMWLoadExclusiveWithMo(value, address, mo);
+    }
+
+    private Store newRMWStoreExclusive(Expression address, Expression value, boolean strong, String mo) {
+        return newRMWStoreExclusiveWithMo(address, value, strong, false, mo);
+    }
+
+    private Event newDmbIsh() {
+        return AArch64.newDmbIshBarrier();
+    }
+
+    private Event newDsbIsh() {
+        return AArch64.newDsbIshBarrier();
+    }
+
+    private Event newDsbIshLd() {
+        return AArch64.newDsbIshLdBarrier();
+    }
+
+    private Event newDsbIshSt() {
+        return AArch64.newDsbIshStBarrier();
     }
 }
