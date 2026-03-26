@@ -4,10 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -19,12 +17,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.arch.CAS;
-import com.dat3m.dartagnan.program.event.arch.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.arch.RMWOp;
-import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -200,9 +193,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadInstructionContext inst = ctx.loadInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final String mo = inst.acquire ? MO_ACQ : "";
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.newLoadWithMo(register, address, mo), lineOfCode);
+        add(EventFactory.AArch64.newLoad(register, address, inst.acquire), lineOfCode);
         addRegister64Update(r64, register, lineOfCode);
         return null;
     }
@@ -217,8 +209,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.newLoad(value0, address0), lineOfCode);
-        add(EventFactory.newLoad(value1, address1), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value0, address0, false), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value1, address1, false), lineOfCode);
         addRegister64Update(r064, value0, lineOfCode);
         addRegister64Update(r164, value1, lineOfCode);
         return null;
@@ -230,9 +222,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadExclusiveInstructionContext inst = ctx.loadExclusiveInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final String mo = inst.acquire ? MO_ACQ : "";
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.newRMWLoadExclusiveWithMo(register, address, mo), lineOfCode);
+        add(EventFactory.AArch64.newLoadExclusive(register, address, inst.acquire), lineOfCode);
         addRegister64Update(r64, register, lineOfCode);
         return null;
     }
@@ -244,8 +235,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final IntegerType type = type(ctx.rV32, inst.halfWordSize, inst.byteSize);
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
-        final String mo = ctx.storeInstruction().release ? MO_REL : "";
-        return add(EventFactory.newStoreWithMo(address, value, mo), ctx.getStart().getLine());
+        return add(EventFactory.AArch64.newStore(address, value, inst.release), ctx.getStart().getLine());
     }
 
     @Override
@@ -271,23 +261,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
-        final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : "";
-        return add(EventFactory.Common.newExclusiveStore(status, address, value, mo), ctx.getStart().getLine());
+        return add(EventFactory.AArch64.newStoreExclusive(status, address, value, inst.release), ctx.getStart().getLine());
     }
-
-    private static final CustomPrinting SWP_PRINTER = e -> {
-        if (!(e instanceof Xchg xchg)) {
-            return Optional.empty();
-        }
-        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
-        final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String size = getArmSizeSuffix(xchg.getAccessType());
-        final Expression value = xchg.getValue();
-        final Register loadReg = xchg.getResultRegister();
-        final Expression address = xchg.getAddress();
-
-        return Optional.of(String.format("SWP%s%s%s %s, %s, [%s]", acq, rel, size, value, loadReg, address));
-    };
 
     @Override
     public Object visitSwap(SwapContext ctx) {
@@ -299,38 +274,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = extended ? sReg : expressions.makeCast(sReg, lReg.getType(), false);
         final Expression address = parseAddress(ctx.address());
 
-        final List<String> mo = new ArrayList<>();
-        if (inst.acquire) {
-            mo.add(MO_ACQ);
-        }
-        if (inst.release) {
-            mo.add(MO_REL);
-        }
-
-        // TODO: Can lReg and sReg match? If so, we get a problem here.
-        final Event xchg = EventFactory.Common.newXchg(lReg, address, value);
-        xchg.addTags(mo);
-        xchg.setMetadata(SWP_PRINTER);
+        final Event xchg = EventFactory.AArch64.newSwap(lReg, address, value, inst.acquire, inst.release);
 
         final int lineOfCode = ctx.getStart().getLine();
         add(xchg, lineOfCode);
         addRegister64Update(r64, lReg, lineOfCode);
         return null;
     }
-
-    private static final CustomPrinting CAS_PRINTER = e -> {
-        if (!(e instanceof CAS cas)) {
-            return Optional.empty();
-        }
-        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
-        final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String size = getArmSizeSuffix(cas.getAccessType());
-        final Expression value = cas.getStoreValue();
-        final Register loadReg = cas.getResultRegister();
-        final Expression address = cas.getAddress();
-
-        return Optional.of(String.format("CAS%s%s%s %s, %s, [%s]", acq, rel, size, loadReg, value, address));
-    };
 
     @Override
     public Object visitCas(CasContext ctx) {
@@ -344,17 +294,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression val = expressions.makeCast(rt64, rs.getType(), false);
         final Expression address = parseAddress(ctx.address());
 
-        final List<String> mo = new ArrayList<>();
-        if (inst.acquire) {
-            mo.add(MO_ACQ);
-        }
-        if (inst.release) {
-            mo.add(MO_REL);
-        }
-
-        final Event cas = EventFactory.Common.newCAS(rs, address, cmpVal, val);
-        cas.addTags(mo);
-        cas.setMetadata(CAS_PRINTER);
+        final Event cas = EventFactory.AArch64.newCas(rs, address, cmpVal, val, inst.acquire, inst.release);
 
         final int lineOfCode = ctx.getStart().getLine();
         add(cas, lineOfCode);
@@ -410,48 +350,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return new LDSTAmoInfo(op, isHalfSize, isByteSize, acquire, release);
     }
 
-    private static final CustomPrinting LDOP_PRINTER = e -> {
-        if (!(e instanceof RMWFetchOp ldop)) {
-            return Optional.empty();
-        }
-        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
-        final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String op = opToArmOpCode(ldop.getOperator());
-        final String size = getArmSizeSuffix(ldop.getAccessType());
-        final Expression operand = ldop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : ldop.getOperand();
-        final Register loadReg = ldop.getResultRegister();
-        final Expression address = ldop.getAddress();
-
-        return Optional.of(String.format("LD%s%s%s%s %s, %s, [%s]", op, acq, rel, size, loadReg, operand, address));
-    };
-
-    private static final CustomPrinting STOP_PRINTER = e -> {
-        if (!(e instanceof RMWOp stop)) {
-            return Optional.empty();
-        }
-        final String rel = e.hasTag(MO_REL) ? "L" : "";
-        final String op = opToArmOpCode(stop.getOperator());
-        final String size = getArmSizeSuffix(stop.getAccessType());
-        final Expression operand = stop.getOperand() instanceof IntUnaryExpr expr ?  expr.getOperand() : stop.getOperand();
-        final Expression address = stop.getAddress();
-
-        return Optional.of(String.format("ST%s%s%s %s, [%s]", op, rel, size, operand, address));
-    };
-
-    private static String opToArmOpCode(IntBinaryOp op) {
-        return switch (op) {
-            case ADD -> "ADD";
-            case XOR -> "EOR";
-            case OR -> "SET";
-            case AND -> "CLR";
-            case SMIN -> "SMIN";
-            case SMAX -> "SMAX";
-            case UMIN -> "UMIN";
-            case UMAX -> "UMAX";
-            default -> throw new RuntimeException("Invalid op: " + op);
-        };
-    }
-
     @Override
     public Object visitLoadOp(LoadOpContext ctx) {
         final String instr = ctx.loadOpInstruction().getText();
@@ -466,18 +364,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             operand = expressions.makeIntNot(operand);
         }
 
-        final List<String> mo = new ArrayList<>();
-        if (info.acquire) {
-            mo.add(MO_ACQ);
-        }
-        if (info.release) {
-            mo.add(MO_REL);
-        }
-
         final Expression address = parseAddress(ctx.address());
-        final Event ldOp = EventFactory.Common.newRmwFetchOp(rt, address, info.op, operand);
-        ldOp.addTags(mo);
-        ldOp.setMetadata(LDOP_PRINTER);
+        final Event ldOp = EventFactory.AArch64.newLoadOp(rt, address, info.op, operand, info.acquire, info.release);
 
         final int lineOfCode = ctx.getStart().getLine();
         add(ldOp, lineOfCode);
@@ -499,11 +387,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
 
         final Expression address = parseAddress(ctx.address());
-        final RMWOp stOp = EventFactory.Common.newRmwOp(address, info.op, operand);
-        if (info.release) {
-            stOp.addTags(MO_REL);
-        }
-        stOp.setMetadata(STOP_PRINTER);
+        final Event stOp = EventFactory.AArch64.newStoreOp(address, info.op, operand, info.release);
 
         add(stOp, ctx.getStart().getLine());
         return null;
@@ -671,13 +555,5 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private Void add(Event event, int lineOfCode) {
         programBuilder.addChild(mainThread, event, lineOfCode);
         return null;
-    }
-
-    private static String getArmSizeSuffix(Type type) {
-        return switch (((IntegerType) type).getBitWidth()) {
-            case 16 -> "H";
-            case 8 -> "B";
-            default -> "";
-        };
     }
 }

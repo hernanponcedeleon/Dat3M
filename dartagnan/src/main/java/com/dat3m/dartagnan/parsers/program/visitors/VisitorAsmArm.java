@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
@@ -158,7 +157,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoad(LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, address));
+        asmInstructions.add(EventFactory.AArch64.newLoad(register, address, false));
         return null;
     }
 
@@ -166,7 +165,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadAcquire(LoadAcquireContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        asmInstructions.add(EventFactory.AArch64.newLoad(register, address, true));
         return null;
     }
 
@@ -174,7 +173,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
+        asmInstructions.add(EventFactory.AArch64.newLoadExclusive(register, address, false));
         return null;
     }
 
@@ -182,7 +181,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadAcquireExclusive(LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        asmInstructions.add(EventFactory.AArch64.newLoadExclusive(register, address, true));
         return null;
     }
 
@@ -232,7 +231,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStore(address, value));
+        asmInstructions.add(EventFactory.AArch64.newStore(address, value, false));
         return null;
     }
 
@@ -240,7 +239,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitStoreRelease(StoreReleaseContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
+        asmInstructions.add(EventFactory.AArch64.newStore(address, value, true));
         return null;
     }
 
@@ -249,7 +248,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, ""));
+        asmInstructions.add(EventFactory.AArch64.newStoreExclusive(freshResultRegister, address, value, false));
         return null;
     }
 
@@ -258,7 +257,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_REL));
+        asmInstructions.add(EventFactory.AArch64.newStoreExclusive(freshResultRegister, address, value, true));
         return null;
     }
 

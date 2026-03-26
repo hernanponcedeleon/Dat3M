@@ -114,7 +114,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitLwz(LwzContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.newLoad(r1, ra), ctx);
+        return append(EventFactory.Power.newLoad(r1, ra), ctx);
     }
 
     @Override
@@ -128,14 +128,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)), ctx);
+        return append(EventFactory.Power.newLoadReserve(r1, expressions.makeAdd(ra, rb)), ctx);
     }
 
     @Override
     public Object visitStw(StwContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.newStore(ra, r1), ctx);
+        return append(EventFactory.Power.newStore(ra, r1), ctx);
     }
 
     @Override
@@ -153,7 +153,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return append(EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""), ctx);
+        return append(EventFactory.Power.newStoreConditional(rs, expressions.makeAdd(ra, rb), r1), ctx);
     }
 
     @Override

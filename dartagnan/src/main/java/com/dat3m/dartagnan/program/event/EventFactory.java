@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -26,6 +27,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -551,6 +553,53 @@ public class EventFactory {
         private AArch64() {
         }
 
+        public static Event newLoad(Register value, Expression address, boolean acquire) {
+            return EventFactory.newLoadWithMo(value, address, acquire ? Tag.ARMv8.MO_ACQ : "");
+        }
+
+        public static Event newStore(Expression address, Expression value, boolean release) {
+            return EventFactory.newStoreWithMo(address, value, release ? Tag.ARMv8.MO_REL : "");
+        }
+
+        public static Event newLoadExclusive(Register value, Expression address, boolean acquire) {
+            return EventFactory.newRMWLoadExclusiveWithMo(value, address, acquire ? Tag.ARMv8.MO_ACQ : "");
+        }
+
+        public static Event newStoreExclusive(Register status, Expression address, Expression value, boolean release) {
+            return EventFactory.Common.newExclusiveStore(status, address, value, release ? Tag.ARMv8.MO_REL : "");
+        }
+
+        public static Event newLoadOp(Register register, Expression address, IntBinaryOp operator, Expression operand,
+                boolean acquire, boolean release) {
+            final Event ld = EventFactory.Common.newRmwFetchOp(register, address, operator, operand);
+            addMemoryOrder(ld, acquire, release);
+            ld.setMetadata(LDOP_PRINTING);
+            return ld;
+        }
+
+        public static Event newStoreOp(Expression address, IntBinaryOp operator, Expression operand, boolean release) {
+            final Event st = EventFactory.Common.newRmwOp(address, operator, operand);
+            addMemoryOrder(st, false, release);
+            st.setMetadata(STOP_PRINTING);
+            return st;
+        }
+
+        public static Event newSwap(Register register, Expression address, Expression value, boolean acquire,
+                boolean release) {
+            final Event swp = EventFactory.Common.newXchg(register, address, value);
+            addMemoryOrder(swp, acquire, release);
+            swp.setMetadata(SWP_PRINTING);
+            return swp;
+        }
+
+        public static Event newCas(Register register, Expression address, Expression expected, Expression desired,
+                boolean acquire, boolean release) {
+            final Event cas = EventFactory.Common.newCAS(register, address, expected, desired);
+            addMemoryOrder(cas, acquire, release);
+            cas.setMetadata(CAS_PRINTING);
+            return cas;
+        }
+
         public static GenericVisibleEvent newDmbBarrier() {
             return newBarrier("DMB", "SY");
         }
@@ -601,6 +650,84 @@ public class EventFactory {
         private static final Set<String> BARRIER_OPT = Set.of(
                 "SY", "LD", "ST", "ISH", "ISHLD", "ISHST", "OSH", "OSHLD", "OSHST", "NSH", "NSHLD", "NSHST"
         );
+
+        private static void addMemoryOrder(Event e, boolean acquire, boolean release) {
+            e.addTags(acquire ? Tag.ARMv8.MO_ACQ : "", release ? Tag.ARMv8.MO_REL : "");
+        }
+
+        private static final CustomPrinting LDOP_PRINTING = e -> {
+            if (!(e instanceof RMWFetchOp ldop)) {
+                return Optional.empty();
+            }
+            final String acq = ldop.hasTag(Tag.ARMv8.MO_ACQ) ? "A" : "";
+            final String rel = ldop.hasTag(Tag.ARMv8.MO_REL) ? "L" : "";
+            final String op = opToArmOpCode(ldop.getOperator());
+            final String size = getArmSizeSuffix(ldop.getAccessType());
+            final Expression operand = ldop.getOperand() instanceof IntUnaryExpr x ? x.getOperand() : ldop.getOperand();
+            final Register loadReg = ldop.getResultRegister();
+            final Expression address = ldop.getAddress();
+            return Optional.of("LD%s%s%s%s %s, %s, [%s]".formatted(op, acq, rel, size, loadReg, operand, address));
+        };
+
+        private static final CustomPrinting STOP_PRINTING = e -> {
+            if (!(e instanceof RMWOp stop)) {
+                return Optional.empty();
+            }
+            final String rel = stop.hasTag(Tag.ARMv8.MO_REL) ? "L" : "";
+            final String op = opToArmOpCode(stop.getOperator());
+            final String size = getArmSizeSuffix(stop.getAccessType());
+            final Expression operand = stop.getOperand() instanceof IntUnaryExpr x ? x.getOperand() : stop.getOperand();
+            final Expression address = stop.getAddress();
+            return Optional.of("ST%s%s%s %s, [%s]".formatted(op, rel, size, operand, address));
+        };
+
+        private static final CustomPrinting SWP_PRINTING = e -> {
+            if (!(e instanceof Xchg xchg)) {
+                return Optional.empty();
+            }
+            final String acq = xchg.hasTag(Tag.ARMv8.MO_ACQ) ? "A" : "";
+            final String rel = xchg.hasTag(Tag.ARMv8.MO_REL) ? "L" : "";
+            final String size = getArmSizeSuffix(xchg.getAccessType());
+            final Expression value = xchg.getValue();
+            final Register loadReg = xchg.getResultRegister();
+            final Expression address = xchg.getAddress();
+            return Optional.of("SWP%s%s%s %s, %s, [%s]".formatted(acq, rel, size, value, loadReg, address));
+        };
+
+        private static final CustomPrinting CAS_PRINTING = e -> {
+            if (!(e instanceof CAS cas)) {
+                return Optional.empty();
+            }
+            final String acq = cas.hasTag(Tag.ARMv8.MO_ACQ) ? "A" : "";
+            final String rel = cas.hasTag(Tag.ARMv8.MO_REL) ? "L" : "";
+            final String size = getArmSizeSuffix(cas.getAccessType());
+            final Expression value = cas.getStoreValue();
+            final Register loadReg = cas.getResultRegister();
+            final Expression address = cas.getAddress();
+            return Optional.of("CAS%s%s%s %s, %s, [%s]".formatted(acq, rel, size, loadReg, value, address));
+        };
+
+        private static String opToArmOpCode(IntBinaryOp op) {
+            return switch (op) {
+                case ADD -> "ADD";
+                case XOR -> "EOR";
+                case OR -> "SET";
+                case AND -> "CLR";
+                case SMIN -> "SMIN";
+                case SMAX -> "SMAX";
+                case UMIN -> "UMIN";
+                case UMAX -> "UMAX";
+                default -> throw new RuntimeException("Invalid op: " + op);
+            };
+        }
+
+        private static String getArmSizeSuffix(Type type) {
+            return switch (((IntegerType) type).getBitWidth()) {
+                case 16 -> "H";
+                case 8 -> "B";
+                default -> "";
+            };
+        }
     }
 
     // =============================================================================================
@@ -707,6 +834,22 @@ public class EventFactory {
         private RISCV() {
         }
 
+        public static Event newLoad(Register value, Expression address, boolean acquire) {
+            return EventFactory.newLoadWithMo(value, address, acquire ? Tag.RISCV.MO_ACQ : "");
+        }
+
+        public static Event newStore(Expression address, Expression value, boolean release) {
+            return EventFactory.newStoreWithMo(address, value, release ? Tag.RISCV.MO_REL : "");
+        }
+
+        public static Event newLoadReserve(Register value, Expression address, boolean acquire) {
+            return EventFactory.newRMWLoadExclusiveWithMo(value, address, acquire ? Tag.RISCV.MO_ACQ : "");
+        }
+
+        public static Event newStoreConditional(Register status, Expression address, Expression value, boolean release) {
+            return Common.newExclusiveStore(status, address, value, release ? Tag.RISCV.MO_REL : "");
+        }
+
         public static GenericVisibleEvent newRRFence() {
             return newFence("Fence.r.r");
         }
@@ -759,6 +902,22 @@ public class EventFactory {
         private Power() {
         }
 
+        public static Event newLoad(Register value, Expression address) {
+            return EventFactory.newLoad(value, address);
+        }
+
+        public static Event newLoadReserve(Register value, Expression address) {
+            return EventFactory.newRMWLoadExclusive(value, address);
+        }
+
+        public static Event newStore(Expression address, Expression value) {
+            return EventFactory.newStore(address, value);
+        }
+
+        public static Event newStoreConditional(Register status, Expression address, Expression value) {
+            return EventFactory.Common.newExclusiveStore(status, address, value, "");
+        }
+
         public static GenericVisibleEvent newISyncBarrier() {
             return newFence("isync");
         }
@@ -777,6 +936,14 @@ public class EventFactory {
     // =============================================================================================
     public static class PTX {
         private PTX() {}
+
+        public static Event newLoad(Register value, Expression address, String mo) {
+            return newLoadWithMo(value, address, mo);
+        }
+
+        public static Event newStore(Expression address, Expression value, String mo) {
+            return newStoreWithMo(address, value, mo);
+        }
 
         public static Event newAtomOp(Expression address, Register register, Expression value,
                 IntBinaryOp op, String mo, String scope) {
@@ -807,6 +974,10 @@ public class EventFactory {
             red.addTags(scope);
             return red;
         }
+
+        public static Event newFence(String name) {
+            return EventFactory.newFence(name);
+        }
     }
 
     // =============================================================================================
@@ -814,6 +985,14 @@ public class EventFactory {
     // =============================================================================================
     public static class Vulkan {
         private Vulkan() {}
+
+        public static Event newLoad(Register value, Expression address, String mo) {
+            return newLoadWithMo(value, address, mo);
+        }
+
+        public static Event newStore(Expression address, Expression value, String mo) {
+            return newStoreWithMo(address, value, mo);
+        }
 
         public static VulkanRMW newRMW(Expression address, Register register, Expression value,
                                           String mo, String scope) {

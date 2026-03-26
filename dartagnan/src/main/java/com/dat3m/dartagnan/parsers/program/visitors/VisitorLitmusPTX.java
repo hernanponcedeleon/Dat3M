@@ -127,7 +127,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression constant = (Expression) ctx.value().accept(this);
         String mo = ctx.mo().content;
-        Event store = EventFactory.newStoreWithMo(object, constant, mo);
+        Event store = EventFactory.PTX.newStore(object, constant, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
@@ -189,7 +189,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
-        Event load = EventFactory.newLoadWithMo(register, location, mo);
+        Event load = EventFactory.PTX.newLoad(register, location, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
@@ -272,21 +272,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC))) {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.PTX.newFence(ctx.getText().toLowerCase());
         fence.addTags(mo, scope, Tag.PTX.GEN);
         return append(fence, ctx);
     }
 
     @Override
     public Object visitFenceProxy(FenceProxyContext ctx) {
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.PTX.newFence(ctx.getText().toLowerCase());
         fence.addTags(ctx.proxyType().content);
         return append(fence, ctx);
     }
 
     @Override
     public Object visitFenceAlias(FenceAliasContext ctx) {
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.PTX.newFence(ctx.getText().toLowerCase());
         fence.addTags(Tag.PTX.ALIAS);
         return append(fence, ctx);
     }

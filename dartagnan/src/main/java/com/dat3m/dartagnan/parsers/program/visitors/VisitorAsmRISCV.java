@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import static com.google.common.base.Preconditions.checkState;
@@ -88,7 +87,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.newLoad(register, newAddress));
+        asmInstructions.add(EventFactory.RISCV.newLoad(register, newAddress, false));
         return null;
     }
 
@@ -105,7 +104,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
+        asmInstructions.add(EventFactory.RISCV.newLoadReserve(register, address, false));
         return null;
     }
 
@@ -113,7 +112,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     public Object visitLoadAcquireExclusive(LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ));
+        asmInstructions.add(EventFactory.RISCV.newLoadReserve(register, address, true));
         return null;
     }
 
@@ -144,7 +143,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.newStore(newAddress, value));
+        asmInstructions.add(EventFactory.RISCV.newStore(newAddress, value, false));
         return null;
     }
 
@@ -154,7 +153,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.STCOND));
+        asmInstructions.add(EventFactory.RISCV.newStoreConditional(freshResultRegister, address, value, false));
         return null;
     }
 
@@ -163,7 +162,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.MO_REL));
+        asmInstructions.add(EventFactory.RISCV.newStoreConditional(freshResultRegister, address, value, true));
         return null;
     }
 

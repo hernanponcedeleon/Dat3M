@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -182,21 +181,21 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	public Object visitLw(LwContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.newLoadWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
+        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV()).acq), ctx);
 	}
 
 	@Override
 	public Object visitSw(SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.newStoreWithMo(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
+        return append(EventFactory.RISCV.newStore(ra, r1, getMo(ctx.moRISCV()).rel), ctx);
 	}
 
 	@Override
 	public Object visitLr(LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
+        return append(EventFactory.RISCV.newLoadReserve(r1, ra, getMo(ctx.moRISCV()).acq), ctx);
 	}
 
 	@Override
@@ -204,7 +203,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return append(EventFactory.Common.newExclusiveStore(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))), ctx);
+        return append(EventFactory.RISCV.newStoreConditional(r1, ra, r2, getMo(ctx.moRISCV()).rel), ctx);
 	}
 
 	@Override
@@ -259,10 +258,16 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	// ================ Utils ================
 	// =======================================
 
-	private String getMo(MoRISCVContext mo1, MoRISCVContext mo2) {
-		String moR = mo1 != null ? mo1.mo : "";
-		String moW = mo2 != null ? mo2.mo : "";
-		return !moR.isEmpty() ? (!moW.isEmpty() ? Tag.RISCV.MO_ACQ_REL : moR) : moW;
+    private record Mo(boolean acq, boolean rel) {}
+
+	private Mo getMo(List<MoRISCVContext> mo) {
+        boolean acq = false;
+        boolean rel = false;
+        for (MoRISCVContext ctx : mo) {
+            acq |= ctx.Acq() != null;
+            rel |= ctx.Rel() != null;
+        }
+		return new Mo(acq, rel);
 	}
 
     private Object append(Event event, ParserRuleContext ctx) {

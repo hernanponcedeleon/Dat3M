@@ -178,7 +178,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         String mo = ctx.moRel() != null ? Tag.Vulkan.RELEASE : Tag.Vulkan.ATOM;
-        Store store = EventFactory.newStoreWithMo(object, value, mo);
+        Event store = EventFactory.Vulkan.newStore(object, value, mo);
         store.addTags(
                 Tag.Vulkan.ATOM,
                 Tag.Vulkan.NON_PRIVATE,
@@ -198,7 +198,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         String mo = ctx.moAcq() != null ? Tag.Vulkan.ACQUIRE : Tag.Vulkan.ATOM;
-        Load load = EventFactory.newLoadWithMo(register, location, mo);
+        Event load = EventFactory.Vulkan.newLoad(register, location, mo);
         load.addTags(
                 Tag.Vulkan.ATOM,
                 Tag.Vulkan.NON_PRIVATE,

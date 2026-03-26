@@ -80,7 +80,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     public Object visitLoad(LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, address));
+        asmInstructions.add(EventFactory.Power.newLoad(register, address));
         return null;
     }
 
@@ -91,7 +91,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, newAddress));
+        asmInstructions.add(EventFactory.Power.newLoadReserve(register, newAddress));
         return null;
     }
 
@@ -99,7 +99,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStore(address, value));
+        asmInstructions.add(EventFactory.Power.newStore(address, value));
         return null;
     }
 
@@ -112,7 +112,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Expression newAddress = expressions.makeAdd(address,offset);
         Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
         this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
+        asmInstructions.add(EventFactory.Power.newStoreConditional(resultRegister, newAddress, value));
         return null;
     }
 
