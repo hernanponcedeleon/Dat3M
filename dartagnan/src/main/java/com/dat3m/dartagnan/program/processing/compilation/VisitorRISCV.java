@@ -576,7 +576,6 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
-        //TODO
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, false, storeMo);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
