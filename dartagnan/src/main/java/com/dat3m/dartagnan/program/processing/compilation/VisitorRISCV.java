@@ -128,7 +128,7 @@ class VisitorRISCV extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusive(oldValue, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, false, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreConditional(address, newValue, strong, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -576,7 +576,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
-        Store store = newRMWStoreExclusiveWithMo(address, dummy, true, false, storeMo);
+        Store store = newRMWStoreConditional(address, dummy, true, storeMo);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
@@ -604,7 +604,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ""),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreExclusive(e.getLock(), one, true, false),
+                newRMWStoreConditional(e.getLock(), one, true, ""),
                 newRRWFence()
         );
     }
