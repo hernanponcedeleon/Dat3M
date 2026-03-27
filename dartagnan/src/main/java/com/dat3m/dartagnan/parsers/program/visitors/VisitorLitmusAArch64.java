@@ -281,6 +281,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
         final String acq = e.hasTag(MO_ACQ) ? "A" : "";
         final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final String size = getArmSizeSuffix(xchg.getAccessType());
         final Expression value = xchg.getValue();
         final Register loadReg = xchg.getResultRegister();
         final Expression address = xchg.getAddress();
@@ -323,6 +324,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
         final String acq = e.hasTag(MO_ACQ) ? "A" : "";
         final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final String size = getArmSizeSuffix(cas.getAccessType());
         final Expression value = cas.getStoreValue();
         final Register loadReg = cas.getResultRegister();
         final Expression address = cas.getAddress();
