@@ -42,8 +42,8 @@ public class Program {
     }
 
     // Shape
-    private final List<Thread> threads;
-    private final List<Function> functions;
+    private final List<Function> functions = new ArrayList<>();
+    private final List<Thread> threads = new ArrayList<>();
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Entrypoint entrypoint = new Entrypoint.None();
@@ -75,8 +75,6 @@ public class Program {
     public Program(String name, Memory memory, SourceLanguage format) {
         this.name = name;
         this.memory = memory;
-        this.threads = new ArrayList<>();
-        this.functions = new ArrayList<>();
         this.format = format;
 
         this.filterSpec = ExpressionFactory.getInstance().makeTrue();
