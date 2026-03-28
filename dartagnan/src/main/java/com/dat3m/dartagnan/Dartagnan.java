@@ -294,7 +294,7 @@ public class Dartagnan extends BaseOptions {
         StringBuilder details = new StringBuilder();
         // We only show the condition if this is the reason of the failure
         String condition = "";
-        final boolean ignoreFilter = task.getConfig().hasProperty(IGNORE_FILTER_SPECIFICATION) && task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION).equals("true");
+        final boolean ignoreFilter = Objects.equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION), "true");
         final boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
         final String filter = !ignoreFilter && nonEmptyFilter ? p.getFilterSpecification().toString() : "";
 

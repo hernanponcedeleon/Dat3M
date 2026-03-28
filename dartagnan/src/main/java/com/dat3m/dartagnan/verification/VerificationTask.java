@@ -39,6 +39,9 @@ public class VerificationTask {
         this.property = checkNotNull(property);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
+
+        // TODO: Is it a good idea to inject configs into the program here?
+        program.injectConfig(config);
     }
 
     public static VerificationTaskBuilder builder() {
