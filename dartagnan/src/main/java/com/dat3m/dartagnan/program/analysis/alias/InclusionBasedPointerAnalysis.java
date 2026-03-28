@@ -80,8 +80,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     // Manages labels / weights on the edges between the variables managed by this analysis.
     private final ModifierTrait<Modifier> trait;
-    private final Modifier relaxedModifier;
-    private final Modifier trivialModifier;
 
     // This analysis depends on another, that maps used registers to a list of possible direct writers.
     private final ReachingDefinitionsAnalysis dependency;
@@ -159,8 +157,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         trait = t;
         dependency = d;
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
-        relaxedModifier = t.relaxedModifier();
-        trivialModifier = t.constantModifier(0);
     }
 
     // ================================ API ================================
@@ -172,7 +168,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         if (vx == null || vy == null) {
             return true;
         }
-        if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
+        if (vx.base == vy.base && trait.isFunctional(vx.modifier) && trait.isFunctional(vy.modifier)) {
             return Objects.equals(vx.modifier, vy.modifier);
         }
         final List<IncludeEdge<Modifier>> ox = toIncludeSet(vx.base);
@@ -196,7 +192,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final DerivedVariable<Modifier> vx = addressVariables.get(x);
         final DerivedVariable<Modifier> vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base &&
-                isConstant(vx.modifier) && Objects.equals(vx.modifier, vy.modifier);
+                trait.isFunctional(vx.modifier) && Objects.equals(vx.modifier, vy.modifier);
     }
 
     @Override
@@ -264,10 +260,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
     }
 
-
     private List<IncludeEdge<Modifier>> toIncludeSet(Variable<Modifier> address) {
         final List<IncludeEdge<Modifier>> set = new ArrayList<>(address.includes);
-        set.add(new IncludeEdge<>(address, trivialModifier));
+        set.add(new IncludeEdge<>(address, trait.constantModifier(0)));
         return set;
     }
 
@@ -360,7 +355,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final DerivedVariable<Modifier> old = registerVariables.put(List.of(event), value);
         if (old != null) {
             // this might happen if events are iterated out of order
-            assert isTrivial(old.modifier);
+            assert trait.isIdentity(old.modifier);
             replace(old.base, value);
         }
     }
@@ -437,9 +432,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 }
             }
         }
-        // memory communication
+        // Memory communication
         // X <stores- A <- variable -> B -loads> Y   ==>   X -> Y (if overlapping modifiers)
-        // Note that variable -> variable can be implied here
+        // Note that variable -> variable can be implied here.
         final boolean hasLoads = !variable.loads.isEmpty();
         final boolean hasStores = !variable.stores.isEmpty();
         if (hasLoads || hasStores) {
@@ -463,10 +458,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                         }
                     }
                 }
-                final boolean isTrivial = isTrivial(edge.modifier);
-                final List<LoadEdge<Modifier>> variableLoads = isTrivial ? variable.loads : new ArrayList<>(variable.loads.size());
-                final List<StoreEdge<Modifier>> variableStores = isTrivial ? variable.stores : new ArrayList<>(variable.stores.size());
-                if (!isTrivial) {
+                final boolean isIdentity = trait.isIdentity(edge.modifier);
+                final List<LoadEdge<Modifier>> variableLoads = isIdentity ? variable.loads : new ArrayList<>(variable.loads.size());
+                final List<StoreEdge<Modifier>> variableStores = isIdentity ? variable.stores : new ArrayList<>(variable.stores.size());
+                if (!isIdentity) {
                     for (final LoadEdge<Modifier> load : variable.loads) {
                         variableLoads.add(new LoadEdge<>(load.result, trait.compose(load.addressModifier, edge.modifier)));
                     }
@@ -511,9 +506,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             return;
         }
         final Modifier post = trait.postProcess(modifier, includeEdge.source.object.getKnownSize());
-        if (trait.isConstant(post)) {
-            entry.setValue(new DerivedVariable<>(includeEdge.source, post));
-        }
+        entry.setValue(new DerivedVariable<>(includeEdge.source, post));
     }
 
     // ================================ Internals ================================
@@ -552,16 +545,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private record DerivedVariable<Modifier>(Variable<Modifier> base, Modifier modifier) {}
 
-    private boolean isConstant(Modifier modifier) {
-        return trait.isConstant(modifier);
-    }
-
-    private boolean isTrivial(Modifier modifier) {
-        return trait.isTrivial(modifier);
-    }
-
     private DerivedVariable<Modifier> derive(Variable<Modifier> base) {
-        return new DerivedVariable<>(base, trivialModifier);
+        return new DerivedVariable<>(base, trait.constantModifier(0));
     }
 
     private IncludeEdge<Modifier> includeEdge(DerivedVariable<Modifier> variable) {
@@ -667,7 +652,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final Map<Variable<Modifier>, List<IncludeEdge<Modifier>>> edges = new HashMap<>();
         // Use 'set' for performance.
         final Set<IncludeEdge<Modifier>> set = new HashSet<>();
-        List<IncludeEdge<Modifier>> worklist = new ArrayList<>(List.of(new IncludeEdge<>(edge.source, trivialModifier)));
+        List<IncludeEdge<Modifier>> worklist = new ArrayList<>();
+        worklist.add(new IncludeEdge<>(edge.source, trait.constantModifier(0)));
         // Since cycles are detected lazily, we need a bound for cycle lengths.
         for (int length = 0; length < includerSet.size(); length++) {
             if (worklist.isEmpty()) {
@@ -772,19 +758,23 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     // Applies another offset to an existing labeled edge.
     private DerivedVariable<Modifier> compose(DerivedVariable<Modifier> other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new DerivedVariable<>(other.base, trait.compose(other.modifier, modifier));
+        final Modifier composed = trait.compose(other.modifier, modifier);
+        return Objects.equals(composed, other.modifier) ? other : new DerivedVariable<>(other.base, composed);
     }
 
     private IncludeEdge<Modifier> compose(IncludeEdge<Modifier> other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new IncludeEdge<>(other.source, trait.compose(other.modifier, modifier));
+        final Modifier composed = trait.compose(other.modifier, modifier);
+        return Objects.equals(composed, other.modifier) ? other : new IncludeEdge<>(other.source, composed);
     }
 
     private LoadEdge<Modifier> compose(LoadEdge<Modifier> other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new LoadEdge<>(other.result, trait.compose(other.addressModifier, modifier));
+        final Modifier composed = trait.compose(other.addressModifier, modifier);
+        return Objects.equals(composed, other.addressModifier) ? other : new LoadEdge<>(other.result, composed);
     }
 
     private StoreEdge<Modifier> compose(StoreEdge<Modifier> other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new StoreEdge<>(other.value, trait.compose(other.addressModifier, modifier));
+        final Modifier composed = trait.compose(other.addressModifier, modifier);
+        return Objects.equals(composed, other.addressModifier) ? other : new StoreEdge<>(other.value, composed);
     }
 
     // Interprets an expression.
@@ -845,12 +835,12 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             expr.accept(new ExpressionInspector() {
                 @Override
                 public Expression visitRegister(Register register) {
-                    edges.add(new IncludeEdge<>(getPhiNodeVariable(register, reader).base, relaxedModifier));
+                    edges.add(new IncludeEdge<>(getPhiNodeVariable(register, reader).base, trait.relaxedModifier()));
                     return register;
                 }
                 @Override
                 public Expression visitMemoryObject(MemoryObject object) {
-                    edges.add(new IncludeEdge<>(objectVariables.get(object), relaxedModifier));
+                    edges.add(new IncludeEdge<>(objectVariables.get(object), trait.relaxedModifier()));
                     return object;
                 }
             });
@@ -886,7 +876,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     result.addAll(visitExpression(operand.x));
                     continue;
                 }
-                Modifier alignment = trivialModifier;
+                Modifier alignment = trait.constantModifier(0);
                 for (int j = 0; j < operands.size(); j++) {
                     alignment = j == i ? alignment : trait.compose(alignment, trait.accelerate(trait.constantModifier(operands.get(j).factor)));
                 }
@@ -936,7 +926,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
         @Override
         public List<IncludeEdge<Modifier>> visitMemoryObject(MemoryObject a) {
-            return List.of(new IncludeEdge<>(objectVariables.get(a), trivialModifier));
+            return List.of(new IncludeEdge<>(objectVariables.get(a), trait.constantModifier(0)));
         }
 
         @Override
@@ -954,7 +944,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     final DerivedVariable<Modifier>[] aggregate = operand.source.aggregate;
                     final DerivedVariable<Modifier> f = aggregate == null || aggregate.length <= index ? null : aggregate[index];
                     if (f == null) {
-                        field = compose(field, relaxedModifier);
+                        field = compose(field, trait.relaxedModifier());
                         break;
                     }
                     field = compose(f, field.modifier);
@@ -982,7 +972,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     addInclude(proxy, includeEdge(operand));
                 }
             }
-            result.add(new IncludeEdge<>(proxy, trivialModifier));
+            result.add(new IncludeEdge<>(proxy, trait.constantModifier(0)));
             return result;
         }
     }

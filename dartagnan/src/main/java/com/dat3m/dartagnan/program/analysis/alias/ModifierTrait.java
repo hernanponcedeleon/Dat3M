@@ -8,34 +8,62 @@ import java.util.List;
 
 /// Describes the abstract domain used in an Andersen-style Pointer Analysis.
 /// The expressiveness of the domain usually impacts both precision and computation time.
+/// Instances `m` of `Modifier` describe binary relations `[m]` over (pointer-sized) integers.
+/// When an *inclusion edge* between pointer sets `X` and `Y` is labelled with `m`,
+/// the analysis models that `Y` includes `{ y | x in X, (x, y) in [m] }`.
 public interface ModifierTrait <Modifier> {
 
-    boolean isConstant(Modifier modifier);
+    /// Checks if `x[modifier]y` and `x[modifier]z` implies `y == z` for all `x`, `y` and `z`.
+    boolean isFunctional(Modifier modifier);
 
-    boolean isTrivial(Modifier modifier);
+    /// Checks if `compose(m, modifier) == m` for all `m`.
+    boolean isIdentity(Modifier modifier);
 
+    /// Checks if there may be integers `x` and `y` with `x[left]y` and `x[right]y`.
+    /// This method must not have false negatives, but is allowed to have false positives.
     boolean overlaps(Modifier left, Modifier right);
 
+    /// Checks if for all integers `x` and `y`, `x[smaller]y` must imply `x[larger]y`.
+    /// This method must not have false positives, but is allowed to have false negatives.
     boolean includes(Modifier larger, Modifier smaller);
 
+    /// Estimates the *complexity* of `modifier`.
+    /// For each `l`, there should only exist finitely many `m` with `level(m) <= l`.
+    /// Ideally, `includes(larger,smaller)` implies `level(larger) < level(smaller)`.
+    /// <p>
+    /// Undetected cycles in the dynamic inclusion graph produce address sets of increasing `level`.
+    /// This may cause the analysis to never terminate.
+    /// A dynamic cycle detection mechanism triggers when values propagate between temporarily-equal address sets.
+    /// The analysis prioritises low-`level` values to guarantee that this happens eventually for each cycle.
+    /// @return Non-negative value, zero for `relaxedModifier()`.
     int level(Modifier modifier);
 
+    /// Describes a relation including `{ (x,y) | x + offset == y }`.
     Modifier constantModifier(int offset);
 
+    /// Describes `{ (x,y) | true }`.
     Modifier relaxedModifier();
 
+    /// Describes a relation including `{ (x,z) | exists y. x[first]y && y[second]z }`.
     Modifier compose(Modifier first, Modifier second);
 
-    Modifier mul(Modifier m, int factor);
+    /// Describes `{ (x,z) | exists y. x[modifier]y && factor * (y - x) == z - x }`.
+    Modifier mul(Modifier modifier, int factor);
 
+    /// Describes the transitive closure of `modifier`,
+    /// i.e. `{ (x,y_n) | exists n,y_1...y_n. x[modifier]y_1 ... [modifier]y_n }`.
     Modifier accelerate(Modifier modifier);
 
+    /// Intersects `[modifier]` with `{ (x,y) | x <= y < x + objectSize }`.
+    /// If this intersection is empty, the associated access must be out-of-bounds.
+    /// <p>
+    /// This is an unsound strengthening that assumes no out-of-bounds accesses, given a memory object of known size.
     Modifier postProcess(Modifier modifier, int objectSize);
 
     /// Used to perform field-insensitive alias analysis.
     final class VoidTrait implements ModifierTrait<Void> {
-        @Override public boolean isConstant(Void modifier) { return false; }
-        @Override public boolean isTrivial(Void modifier) { return false; }
+        @Override public boolean isFunctional(Void modifier) { return false; }
+        @Override public boolean isIdentity(Void modifier) { return false; }
         @Override public boolean overlaps(Void left, Void right) { return true; }
         @Override public boolean includes(Void larger, Void smaller) { return true; }
         @Override public int level(Void modifier) { return 0; }
@@ -48,9 +76,10 @@ public interface ModifierTrait <Modifier> {
     }
 
     /// Enables field-sensitive alias analysis based on finite sets.
+    /// Each non-null integer `i` describes the relation `[i]` as `{ (x,y) | x + i == y }`.
     final class Offsets implements ModifierTrait<Integer> {
-        @Override public boolean isConstant(Integer v) { return v != null; }
-        @Override public boolean isTrivial(Integer v) { return v != null && v == 0; }
+        @Override public boolean isFunctional(Integer v) { return v != null; }
+        @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
         @Override public boolean overlaps(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
         @Override public boolean includes(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
         @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
@@ -62,18 +91,19 @@ public interface ModifierTrait <Modifier> {
         @Override public Integer postProcess(Integer v, int s) { return v; }
     }
 
+    /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
     record Sd(int offset, int alignment) {}
 
     /// Enables field-sensitive alias analysis based on unions of one-dimensional linear sets.
     /// This is more precise than {@link Offsets} in presence of dynamic indexing into arrays.
     final class SdLinear implements ModifierTrait<Sd> {
-        private static final Sd TRIVIAL = new Sd(0, 0);
+        private static final Sd IDENTITY = new Sd(0, 0);
         private static final Sd RELAXED = new Sd(0, 1);
-        @Override public boolean isConstant(Sd m) { return m.alignment == 0; }
-        @Override public boolean isTrivial(Sd m) { return m.offset == 0 && m.alignment == 0; }
+        @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
+        @Override public boolean isIdentity(Sd m) { return m.offset == 0 && m.alignment == 0; }
         @Override
         public boolean overlaps(Sd left, Sd right) {
-            // exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
+            // Exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
             final int offset = right.offset - left.offset;
             final int l = left.alignment;
             final int r = right.alignment;
@@ -92,7 +122,7 @@ public interface ModifierTrait <Modifier> {
             return offset % l == 0 && r % l == 0;
         }
         @Override public int level(Sd m) { return Math.abs(m.offset); }
-        @Override public Sd constantModifier(int offset) { return offset == 0 ? TRIVIAL : new Sd(offset, 0); }
+        @Override public Sd constantModifier(int offset) { return offset == 0 ? IDENTITY : new Sd(offset, 0); }
         @Override public Sd relaxedModifier() { return RELAXED; }
         @Override
         public Sd compose(Sd left, Sd right) {
@@ -117,20 +147,23 @@ public interface ModifierTrait <Modifier> {
 
     record Md(int offset, List<Integer> alignment) {}
 
-    /// Enables field-sensitive alias analysis based on multi-dimensional linear sets.
+    /// Enables field-sensitive alias analysis based on multidimensional linear sets.
     /// This might be slightly more precise than {@link SdLinear} in presence of aggregates containing arrays.
     final class MdLinear implements ModifierTrait<Md> {
+        private static final List<Integer> TOP = List.of(-1);
+        private static final Md RELAXED = new Md(0, TOP);
+        private static final Md IDENTITY = new Md(0, List.of());
         @Override
-        public boolean isConstant(Md m) {
+        public boolean isFunctional(Md m) {
             return m.alignment.isEmpty();
         }
         @Override
-        public boolean isTrivial(Md m) {
+        public boolean isIdentity(Md m) {
             return m.offset == 0 && m.alignment.isEmpty();
         }
         @Override
         public boolean overlaps(Md left, Md right) {
-            // exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
+            // Exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
             final int offset = right.offset - left.offset;
             final int leftAlignment = singleAlignment(left.alignment);
             final int rightAlignment = singleAlignment(right.alignment);
@@ -199,7 +232,7 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Md constantModifier(int offset) {
-            return offset == 0 ? TRIVIAL : new Md(offset, List.of());
+            return offset == 0 ? IDENTITY : new Md(offset, List.of());
         }
         @Override
         public Md relaxedModifier() {
@@ -212,7 +245,7 @@ public interface ModifierTrait <Modifier> {
         @Override
         public Md mul(Md m, int factor) {
             if (factor == 0) {
-                return TRIVIAL;
+                return ZERO;
             }
             return new Md(m.offset * factor, m.alignment.stream().map(i -> Math.abs(i * factor)).toList());
         }
@@ -230,9 +263,6 @@ public interface ModifierTrait <Modifier> {
             }
             return constantModifier(modifier.offset);
         }
-        private static final List<Integer> TOP = List.of(-1);
-        private static final Md RELAXED = new Md(0, TOP);
-        private static final Md TRIVIAL = new Md(0, List.of());
         private static int singleAlignment(List<Integer> alignment) {
             return alignment.size() != 1 ? 0 : alignment.get(0);
         }
@@ -279,7 +309,7 @@ public interface ModifierTrait <Modifier> {
                 }
                 return List.of(-alignment);
             }
-            // assert left and right each consist of pairwise indivisible positives
+            // Assert left and right each consist of pairwise indivisible positives
             final List<Integer> result = new ArrayList<>();
             for (final Integer i : left) {
                 if (hasNoDivisorsInList(i, right, true)) {
