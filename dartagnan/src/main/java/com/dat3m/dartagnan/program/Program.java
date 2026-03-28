@@ -33,6 +33,14 @@ public class Program {
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
+    @Options
+    private static class SemanticConfig {
+        @Option(name = ROUNDING_MODE_FLOATS,
+                description = "Default rounding mode for floating point operations (default NEAREST_TIES_TO_EVEN).",
+                secure = true)
+        private FloatingPointRoundingMode floatRoundingMode = NEAREST_TIES_TO_EVEN;
+    }
+
     // Shape
     private final List<Thread> threads;
     // Semantic options
@@ -152,14 +160,6 @@ public class Program {
 
     public void injectConfig(Configuration configuration) throws InvalidConfigurationException {
         configuration.inject(semanticConfig);
-    }
-
-    @Options
-    private static class SemanticConfig {
-        @Option(name = ROUNDING_MODE_FLOATS,
-                description = "Default rounding mode for floating point operations (default NEAREST_TIES_TO_EVEN).",
-                secure = true)
-        private FloatingPointRoundingMode floatRoundingMode = NEAREST_TIES_TO_EVEN;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
