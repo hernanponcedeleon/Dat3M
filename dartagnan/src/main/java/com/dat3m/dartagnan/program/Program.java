@@ -43,27 +43,25 @@ public class Program {
 
     // Shape
     private final List<Thread> threads;
-    // Semantic options
-    private final SemanticConfig semanticConfig = new SemanticConfig();
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Entrypoint entrypoint = new Entrypoint.None();
-    private final SourceLanguage format;
+
     // Spec
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
 
+    // Semantic options
+    private final SemanticConfig semanticConfig = new SemanticConfig();
+
     // Metadata
+    private final SourceLanguage format;
     private String name;
     private int unrollingBound = 0;
     private Arch arch;
     private boolean isCompiled;
-
-    public FloatingPointRoundingMode getFloatRoundingMode() {
-        return semanticConfig.floatRoundingMode;
-    }
 
     private int nextThreadId = 0;
     private int nextConstantId = 0;
@@ -152,6 +150,10 @@ public class Program {
     public void setFilterSpecification(Expression spec) {
         Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
+    }
+
+    public FloatingPointRoundingMode getFloatRoundingMode() {
+        return semanticConfig.floatRoundingMode;
     }
 
     public void setFloatRoundingMode(FloatingPointRoundingMode roundingMode) {
