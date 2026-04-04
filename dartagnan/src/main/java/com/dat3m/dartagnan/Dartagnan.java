@@ -26,6 +26,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
@@ -157,14 +158,14 @@ public class Dartagnan extends BaseOptions {
                 }
                 final VerificationTask task = builder.build(p, mcm, o.getProperty());
 
-                // ----------- Run Model Checker ----------
-                final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
+                // ----------- Solve task ----------
+                final TaskSolver taskSolver = TaskSolver.create(task);
                 long startTime = System.currentTimeMillis();
-                modelChecker.run();
+                taskSolver.run();
                 long endTime = System.currentTimeMillis();
 
                 // ----------- Generate output-----------
-                summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
+                summary = summaryFromResult(task, taskSolver, f.toString(), (endTime - startTime));
                 // We only generate witnesses if we are not validating one.
                 if (!o.runValidator()) {
                     final String progName = task.getProgram().getName();
@@ -174,7 +175,7 @@ public class Dartagnan extends BaseOptions {
                                         progName.isEmpty() ?
                                             "unnamed_program" :
                                             (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-                    generateWitnessIfAble(task, modelChecker, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
+                    generateWitnessIfAble(task, taskSolver, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
                 }
             } catch (InterruptedException e) {
                 final String details;
@@ -240,20 +241,20 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateWitnessIfAble(VerificationTask task, ModelChecker modelChecker,
+    public static File generateWitnessIfAble(VerificationTask task, TaskSolver solver,
         WitnessType witnessType, String filename, String details, boolean generateWitnessForUnknown) throws SolverException, IOException {
-            if (!modelChecker.hasModel() ||
-                (modelChecker.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
+            if (!solver.hasModel() ||
+                (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
                 return null;
             }
             switch (witnessType) {
                 case NONE:
                     break;
                 case GRAPHML:
-                    assert modelChecker.getResult() != UNKNOWN;
+                    assert solver.getResult() != UNKNOWN;
                     if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && requiresSvcompWitness(task.getProperty())) {
-                        try (IREvaluator evaluator = modelChecker.getModel()) {
-                            WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
+                        try (IREvaluator evaluator = solver.getModel()) {
+                            WitnessBuilder w = WitnessBuilder.of(evaluator, solver.getResult(), details);
                             if (w.canBeBuilt()) {
                                 w.build().write(filename);
                             }
@@ -264,7 +265,7 @@ public class Dartagnan extends BaseOptions {
                     break;
                 case DOT, PNG:
                     final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                    final ExecutionModelNext model = modelChecker.getExecutionGraph();
+                    final ExecutionModelNext model = solver.getExecutionGraph();
                     // RF edges give both ordering and data flow information, thus even when the pair is in PO
                     // we get some data flow information by observing the edge
                     // CO edges only give ordering information which is known if the pair is also in PO
@@ -276,17 +277,16 @@ public class Dartagnan extends BaseOptions {
             return null;
     }
 
-    public static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, String path, long time) throws SolverException {
-        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getModel() : null) {
-            return summaryFromResult(task, modelChecker, evaluator, path, time);
+    public static ResultSummary summaryFromResult(VerificationTask task, TaskSolver solver, String path, long time) throws SolverException {
+        try (IREvaluator evaluator = solver.hasModel() ? solver.getModel() : null) {
+            return summaryFromResult(task, solver.getResult(), evaluator, path, time);
         }
     }
 
-    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) throws SolverException {
+    private static ResultSummary summaryFromResult(VerificationTask task, Result result, IREvaluator model, String path, long time) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
-        final Result result = modelChecker.getResult();
         final boolean hasViolations = result == FAIL && model != null;
         final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
 

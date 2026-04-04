@@ -127,13 +127,6 @@ public abstract class ModelChecker implements AutoCloseable {
         return context.newEvaluator(prover);
     }
 
-    public ExecutionModelNext getExecutionGraph() throws SolverException {
-        Preconditions.checkState(hasModel(), "No model available");
-        try (IREvaluator evaluator = getModel()) {
-            return new ExecutionModelManager().buildExecutionModel(evaluator);
-        }
-    }
-
     protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
 
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
@@ -243,7 +236,7 @@ public abstract class ModelChecker implements AutoCloseable {
 
     public static void performIntervalAnalysis(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.registerOptional(IntervalAnalysis.class, IntervalAnalysis.fromConfig(task.getProgram(), analysisContext, task.getMemoryModel(), config));
-     }
+    }
 
     // ====================================== Processing utility ==================================================
 

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
@@ -35,15 +36,16 @@ public class BuildWitnessTest {
                 setOption(WITNESS, "graphml").
                 setOption(WITNESS_ORIGINAL_PROGRAM_PATH, getTestResourcePath("witness/lazy01-for-witness.ll")).
                 setOption(BOUND, "1").
+                setOption(METHOD, Method.EAGER.asStringOption()).
                 build();
 
         Program p = new ProgramParser().parse(new File(getTestResourcePath("witness/lazy01-for-witness.ll")));
         Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/svcomp.cat")));
         VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
-        try (ModelChecker modelChecker = ModelChecker.create(task, Method.EAGER)) {
-            modelChecker.run();
-            Result res = modelChecker.getResult();
-            IREvaluator model = modelChecker.getModel();
+        try (TaskSolver solver = TaskSolver.create(task)) {
+            solver.run();
+            Result res = solver.getResult();
+            IREvaluator model = solver.getModel();
             WitnessBuilder witnessBuilder = WitnessBuilder.of(model, res, "user assertion");
             config.inject(witnessBuilder);
             WitnessGraph graph = witnessBuilder.build();

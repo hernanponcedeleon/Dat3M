@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,7 +77,8 @@ public abstract class AbstractComparisonTest {
                 .setOption(SOLVER, Z3.name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true");
+                .setOption(USE_INTEGERS, "true")
+                .setOption(METHOD, Method.EAGER.asStringOption());
 
         return additionalConfig(configBase).build();
     }
@@ -120,10 +121,8 @@ public abstract class AbstractComparisonTest {
 
     @Test
     public void testAssume() throws Exception {
-        try (ModelChecker s1 = ModelChecker.create(task1Provider.get(), Method.EAGER);
-             ModelChecker s2 = ModelChecker.create(task2Provider.get(), Method.EAGER)) {
-            s1.setShutdownManager(shutdownManagerProvider.get());
-            s2.setShutdownManager(shutdownManagerProvider.get());
+        try (TaskSolver s1 = TaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
+             TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
             s1.run();
             s2.run();
             assertEquals(s1.hasModel(), s2.hasModel());

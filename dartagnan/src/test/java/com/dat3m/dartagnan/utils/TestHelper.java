@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory;
@@ -21,10 +21,10 @@ public class TestHelper {
                 .build();
     }
 
-    public static Result createAndRunModelChecker(VerificationTask task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
-        try (ModelChecker checker = ModelChecker.create(task, method)) {
-            checker.run();
-            return checker.getResult();
+    public static Result createAndRunSolver(VerificationTask task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
+        try (TaskSolver solver = TaskSolver.createWithMethod(task, method)) {
+            solver.run();
+            return solver.getResult();
         }
     }
 

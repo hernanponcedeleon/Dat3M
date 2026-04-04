@@ -48,8 +48,8 @@ public class AsmCkRISCVTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.LAZY));
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.LAZY));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
     private VerificationTask mkTask() throws Exception {

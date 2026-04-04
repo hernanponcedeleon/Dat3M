@@ -102,6 +102,11 @@ public class VerificationTask {
             return this;
         }
 
+        public VerificationTaskBuilder withOption(String option, String value) {
+            this.config.setOption(option, value);
+            return this;
+        }
+
         public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
             return new VerificationTask(program, memoryModel, progressModel, property, witness, config.build());
         }
