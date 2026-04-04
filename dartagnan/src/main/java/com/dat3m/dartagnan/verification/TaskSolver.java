@@ -52,10 +52,10 @@ public class TaskSolver implements AutoCloseable {
 
     private final VerificationTask task;
 
-    protected transient ModelChecker modelChecker;
-    protected transient IREvaluator model;
-    protected transient ShutdownManager shutdownManager;
-    protected transient long runtime = 0;
+    private ModelChecker modelChecker;
+    private IREvaluator model;
+    private ShutdownManager shutdownManager;
+    private long runtime = 0;
 
     public VerificationTask getTask() {
         return task;
@@ -106,22 +106,12 @@ public class TaskSolver implements AutoCloseable {
 
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
         final long startTime = System.currentTimeMillis();
-        initModelChecker();
 
+        initModelChecker();
         if (!hasTimeout()) {
             modelChecker.run();
         } else {
-            final java.lang.Thread t = new java.lang.Thread(() -> {
-                try {
-                    final long timeoutInMillis = timeout;
-                    java.lang.Thread.sleep(timeoutInMillis);
-                    final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
-                    modelChecker.requestShutdown(error);
-                } catch (InterruptedException e) {
-                    // Verification ended, nothing to be done.
-                }
-            });
-
+            final Thread t = createTimeoutThread();
             t.start();
             modelChecker.run();
             t.interrupt();
@@ -148,7 +138,8 @@ public class TaskSolver implements AutoCloseable {
 
     public boolean hasModel() {
         checkHasRun();
-        return model != null;
+        return modelChecker.hasModel();
+        //return model != null;
     }
 
     public IREvaluator getModel() {
@@ -182,6 +173,19 @@ public class TaskSolver implements AutoCloseable {
 
     protected void checkHasRun() {
         Preconditions.checkState(modelChecker != null, "Model checker has not run yet.");
+    }
+
+    private Thread createTimeoutThread() {
+        return new Thread(() -> {
+            try {
+                final long timeoutInMillis = timeout;
+                Thread.sleep(timeoutInMillis);
+                final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
+                modelChecker.requestShutdown(error);
+            } catch (InterruptedException e) {
+                // Verification ended, nothing to be done.
+            }
+        });
     }
 
 }
