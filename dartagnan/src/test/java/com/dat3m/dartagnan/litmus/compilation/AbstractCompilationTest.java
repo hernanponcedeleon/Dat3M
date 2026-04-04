@@ -153,9 +153,9 @@ public abstract class AbstractCompilationTest {
 
     private static boolean isRcuOrSrcu(Event e) {
         // The following have features (RCU and SRCU) that hardware models do not support
-        return Stream.of(
-                Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
-                Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC)
-                .anyMatch(e::hasTag);
+        return Stream.of(Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
+                        Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC,
+                        Tag.Linux.AFTER_SRCU_READ_UNLOCK
+                ).anyMatch(e::hasTag);
     }
 }

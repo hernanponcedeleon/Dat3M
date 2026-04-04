@@ -111,16 +111,14 @@ public class TaskSolver implements AutoCloseable {
         if (!hasTimeout()) {
             modelChecker.run();
         } else {
-            final Thread t = createTimeoutThread();
-            t.start();
+            final Thread timeoutThread = createTimeoutThread();
+            timeoutThread.start();
             modelChecker.run();
-            t.interrupt();
+            timeoutThread.interrupt();
         }
 
         if (modelChecker.hasModel()) {
-            // TODO: Check why this code here breaks unit tests with SIGTRAP/SIGSEG
-            //  Do we try to get a model when none exists?
-            // model = modelChecker.getModel();
+            model = modelChecker.getModel();
         }
 
         runtime = System.currentTimeMillis() - startTime;
@@ -138,19 +136,11 @@ public class TaskSolver implements AutoCloseable {
 
     public boolean hasModel() {
         checkHasRun();
-        return modelChecker.hasModel();
-        //return model != null;
+        return model != null;
     }
 
     public IREvaluator getModel() {
         Preconditions.checkState(hasModel(), "No model available");
-        if (model == null) {
-            try {
-                model = modelChecker.getModel();
-            } catch (SolverException e) {
-                throw new RuntimeException(e);
-            }
-        }
         return model;
     }
 
@@ -162,12 +152,15 @@ public class TaskSolver implements AutoCloseable {
 
     @Override
     public void close() {
-        if (modelChecker != null) {
-            modelChecker.close();
-        }
-
+        // VERY IMPORTANT: Close model before closing model checker!
         if (model != null) {
             model.close();
+            model = null;
+        }
+
+        if (modelChecker != null) {
+            modelChecker.close();
+            modelChecker = null;
         }
     }
 
