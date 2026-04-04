@@ -1,58 +1,32 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.ExpressionPrinter;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.BlockingEvent;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Assert;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
+import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.witness.WitnessType;
-import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,14 +34,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
-import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -122,10 +92,10 @@ public class Dartagnan extends BaseOptions {
         final Configuration config = loadConfiguration(args);
         final Dartagnan o = new Dartagnan(config);
 
-        final File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
+        final File wmmFile = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
-        logger.info("CAT file path: {}", fileModel);
-        final OutputLogger output = new OutputLogger(fileModel, config);
+        logger.info("CAT file path: {}", wmmFile);
+        final OutputLogger output = new OutputLogger(wmmFile, config);
 
         final WitnessGraph witness;
         if (o.runValidator()) {
@@ -137,15 +107,17 @@ public class Dartagnan extends BaseOptions {
 
         ResultSummary summary = null;
         final List<File> files = getProgramFilesFromArgs(args);
+        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         for (File f : files) {
+            final String progFilePath = f.getPath();
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
-                        () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
+                            () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
-                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
+                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(wmmFile);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
                         .withProgressModel(o.getProgressModel())
@@ -160,42 +132,24 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Solve task ----------
                 final TaskSolver taskSolver = TaskSolver.create(task);
-                long startTime = System.currentTimeMillis();
                 taskSolver.run();
-                long endTime = System.currentTimeMillis();
 
                 // ----------- Generate output-----------
-                summary = summaryFromResult(task, taskSolver, f.toString(), (endTime - startTime));
+                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, f.getPath());
                 // We only generate witnesses if we are not validating one.
                 if (!o.runValidator()) {
                     final String progName = task.getProgram().getName();
                     final int fileSuffixIndex = progName.lastIndexOf('.');
                     final String filename = o.hasWitnessFilename() ?
-                                        o.getWitnessFilename() :
-                                        progName.isEmpty() ?
-                                            "unnamed_program" :
-                                            (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-                    generateWitnessIfAble(task, taskSolver, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
+                            o.getWitnessFilename() :
+                            progName.isEmpty() ?
+                                    "unnamed_program" :
+                                    (fileSuffixIndex == -1) ? progName : progName.substring(0, fileSuffixIndex);
+
+                    resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
                 }
-            } catch (InterruptedException e) {
-                final String details;
-                final ExitCode exitCode;
-                if (e.getMessage() != null) {
-                    details = "\t" + e.getMessage();
-                    exitCode = e.getMessage().contains("Timeout")
-                            ? TIMEOUT_ELAPSED
-                            : e.getMessage().contains("canceled")
-                            ? CANCELED
-                            : UNKNOWN_ERROR;
-                } else {
-                    details = "\tUnknown error occurred";
-                    exitCode = UNKNOWN_ERROR;
-                }
-                summary = new ResultSummary(f.toString(), "", INTERRUPTED, "", "", details, 0, exitCode);
             } catch (Exception e) {
-                final String reason = e.getClass().getSimpleName();
-                final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
-                summary = new ResultSummary(f.toString(), "", ERROR, "", reason, details, 0, UNKNOWN_ERROR);
+                summary = resultAnalyzer.getSummaryFromException(e, progFilePath);
             }
             output.addResult(summary);
         }
@@ -241,259 +195,5 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateWitnessIfAble(VerificationTask task, TaskSolver solver,
-        WitnessType witnessType, String filename, String details, boolean generateWitnessForUnknown) throws SolverException, IOException {
-            if (!solver.hasModel() ||
-                (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
-                return null;
-            }
-            switch (witnessType) {
-                case NONE:
-                    break;
-                case GRAPHML:
-                    assert solver.getResult() != UNKNOWN;
-                    if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && requiresSvcompWitness(task.getProperty())) {
-                        try (IREvaluator evaluator = solver.getModel()) {
-                            WitnessBuilder w = WitnessBuilder.of(evaluator, solver.getResult(), details);
-                            if (w.canBeBuilt()) {
-                                w.build().write(filename);
-                            }
-                        } catch (InvalidConfigurationException e) {
-                            logger.warn(e.getMessage());
-                        }
-                    }
-                    break;
-                case DOT, PNG:
-                    final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                    final ExecutionModelNext model = solver.getExecutionGraph();
-                    // RF edges give both ordering and data flow information, thus even when the pair is in PO
-                    // we get some data flow information by observing the edge
-                    // CO edges only give ordering information which is known if the pair is also in PO
-                    return generateGraphvizFile(model, 1, (x, y) -> true,
-                            (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                            getOrCreateOutputDirectory() + "/", filename,
-                            synContext, witnessType.convertToPng(), task.getConfig());
-            }
-            return null;
-    }
-
-    public static ResultSummary summaryFromResult(VerificationTask task, TaskSolver solver, String path, long time) throws SolverException {
-        try (IREvaluator evaluator = solver.hasModel() ? solver.getModel() : null) {
-            return summaryFromResult(task, solver.getResult(), evaluator, path, time);
-        }
-    }
-
-    private static ResultSummary summaryFromResult(VerificationTask task, Result result, IREvaluator model, String path, long time) throws SolverException {
-        // ----------------- Generate output of verification result -----------------
-        final Program p = task.getProgram();
-        final EnumSet<Property> props = task.getProperty();
-        final boolean hasViolations = result == FAIL && model != null;
-        final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
-
-        String reason = "";
-        StringBuilder details = new StringBuilder();
-        // We only show the condition if this is the reason of the failure
-        String condition = "";
-        final boolean ignoreFilter = Objects.equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION), "true");
-        final boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
-        final String filter = !ignoreFilter && nonEmptyFilter ? p.getFilterSpecification().toString() : "";
-
-        final SyntacticContextAnalysis synContext = newInstance(p);
-        if (hasViolations) {
-            printWarningIfThreadStartFailed(p, model);
-            if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                reason = ResultSummary.PROGRAM_SPEC_REASON;
-                condition = getSpecificationString(p);
-                List<Assert> violations = p.getThreadEvents(Assert.class)
-                    .stream().filter(model::assertionViolated)
-                    .toList();
-                for (Assert ass : violations) {
-                    appendTo(details, ass, synContext);
-                }
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
-            }
-            if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
-                reason = ResultSummary.TERMINATION_REASON;
-                for (Event e : p.getThreadEvents()) {
-                    final boolean isStuckLoop = e instanceof CondJump jump
-                            && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
-                            && model.jumpTaken(jump);
-                    final boolean isStuckBarrier = e instanceof BlockingEvent barrier
-                            && model.isBlocked(barrier);
-
-                    if (isStuckLoop || isStuckBarrier) {
-                        appendTo(details, e, synContext);
-                    }
-                }
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
-            }
-            if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
-                reason = ResultSummary.SVCOMP_RACE_REASON;
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
-            }
-            if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
-                reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
-                for (MemoryObject o : p.getMemory().getObjects()) {
-                    if (model.isLeaked(o) && !model.isTrackable(o)) {
-                        appendTo(details, o.getAllocationSite(), synContext);
-                    }
-                }
-                ExitCode code = task.getWitness().isEmpty() ? MEMORY_TRACKABILITY_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
-            }
-            final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
-                    : task.getMemoryModel().getAxioms().stream()
-                    .filter(Axiom::isFlagged)
-                    .filter(model::isFlaggedAxiomViolated)
-                    .toList();
-            if (!violatedCATSpecs.isEmpty()) {
-                reason = ResultSummary.CAT_SPEC_REASON;
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model), time, code);
-            }
-        } else if (hasViolationsWithoutWitness) {
-            // Only for programs with exists/forall specifications
-            reason = ResultSummary.PROGRAM_SPEC_REASON;
-            condition = getSpecificationString(p);
-        } else if (result == UNKNOWN && model != null) {
-            // We reached unrolling bounds.
-            final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
-                    .stream().filter(model::isExecuted)
-                    .toList();
-            reason = ResultSummary.BOUND_REASON;
-            for (Event bound : reachedBounds) {
-                details
-                        .append("\t")
-                        .append(synContext.getSourceLocationWithContext(bound, true))
-                        .append("\n");
-            }
-            try {
-                increaseBoundAndDump(reachedBounds, task.getConfig());
-            } catch (IOException e) {
-                logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
-            }
-            ExitCode code = BOUNDED_RESULT;
-            return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
-        }
-        // We consider those cases without an explicit return to yield normal termination.
-        // This includes verification of litmus code, independent of the verification result.
-        // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
-        ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
-        return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
-    }
-
-    private static void appendTo(StringBuilder details, Event event, SyntacticContextAnalysis synContext) {
-        details.append("\t").append(synContext.getSourceLocationWithContext(event, true));
-        if (event instanceof Assert ass) {
-            details.append(": ").append(ass.getErrorMessage());
-        }
-        details.append("\n");
-    }
-
-    private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
-        if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
-            return;
-        }
-        final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));
-
-        // Parse old entries
-        final List<CSVRecord> entries;
-        try (CSVParser parser = CSVParser.parse(new FileReader(boundsFile), CSVFormat.DEFAULT)) {
-            entries = parser.getRecords();
-        }
-
-        // Compute update for entries
-        final Map<Integer, Integer> loopId2UpdatedBound = new HashMap<>();
-        for (Event e : boundEvents) {
-            assert e instanceof CondJump;
-            final CondJump loopJump = (CondJump) e;
-            final int loopId = LoopUnrolling.getPersistentLoopId(loopJump);
-            final int bound = LoopUnrolling.getUnrollingBoundAnnotation(loopJump);
-            loopId2UpdatedBound.put(loopId, bound + 1);
-        }
-
-        // Write new entries
-        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(boundsFile, false), CSVFormat.DEFAULT)) {
-            for (CSVRecord entry : entries) {
-                final int entryId = Integer.parseInt(entry.get(0));
-                if (!loopId2UpdatedBound.containsKey(entryId)) {
-                    csvPrinter.printRecord(entry);
-                } else {
-                    final String[] content = entry.values();
-                    content[1] = String.valueOf(loopId2UpdatedBound.get(entryId));
-                    csvPrinter.printRecord(Arrays.asList(content));
-                }
-            }
-            csvPrinter.flush();
-        }
-    }
-
-    private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
-        p.getThreads().stream().filter(t ->
-                t.getEntry().isSpawned()
-                && model.isExecuted(t.getEntry().getCreator())
-                && !model.threadHasStarted(t)
-        ).forEach(t -> System.out.printf(
-                "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
-                t, OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS
-        ));
-    }
-
-    private static String getSpecificationString(Program program) {
-        final StringBuilder sb = new StringBuilder();
-        final SourceLanguage format = program.getFormat();
-        if (format == SourceLanguage.LITMUS || format == SourceLanguage.SPV) {
-            sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
-            if (program.getSpecification() != null) {
-                sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
-
-    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model) {
-        if (!task.getProperty().contains(CAT_SPEC)) {
-            return "";
-        }
-
-        final Wmm wmm = task.getMemoryModel();
-        final Program program = task.getProgram();
-        final StringBuilder output = new StringBuilder();
-        final SyntacticContextAnalysis synContext = newInstance(program);
-        for (Axiom ax : wmm.getAxioms()) {
-            if (ax.isFlagged() && model.isFlaggedAxiomViolated(ax)) {
-                StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                model.eventGraph(ax.getRelation()).apply((e1, e2) -> {
-                    final String callSeparator = " -> ";
-                    final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
-                            callSeparator);
-                    final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
-                            callSeparator);
-
-                    violatingPairs
-                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e1))
-                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e2))
-                            .append("\t(E").append(e1.getGlobalId())
-                            .append(" / E").append(e2.getGlobalId()).append(")")
-                            .append("\n");
-                });
-                output.append(violatingPairs);
-            }
-        }
-
-        return output.toString();
-    }
 
 }

@@ -53,7 +53,13 @@ public class TaskSolver implements AutoCloseable {
     private final VerificationTask task;
 
     protected transient ModelChecker modelChecker;
+    protected transient IREvaluator model;
     protected transient ShutdownManager shutdownManager;
+    protected transient long runtime = 0;
+
+    public VerificationTask getTask() {
+        return task;
+    }
 
     // =================================== Construction ===================================
 
@@ -99,27 +105,33 @@ public class TaskSolver implements AutoCloseable {
     }
 
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
+        final long startTime = System.currentTimeMillis();
         initModelChecker();
 
         if (!hasTimeout()) {
             modelChecker.run();
-            return;
+        } else {
+            final java.lang.Thread t = new java.lang.Thread(() -> {
+                try {
+                    final long timeoutInMillis = timeout;
+                    java.lang.Thread.sleep(timeoutInMillis);
+                    final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
+                    modelChecker.requestShutdown(error);
+                } catch (InterruptedException e) {
+                    // Verification ended, nothing to be done.
+                }
+            });
+
+            t.start();
+            modelChecker.run();
+            t.interrupt();
         }
 
-        final java.lang.Thread t = new java.lang.Thread(() -> {
-            try {
-                final long timeoutInMillis = timeout;
-                java.lang.Thread.sleep(timeoutInMillis);
-                final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
-                modelChecker.requestShutdown(error);
-            } catch (InterruptedException e) {
-                // Verification ended, nothing to be done.
-            }
-        });
+        if (modelChecker.hasModel()) {
+            model = modelChecker.getModel();
+        }
 
-        t.start();
-        modelChecker.run();
-        t.interrupt();
+        runtime = System.currentTimeMillis() - startTime;
     }
 
     public Result getResult() {
@@ -127,21 +139,23 @@ public class TaskSolver implements AutoCloseable {
         return modelChecker.getResult();
     }
 
+    public long getRuntime() {
+        checkHasRun();
+        return runtime;
+    }
+
     public boolean hasModel() {
         checkHasRun();
-        return modelChecker.hasModel();
+        return model != null;
     }
 
-    public IREvaluator getModel() throws SolverException {
-        checkHasRun();
-        return modelChecker.getModel();
-    }
-
-    public ExecutionModelNext getExecutionGraph() throws SolverException {
+    public IREvaluator getModel() {
         Preconditions.checkState(hasModel(), "No model available");
-        try (IREvaluator evaluator = getModel()) {
-            return new ExecutionModelManager().buildExecutionModel(evaluator);
-        }
+        return model;
+    }
+
+    public ExecutionModelNext getExecutionGraph() {
+        return new ExecutionModelManager().buildExecutionModel(getModel());
     }
 
     // ===================================== Misc =====================================
@@ -150,6 +164,10 @@ public class TaskSolver implements AutoCloseable {
     public void close() {
         if (modelChecker != null) {
             modelChecker.close();
+        }
+
+        if (model != null) {
+            model.close();
         }
     }
 

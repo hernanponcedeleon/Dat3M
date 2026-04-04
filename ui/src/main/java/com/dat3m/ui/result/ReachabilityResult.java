@@ -1,9 +1,9 @@
 package com.dat3m.ui.result;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -59,12 +59,13 @@ public class ReachabilityResult {
                     .withTarget(arch)
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
+
             try (TaskSolver solver = TaskSolver.create(task)) {
-                long startTime = System.currentTimeMillis();
                 solver.run();
-                long endTime = System.currentTimeMillis();
-                verdict = Dartagnan.summaryFromResult(task, solver, "", (endTime - startTime)).toUIString();
-                witnessFile = Dartagnan.generateWitnessIfAble(task, solver, WitnessType.PNG, "dat3m", "", false);
+
+                final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
+                verdict = resultAnalyzer.getSummaryFromSolver(solver, "").toUIString();
+                witnessFile = resultAnalyzer.generateWitnessIfAble(solver, WitnessType.PNG, "dat3m", "", false);
             }
         } catch (InterruptedException e) {
             verdict = "TIMEOUT";

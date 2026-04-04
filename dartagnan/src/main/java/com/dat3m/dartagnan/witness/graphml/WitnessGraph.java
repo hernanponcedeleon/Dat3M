@@ -15,6 +15,7 @@ import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -194,8 +195,9 @@ public class WitnessGraph extends ElemWithAttributes {
         return k;
     }
 
-    public void write(String filename) {
-        try (FileWriter fw = new FileWriter(String.format("%s/%s.graphml", getOrCreateOutputDirectory(), filename))) {
+    public File write(String filename) throws IOException {
+        final String filepath = String.format("%s/%s.graphml", getOrCreateOutputDirectory(), filename);
+        try (FileWriter fw = new FileWriter(filepath)) {
             fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
             fw.write(
                     "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
@@ -213,8 +215,7 @@ public class WitnessGraph extends ElemWithAttributes {
             }
             fw.write(toXML());
             fw.write("</graphml>\n");
-        } catch (IOException e1) {
-            e1.printStackTrace();
+            return new File(filepath);
         }
     }
 }
