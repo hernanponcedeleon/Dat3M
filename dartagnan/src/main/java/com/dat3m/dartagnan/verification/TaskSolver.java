@@ -34,7 +34,7 @@ public class TaskSolver implements AutoCloseable {
 
     @Option(
             name = METHOD,
-            description = "Method to be used.",
+            description = "Solving method to be used.",
             toUppercase = true)
     private Method method = Method.getDefault();
 
