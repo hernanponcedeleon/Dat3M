@@ -128,7 +128,9 @@ public class TaskSolver implements AutoCloseable {
         }
 
         if (modelChecker.hasModel()) {
-            model = modelChecker.getModel();
+            // TODO: Check why this code here breaks unit tests with SIGTRAP/SIGSEG
+            //  Do we try to get a model when none exists?
+            // model = modelChecker.getModel();
         }
 
         runtime = System.currentTimeMillis() - startTime;
@@ -151,6 +153,13 @@ public class TaskSolver implements AutoCloseable {
 
     public IREvaluator getModel() {
         Preconditions.checkState(hasModel(), "No model available");
+        if (model == null) {
+            try {
+                model = modelChecker.getModel();
+            } catch (SolverException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return model;
     }
 
