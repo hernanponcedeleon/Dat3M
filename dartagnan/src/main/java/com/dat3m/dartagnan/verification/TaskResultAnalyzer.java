@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
@@ -39,6 +39,7 @@ import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUNDS_SAVE_PATH;
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.Property.*;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.getSourceLocationString;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
@@ -58,26 +59,17 @@ public class TaskResultAnalyzer {
     }
 
     public ResultSummary getSummaryFromException(Exception exception, String programPath) {
-        final String message = exception.getMessage();
+        final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
+        final String details = "\t" + message;
 
         if (exception instanceof InterruptedException) {
-            final String details;
-            final ExitCode exitCode;
-            if (message != null) {
-                details = "\t" + message;
-                exitCode = message.contains("Timeout")
-                        ? TIMEOUT_ELAPSED
-                        : message.contains("canceled")
-                        ? CANCELED
-                        : UNKNOWN_ERROR;
-            } else {
-                details = "\tUnknown error occurred";
-                exitCode = UNKNOWN_ERROR;
-            }
+            final ExitCode exitCode =
+                    message.contains("Timeout") ? TIMEOUT_ELAPSED
+                    : message.contains("canceled") ? CANCELED
+                    : UNKNOWN_ERROR;
             return new ResultSummary(programPath, "", INTERRUPTED, "", "", details, 0, exitCode);
         } else {
             final String reason = exception.getClass().getSimpleName();
-            final String details = "\t" + Optional.ofNullable(message).orElse("Unknown error occurred");
             return new ResultSummary(programPath, "", ERROR, "", reason, details, 0, UNKNOWN_ERROR);
         }
     }
@@ -100,7 +92,7 @@ public class TaskResultAnalyzer {
         // We only show the condition if this is the reason of the failure
         String condition = "";
         if (hasViolationsWithModel) {
-            printWarningIfThreadStartFailed(p, model);
+
             if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
                 reason = ResultSummary.PROGRAM_SPEC_REASON;
                 condition = getSpecificationString(p);
@@ -114,6 +106,7 @@ public class TaskResultAnalyzer {
                 ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
             }
+
             if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
                 reason = ResultSummary.TERMINATION_REASON;
                 for (Event e : p.getThreadEvents()) {
@@ -131,12 +124,14 @@ public class TaskResultAnalyzer {
                 ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
             }
+
             if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
                 reason = ResultSummary.SVCOMP_RACE_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
             }
+
             if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
                 reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
                 for (MemoryObject o : p.getMemory().getObjects()) {
@@ -147,16 +142,18 @@ public class TaskResultAnalyzer {
                 ExitCode code = task.getWitness().isEmpty() ? MEMORY_TRACKABILITY_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
             }
-            final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
-                    : task.getMemoryModel().getAxioms().stream()
-                    .filter(Axiom::isFlagged)
-                    .filter(model::isFlaggedAxiomViolated)
-                    .toList();
-            if (!violatedCATSpecs.isEmpty()) {
-                reason = ResultSummary.CAT_SPEC_REASON;
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, code);
+
+            if (props.contains(CAT_SPEC)) {
+                final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
+                        .filter(Axiom::isFlagged)
+                        .filter(model::isFlaggedAxiomViolated)
+                        .toList();
+                if (!violatedCATSpecs.isEmpty()) {
+                    reason = ResultSummary.CAT_SPEC_REASON;
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, code);
+                }
             }
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
@@ -182,6 +179,7 @@ public class TaskResultAnalyzer {
             ExitCode code = BOUNDED_RESULT;
             return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, code);
         }
+
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
         // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
@@ -191,17 +189,18 @@ public class TaskResultAnalyzer {
 
     public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename, String details,
                                       boolean generateWitnessForUnknown) throws IOException {
-        if (!solver.hasModel() || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)) {
+        if (!solver.hasModel()
+                || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
+                || witnessType == WitnessType.NONE) {
             return null;
         }
 
         final VerificationTask task = solver.getTask();
         switch (witnessType) {
-            case NONE: { }
-            case GRAPHML: {
+            case GRAPHML -> {
                 Preconditions.checkArgument(solver.getResult() != UNKNOWN);
 
-                if (!task.getProgram().getFormat().equals(Program.SourceLanguage.LLVM) || !requiresSvcompWitness(task.getProperty())) {
+                if (!task.getProgram().getFormat().equals(LLVM) || !requiresSvcompWitness(task.getProperty())) {
                     return null;
                 }
                 try {
@@ -213,7 +212,7 @@ public class TaskResultAnalyzer {
                     logger.warn(e.getMessage());
                 }
             }
-            case DOT, PNG: {
+            case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 final ExecutionModelNext model = solver.getExecutionGraph();
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
@@ -225,6 +224,7 @@ public class TaskResultAnalyzer {
                         synContext, witnessType.convertToPng(), task.getConfig());
             }
         }
+
         return null;
     }
 
@@ -311,36 +311,28 @@ public class TaskResultAnalyzer {
         return output.toString();
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
-        p.getThreads().stream().filter(t ->
-                t.getEntry().isSpawned()
-                        && model.isExecuted(t.getEntry().getCreator())
-                        && !model.threadHasStarted(t)
-        ).forEach(t -> System.out.printf(
-                "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
-                t, OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS
-        ));
-    }
-
     private static String getSpecificationString(Program program) {
-        final StringBuilder sb = new StringBuilder();
-        final Program.SourceLanguage format = program.getFormat();
-        if (format == Program.SourceLanguage.LITMUS || format == Program.SourceLanguage.SPV) {
-            sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
-            if (program.getSpecification() != null) {
-                sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
-            }
-            sb.append("\n");
+        if (!List.of(LITMUS, SPV).contains(program.getFormat())) {
+            return "";
         }
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
+        // TODO: Can the spec really be null here?
+        if (program.getSpecification() != null) {
+            sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
+        }
+        sb.append("\n");
         return sb.toString();
     }
 
     private static String getFilterString(VerificationTask task) {
-        final Program p = task.getProgram();
-        final boolean ignoreFilter = task.getConfig().hasProperty(IGNORE_FILTER_SPECIFICATION) && task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION).equals("true");
-        final boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
-        final String filter = !ignoreFilter && nonEmptyFilter ? p.getFilterSpecification().toString() : "";
-        return filter;
+        if ("true".equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION)))
+            return "";
+
+        final Expression filter = task.getProgram().getFilterSpecification();
+        final boolean isTrivialFilter = filter instanceof BoolLiteral bLit && bLit.getValue();
+        return isTrivialFilter ? "" : filter.toString();
     }
 
 }
