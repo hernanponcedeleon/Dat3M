@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -16,7 +17,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
@@ -31,93 +31,60 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.utils.ExitCode.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
-import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
 public class Dartagnan extends BaseOptions {
 
     private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
 
-    private static final Set<String> supportedFormats = ImmutableSet.copyOf(ProgramParser.SUPPORTED_EXTENSIONS);
-
     private Dartagnan(Configuration config) throws InvalidConfigurationException {
         config.recursiveInject(this);
     }
-
-    private static Configuration loadConfiguration(String[] args) throws InvalidConfigurationException, IOException {
-        final var preamble = new StringBuilder();
-        final var options = new StringBuilder();
-        for (String argument : args) {
-            if (argument.startsWith("--")) {
-                options.append(argument.substring("--".length())).append("\n");
-            } else if (argument.endsWith(".properties")) {
-                preamble.append("#include ").append(argument).append("\n");
-            }
-        }
-        final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
-        return Configuration.builder()
-                .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
-                .loadFromSource(source, ".", ".")
-                .build();
-    }
-
 
     public static void main(String[] args) throws Exception {
 
         initGitInfo();
 
         if (Arrays.asList(args).contains("--help")) {
-            collectOptions();
+            printOptions();
             return;
-        }
-
-        if (Arrays.asList(args).contains("--version")) {
-            final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-            final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
-            final String base = mvnReader.read(fileReader).getVersion();
-            final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
-            System.out.println(version);
+        } else if (Arrays.asList(args).contains("--version")) {
+            printVersion();
             return;
         }
 
         logGitInfo();
 
-        final Configuration config = loadConfiguration(args);
+        final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
 
-        final File wmmFile = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
-        logger.info("CAT file path: {}", wmmFile);
-        final OutputLogger output = new OutputLogger(wmmFile, config);
+        final File catFile = getCatFileFromArgs(args);
+        final List<File> progFiles = getProgramFilesFromArgs(args);
+        final boolean isBatchMode = progFiles.size() > 1;
 
-        final WitnessGraph witness;
-        if (o.runValidator()) {
-            logger.info("Witness path: {}", o.getWitnessPath());
-            witness = new ParserWitness().parse(new File(o.getWitnessPath()));
-        } else {
-            witness = new WitnessGraph();
-        }
+        final WitnessGraph witness = getWitnessGraph(o, isBatchMode);
 
-        ResultSummary summary = null;
-        final List<File> files = getProgramFilesFromArgs(args);
+        final OutputLogger output = new OutputLogger(catFile, config);
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-        for (File f : files) {
-            final String progFilePath = f.getPath();
+        ResultSummary summary = null;
+        for (File progFile : progFiles) {
             try {
                 // ----------- Generate verification task -----------
-                final Program p = new ProgramParser().parse(f);
+                final Program p = new ProgramParser().parse(progFile);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
-                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(wmmFile);
+                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(catFile);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
                         .withProgressModel(o.getProgressModel())
@@ -135,65 +102,109 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, f.getPath());
+                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
                 // We only generate witnesses if we are not validating one.
                 if (!o.runValidator()) {
-                    final String progName = task.getProgram().getName();
-                    final int fileSuffixIndex = progName.lastIndexOf('.');
-                    final String filename = o.hasWitnessFilename() ?
-                            o.getWitnessFilename() :
-                            progName.isEmpty() ?
-                                    "unnamed_program" :
-                                    (fileSuffixIndex == -1) ? progName : progName.substring(0, fileSuffixIndex);
-
+                    final String filename = getWitnessFileName(task.getProgram(), o);
                     resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
                 }
             } catch (Exception e) {
-                summary = resultAnalyzer.getSummaryFromException(e, progFilePath);
+                summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
             }
             output.addResult(summary);
         }
-        output.toStdOut(files.size() > 1);
+        output.toStdOut(isBatchMode);
         // Running batch mode results in normal termination independent of the individual results
-        System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
+        System.exit((isBatchMode ? NORMAL_TERMINATION : summary.code()).asInt());
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+
+    private static void printOptions() {
+        OptionInfo.stream().sorted().forEach(System.out::print);
+    }
+
+    private static void printVersion() throws Exception {
+        final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
+        final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
+        final String base = mvnReader.read(fileReader).getVersion();
+        final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
+
+        System.out.println(version);
+    }
+
+    private static Configuration loadConfigurationFromArgs(String[] args) throws InvalidConfigurationException, IOException {
+        final var preamble = new StringBuilder();
+        final var options = new StringBuilder();
+        for (String argument : args) {
+            if (argument.startsWith("--")) {
+                options.append(argument.substring("--".length())).append("\n");
+            } else if (argument.endsWith(".properties")) {
+                preamble.append("#include ").append(argument).append("\n");
+            }
+        }
+        final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
+        return Configuration.builder()
+                .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
+                .loadFromSource(source, ".", ".")
+                .build();
+    }
+
+    private static File getCatFileFromArgs(String[] args) {
+        File catFile = Arrays.stream(args)
+                .filter(a -> a.endsWith(".cat"))
+                .findFirst()
+                .map(File::new)
+                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
+        logger.info("CAT file path: {}", catFile);
+        return catFile;
     }
 
     private static List<File> getProgramFilesFromArgs(String[] args) {
         final List<File> files = new ArrayList<>();
-        Stream.of(args)
-            .map(File::new)
-            .forEach(file -> {
-                if (file.exists()) {
-                    final String path = file.getAbsolutePath();
-                    if (file.isDirectory()) {
-                        logger.info("Programs path: {}", path);
-                        files.addAll(getProgramFiles(path));
-                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
-                        logger.info("Program path: {}", path);
-                        files.add(file);
-                    }
-                }
-            });
+        Stream.of(args).map(Paths::get).filter(Files::exists)
+                .forEach(path -> {
+                    logger.info("Program(s) path: {}", path.normalize());
+                    files.addAll(getProgramFiles(path));
+                });
         if (files.isEmpty()) {
             throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
         }
         return files;
     }
 
-    private static List<File> getProgramFiles(String dirPath) {
-        List<File> files = new ArrayList<>();
-        try (Stream<Path> stream = Files.walk(Paths.get(dirPath))) {
-            files = stream.filter(Files::isRegularFile)
-                .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
-                .map(Path::toFile)
-                .sorted(Comparator.comparing(File::toString))
-                .toList();
+    private static List<File> getProgramFiles(Path path) {
+        try (Stream<Path> stream = Files.walk(path)) {
+            return stream.filter(Files::isRegularFile)
+                    .filter(ProgramParser::isSupported)
+                    .sorted(Comparator.comparing(Path::toString))
+                    .map(Path::toFile)
+                    .toList();
         } catch (IOException e) {
-            logger.error("There was an I/O error when accessing path {}", dirPath);
-            System.exit(UNKNOWN_ERROR.asInt());
+            logger.error("There was an I/O error when accessing path {}", path);
+            return List.of();
         }
-        return files;
     }
 
+    private static WitnessGraph getWitnessGraph(Dartagnan o, boolean isBatchMode) throws IOException {
+        if (!o.runValidator()) {
+            return new WitnessGraph();
+        }
 
+        if (isBatchMode) {
+            throw new IllegalArgumentException("Cannot run validator in batch mode.");
+        }
+        logger.info("Witness path: {}", o.getWitnessPath());
+        return new ParserWitness().parse(new File(o.getWitnessPath()));
+    }
+
+    private static String getWitnessFileName(Program program, Dartagnan o) {
+        if (o.hasWitnessFilename()) {
+            return o.getWitnessFilename();
+        }
+
+        return program.getName().isEmpty()
+                ? "unnamed_program"
+                : com.google.common.io.Files.getNameWithoutExtension(program.getName());
+    }
 }

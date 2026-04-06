@@ -31,10 +31,6 @@ import static com.google.common.base.Verify.verify;
 
 public final class OptionInfo implements Comparable<OptionInfo> {
 
-    public static void collectOptions() {
-        stream().sorted().forEach(System.out::print);
-    }
-
     public static Stream<OptionInfo> stream() {
         return classes().flatMap(OptionInfo::collectOptions);
     }

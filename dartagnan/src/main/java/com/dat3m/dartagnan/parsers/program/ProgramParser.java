@@ -2,12 +2,14 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
+import com.google.common.io.Files;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
@@ -33,6 +35,11 @@ public class ProgramParser {
     public static final String EXTENSION_SPVASM = ".spvasm";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
             EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM);
+
+    public static boolean isSupported(Path filePath) {
+        final String extension = "." + Files.getFileExtension(filePath.getFileName().toString());
+        return SUPPORTED_EXTENSIONS.contains(extension);
+    }
 
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
