@@ -70,32 +70,24 @@ public class VisitorPower extends VisitorBase {
         };
         Label optionalLabel = doCtrlDependency ? newLabel("FakeDep") : null;
         CondJump optionalFakeCtrlDep = doCtrlDependency ? newFakeCtrlDep(resultRegister, optionalLabel) : null;
-        Event optionalBarrierAfter = switch (e.getMo()) {
-            case C11.MO_SC -> leadingSync() ? newISync() : newSync();
-            case C11.MO_ACQUIRE -> newISync();
-            default -> null;
-        };
         return eventSequence(
                 optionalBarrierBefore,
                 load,
                 optionalFakeCtrlDep,
                 optionalLabel,
-                optionalBarrierAfter);
+                optionalBarrierAfter(e.getMo())
+        );
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-        Event optionalBarrierBefore = switch (e.getMo()) {
-            case C11.MO_SC -> leadingSync() ? newSync() : newLwSync();
-            case C11.MO_RELEASE -> newLwSync();
-            default -> null;
-        };
         Store store = newStore(e.getAddress(), e.getMemValue());
         Event optionalBarrierAfter = e.getMo().equals(C11.MO_SC) && !leadingSync() ? newSync() : null;
         return eventSequence(
-                optionalBarrierBefore,
+                optionalBarrierBefore(e.getMo()),
                 store,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
@@ -272,18 +264,13 @@ public class VisitorPower extends VisitorBase {
         };
         Label optionalLabel = doControlDependency ? newLabel("FakeDep") : null;
         CondJump optionalFakeCtrlDep = doControlDependency ? newFakeCtrlDep(resultRegister, optionalLabel) : null;
-        Event optionalBarrierAfter = switch (mo) {
-            case C11.MO_SC -> leadingSync() ? newISync() : newSync();
-            case C11.MO_ACQUIRE -> newISync();
-            default -> null;
-        };
 
         return eventSequence(
                 optionalBarrierBefore,
                 load,
                 optionalFakeCtrlDep,
                 optionalLabel,
-                optionalBarrierAfter
+                optionalBarrierAfter(mo)
         );
     }
 
@@ -292,16 +279,11 @@ public class VisitorPower extends VisitorBase {
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
 
-        Event optionalBarrierBefore = switch (e.getMo()) {
-            case C11.MO_SC -> leadingSync() ? newSync() : newLwSync();
-            case C11.MO_RELEASE -> newLwSync();
-            default -> null;
-        };
         Store store = newStore(address, value);
         Event optionalBarrierAfter = e.getMo().equals(C11.MO_SC) && !leadingSync() ? newSync() : null;
 
         return eventSequence(
-                optionalBarrierBefore,
+                optionalBarrierBefore(e.getMo()),
                 store,
                 optionalBarrierAfter
         );
