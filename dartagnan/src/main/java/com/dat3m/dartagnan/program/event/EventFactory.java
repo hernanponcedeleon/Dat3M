@@ -799,20 +799,33 @@ public class EventFactory {
         private RISCV() {
         }
 
-        public static Event newLoad(Register value, Expression address, boolean acquire) {
-            return EventFactory.newLoadWithMo(value, address, acquire ? Tag.RISCV.MO_ACQ : "");
+        public enum MemoryOrder {
+            RELAXED, ACQUIRE, RELEASE, ACQ_REL
         }
 
-        public static Event newStore(Expression address, Expression value, boolean release) {
-            return EventFactory.newStoreWithMo(address, value, release ? Tag.RISCV.MO_REL : "");
+        public static Event newLoad(Register value, Expression address, MemoryOrder mo) {
+            return EventFactory.newLoadWithMo(value, address, toTag(mo));
         }
 
-        public static Event newLoadReserve(Register value, Expression address, boolean acquire) {
-            return EventFactory.newRMWLoadExclusiveWithMo(value, address, acquire ? Tag.RISCV.MO_ACQ : "");
+        public static Event newStore(Expression address, Expression value, MemoryOrder mo) {
+            return EventFactory.newStoreWithMo(address, value, toTag(mo));
         }
 
-        public static Event newStoreConditional(Register status, Expression address, Expression value, boolean release) {
-            return Common.newExclusiveStore(status, address, value, release ? Tag.RISCV.MO_REL : "");
+        public static Event newLoadReserve(Register value, Expression address, MemoryOrder mo) {
+            return EventFactory.newRMWLoadExclusiveWithMo(value, address, toTag(mo));
+        }
+
+        public static Event newStoreConditional(Register status, Expression address, Expression value, MemoryOrder mo) {
+            return Common.newExclusiveStore(status, address, value, toTag(mo));
+        }
+
+        private static String toTag(MemoryOrder mo) {
+            return switch(mo) {
+                case RELAXED -> "";
+                case ACQUIRE -> Tag.RISCV.MO_ACQ;
+                case RELEASE -> Tag.RISCV.MO_REL;
+                case ACQ_REL -> Tag.RISCV.MO_ACQ_REL;
+            };
         }
 
         public static GenericVisibleEvent newRRFence() {

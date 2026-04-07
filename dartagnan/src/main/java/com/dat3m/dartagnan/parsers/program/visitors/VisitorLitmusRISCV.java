@@ -181,21 +181,21 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	public Object visitLw(LwContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV()).acq), ctx);
+        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
 	public Object visitSw(SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.RISCV.newStore(ra, r1, getMo(ctx.moRISCV()).rel), ctx);
+        return append(EventFactory.RISCV.newStore(ra, r1, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
 	public Object visitLr(LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return append(EventFactory.RISCV.newLoadReserve(r1, ra, getMo(ctx.moRISCV()).acq), ctx);
+        return append(EventFactory.RISCV.newLoadReserve(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
@@ -203,7 +203,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return append(EventFactory.RISCV.newStoreConditional(r1, ra, r2, getMo(ctx.moRISCV()).rel), ctx);
+        return append(EventFactory.RISCV.newStoreConditional(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
@@ -258,16 +258,15 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	// ================ Utils ================
 	// =======================================
 
-    private record Mo(boolean acq, boolean rel) {}
-
-	private Mo getMo(List<MoRISCVContext> mo) {
+	private EventFactory.RISCV.MemoryOrder getMo(List<MoRISCVContext> mo) {
         boolean acq = false;
         boolean rel = false;
         for (MoRISCVContext ctx : mo) {
             acq |= ctx.Acq() != null;
             rel |= ctx.Rel() != null;
         }
-		return new Mo(acq, rel);
+		return acq ? rel ? EventFactory.RISCV.MemoryOrder.ACQ_REL : EventFactory.RISCV.MemoryOrder.ACQUIRE
+                : rel ? EventFactory.RISCV.MemoryOrder.RELEASE : EventFactory.RISCV.MemoryOrder.RELAXED;
 	}
 
     private Event append(Event event, ParserRuleContext ctx) {
