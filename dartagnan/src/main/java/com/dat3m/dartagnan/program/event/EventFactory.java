@@ -1002,21 +1002,21 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newAcqBarrier(String scope, List<String> semantics, boolean visible) {
-            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
             barrier.addTags(semantics);
             barrier.addTags(Tag.Vulkan.ACQUIRE, scope, visible ? Tag.Vulkan.SEM_VISIBLE : "");
             return barrier;
         }
 
         public static GenericVisibleEvent newRelBarrier(String scope, List<String> semantics, boolean available) {
-            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
             barrier.addTags(semantics);
             barrier.addTags(Tag.Vulkan.RELEASE, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "");
             return barrier;
         }
 
         public static Event newAcqRelBarrier(String scope, List<String> semantics, boolean available, boolean visible) {
-            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
             barrier.addTags(semantics);
             barrier.addTags(Tag.Vulkan.ACQ_REL, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "", visible ? Tag.Vulkan.SEM_VISIBLE : "");
             return barrier;
