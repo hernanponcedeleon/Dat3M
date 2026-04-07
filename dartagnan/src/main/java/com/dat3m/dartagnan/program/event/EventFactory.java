@@ -526,49 +526,53 @@ public class EventFactory {
         private AArch64() {
         }
 
-        public static Event newLoad(Register value, Expression address, boolean acquire) {
-            return EventFactory.newLoadWithMo(value, address, acquire ? Tag.ARMv8.MO_ACQ : "");
+        public enum MemoryOrder {
+            RELAXED, ACQUIRE, RELEASE, ACQ_REL
         }
 
-        public static Event newStore(Expression address, Expression value, boolean release) {
-            return EventFactory.newStoreWithMo(address, value, release ? Tag.ARMv8.MO_REL : "");
+        public static Event newLoad(Register value, Expression address, MemoryOrder mo) {
+            return EventFactory.newLoadWithMo(value, address, toAcqTag(mo));
         }
 
-        public static Event newLoadExclusive(Register value, Expression address, boolean acquire) {
-            return EventFactory.newRMWLoadExclusiveWithMo(value, address, acquire ? Tag.ARMv8.MO_ACQ : "");
+        public static Event newStore(Expression address, Expression value, MemoryOrder mo) {
+            return EventFactory.newStoreWithMo(address, value, toRelTag(mo));
         }
 
-        public static Event newStoreExclusive(Register status, Expression address, Expression value, boolean release) {
-            return EventFactory.Common.newExclusiveStore(status, address, value, release ? Tag.ARMv8.MO_REL : "");
+        public static Event newLoadExclusive(Register value, Expression address, MemoryOrder mo) {
+            return EventFactory.newRMWLoadExclusiveWithMo(value, address, toAcqTag(mo));
+        }
+
+        public static Event newStoreExclusive(Register status, Expression address, Expression value, MemoryOrder mo) {
+            return EventFactory.Common.newExclusiveStore(status, address, value, toRelTag(mo));
         }
 
         public static Event newLoadOp(Register register, Expression address, IntBinaryOp operator, Expression operand,
-                boolean acquire, boolean release) {
+                MemoryOrder mo) {
             final Event ld = EventFactory.Common.newRmwFetchOp(register, address, operator, operand);
-            addMemoryOrder(ld, acquire, release);
+            ld.addTags(toAcqTag(mo), toRelTag(mo));
             ld.setMetadata(LDOP_PRINTING);
             return ld;
         }
 
-        public static Event newStoreOp(Expression address, IntBinaryOp operator, Expression operand, boolean release) {
+        public static Event newStoreOp(Expression address, IntBinaryOp operator, Expression operand, MemoryOrder mo) {
             final Event st = EventFactory.Common.newRmwOp(address, operator, operand);
-            addMemoryOrder(st, false, release);
+            // ignore acquire tag
+            st.addTags(toRelTag(mo));
             st.setMetadata(STOP_PRINTING);
             return st;
         }
 
-        public static Event newSwap(Register register, Expression address, Expression value, boolean acquire,
-                boolean release) {
+        public static Event newSwap(Register register, Expression address, Expression value, MemoryOrder mo) {
             final Event swp = EventFactory.Common.newXchg(register, address, value);
-            addMemoryOrder(swp, acquire, release);
+            swp.addTags(toAcqTag(mo), toRelTag(mo));
             swp.setMetadata(SWP_PRINTING);
             return swp;
         }
 
         public static Event newCas(Register register, Expression address, Expression expected, Expression desired,
-                boolean acquire, boolean release) {
+                MemoryOrder mo) {
             final Event cas = EventFactory.Common.newCAS(register, address, expected, desired);
-            addMemoryOrder(cas, acquire, release);
+            cas.addTags(toAcqTag(mo), toRelTag(mo));
             cas.setMetadata(CAS_PRINTING);
             return cas;
         }
@@ -624,8 +628,18 @@ public class EventFactory {
                 "SY", "LD", "ST", "ISH", "ISHLD", "ISHST", "OSH", "OSHLD", "OSHST", "NSH", "NSHLD", "NSHST"
         );
 
-        private static void addMemoryOrder(Event e, boolean acquire, boolean release) {
-            e.addTags(acquire ? Tag.ARMv8.MO_ACQ : "", release ? Tag.ARMv8.MO_REL : "");
+        private static String toAcqTag(MemoryOrder mo) {
+            return switch (mo) {
+                case ACQUIRE, ACQ_REL -> Tag.ARMv8.MO_ACQ;
+                default -> "";
+            };
+        }
+
+        private static String toRelTag(MemoryOrder mo) {
+            return switch (mo) {
+                case RELEASE, ACQ_REL -> Tag.ARMv8.MO_REL;
+                default -> "";
+            };
         }
 
         private static final CustomPrinting LDOP_PRINTING = e -> {

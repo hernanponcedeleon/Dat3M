@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
+import static com.dat3m.dartagnan.program.event.EventFactory.AArch64.MemoryOrder.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -193,7 +194,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadInstructionContext inst = ctx.loadInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final Event ld = EventFactory.AArch64.newLoad(register, address, inst.acquire);
+        final Event ld = EventFactory.AArch64.newLoad(register, address, inst.acquire ? ACQUIRE : RELAXED);
         return appendAndRegister64Update(ld, r64, register, ctx);
     }
 
@@ -207,8 +208,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.AArch64.newLoad(value0, address0, false), lineOfCode);
-        add(EventFactory.AArch64.newLoad(value1, address1, false), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value0, address0, RELAXED), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value1, address1, RELAXED), lineOfCode);
         addRegister64Update(r064, value0, lineOfCode);
         addRegister64Update(r164, value1, lineOfCode);
         return null;
@@ -220,7 +221,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadExclusiveInstructionContext inst = ctx.loadExclusiveInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final Event ldx = EventFactory.AArch64.newLoadExclusive(register, address, inst.acquire);
+        final Event ldx = EventFactory.AArch64.newLoadExclusive(register, address, inst.acquire ? ACQUIRE : RELAXED);
         return appendAndRegister64Update(ldx, r64, register, ctx);
     }
 
@@ -231,7 +232,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final IntegerType type = type(ctx.rV32, inst.halfWordSize, inst.byteSize);
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
-        return append(EventFactory.AArch64.newStore(address, value, inst.release), ctx);
+        return append(EventFactory.AArch64.newStore(address, value, inst.release ? RELEASE : RELAXED), ctx);
     }
 
     @Override
@@ -257,7 +258,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
-        return append(EventFactory.AArch64.newStoreExclusive(status, address, value, inst.release), ctx);
+        return append(EventFactory.AArch64.newStoreExclusive(status, address, value, inst.release ? RELEASE : RELAXED), ctx);
     }
 
     @Override
@@ -270,7 +271,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = extended ? sReg : expressions.makeCast(sReg, lReg.getType(), false);
         final Expression address = parseAddress(ctx.address());
 
-        final Event xchg = EventFactory.AArch64.newSwap(lReg, address, value, inst.acquire, inst.release);
+        final Event xchg = EventFactory.AArch64.newSwap(lReg, address, value, mo(inst.acquire, inst.release));
 
         return appendAndRegister64Update(xchg, r64, lReg, ctx);
     }
@@ -287,11 +288,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression val = expressions.makeCast(rt64, rs.getType(), false);
         final Expression address = parseAddress(ctx.address());
 
-        final Event cas = EventFactory.AArch64.newCas(rs, address, cmpVal, val, inst.acquire, inst.release);
+        final Event cas = EventFactory.AArch64.newCas(rs, address, cmpVal, val, mo(inst.acquire, inst.release));
         return appendAndRegister64Update(cas, rs64, rs, ctx);
     }
 
-    record LDSTAmoInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, boolean acquire, boolean release) {}
+    record LDSTAmoInfo(IntBinaryOp op, boolean isHalfSize, boolean isByteSize, EventFactory.AArch64.MemoryOrder mo) {}
 
     // Used for LDXXX and STXXX instructions of shape
     // ST/LD - XXX/XXXX - {A, L, AL}?  - {H, B}?
@@ -336,7 +337,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             default -> throw new ParsingException("Invalid op " + opCode + " found in " + instrName);
         };
 
-        return new LDSTAmoInfo(op, isHalfSize, isByteSize, acquire, release);
+        return new LDSTAmoInfo(op, isHalfSize, isByteSize, mo(acquire, release));
     }
 
     @Override
@@ -354,7 +355,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
 
         final Expression address = parseAddress(ctx.address());
-        final Event ldOp = EventFactory.AArch64.newLoadOp(rt, address, info.op, operand, info.acquire, info.release);
+        final Event ldOp = EventFactory.AArch64.newLoadOp(rt, address, info.op, operand, info.mo);
         return appendAndRegister64Update(ldOp, rt64, rt, ctx);
     }
 
@@ -372,7 +373,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
 
         final Expression address = parseAddress(ctx.address());
-        final Event stOp = EventFactory.AArch64.newStoreOp(address, info.op, operand, info.release);
+        final Event stOp = EventFactory.AArch64.newStoreOp(address, info.op, operand, info.mo);
         return append(stOp, ctx);
     }
 
@@ -526,6 +527,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     private IntegerType type(Register32Context ctx, boolean halfWordSize, boolean byteSize) {
         return byteSize ? i8 : halfWordSize ? i16 : ctx != null ? i32 : i64;
+    }
+
+    private EventFactory.AArch64.MemoryOrder mo(boolean acq, boolean rel) {
+        return acq ? rel ? ACQ_REL : ACQUIRE : rel ? RELEASE : RELAXED;
     }
 
     private Void append(Event event, ParserRuleContext ctx) {
