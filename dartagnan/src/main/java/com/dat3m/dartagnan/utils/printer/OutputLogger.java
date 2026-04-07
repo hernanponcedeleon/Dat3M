@@ -26,18 +26,22 @@ public class OutputLogger {
         results.add(result);
     }
 
-    public void toStdOut(boolean batchMode) {
-        if (batchMode) {
+    public void toStdOut() {
+        if (results.isEmpty()) {
+            return;
+        }
+
+        if (results.size() == 1) {
+            System.out.println(results.get(0));
+        } else {
             System.out.println("================ Configuration ==================");
             System.out.println("cat = " + modelFile);
             System.out.print(config.asPropertiesString()); // it already contains its own \n
             System.out.println("=================================================");
-        }
-        for (ResultSummary r : results) {
-            if (batchMode) {
+            for (ResultSummary r : results) {
                 System.out.println();
+                System.out.println(r);
             }
-            System.out.println(r);
         }
     }
 

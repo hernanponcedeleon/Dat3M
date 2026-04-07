@@ -113,14 +113,15 @@ public class Dartagnan extends BaseOptions {
             }
             output.addResult(summary);
         }
-        output.toStdOut(isBatchMode);
+
+        output.toStdOut();
         // Running batch mode results in normal termination independent of the individual results
         System.exit((isBatchMode ? NORMAL_TERMINATION : summary.code()).asInt());
     }
 
     // ----------------------------------------------------------------------------------------------------
 
-    private static void printOptions() {
+    public static void printOptions() {
         OptionInfo.stream().sorted().forEach(System.out::print);
     }
 
@@ -186,16 +187,16 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static WitnessGraph getWitnessGraph(Dartagnan o, boolean isBatchMode) throws IOException {
-        if (!o.runValidator()) {
+    private static WitnessGraph getWitnessGraph(BaseOptions options, boolean isBatchMode) throws IOException {
+        if (!options.runValidator()) {
             return new WitnessGraph();
         }
 
         if (isBatchMode) {
             throw new IllegalArgumentException("Cannot run validator in batch mode.");
         }
-        logger.info("Witness path: {}", o.getWitnessPath());
-        return new ParserWitness().parse(new File(o.getWitnessPath()));
+        logger.info("Witness path: {}", options.getWitnessPath());
+        return new ParserWitness().parse(new File(options.getWitnessPath()));
     }
 
     private static String getWitnessFileName(Program program, Dartagnan o) {
