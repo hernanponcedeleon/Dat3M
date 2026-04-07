@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 
