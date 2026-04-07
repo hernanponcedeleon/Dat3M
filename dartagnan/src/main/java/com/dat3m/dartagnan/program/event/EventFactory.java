@@ -467,33 +467,6 @@ public class EventFactory {
     }
 
     // =============================================================================================
-    // ======================================== C11 / IMM ==========================================
-    // =============================================================================================
-
-    public static class C11 {
-
-        public static GenericVisibleEvent newThreadFenceAcquire() {
-            return newThreadFence(Tag.C11.MO_ACQUIRE);
-        }
-
-        public static GenericVisibleEvent newThreadFenceRelease() {
-            return newThreadFence(Tag.C11.MO_RELEASE);
-        }
-
-        public static GenericVisibleEvent newThreadFenceAcquireRelease() {
-            return newThreadFence(Tag.C11.MO_ACQUIRE_RELEASE);
-        }
-
-        public static GenericVisibleEvent newThreadFenceSequentiallyConsistent() {
-            return newThreadFence(Tag.C11.MO_SC);
-        }
-
-        public static GenericVisibleEvent newThreadFence(String mo) {
-            return new GenericVisibleEvent("atomic_thread_fence(%s)".formatted(mo), mo, Tag.FENCE);
-        }
-    }
-
-    // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
 
@@ -737,11 +710,11 @@ public class EventFactory {
         private Linux() {
         }
 
-        public static LKMMLoad newLKMMLoad(Register reg, Expression address, String mo) {
+        public static LKMMLoad newLoad(Register reg, Expression address, String mo) {
             return new LKMMLoad(reg, address, mo);
         }
 
-        public static LKMMStore newLKMMStore(Expression address, Expression value, String mo) {
+        public static LKMMStore newStore(Expression address, Expression value, String mo) {
             return new LKMMStore(address, value, mo);
         }
 
@@ -773,11 +746,7 @@ public class EventFactory {
             return new LKMMXchg(register, address, value, mo);
         }
 
-        public static LKMMFence newMemoryBarrier() {
-            return new LKMMFence(Tag.Linux.MO_MB);
-        }
-
-        public static LKMMFence newLKMMFence(String name) {
+        public static LKMMFence newBarrier(String name) {
             return new LKMMFence(name);
         }
 
@@ -794,10 +763,6 @@ public class EventFactory {
             GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, types.getUnitType(), "synchronize_srcu");
             srcuSync.addTags(Tag.Linux.SRCU_SYNC);
             return srcuSync;
-        }
-
-        public static GenericVisibleEvent newFence(String fenceType) {
-            return EventFactory.newFence(fenceType);
         }
     }
 
@@ -818,11 +783,11 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newLoadFence() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("lfence");
         }
 
         public static GenericVisibleEvent newStoreFence() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("sfence");
         }
     }
 
@@ -1046,28 +1011,26 @@ public class EventFactory {
     public static class Spirv {
         private Spirv() {}
 
-        public static SpirvLoad newSpirvLoad(Register register, Expression address, String scope,
-                                             Set<String> tags) {
+        public static Event newLoad(Register register, Expression address, String scope, Set<String> tags) {
             return new SpirvLoad(register, address, scope, tags);
         }
 
-        public static SpirvStore newSpirvStore(Expression address, Expression value, String scope,
-                                               Set<String> tags) {
+        public static Event newStore(Expression address, Expression value, String scope, Set<String> tags) {
             return new SpirvStore(address, value, scope, tags);
         }
 
-        public static SpirvXchg newSpirvXchg(Register register, Expression address, Expression value,
-                                             String scope, Set<String> tags) {
+        public static Event newXchg(Register register, Expression address, Expression value, String scope,
+                Set<String> tags) {
             return new SpirvXchg(register, address, value, scope, tags);
         }
 
-        public static SpirvRmw newSpirvRmw(Register register, Expression address, IntBinaryOp op, Expression value,
-                                            String scope, Set<String> tags) {
+        public static Event newRmw(Register register, Expression address, IntBinaryOp op, Expression value,
+                String scope, Set<String> tags) {
             return new SpirvRmw(register, address, op, value, scope, tags);
         }
 
-        public static SpirvCmpXchg newSpirvCmpXchg(Register register, Expression address, Expression cmp, Expression value,
-                                                   String scope, Set<String> eqTags, Set<String> neqTags) {
+        public static Event newCmpXchg(Register register, Expression address, Expression cmp, Expression value,
+                String scope, Set<String> eqTags, Set<String> neqTags) {
             return new SpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
         }
     }

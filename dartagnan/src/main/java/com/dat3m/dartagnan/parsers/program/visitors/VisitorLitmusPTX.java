@@ -332,7 +332,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         return append(EventFactory.newGoto(label), ctx);
     }
 
-    private Object append(Event event, ParserRuleContext ctx) {
+    private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

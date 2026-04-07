@@ -49,8 +49,6 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
-        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
@@ -72,11 +70,11 @@ class VisitorIMM extends VisitorBase {
 
         return eventSequence(
                 loadExpected,
-                optionalFenceLoad,
+                optionalFence(mo),
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                optionalFenceStore,
+                optionalFence(mo),
                 storeValue,
                 gotoCasEnd,
                 casFail,
@@ -91,17 +89,15 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Event optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        Event optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
-                optionalFenceBefore,
+                optionalFence(mo),
                 load,
                 newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
-                optionalFenceAfter,
+                optionalFence(mo),
                 newRMWStoreWithMo(load, address, dummyReg, extractStoreMo(mo))
         );
     }
@@ -109,9 +105,8 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         String mo = e.getMo();
-        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         return eventSequence(
-                optionalFence,
+                optionalFence(mo),
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
         );
     }
@@ -119,9 +114,8 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         String mo = e.getMo();
-        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         return eventSequence(
-                optionalFence,
+                optionalFence(mo),
                 newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
         );
     }
@@ -129,7 +123,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         return eventSequence(
-                C11.newThreadFence(e.getMo())
+                newFence(e.getMo())
         );
     }
 
@@ -137,17 +131,19 @@ class VisitorIMM extends VisitorBase {
     public List<Event> visitAtomicXchg(AtomicXchg e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
-        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
 
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
 
         return eventSequence(
-                optionalFenceLoad,
+                optionalFence(mo),
                 load,
-                optionalFenceStore,
+                optionalFence(mo),
                 newRMWStoreWithMo(load, address, e.getValue(), extractStoreMo(mo))
         );
+    }
+
+    private Event optionalFence(String mo) {
+        return mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
     }
 
     // =============================================================================================
@@ -236,8 +232,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         return eventSequence(
-                C11.newThreadFence(e.getMo())
+                newFence(e.getMo())
         );
     }
-
 }

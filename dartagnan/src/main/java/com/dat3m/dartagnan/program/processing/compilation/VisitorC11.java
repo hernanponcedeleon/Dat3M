@@ -108,7 +108,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         return tagList(e, eventSequence(
-                C11.newThreadFence(e.getMo())
+                newFence(e.getMo())
         ));
     }
 
@@ -211,7 +211,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         return tagList(eventSequence(
-                C11.newThreadFence(e.getMo())
+                newFence(e.getMo())
         ));
     }
 

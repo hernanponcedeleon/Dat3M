@@ -323,7 +323,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier = switch (e.getName()) {
+        Event optionalMemoryBarrier = switch (e.getMo()) {
             // smp_mb()
             // https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
             // https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h
@@ -349,7 +349,7 @@ class VisitorRISCV extends VisitorBase {
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
             case Tag.Linux.BARRIER -> null;
             default ->
-                    throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+                    throw new UnsupportedOperationException("Compilation of fence " + e.getMo() + " is not supported");
         };
 
         return eventSequence(
@@ -641,6 +641,9 @@ class VisitorRISCV extends VisitorBase {
         store.addTags(STCOND);
         return store;
     }
+
+    //TODO The following methods must return core events.
+    // The respective methods in EventFactory fit now, but may produce compilable barriers in the future.
 
     private Event newRRFence() {
         return RISCV.newRRFence();

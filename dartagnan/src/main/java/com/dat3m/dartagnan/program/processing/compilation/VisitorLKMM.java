@@ -149,7 +149,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
         return eventSequence(
-                Linux.newFence(e.getName())
+                newCoreFence(e.getMo())
         );
     }
 
@@ -228,6 +228,10 @@ public class VisitorLKMM extends VisitorBase {
 
     private static Store newCoreStore(Expression addr, Expression value, String mo) {
         return EventFactory.newStoreWithMo(addr, value, mo);
+    }
+
+    private static Event newCoreFence(String mo) {
+        return EventFactory.newFence(mo);
     }
 
     private static Load newLockRead(Register dummy, Expression lockAddr) {

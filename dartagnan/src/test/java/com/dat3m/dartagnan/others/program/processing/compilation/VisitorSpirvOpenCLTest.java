@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorSpirvOpenCL;
 import com.google.common.collect.Sets;
@@ -137,11 +136,11 @@ public class VisitorSpirvOpenCLTest {
         Register register = mock(Register.class);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvLoad e = EventFactory.Spirv.newSpirvLoad(register, address, scope, spvTags);
+        Event e = EventFactory.Spirv.newLoad(register, address, scope, spvTags);
         e.setFunction(mock(Function.class));
 
         // when
-        List<Event> seq = visitor.visitSpirvLoad(e);
+        List<Event> seq = e.accept(visitor);
 
         // then
         assertEquals(1, seq.size());
@@ -179,11 +178,11 @@ public class VisitorSpirvOpenCLTest {
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvStore e = EventFactory.Spirv.newSpirvStore(address, value, scope, spvTags);
+        Event e = EventFactory.Spirv.newStore(address, value, scope, spvTags);
         e.setFunction(mock(Function.class));
 
         // when
-        List<Event> seq = visitor.visitSpirvStore(e);
+        List<Event> seq = e.accept(visitor);
 
         // then
         assertEquals(1, seq.size());
@@ -233,11 +232,11 @@ public class VisitorSpirvOpenCLTest {
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvXchg e = EventFactory.Spirv.newSpirvXchg(register, address, value, scope, spvTags);
+        Event e = EventFactory.Spirv.newXchg(register, address, value, scope, spvTags);
         e.setFunction(function);
 
         // when
-        List<Event> seq = visitor.visitSpirvXchg(e);
+        List<Event> seq = e.accept(visitor);
 
         // then
         assertEquals(2, seq.size());
@@ -290,11 +289,11 @@ public class VisitorSpirvOpenCLTest {
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvRmw e = EventFactory.Spirv.newSpirvRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
+        Event e = EventFactory.Spirv.newRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
         e.setFunction(function);
 
         // when
-        List<Event> seq = visitor.visitSpirvRMW(e);
+        List<Event> seq = e.accept(visitor);
 
         // then
         assertEquals(3, seq.size());
@@ -355,11 +354,11 @@ public class VisitorSpirvOpenCLTest {
         Expression cmp = expressions.makeValue(0, archType);
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
-        SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
+        Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
         e.setFunction(function);
 
         // when
-        List<Event> seq = visitor.visitSpirvCmpXchg(e);
+        List<Event> seq = e.accept(visitor);
 
         // then
         assertEquals(5, seq.size());
@@ -398,13 +397,12 @@ public class VisitorSpirvOpenCLTest {
         Expression cmp = expressions.makeValue(0, archType);
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
-        SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register,
-                address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);
+        Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);
         e.setFunction(function);
 
         try {
             // when
-            visitor.visitSpirvCmpXchg(e);
+            e.accept(visitor);
             fail("Should throw exception");
         } catch (Exception ex) {
             // then

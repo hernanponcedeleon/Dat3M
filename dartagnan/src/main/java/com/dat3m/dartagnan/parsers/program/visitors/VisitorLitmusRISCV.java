@@ -270,7 +270,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 		return new Mo(acq, rel);
 	}
 
-    private Object append(Event event, ParserRuleContext ctx) {
+    private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

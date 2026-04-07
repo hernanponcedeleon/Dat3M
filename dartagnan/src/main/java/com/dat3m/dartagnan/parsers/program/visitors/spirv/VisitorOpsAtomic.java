@@ -32,7 +32,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        return builder.addEvent(newSpirvLoad(register, ptr, scope, tags));
+        return builder.addEvent(newLoad(register, ptr, scope, tags));
     }
 
     @Override
@@ -42,7 +42,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        return builder.addEvent(newSpirvStore(ptr, value, scope, tags));
+        return builder.addEvent(newStore(ptr, value, scope, tags));
     }
 
     @Override
@@ -53,7 +53,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        return builder.addEvent(newSpirvXchg(register, ptr, value, scope, tags));
+        return builder.addEvent(newXchg(register, ptr, value, scope, tags));
     }
 
     @Override
@@ -156,7 +156,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         neqTags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         Expression value = builder.getExpression(valCtx.getText());
         Expression cmp = builder.getExpression(cmpCtx.getText());
-        return builder.addEvent(newSpirvCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags));
+        return builder.addEvent(newCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags));
     }
 
     private Event visitAtomicOpIncDec(
@@ -203,7 +203,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
-        return builder.addEvent(newSpirvRmw(register, ptr, op, value, scope, tags));
+        return builder.addEvent(newRmw(register, ptr, op, value, scope, tags));
     }
 
     private String getScopeTag(String scopeId) {

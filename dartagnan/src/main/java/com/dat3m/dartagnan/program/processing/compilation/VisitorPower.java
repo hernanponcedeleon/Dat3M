@@ -401,7 +401,7 @@ public class VisitorPower extends VisitorBase {
     //      https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier = switch (e.getName()) {
+        Event optionalMemoryBarrier = switch (e.getMo()) {
             case Tag.Linux.MO_MB,
                  Tag.Linux.MO_RMB,
                  Tag.Linux.MO_WMB,
@@ -418,7 +418,7 @@ public class VisitorPower extends VisitorBase {
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
             case Tag.Linux.BARRIER -> null;
             default ->
-                    throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+                    throw new UnsupportedOperationException("Compilation of fence " + e.getMo() + " is not supported");
         };
 
         return eventSequence(

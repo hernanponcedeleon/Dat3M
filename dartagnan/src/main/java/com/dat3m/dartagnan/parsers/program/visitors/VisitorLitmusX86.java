@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -173,7 +172,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         return append(fence, ctx);
     }
 
-    private Object append(Event event, ParserRuleContext ctx) {
+    private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

@@ -340,7 +340,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return defaultMo;
     }
 
-    private Object append(Event event, ParserRuleContext ctx) {
+    private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

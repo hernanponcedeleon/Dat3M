@@ -220,7 +220,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
     }
 
-    private Object append(Event event, ParserRuleContext ctx) {
+    private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

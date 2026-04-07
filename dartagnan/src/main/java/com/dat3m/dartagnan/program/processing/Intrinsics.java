@@ -1451,7 +1451,7 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p2);
                 final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
-                result.add(EventFactory.Linux.newLKMMLoad(dummy, p0, mo));
+                result.add(EventFactory.Linux.newLoad(dummy, p0, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
             case "__LKMM_store" -> {
@@ -1459,7 +1459,7 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p3);
                 final Expression value = expressions.makeCast(p2, bytes);
-                result.add(EventFactory.Linux.newLKMMStore(p0, value, mo));
+                result.add(EventFactory.Linux.newStore(p0, value, mo));
             }
             case "__LKMM_xchg" -> {
                 checkArguments(4, call);
@@ -1510,7 +1510,7 @@ public class Intrinsics {
             case "__LKMM_fence" -> {
                 checkArguments(1, call);
                 final String mo = toLKMMMemoryOrder(p0);
-                result.add(EventFactory.Linux.newLKMMFence(mo));
+                result.add(EventFactory.Linux.newBarrier(mo));
             }
             case "__LKMM_SPIN_LOCK" -> {
                 checkArguments(1, call);
