@@ -68,13 +68,6 @@ public final class EncodingContext {
             secure = true)
     boolean useIntegers = false;
 
-    // TODO: If we ever simplify floats, this option will play a role there besides than the encoding.
-    // If that is the case we need to move this option outside of this encoding class.
-    @Option(name = ROUNDING_MODE_FLOATS,
-            description = "Rounding mode for floating point operations.",
-            secure = true)
-    FloatingPointRoundingMode roundingModeFloats = NEAREST_TIES_TO_EVEN;
-
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
@@ -117,7 +110,6 @@ public final class EncodingContext {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
-        logger.info("{}: {}", ROUNDING_MODE_FLOATS, context.roundingModeFloats);
         context.initialize();
 
         return context;
