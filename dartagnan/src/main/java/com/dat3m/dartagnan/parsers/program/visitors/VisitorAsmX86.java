@@ -26,13 +26,7 @@ public class VisitorAsmX86 extends AsmX86BaseVisitor<Object> {
 
     @Override
     public Object visitX86Fence(X86FenceContext ctx) {
-        final Event fence = switch (ctx.X86Fence().getText()) {
-            case "mfence" -> EventFactory.X86.newMemoryFence();
-            case "lfence" -> EventFactory.X86.newLoadFence();
-            case "sfence" -> EventFactory.X86.newStoreFence();
-            default -> throw new ParsingException("Unknown barrier '%s'", ctx.X86Fence());
-        };
-        asmInstructions.add(fence);
+        asmInstructions.add(EventFactory.X86.newMemoryFence(ctx.X86Fence().getText()));
         return null;
     }
 

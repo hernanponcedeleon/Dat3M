@@ -52,8 +52,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         String mo = e.getMo();
         Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? newRWRWFence() : null;
-        Event optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? newRRWFence()
-                : null;
+        Event optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? newRRWFence() : null;
 
         return eventSequence(
                 optionalBarrierBefore,
@@ -629,26 +628,26 @@ class VisitorRISCV extends VisitorBase {
     // The respective methods in EventFactory fit now, but may produce compilable barriers in the future.
 
     private Event newRRFence() {
-        return RISCV.newRRFence();
+        return RISCV.newFence("r.r");
     }
 
     private Event newRRWFence() {
-        return RISCV.newRRWFence();
+        return RISCV.newFence("r.rw");
     }
 
     private Event newRWWFence() {
-        return RISCV.newRWWFence();
+        return RISCV.newFence("rw.w");
     }
 
     private Event newRWRWFence() {
-        return RISCV.newRWRWFence();
+        return RISCV.newFence("rw.rw");
     }
 
     private Event newWWFence() {
-        return RISCV.newWWFence();
+        return RISCV.newFence("w.w");
     }
 
     private Event newTsoFence() {
-        return RISCV.newTsoFence();
+        return RISCV.newFence("tso");
     }
 }

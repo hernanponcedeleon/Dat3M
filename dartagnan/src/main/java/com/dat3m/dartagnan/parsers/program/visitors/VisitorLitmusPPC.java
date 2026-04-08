@@ -206,13 +206,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitFence(FenceContext ctx) {
-        final Event barrier = switch (ctx.getText().toLowerCase()) {
-            case "sync" -> EventFactory.Power.newSyncBarrier();
-            case "lwsync" -> EventFactory.Power.newLwSyncBarrier();
-            case "isync" -> EventFactory.Power.newISyncBarrier();
-            default -> throw new ParsingException("Unrecognised fence %s", ctx.getText());
-        };
-        return append(barrier, ctx);
+        return append(EventFactory.Power.newBarrier(ctx.getText().toLowerCase()), ctx);
     }
 
     @Override

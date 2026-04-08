@@ -262,18 +262,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
     @Override
     public Object visitPpcFence(PpcFenceContext ctx) {
-        String barrier = ctx.PPCFence().getText();
-        Event fence = switch (barrier) {
-            case "sync" ->
-                EventFactory.Power.newSyncBarrier();
-            case "isync" ->
-                EventFactory.Power.newISyncBarrier();
-            case "lwsync" ->
-                EventFactory.Power.newLwSyncBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
+        asmInstructions.add(EventFactory.Power.newBarrier(ctx.PPCFence().getText()));
         return null;
     }
 

@@ -622,15 +622,15 @@ public class VisitorPower extends VisitorBase {
     }
 
     private Event newISync() {
-        return Power.newISyncBarrier();
+        return Power.newBarrier("isync");
     }
 
     private Event newLwSync() {
-        return Power.newLwSyncBarrier();
+        return Power.newBarrier("lwsync");
     }
 
     private Event newSync() {
-        return Power.newSyncBarrier();
+        return Power.newBarrier("sync");
     }
 
     public enum PowerScheme {

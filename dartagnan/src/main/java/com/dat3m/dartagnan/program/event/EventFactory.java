@@ -578,47 +578,11 @@ public class EventFactory {
             return cas;
         }
 
-        public static GenericVisibleEvent newDmbBarrier() {
-            return newBarrier("DMB", "SY");
-        }
-
-        public static GenericVisibleEvent newDmbStBarrier() {
-            return newBarrier("DMB", "ST");
-        }
-
-        public static GenericVisibleEvent newDmbIshBarrier() {
-            return newBarrier("DMB", "ISH");
-        }
-
-        public static GenericVisibleEvent newDmbIshLdBarrier() {
-            return newBarrier("DMB", "ISHLD");
-        }
-
-        public static GenericVisibleEvent newDmbIshStBarrier() {
-            return newBarrier("DMB", "ISHST");
-        }
-
-        public static GenericVisibleEvent newDsbBarrier() {
-            return newBarrier("DSB", "SY");
-        }
-
-        public static GenericVisibleEvent newDsbIshBarrier() {
-            return newBarrier("DSB", "ISH");
-        }
-
-        public static GenericVisibleEvent newDsbIshLdBarrier() {
-            return newBarrier("DSB", "ISHLD");
-        }
-
-        public static GenericVisibleEvent newDsbIshStBarrier() {
-            return newBarrier("DSB", "ISHST");
-        }
-
         public static GenericVisibleEvent newBarrier(String type, String option) {
             final String typeUpper = type.toUpperCase();
             final String optionUpper = option.toUpperCase();
-            checkArgument(BARRIER_TYPE.contains(typeUpper), "Unknown barrier type %s", type);
-            checkArgument(BARRIER_OPT.contains(optionUpper), "Unknown barrier option %s");
+            checkArgument(BARRIER_TYPE.contains(typeUpper), "Unknown barrier type '%s'.", type);
+            checkArgument(BARRIER_OPT.contains(optionUpper), "Unknown barrier option '%s'.", option);
             final String name = "%s.%s".formatted(typeUpper, optionUpper);
             return new GenericVisibleEvent(name, name, Tag.FENCE, typeUpper);
         }
@@ -793,16 +757,11 @@ public class EventFactory {
             return new TSOXchg(address, register);
         }
 
-        public static GenericVisibleEvent newMemoryFence() {
-            return newFence("mfence");
-        }
-
-        public static GenericVisibleEvent newLoadFence() {
-            throw new UnsupportedOperationException("lfence");
-        }
-
-        public static GenericVisibleEvent newStoreFence() {
-            throw new UnsupportedOperationException("sfence");
+        public static Event newMemoryFence(String type) {
+            if (type.equalsIgnoreCase("mfence")) {
+                throw new UnsupportedOperationException("X86 fence '%s'.".formatted(type));
+            }
+            return newFence(type.toLowerCase());
         }
     }
 
@@ -834,6 +793,11 @@ public class EventFactory {
             return Common.newExclusiveStore(status, address, value, toTag(mo));
         }
 
+        public static Event newFence(String mode) {
+            checkArgument(FENCE_MODE.contains(mode), "Invalid fence mode '%s'.", mode);
+            return EventFactory.newFence("Fence."+mode);
+        }
+
         private static String toTag(MemoryOrder mo) {
             return switch(mo) {
                 case RELAXED -> "";
@@ -843,49 +807,9 @@ public class EventFactory {
             };
         }
 
-        public static GenericVisibleEvent newRRFence() {
-            return newFence("Fence.r.r");
-        }
-
-        public static GenericVisibleEvent newRWFence() {
-            return newFence("Fence.r.w");
-        }
-
-        public static GenericVisibleEvent newRRWFence() {
-            return newFence("Fence.r.rw");
-        }
-
-        public static GenericVisibleEvent newWRFence() {
-            return newFence("Fence.w.r");
-        }
-
-        public static GenericVisibleEvent newWWFence() {
-            return newFence("Fence.w.w");
-        }
-
-        public static GenericVisibleEvent newWRWFence() {
-            return newFence("Fence.w.rw");
-        }
-
-        public static GenericVisibleEvent newRWRFence() {
-            return newFence("Fence.rw.r");
-        }
-
-        public static GenericVisibleEvent newRWWFence() {
-            return newFence("Fence.rw.w");
-        }
-
-        public static GenericVisibleEvent newRWRWFence() {
-            return newFence("Fence.rw.rw");
-        }
-
-        public static GenericVisibleEvent newTsoFence() {
-            return newFence("Fence.tso");
-        }
-
-        public static GenericVisibleEvent newSynchronizeFence() {
-            return newFence("Fence.i");
-        }
+        private static final Set<String> FENCE_MODE = Set.of(
+                "r.r", "r.w", "r.rw", "w.r", "w.w", "w.rw", "rw.r", "rw.w", "rw.rw", "tso", "i"
+        );
     }
 
     // =============================================================================================
@@ -911,17 +835,12 @@ public class EventFactory {
             return EventFactory.Common.newExclusiveStore(status, address, value, "");
         }
 
-        public static GenericVisibleEvent newISyncBarrier() {
-            return newFence("isync");
+        public static GenericVisibleEvent newBarrier(String type) {
+            checkArgument(BARRIER_TYPE.contains(type), "Invalid barrier '%s'.", type);
+            return newFence(type);
         }
 
-        public static GenericVisibleEvent newSyncBarrier() {
-            return newFence("sync");
-        }
-
-        public static GenericVisibleEvent newLwSyncBarrier() {
-            return newFence("lwsync");
-        }
+        private static final Set<String> BARRIER_TYPE = Set.of("isync", "sync", "lwsync");
     }
 
     // =============================================================================================
@@ -1002,24 +921,11 @@ public class EventFactory {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
         }
 
-        public static GenericVisibleEvent newAcqBarrier(String scope, List<String> semantics, boolean visible) {
+        public static Event newBarrier(String mo, String scope, List<String> semantics, boolean av, boolean vis) {
+            checkArgument(BARRIER_MEMORY_ORDER.contains(mo), "Unknown barrier memory order '%s'.", mo);
             final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
             barrier.addTags(semantics);
-            barrier.addTags(Tag.Vulkan.ACQUIRE, scope, visible ? Tag.Vulkan.SEM_VISIBLE : "");
-            return barrier;
-        }
-
-        public static GenericVisibleEvent newRelBarrier(String scope, List<String> semantics, boolean available) {
-            final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
-            barrier.addTags(semantics);
-            barrier.addTags(Tag.Vulkan.RELEASE, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "");
-            return barrier;
-        }
-
-        public static Event newAcqRelBarrier(String scope, List<String> semantics, boolean available, boolean visible) {
-            final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
-            barrier.addTags(semantics);
-            barrier.addTags(Tag.Vulkan.ACQ_REL, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "", visible ? Tag.Vulkan.SEM_VISIBLE : "");
+            barrier.addTags(mo, scope, av ? Tag.Vulkan.SEM_AVAILABLE : "", vis ? Tag.Vulkan.SEM_VISIBLE : "");
             return barrier;
         }
 
@@ -1030,6 +936,10 @@ public class EventFactory {
         public static GenericVisibleEvent newVisDevice() {
             return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
         }
+
+        private static final Set<String> BARRIER_MEMORY_ORDER = Set.of(
+                Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.ACQ_REL
+        );
     }
 
     // =============================================================================================

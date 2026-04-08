@@ -222,22 +222,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitFence(FenceContext ctx) {
-        String mo = ctx.fenceMode().mode;
-        Event fence = switch(mo) {
-            case "r.r" -> EventFactory.RISCV.newRRFence();
-            case "r.w" -> EventFactory.RISCV.newRWFence();
-            case "r.rw" -> EventFactory.RISCV.newRRWFence();
-            case "w.r" -> EventFactory.RISCV.newWRFence();
-            case "w.w" -> EventFactory.RISCV.newWWFence();
-            case "w.rw" -> EventFactory.RISCV.newWRWFence();
-            case "rw.r" -> EventFactory.RISCV.newRWRFence();
-            case "rw.w" -> EventFactory.RISCV.newRWWFence();
-            case "rw.rw" -> EventFactory.RISCV.newRWRWFence();
-            case "tso" -> EventFactory.RISCV.newTsoFence();
-            case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("Invalid fence mode " + mo);
-        };
-		return append(fence, ctx);
+        return append(EventFactory.RISCV.newFence(ctx.fenceMode().mode), ctx);
 	}
 
 	@Override

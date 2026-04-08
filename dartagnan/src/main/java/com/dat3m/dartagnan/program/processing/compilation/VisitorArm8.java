@@ -617,18 +617,18 @@ class VisitorArm8 extends VisitorBase {
     }
 
     private Event newDmbIsh() {
-        return AArch64.newDmbIshBarrier();
+        return AArch64.newBarrier("DMB", "ISH");
     }
 
     private Event newDsbIsh() {
-        return AArch64.newDsbIshBarrier();
+        return AArch64.newBarrier("DSB", "ISH");
     }
 
     private Event newDsbIshLd() {
-        return AArch64.newDsbIshLdBarrier();
+        return AArch64.newBarrier("DSB", "ISHLD");
     }
 
     private Event newDsbIshSt() {
-        return AArch64.newDsbIshStBarrier();
+        return AArch64.newBarrier("DSB", "ISHST");
     }
 }

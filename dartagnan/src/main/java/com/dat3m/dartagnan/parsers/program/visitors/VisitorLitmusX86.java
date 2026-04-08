@@ -163,13 +163,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     @Override
     public Object visitFence(FenceContext ctx) {
-        Event fence = switch (ctx.getText().toLowerCase()) {
-            case "mfence" -> EventFactory.X86.newMemoryFence();
-            case "lfence" -> EventFactory.X86.newLoadFence();
-            case "sfence" -> EventFactory.X86.newStoreFence();
-            default -> throw new ParsingException("Unrecognised fence '%s'", ctx.getText());
-        };
-        return append(fence, ctx);
+        return append(EventFactory.X86.newMemoryFence(ctx.getText()), ctx);
     }
 
     private Event append(Event event, ParserRuleContext ctx) {

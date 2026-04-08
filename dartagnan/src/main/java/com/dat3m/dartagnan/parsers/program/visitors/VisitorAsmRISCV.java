@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -305,22 +304,8 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitRiscvFence(RiscvFenceContext ctx) {
-        String mo = ctx.fenceOptions().mode;
-        Event fence = switch(mo) {
-            case "r r" -> EventFactory.RISCV.newRRFence();
-            case "r w" -> EventFactory.RISCV.newRWFence();
-            case "r rw" -> EventFactory.RISCV.newRRWFence();
-            case "w r" -> EventFactory.RISCV.newWRFence();
-            case "w w" -> EventFactory.RISCV.newWWFence();
-            case "w rw" -> EventFactory.RISCV.newWRWFence();
-            case "rw r" -> EventFactory.RISCV.newRWRFence();
-            case "rw w" -> EventFactory.RISCV.newRWWFence();
-            case "rw rw" -> EventFactory.RISCV.newRWRWFence();
-            case "tso" -> EventFactory.RISCV.newTsoFence();
-            case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
+        final String mode = ctx.fenceOptions().mode.replace(" ", ".");
+        asmInstructions.add(EventFactory.RISCV.newFence(mode));
         return null;
     }
 

@@ -47,11 +47,9 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-        Event optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
-
         return eventSequence(
                 newStore(e.getAddress(), e.getMemValue()),
-                optionalMFence
+                optionalMFence(e.getMo())
         );
     }
 
@@ -104,10 +102,8 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        Event optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
-
         return eventSequence(
-                optionalFence
+                optionalMFence(e.getMo())
         );
     }
 
@@ -175,21 +171,16 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
-        String mo = e.getMo();
-        Event optionalMFence = mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
-
         return eventSequence(
                 newStore(e.getAddress(), e.getMemValue()),
-                optionalMFence
+                optionalMFence(e.getMo())
         );
     }
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        Event optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
-
         return eventSequence(
-                optionalFence
+                optionalMFence(e.getMo())
         );
     }
 
@@ -204,6 +195,10 @@ class VisitorTso extends VisitorBase {
         ));
     }
 
+    private Event optionalMFence(String mo) {
+        return mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence("mfence") : null;
+    }
+
     private List<Event> tagList(List<Event> in) {
         in.forEach(this::tagEvent);
         return in;
@@ -214,5 +209,4 @@ class VisitorTso extends VisitorBase {
             e.addTags(Tag.TSO.ATOM);
         }
     }
-
 }

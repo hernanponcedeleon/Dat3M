@@ -240,17 +240,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitMemoryBarrierInstruction(MemoryBarrierInstructionContext ctx) {
+        final String mo = getMemoryOrderOrDefault(ctx, null);
         final String scope = ctx.scope().content;
         final List<String> semantics = ctx.semSc().stream().map(c -> c.content).toList();
         final boolean av = ctx.semAv() != null;
         final boolean vis = ctx.semVis() != null;
-        final Event fence = switch (getMemoryOrderOrDefault(ctx, null)) {
-            case Tag.Vulkan.ACQUIRE -> EventFactory.Vulkan.newAcqBarrier(scope, semantics, vis);
-            case Tag.Vulkan.RELEASE -> EventFactory.Vulkan.newRelBarrier(scope, semantics, av);
-            case Tag.Vulkan.ACQ_REL -> EventFactory.Vulkan.newAcqRelBarrier(scope, semantics, av, vis);
-            default -> throw new ParsingException("Unknown barrier type");
-        };
-        return append(fence, ctx);
+        return append(EventFactory.Vulkan.newBarrier(mo, scope, semantics, av, vis), ctx);
     }
 
     @Override
