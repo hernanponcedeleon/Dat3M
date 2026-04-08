@@ -68,13 +68,10 @@ public class VisitorPower extends VisitorBase {
             case C11.MO_RELAXED -> useRC11Scheme;
             default -> false;
         };
-        Label optionalLabel = doCtrlDependency ? newLabel("FakeDep") : null;
-        CondJump optionalFakeCtrlDep = doCtrlDependency ? newFakeCtrlDep(resultRegister, optionalLabel) : null;
         return eventSequence(
                 optionalBarrierBefore,
                 load,
-                optionalFakeCtrlDep,
-                optionalLabel,
+                doCtrlDependency ? newFakeCtrlDependency(resultRegister) : null,
                 optionalBarrierAfter(e.getMo())
         );
     }
@@ -98,14 +95,11 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 store,
                 optionalBarrierAfter(e.getMo())
         );
@@ -122,14 +116,10 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = newRMWStoreConditional(address, dummyReg, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 localOp,
                 store,
                 optionalBarrierAfter(e.getMo())
@@ -154,8 +144,7 @@ public class VisitorPower extends VisitorBase {
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
-                strong ? null : newExecutionStatus(success, store),
-                strong ? null : newLocal(success, expressions.makeNot(success)),
+                strong ? null : newAssignExecutionStatus(success, store),
                 casEnd,
                 optionalBarrierAfter(mo)
         );
@@ -198,13 +187,6 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use the empty string
         Load loadValue = newRMWLoadExclusive(regValue, address);
         Store storeValue = newRMWStoreConditional(address, value, e.isStrong());
-        ExecutionStatus optionalExecStatus = null;
-        Local optionalUpdateCasCmpResult = null;
-        if (e.isWeak()) {
-            Register statusReg = e.getFunction().newRegister(types.getBooleanType());
-            optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
-        }
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 loadExpected,
@@ -212,8 +194,7 @@ public class VisitorPower extends VisitorBase {
                 casCmpResult,
                 branchOnCasCmpResult,
                 storeValue,
-                optionalExecStatus,
-                optionalUpdateCasCmpResult,
+                e.isStrong() ? null : newAssignExecutionStatus(booleanResultRegister, storeValue),
                 gotoCasEnd,
                 casFail,
                 storeExpected,
@@ -233,15 +214,11 @@ public class VisitorPower extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = newRMWStoreConditional(address, dummyReg, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 localOp,
                 store,
                 optionalBarrierAfter(e.getMo())
@@ -262,14 +239,11 @@ public class VisitorPower extends VisitorBase {
             case C11.MO_RELAXED -> useRC11Scheme;
             default -> false;
         };
-        Label optionalLabel = doControlDependency ? newLabel("FakeDep") : null;
-        CondJump optionalFakeCtrlDep = doControlDependency ? newFakeCtrlDep(resultRegister, optionalLabel) : null;
 
         return eventSequence(
                 optionalBarrierBefore,
                 load,
-                optionalFakeCtrlDep,
-                optionalLabel,
+                doControlDependency ? newFakeCtrlDependency(resultRegister) : null,
                 optionalBarrierAfter(mo)
         );
     }
@@ -306,14 +280,11 @@ public class VisitorPower extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 store,
                 optionalBarrierAfter(e.getMo())
         );
@@ -447,16 +418,13 @@ public class VisitorPower extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreConditional(address, e.getStoreValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 branchOnCasCmpResult,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo()),
                 casEnd,
                 newLocal(resultRegister, dummy)
@@ -471,16 +439,13 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -494,15 +459,12 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreConditional(address, storeValue, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -515,8 +477,6 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreConditional(address, dummy, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -524,8 +484,7 @@ public class VisitorPower extends VisitorBase {
                 newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -538,16 +497,13 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -567,8 +523,6 @@ public class VisitorPower extends VisitorBase {
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
         Store store = newRMWStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getFunction().newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
@@ -581,8 +535,7 @@ public class VisitorPower extends VisitorBase {
                 newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(regValue),
                 optionalMemoryBarrierAfter(e.getMo()),
                 cauEnd,
                 newLocal(resultRegister, expressions.makeCast(dummy, resultRegister.getType()))
@@ -604,16 +557,13 @@ public class VisitorPower extends VisitorBase {
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreConditional(address, dummy, true);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 localOp,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter(e.getMo()),
                 testOp
         );
@@ -625,15 +575,13 @@ public class VisitorPower extends VisitorBase {
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
-        Label label = newLabel("FakeDep");
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock()),
                 newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreConditional(e.getLock(), one, true),
                 // Fake dependency to guarantee acquire semantics
-                newFakeCtrlDep(dummy, label),
-                label,
+                newFakeCtrlDependency(dummy),
                 newISync()
         );
     }
@@ -660,6 +608,19 @@ public class VisitorPower extends VisitorBase {
             case Tag.Linux.MO_ACQUIRE -> newISync();
             default -> null;
         };
+    }
+
+    private List<Event> newFakeCtrlDependency(Register register) {
+        final Label label = newLabel("FakeDep");
+        return List.of(newFakeCtrlDep(register, label), label);
+    }
+
+    private List<Event> newAssignExecutionStatus(Register register, Event store) {
+        final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
+        return List.of(
+                newExecutionStatus(status, store),
+                newLocal(register, expressions.makeNot(status))
+        );
     }
 
     private Load newRMWLoadExclusive(Register value, Expression address) {

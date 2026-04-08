@@ -153,13 +153,10 @@ class VisitorArm8 extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 store
         );
     }
@@ -175,13 +172,10 @@ class VisitorArm8 extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 localOp,
                 store
         );
@@ -204,8 +198,7 @@ class VisitorArm8 extends VisitorBase {
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
-                strong ? null : newExecutionStatus(success, store),
-                strong ? null : newLocal(success, expressions.makeNot(success)),
+                strong ? null : newAssignExecutionStatus(success, store),
                 casEnd
         );
     }
@@ -233,7 +226,6 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         Expression value = e.getStoreValue();
         String mo = e.getMo();
-        boolean strong = e.isStrong();
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
@@ -250,18 +242,14 @@ class VisitorArm8 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadExclusive(regValue, address, extractLoadMoFromCMo(mo));
-        Store storeValue = newRMWStoreExclusive(address, value, strong, extractStoreMoFromCMo(mo));
-        Register statusReg = strong ? null : e.getFunction().newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
-        ExecutionStatus optionalExecStatus = strong ? null : newExecutionStatus(statusReg, storeValue);
-        Local optionalUpdateCasCmpResult = strong ? null : newLocal(booleanResultRegister, expressions.makeNot(statusReg));
+        Store storeValue = newRMWStoreExclusive(address, value, e.isStrong(), extractStoreMoFromCMo(mo));
         return eventSequence(
                 loadExpected,
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
                 storeValue,
-                optionalExecStatus,
-                optionalUpdateCasCmpResult,
+                e.isStrong() ? null : newAssignExecutionStatus(booleanResultRegister, storeValue),
                 gotoCasEnd,
                 casFail,
                 storeExpected,
@@ -281,13 +269,10 @@ class VisitorArm8 extends VisitorBase {
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 localOp,
                 store
         );
@@ -328,13 +313,10 @@ class VisitorArm8 extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(resultRegister),
                 store
         );
     }
@@ -432,16 +414,13 @@ class VisitorArm8 extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, e.getStoreValue(), true, extractStoreMoFromLKMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
                 branchOnCasCmpResult,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter,
                 casEnd,
                 newLocal(resultRegister, dummy)
@@ -459,16 +438,13 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromLKMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -483,14 +459,11 @@ class VisitorArm8 extends VisitorBase {
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = newRMWStoreExclusive(address, storeValue, true, "");
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         return eventSequence(
                 load,
                 store,
-                fakeCtrlDep,
-                label
+                newFakeCtrlDependency(dummy)
         );
     }
 
@@ -505,8 +478,6 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
@@ -514,8 +485,7 @@ class VisitorArm8 extends VisitorBase {
                 newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -532,16 +502,13 @@ class VisitorArm8 extends VisitorBase {
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -563,9 +530,6 @@ class VisitorArm8 extends VisitorBase {
         Load load = newRMWLoadExclusive(regValue, address, extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
 
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
-
         Register dummy = e.getFunction().newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
@@ -577,8 +541,7 @@ class VisitorArm8 extends VisitorBase {
                 newLocal(dummy, expressions.makeCast(expressions.makeNEQ(regValue, unless), dummy.getType())),
                 branchOnCauCmpResult,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(regValue),
                 optionalMemoryBarrierAfter,
                 cauEnd,
                 newLocal(resultRegister, dummy)
@@ -601,16 +564,13 @@ class VisitorArm8 extends VisitorBase {
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
 
         return eventSequence(
                 load,
                 localOp,
                 store,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDependency(dummy),
                 optionalMemoryBarrierAfter,
                 testOp
         );
@@ -638,6 +598,19 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newStoreWithMo(e.getAddress(), zero, MO_REL)
         );
+    }
+
+    private List<Event> newAssignExecutionStatus(Register register, Event store) {
+        final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
+        return List.of(
+                newExecutionStatus(status, store),
+                newLocal(register, expressions.makeNot(status))
+        );
+    }
+
+    private List<Event> newFakeCtrlDependency(Register register) {
+        final Label label = newLabel("FakeDep");
+        return List.of(newFakeCtrlDep(register, label), label);
     }
 
     private Load newRMWLoadExclusive(Register value, Expression address, String mo) {
