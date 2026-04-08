@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -71,7 +70,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore,
                 load,
-                doCtrlDependency ? newFakeCtrlDependency(resultRegister) : null,
+                doCtrlDependency ? newFakeCtrlDep(resultRegister) : null,
                 optionalBarrierAfter(e.getMo())
         );
     }
@@ -99,7 +98,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store,
                 optionalBarrierAfter(e.getMo())
         );
@@ -119,7 +118,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store,
                 optionalBarrierAfter(e.getMo())
@@ -218,7 +217,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store,
                 optionalBarrierAfter(e.getMo())
@@ -233,7 +232,7 @@ public class VisitorPower extends VisitorBase {
 
         Event optionalBarrierBefore = mo.equals(C11.MO_SC) && leadingSync() ? newSync() : null;
         Load load = newLoad(resultRegister, address);
-        final boolean doControlDependency = switch (mo) {
+        final boolean doCtrlDependency = switch (mo) {
             case C11.MO_SC -> leadingSync();
             case C11.MO_ACQUIRE -> true;
             case C11.MO_RELAXED -> useRC11Scheme;
@@ -243,7 +242,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore,
                 load,
-                doControlDependency ? newFakeCtrlDependency(resultRegister) : null,
+                doCtrlDependency ? newFakeCtrlDep(resultRegister) : null,
                 optionalBarrierAfter(mo)
         );
     }
@@ -284,7 +283,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store,
                 optionalBarrierAfter(e.getMo())
         );
@@ -424,7 +423,7 @@ public class VisitorPower extends VisitorBase {
                 load,
                 branchOnCasCmpResult,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo()),
                 casEnd,
                 newLocal(resultRegister, dummy)
@@ -445,7 +444,7 @@ public class VisitorPower extends VisitorBase {
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -464,7 +463,7 @@ public class VisitorPower extends VisitorBase {
                 optionalMemoryBarrierBefore(e.getMo()),
                 load,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -484,7 +483,7 @@ public class VisitorPower extends VisitorBase {
                 newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -503,7 +502,7 @@ public class VisitorPower extends VisitorBase {
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo())
         );
     }
@@ -535,7 +534,7 @@ public class VisitorPower extends VisitorBase {
                 newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
-                newFakeCtrlDependency(regValue),
+                newFakeCtrlDep(regValue),
                 optionalMemoryBarrierAfter(e.getMo()),
                 cauEnd,
                 newLocal(resultRegister, expressions.makeCast(dummy, resultRegister.getType()))
@@ -563,7 +562,7 @@ public class VisitorPower extends VisitorBase {
                 load,
                 localOp,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(e.getMo()),
                 testOp
         );
@@ -581,7 +580,7 @@ public class VisitorPower extends VisitorBase {
                 newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreConditional(e.getLock(), one, true),
                 // Fake dependency to guarantee acquire semantics
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 newISync()
         );
     }
@@ -610,21 +609,12 @@ public class VisitorPower extends VisitorBase {
         };
     }
 
-    private List<Event> newFakeCtrlDependency(Register register) {
-        final Label label = newLabel("FakeDep");
-        return List.of(newFakeCtrlDep(register, label), label);
-    }
-
     private List<Event> newAssignExecutionStatus(Register register, Event store) {
         final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
         return List.of(
                 newExecutionStatus(status, store),
                 newLocal(register, expressions.makeNot(status))
         );
-    }
-
-    private Load newRMWLoadExclusive(Register value, Expression address) {
-        return EventFactory.newRMWLoadExclusive(value, address);
     }
 
     private Store newRMWStoreConditional(Expression address, Expression value, boolean strong) {

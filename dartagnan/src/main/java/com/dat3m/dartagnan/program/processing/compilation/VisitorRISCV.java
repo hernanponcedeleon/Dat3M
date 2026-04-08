@@ -86,7 +86,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store
         );
     }
@@ -106,7 +106,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store
         );
@@ -214,7 +214,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store
         );
@@ -270,7 +270,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store
         );
     }
@@ -526,7 +526,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = newRMWStoreConditional(address, value, true, moStore);
 
         // TODO: Why does this use a different fake dep (from the load) than the other RMW events (from the store)?
-        List<Event> fakeCtrlDep = newFakeCtrlDependency(regValue);
+        List<Event> fakeCtrlDep = newFakeCtrlDep(regValue);
 
         Register dummy = e.getFunction().newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
@@ -569,7 +569,7 @@ class VisitorRISCV extends VisitorBase {
                 load,
                 localOp,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter(mo),
                 testOp
         );
@@ -623,11 +623,6 @@ class VisitorRISCV extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, value, strong, true, mo);
         store.addTags(STCOND);
         return store;
-    }
-
-    private List<Event> newFakeCtrlDependency(Register register) {
-        final Label label = newLabel("FakeDep");
-        return List.of(newFakeCtrlDep(register, label), label);
     }
 
     //TODO The following methods must return core events.

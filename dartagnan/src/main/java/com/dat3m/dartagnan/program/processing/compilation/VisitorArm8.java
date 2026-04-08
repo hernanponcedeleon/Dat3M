@@ -156,7 +156,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store
         );
     }
@@ -175,7 +175,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store
         );
@@ -272,7 +272,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store
         );
@@ -316,7 +316,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newFakeCtrlDependency(resultRegister),
+                newFakeCtrlDep(resultRegister),
                 store
         );
     }
@@ -420,7 +420,7 @@ class VisitorArm8 extends VisitorBase {
                 load,
                 branchOnCasCmpResult,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter,
                 casEnd,
                 newLocal(resultRegister, dummy)
@@ -444,7 +444,7 @@ class VisitorArm8 extends VisitorBase {
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -463,7 +463,7 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 load,
                 store,
-                newFakeCtrlDependency(dummy)
+                newFakeCtrlDep(dummy)
         );
     }
 
@@ -485,7 +485,7 @@ class VisitorArm8 extends VisitorBase {
                 newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -508,7 +508,7 @@ class VisitorArm8 extends VisitorBase {
                 load,
                 store,
                 newLocal(resultRegister, dummy),
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter
         );
     }
@@ -541,7 +541,7 @@ class VisitorArm8 extends VisitorBase {
                 newLocal(dummy, expressions.makeCast(expressions.makeNEQ(regValue, unless), dummy.getType())),
                 branchOnCauCmpResult,
                 store,
-                newFakeCtrlDependency(regValue),
+                newFakeCtrlDep(regValue),
                 optionalMemoryBarrierAfter,
                 cauEnd,
                 newLocal(resultRegister, dummy)
@@ -570,7 +570,7 @@ class VisitorArm8 extends VisitorBase {
                 load,
                 localOp,
                 store,
-                newFakeCtrlDependency(dummy),
+                newFakeCtrlDep(dummy),
                 optionalMemoryBarrierAfter,
                 testOp
         );
@@ -606,11 +606,6 @@ class VisitorArm8 extends VisitorBase {
                 newExecutionStatus(status, store),
                 newLocal(register, expressions.makeNot(status))
         );
-    }
-
-    private List<Event> newFakeCtrlDependency(Register register) {
-        final Label label = newLabel("FakeDep");
-        return List.of(newFakeCtrlDep(register, label), label);
     }
 
     private Load newRMWLoadExclusive(Register value, Expression address, String mo) {

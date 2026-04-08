@@ -172,13 +172,10 @@ class VisitorIMM extends VisitorBase {
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, false, extractStoreMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDep(resultRegister),
                 store
         );
     }
@@ -194,13 +191,10 @@ class VisitorIMM extends VisitorBase {
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, false, extractStoreMo(mo));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                fakeCtrlDep,
-                label,
+                newFakeCtrlDep(resultRegister),
                 localOp,
                 store
         );

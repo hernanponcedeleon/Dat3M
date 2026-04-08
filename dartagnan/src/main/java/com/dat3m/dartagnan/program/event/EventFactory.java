@@ -251,10 +251,11 @@ public class EventFactory {
         return newJump(expressions.makeTrue(), target);
     }
 
-    public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        CondJump jump = newJump(expressions.makeEQ(reg, reg), target);
+    public static List<Event> newFakeCtrlDep(Register reg) {
+        final Label label = newLabel("FakeDep");
+        CondJump jump = newJump(expressions.makeEQ(reg, reg), label);
         jump.addTags(Tag.NOOPT);
-        return jump;
+        return List.of(jump, label);
     }
 
     public static Assume newAssume(Expression expr) {
