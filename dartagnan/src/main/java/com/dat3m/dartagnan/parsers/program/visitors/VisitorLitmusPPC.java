@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -120,7 +119,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitLwzx(LwzxContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("lwzx is not implemented");
+        throw new UnsupportedOperationException("lwzx is not implemented");
     }
 
     @Override
@@ -141,7 +140,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitStwx(StwxContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("stwx is not implemented");
+        throw new UnsupportedOperationException("stwx is not implemented");
     }
 
     @Override

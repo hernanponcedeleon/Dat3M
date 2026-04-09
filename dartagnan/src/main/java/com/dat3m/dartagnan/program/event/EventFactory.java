@@ -758,8 +758,8 @@ public class EventFactory {
         }
 
         public static Event newMemoryFence(String type) {
-            final String name = switch (type.toLowerCase()) {
-                case "mfence" -> "mfence";
+            final String name = switch (type) {
+                case "mfence" -> type;
                 case "lfence", "sfence" -> throw new UnsupportedOperationException("X86 fence '%s'.".formatted(type));
                 default -> throw new IllegalArgumentException("Invalid X86 fence '%s'".formatted(type));
             };

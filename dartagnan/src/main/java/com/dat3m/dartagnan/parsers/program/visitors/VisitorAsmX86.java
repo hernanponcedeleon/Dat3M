@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.AsmX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmX86Parser.*;
@@ -29,5 +28,4 @@ public class VisitorAsmX86 extends AsmX86BaseVisitor<Object> {
         asmInstructions.add(EventFactory.X86.newMemoryFence(ctx.X86Fence().getText()));
         return null;
     }
-
 }

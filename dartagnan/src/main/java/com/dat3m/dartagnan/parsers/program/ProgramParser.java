@@ -44,7 +44,7 @@ public class ProgramParser {
         try (FileInputStream stream = new FileInputStream(file)) {
             ParserInterface parser = getConcreteParser(file);
             CharStream charStream = CharStreams.fromStream(stream);
-            program = parser.parse(charStream);
+            program = parseAndWrap(parser, charStream);
         }
         program.setName(file.getName());
         return program;
@@ -55,6 +55,7 @@ public class ProgramParser {
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
+        final ParserInterface parser;
         switch (format) {
             case EXTENSION_C, EXTENSION_I -> {
                 File file = path.isEmpty() ?
@@ -71,20 +72,31 @@ public class ProgramParser {
                 return p;
             }
             case EXTENSION_LL -> {
-                return new ParserLlvm().parse(CharStreams.fromString(raw));
+                parser = new ParserLlvm();
             }
             case EXTENSION_SPVASM -> {
-                return new ParserSpirv().parse(CharStreams.fromString(raw));
+                parser = new ParserSpirv();
             }
             case EXTENSION_SPV_DIS -> {
                 logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
-                return new ParserSpirv().parse(CharStreams.fromString(raw));
+                parser = new ParserSpirv();
             }
             case EXTENSION_LITMUS -> {
-                return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
+                parser = getConcreteLitmusParser(raw.toUpperCase());
             }
+            default -> throw new ParsingException("Unknown input file type");
         }
-        throw new ParsingException("Unknown input file type");
+        return parseAndWrap(parser, CharStreams.fromString(raw));
+    }
+
+    private Program parseAndWrap(ParserInterface parser, CharStream charStream) {
+        try {
+            return parser.parse(charStream);
+        } catch (ParsingException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new ParsingException(exception, exception.getMessage());
+        }
     }
 
     private ParserInterface getConcreteParser(File file) throws IOException {

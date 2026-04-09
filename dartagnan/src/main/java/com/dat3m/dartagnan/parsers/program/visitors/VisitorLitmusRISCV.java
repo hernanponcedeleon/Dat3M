@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -227,16 +226,16 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAmoadd(AmoaddContext ctx) {
-		throw new ParsingException("No support for amoadd instructions");
+		throw new UnsupportedOperationException("No support for amoadd instructions");
     }
 
 	@Override
 	public Object visitAmoor(AmoorContext ctx) {
-		throw new ParsingException("No support for amoor instructions");	}
+		throw new UnsupportedOperationException("No support for amoor instructions");	}
 
 	@Override
 	public Object visitAmoswap(AmoswapContext ctx) {
-		throw new ParsingException("No support for amoswap instructions");
+		throw new UnsupportedOperationException("No support for amoswap instructions");
 	}
 
 	// =======================================
