@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public class ProgramBuilderTest {
                     .forEach(f -> {
                                 try {
                                     new ProgramParser().parse(new File(f.toString()));
-                                } catch (MalformedProgramException e) {
+                                } catch (ParsingException e) {
                                     // Test succeeded
                                 } catch (Exception e) {
                                     fail("Missing resource file");
