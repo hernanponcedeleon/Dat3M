@@ -158,7 +158,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoad(LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.AArch64.newLoad(register, address, RELAXED));
+        asmInstructions.add(EventFactory.AArch64.newLoad(register, address, PLAIN));
         return null;
     }
 
@@ -174,7 +174,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.AArch64.newLoadExclusive(register, address, RELAXED));
+        asmInstructions.add(EventFactory.AArch64.newLoadExclusive(register, address, PLAIN));
         return null;
     }
 
@@ -232,7 +232,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.AArch64.newStore(address, value, RELAXED));
+        asmInstructions.add(EventFactory.AArch64.newStore(address, value, PLAIN));
         return null;
     }
 
@@ -249,7 +249,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.AArch64.newStoreExclusive(freshResultRegister, address, value, RELAXED));
+        asmInstructions.add(EventFactory.AArch64.newStoreExclusive(freshResultRegister, address, value, PLAIN));
         return null;
     }
 

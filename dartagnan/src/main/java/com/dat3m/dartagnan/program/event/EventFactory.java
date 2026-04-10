@@ -528,7 +528,7 @@ public class EventFactory {
         }
 
         public enum MemoryOrder {
-            RELAXED, ACQUIRE, RELEASE, ACQ_REL
+            PLAIN, ACQUIRE, RELEASE, ACQ_REL
         }
 
         public static Event newLoad(Register value, Expression address, MemoryOrder mo) {
@@ -776,7 +776,7 @@ public class EventFactory {
         }
 
         public enum MemoryOrder {
-            RELAXED, ACQUIRE, RELEASE, ACQ_REL
+            PLAIN, ACQUIRE, RELEASE, ACQ_REL
         }
 
         public static Event newLoad(Register value, Expression address, MemoryOrder mo) {
@@ -802,7 +802,7 @@ public class EventFactory {
 
         private static String toTag(MemoryOrder mo) {
             return switch(mo) {
-                case RELAXED -> "";
+                case PLAIN -> "";
                 case ACQUIRE -> Tag.RISCV.MO_ACQ;
                 case RELEASE -> Tag.RISCV.MO_REL;
                 case ACQ_REL -> Tag.RISCV.MO_ACQ_REL;

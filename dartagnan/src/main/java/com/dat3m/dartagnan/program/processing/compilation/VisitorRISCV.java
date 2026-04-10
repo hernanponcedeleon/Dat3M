@@ -36,7 +36,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
-        Store store = newRMWStoreConditional(e.getAddress(), e.getMemValue(), false, e.getMo());
+        Store store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), false, e.getMo());
 
         return eventSequence(
                 store,
@@ -81,7 +81,7 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreConditional(address, e.getValue(), true, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -101,7 +101,7 @@ class VisitorRISCV extends VisitorBase {
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreConditional(address, dummyReg, true, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -121,7 +121,7 @@ class VisitorRISCV extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusive(oldValue, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreConditional(address, newValue, strong, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, newValue, strong, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -174,7 +174,7 @@ class VisitorRISCV extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadExclusive(regValue, address, extractLoadMoFromCMo(mo));
-        Store storeValue = newRMWStoreConditional(address, value, e.isStrong(), extractStoreMoFromCMo(mo));
+        Store storeValue = newRMWStoreExclusive(address, value, e.isStrong(), extractStoreMoFromCMo(mo));
         Register statusReg = e.getFunction().newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
         // We normally make the following two events optional.
         // Here we make them mandatory to guarantee correct dependencies.
@@ -209,7 +209,7 @@ class VisitorRISCV extends VisitorBase {
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreConditional(address, dummyReg, true, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, dummyReg, true, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -265,7 +265,7 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreConditional(address, e.getValue(), true, extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -356,7 +356,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, ""); // TODO: No mo on the load?
         String moStore = mo.equals(Tag.Linux.MO_MB) ? MO_REL : "";
-        Store store = newRMWStoreConditional(address, e.getStoreValue(), true, moStore);
+        Store store = newRMWStoreExclusive(address, e.getStoreValue(), true, moStore);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
@@ -390,7 +390,7 @@ class VisitorRISCV extends VisitorBase {
         String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? MO_ACQ : "";
         Load load = newRMWLoadExclusive(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? MO_ACQ_REL : "";
-        Store store = newRMWStoreConditional(address, e.getValue(), true, moStore);
+        Store store = newRMWStoreExclusive(address, e.getValue(), true, moStore);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
@@ -421,7 +421,7 @@ class VisitorRISCV extends VisitorBase {
         String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? MO_ACQ : "";
         Load load = newRMWLoadExclusive(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? MO_ACQ_REL : "";
-        Store store = newRMWStoreConditional(address, storeValue, true, moStore);
+        Store store = newRMWStoreExclusive(address, storeValue, true, moStore);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
@@ -453,7 +453,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, ""); // TODO: No mo on the load?
         String moStore = mo.equals(Tag.Linux.MO_MB) ? MO_REL : "";
-        Store store = newRMWStoreConditional(address, value, true, moStore);
+        Store store = newRMWStoreExclusive(address, value, true, moStore);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
@@ -487,7 +487,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, ""); // TODO: No mo on the load?
         String moStore = mo.equals(Tag.Linux.MO_MB) ? MO_REL : "";
-        Store store = newRMWStoreConditional(address, dummy, true, moStore);
+        Store store = newRMWStoreExclusive(address, dummy, true, moStore);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
@@ -522,7 +522,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(regValue, address, ""); // TODO: No mo on the load?
         String moStore = mo.equals(Tag.Linux.MO_MB) ? MO_REL : "";
-        Store store = newRMWStoreConditional(address, value, true, moStore);
+        Store store = newRMWStoreExclusive(address, value, true, moStore);
 
         // TODO: Why does this use a different fake dep (from the load) than the other RMW events (from the store)?
         List<Event> fakeCtrlDep = newFakeCtrlDep(regValue);
@@ -561,7 +561,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
-        Store store = newRMWStoreConditional(address, dummy, true, storeMo);
+        Store store = newRMWStoreExclusive(address, dummy, true, storeMo);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
 
         return eventSequence(
@@ -586,7 +586,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ""),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreConditional(e.getLock(), one, true, ""),
+                newRMWStoreExclusive(e.getLock(), one, true, ""),
                 newRRWFence()
         );
     }
@@ -618,7 +618,7 @@ class VisitorRISCV extends VisitorBase {
         return newRMWLoadExclusiveWithMo(value, address, mo);
     }
 
-    private Store newRMWStoreConditional(Expression address, Expression value, boolean strong, String mo) {
+    private Store newRMWStoreExclusive(Expression address, Expression value, boolean strong, String mo) {
         Store store = newRMWStoreExclusiveWithMo(address, value, strong, true, mo);
         store.addTags(STCOND);
         return store;

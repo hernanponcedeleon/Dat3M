@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
+import static com.dat3m.dartagnan.program.event.EventFactory.RISCV.MemoryOrder.*;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
@@ -249,8 +250,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
             acq |= ctx.Acq() != null;
             rel |= ctx.Rel() != null;
         }
-		return acq ? rel ? EventFactory.RISCV.MemoryOrder.ACQ_REL : EventFactory.RISCV.MemoryOrder.ACQUIRE
-                : rel ? EventFactory.RISCV.MemoryOrder.RELEASE : EventFactory.RISCV.MemoryOrder.RELAXED;
+		return acq ? rel ? ACQ_REL : ACQUIRE : rel ? RELEASE : PLAIN;
 	}
 
     private Event append(Event event, ParserRuleContext ctx) {

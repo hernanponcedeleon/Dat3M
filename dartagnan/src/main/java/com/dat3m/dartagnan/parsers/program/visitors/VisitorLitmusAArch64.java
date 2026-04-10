@@ -194,7 +194,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadInstructionContext inst = ctx.loadInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final Event ld = EventFactory.AArch64.newLoad(register, address, inst.acquire ? ACQUIRE : RELAXED);
+        final Event ld = EventFactory.AArch64.newLoad(register, address, inst.acquire ? ACQUIRE : PLAIN);
         return appendAndRegister64Update(ld, r64, register, ctx);
     }
 
@@ -208,8 +208,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         final int lineOfCode = ctx.getStart().getLine();
-        add(EventFactory.AArch64.newLoad(value0, address0, RELAXED), lineOfCode);
-        add(EventFactory.AArch64.newLoad(value1, address1, RELAXED), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value0, address0, PLAIN), lineOfCode);
+        add(EventFactory.AArch64.newLoad(value1, address1, PLAIN), lineOfCode);
         addRegister64Update(r064, value0, lineOfCode);
         addRegister64Update(r164, value1, lineOfCode);
         return null;
@@ -221,7 +221,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadExclusiveInstructionContext inst = ctx.loadExclusiveInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final Event ldx = EventFactory.AArch64.newLoadExclusive(register, address, inst.acquire ? ACQUIRE : RELAXED);
+        final Event ldx = EventFactory.AArch64.newLoadExclusive(register, address, inst.acquire ? ACQUIRE : PLAIN);
         return appendAndRegister64Update(ldx, r64, register, ctx);
     }
 
@@ -232,7 +232,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final IntegerType type = type(ctx.rV32, inst.halfWordSize, inst.byteSize);
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
-        return append(EventFactory.AArch64.newStore(address, value, inst.release ? RELEASE : RELAXED), ctx);
+        return append(EventFactory.AArch64.newStore(address, value, inst.release ? RELEASE : PLAIN), ctx);
     }
 
     @Override
@@ -258,7 +258,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
-        return append(EventFactory.AArch64.newStoreExclusive(status, address, value, inst.release ? RELEASE : RELAXED), ctx);
+        return append(EventFactory.AArch64.newStoreExclusive(status, address, value, inst.release ? RELEASE : PLAIN), ctx);
     }
 
     @Override
@@ -530,7 +530,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     private EventFactory.AArch64.MemoryOrder mo(boolean acq, boolean rel) {
-        return acq ? rel ? ACQ_REL : ACQUIRE : rel ? RELEASE : RELAXED;
+        return acq ? rel ? ACQ_REL : ACQUIRE : rel ? RELEASE : PLAIN;
     }
 
     private Void append(Event event, ParserRuleContext ctx) {

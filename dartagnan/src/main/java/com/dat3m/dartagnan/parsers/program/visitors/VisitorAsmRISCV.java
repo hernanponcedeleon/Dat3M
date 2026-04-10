@@ -89,7 +89,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.RISCV.newLoad(register, newAddress, RELAXED));
+        asmInstructions.add(EventFactory.RISCV.newLoad(register, newAddress, PLAIN));
         return null;
     }
 
@@ -106,7 +106,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.RISCV.newLoadReserve(register, address, RELAXED));
+        asmInstructions.add(EventFactory.RISCV.newLoadReserve(register, address, PLAIN));
         return null;
     }
 
@@ -145,7 +145,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.RISCV.newStore(newAddress, value, RELAXED));
+        asmInstructions.add(EventFactory.RISCV.newStore(newAddress, value, PLAIN));
         return null;
     }
 
@@ -155,7 +155,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.RISCV.newStoreConditional(freshResultRegister, address, value, RELAXED));
+        asmInstructions.add(EventFactory.RISCV.newStoreConditional(freshResultRegister, address, value, PLAIN));
         return null;
     }
 
