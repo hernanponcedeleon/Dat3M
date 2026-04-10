@@ -42,7 +42,7 @@ public class TaskSolver implements AutoCloseable {
             name = TIMEOUT,
             description = "Timeout before interrupting the task solver. Can specify time units ns, ms, s (default), min, and h.")
     @TimeSpanOption(min = 0, codeUnit = TimeUnit.MILLISECONDS, defaultUserUnit = TimeUnit.SECONDS)
-    private int timeout = 1200;
+    private int timeout = 0;
 
     private boolean hasTimeout() {
         return timeout > 0;
