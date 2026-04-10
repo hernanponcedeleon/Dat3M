@@ -170,8 +170,8 @@ class VisitorIMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
-        Store store = newRMWStoreWithMo(load, address, e.getValue(), extractStoreMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, false, extractStoreMo(mo));
 
         return eventSequence(
                 load,
@@ -189,8 +189,8 @@ class VisitorIMM extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
-        Store store = newRMWStoreWithMo(load, address, dummyReg, extractStoreMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, false, extractStoreMo(mo));
 
         return eventSequence(
                 load,
