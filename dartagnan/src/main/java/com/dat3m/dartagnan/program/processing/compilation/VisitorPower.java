@@ -92,8 +92,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
 
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = newRMWStoreConditional(address, e.getValue(), true);
+        Load load = newCoreLoadReserved(resultRegister, address);
+        Store store = newCoreStoreConditional(address, e.getValue(), true);
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
@@ -113,8 +113,8 @@ public class VisitorPower extends VisitorBase {
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = newRMWStoreConditional(address, dummyReg, true);
+        Load load = newCoreLoadReserved(resultRegister, address);
+        Store store = newCoreStoreConditional(address, dummyReg, true);
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 load,
@@ -134,8 +134,8 @@ public class VisitorPower extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        Load load = newRMWLoadExclusive(oldValue, address);
-        Store store = newRMWStoreConditional(address, newValue, strong);
+        Load load = newCoreLoadReserved(oldValue, address);
+        Store store = newCoreStoreConditional(address, newValue, strong);
 
         return eventSequence(
                 optionalBarrierBefore(mo),
@@ -184,8 +184,8 @@ public class VisitorPower extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         // Power does not have mo tags, thus we use the empty string
-        Load loadValue = newRMWLoadExclusive(regValue, address);
-        Store storeValue = newRMWStoreConditional(address, value, e.isStrong());
+        Load loadValue = newCoreLoadReserved(regValue, address);
+        Store storeValue = newCoreStoreConditional(address, value, e.isStrong());
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
                 loadExpected,
@@ -211,8 +211,8 @@ public class VisitorPower extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = newRMWStoreConditional(address, dummyReg, true);
+        Load load = newCoreLoadReserved(resultRegister, address);
+        Store store = newCoreStoreConditional(address, dummyReg, true);
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
@@ -277,8 +277,8 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = newRMWStoreConditional(address, e.getValue(), true);
+        Load load = newCoreLoadReserved(resultRegister, address);
+        Store store = newCoreStoreConditional(address, e.getValue(), true);
 
         return eventSequence(
                 optionalBarrierBefore(e.getMo()),
@@ -415,8 +415,8 @@ public class VisitorPower extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreConditional(address, e.getStoreValue(), true);
+        Load load = newCoreLoadReserved(dummy, address);
+        Store store = newCoreStoreConditional(address, e.getStoreValue(), true);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -436,8 +436,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreConditional(address, e.getValue(), true);
+        Load load = newCoreLoadReserved(dummy, address);
+        Store store = newCoreStoreConditional(address, e.getValue(), true);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -456,8 +456,8 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreConditional(address, storeValue, true);
+        Load load = newCoreLoadReserved(dummy, address);
+        Store store = newCoreStoreConditional(address, storeValue, true);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -474,8 +474,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreConditional(address, dummy, true);
+        Load load = newCoreLoadReserved(dummy, address);
+        Store store = newCoreStoreConditional(address, dummy, true);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -494,8 +494,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
+        Load load = newCoreLoadReserved(dummy, address);
+        Store store = newCoreStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
 
         return eventSequence(
                 optionalMemoryBarrierBefore(e.getMo()),
@@ -520,8 +520,8 @@ public class VisitorPower extends VisitorBase {
 
         Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
-        Load load = newRMWLoadExclusive(regValue, address);
-        Store store = newRMWStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
+        Load load = newCoreLoadReserved(regValue, address);
+        Store store = newCoreStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
 
         Register dummy = e.getFunction().newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
@@ -552,9 +552,9 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
-        Load load = newRMWLoadExclusive(dummy, address);
+        Load load = newCoreLoadReserved(dummy, address);
         Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
-        Store store = newRMWStoreConditional(address, dummy, true);
+        Store store = newCoreStoreConditional(address, dummy, true);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
 
         return eventSequence(
@@ -576,9 +576,9 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(type);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(
-                newRMWLoadExclusive(dummy, e.getLock()),
+                newCoreLoadReserved(dummy, e.getLock()),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreConditional(e.getLock(), one, true),
+                newCoreStoreConditional(e.getLock(), one, true),
                 // Fake dependency to guarantee acquire semantics
                 newFakeCtrlDep(dummy),
                 newISync()
@@ -617,7 +617,11 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    private Store newRMWStoreConditional(Expression address, Expression value, boolean strong) {
+    private Load newCoreLoadReserved(Register value, Expression address) {
+        return newRMWLoadExclusive(value, address);
+    }
+
+    private Store newCoreStoreConditional(Expression address, Expression value, boolean strong) {
         return newRMWStoreExclusive(address, value, strong, true);
     }
 

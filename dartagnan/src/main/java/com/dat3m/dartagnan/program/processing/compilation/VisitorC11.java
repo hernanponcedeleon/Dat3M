@@ -157,8 +157,8 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, loadMO(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, false, storeMO(mo));
+        Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
+        Store store = newRMWStoreWithMo(load, address, e.getValue(), storeMO(mo));
 
         return tagList(eventSequence(
                 load,
@@ -175,8 +175,8 @@ public class VisitorC11 extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, loadMO(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, false, storeMO(mo));
+        Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
+        Store store = newRMWStoreWithMo(load, address, dummyReg, storeMO(mo));
 
         return tagList(eventSequence(
                 load,
