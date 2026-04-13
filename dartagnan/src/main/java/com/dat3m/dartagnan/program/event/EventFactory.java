@@ -556,8 +556,9 @@ public class EventFactory {
         }
 
         public static Event newStoreOp(Expression address, IntBinaryOp operator, Expression operand, MemoryOrder mo) {
+            checkArgument(mo.equals(MemoryOrder.PLAIN) || mo.equals(MemoryOrder.RELEASE),
+                    "Invalid memory order for St%s", opToArmOpCode(operator));
             final Event st = EventFactory.Common.newRmwOp(address, operator, operand);
-            // ignore acquire tag
             st.addTags(toRelTag(mo));
             st.setMetadata(STOP_PRINTING);
             return st;
