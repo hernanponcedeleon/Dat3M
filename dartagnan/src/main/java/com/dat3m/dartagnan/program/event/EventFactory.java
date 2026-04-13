@@ -923,7 +923,8 @@ public class EventFactory {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
         }
 
-        public static Event newBarrier(String mo, String scope, List<String> semantics, boolean av, boolean vis) {
+        public static Event newMemoryBarrier(String mo, String scope, List<String> semantics, boolean av,
+                boolean vis) {
             checkArgument(BARRIER_MEMORY_ORDER.contains(mo), "Unknown barrier memory order '%s'.", mo);
             final GenericVisibleEvent barrier = new GenericVisibleEvent("membar", Tag.FENCE);
             barrier.addTags(semantics);

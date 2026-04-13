@@ -92,10 +92,10 @@ public class ProgramParser {
     private Program parseAndWrap(ParserInterface parser, CharStream charStream) {
         try {
             return parser.parse(charStream);
-        } catch (ParsingException exception) {
-            throw exception;
         } catch (RuntimeException exception) {
-            throw new ParsingException(exception, exception.getMessage());
+            // Wrap into ParsingException.
+            throw exception instanceof ParsingException ? exception
+                    : new ParsingException(exception, exception.getMessage());
         }
     }
 

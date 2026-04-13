@@ -245,7 +245,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         final List<String> semantics = ctx.semSc().stream().map(c -> c.content).toList();
         final boolean av = ctx.semAv() != null;
         final boolean vis = ctx.semVis() != null;
-        return append(EventFactory.Vulkan.newBarrier(mo, scope, semantics, av, vis), ctx);
+        return append(EventFactory.Vulkan.newMemoryBarrier(mo, scope, semantics, av, vis), ctx);
     }
 
     @Override

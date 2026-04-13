@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -134,31 +133,31 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitIncrementLocation(IncrementLocationContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("INC is not implemented");
+        throw new UnsupportedOperationException("INC is not implemented");
     }
 
     @Override
     public Object visitCompareRegisterValue(CompareRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("CMP is not implemented");
+        throw new UnsupportedOperationException("CMP is not implemented");
     }
 
     @Override
     public Object visitCompareLocationValue(CompareLocationValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("CMP is not implemented");
+        throw new UnsupportedOperationException("CMP is not implemented");
     }
 
     @Override
     public Object visitAddRegisterRegister(AddRegisterRegisterContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("ADD is not implemented");
+        throw new UnsupportedOperationException("ADD is not implemented");
     }
 
     @Override
     public Object visitAddRegisterValue(AddRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("ADD is not implemented");
+        throw new UnsupportedOperationException("ADD is not implemented");
     }
 
     @Override
