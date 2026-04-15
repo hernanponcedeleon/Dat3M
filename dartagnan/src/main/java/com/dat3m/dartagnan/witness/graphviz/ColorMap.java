@@ -1,65 +1,38 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import java.awt.Color;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-
 class ColorMap {
-    private final Map<String, String> fixedColorMap = new HashMap<>();
-    private final Set<String> usedColors = new HashSet<>();
-    private int currentHue = 0;
-    private int step = 72;
-    private float saturation = 1.0f;
-    private float brightness = 1.0f;
+
+    private final Map<String, String> relationColors = new HashMap<>();
+    private int nextColorIndex = 0;
+
+    // Kelly palette
+    private static final String[] KELLY_COLORS = {
+        "\"#FFB300\"", "\"#803E75\"", "\"#FF6800\"", "\"#A6BDD7\"", "\"#C10020\"",
+        "\"#CEA262\"", "\"#817066\"", "\"#007D34\"", "\"#F6768E\"", "\"#00538A\"",
+        "\"#FF7A5C\"", "\"#53377A\"", "\"#FF8E00\"", "\"#B32851\"", "\"#F4C800\"",
+        "\"#7F180D\"", "\"#93AA00\"", "\"#593315\"", "\"#F13A13\"", "\"#232C16\""
+    };
 
     ColorMap() {
-        // Black for PO
-        fixedColorMap.put(PO, colorToHex(Color.getHSBColor(0.0f, 0.0f, 0.0f)));
-        // Green for RF
-        fixedColorMap.put(RF, colorToHex(Color.getHSBColor(0.33f, 1.0f, 1.0f)));
-        // Red for CO
-        fixedColorMap.put(CO, colorToHex(Color.getHSBColor(0.0f, 1.0f, 1.0f)));
-        // Pink for SI
-        fixedColorMap.put(SI, colorToHex(Color.getHSBColor(0.0f, 0.5f, 1.0f)));
-
-        usedColors.addAll(fixedColorMap.values());
+        // Fixed colors
+        relationColors.put(PO, "\"#000000\""); // black
+        relationColors.put(RF, "\"#00AA00\""); // green
+        relationColors.put(CO, "\"#FF0000\""); // red
+        relationColors.put(SI, "\"#800080\""); // purple
     }
 
     String getColor(String relName) {
-        if (fixedColorMap.containsKey(relName)) {
-            return fixedColorMap.get(relName);
-        }
-        return generateColor();
+        return relationColors.computeIfAbsent(relName, k -> nextPaletteColor());
     }
 
-    private String generateColor() {
-        updateHue();
-        float hue = currentHue / 360.0f;
-        String c = colorToHex(Color.getHSBColor(hue, saturation, brightness));
-        if (usedColors.contains(c)) {
-            c = generateColor();
-        }
-        usedColors.add(c);
-        return c;
-    }
-
-    private String colorToHex(Color c) {
-        return String.format("\"#%02x%02x%02x\"", c.getRed(), c.getGreen(), c.getBlue());
-    }
-
-    private void updateHue() {
-        currentHue += step;
-        if (currentHue >= 360) {
-            currentHue -= 360;
-            step /= 2;
-            if (currentHue == 0) {
-                updateHue();
-            }
-        }
+    private String nextPaletteColor() {
+        String color = KELLY_COLORS[nextColorIndex];
+        nextColorIndex = (nextColorIndex + 1) % KELLY_COLORS.length;
+        return color;
     }
 }
