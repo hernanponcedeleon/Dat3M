@@ -12,10 +12,18 @@ class ColorMap {
 
     // Kelly palette
     private static final String[] KELLY_COLORS = {
-        "\"#FFB300\"", "\"#803E75\"", "\"#FF6800\"", "\"#A6BDD7\"", "\"#C10020\"",
-        "\"#CEA262\"", "\"#817066\"", "\"#007D34\"", "\"#F6768E\"", "\"#00538A\"",
-        "\"#FF7A5C\"", "\"#53377A\"", "\"#FF8E00\"", "\"#B32851\"", "\"#F4C800\"",
-        "\"#7F180D\"", "\"#93AA00\"", "\"#593315\"", "\"#F13A13\"", "\"#232C16\""
+        "\"#FFB300\"", // vivid yellow
+        "\"#FF6800\"", // vivid orange
+        "\"#A6BDD7\"", // very light blue
+        "\"#CEA262\"", // grayish yellow
+        "\"#817066\"", // medium gray
+        "\"#F6768E\"", // pink
+        "\"#00538A\"", // strong blue
+        "\"#FF7A5C\"", // coral
+        "\"#FF8E00\"", // orange-yellow
+        "\"#F4C800\"", // yellow
+        "\"#593315\"", // brown
+        "\"#F13A13\""  // reddish orange
     };
 
     ColorMap() {
