@@ -155,9 +155,7 @@ public class Dartagnan extends BaseOptions {
         final List<File> files = new ArrayList<>();
         Stream.of(args).map(Paths::get).filter(Files::exists)
                 .forEach(path -> {
-                    List<File> supported = getProgramFiles(path).stream()
-                        .filter(ProgramParser::isSupported)
-                        .toList();
+                    List<File> supported = getProgramFiles(path);
                     if (!supported.isEmpty()) {
                         logger.info("Program(s) path: {}", path.normalize());
                         files.addAll(supported);
