@@ -2,10 +2,14 @@ package com.dat3m.dartagnan.witness.graphviz;
 
 import java.util.Map;
 import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-class ColorMap {
+public class ColorMap {
+
+    private static final Logger logger = LoggerFactory.getLogger(ColorMap.class);
 
     private final Map<String, String> relationColors = new HashMap<>();
     private int nextColorIndex = 0;
@@ -39,6 +43,9 @@ class ColorMap {
     }
 
     private String nextPaletteColor() {
+        if (nextColorIndex == KELLY_COLORS.length - 1) {
+            logger.warn("Not enough distinct colors; palette will repeat. Consider reducing the number of shown relations.");
+        }
         String color = KELLY_COLORS[nextColorIndex];
         nextColorIndex = (nextColorIndex + 1) % KELLY_COLORS.length;
         return color;
