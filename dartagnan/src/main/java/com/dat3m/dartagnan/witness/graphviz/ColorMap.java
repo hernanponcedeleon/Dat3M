@@ -7,9 +7,13 @@ import org.slf4j.LoggerFactory;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
+<<<<<<< HEAD
 public class ColorMap {
 
     private static final Logger logger = LoggerFactory.getLogger(ColorMap.class);
+=======
+class ColorMap {
+>>>>>>> 220004204 (Remoove awt dependency in ColorMap)
 
     private final Map<String, String> relationColors = new HashMap<>();
     private int nextColorIndex = 0;
