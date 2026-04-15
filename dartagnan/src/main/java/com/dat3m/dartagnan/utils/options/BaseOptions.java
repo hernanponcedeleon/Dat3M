@@ -40,19 +40,6 @@ public abstract class BaseOptions {
     }
 
     @Option(
-            name = VALIDATE,
-            description = "Performs violation witness validation. Argument is the path to the witness file.")
-    private String witnessPath;
-
-    public boolean runValidator() {
-        return witnessPath != null;
-    }
-
-    public String getWitnessPath() {
-        return witnessPath;
-    }
-
-    @Option(
             name = METHOD,
             description = "Solver method to be used.",
             toUppercase = true)

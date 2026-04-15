@@ -11,7 +11,6 @@ public class OptionNames {
     public static final String METHOD = "method";
     public static final String SOLVER = "solver";
     public static final String TIMEOUT = "timeout";
-    public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
     public static final String WITNESS = "witness";
     public static final String SMTLIB2 = "smtlib2";
@@ -78,7 +77,6 @@ public class OptionNames {
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
 
     // Witness Options
-    public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
     public static final String WITNESS_SHOW = "witness.show";
     public static final String WITNESS_FILENAME = "witness.filename";
     public static final String WITNESS_UNKNOWN = "witness.unknown";

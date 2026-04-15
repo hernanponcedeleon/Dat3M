@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
-import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
@@ -102,9 +101,7 @@ public class TaskResultAnalyzer {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
+                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, PROGRAM_SPEC_VIOLATION);
             }
 
             if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
@@ -120,16 +117,12 @@ public class TaskResultAnalyzer {
                         appendTo(details, e, synContext);
                     }
                 }
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
+                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, TERMINATION_VIOLATION);
             }
 
             if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
                 reason = ResultSummary.SVCOMP_RACE_REASON;
-                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
+                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, DATA_RACE_FREEDOM_VIOLATION);
             }
 
             if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
@@ -139,8 +132,7 @@ public class TaskResultAnalyzer {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                ExitCode code = task.getWitness().isEmpty() ? MEMORY_TRACKABILITY_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, code);
+                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, MEMORY_TRACKABILITY_VIOLATION);
             }
 
             if (props.contains(CAT_SPEC)) {
@@ -150,9 +142,7 @@ public class TaskResultAnalyzer {
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     reason = ResultSummary.CAT_SPEC_REASON;
-                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                    ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, code);
+                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, CAT_SPEC_VIOLATION);
                 }
             }
         } else if (hasViolationsWithoutWitness) {
@@ -182,9 +172,7 @@ public class TaskResultAnalyzer {
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
-        ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
-        return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, code);
+        return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
     public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename, String details,
@@ -197,21 +185,6 @@ public class TaskResultAnalyzer {
 
         final VerificationTask task = solver.getTask();
         switch (witnessType) {
-            case GRAPHML -> {
-                Preconditions.checkArgument(solver.getResult() != UNKNOWN);
-
-                if (!task.getProgram().getFormat().equals(LLVM) || !requiresSvcompWitness(task.getProperty())) {
-                    return null;
-                }
-                try {
-                    WitnessBuilder w = WitnessBuilder.of(solver.getModel(), solver.getResult(), details);
-                    if (w.canBeBuilt()) {
-                        return w.build().write(filename);
-                    }
-                } catch (IOException | InvalidConfigurationException e) {
-                    logger.warn(e.getMessage());
-                }
-            }
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 final ExecutionModelNext model = solver.getExecutionGraph();

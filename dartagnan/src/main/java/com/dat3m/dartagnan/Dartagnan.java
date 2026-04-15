@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -15,7 +14,6 @@ import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -71,8 +69,6 @@ public class Dartagnan extends BaseOptions {
         final List<File> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
 
-        final WitnessGraph witness = getWitnessGraph(o, isBatchMode);
-
         final OutputLogger output = new OutputLogger(catFile, config);
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         ResultSummary summary = null;
@@ -87,8 +83,7 @@ public class Dartagnan extends BaseOptions {
                 final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(catFile);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
-                        .withProgressModel(o.getProgressModel())
-                        .withWitness(witness);
+                        .withProgressModel(o.getProgressModel());
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.
@@ -103,11 +98,6 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
-                // We only generate witnesses if we are not validating one.
-                if (!o.runValidator()) {
-                    final String filename = getWitnessFileName(task.getProgram(), o);
-                    resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), filename, summary.reason() + "\n" + summary.details(), o.generateWitnessForUnknown());
-                }
             } catch (Exception e) {
                 summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
             }
@@ -185,27 +175,5 @@ public class Dartagnan extends BaseOptions {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
         }
-    }
-
-    private static WitnessGraph getWitnessGraph(BaseOptions options, boolean isBatchMode) throws IOException {
-        if (!options.runValidator()) {
-            return new WitnessGraph();
-        }
-
-        if (isBatchMode) {
-            throw new IllegalArgumentException("Cannot run validator in batch mode.");
-        }
-        logger.info("Witness path: {}", options.getWitnessPath());
-        return new ParserWitness().parse(new File(options.getWitnessPath()));
-    }
-
-    private static String getWitnessFileName(Program program, Dartagnan o) {
-        if (o.hasWitnessFilename()) {
-            return o.getWitnessFilename();
-        }
-
-        return program.getName().isEmpty()
-                ? "unnamed_program"
-                : com.google.common.io.Files.getNameWithoutExtension(program.getName());
     }
 }
