@@ -41,6 +41,10 @@ public class ProgramParser {
         return SUPPORTED_EXTENSIONS.contains(extension);
     }
 
+    public static boolean isSupported(File file) {
+        return isSupported(file.toPath());
+    }
+
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
             file = compileWithClang(file, "");

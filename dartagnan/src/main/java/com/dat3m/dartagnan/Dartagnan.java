@@ -155,8 +155,13 @@ public class Dartagnan extends BaseOptions {
         final List<File> files = new ArrayList<>();
         Stream.of(args).map(Paths::get).filter(Files::exists)
                 .forEach(path -> {
-                    logger.info("Program(s) path: {}", path.normalize());
-                    files.addAll(getProgramFiles(path));
+                    List<File> supported = getProgramFiles(path).stream()
+                        .filter(ProgramParser::isSupported)
+                        .toList();
+                    if (!supported.isEmpty()) {
+                        logger.info("Program(s) path: {}", path.normalize());
+                        files.addAll(supported);
+                    }
                 });
         if (files.isEmpty()) {
             throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
