@@ -47,9 +47,6 @@ public interface ModifierTrait <Modifier> {
     /// Describes a relation including `{ (x,z) | exists y. x[first]y && y[second]z }`.
     Modifier compose(Modifier first, Modifier second);
 
-    /// Describes `{ (x,z) | exists y. x[modifier]y && factor * (y - x) == z - x }`.
-    Modifier mul(Modifier modifier, int factor);
-
     /// Describes the transitive closure of `modifier`,
     /// i.e. `{ (x,y_n) | exists n,y_1...y_n. x[modifier]y_1 ... [modifier]y_n }`.
     Modifier accelerate(Modifier modifier);
@@ -70,7 +67,6 @@ public interface ModifierTrait <Modifier> {
         @Override public Void constantModifier(int offset) { return null; }
         @Override public Void relaxedModifier() { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
-        @Override public Void mul(Void m, int factor) { return null; }
         @Override public Void accelerate(Void m) { return null; }
         @Override public Void postProcess(Void m, int s) { return null; }
     }
@@ -86,7 +82,6 @@ public interface ModifierTrait <Modifier> {
         @Override public Integer constantModifier(int offset) { return offset; }
         @Override public Integer relaxedModifier() { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
-        @Override public Integer mul(Integer v, int factor) { return v == null ? null : v * factor; }
         @Override public Integer accelerate(Integer v) { return null; }
         @Override public Integer postProcess(Integer v, int s) { return v; }
     }
@@ -127,13 +122,6 @@ public interface ModifierTrait <Modifier> {
         @Override
         public Sd compose(Sd left, Sd right) {
             return new Sd(left.offset + right.offset, IntMath.gcd(left.alignment, right.alignment));
-        }
-        @Override
-        public Sd mul(Sd m, int factor) {
-            if (factor == 0) {
-                return TRIVIAL;
-            }
-            return new Sd(m.offset * factor, Math.abs(m.alignment * factor));
         }
         @Override
         public Sd accelerate(Sd m) {
@@ -241,13 +229,6 @@ public interface ModifierTrait <Modifier> {
         @Override
         public Md compose(Md left, Md right) {
             return new Md(left.offset + right.offset, compose(left.alignment, right.alignment));
-        }
-        @Override
-        public Md mul(Md m, int factor) {
-            if (factor == 0) {
-                return ZERO;
-            }
-            return new Md(m.offset * factor, m.alignment.stream().map(i -> Math.abs(i * factor)).toList());
         }
         @Override
         public Md accelerate(Md m) {
