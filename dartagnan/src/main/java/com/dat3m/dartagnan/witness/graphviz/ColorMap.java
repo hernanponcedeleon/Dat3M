@@ -31,7 +31,7 @@ class ColorMap {
         "\"#FF8E00\"", // orange-yellow
         "\"#F4C800\"", // yellow
         "\"#593315\"", // brown
-        "\"#F13A13\""  // reddish orange
+        "\"#F13A13\"", // reddish orange
         "\"#232C16\"", // olive green
         "\"#232C16\""  // purplish red
     };
