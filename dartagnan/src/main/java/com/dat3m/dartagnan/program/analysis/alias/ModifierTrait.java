@@ -82,7 +82,7 @@ public interface ModifierTrait <Modifier> {
         @Override public Integer constantModifier(int offset) { return offset; }
         @Override public Integer relaxedModifier() { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
-        @Override public Integer accelerate(Integer v) { return null; }
+        @Override public Integer accelerate(Integer v) { return isIdentity(v) ? v : null; }
         @Override public Integer postProcess(Integer v, int s) { return v; }
     }
 
@@ -232,7 +232,7 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Md accelerate(Md m) {
-            return m.offset == 0 ? m : new Md(0, compose(List.of(Math.abs(m.offset)), m.alignment));
+            return m.offset == 0 ? m : new Md(0, compose(List.of(m.offset), m.alignment));
         }
         @Override
         public Md postProcess(Md modifier, int objectSize) {
