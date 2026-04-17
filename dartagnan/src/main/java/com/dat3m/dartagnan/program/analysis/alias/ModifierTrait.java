@@ -60,7 +60,7 @@ public interface ModifierTrait <Modifier> {
     /// Used to perform field-insensitive alias analysis.
     final class VoidTrait implements ModifierTrait<Void> {
         @Override public boolean isFunctional(Void modifier) { return false; }
-        @Override public boolean isIdentity(Void modifier) { return false; }
+        @Override public boolean isIdentity(Void modifier) { return true; }
         @Override public boolean overlaps(Void left, Void right) { return true; }
         @Override public boolean includes(Void larger, Void smaller) { return true; }
         @Override public int level(Void modifier) { return 0; }
