@@ -41,8 +41,8 @@ public interface ModifierTrait <Modifier> {
     /// Describes a relation including `{ (x,y) | x + offset == y }`.
     Modifier constantModifier(int offset);
 
-    /// Describes `{ (x,y) | true }`.
-    Modifier relaxedModifier();
+    /// Describes a relation including `{ (x,y) | exists z. x + alignment * z == y }`.
+    Modifier relaxedModifier(int alignment);
 
     /// Describes a relation including `{ (x,z) | exists y. x[first]y && y[second]z }`.
     Modifier compose(Modifier first, Modifier second);
@@ -65,7 +65,7 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean includes(Void larger, Void smaller) { return true; }
         @Override public int level(Void modifier) { return 0; }
         @Override public Void constantModifier(int offset) { return null; }
-        @Override public Void relaxedModifier() { return null; }
+        @Override public Void relaxedModifier(int alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
         @Override public Void accelerate(Void m) { return null; }
         @Override public Void postProcess(Void m, int s) { return null; }
@@ -80,7 +80,7 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean includes(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
         @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
         @Override public Integer constantModifier(int offset) { return offset; }
-        @Override public Integer relaxedModifier() { return null; }
+        @Override public Integer relaxedModifier(int alignment) { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
         @Override public Integer accelerate(Integer v) { return isIdentity(v) ? v : null; }
         @Override public Integer postProcess(Integer v, int s) { return v; }
@@ -92,8 +92,6 @@ public interface ModifierTrait <Modifier> {
     /// Enables field-sensitive alias analysis based on unions of one-dimensional linear sets.
     /// This is more precise than {@link Offsets} in presence of dynamic indexing into arrays.
     final class SdLinear implements ModifierTrait<Sd> {
-        private static final Sd IDENTITY = new Sd(0, 0);
-        private static final Sd RELAXED = new Sd(0, 1);
         @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
         @Override public boolean isIdentity(Sd m) { return m.offset == 0 && m.alignment == 0; }
         @Override
@@ -117,8 +115,8 @@ public interface ModifierTrait <Modifier> {
             return offset % l == 0 && r % l == 0;
         }
         @Override public int level(Sd m) { return Math.abs(m.offset); }
-        @Override public Sd constantModifier(int offset) { return offset == 0 ? IDENTITY : new Sd(offset, 0); }
-        @Override public Sd relaxedModifier() { return RELAXED; }
+        @Override public Sd constantModifier(int offset) { return new Sd(offset, 0); }
+        @Override public Sd relaxedModifier(int alignment) { return new Sd(0, Math.abs(alignment)); }
         @Override
         public Sd compose(Sd left, Sd right) {
             return new Sd(left.offset + right.offset, IntMath.gcd(left.alignment, right.alignment));
@@ -138,9 +136,6 @@ public interface ModifierTrait <Modifier> {
     /// Enables field-sensitive alias analysis based on multidimensional linear sets.
     /// This might be slightly more precise than {@link SdLinear} in presence of aggregates containing arrays.
     final class MdLinear implements ModifierTrait<Md> {
-        private static final List<Integer> TOP = List.of(-1);
-        private static final Md RELAXED = new Md(0, TOP);
-        private static final Md IDENTITY = new Md(0, List.of());
         @Override
         public boolean isFunctional(Md m) {
             return m.alignment.isEmpty();
@@ -220,11 +215,11 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Md constantModifier(int offset) {
-            return offset == 0 ? IDENTITY : new Md(offset, List.of());
+            return new Md(offset, List.of());
         }
         @Override
-        public Md relaxedModifier() {
-            return RELAXED;
+        public Md relaxedModifier(int alignment) {
+            return new Md(0, alignment == 0 ? List.of() : List.of(-Math.abs(alignment)));
         }
         @Override
         public Md compose(Md left, Md right) {
@@ -273,11 +268,8 @@ public interface ModifierTrait <Modifier> {
             return true;
         }
         private List<Integer> compose(List<Integer> left, List<Integer> right) {
-            if (left.isEmpty() || right.isEmpty()) {
+            if (left.isEmpty() || right.isEmpty() || (left.size() == 1 && left.equals(right))) {
                 return right.isEmpty() ? left : right;
-            }
-            if (left == TOP || right == TOP) {
-                return TOP;
             }
             // Negative values are unrestricted and compose always.
             // Therefore, each list shall either contain a single negative value, or only positive values.

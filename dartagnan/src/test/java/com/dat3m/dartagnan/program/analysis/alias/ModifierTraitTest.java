@@ -43,7 +43,7 @@ public class ModifierTraitTest {
 
     private <T> void checkBasicProperties(ModifierTrait<T> t) {
         final T id = t.constantModifier(0);
-        final T all = t.relaxedModifier();
+        final T all = t.relaxedModifier(1);
         assertEquals(id, t.compose(id, id));
         assertEquals(id, t.accelerate(id));
         assertTrue(t.level(all) <= t.level(id));
