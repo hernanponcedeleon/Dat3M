@@ -11,7 +11,7 @@ Then, from libvsync's root follow this pattern :
 clang <Includes> <Libvsync flags> <architecture> -S -emit-llvm <file_path.c>
 ```
 The Includes should contain : 
-1. path to libvsync/include
+1. path to libvsync/include and libvsync/vsync/include
 2. path to dat3m/include 
 
 *Note* you might have to comment out **await_while()** declaration from **dat3m/include/dat3m.h**
@@ -30,5 +30,9 @@ For the architecture these are the options :
 
 A valid example would therefore be, from libvsync's root,
 ```
-clang -I ./include -I Dat3M_HOME/include -DVATOMIC_DISABLE_ARM64_LSE -DVSYNC_DISABLE_POLITE_AWAIT -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNCER_CHECK=on -DVSYNC_VERIFICATION_QUICK -D__aarch__ -S -emit-llvm test/spinlock/ttaslock.c
+clang -I ./include -I ./vsync/include -I "$Dat3M_HOME"/include -DVATOMIC_DISABLE_ARM64_LSE -DVSYNC_DISABLE_POLITE_AWAIT -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNCER_CHECK=on -DVSYNC_VERIFICATION_QUICK -D__aarch__ -S -emit-llvm test/spinlock/ttaslock.c
 ```
+
+## Concurrency Kit
+
+see [benchmarks/ck/README.md](../../../../../benchmarks/ck/README.md).

@@ -1,18 +1,6 @@
-#include <inttypes.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <unistd.h>
-#include <sys/time.h>
-
-#include "ck_cc.h"
-#include "ck_pr.h"
-#include "stdbool.h"
-#include "stddef.h"
 #include "ck_epoch.c"
-#include "ck_stack.h"
 #include <assert.h>
+#include <pthread.h>
 
 #ifndef NTHREADS
 #define NTHREADS 4

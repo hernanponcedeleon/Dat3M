@@ -46,7 +46,7 @@ public abstract class ParserAsm {
 
     public static ParserAsm forTarget(Arch target, Function entry) {
         return switch (target) {
-            case ARM8 -> new ParserAsmArm(entry);
+            case ARM7, ARM8 -> new ParserAsmArm(entry);
             case POWER -> new ParserAsmPPC(entry);
             case RISCV -> new ParserAsmRISCV(entry);
             case TSO -> new ParserAsmX86(entry, false, false);

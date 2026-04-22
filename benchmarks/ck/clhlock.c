@@ -38,8 +38,8 @@ int main()
     nodes = (ck_spinlock_clh_t *)malloc(NTHREADS * sizeof(ck_spinlock_clh_t));
     for (i = 0; i < NTHREADS; i++)
     {
-        ck_spinlock_clh_t unowned_node;
-        ck_spinlock_clh_init(&nodes[i], &unowned_node);
+        ck_spinlock_clh_t* ptr;
+        ck_spinlock_clh_init(&ptr, &nodes[i]);
     }
 
     for (i = 0; i < NTHREADS; i++)

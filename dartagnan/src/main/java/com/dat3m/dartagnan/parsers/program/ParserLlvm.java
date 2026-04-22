@@ -47,7 +47,7 @@ class ParserLlvm implements ParserInterface {
             if (targetTriple != null) {
                 final String architecture = VisitorLlvm.unescape(targetTriple.StringLit().getText()).split("-")[0];
                 layout.targetArchitecture = switch (architecture) {
-                    case "arm" -> Arch.ARM7;
+                    case "armv7" -> Arch.ARM7;
                     case "arm64" -> Arch.ARM8;
                     case "riscv" -> Arch.RISCV;
                     case "x86", "x86_64" -> Arch.TSO;

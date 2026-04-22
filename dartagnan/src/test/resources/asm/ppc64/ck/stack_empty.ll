@@ -1,191 +1,202 @@
-; ModuleID = 'tests/stack_empty.c'
-source_filename = "tests/stack_empty.c"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
-target triple = "arm64-apple-macosx15.0.0"
+; ModuleID = 'benchmarks/ck/stack_empty.c'
+source_filename = "benchmarks/ck/stack_empty.c"
+target datalayout = "E-m:e-Fi64-i64:64-i128:128-n32:64-S128-v256:256:256-v512:512:512"
+target triple = "ppc64-pc-linux-gnu"
 
 %struct.ck_stack = type { ptr, ptr }
 %struct.ck_stack_entry = type { ptr }
 
-@stack = global %struct.ck_stack zeroinitializer, align 8, !dbg !0
-@__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1, !dbg !18
-@.str = private unnamed_addr constant [14 x i8] c"stack_empty.c\00", align 1, !dbg !25
-@.str.1 = private unnamed_addr constant [25 x i8] c"CK_STACK_ISEMPTY(&stack)\00", align 1, !dbg !30
+@stack = dso_local global %struct.ck_stack zeroinitializer, align 8, !dbg !0
+@.str = private unnamed_addr constant [25 x i8] c"CK_STACK_ISEMPTY(&stack)\00", align 1, !dbg !22
+@.str.1 = private unnamed_addr constant [28 x i8] c"benchmarks/ck/stack_empty.c\00", align 1, !dbg !28
+@__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1, !dbg !33
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define ptr @pusher_fn(ptr noundef %0) #0 !dbg !49 {
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local ptr @pusher_fn(ptr noundef %0) #0 !dbg !53 {
   %2 = alloca ptr, align 8
   %3 = alloca i32, align 4
   %4 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-  store i32 0, ptr %3, align 4, !dbg !58
-  br label %5, !dbg !59
+    #dbg_declare(ptr %2, !57, !DIExpression(), !58)
+    #dbg_declare(ptr %3, !59, !DIExpression(), !61)
+  store i32 0, ptr %3, align 4, !dbg !61
+  br label %5, !dbg !62
 
 5:                                                ; preds = %15, %1
-  %6 = load i32, ptr %3, align 4, !dbg !60
-  %7 = icmp slt i32 %6, 2, !dbg !62
-  br i1 %7, label %8, label %18, !dbg !63
+  %6 = load i32, ptr %3, align 4, !dbg !63
+  %7 = icmp slt i32 %6, 2, !dbg !65
+  br i1 %7, label %8, label %18, !dbg !66
 
 8:                                                ; preds = %5
-  %9 = call ptr @malloc(i64 noundef 8) #5, !dbg !69
-  store ptr %9, ptr %4, align 8, !dbg !68
-  %10 = load ptr, ptr %4, align 8, !dbg !70
-  %11 = icmp ne ptr %10, null, !dbg !70
-  br i1 %11, label %13, label %12, !dbg !72
+    #dbg_declare(ptr %4, !67, !DIExpression(), !71)
+  %9 = call ptr @malloc(i64 noundef 8) #4, !dbg !72
+  store ptr %9, ptr %4, align 8, !dbg !71
+  %10 = load ptr, ptr %4, align 8, !dbg !73
+  %11 = icmp ne ptr %10, null, !dbg !73
+  br i1 %11, label %13, label %12, !dbg !75
 
 12:                                               ; preds = %8
-  call void @exit(i32 noundef 1) #6, !dbg !73
-  unreachable, !dbg !73
+  call void @exit(i32 noundef signext 1) #5, !dbg !76
+  unreachable, !dbg !76
 
 13:                                               ; preds = %8
-  %14 = load ptr, ptr %4, align 8, !dbg !75
-  call void @ck_stack_push_upmc(ptr noundef @stack, ptr noundef %14), !dbg !76
-  br label %15, !dbg !77
+  %14 = load ptr, ptr %4, align 8, !dbg !78
+  call void @ck_stack_push_upmc(ptr noundef @stack, ptr noundef %14), !dbg !79
+  br label %15, !dbg !80
 
 15:                                               ; preds = %13
-  %16 = load i32, ptr %3, align 4, !dbg !78
-  %17 = add nsw i32 %16, 1, !dbg !78
-  store i32 %17, ptr %3, align 4, !dbg !78
-  br label %5, !dbg !79, !llvm.loop !80
+  %16 = load i32, ptr %3, align 4, !dbg !81
+  %17 = add nsw i32 %16, 1, !dbg !81
+  store i32 %17, ptr %3, align 4, !dbg !81
+  br label %5, !dbg !82, !llvm.loop !83
 
 18:                                               ; preds = %5
-  ret ptr null, !dbg !83
+  ret ptr null, !dbg !86
 }
 
 ; Function Attrs: allocsize(0)
 declare ptr @malloc(i64 noundef) #1
 
 ; Function Attrs: noreturn
-declare void @exit(i32 noundef) #2
+declare void @exit(i32 noundef signext) #2
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_stack_push_upmc(ptr noundef %0, ptr noundef %1) #0 !dbg !84 {
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_stack_push_upmc(ptr noundef %0, ptr noundef %1) #0 !dbg !87 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
   %5 = alloca ptr, align 8
   store ptr %0, ptr %3, align 8
+    #dbg_declare(ptr %3, !91, !DIExpression(), !92)
   store ptr %1, ptr %4, align 8
-  %6 = load ptr, ptr %3, align 8, !dbg !94
-  %7 = getelementptr inbounds %struct.ck_stack, ptr %6, i32 0, i32 0, !dbg !94
-  %8 = call ptr @ck_pr_md_load_ptr(ptr noundef %7), !dbg !94
-  store ptr %8, ptr %5, align 8, !dbg !95
-  %9 = load ptr, ptr %5, align 8, !dbg !96
-  %10 = load ptr, ptr %4, align 8, !dbg !97
-  %11 = getelementptr inbounds %struct.ck_stack_entry, ptr %10, i32 0, i32 0, !dbg !98
-  store ptr %9, ptr %11, align 8, !dbg !99
-  call void @ck_pr_fence_store(), !dbg !100
-  br label %12, !dbg !101
+    #dbg_declare(ptr %4, !93, !DIExpression(), !94)
+    #dbg_declare(ptr %5, !95, !DIExpression(), !96)
+  %6 = load ptr, ptr %3, align 8, !dbg !97
+  %7 = getelementptr inbounds nuw %struct.ck_stack, ptr %6, i32 0, i32 0, !dbg !98
+  %8 = call ptr @ck_pr_md_load_ptr(ptr noundef %7), !dbg !99
+  store ptr %8, ptr %5, align 8, !dbg !100
+  %9 = load ptr, ptr %5, align 8, !dbg !101
+  %10 = load ptr, ptr %4, align 8, !dbg !102
+  %11 = getelementptr inbounds nuw %struct.ck_stack_entry, ptr %10, i32 0, i32 0, !dbg !103
+  store ptr %9, ptr %11, align 8, !dbg !104
+  call void @ck_pr_fence_store(), !dbg !105
+  br label %12, !dbg !106
 
 12:                                               ; preds = %20, %2
-  %13 = load ptr, ptr %3, align 8, !dbg !102
-  %14 = getelementptr inbounds %struct.ck_stack, ptr %13, i32 0, i32 0, !dbg !103
-  %15 = load ptr, ptr %5, align 8, !dbg !104
-  %16 = load ptr, ptr %4, align 8, !dbg !105
-  %17 = call zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %14, ptr noundef %15, ptr noundef %16, ptr noundef %5), !dbg !106
-  %18 = zext i1 %17 to i32, !dbg !106
-  %19 = icmp eq i32 %18, 0, !dbg !107
-  br i1 %19, label %20, label %24, !dbg !101
+  %13 = load ptr, ptr %3, align 8, !dbg !107
+  %14 = getelementptr inbounds nuw %struct.ck_stack, ptr %13, i32 0, i32 0, !dbg !108
+  %15 = load ptr, ptr %5, align 8, !dbg !109
+  %16 = load ptr, ptr %4, align 8, !dbg !110
+  %17 = call zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %14, ptr noundef %15, ptr noundef %16, ptr noundef %5), !dbg !111
+  %18 = zext i1 %17 to i32, !dbg !111
+  %19 = icmp eq i32 %18, 0, !dbg !112
+  br i1 %19, label %20, label %24, !dbg !106
 
 20:                                               ; preds = %12
-  %21 = load ptr, ptr %5, align 8, !dbg !108
-  %22 = load ptr, ptr %4, align 8, !dbg !110
-  %23 = getelementptr inbounds %struct.ck_stack_entry, ptr %22, i32 0, i32 0, !dbg !111
-  store ptr %21, ptr %23, align 8, !dbg !112
-  call void @ck_pr_fence_store(), !dbg !113
-  br label %12, !dbg !101, !llvm.loop !114
+  %21 = load ptr, ptr %5, align 8, !dbg !113
+  %22 = load ptr, ptr %4, align 8, !dbg !115
+  %23 = getelementptr inbounds nuw %struct.ck_stack_entry, ptr %22, i32 0, i32 0, !dbg !116
+  store ptr %21, ptr %23, align 8, !dbg !117
+  call void @ck_pr_fence_store(), !dbg !118
+  br label %12, !dbg !106, !llvm.loop !119
 
 24:                                               ; preds = %12
-  ret void, !dbg !116
+  ret void, !dbg !121
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define ptr @popper_fn(ptr noundef %0) #0 !dbg !117 {
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local ptr @popper_fn(ptr noundef %0) #0 !dbg !122 {
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-  br label %4, !dbg !122
+    #dbg_declare(ptr %2, !123, !DIExpression(), !124)
+    #dbg_declare(ptr %3, !125, !DIExpression(), !126)
+  br label %4, !dbg !127
 
 4:                                                ; preds = %7, %1
-  %5 = call ptr @ck_stack_pop_upmc(ptr noundef @stack), !dbg !123
-  store ptr %5, ptr %3, align 8, !dbg !124
-  %6 = icmp eq ptr %5, null, !dbg !125
-  br i1 %6, label %7, label %8, !dbg !122
+  %5 = call ptr @ck_stack_pop_upmc(ptr noundef @stack), !dbg !128
+  store ptr %5, ptr %3, align 8, !dbg !129
+  %6 = icmp eq ptr %5, null, !dbg !130
+  br i1 %6, label %7, label %8, !dbg !127
 
 7:                                                ; preds = %4
-  br label %4, !dbg !122, !llvm.loop !126
+  br label %4, !dbg !127, !llvm.loop !131
 
 8:                                                ; preds = %4
-  %9 = load ptr, ptr %3, align 8, !dbg !128
-  call void @free(ptr noundef %9), !dbg !129
-  ret ptr null, !dbg !130
+  %9 = load ptr, ptr %3, align 8, !dbg !133
+  call void @free(ptr noundef %9), !dbg !134
+  ret ptr null, !dbg !135
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal ptr @ck_stack_pop_upmc(ptr noundef %0) #0 !dbg !131 {
+; Function Attrs: noinline nounwind optnone uwtable
+define internal ptr @ck_stack_pop_upmc(ptr noundef %0) #0 !dbg !136 {
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
   %5 = alloca ptr, align 8
   store ptr %0, ptr %3, align 8
-  %6 = load ptr, ptr %3, align 8, !dbg !140
-  %7 = getelementptr inbounds %struct.ck_stack, ptr %6, i32 0, i32 0, !dbg !140
-  %8 = call ptr @ck_pr_md_load_ptr(ptr noundef %7), !dbg !140
-  store ptr %8, ptr %4, align 8, !dbg !141
-  %9 = load ptr, ptr %4, align 8, !dbg !142
-  %10 = icmp eq ptr %9, null, !dbg !144
-  br i1 %10, label %11, label %12, !dbg !145
+    #dbg_declare(ptr %3, !139, !DIExpression(), !140)
+    #dbg_declare(ptr %4, !141, !DIExpression(), !142)
+    #dbg_declare(ptr %5, !143, !DIExpression(), !144)
+  %6 = load ptr, ptr %3, align 8, !dbg !145
+  %7 = getelementptr inbounds nuw %struct.ck_stack, ptr %6, i32 0, i32 0, !dbg !146
+  %8 = call ptr @ck_pr_md_load_ptr(ptr noundef %7), !dbg !147
+  store ptr %8, ptr %4, align 8, !dbg !148
+  %9 = load ptr, ptr %4, align 8, !dbg !149
+  %10 = icmp eq ptr %9, null, !dbg !151
+  br i1 %10, label %11, label %12, !dbg !151
 
 11:                                               ; preds = %1
-  store ptr null, ptr %2, align 8, !dbg !146
-  br label %34, !dbg !146
+  store ptr null, ptr %2, align 8, !dbg !152
+  br label %34, !dbg !152
 
 12:                                               ; preds = %1
-  call void @ck_pr_fence_load(), !dbg !147
-  %13 = load ptr, ptr %4, align 8, !dbg !148
-  %14 = getelementptr inbounds %struct.ck_stack_entry, ptr %13, i32 0, i32 0, !dbg !149
-  %15 = load ptr, ptr %14, align 8, !dbg !149
-  store ptr %15, ptr %5, align 8, !dbg !150
-  br label %16, !dbg !151
+  call void @ck_pr_fence_load(), !dbg !153
+  %13 = load ptr, ptr %4, align 8, !dbg !154
+  %14 = getelementptr inbounds nuw %struct.ck_stack_entry, ptr %13, i32 0, i32 0, !dbg !155
+  %15 = load ptr, ptr %14, align 8, !dbg !155
+  store ptr %15, ptr %5, align 8, !dbg !156
+  br label %16, !dbg !157
 
 16:                                               ; preds = %28, %12
-  %17 = load ptr, ptr %3, align 8, !dbg !152
-  %18 = getelementptr inbounds %struct.ck_stack, ptr %17, i32 0, i32 0, !dbg !153
-  %19 = load ptr, ptr %4, align 8, !dbg !154
-  %20 = load ptr, ptr %5, align 8, !dbg !155
-  %21 = call zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %18, ptr noundef %19, ptr noundef %20, ptr noundef %4), !dbg !156
-  %22 = zext i1 %21 to i32, !dbg !156
-  %23 = icmp eq i32 %22, 0, !dbg !157
-  br i1 %23, label %24, label %32, !dbg !151
+  %17 = load ptr, ptr %3, align 8, !dbg !158
+  %18 = getelementptr inbounds nuw %struct.ck_stack, ptr %17, i32 0, i32 0, !dbg !159
+  %19 = load ptr, ptr %4, align 8, !dbg !160
+  %20 = load ptr, ptr %5, align 8, !dbg !161
+  %21 = call zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %18, ptr noundef %19, ptr noundef %20, ptr noundef %4), !dbg !162
+  %22 = zext i1 %21 to i32, !dbg !162
+  %23 = icmp eq i32 %22, 0, !dbg !163
+  br i1 %23, label %24, label %32, !dbg !157
 
 24:                                               ; preds = %16
-  %25 = load ptr, ptr %4, align 8, !dbg !158
-  %26 = icmp eq ptr %25, null, !dbg !161
-  br i1 %26, label %27, label %28, !dbg !162
+  %25 = load ptr, ptr %4, align 8, !dbg !164
+  %26 = icmp eq ptr %25, null, !dbg !167
+  br i1 %26, label %27, label %28, !dbg !167
 
 27:                                               ; preds = %24
-  br label %32, !dbg !163
+  br label %32, !dbg !168
 
 28:                                               ; preds = %24
-  call void @ck_pr_fence_load(), !dbg !164
-  %29 = load ptr, ptr %4, align 8, !dbg !165
-  %30 = getelementptr inbounds %struct.ck_stack_entry, ptr %29, i32 0, i32 0, !dbg !166
-  %31 = load ptr, ptr %30, align 8, !dbg !166
-  store ptr %31, ptr %5, align 8, !dbg !167
-  br label %16, !dbg !151, !llvm.loop !168
+  call void @ck_pr_fence_load(), !dbg !169
+  %29 = load ptr, ptr %4, align 8, !dbg !170
+  %30 = getelementptr inbounds nuw %struct.ck_stack_entry, ptr %29, i32 0, i32 0, !dbg !171
+  %31 = load ptr, ptr %30, align 8, !dbg !171
+  store ptr %31, ptr %5, align 8, !dbg !172
+  br label %16, !dbg !157, !llvm.loop !173
 
 32:                                               ; preds = %27, %16
-  %33 = load ptr, ptr %4, align 8, !dbg !170
-  store ptr %33, ptr %2, align 8, !dbg !171
-  br label %34, !dbg !171
+  %33 = load ptr, ptr %4, align 8, !dbg !175
+  store ptr %33, ptr %2, align 8, !dbg !176
+  br label %34, !dbg !176
 
 34:                                               ; preds = %32, %11
-  %35 = load ptr, ptr %2, align 8, !dbg !172
-  ret ptr %35, !dbg !172
+  %35 = load ptr, ptr %2, align 8, !dbg !177
+  ret ptr %35, !dbg !177
 }
 
 declare void @free(ptr noundef) #3
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define i32 @main() #0 !dbg !173 {
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local signext i32 @main() #0 !dbg !178 {
   %1 = alloca i32, align 4
   %2 = alloca [1 x ptr], align 8
   %3 = alloca [2 x ptr], align 8
@@ -194,576 +205,562 @@ define i32 @main() #0 !dbg !173 {
   %6 = alloca i32, align 4
   %7 = alloca i32, align 4
   store i32 0, ptr %1, align 4
-  store i32 0, ptr %4, align 4, !dbg !211
-  br label %8, !dbg !212
+    #dbg_declare(ptr %2, !181, !DIExpression(), !187)
+    #dbg_declare(ptr %3, !188, !DIExpression(), !192)
+    #dbg_declare(ptr %4, !193, !DIExpression(), !195)
+  store i32 0, ptr %4, align 4, !dbg !195
+  br label %8, !dbg !196
 
 8:                                                ; preds = %19, %0
-  %9 = load i32, ptr %4, align 4, !dbg !213
-  %10 = icmp slt i32 %9, 1, !dbg !215
-  br i1 %10, label %11, label %22, !dbg !216
+  %9 = load i32, ptr %4, align 4, !dbg !197
+  %10 = icmp slt i32 %9, 1, !dbg !199
+  br i1 %10, label %11, label %22, !dbg !200
 
 11:                                               ; preds = %8
-  %12 = load i32, ptr %4, align 4, !dbg !217
-  %13 = sext i32 %12 to i64, !dbg !220
-  %14 = getelementptr inbounds [1 x ptr], ptr %2, i64 0, i64 %13, !dbg !220
-  %15 = call i32 @pthread_create(ptr noundef %14, ptr noundef null, ptr noundef @pusher_fn, ptr noundef null), !dbg !221
-  %16 = icmp ne i32 %15, 0, !dbg !222
-  br i1 %16, label %17, label %18, !dbg !223
+  %12 = load i32, ptr %4, align 4, !dbg !201
+  %13 = sext i32 %12 to i64, !dbg !204
+  %14 = getelementptr inbounds [1 x ptr], ptr %2, i64 0, i64 %13, !dbg !204
+  %15 = call signext i32 @pthread_create(ptr noundef %14, ptr noundef null, ptr noundef @pusher_fn, ptr noundef null), !dbg !205
+  %16 = icmp ne i32 %15, 0, !dbg !206
+  br i1 %16, label %17, label %18, !dbg !206
 
 17:                                               ; preds = %11
-  store i32 1, ptr %1, align 4, !dbg !224
-  br label %74, !dbg !224
+  store i32 1, ptr %1, align 4, !dbg !207
+  br label %68, !dbg !207
 
 18:                                               ; preds = %11
-  br label %19, !dbg !226
+  br label %19, !dbg !209
 
 19:                                               ; preds = %18
-  %20 = load i32, ptr %4, align 4, !dbg !227
-  %21 = add nsw i32 %20, 1, !dbg !227
-  store i32 %21, ptr %4, align 4, !dbg !227
-  br label %8, !dbg !228, !llvm.loop !229
+  %20 = load i32, ptr %4, align 4, !dbg !210
+  %21 = add nsw i32 %20, 1, !dbg !210
+  store i32 %21, ptr %4, align 4, !dbg !210
+  br label %8, !dbg !211, !llvm.loop !212
 
 22:                                               ; preds = %8
-  store i32 0, ptr %5, align 4, !dbg !233
-  br label %23, !dbg !234
+    #dbg_declare(ptr %5, !214, !DIExpression(), !216)
+  store i32 0, ptr %5, align 4, !dbg !216
+  br label %23, !dbg !217
 
 23:                                               ; preds = %34, %22
-  %24 = load i32, ptr %5, align 4, !dbg !235
-  %25 = icmp slt i32 %24, 2, !dbg !237
-  br i1 %25, label %26, label %37, !dbg !238
+  %24 = load i32, ptr %5, align 4, !dbg !218
+  %25 = icmp slt i32 %24, 2, !dbg !220
+  br i1 %25, label %26, label %37, !dbg !221
 
 26:                                               ; preds = %23
-  %27 = load i32, ptr %5, align 4, !dbg !239
-  %28 = sext i32 %27 to i64, !dbg !242
-  %29 = getelementptr inbounds [2 x ptr], ptr %3, i64 0, i64 %28, !dbg !242
-  %30 = call i32 @pthread_create(ptr noundef %29, ptr noundef null, ptr noundef @popper_fn, ptr noundef null), !dbg !243
-  %31 = icmp ne i32 %30, 0, !dbg !244
-  br i1 %31, label %32, label %33, !dbg !245
+  %27 = load i32, ptr %5, align 4, !dbg !222
+  %28 = sext i32 %27 to i64, !dbg !225
+  %29 = getelementptr inbounds [2 x ptr], ptr %3, i64 0, i64 %28, !dbg !225
+  %30 = call signext i32 @pthread_create(ptr noundef %29, ptr noundef null, ptr noundef @popper_fn, ptr noundef null), !dbg !226
+  %31 = icmp ne i32 %30, 0, !dbg !227
+  br i1 %31, label %32, label %33, !dbg !227
 
 32:                                               ; preds = %26
-  store i32 1, ptr %1, align 4, !dbg !246
-  br label %74, !dbg !246
+  store i32 1, ptr %1, align 4, !dbg !228
+  br label %68, !dbg !228
 
 33:                                               ; preds = %26
-  br label %34, !dbg !248
+  br label %34, !dbg !230
 
 34:                                               ; preds = %33
-  %35 = load i32, ptr %5, align 4, !dbg !249
-  %36 = add nsw i32 %35, 1, !dbg !249
-  store i32 %36, ptr %5, align 4, !dbg !249
-  br label %23, !dbg !250, !llvm.loop !251
+  %35 = load i32, ptr %5, align 4, !dbg !231
+  %36 = add nsw i32 %35, 1, !dbg !231
+  store i32 %36, ptr %5, align 4, !dbg !231
+  br label %23, !dbg !232, !llvm.loop !233
 
 37:                                               ; preds = %23
-  store i32 0, ptr %6, align 4, !dbg !255
-  br label %38, !dbg !256
+    #dbg_declare(ptr %6, !235, !DIExpression(), !237)
+  store i32 0, ptr %6, align 4, !dbg !237
+  br label %38, !dbg !238
 
 38:                                               ; preds = %47, %37
-  %39 = load i32, ptr %6, align 4, !dbg !257
-  %40 = icmp slt i32 %39, 1, !dbg !259
-  br i1 %40, label %41, label %50, !dbg !260
+  %39 = load i32, ptr %6, align 4, !dbg !239
+  %40 = icmp slt i32 %39, 1, !dbg !241
+  br i1 %40, label %41, label %50, !dbg !242
 
 41:                                               ; preds = %38
-  %42 = load i32, ptr %6, align 4, !dbg !261
-  %43 = sext i32 %42 to i64, !dbg !263
-  %44 = getelementptr inbounds [1 x ptr], ptr %2, i64 0, i64 %43, !dbg !263
-  %45 = load ptr, ptr %44, align 8, !dbg !263
-  %46 = call i32 @"\01_pthread_join"(ptr noundef %45, ptr noundef null), !dbg !264
-  br label %47, !dbg !265
+  %42 = load i32, ptr %6, align 4, !dbg !243
+  %43 = sext i32 %42 to i64, !dbg !245
+  %44 = getelementptr inbounds [1 x ptr], ptr %2, i64 0, i64 %43, !dbg !245
+  %45 = load ptr, ptr %44, align 8, !dbg !245
+  %46 = call signext i32 @pthread_join(ptr noundef %45, ptr noundef null), !dbg !246
+  br label %47, !dbg !247
 
 47:                                               ; preds = %41
-  %48 = load i32, ptr %6, align 4, !dbg !266
-  %49 = add nsw i32 %48, 1, !dbg !266
-  store i32 %49, ptr %6, align 4, !dbg !266
-  br label %38, !dbg !267, !llvm.loop !268
+  %48 = load i32, ptr %6, align 4, !dbg !248
+  %49 = add nsw i32 %48, 1, !dbg !248
+  store i32 %49, ptr %6, align 4, !dbg !248
+  br label %38, !dbg !249, !llvm.loop !250
 
 50:                                               ; preds = %38
-  store i32 0, ptr %7, align 4, !dbg !272
-  br label %51, !dbg !273
+    #dbg_declare(ptr %7, !252, !DIExpression(), !254)
+  store i32 0, ptr %7, align 4, !dbg !254
+  br label %51, !dbg !255
 
 51:                                               ; preds = %60, %50
-  %52 = load i32, ptr %7, align 4, !dbg !274
-  %53 = icmp slt i32 %52, 2, !dbg !276
-  br i1 %53, label %54, label %63, !dbg !277
+  %52 = load i32, ptr %7, align 4, !dbg !256
+  %53 = icmp slt i32 %52, 2, !dbg !258
+  br i1 %53, label %54, label %63, !dbg !259
 
 54:                                               ; preds = %51
-  %55 = load i32, ptr %7, align 4, !dbg !278
-  %56 = sext i32 %55 to i64, !dbg !280
-  %57 = getelementptr inbounds [2 x ptr], ptr %3, i64 0, i64 %56, !dbg !280
-  %58 = load ptr, ptr %57, align 8, !dbg !280
-  %59 = call i32 @"\01_pthread_join"(ptr noundef %58, ptr noundef null), !dbg !281
-  br label %60, !dbg !282
+  %55 = load i32, ptr %7, align 4, !dbg !260
+  %56 = sext i32 %55 to i64, !dbg !262
+  %57 = getelementptr inbounds [2 x ptr], ptr %3, i64 0, i64 %56, !dbg !262
+  %58 = load ptr, ptr %57, align 8, !dbg !262
+  %59 = call signext i32 @pthread_join(ptr noundef %58, ptr noundef null), !dbg !263
+  br label %60, !dbg !264
 
 60:                                               ; preds = %54
-  %61 = load i32, ptr %7, align 4, !dbg !283
-  %62 = add nsw i32 %61, 1, !dbg !283
-  store i32 %62, ptr %7, align 4, !dbg !283
-  br label %51, !dbg !284, !llvm.loop !285
+  %61 = load i32, ptr %7, align 4, !dbg !265
+  %62 = add nsw i32 %61, 1, !dbg !265
+  store i32 %62, ptr %7, align 4, !dbg !265
+  br label %51, !dbg !266, !llvm.loop !267
 
 63:                                               ; preds = %51
-  %64 = load ptr, ptr @stack, align 8, !dbg !287
-  %65 = icmp eq ptr %64, null, !dbg !287
-  %66 = xor i1 %65, true, !dbg !287
-  %67 = zext i1 %66 to i32, !dbg !287
-  %68 = sext i32 %67 to i64, !dbg !287
-  %69 = icmp ne i64 %68, 0, !dbg !287
-  br i1 %69, label %70, label %72, !dbg !287
+  %64 = load ptr, ptr @stack, align 8, !dbg !269
+  %65 = icmp eq ptr %64, null, !dbg !269
+  br i1 %65, label %67, label %66, !dbg !272
 
-70:                                               ; preds = %63
-  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 71, ptr noundef @.str.1) #7, !dbg !287
-  unreachable, !dbg !287
+66:                                               ; preds = %63
+  call void @__assert_fail(ptr noundef @.str, ptr noundef @.str.1, i32 noundef signext 71, ptr noundef @__func__.main), !dbg !272
+  br label %67, !dbg !272
 
-71:                                               ; No predecessors!
-  br label %73, !dbg !287
+67:                                               ; preds = %66, %63
+  store i32 0, ptr %1, align 4, !dbg !273
+  br label %68, !dbg !273
 
-72:                                               ; preds = %63
-  br label %73, !dbg !287
-
-73:                                               ; preds = %72, %71
-  store i32 0, ptr %1, align 4, !dbg !288
-  br label %74, !dbg !288
-
-74:                                               ; preds = %73, %32, %17
-  %75 = load i32, ptr %1, align 4, !dbg !289
-  ret i32 %75, !dbg !289
+68:                                               ; preds = %67, %32, %17
+  %69 = load i32, ptr %1, align 4, !dbg !274
+  ret i32 %69, !dbg !274
 }
 
-declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #3
+declare signext i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #3
 
-declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #3
+declare signext i32 @pthread_join(ptr noundef, ptr noundef) #3
 
-; Function Attrs: cold noreturn
-declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #4
+declare void @__assert_fail(ptr noundef, ptr noundef, i32 noundef signext, ptr noundef) #3
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal ptr @ck_pr_md_load_ptr(ptr noundef %0) #0 !dbg !290 {
+; Function Attrs: noinline nounwind optnone uwtable
+define internal ptr @ck_pr_md_load_ptr(ptr noundef %0) #0 !dbg !275 {
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-  %4 = load ptr, ptr %2, align 8, !dbg !297
-  %5 = call ptr asm sideeffect "ld $0, $1", "=r,*m,~{memory}"(ptr elementtype(i64) %4) #8, !dbg !297, !srcloc !299
-  store ptr %5, ptr %3, align 8, !dbg !297
-  %6 = load ptr, ptr %3, align 8, !dbg !297
-  ret ptr %6, !dbg !297
+    #dbg_declare(ptr %2, !281, !DIExpression(), !282)
+    #dbg_declare(ptr %3, !283, !DIExpression(), !282)
+  %4 = load ptr, ptr %2, align 8, !dbg !282
+  %5 = call ptr asm sideeffect "ld${1:U}${1:X} $0, $1", "=r,*m,~{memory}"(ptr elementtype(i64) %4) #6, !dbg !282, !srcloc !284
+  store ptr %5, ptr %3, align 8, !dbg !282
+  %6 = load ptr, ptr %3, align 8, !dbg !282
+  ret ptr %6, !dbg !282
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_pr_fence_store() #0 !dbg !300 {
-  call void @ck_pr_fence_strict_store(), !dbg !304
-  ret void, !dbg !304
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_pr_fence_store() #0 !dbg !285 {
+  call void @ck_pr_fence_strict_store(), !dbg !289
+  ret void, !dbg !289
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %0, ptr noundef %1, ptr noundef %2, ptr noundef %3) #0 !dbg !305 {
+; Function Attrs: noinline nounwind optnone uwtable
+define internal zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %0, ptr noundef %1, ptr noundef %2, ptr noundef %3) #0 !dbg !290 {
   %5 = alloca ptr, align 8
   %6 = alloca ptr, align 8
   %7 = alloca ptr, align 8
   %8 = alloca ptr, align 8
   %9 = alloca ptr, align 8
   store ptr %0, ptr %5, align 8
+    #dbg_declare(ptr %5, !293, !DIExpression(), !294)
   store ptr %1, ptr %6, align 8
+    #dbg_declare(ptr %6, !295, !DIExpression(), !296)
   store ptr %2, ptr %7, align 8
+    #dbg_declare(ptr %7, !297, !DIExpression(), !298)
   store ptr %3, ptr %8, align 8
-  %10 = load ptr, ptr %5, align 8, !dbg !319
-  %11 = load ptr, ptr %7, align 8, !dbg !320
-  %12 = load ptr, ptr %6, align 8, !dbg !321
-  %13 = call ptr asm sideeffect "1:;ldarx $0, 0, $1;cmpd  0, $0, $3;bne-  2f;stdcx. $2, 0, $1;bne-  1b;2:", "=&r,r,r,r,~{memory},~{cc}"(ptr %10, ptr %11, ptr %12) #8, !dbg !322, !srcloc !323
-  store ptr %13, ptr %9, align 8, !dbg !322
-  %14 = load ptr, ptr %8, align 8, !dbg !324
-  %15 = load ptr, ptr %9, align 8, !dbg !325
-  call void @ck_pr_md_store_ptr(ptr noundef %14, ptr noundef %15), !dbg !326
-  %16 = load ptr, ptr %9, align 8, !dbg !327
-  %17 = load ptr, ptr %6, align 8, !dbg !328
-  %18 = icmp eq ptr %16, %17, !dbg !329
-  ret i1 %18, !dbg !330
+    #dbg_declare(ptr %8, !299, !DIExpression(), !300)
+    #dbg_declare(ptr %9, !301, !DIExpression(), !302)
+  %10 = load ptr, ptr %5, align 8, !dbg !303
+  %11 = load ptr, ptr %7, align 8, !dbg !304
+  %12 = load ptr, ptr %6, align 8, !dbg !305
+  %13 = call ptr asm sideeffect "1:ldarx $0, 0, $1;cmpd  0, $0, $3;bne-  2f;stdcx. $2, 0, $1;bne-  1b;2:", "=&r,r,r,r,~{memory},~{cc}"(ptr %10, ptr %11, ptr %12) #6, !dbg !306, !srcloc !307
+  store ptr %13, ptr %9, align 8, !dbg !306
+  %14 = load ptr, ptr %8, align 8, !dbg !308
+  %15 = load ptr, ptr %9, align 8, !dbg !309
+  call void @ck_pr_md_store_ptr(ptr noundef %14, ptr noundef %15), !dbg !310
+  %16 = load ptr, ptr %9, align 8, !dbg !311
+  %17 = load ptr, ptr %6, align 8, !dbg !312
+  %18 = icmp eq ptr %16, %17, !dbg !313
+  ret i1 %18, !dbg !314
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_pr_fence_strict_store() #0 !dbg !331 {
-  call void asm sideeffect "lwsync", "~{memory}"() #8, !dbg !332, !srcloc !333
-  ret void, !dbg !332
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_pr_fence_strict_store() #0 !dbg !315 {
+  call void asm sideeffect "lwsync", "~{memory}"() #6, !dbg !316, !srcloc !317
+  ret void, !dbg !316
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_pr_md_store_ptr(ptr noundef %0, ptr noundef %1) #0 !dbg !334 {
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_pr_md_store_ptr(ptr noundef %0, ptr noundef %1) #0 !dbg !318 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
   store ptr %0, ptr %3, align 8
+    #dbg_declare(ptr %3, !321, !DIExpression(), !322)
   store ptr %1, ptr %4, align 8
-  %5 = load ptr, ptr %3, align 8, !dbg !338
-  %6 = load ptr, ptr %4, align 8, !dbg !338
-  call void asm sideeffect "std $1, $0", "=*m,r,~{memory}"(ptr elementtype(i64) %5, ptr %6) #8, !dbg !338, !srcloc !340
-  ret void, !dbg !338
+    #dbg_declare(ptr %4, !323, !DIExpression(), !322)
+  %5 = load ptr, ptr %3, align 8, !dbg !322
+  %6 = load ptr, ptr %4, align 8, !dbg !322
+  call void asm sideeffect "std${0:U}${0:X} $1, $0", "=*m,r,~{memory}"(ptr elementtype(i64) %5, ptr %6) #6, !dbg !322, !srcloc !324
+  ret void, !dbg !322
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_pr_fence_load() #0 !dbg !341 {
-  call void @ck_pr_fence_strict_load(), !dbg !342
-  ret void, !dbg !342
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_pr_fence_load() #0 !dbg !325 {
+  call void @ck_pr_fence_strict_load(), !dbg !326
+  ret void, !dbg !326
 }
 
-; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
-define internal void @ck_pr_fence_strict_load() #0 !dbg !343 {
-  call void asm sideeffect "lwsync", "~{memory}"() #8, !dbg !344, !srcloc !345
-  ret void, !dbg !344
+; Function Attrs: noinline nounwind optnone uwtable
+define internal void @ck_pr_fence_strict_load() #0 !dbg !327 {
+  call void asm sideeffect "lwsync", "~{memory}"() #6, !dbg !328, !srcloc !329
+  ret void, !dbg !328
 }
 
-attributes #0 = { noinline nounwind optnone ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #1 = { allocsize(0) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #2 = { noreturn "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #3 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #4 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #5 = { allocsize(0) }
-attributes #6 = { noreturn }
-attributes #7 = { cold noreturn }
-attributes #8 = { nounwind }
+attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="ppc64" "target-features"="+64bit-support,+fpu,+fres,+frsqrte,+fsqrt,+mfocrf,+stfiwx,-altivec,-crypto,-direct-move,-float128,-hard-float,-mma,-paired-vector-memops,-power10-vector,-power8-vector,-power9-vector,-vsx" "use-soft-float"="true" }
+attributes #1 = { allocsize(0) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="ppc64" "target-features"="+64bit-support,+fpu,+fres,+frsqrte,+fsqrt,+mfocrf,+stfiwx,-altivec,-crypto,-direct-move,-float128,-hard-float,-mma,-paired-vector-memops,-power10-vector,-power8-vector,-power9-vector,-vsx" "use-soft-float"="true" }
+attributes #2 = { noreturn "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="ppc64" "target-features"="+64bit-support,+fpu,+fres,+frsqrte,+fsqrt,+mfocrf,+stfiwx,-altivec,-crypto,-direct-move,-float128,-hard-float,-mma,-paired-vector-memops,-power10-vector,-power8-vector,-power9-vector,-vsx" "use-soft-float"="true" }
+attributes #3 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="ppc64" "target-features"="+64bit-support,+fpu,+fres,+frsqrte,+fsqrt,+mfocrf,+stfiwx,-altivec,-crypto,-direct-move,-float128,-hard-float,-mma,-paired-vector-memops,-power10-vector,-power8-vector,-power9-vector,-vsx" "use-soft-float"="true" }
+attributes #4 = { allocsize(0) }
+attributes #5 = { noreturn }
+attributes #6 = { nounwind }
 
-!llvm.module.flags = !{!41, !42, !43, !44, !45, !46, !47}
 !llvm.dbg.cu = !{!2}
-!llvm.ident = !{!48}
+!llvm.module.flags = !{!45, !46, !47, !48, !49, !50, !51}
+!llvm.ident = !{!52}
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
-!1 = distinct !DIGlobalVariable(name: "stack", scope: !2, file: !3, line: 16, type: !35, isLocal: false, isDefinition: true)
-!2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 19.1.7", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !4, globals: !17, splitDebugInlining: false, nameTableKind: Apple, sysroot: "/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk", sdk: "MacOSX15.sdk")
-!3 = !DIFile(filename: "tests/stack_empty.c", directory: "/Users/stefanodalmas/Desktop/huawei/ck", checksumkind: CSK_MD5, checksum: "7770eb9e51382a482ca395f3ea92eef9")
-!4 = !{!5, !6, !11, !16}
+!1 = distinct !DIGlobalVariable(name: "stack", scope: !2, file: !3, line: 16, type: !39, isLocal: false, isDefinition: true)
+!2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 22.1.8", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !4, globals: !21, splitDebugInlining: false, nameTableKind: None)
+!3 = !DIFile(filename: "benchmarks/ck/stack_empty.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "99be8c5b41f0b7504e3cdccabae5429a")
+!4 = !{!5, !6, !7, !12, !15, !20}
 !5 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
-!6 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !7, size: 64)
-!7 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "ck_stack_entry", file: !8, line: 35, size: 64, elements: !9)
-!8 = !DIFile(filename: "include/ck_stack.h", directory: "/Users/stefanodalmas/Desktop/huawei/ck", checksumkind: CSK_MD5, checksum: "19674f5fb31e41969a7583ca1d1160b2")
-!9 = !{!10}
-!10 = !DIDerivedType(tag: DW_TAG_member, name: "next", scope: !7, file: !8, line: 36, baseType: !6, size: 64)
-!11 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !12, size: 64)
-!12 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !13)
-!13 = !DIDerivedType(tag: DW_TAG_typedef, name: "uint64_t", file: !14, line: 31, baseType: !15)
-!14 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk/usr/include/_types/_uint64_t.h", directory: "", checksumkind: CSK_MD5, checksum: "77fc5e91653260959605f129691cf9b1")
-!15 = !DIBasicType(name: "unsigned long long", size: 64, encoding: DW_ATE_unsigned)
-!16 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !13, size: 64)
-!17 = !{!0, !18, !25, !30}
-!18 = !DIGlobalVariableExpression(var: !19, expr: !DIExpression())
-!19 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !20, isLocal: true, isDefinition: true)
-!20 = !DICompositeType(tag: DW_TAG_array_type, baseType: !21, size: 40, elements: !23)
-!21 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !22)
-!22 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
-!23 = !{!24}
-!24 = !DISubrange(count: 5)
-!25 = !DIGlobalVariableExpression(var: !26, expr: !DIExpression())
-!26 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !27, isLocal: true, isDefinition: true)
-!27 = !DICompositeType(tag: DW_TAG_array_type, baseType: !22, size: 112, elements: !28)
-!28 = !{!29}
-!29 = !DISubrange(count: 14)
-!30 = !DIGlobalVariableExpression(var: !31, expr: !DIExpression())
-!31 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !32, isLocal: true, isDefinition: true)
-!32 = !DICompositeType(tag: DW_TAG_array_type, baseType: !22, size: 200, elements: !33)
-!33 = !{!34}
-!34 = !DISubrange(count: 25)
-!35 = !DIDerivedType(tag: DW_TAG_typedef, name: "ck_stack_t", file: !8, line: 44, baseType: !36)
-!36 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "ck_stack", file: !8, line: 40, size: 128, elements: !37)
-!37 = !{!38, !39}
-!38 = !DIDerivedType(tag: DW_TAG_member, name: "head", scope: !36, file: !8, line: 41, baseType: !6, size: 64)
-!39 = !DIDerivedType(tag: DW_TAG_member, name: "generation", scope: !36, file: !8, line: 42, baseType: !40, size: 64, offset: 64)
-!40 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !22, size: 64)
-!41 = !{i32 2, !"SDK Version", [2 x i32] [i32 15, i32 0]}
-!42 = !{i32 7, !"Dwarf Version", i32 5}
-!43 = !{i32 2, !"Debug Info Version", i32 3}
-!44 = !{i32 1, !"wchar_size", i32 4}
-!45 = !{i32 8, !"PIC Level", i32 2}
-!46 = !{i32 7, !"uwtable", i32 1}
-!47 = !{i32 7, !"frame-pointer", i32 1}
-!48 = !{!"Homebrew clang version 19.1.7"}
-!49 = distinct !DISubprogram(name: "pusher_fn", scope: !3, file: !3, line: 18, type: !50, scopeLine: 19, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!50 = !DISubroutineType(types: !51)
-!51 = !{!5, !5}
-!52 = !{}
-!53 = !DILocalVariable(name: "arg", arg: 1, scope: !49, file: !3, line: 18, type: !5)
-!54 = !DILocation(line: 18, column: 23, scope: !49)
-!55 = !DILocalVariable(name: "i", scope: !56, file: !3, line: 20, type: !57)
-!56 = distinct !DILexicalBlock(scope: !49, file: !3, line: 20, column: 5)
-!57 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
-!58 = !DILocation(line: 20, column: 14, scope: !56)
-!59 = !DILocation(line: 20, column: 10, scope: !56)
-!60 = !DILocation(line: 20, column: 21, scope: !61)
-!61 = distinct !DILexicalBlock(scope: !56, file: !3, line: 20, column: 5)
-!62 = !DILocation(line: 20, column: 23, scope: !61)
-!63 = !DILocation(line: 20, column: 5, scope: !56)
-!64 = !DILocalVariable(name: "entry", scope: !65, file: !3, line: 22, type: !66)
-!65 = distinct !DILexicalBlock(scope: !61, file: !3, line: 21, column: 5)
-!66 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !67, size: 64)
-!67 = !DIDerivedType(tag: DW_TAG_typedef, name: "ck_stack_entry_t", file: !8, line: 38, baseType: !7)
-!68 = !DILocation(line: 22, column: 27, scope: !65)
-!69 = !DILocation(line: 22, column: 35, scope: !65)
-!70 = !DILocation(line: 23, column: 14, scope: !71)
-!71 = distinct !DILexicalBlock(scope: !65, file: !3, line: 23, column: 13)
-!72 = !DILocation(line: 23, column: 13, scope: !65)
-!73 = !DILocation(line: 25, column: 13, scope: !74)
-!74 = distinct !DILexicalBlock(scope: !71, file: !3, line: 24, column: 9)
-!75 = !DILocation(line: 27, column: 36, scope: !65)
-!76 = !DILocation(line: 27, column: 9, scope: !65)
-!77 = !DILocation(line: 28, column: 5, scope: !65)
-!78 = !DILocation(line: 20, column: 39, scope: !61)
-!79 = !DILocation(line: 20, column: 5, scope: !61)
-!80 = distinct !{!80, !63, !81, !82}
-!81 = !DILocation(line: 28, column: 5, scope: !56)
-!82 = !{!"llvm.loop.mustprogress"}
-!83 = !DILocation(line: 29, column: 5, scope: !49)
-!84 = distinct !DISubprogram(name: "ck_stack_push_upmc", scope: !8, file: !8, line: 54, type: !85, scopeLine: 55, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!85 = !DISubroutineType(types: !86)
-!86 = !{null, !87, !6}
-!87 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !36, size: 64)
-!88 = !DILocalVariable(name: "target", arg: 1, scope: !84, file: !8, line: 54, type: !87)
-!89 = !DILocation(line: 54, column: 37, scope: !84)
-!90 = !DILocalVariable(name: "entry", arg: 2, scope: !84, file: !8, line: 54, type: !6)
-!91 = !DILocation(line: 54, column: 68, scope: !84)
-!92 = !DILocalVariable(name: "stack", scope: !84, file: !8, line: 56, type: !6)
-!93 = !DILocation(line: 56, column: 25, scope: !84)
-!94 = !DILocation(line: 58, column: 10, scope: !84)
-!95 = !DILocation(line: 58, column: 8, scope: !84)
-!96 = !DILocation(line: 59, column: 16, scope: !84)
-!97 = !DILocation(line: 59, column: 2, scope: !84)
-!98 = !DILocation(line: 59, column: 9, scope: !84)
-!99 = !DILocation(line: 59, column: 14, scope: !84)
-!100 = !DILocation(line: 60, column: 2, scope: !84)
-!101 = !DILocation(line: 62, column: 2, scope: !84)
-!102 = !DILocation(line: 62, column: 30, scope: !84)
-!103 = !DILocation(line: 62, column: 38, scope: !84)
-!104 = !DILocation(line: 62, column: 44, scope: !84)
-!105 = !DILocation(line: 62, column: 51, scope: !84)
-!106 = !DILocation(line: 62, column: 9, scope: !84)
-!107 = !DILocation(line: 62, column: 66, scope: !84)
-!108 = !DILocation(line: 63, column: 17, scope: !109)
-!109 = distinct !DILexicalBlock(scope: !84, file: !8, line: 62, column: 76)
-!110 = !DILocation(line: 63, column: 3, scope: !109)
-!111 = !DILocation(line: 63, column: 10, scope: !109)
-!112 = !DILocation(line: 63, column: 15, scope: !109)
-!113 = !DILocation(line: 64, column: 3, scope: !109)
-!114 = distinct !{!114, !101, !115, !82}
-!115 = !DILocation(line: 65, column: 2, scope: !84)
-!116 = !DILocation(line: 67, column: 2, scope: !84)
-!117 = distinct !DISubprogram(name: "popper_fn", scope: !3, file: !3, line: 32, type: !50, scopeLine: 33, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!118 = !DILocalVariable(name: "arg", arg: 1, scope: !117, file: !3, line: 32, type: !5)
-!119 = !DILocation(line: 32, column: 23, scope: !117)
-!120 = !DILocalVariable(name: "entry", scope: !117, file: !3, line: 34, type: !66)
-!121 = !DILocation(line: 34, column: 23, scope: !117)
-!122 = !DILocation(line: 35, column: 5, scope: !117)
-!123 = !DILocation(line: 35, column: 20, scope: !117)
-!124 = !DILocation(line: 35, column: 18, scope: !117)
-!125 = !DILocation(line: 35, column: 47, scope: !117)
-!126 = distinct !{!126, !122, !127, !82}
-!127 = !DILocation(line: 35, column: 55, scope: !117)
-!128 = !DILocation(line: 36, column: 10, scope: !117)
-!129 = !DILocation(line: 36, column: 5, scope: !117)
-!130 = !DILocation(line: 37, column: 5, scope: !117)
-!131 = distinct !DISubprogram(name: "ck_stack_pop_upmc", scope: !8, file: !8, line: 96, type: !132, scopeLine: 97, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!132 = !DISubroutineType(types: !133)
-!133 = !{!6, !87}
-!134 = !DILocalVariable(name: "target", arg: 1, scope: !131, file: !8, line: 96, type: !87)
-!135 = !DILocation(line: 96, column: 36, scope: !131)
-!136 = !DILocalVariable(name: "entry", scope: !131, file: !8, line: 98, type: !6)
-!137 = !DILocation(line: 98, column: 25, scope: !131)
-!138 = !DILocalVariable(name: "next", scope: !131, file: !8, line: 98, type: !6)
-!139 = !DILocation(line: 98, column: 33, scope: !131)
-!140 = !DILocation(line: 100, column: 10, scope: !131)
-!141 = !DILocation(line: 100, column: 8, scope: !131)
-!142 = !DILocation(line: 101, column: 6, scope: !143)
-!143 = distinct !DILexicalBlock(scope: !131, file: !8, line: 101, column: 6)
-!144 = !DILocation(line: 101, column: 12, scope: !143)
-!145 = !DILocation(line: 101, column: 6, scope: !131)
-!146 = !DILocation(line: 102, column: 3, scope: !143)
-!147 = !DILocation(line: 104, column: 2, scope: !131)
-!148 = !DILocation(line: 105, column: 9, scope: !131)
-!149 = !DILocation(line: 105, column: 16, scope: !131)
-!150 = !DILocation(line: 105, column: 7, scope: !131)
-!151 = !DILocation(line: 106, column: 2, scope: !131)
-!152 = !DILocation(line: 106, column: 30, scope: !131)
-!153 = !DILocation(line: 106, column: 38, scope: !131)
-!154 = !DILocation(line: 106, column: 44, scope: !131)
-!155 = !DILocation(line: 106, column: 51, scope: !131)
-!156 = !DILocation(line: 106, column: 9, scope: !131)
-!157 = !DILocation(line: 106, column: 65, scope: !131)
-!158 = !DILocation(line: 107, column: 7, scope: !159)
-!159 = distinct !DILexicalBlock(scope: !160, file: !8, line: 107, column: 7)
-!160 = distinct !DILexicalBlock(scope: !131, file: !8, line: 106, column: 75)
-!161 = !DILocation(line: 107, column: 13, scope: !159)
-!162 = !DILocation(line: 107, column: 7, scope: !160)
-!163 = !DILocation(line: 108, column: 4, scope: !159)
-!164 = !DILocation(line: 110, column: 3, scope: !160)
-!165 = !DILocation(line: 111, column: 10, scope: !160)
-!166 = !DILocation(line: 111, column: 17, scope: !160)
-!167 = !DILocation(line: 111, column: 8, scope: !160)
-!168 = distinct !{!168, !151, !169, !82}
-!169 = !DILocation(line: 112, column: 2, scope: !131)
-!170 = !DILocation(line: 114, column: 9, scope: !131)
-!171 = !DILocation(line: 114, column: 2, scope: !131)
-!172 = !DILocation(line: 115, column: 1, scope: !131)
-!173 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 40, type: !174, scopeLine: 41, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!174 = !DISubroutineType(types: !175)
-!175 = !{!57}
-!176 = !DILocalVariable(name: "pushers", scope: !173, file: !3, line: 42, type: !177)
-!177 = !DICompositeType(tag: DW_TAG_array_type, baseType: !178, size: 64, elements: !201)
-!178 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !179, line: 31, baseType: !180)
-!179 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk/usr/include/sys/_pthread/_pthread_t.h", directory: "", checksumkind: CSK_MD5, checksum: "086fc6d7dc3c67fdb87e7376555dcfd7")
-!180 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !181, line: 118, baseType: !182)
-!181 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk/usr/include/sys/_pthread/_pthread_types.h", directory: "", checksumkind: CSK_MD5, checksum: "4e2ea0e1af95894da0a6030a21a8ebee")
-!182 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !183, size: 64)
-!183 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !181, line: 103, size: 65536, elements: !184)
-!184 = !{!185, !187, !197}
-!185 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !183, file: !181, line: 104, baseType: !186, size: 64)
-!186 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
-!187 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !183, file: !181, line: 105, baseType: !188, size: 64, offset: 64)
-!188 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !189, size: 64)
-!189 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !181, line: 57, size: 192, elements: !190)
-!190 = !{!191, !195, !196}
-!191 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !189, file: !181, line: 58, baseType: !192, size: 64)
-!192 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !193, size: 64)
-!193 = !DISubroutineType(types: !194)
-!194 = !{null, !5}
-!195 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !189, file: !181, line: 59, baseType: !5, size: 64, offset: 64)
-!196 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !189, file: !181, line: 60, baseType: !188, size: 64, offset: 128)
-!197 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !183, file: !181, line: 106, baseType: !198, size: 65408, offset: 128)
-!198 = !DICompositeType(tag: DW_TAG_array_type, baseType: !22, size: 65408, elements: !199)
-!199 = !{!200}
-!200 = !DISubrange(count: 8176)
-!201 = !{!202}
-!202 = !DISubrange(count: 1)
-!203 = !DILocation(line: 42, column: 15, scope: !173)
-!204 = !DILocalVariable(name: "poppers", scope: !173, file: !3, line: 43, type: !205)
-!205 = !DICompositeType(tag: DW_TAG_array_type, baseType: !178, size: 128, elements: !206)
-!206 = !{!207}
-!207 = !DISubrange(count: 2)
-!208 = !DILocation(line: 43, column: 15, scope: !173)
-!209 = !DILocalVariable(name: "i", scope: !210, file: !3, line: 45, type: !57)
-!210 = distinct !DILexicalBlock(scope: !173, file: !3, line: 45, column: 5)
-!211 = !DILocation(line: 45, column: 14, scope: !210)
-!212 = !DILocation(line: 45, column: 10, scope: !210)
-!213 = !DILocation(line: 45, column: 21, scope: !214)
-!214 = distinct !DILexicalBlock(scope: !210, file: !3, line: 45, column: 5)
-!215 = !DILocation(line: 45, column: 23, scope: !214)
-!216 = !DILocation(line: 45, column: 5, scope: !210)
-!217 = !DILocation(line: 47, column: 37, scope: !218)
-!218 = distinct !DILexicalBlock(scope: !219, file: !3, line: 47, column: 13)
-!219 = distinct !DILexicalBlock(scope: !214, file: !3, line: 46, column: 5)
-!220 = !DILocation(line: 47, column: 29, scope: !218)
-!221 = !DILocation(line: 47, column: 13, scope: !218)
-!222 = !DILocation(line: 47, column: 64, scope: !218)
-!223 = !DILocation(line: 47, column: 13, scope: !219)
-!224 = !DILocation(line: 49, column: 13, scope: !225)
-!225 = distinct !DILexicalBlock(scope: !218, file: !3, line: 48, column: 9)
-!226 = !DILocation(line: 51, column: 5, scope: !219)
-!227 = !DILocation(line: 45, column: 39, scope: !214)
-!228 = !DILocation(line: 45, column: 5, scope: !214)
-!229 = distinct !{!229, !216, !230, !82}
-!230 = !DILocation(line: 51, column: 5, scope: !210)
-!231 = !DILocalVariable(name: "i", scope: !232, file: !3, line: 53, type: !57)
-!232 = distinct !DILexicalBlock(scope: !173, file: !3, line: 53, column: 5)
-!233 = !DILocation(line: 53, column: 14, scope: !232)
-!234 = !DILocation(line: 53, column: 10, scope: !232)
-!235 = !DILocation(line: 53, column: 21, scope: !236)
-!236 = distinct !DILexicalBlock(scope: !232, file: !3, line: 53, column: 5)
-!237 = !DILocation(line: 53, column: 23, scope: !236)
-!238 = !DILocation(line: 53, column: 5, scope: !232)
-!239 = !DILocation(line: 55, column: 37, scope: !240)
-!240 = distinct !DILexicalBlock(scope: !241, file: !3, line: 55, column: 13)
-!241 = distinct !DILexicalBlock(scope: !236, file: !3, line: 54, column: 5)
-!242 = !DILocation(line: 55, column: 29, scope: !240)
-!243 = !DILocation(line: 55, column: 13, scope: !240)
-!244 = !DILocation(line: 55, column: 64, scope: !240)
-!245 = !DILocation(line: 55, column: 13, scope: !241)
-!246 = !DILocation(line: 57, column: 13, scope: !247)
-!247 = distinct !DILexicalBlock(scope: !240, file: !3, line: 56, column: 9)
-!248 = !DILocation(line: 59, column: 5, scope: !241)
-!249 = !DILocation(line: 53, column: 39, scope: !236)
-!250 = !DILocation(line: 53, column: 5, scope: !236)
-!251 = distinct !{!251, !238, !252, !82}
-!252 = !DILocation(line: 59, column: 5, scope: !232)
-!253 = !DILocalVariable(name: "i", scope: !254, file: !3, line: 61, type: !57)
-!254 = distinct !DILexicalBlock(scope: !173, file: !3, line: 61, column: 5)
-!255 = !DILocation(line: 61, column: 14, scope: !254)
-!256 = !DILocation(line: 61, column: 10, scope: !254)
-!257 = !DILocation(line: 61, column: 21, scope: !258)
-!258 = distinct !DILexicalBlock(scope: !254, file: !3, line: 61, column: 5)
-!259 = !DILocation(line: 61, column: 23, scope: !258)
-!260 = !DILocation(line: 61, column: 5, scope: !254)
-!261 = !DILocation(line: 63, column: 30, scope: !262)
-!262 = distinct !DILexicalBlock(scope: !258, file: !3, line: 62, column: 5)
-!263 = !DILocation(line: 63, column: 22, scope: !262)
-!264 = !DILocation(line: 63, column: 9, scope: !262)
-!265 = !DILocation(line: 64, column: 5, scope: !262)
-!266 = !DILocation(line: 61, column: 39, scope: !258)
-!267 = !DILocation(line: 61, column: 5, scope: !258)
-!268 = distinct !{!268, !260, !269, !82}
-!269 = !DILocation(line: 64, column: 5, scope: !254)
-!270 = !DILocalVariable(name: "i", scope: !271, file: !3, line: 66, type: !57)
-!271 = distinct !DILexicalBlock(scope: !173, file: !3, line: 66, column: 5)
-!272 = !DILocation(line: 66, column: 14, scope: !271)
-!273 = !DILocation(line: 66, column: 10, scope: !271)
-!274 = !DILocation(line: 66, column: 21, scope: !275)
-!275 = distinct !DILexicalBlock(scope: !271, file: !3, line: 66, column: 5)
-!276 = !DILocation(line: 66, column: 23, scope: !275)
-!277 = !DILocation(line: 66, column: 5, scope: !271)
-!278 = !DILocation(line: 68, column: 30, scope: !279)
-!279 = distinct !DILexicalBlock(scope: !275, file: !3, line: 67, column: 5)
-!280 = !DILocation(line: 68, column: 22, scope: !279)
-!281 = !DILocation(line: 68, column: 9, scope: !279)
-!282 = !DILocation(line: 69, column: 5, scope: !279)
-!283 = !DILocation(line: 66, column: 39, scope: !275)
-!284 = !DILocation(line: 66, column: 5, scope: !275)
-!285 = distinct !{!285, !277, !286, !82}
-!286 = !DILocation(line: 69, column: 5, scope: !271)
-!287 = !DILocation(line: 71, column: 5, scope: !173)
-!288 = !DILocation(line: 73, column: 5, scope: !173)
-!289 = !DILocation(line: 74, column: 1, scope: !173)
-!290 = distinct !DISubprogram(name: "ck_pr_md_load_ptr", scope: !291, file: !291, line: 105, type: !292, scopeLine: 105, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!291 = !DIFile(filename: "include/gcc/ppc64/ck_pr.h", directory: "/Users/stefanodalmas/Desktop/huawei/ck", checksumkind: CSK_MD5, checksum: "1c5aecf7376064f28c732d8a93471464")
-!292 = !DISubroutineType(types: !293)
-!293 = !{!5, !294}
-!294 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !295, size: 64)
-!295 = !DIDerivedType(tag: DW_TAG_const_type, baseType: null)
-!296 = !DILocalVariable(name: "target", arg: 1, scope: !290, file: !291, line: 105, type: !294)
-!297 = !DILocation(line: 105, column: 1, scope: !290)
-!298 = !DILocalVariable(name: "r", scope: !290, file: !291, line: 105, type: !5)
-!299 = !{i64 2148651871}
-!300 = distinct !DISubprogram(name: "ck_pr_fence_store", scope: !301, file: !301, line: 113, type: !302, scopeLine: 113, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
-!301 = !DIFile(filename: "include/ck_pr.h", directory: "/Users/stefanodalmas/Desktop/huawei/ck", checksumkind: CSK_MD5, checksum: "cffbc3bc631aa31cdde49d8ca6470a32")
-!302 = !DISubroutineType(types: !303)
-!303 = !{null}
-!304 = !DILocation(line: 113, column: 1, scope: !300)
-!305 = distinct !DISubprogram(name: "ck_pr_cas_ptr_value", scope: !291, file: !291, line: 177, type: !306, scopeLine: 178, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!306 = !DISubroutineType(types: !307)
-!307 = !{!308, !5, !5, !5, !5}
-!308 = !DIBasicType(name: "_Bool", size: 8, encoding: DW_ATE_boolean)
-!309 = !DILocalVariable(name: "target", arg: 1, scope: !305, file: !291, line: 177, type: !5)
-!310 = !DILocation(line: 177, column: 27, scope: !305)
-!311 = !DILocalVariable(name: "compare", arg: 2, scope: !305, file: !291, line: 177, type: !5)
-!312 = !DILocation(line: 177, column: 41, scope: !305)
-!313 = !DILocalVariable(name: "set", arg: 3, scope: !305, file: !291, line: 177, type: !5)
-!314 = !DILocation(line: 177, column: 56, scope: !305)
-!315 = !DILocalVariable(name: "value", arg: 4, scope: !305, file: !291, line: 177, type: !5)
-!316 = !DILocation(line: 177, column: 67, scope: !305)
-!317 = !DILocalVariable(name: "previous", scope: !305, file: !291, line: 179, type: !5)
-!318 = !DILocation(line: 179, column: 8, scope: !305)
-!319 = !DILocation(line: 189, column: 42, scope: !305)
-!320 = !DILocation(line: 190, column: 14, scope: !305)
-!321 = !DILocation(line: 191, column: 42, scope: !305)
-!322 = !DILocation(line: 181, column: 9, scope: !305)
-!323 = !{i64 1155983}
-!324 = !DILocation(line: 194, column: 28, scope: !305)
-!325 = !DILocation(line: 194, column: 35, scope: !305)
-!326 = !DILocation(line: 194, column: 9, scope: !305)
-!327 = !DILocation(line: 195, column: 17, scope: !305)
-!328 = !DILocation(line: 195, column: 29, scope: !305)
-!329 = !DILocation(line: 195, column: 26, scope: !305)
-!330 = !DILocation(line: 195, column: 9, scope: !305)
-!331 = distinct !DISubprogram(name: "ck_pr_fence_strict_store", scope: !291, file: !291, line: 80, type: !302, scopeLine: 80, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
-!332 = !DILocation(line: 80, column: 1, scope: !331)
-!333 = !{i64 2148649741}
-!334 = distinct !DISubprogram(name: "ck_pr_md_store_ptr", scope: !291, file: !291, line: 135, type: !335, scopeLine: 135, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !52)
-!335 = !DISubroutineType(types: !336)
-!336 = !{null, !5, !294}
-!337 = !DILocalVariable(name: "target", arg: 1, scope: !334, file: !291, line: 135, type: !5)
-!338 = !DILocation(line: 135, column: 1, scope: !334)
-!339 = !DILocalVariable(name: "v", arg: 2, scope: !334, file: !291, line: 135, type: !294)
-!340 = !{i64 2148655703}
-!341 = distinct !DISubprogram(name: "ck_pr_fence_load", scope: !301, file: !301, line: 112, type: !302, scopeLine: 112, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
-!342 = !DILocation(line: 112, column: 1, scope: !341)
-!343 = distinct !DISubprogram(name: "ck_pr_fence_strict_load", scope: !291, file: !291, line: 82, type: !302, scopeLine: 82, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
-!344 = !DILocation(line: 82, column: 1, scope: !343)
-!345 = !{i64 2148650142}
+!6 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!7 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !8, size: 64)
+!8 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "ck_stack_entry", file: !9, line: 35, size: 64, elements: !10)
+!9 = !DIFile(filename: "../ck/include/ck_stack.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "19674f5fb31e41969a7583ca1d1160b2")
+!10 = !{!11}
+!11 = !DIDerivedType(tag: DW_TAG_member, name: "next", scope: !8, file: !9, line: 36, baseType: !7, size: 64)
+!12 = !DIDerivedType(tag: DW_TAG_typedef, name: "bool", file: !13, line: 4, baseType: !14)
+!13 = !DIFile(filename: "include/libc/stdbool.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "6e643322591bab80343344357c642cba")
+!14 = !DIBasicType(name: "_Bool", size: 8, encoding: DW_ATE_boolean)
+!15 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !16, size: 64)
+!16 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !17)
+!17 = !DIDerivedType(tag: DW_TAG_typedef, name: "uint64_t", file: !18, line: 24, baseType: !19)
+!18 = !DIFile(filename: "include/libc/stdint.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "027aa838071dee39e5261b0fdecb37d3")
+!19 = !DIBasicType(name: "unsigned long", size: 64, encoding: DW_ATE_unsigned)
+!20 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !17, size: 64)
+!21 = !{!0, !22, !28, !33}
+!22 = !DIGlobalVariableExpression(var: !23, expr: !DIExpression())
+!23 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !24, isLocal: true, isDefinition: true)
+!24 = !DICompositeType(tag: DW_TAG_array_type, baseType: !25, size: 200, elements: !26)
+!25 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_unsigned_char)
+!26 = !{!27}
+!27 = !DISubrange(count: 25)
+!28 = !DIGlobalVariableExpression(var: !29, expr: !DIExpression())
+!29 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !30, isLocal: true, isDefinition: true)
+!30 = !DICompositeType(tag: DW_TAG_array_type, baseType: !25, size: 224, elements: !31)
+!31 = !{!32}
+!32 = !DISubrange(count: 28)
+!33 = !DIGlobalVariableExpression(var: !34, expr: !DIExpression())
+!34 = distinct !DIGlobalVariable(scope: null, file: !3, line: 71, type: !35, isLocal: true, isDefinition: true)
+!35 = !DICompositeType(tag: DW_TAG_array_type, baseType: !36, size: 40, elements: !37)
+!36 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !25)
+!37 = !{!38}
+!38 = !DISubrange(count: 5)
+!39 = !DIDerivedType(tag: DW_TAG_typedef, name: "ck_stack_t", file: !9, line: 44, baseType: !40)
+!40 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "ck_stack", file: !9, line: 40, size: 128, elements: !41)
+!41 = !{!42, !43}
+!42 = !DIDerivedType(tag: DW_TAG_member, name: "head", scope: !40, file: !9, line: 41, baseType: !7, size: 64)
+!43 = !DIDerivedType(tag: DW_TAG_member, name: "generation", scope: !40, file: !9, line: 42, baseType: !44, size: 64, offset: 64)
+!44 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !25, size: 64)
+!45 = !{i32 7, !"Dwarf Version", i32 5}
+!46 = !{i32 2, !"Debug Info Version", i32 3}
+!47 = !{i32 1, !"wchar_size", i32 4}
+!48 = !{i32 8, !"PIC Level", i32 2}
+!49 = !{i32 7, !"PIE Level", i32 2}
+!50 = !{i32 7, !"uwtable", i32 2}
+!51 = !{i32 7, !"frame-pointer", i32 2}
+!52 = !{!"Homebrew clang version 22.1.8"}
+!53 = distinct !DISubprogram(name: "pusher_fn", scope: !3, file: !3, line: 18, type: !54, scopeLine: 19, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!54 = !DISubroutineType(types: !55)
+!55 = !{!5, !5}
+!56 = !{}
+!57 = !DILocalVariable(name: "arg", arg: 1, scope: !53, file: !3, line: 18, type: !5)
+!58 = !DILocation(line: 18, column: 23, scope: !53)
+!59 = !DILocalVariable(name: "i", scope: !60, file: !3, line: 20, type: !6)
+!60 = distinct !DILexicalBlock(scope: !53, file: !3, line: 20, column: 5)
+!61 = !DILocation(line: 20, column: 14, scope: !60)
+!62 = !DILocation(line: 20, column: 10, scope: !60)
+!63 = !DILocation(line: 20, column: 21, scope: !64)
+!64 = distinct !DILexicalBlock(scope: !60, file: !3, line: 20, column: 5)
+!65 = !DILocation(line: 20, column: 23, scope: !64)
+!66 = !DILocation(line: 20, column: 5, scope: !60)
+!67 = !DILocalVariable(name: "entry", scope: !68, file: !3, line: 22, type: !69)
+!68 = distinct !DILexicalBlock(scope: !64, file: !3, line: 21, column: 5)
+!69 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !70, size: 64)
+!70 = !DIDerivedType(tag: DW_TAG_typedef, name: "ck_stack_entry_t", file: !9, line: 38, baseType: !8)
+!71 = !DILocation(line: 22, column: 27, scope: !68)
+!72 = !DILocation(line: 22, column: 35, scope: !68)
+!73 = !DILocation(line: 23, column: 14, scope: !74)
+!74 = distinct !DILexicalBlock(scope: !68, file: !3, line: 23, column: 13)
+!75 = !DILocation(line: 23, column: 13, scope: !74)
+!76 = !DILocation(line: 25, column: 13, scope: !77)
+!77 = distinct !DILexicalBlock(scope: !74, file: !3, line: 24, column: 9)
+!78 = !DILocation(line: 27, column: 36, scope: !68)
+!79 = !DILocation(line: 27, column: 9, scope: !68)
+!80 = !DILocation(line: 28, column: 5, scope: !68)
+!81 = !DILocation(line: 20, column: 39, scope: !64)
+!82 = !DILocation(line: 20, column: 5, scope: !64)
+!83 = distinct !{!83, !66, !84, !85}
+!84 = !DILocation(line: 28, column: 5, scope: !60)
+!85 = !{!"llvm.loop.mustprogress"}
+!86 = !DILocation(line: 29, column: 5, scope: !53)
+!87 = distinct !DISubprogram(name: "ck_stack_push_upmc", scope: !9, file: !9, line: 54, type: !88, scopeLine: 55, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!88 = !DISubroutineType(types: !89)
+!89 = !{null, !90, !7}
+!90 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !40, size: 64)
+!91 = !DILocalVariable(name: "target", arg: 1, scope: !87, file: !9, line: 54, type: !90)
+!92 = !DILocation(line: 54, column: 37, scope: !87)
+!93 = !DILocalVariable(name: "entry", arg: 2, scope: !87, file: !9, line: 54, type: !7)
+!94 = !DILocation(line: 54, column: 68, scope: !87)
+!95 = !DILocalVariable(name: "stack", scope: !87, file: !9, line: 56, type: !7)
+!96 = !DILocation(line: 56, column: 25, scope: !87)
+!97 = !DILocation(line: 58, column: 26, scope: !87)
+!98 = !DILocation(line: 58, column: 34, scope: !87)
+!99 = !DILocation(line: 58, column: 10, scope: !87)
+!100 = !DILocation(line: 58, column: 8, scope: !87)
+!101 = !DILocation(line: 59, column: 16, scope: !87)
+!102 = !DILocation(line: 59, column: 2, scope: !87)
+!103 = !DILocation(line: 59, column: 9, scope: !87)
+!104 = !DILocation(line: 59, column: 14, scope: !87)
+!105 = !DILocation(line: 60, column: 2, scope: !87)
+!106 = !DILocation(line: 62, column: 2, scope: !87)
+!107 = !DILocation(line: 62, column: 30, scope: !87)
+!108 = !DILocation(line: 62, column: 38, scope: !87)
+!109 = !DILocation(line: 62, column: 44, scope: !87)
+!110 = !DILocation(line: 62, column: 51, scope: !87)
+!111 = !DILocation(line: 62, column: 9, scope: !87)
+!112 = !DILocation(line: 62, column: 66, scope: !87)
+!113 = !DILocation(line: 63, column: 17, scope: !114)
+!114 = distinct !DILexicalBlock(scope: !87, file: !9, line: 62, column: 76)
+!115 = !DILocation(line: 63, column: 3, scope: !114)
+!116 = !DILocation(line: 63, column: 10, scope: !114)
+!117 = !DILocation(line: 63, column: 15, scope: !114)
+!118 = !DILocation(line: 64, column: 3, scope: !114)
+!119 = distinct !{!119, !106, !120, !85}
+!120 = !DILocation(line: 65, column: 2, scope: !87)
+!121 = !DILocation(line: 67, column: 2, scope: !87)
+!122 = distinct !DISubprogram(name: "popper_fn", scope: !3, file: !3, line: 32, type: !54, scopeLine: 33, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!123 = !DILocalVariable(name: "arg", arg: 1, scope: !122, file: !3, line: 32, type: !5)
+!124 = !DILocation(line: 32, column: 23, scope: !122)
+!125 = !DILocalVariable(name: "entry", scope: !122, file: !3, line: 34, type: !69)
+!126 = !DILocation(line: 34, column: 23, scope: !122)
+!127 = !DILocation(line: 35, column: 5, scope: !122)
+!128 = !DILocation(line: 35, column: 20, scope: !122)
+!129 = !DILocation(line: 35, column: 18, scope: !122)
+!130 = !DILocation(line: 35, column: 47, scope: !122)
+!131 = distinct !{!131, !127, !132, !85}
+!132 = !DILocation(line: 35, column: 55, scope: !122)
+!133 = !DILocation(line: 36, column: 10, scope: !122)
+!134 = !DILocation(line: 36, column: 5, scope: !122)
+!135 = !DILocation(line: 37, column: 5, scope: !122)
+!136 = distinct !DISubprogram(name: "ck_stack_pop_upmc", scope: !9, file: !9, line: 96, type: !137, scopeLine: 97, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!137 = !DISubroutineType(types: !138)
+!138 = !{!7, !90}
+!139 = !DILocalVariable(name: "target", arg: 1, scope: !136, file: !9, line: 96, type: !90)
+!140 = !DILocation(line: 96, column: 36, scope: !136)
+!141 = !DILocalVariable(name: "entry", scope: !136, file: !9, line: 98, type: !7)
+!142 = !DILocation(line: 98, column: 25, scope: !136)
+!143 = !DILocalVariable(name: "next", scope: !136, file: !9, line: 98, type: !7)
+!144 = !DILocation(line: 98, column: 33, scope: !136)
+!145 = !DILocation(line: 100, column: 26, scope: !136)
+!146 = !DILocation(line: 100, column: 34, scope: !136)
+!147 = !DILocation(line: 100, column: 10, scope: !136)
+!148 = !DILocation(line: 100, column: 8, scope: !136)
+!149 = !DILocation(line: 101, column: 6, scope: !150)
+!150 = distinct !DILexicalBlock(scope: !136, file: !9, line: 101, column: 6)
+!151 = !DILocation(line: 101, column: 12, scope: !150)
+!152 = !DILocation(line: 102, column: 3, scope: !150)
+!153 = !DILocation(line: 104, column: 2, scope: !136)
+!154 = !DILocation(line: 105, column: 9, scope: !136)
+!155 = !DILocation(line: 105, column: 16, scope: !136)
+!156 = !DILocation(line: 105, column: 7, scope: !136)
+!157 = !DILocation(line: 106, column: 2, scope: !136)
+!158 = !DILocation(line: 106, column: 30, scope: !136)
+!159 = !DILocation(line: 106, column: 38, scope: !136)
+!160 = !DILocation(line: 106, column: 44, scope: !136)
+!161 = !DILocation(line: 106, column: 51, scope: !136)
+!162 = !DILocation(line: 106, column: 9, scope: !136)
+!163 = !DILocation(line: 106, column: 65, scope: !136)
+!164 = !DILocation(line: 107, column: 7, scope: !165)
+!165 = distinct !DILexicalBlock(scope: !166, file: !9, line: 107, column: 7)
+!166 = distinct !DILexicalBlock(scope: !136, file: !9, line: 106, column: 75)
+!167 = !DILocation(line: 107, column: 13, scope: !165)
+!168 = !DILocation(line: 108, column: 4, scope: !165)
+!169 = !DILocation(line: 110, column: 3, scope: !166)
+!170 = !DILocation(line: 111, column: 10, scope: !166)
+!171 = !DILocation(line: 111, column: 17, scope: !166)
+!172 = !DILocation(line: 111, column: 8, scope: !166)
+!173 = distinct !{!173, !157, !174, !85}
+!174 = !DILocation(line: 112, column: 2, scope: !136)
+!175 = !DILocation(line: 114, column: 9, scope: !136)
+!176 = !DILocation(line: 114, column: 2, scope: !136)
+!177 = !DILocation(line: 115, column: 1, scope: !136)
+!178 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 40, type: !179, scopeLine: 41, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!179 = !DISubroutineType(types: !180)
+!180 = !{!6}
+!181 = !DILocalVariable(name: "pushers", scope: !178, file: !3, line: 42, type: !182)
+!182 = !DICompositeType(tag: DW_TAG_array_type, baseType: !183, size: 64, elements: !185)
+!183 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !184, line: 2, baseType: !5)
+!184 = !DIFile(filename: "include/libc/pthread.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "17740edbdaeb6f1f4624ba115290b408")
+!185 = !{!186}
+!186 = !DISubrange(count: 1)
+!187 = !DILocation(line: 42, column: 15, scope: !178)
+!188 = !DILocalVariable(name: "poppers", scope: !178, file: !3, line: 43, type: !189)
+!189 = !DICompositeType(tag: DW_TAG_array_type, baseType: !183, size: 128, elements: !190)
+!190 = !{!191}
+!191 = !DISubrange(count: 2)
+!192 = !DILocation(line: 43, column: 15, scope: !178)
+!193 = !DILocalVariable(name: "i", scope: !194, file: !3, line: 45, type: !6)
+!194 = distinct !DILexicalBlock(scope: !178, file: !3, line: 45, column: 5)
+!195 = !DILocation(line: 45, column: 14, scope: !194)
+!196 = !DILocation(line: 45, column: 10, scope: !194)
+!197 = !DILocation(line: 45, column: 21, scope: !198)
+!198 = distinct !DILexicalBlock(scope: !194, file: !3, line: 45, column: 5)
+!199 = !DILocation(line: 45, column: 23, scope: !198)
+!200 = !DILocation(line: 45, column: 5, scope: !194)
+!201 = !DILocation(line: 47, column: 37, scope: !202)
+!202 = distinct !DILexicalBlock(scope: !203, file: !3, line: 47, column: 13)
+!203 = distinct !DILexicalBlock(scope: !198, file: !3, line: 46, column: 5)
+!204 = !DILocation(line: 47, column: 29, scope: !202)
+!205 = !DILocation(line: 47, column: 13, scope: !202)
+!206 = !DILocation(line: 47, column: 64, scope: !202)
+!207 = !DILocation(line: 49, column: 13, scope: !208)
+!208 = distinct !DILexicalBlock(scope: !202, file: !3, line: 48, column: 9)
+!209 = !DILocation(line: 51, column: 5, scope: !203)
+!210 = !DILocation(line: 45, column: 39, scope: !198)
+!211 = !DILocation(line: 45, column: 5, scope: !198)
+!212 = distinct !{!212, !200, !213, !85}
+!213 = !DILocation(line: 51, column: 5, scope: !194)
+!214 = !DILocalVariable(name: "i", scope: !215, file: !3, line: 53, type: !6)
+!215 = distinct !DILexicalBlock(scope: !178, file: !3, line: 53, column: 5)
+!216 = !DILocation(line: 53, column: 14, scope: !215)
+!217 = !DILocation(line: 53, column: 10, scope: !215)
+!218 = !DILocation(line: 53, column: 21, scope: !219)
+!219 = distinct !DILexicalBlock(scope: !215, file: !3, line: 53, column: 5)
+!220 = !DILocation(line: 53, column: 23, scope: !219)
+!221 = !DILocation(line: 53, column: 5, scope: !215)
+!222 = !DILocation(line: 55, column: 37, scope: !223)
+!223 = distinct !DILexicalBlock(scope: !224, file: !3, line: 55, column: 13)
+!224 = distinct !DILexicalBlock(scope: !219, file: !3, line: 54, column: 5)
+!225 = !DILocation(line: 55, column: 29, scope: !223)
+!226 = !DILocation(line: 55, column: 13, scope: !223)
+!227 = !DILocation(line: 55, column: 64, scope: !223)
+!228 = !DILocation(line: 57, column: 13, scope: !229)
+!229 = distinct !DILexicalBlock(scope: !223, file: !3, line: 56, column: 9)
+!230 = !DILocation(line: 59, column: 5, scope: !224)
+!231 = !DILocation(line: 53, column: 39, scope: !219)
+!232 = !DILocation(line: 53, column: 5, scope: !219)
+!233 = distinct !{!233, !221, !234, !85}
+!234 = !DILocation(line: 59, column: 5, scope: !215)
+!235 = !DILocalVariable(name: "i", scope: !236, file: !3, line: 61, type: !6)
+!236 = distinct !DILexicalBlock(scope: !178, file: !3, line: 61, column: 5)
+!237 = !DILocation(line: 61, column: 14, scope: !236)
+!238 = !DILocation(line: 61, column: 10, scope: !236)
+!239 = !DILocation(line: 61, column: 21, scope: !240)
+!240 = distinct !DILexicalBlock(scope: !236, file: !3, line: 61, column: 5)
+!241 = !DILocation(line: 61, column: 23, scope: !240)
+!242 = !DILocation(line: 61, column: 5, scope: !236)
+!243 = !DILocation(line: 63, column: 30, scope: !244)
+!244 = distinct !DILexicalBlock(scope: !240, file: !3, line: 62, column: 5)
+!245 = !DILocation(line: 63, column: 22, scope: !244)
+!246 = !DILocation(line: 63, column: 9, scope: !244)
+!247 = !DILocation(line: 64, column: 5, scope: !244)
+!248 = !DILocation(line: 61, column: 39, scope: !240)
+!249 = !DILocation(line: 61, column: 5, scope: !240)
+!250 = distinct !{!250, !242, !251, !85}
+!251 = !DILocation(line: 64, column: 5, scope: !236)
+!252 = !DILocalVariable(name: "i", scope: !253, file: !3, line: 66, type: !6)
+!253 = distinct !DILexicalBlock(scope: !178, file: !3, line: 66, column: 5)
+!254 = !DILocation(line: 66, column: 14, scope: !253)
+!255 = !DILocation(line: 66, column: 10, scope: !253)
+!256 = !DILocation(line: 66, column: 21, scope: !257)
+!257 = distinct !DILexicalBlock(scope: !253, file: !3, line: 66, column: 5)
+!258 = !DILocation(line: 66, column: 23, scope: !257)
+!259 = !DILocation(line: 66, column: 5, scope: !253)
+!260 = !DILocation(line: 68, column: 30, scope: !261)
+!261 = distinct !DILexicalBlock(scope: !257, file: !3, line: 67, column: 5)
+!262 = !DILocation(line: 68, column: 22, scope: !261)
+!263 = !DILocation(line: 68, column: 9, scope: !261)
+!264 = !DILocation(line: 69, column: 5, scope: !261)
+!265 = !DILocation(line: 66, column: 39, scope: !257)
+!266 = !DILocation(line: 66, column: 5, scope: !257)
+!267 = distinct !{!267, !259, !268, !85}
+!268 = !DILocation(line: 69, column: 5, scope: !253)
+!269 = !DILocation(line: 71, column: 12, scope: !270)
+!270 = distinct !DILexicalBlock(scope: !271, file: !3, line: 71, column: 5)
+!271 = distinct !DILexicalBlock(scope: !178, file: !3, line: 71, column: 5)
+!272 = !DILocation(line: 71, column: 5, scope: !270)
+!273 = !DILocation(line: 73, column: 5, scope: !178)
+!274 = !DILocation(line: 74, column: 1, scope: !178)
+!275 = distinct !DISubprogram(name: "ck_pr_md_load_ptr", scope: !276, file: !276, line: 103, type: !277, scopeLine: 103, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!276 = !DIFile(filename: "../ck/include/gcc/ppc64/ck_pr.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "8952bb109540f13c2aa63ce3890cafa9")
+!277 = !DISubroutineType(types: !278)
+!278 = !{!5, !279}
+!279 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !280, size: 64)
+!280 = !DIDerivedType(tag: DW_TAG_const_type, baseType: null)
+!281 = !DILocalVariable(name: "target", arg: 1, scope: !275, file: !276, line: 103, type: !279)
+!282 = !DILocation(line: 103, column: 1, scope: !275)
+!283 = !DILocalVariable(name: "r", scope: !275, file: !276, line: 103, type: !5)
+!284 = !{i64 2147585225}
+!285 = distinct !DISubprogram(name: "ck_pr_fence_store", scope: !286, file: !286, line: 117, type: !287, scopeLine: 117, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
+!286 = !DIFile(filename: "../ck/include/ck_pr.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "a04525ce1c6aca0c6489b709b33f6356")
+!287 = !DISubroutineType(types: !288)
+!288 = !{null}
+!289 = !DILocation(line: 117, column: 1, scope: !285)
+!290 = distinct !DISubprogram(name: "ck_pr_cas_ptr_value", scope: !276, file: !276, line: 175, type: !291, scopeLine: 176, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!291 = !DISubroutineType(types: !292)
+!292 = !{!12, !5, !5, !5, !5}
+!293 = !DILocalVariable(name: "target", arg: 1, scope: !290, file: !276, line: 175, type: !5)
+!294 = !DILocation(line: 175, column: 27, scope: !290)
+!295 = !DILocalVariable(name: "compare", arg: 2, scope: !290, file: !276, line: 175, type: !5)
+!296 = !DILocation(line: 175, column: 41, scope: !290)
+!297 = !DILocalVariable(name: "set", arg: 3, scope: !290, file: !276, line: 175, type: !5)
+!298 = !DILocation(line: 175, column: 56, scope: !290)
+!299 = !DILocalVariable(name: "value", arg: 4, scope: !290, file: !276, line: 175, type: !5)
+!300 = !DILocation(line: 175, column: 67, scope: !290)
+!301 = !DILocalVariable(name: "previous", scope: !290, file: !276, line: 177, type: !5)
+!302 = !DILocation(line: 177, column: 8, scope: !290)
+!303 = !DILocation(line: 187, column: 42, scope: !290)
+!304 = !DILocation(line: 188, column: 14, scope: !290)
+!305 = !DILocation(line: 189, column: 42, scope: !290)
+!306 = !DILocation(line: 179, column: 9, scope: !290)
+!307 = !{i64 89341}
+!308 = !DILocation(line: 192, column: 28, scope: !290)
+!309 = !DILocation(line: 192, column: 35, scope: !290)
+!310 = !DILocation(line: 192, column: 9, scope: !290)
+!311 = !DILocation(line: 193, column: 17, scope: !290)
+!312 = !DILocation(line: 193, column: 29, scope: !290)
+!313 = !DILocation(line: 193, column: 26, scope: !290)
+!314 = !DILocation(line: 193, column: 9, scope: !290)
+!315 = distinct !DISubprogram(name: "ck_pr_fence_strict_store", scope: !276, file: !276, line: 78, type: !287, scopeLine: 78, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
+!316 = !DILocation(line: 78, column: 1, scope: !315)
+!317 = !{i64 2147583089}
+!318 = distinct !DISubprogram(name: "ck_pr_md_store_ptr", scope: !276, file: !276, line: 133, type: !319, scopeLine: 133, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2, retainedNodes: !56)
+!319 = !DISubroutineType(types: !320)
+!320 = !{null, !5, !279}
+!321 = !DILocalVariable(name: "target", arg: 1, scope: !318, file: !276, line: 133, type: !5)
+!322 = !DILocation(line: 133, column: 1, scope: !318)
+!323 = !DILocalVariable(name: "v", arg: 2, scope: !318, file: !276, line: 133, type: !279)
+!324 = !{i64 2147589117}
+!325 = distinct !DISubprogram(name: "ck_pr_fence_load", scope: !286, file: !286, line: 116, type: !287, scopeLine: 116, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
+!326 = !DILocation(line: 116, column: 1, scope: !325)
+!327 = distinct !DISubprogram(name: "ck_pr_fence_strict_load", scope: !276, file: !276, line: 80, type: !287, scopeLine: 80, flags: DIFlagPrototyped, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !2)
+!328 = !DILocation(line: 80, column: 1, scope: !327)
+!329 = !{i64 2147583490}
