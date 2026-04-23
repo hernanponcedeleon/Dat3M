@@ -232,8 +232,8 @@ public interface ModifierTrait <Modifier> {
         @Override
         public Md shrinkToBounds(Md modifier, int objectSize) {
             final int remainingSize = objectSize - modifier.offset;
-            for (final Integer a : modifier.alignment) {
-                if (a < remainingSize) {
+            for (final int a : modifier.alignment) {
+                if (a > 0 ? a < remainingSize : -a < remainingSize && modifier.offset <= -a) {
                     return modifier;
                 }
             }
