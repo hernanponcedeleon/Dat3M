@@ -182,7 +182,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 if (ax.source == ay.source) {
                     final Modifier l = compose(ax.modifier, vx.modifier);
                     final Modifier r = compose(ay.modifier, vy.modifier);
-                    if (trait.overlaps(l, r)) {
+                    if (trait.mayOverlap(l, r)) {
                         return true;
                     }
                 }
@@ -280,7 +280,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final Modifier next = compose(modifier1, constantModifier(bytes1));
         for (int i = 1; i < bytes0; i++) {
             final Modifier offset = compose(modifier0, constantModifier(i));
-            if (trait.overlaps(offset, modifier1) || trait.overlaps(offset, next)) {
+            if (trait.mayOverlap(offset, modifier1) || trait.mayOverlap(offset, next)) {
                 out.add(i);
             }
         }
@@ -509,7 +509,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final Modifier post = trait.postProcess(modifier, includeEdge.source.object.getKnownSize());
+        final Modifier post = trait.shrinkToBounds(modifier, includeEdge.source.object.getKnownSize());
         entry.setValue(new DerivedVariable<>(includeEdge.source, post));
     }
 
@@ -685,7 +685,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private boolean addInto(List<IncludeEdge<Modifier>> list, IncludeEdge<Modifier> element, boolean isGraphModification) {
         //NOTE The Stream API is too costly here
         for (final IncludeEdge<Modifier> o : list) {
-            if (element.source.equals(o.source) && trait.includes(o.modifier, element.modifier)) {
+            if (element.source.equals(o.source) && trait.mustInclude(o.modifier, element.modifier)) {
                 if (isGraphModification) {
                     addIntoGraphFails++;
                 } else {
@@ -701,7 +701,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
         list.removeIf(o -> {
             if (!element.source.equals(o.source)) return false;
-            return trait.includes(element.modifier, o.modifier);
+            return trait.mustInclude(element.modifier, o.modifier);
         });
         list.add(element);
         return true;
@@ -753,7 +753,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
         for (final StoreEdge<Modifier> store : stores) {
             for (final LoadEdge<Modifier> load : loads) {
-                if (trait.overlaps(store.addressModifier, load.addressModifier)) {
+                if (trait.mayOverlap(store.addressModifier, load.addressModifier)) {
                     addInclude(load.result, includeEdge(store.value));
                 }
             }

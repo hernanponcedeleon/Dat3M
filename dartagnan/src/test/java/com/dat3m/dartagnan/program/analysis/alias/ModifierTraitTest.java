@@ -14,8 +14,8 @@ public class ModifierTraitTest {
         final Void unit = t.constantModifier(0);
         assertFalse(t.isFunctional(unit));
         assertTrue(t.isIdentity(unit));
-        assertTrue(t.overlaps(unit, unit));
-        assertTrue(t.includes(unit, unit));
+        assertTrue(t.mayOverlap(unit, unit));
+        assertTrue(t.mustInclude(unit, unit));
         assertEquals(0, t.level(unit));
         assertEquals(unit, t.constantModifier(1));
         assertEquals(unit, t.relaxedModifier(1));
@@ -47,10 +47,10 @@ public class ModifierTraitTest {
         assertEquals(id, t.compose(id, id));
         assertEquals(id, t.accelerate(id));
         assertTrue(t.level(all) <= t.level(id));
-        assertTrue(t.includes(id, id));
-        assertTrue(t.overlaps(id, id));
+        assertTrue(t.mustInclude(id, id));
+        assertTrue(t.mayOverlap(id, id));
         checkBasicPropertiesForInstance(t, all);
-        assertTrue(t.includes(all, id));
+        assertTrue(t.mustInclude(all, id));
         for (int i = 16; i < 1024; i += 16) {
             final T positive = t.constantModifier(i);
             final T negative = t.constantModifier(-i);
@@ -75,8 +75,8 @@ public class ModifierTraitTest {
             assertEquals(positive, t.compose(id, positive));
             assertEquals(negative, t.compose(negative, id));
             assertEquals(negative, t.compose(id, negative));
-            assertTrue(t.includes(all, positive));
-            assertTrue(t.includes(all, negative));
+            assertTrue(t.mustInclude(all, positive));
+            assertTrue(t.mustInclude(all, negative));
         }
     }
 
@@ -88,7 +88,7 @@ public class ModifierTraitTest {
         assertFalse(t.isIdentity(mm));
         assertFalse(t.isIdentity(a));
         assertFalse(t.isFunctional(a));
-        assertTrue(t.overlaps(m, m));
+        assertTrue(t.mayOverlap(m, m));
         if (t.isFunctional(m)) {
             checkOverlap(false, t, mm, m);
         }
@@ -96,22 +96,22 @@ public class ModifierTraitTest {
         checkOverlap(true, t, a, m);
         checkOverlap(true, t, a, mm);
         checkOverlap(true, t, a, a);
-        assertTrue(t.includes(m, m));
-        assertTrue(t.includes(mm, mm));
-        assertTrue(t.includes(a, m));
-        assertTrue(t.includes(a, mm));
-        assertTrue(t.includes(a, a));
+        assertTrue(t.mustInclude(m, m));
+        assertTrue(t.mustInclude(mm, mm));
+        assertTrue(t.mustInclude(a, m));
+        assertTrue(t.mustInclude(a, mm));
+        assertTrue(t.mustInclude(a, a));
         if (t.isFunctional(m)) {
-            assertFalse(t.includes(m, mm));
-            assertFalse(t.includes(m, a));
-            assertFalse(t.includes(mm, m));
+            assertFalse(t.mustInclude(m, mm));
+            assertFalse(t.mustInclude(m, a));
+            assertFalse(t.mustInclude(mm, m));
         }
         assertTrue(t.level(a) <= t.level(m));
         assertTrue(t.level(a) <= t.level(mm));
     }
 
     private <M> void checkOverlap(boolean expected, ModifierTrait<M> t, M l, M r) {
-        assertEquals(expected, t.overlaps(l, r));
-        assertEquals(expected, t.overlaps(r, l));
+        assertEquals(expected, t.mayOverlap(l, r));
+        assertEquals(expected, t.mayOverlap(r, l));
     }
 }

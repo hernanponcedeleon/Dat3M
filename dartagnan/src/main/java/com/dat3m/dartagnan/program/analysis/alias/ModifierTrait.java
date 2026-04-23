@@ -21,11 +21,11 @@ public interface ModifierTrait <Modifier> {
 
     /// Checks if there may be integers `x` and `y` with `x[left]y` and `x[right]y`.
     /// This method must not have false negatives, but is allowed to have false positives.
-    boolean overlaps(Modifier left, Modifier right);
+    boolean mayOverlap(Modifier left, Modifier right);
 
     /// Checks if for all integers `x` and `y`, `x[smaller]y` must imply `x[larger]y`.
     /// This method must not have false positives, but is allowed to have false negatives.
-    boolean includes(Modifier larger, Modifier smaller);
+    boolean mustInclude(Modifier larger, Modifier smaller);
 
     /// Estimates the *complexity* of `modifier`.
     /// For each `l`, there should only exist finitely many `m` with `level(m) <= l`.
@@ -55,20 +55,20 @@ public interface ModifierTrait <Modifier> {
     /// If this intersection is empty, the associated access must be out-of-bounds.
     /// <p>
     /// This is an unsound strengthening that assumes no out-of-bounds accesses, given a memory object of known size.
-    Modifier postProcess(Modifier modifier, int objectSize);
+    Modifier shrinkToBounds(Modifier modifier, int objectSize);
 
     /// Used to perform field-insensitive alias analysis.
     final class VoidTrait implements ModifierTrait<Void> {
         @Override public boolean isFunctional(Void modifier) { return false; }
         @Override public boolean isIdentity(Void modifier) { return true; }
-        @Override public boolean overlaps(Void left, Void right) { return true; }
-        @Override public boolean includes(Void larger, Void smaller) { return true; }
+        @Override public boolean mayOverlap(Void left, Void right) { return true; }
+        @Override public boolean mustInclude(Void larger, Void smaller) { return true; }
         @Override public int level(Void modifier) { return 0; }
         @Override public Void constantModifier(int offset) { return null; }
         @Override public Void relaxedModifier(int alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
         @Override public Void accelerate(Void m) { return null; }
-        @Override public Void postProcess(Void m, int s) { return null; }
+        @Override public Void shrinkToBounds(Void m, int s) { return null; }
     }
 
     /// Enables field-sensitive alias analysis based on finite sets.
@@ -76,14 +76,14 @@ public interface ModifierTrait <Modifier> {
     final class Offsets implements ModifierTrait<Integer> {
         @Override public boolean isFunctional(Integer v) { return v != null; }
         @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
-        @Override public boolean overlaps(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
-        @Override public boolean includes(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
+        @Override public boolean mayOverlap(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
+        @Override public boolean mustInclude(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
         @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
         @Override public Integer constantModifier(int offset) { return offset; }
         @Override public Integer relaxedModifier(int alignment) { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
         @Override public Integer accelerate(Integer v) { return isIdentity(v) ? v : null; }
-        @Override public Integer postProcess(Integer v, int s) { return v; }
+        @Override public Integer shrinkToBounds(Integer v, int s) { return v; }
     }
 
     /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
@@ -95,7 +95,7 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
         @Override public boolean isIdentity(Sd m) { return m.offset == 0 && m.alignment == 0; }
         @Override
-        public boolean overlaps(Sd left, Sd right) {
+        public boolean mayOverlap(Sd left, Sd right) {
             // Exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
             final int offset = right.offset - left.offset;
             final int l = left.alignment;
@@ -104,7 +104,7 @@ public interface ModifierTrait <Modifier> {
             return divisor == 0 ? offset == 0 : offset % divisor == 0;
         }
         @Override
-        public boolean includes(Sd left, Sd right) {
+        public boolean mustInclude(Sd left, Sd right) {
             int offset = right.offset - left.offset;
             if (left.alignment == 0) {
                 return right.alignment == 0 && offset == 0;
@@ -126,7 +126,7 @@ public interface ModifierTrait <Modifier> {
             return m.offset == 0 ? m : new Sd(0, IntMath.gcd(Math.abs(m.offset), m.alignment));
         }
         @Override
-        public Sd postProcess(Sd m, int objectSize) {
+        public Sd shrinkToBounds(Sd m, int objectSize) {
             return m.alignment < objectSize ? m : constantModifier(m.offset);
         }
     }
@@ -145,7 +145,7 @@ public interface ModifierTrait <Modifier> {
             return m.offset == 0 && m.alignment.isEmpty();
         }
         @Override
-        public boolean overlaps(Md left, Md right) {
+        public boolean mayOverlap(Md left, Md right) {
             // Exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
             final int offset = right.offset - left.offset;
             final int leftAlignment = singleAlignment(left.alignment);
@@ -161,7 +161,7 @@ public interface ModifierTrait <Modifier> {
             return leftDirectedTowardsRight && rightDirectedTowardsLeft && offset % divisor == 0;
         }
         @Override
-        public boolean includes(Md left, Md right) {
+        public boolean mustInclude(Md left, Md right) {
             int offset = right.offset - left.offset;
             if (left.alignment.isEmpty()) {
                 return right.alignment.isEmpty() && offset == 0;
@@ -230,7 +230,7 @@ public interface ModifierTrait <Modifier> {
             return m.offset == 0 ? m : new Md(0, compose(List.of(m.offset), m.alignment));
         }
         @Override
-        public Md postProcess(Md modifier, int objectSize) {
+        public Md shrinkToBounds(Md modifier, int objectSize) {
             final int remainingSize = objectSize - modifier.offset;
             for (final Integer a : modifier.alignment) {
                 if (a < remainingSize) {
