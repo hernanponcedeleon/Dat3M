@@ -393,7 +393,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     for (final IncludeEdge<Modifier> includeEdge : includer.includes) {
                         if (includeEdge.source == address.base) {
                             for (final LoadEdge<Modifier> load : includer.loads) {
-                                loads.add(compose(load, includeEdge.modifier));
+                                loads.add(compose(includeEdge.modifier, load));
                             }
                         }
                     }
@@ -452,12 +452,12 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     for (final IncludeEdge<Modifier> edge1 : out.includes) {
                         if (hasStores && edge1.source == edge.source) {
                             for (final LoadEdge<Modifier> load : out.loads) {
-                                loads.add(compose(load, edge1.modifier));
+                                loads.add(compose(edge1.modifier, load));
                             }
                         }
                         if (hasLoads && edge1.source == edge.source) {
                             for (final StoreEdge<Modifier> store : out.stores) {
-                                stores.add(compose(store, edge1.modifier));
+                                stores.add(compose(edge1.modifier, store));
                             }
                         }
                     }
@@ -467,10 +467,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 final List<StoreEdge<Modifier>> variableStores = isIdentity ? variable.stores : new ArrayList<>(variable.stores.size());
                 if (!isIdentity) {
                     for (final LoadEdge<Modifier> load : variable.loads) {
-                        variableLoads.add(new LoadEdge<>(load.result, compose(load.addressModifier, edge.modifier)));
+                        variableLoads.add(new LoadEdge<>(load.result, compose(edge.modifier, load.addressModifier)));
                     }
                     for (final StoreEdge<Modifier> store : variable.stores) {
-                        variableStores.add(new StoreEdge<>(store.value, compose(store.addressModifier, edge.modifier)));
+                        variableStores.add(new StoreEdge<>(store.value, compose(edge.modifier, store.addressModifier)));
                     }
                 }
                 processCommunication(variableStores, loads);
@@ -732,11 +732,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         // Redirect load and store relationships.
         // This could enable more communications, but replacement.
         for (final LoadEdge<Modifier> load : old.loads) {
-            replacement.base.loads.add(compose(load, replacement.modifier));
+            replacement.base.loads.add(compose(replacement.modifier, load));
             load.result.seeAlso.add(replacement.base);
         }
         for (final StoreEdge<Modifier> store : old.stores) {
-            replacement.base.stores.add(compose(store, replacement.modifier));
+            replacement.base.stores.add(compose(replacement.modifier, store));
             store.value.base.seeAlso.add(replacement.base);
         }
         old.seeAlso.clear();
@@ -789,13 +789,13 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         return Objects.equals(composed, other.modifier) ? other : new IncludeEdge<>(other.source, composed);
     }
 
-    private LoadEdge<Modifier> compose(LoadEdge<Modifier> other, Modifier modifier) {
-        final Modifier composed = compose(other.addressModifier, modifier);
+    private LoadEdge<Modifier> compose(Modifier modifier, LoadEdge<Modifier> other) {
+        final Modifier composed = compose(modifier, other.addressModifier);
         return Objects.equals(composed, other.addressModifier) ? other : new LoadEdge<>(other.result, composed);
     }
 
-    private StoreEdge<Modifier> compose(StoreEdge<Modifier> other, Modifier modifier) {
-        final Modifier composed = compose(other.addressModifier, modifier);
+    private StoreEdge<Modifier> compose(Modifier modifier, StoreEdge<Modifier> other) {
+        final Modifier composed = compose(modifier, other.addressModifier);
         return Objects.equals(composed, other.addressModifier) ? other : new StoreEdge<>(other.value, composed);
     }
 
