@@ -129,10 +129,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     public static InclusionBasedPointerAnalysis<?> fromConfig(Program program, Context analysisContext, AliasAnalysis.Config config) {
         final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
         final var analysis = switch (config.method) {
-            case EXPERIMENTAL_FIELD_INSENSITIVE -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.VoidTrait(), program, def);
-            case EXPERIMENTAL_FIELD_SENSITIVE -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.Offsets(), program, def);
-            case EXPERIMENTAL_LINEAR_1D -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.SdLinear(), program, def);
-            default -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.MdLinear(), program, def);
+            case FIELD_INSENSITIVE -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.VoidTrait(), program, def);
+            case FINITE_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.Offsets(), program, def);
+            case LINEAR_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.SdLinear(), program, def);
+            case LINEAR_MD_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.MdLinear(), program, def);
         };
         analysis.run(program, config);
         if (config.detectMixedSizeAccesses) {

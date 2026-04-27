@@ -245,33 +245,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive0() throws InvalidConfigurationException {
-        program0(FIELD_SENSITIVE, MAY, MAY, NONE, NONE, NONE, NONE);
-    }
-
-    @Test
-    public void fieldinsensitive0() throws InvalidConfigurationException {
-        program0(FIELD_INSENSITIVE, MAY, NONE, MAY, NONE, MAY, NONE);
-    }
-
-    @Test
     public void ins0() throws InvalidConfigurationException {
-        program0(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, NONE, NONE, NONE);
+        program0(FIELD_INSENSITIVE, MAY, MAY, MAY, NONE, NONE, NONE);
     }
 
     @Test
     public void sen0() throws InvalidConfigurationException {
-        program0(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+        program0(FINITE_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void sd0() throws InvalidConfigurationException {
-        program0(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
+        program0(LINEAR_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void full0() throws InvalidConfigurationException {
-        program0(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
+        program0(LINEAR_MD_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -304,33 +294,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive1() throws InvalidConfigurationException {
-        program1(FIELD_SENSITIVE, NONE, NONE, MUST, MUST, NONE, NONE);
-    }
-
-    @Test
-    public void fieldinsensitive1() throws InvalidConfigurationException {
-        program1(FIELD_INSENSITIVE, NONE, NONE, MUST, MAY, MAY, MAY);
-    }
-
-    @Test
     public void ins1() throws InvalidConfigurationException {
-        program1(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
+        program1(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
     }
 
     @Test
     public void sen1() throws InvalidConfigurationException {
-        program1(EXPERIMENTAL_FIELD_SENSITIVE, NONE, NONE, MUST, MUST, NONE, NONE);
+        program1(FINITE_FIELDS, NONE, NONE, MUST, MUST, NONE, NONE);
     }
 
     @Test
     public void sd1() throws InvalidConfigurationException {
-        program1(EXPERIMENTAL_LINEAR_1D, NONE, NONE, MUST, MUST, NONE, NONE);
+        program1(LINEAR_FIELDS, NONE, NONE, MUST, MUST, NONE, NONE);
     }
 
     @Test
     public void full1() throws InvalidConfigurationException {
-        program1(FULL, NONE, NONE, MUST, MUST, NONE, NONE);
+        program1(LINEAR_MD_FIELDS, NONE, NONE, MUST, MUST, NONE, NONE);
     }
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -360,33 +340,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive2() throws InvalidConfigurationException {
-        program2(FIELD_SENSITIVE, NONE, NONE, NONE, MAY, NONE, MAY);
-    }
-
-    @Test
-    public void fieldinsensitive2() throws InvalidConfigurationException {
-        program2(FIELD_INSENSITIVE, NONE, NONE, NONE, MAY, MAY, MAY);
-    }
-
-    @Test
     public void ins2() throws InvalidConfigurationException {
-        program2(EXPERIMENTAL_FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
+        program2(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY);
     }
 
     @Test
     public void sen2() throws InvalidConfigurationException {
-        program2(EXPERIMENTAL_FIELD_SENSITIVE, NONE, NONE, NONE, MAY, MAY, MAY);
+        program2(FINITE_FIELDS, NONE, NONE, NONE, MAY, MAY, MAY);
     }
 
     @Test
     public void sd2() throws InvalidConfigurationException {
-        program2(EXPERIMENTAL_LINEAR_1D, NONE, NONE, NONE, MAY, NONE, MAY);
+        program2(LINEAR_FIELDS, NONE, NONE, NONE, MAY, NONE, MAY);
     }
 
     @Test
     public void full2() throws InvalidConfigurationException {
-        program2(FULL, NONE, NONE, NONE, MAY, NONE, MAY);
+        program2(LINEAR_MD_FIELDS, NONE, NONE, NONE, MAY, NONE, MAY);
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -426,33 +396,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive3() throws InvalidConfigurationException {
-        program3(FIELD_SENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
-    }
-
-    @Test
-    public void fieldinsensitive3() throws InvalidConfigurationException {
-        program3(FIELD_INSENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
-    }
-
-    @Test
     public void ins3() throws InvalidConfigurationException {
-        program3(EXPERIMENTAL_FIELD_INSENSITIVE, MUST, MAY, MAY, MAY, MAY, MAY);
+        program3(FIELD_INSENSITIVE, MUST, MAY, MAY, MAY, MAY, MAY);
     }
 
     @Test
     public void sen3() throws InvalidConfigurationException {
-        program3(EXPERIMENTAL_FIELD_SENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
+        program3(FINITE_FIELDS, MUST, NONE, NONE, MAY, MAY, MAY);
     }
 
     @Test
     public void sd3() throws InvalidConfigurationException {
-        program3(EXPERIMENTAL_LINEAR_1D, MUST, NONE, NONE, MAY, MAY, MAY);
+        program3(LINEAR_FIELDS, MUST, NONE, NONE, MAY, MAY, MAY);
     }
 
     @Test
     public void full3() throws InvalidConfigurationException {
-        program3(FULL, MUST, NONE, NONE, MAY, MAY, MAY);
+        program3(LINEAR_MD_FIELDS, MUST, NONE, NONE, MAY, MAY, MAY);
     }
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -482,33 +442,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive4() throws InvalidConfigurationException {
-        program4(FIELD_SENSITIVE, MAY, MAY, NONE, NONE, NONE, NONE);
-    }
-
-    @Test
-    public void fieldinsensitive4() throws InvalidConfigurationException {
-        program4(FIELD_INSENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
-    }
-
-    @Test
     public void ins4() throws InvalidConfigurationException {
-        program4(EXPERIMENTAL_FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
+        program4(FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void sen4() throws InvalidConfigurationException {
-        program4(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+        program4(FINITE_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void sd4() throws InvalidConfigurationException {
-        program4(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
+        program4(LINEAR_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void full4() throws InvalidConfigurationException {
-        program4(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
+        program4(LINEAR_MD_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -541,33 +491,23 @@ public class AnalysisTest {
     }
 
     @Test
-    public void fieldsensitive5() throws InvalidConfigurationException {
-        program5(FIELD_SENSITIVE, MAY, MAY, NONE, NONE, NONE, NONE);
-    }
-
-    @Test
-    public void fieldinsensitive5() throws InvalidConfigurationException {
-        program5(FIELD_INSENSITIVE, MUST, NONE, NONE, NONE, NONE, NONE);
-    }
-
-    @Test
     public void ins5() throws InvalidConfigurationException {
-        program5(EXPERIMENTAL_FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
+        program5(FIELD_INSENSITIVE, NONE, MAY, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void sen5() throws InvalidConfigurationException {
-        program5(EXPERIMENTAL_FIELD_SENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+        program5(FINITE_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void sd5() throws InvalidConfigurationException {
-        program5(EXPERIMENTAL_LINEAR_1D, NONE, MUST, NONE, NONE, NONE, NONE);
+        program5(LINEAR_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     @Test
     public void full5() throws InvalidConfigurationException {
-        program5(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
+        program5(LINEAR_MD_FIELDS, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -624,7 +564,7 @@ public class AnalysisTest {
         b.addChildWithoutSourceLoc(0, e4);
 
         Program program = b.build();
-        AliasAnalysis a = analyze(program, FULL);
+        AliasAnalysis a = analyze(program, LINEAR_MD_FIELDS);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -661,7 +601,7 @@ public class AnalysisTest {
         b.addChildWithoutSourceLoc(0, e4);
 
         Program program = b.build();
-        AliasAnalysis a = analyze(program, FULL);
+        AliasAnalysis a = analyze(program, LINEAR_MD_FIELDS);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
