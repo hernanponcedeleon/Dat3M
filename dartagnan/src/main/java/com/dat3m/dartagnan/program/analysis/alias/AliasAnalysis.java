@@ -82,6 +82,7 @@ public interface AliasAnalysis {
             if (methodString == null) {
                 return;
             }
+            methodString = methodString.toUpperCase();
             method = switch (methodString) {
                 case "FULL" -> Alias.LINEAR_MD_FIELDS;
                 case "FIELD_SENSITIVE" -> Alias.LINEAR_FIELDS;
