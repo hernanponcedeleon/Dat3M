@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -142,7 +143,8 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private Register newRegister(Alloc allocation, Field field) {
-        return allocation.getFunction().newUniqueRegister("__memToReg", field.type);
+        final String regName = allocation.getResultRegister().getName() + "@" + field.offset + "__m2r";
+        return allocation.getFunction().newUniqueRegister(regName, field.type);
     }
 
     private List<Event> promoteAccess(MemoryCoreEvent event, AddressOffset access,
