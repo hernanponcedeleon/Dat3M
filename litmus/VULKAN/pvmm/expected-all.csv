@@ -36,9 +36,9 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3.4-problem-race-asmo3-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3.4-problem-race-asmo3-c,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,FAIL,PASS
 ,,,,,,,,
-3.4-problem-race-mp3-atom-wrr,FAIL,FAIL,FAIL,FAIL,PASS,FAIL,FAIL,FAIL
+3.4-problem-race-mp3-atom-wrr,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3.4-problem-race-mp3-atom-wrw,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
-3.4-problem-race-mp3-wrr,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL,PASS
+3.4-problem-race-mp3-wrr,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,FAIL,PASS
 3.4-problem-race-mp3-wrw,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 ,,,,,,,,
 3.4-y-problem-race-w-w-rr-a,PASS,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL
@@ -46,8 +46,8 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3.4-y-problem-race-w-w-rw-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 3.4-y-problem-race-w-w-rw-b,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 ,,,,,,,,
-3.4-y-problem-race-r-r-w,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL,PASS
-3.4-y-problem-race-r-w-rw-a,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL,PASS
+3.4-y-problem-race-r-r-w,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,PASS
+3.4-y-problem-race-r-w-rw-a,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,PASS
 3.4-y-problem-race-r-w-rw-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 ,,,,,,,,
 4.1.2-fix-semsc-nonpriv,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
