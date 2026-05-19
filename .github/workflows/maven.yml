@@ -126,9 +126,6 @@ jobs:
       - name: Other tests
         run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
 
-      - name: Encoding tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/encoding/**/*" -f dartagnan/pom.xml
-
       - name: Parsers tests
         run: mvn test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
 

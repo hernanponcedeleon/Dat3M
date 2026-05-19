@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.lang.svcomp;
+package com.dat3m.dartagnan.program.event.core.annotations;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;

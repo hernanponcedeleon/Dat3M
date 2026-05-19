@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class ControlBarrier extends GenericVisibleEvent implements BlockingEvent {
 
@@ -56,8 +54,4 @@ public class ControlBarrier extends GenericVisibleEvent implements BlockingEvent
         return visitor.visitControlBarrier(this);
     }
 
-    @Override
-    public BooleanFormula encodeExec(EncodingContext ctx) {
-        return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
-    }
 }

@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
-
 import java.util.List;
 import java.util.Stack;
 
@@ -25,21 +23,11 @@ public abstract class Definition implements Constraint {
         return definedRelation;
     }
 
-    public EncodingContext.EdgeEncoder getEdgeVariableEncoder(EncodingContext c) {
-        String nameOrTerm = definedRelation.getNameOrTerm();
-        return (e1, e2) -> c.edgeVariable(nameOrTerm, e1, e2);
-    }
-
     public String getTerm() {
         return getTerm(new Stack<>());
     }
 
-    /**
-     * @return
-     * Non-empty list of all relations directly participating in this definition.
-     * The first relation is always the defined relation,
-     * while the roles of the others are implementation-dependent.
-     */
+    // INVARIANT: The first relation is always the defined relation.
     @Override
     public List<Relation> getConstrainedRelations() {
         return List.of(definedRelation);

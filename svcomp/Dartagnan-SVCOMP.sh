@@ -11,15 +11,8 @@ export DAT3M_OUTPUT=$DAT3M_HOME/output
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
     cmd="java -jar dartagnan/target/dartagnan.jar --version"
 else
-    if [ $1 == "-witness" ]; then
-        witness="--validate="$2
-        propertypath=$3
-        programpath=$4
-    else
-        witness=""
-        propertypath=$1
-        programpath=$2
-    fi
+    propertypath=$1
+    programpath=$2
 
     skip_assertions_of_type="--program.processing.skipAssertionsOfType=USER"
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
@@ -35,6 +28,6 @@ else
         skip_assertions_of_type=""
     fi
     
-    cmd="svcomp/target/svcomp $skip_assertions_of_type cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="svcomp/target/svcomp $skip_assertions_of_type cat/svcomp.cat --svcomp.property="$propertypath" "$programpath
 fi
 $cmd

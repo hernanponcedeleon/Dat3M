@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -86,13 +85,8 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
     }
 
     @Override
-    public long countMaySet() {
-        return lazyKnowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
-    }
-
-    @Override
-    public long countMustSet() {
-        return lazyKnowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
+    public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
+        // Without XRA (runExtended() is currently no implemented), there are no discrepancies
     }
 
     private class LazyInitializer implements Definition.Visitor<RelationAnalysis.Knowledge> {
@@ -127,6 +121,15 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         public RelationAnalysis.Knowledge visitFree(Free definition) {
             long start = System.currentTimeMillis();
             EventGraph may = new LazyEventGraph(visibleEvents, visibleEvents, (e1, e2) -> true);
+            EventGraph must = ImmutableEventGraph.empty();
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
+        public RelationAnalysis.Knowledge visitEmpty(Empty definition) {
+            long start = System.currentTimeMillis();
+            EventGraph may = ImmutableEventGraph.empty();
             EventGraph must = ImmutableEventGraph.empty();
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);

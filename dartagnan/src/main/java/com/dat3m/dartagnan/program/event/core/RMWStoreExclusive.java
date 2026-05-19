@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class RMWStoreExclusive extends Store {
 
@@ -42,11 +40,6 @@ public class RMWStoreExclusive extends Store {
         String tag = isStrong ? " strong" : "";
         tag += requiresMatchingAddresses ? " addrmatch" : "";
         return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", "excl " + super.defaultString()) + "# opt" + tag;
-    }
-
-    @Override
-    public BooleanFormula encodeExec(EncodingContext ctx) {
-        return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
     @Override

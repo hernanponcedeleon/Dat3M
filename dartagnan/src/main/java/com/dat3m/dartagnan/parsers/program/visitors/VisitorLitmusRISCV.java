@@ -1,24 +1,25 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.util.Arrays;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
-import com.dat3m.dartagnan.parsers.LitmusRISCVParser;
+import com.dat3m.dartagnan.parsers.LitmusRISCVParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+import org.antlr.v4.runtime.ParserRuleContext;
+
+import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
+import static com.dat3m.dartagnan.program.event.EventFactory.RISCV.MemoryOrder.*;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
@@ -36,13 +37,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     // Entry point
 
     @Override
-    public Object visitMain(LitmusRISCVParser.MainContext ctx) {
+    public Object visitMain(MainContext ctx) {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         Program prog = programBuilder.build();
-        replaceZeroRegisters(prog, Arrays.asList("x0"));
+        replaceZeroRegisters(prog, List.of("x0"));
         return prog;
     }
 
@@ -50,27 +51,27 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     // Variable declarator list
 
     @Override
-    public Object visitVariableDeclaratorLocation(LitmusRISCVParser.VariableDeclaratorLocationContext ctx) {
+    public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorRegister(LitmusRISCVParser.VariableDeclaratorRegisterContext ctx) {
+    public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value, ctx.getStart().getLine());
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorRegisterLocation(LitmusRISCVParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+    public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorLocationLocation(LitmusRISCVParser.VariableDeclaratorLocationLocationContext ctx) {
+    public Object visitVariableDeclaratorLocationLocation(VariableDeclaratorLocationLocationContext ctx) {
         programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
@@ -80,8 +81,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
 
     @Override
-    public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {
-        for(LitmusRISCVParser.ThreadIdContext threadCtx : ctx.threadId()){
+    public Object visitThreadDeclaratorList(ThreadDeclaratorListContext ctx) {
+        for(ThreadIdContext threadCtx : ctx.threadId()){
             programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
@@ -93,7 +94,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     // Instruction list (the program itself)
 
     @Override
-    public Object visitInstructionRow(LitmusRISCVParser.InstructionRowContext ctx) {
+    public Object visitInstructionRow(InstructionRowContext ctx) {
         for(int i = 0; i < threadCount; i++){
             mainThread = i;
             visitInstruction(ctx.instruction(i));
@@ -102,164 +103,157 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
 	@Override
-	public Object visitLi(LitmusRISCVParser.LiContext ctx) {
+	public Object visitLi(LiContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+        return append(EventFactory.newLocal(register, constant), ctx);
 	}
 
 	@Override
-	public Object visitXor(LitmusRISCVParser.XorContext ctx) {
+	public Object visitXor(XorContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)), ctx);
 
 	}
 
 	@Override
-	public Object visitAnd(LitmusRISCVParser.AndContext ctx) {
+	public Object visitAnd(AndContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntAnd(r2, r3)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntAnd(r2, r3)), ctx);
 
 	}
 
 	@Override
-	public Object visitOr(LitmusRISCVParser.OrContext ctx) {
+	public Object visitOr(OrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntOr(r2, r3)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntOr(r2, r3)), ctx);
 
 	}
 
 	@Override
-	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
+	public Object visitAdd(AddContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, r3)));
+        return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, r3)), ctx);
 
 	}
 
 	@Override
-	public Object visitXori(LitmusRISCVParser.XoriContext ctx) {
+	public Object visitXori(XoriContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant)), ctx);
 	}
 
 	@Override
-	public Object visitAndi(LitmusRISCVParser.AndiContext ctx) {
+	public Object visitAndi(AndiContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntAnd(r2, constant)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntAnd(r2, constant)), ctx);
 	}
 
 	@Override
-	public Object visitOri(LitmusRISCVParser.OriContext ctx) {
+	public Object visitOri(OriContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntOr(r2, constant)));
+        return append(EventFactory.newLocal(r1, expressions.makeIntOr(r2, constant)), ctx);
 	}
 
 	@Override
-	public Object visitAddi(LitmusRISCVParser.AddiContext ctx) {
+	public Object visitAddi(AddiContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)));
+        return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)), ctx);
 	}
 
 	@Override
-	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
+	public Object visitLw(LwContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
-	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
+	public Object visitSw(SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return append(EventFactory.RISCV.newStore(ra, r1, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
-	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
+	public Object visitLr(LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return append(EventFactory.RISCV.newLoadReserve(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
-	public Object visitSc(LitmusRISCVParser.ScContext ctx) {
+	public Object visitSc(ScContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return append(EventFactory.RISCV.newStoreConditional(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
-	public Object visitLabel(LitmusRISCVParser.LabelContext ctx) {
-		return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+	public Object visitLabel(LabelContext ctx) {
+		return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
 	}
 
 	@Override
-	public Object visitBranchCond(LitmusRISCVParser.BranchCondContext ctx) {
+	public Object visitBranchCond(BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Expression expr = expressions.makeIntCmp(r1, ctx.cond().op, r2);
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return append(EventFactory.newJump(expr, label), ctx);
 	}
 
 	@Override
-	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-        String mo = ctx.fenceMode().mode;
-        Event fence = switch(mo) {
-            case "r.r" -> EventFactory.RISCV.newRRFence();
-            case "r.w" -> EventFactory.RISCV.newRWFence();
-            case "r.rw" -> EventFactory.RISCV.newRRWFence();
-            case "w.r" -> EventFactory.RISCV.newWRFence();
-            case "w.w" -> EventFactory.RISCV.newWWFence();
-            case "w.rw" -> EventFactory.RISCV.newWRWFence();
-            case "rw.r" -> EventFactory.RISCV.newRWRFence();
-            case "rw.w" -> EventFactory.RISCV.newRWWFence();
-            case "rw.rw" -> EventFactory.RISCV.newRWRWFence();
-            case "tso" -> EventFactory.RISCV.newTsoFence();
-            case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("Invalid fence mode " + mo);
-        };
-		return programBuilder.addChild(mainThread, fence);
+	public Object visitFence(FenceContext ctx) {
+        return append(EventFactory.RISCV.newFence(ctx.fenceMode().mode), ctx);
 	}
 
 	@Override
-	public Object visitAmoadd(LitmusRISCVParser.AmoaddContext ctx) {
-		throw new ParsingException("No support for amoadd instructions");
+	public Object visitAmoadd(AmoaddContext ctx) {
+		throw new UnsupportedOperationException("No support for amoadd instructions");
     }
 
 	@Override
-	public Object visitAmoor(LitmusRISCVParser.AmoorContext ctx) {
-		throw new ParsingException("No support for amoor instructions");	}
+	public Object visitAmoor(AmoorContext ctx) {
+		throw new UnsupportedOperationException("No support for amoor instructions");	}
 
 	@Override
-	public Object visitAmoswap(LitmusRISCVParser.AmoswapContext ctx) {
-		throw new ParsingException("No support for amoswap instructions");
+	public Object visitAmoswap(AmoswapContext ctx) {
+		throw new UnsupportedOperationException("No support for amoswap instructions");
 	}
 
 	// =======================================
 	// ================ Utils ================
 	// =======================================
 
-	private String getMo(LitmusRISCVParser.MoRISCVContext mo1, LitmusRISCVParser.MoRISCVContext mo2) {
-		String moR = mo1 != null ? mo1.mo : "";
-		String moW = mo2 != null ? mo2.mo : "";
-		return !moR.isEmpty() ? (!moW.isEmpty() ? Tag.RISCV.MO_ACQ_REL : moR) : moW;
+	private EventFactory.RISCV.MemoryOrder getMo(List<MoRISCVContext> mo) {
+        boolean acq = false;
+        boolean rel = false;
+        for (MoRISCVContext ctx : mo) {
+            acq |= ctx.Acq() != null;
+            rel |= ctx.Rel() != null;
+        }
+		return acq ? rel ? ACQ_REL : ACQUIRE : rel ? RELEASE : PLAIN;
 	}
+
+    private Event append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
+    }
 }

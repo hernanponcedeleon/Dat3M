@@ -18,8 +18,8 @@ The Includes should contain :
 
 The useful libvsync flags are :
 1. VATOMIC_DISABLE_ARM64_LSE -- to let libvsync pick up *arm64_llsc.h*
-3. VSYNC_DISABLE_POLITE_AWAIT 
-2. VSYNC_VERIFICATION -- we are in verification mode
+2. VSYNC_DISABLE_POLITE_AWAIT 
+3. VSYNC_VERIFICATION -- we are in verification mode
 4. VSYNC_VERIFICATION_DAT3M -- to tell it that we are using Dat3M to verify
 5. TWA_A=128 -- in case we are generating a ll file for twalock.c
 6. VSYNC_VERIFICATION_QUICK -- reducing NTHREADS or READERS/WRITERS to speedup analysis

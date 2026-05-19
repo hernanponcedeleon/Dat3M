@@ -1,9 +1,10 @@
-package com.dat3m.dartagnan.program.event.lang.svcomp;
+package com.dat3m.dartagnan.program.event.lang.dat3m;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.google.common.base.Preconditions;
 
 public class NonDetChoice extends AbstractEvent implements RegWriter {
@@ -42,5 +43,10 @@ public class NonDetChoice extends AbstractEvent implements RegWriter {
     @Override
     public void setResultRegister(Register reg) {
         this.register = reg;
+    }
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitNonDetChoice(this);
     }
 }

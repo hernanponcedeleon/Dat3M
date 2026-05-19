@@ -35,7 +35,7 @@ public class VisitorLKMM extends VisitorBase {
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                EventFactory.newNonDetChoice(havocRegister),
                 newJump(havocRegister, success),
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
@@ -64,7 +64,7 @@ public class VisitorLKMM extends VisitorBase {
         loadFail.addTags(Tag.RMW);
         Load loadSuccess;
         return eventSequence(
-                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                EventFactory.newNonDetChoice(havocRegister),
                 newJump(havocRegister, success),
                 // Cas failure branch
                 loadFail,
@@ -149,7 +149,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
         return eventSequence(
-                newFence(e.getName())
+                newFence(e.getMo())
         );
     }
 
@@ -221,10 +221,6 @@ public class VisitorLKMM extends VisitorBase {
         The following helper methods are used to generate core-level events with additional metadata attached,
         for example, with custom printing capabilities.
      */
-
-    private static Event newCoreMemoryBarrier() {
-        return newFence(Tag.Linux.MO_MB);
-    }
 
     private static Load newCoreLoad(Register reg, Expression addr, String mo) {
         return EventFactory.newLoadWithMo(reg, addr, mo);

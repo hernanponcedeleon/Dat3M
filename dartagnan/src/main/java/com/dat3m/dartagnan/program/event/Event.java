@@ -1,19 +1,16 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.encoding.Encoder;
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.verification.Context;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface Event extends Encoder, Comparable<Event> {
+public interface Event extends Comparable<Event> {
     int PRINT_PAD_EXTRA = 50;
 
     int getGlobalId();
@@ -97,6 +94,4 @@ public interface Event extends Encoder, Comparable<Event> {
 
     // This method needs to get overwritten for conditional events.
     boolean cfImpliesExec();
-
-    BooleanFormula encodeExec(EncodingContext ctx);
 }

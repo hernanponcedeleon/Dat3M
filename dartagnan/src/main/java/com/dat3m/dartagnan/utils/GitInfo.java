@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.Dartagnan;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +12,7 @@ public class GitInfo {
 
     private static final Logger logger = LoggerFactory.getLogger(GitInfo.class);
 
-    static Properties properties = new Properties();
+    private final static Properties properties = new Properties();
 
     public static void initGitInfo() throws IOException {
         try (InputStream is = Dartagnan.class.getClassLoader()

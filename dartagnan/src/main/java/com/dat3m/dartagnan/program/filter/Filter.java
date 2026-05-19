@@ -7,6 +7,8 @@ import java.util.Map;
 
 /*
 Filters are used as general ways to extract program-events.
+TODO: There are only two uses of Filter in the code base, and both are simple TagFilters
+    Maybe we can delete all of this?
 */
 public abstract class Filter {
 

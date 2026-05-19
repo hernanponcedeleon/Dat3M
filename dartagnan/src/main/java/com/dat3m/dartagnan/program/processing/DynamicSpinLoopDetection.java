@@ -136,7 +136,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         // ---------------- Instrumentation ----------------
         // Init tracking registers
         for (Register liveWriter : loop.writtenLiveRegisters) {
-            loop.getStart().getFunction().getEntry().insertAfter(EventFactory.Svcomp.newNonDetChoice(liveWriter));
+            loop.getStart().getFunction().getEntry().insertAfter(EventFactory.newNonDetChoice(liveWriter));
         }
         loop.getStart().insertAfter(List.of(
                 EventFactory.newLocal(entryLiveStateRegister, liveRegistersVector),
@@ -178,7 +178,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
         if (loop.isSideEffectFree()) {
-            final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
+            final Event loopBound = EventFactory.newLoopBound(expressions.makeValue(1, types.getArchType()));
             loop.getStart().insertBefore(loopBound);
         }
     }

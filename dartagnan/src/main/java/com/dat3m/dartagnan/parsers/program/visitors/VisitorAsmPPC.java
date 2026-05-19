@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -12,7 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.AsmPPCBaseVisitor;
-import com.dat3m.dartagnan.parsers.AsmPPCParser;
+import com.dat3m.dartagnan.parsers.AsmPPCParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -20,11 +15,17 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
-    private record CmpInstruction(Expression left, Expression right) {};
+    private record CmpInstruction(Expression left, Expression right) {}
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -51,22 +52,22 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     // Tells if a constraint is a numeric one, e.g. '3'
-    private boolean isConstraintNumeric(AsmPPCParser.ConstraintContext constraint) {
+    private boolean isConstraintNumeric(ConstraintContext constraint) {
         return constraint.overlapInOutRegister() != null;
     }
     
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
-    private boolean isConstraintOutputConstraint(AsmPPCParser.ConstraintContext constraint) {
+    private boolean isConstraintOutputConstraint(ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
     }
 
     // Tells us if the constraint is an input one, e.g. 'r' or '*m'
-    private boolean isConstraintInputConstraint(AsmPPCParser.ConstraintContext constraint) {
+    private boolean isConstraintInputConstraint(ConstraintContext constraint) {
         return constraint.inputOpGeneralReg() != null;
     }
 
     @Override
-    public List<Event> visitAsm(AsmPPCParser.AsmContext ctx) {
+    public List<Event> visitAsm(AsmContext ctx) {
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(inputAssignments);
@@ -76,34 +77,34 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoad(AsmPPCParser.LoadContext ctx) {
+    public Object visitLoad(LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, address));
+        asmInstructions.add(EventFactory.Power.newLoad(register, address));
         return null;
     }
 
     @Override
-    public Object visitLoadReserve(AsmPPCParser.LoadReserveContext ctx) {
+    public Object visitLoadReserve(LoadReserveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, newAddress));
+        asmInstructions.add(EventFactory.Power.newLoadReserve(register, newAddress));
         return null;
     }
 
     @Override
-    public Object visitStore(AsmPPCParser.StoreContext ctx) {
+    public Object visitStore(StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStore(address, value));
+        asmInstructions.add(EventFactory.Power.newStore(address, value));
         return null;
     }
 
     @Override
-    public Object visitStoreConditional(AsmPPCParser.StoreConditionalContext ctx) {
+    public Object visitStoreConditional(StoreConditionalContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
@@ -111,12 +112,12 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         Expression newAddress = expressions.makeAdd(address,offset);
         Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
         this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
+        asmInstructions.add(EventFactory.Power.newStoreConditional(resultRegister, newAddress, value));
         return null;
     }
 
     @Override
-    public Object visitCompare(AsmPPCParser.CompareContext ctx) {
+    public Object visitCompare(CompareContext ctx) {
         Register firstRegister = (Register) ctx.register(0).accept(this);
         expectedType = firstRegister.getType();
         Expression secondRegister = (Expression) ctx.register(1).accept(this);
@@ -125,7 +126,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchNotEqual(AsmPPCParser.BranchNotEqualContext ctx) {
+    public Object visitBranchNotEqual(BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
@@ -133,13 +134,13 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitNop(AsmPPCParser.NopContext ctx) {
+    public Object visitNop(NopContext ctx) {
         // or 1, 1, 1 is a nop, so we do not perform anything.
         return null;
     }
 
     @Override
-    public Object visitAdd(AsmPPCParser.AddContext ctx) {
+    public Object visitAdd(AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -149,7 +150,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
     
     @Override
-    public Object visitAddImmediateCarry(AsmPPCParser.AddImmediateCarryContext ctx) {
+    public Object visitAddImmediateCarry(AddImmediateCarryContext ctx) {
         // TODO :
         // It also sets the Carry bit of fixed-point exception register in HW
         // https://www.ibm.com/docs/sv/aix/7.2?topic=set-addic-ai-add-immediate-carrying-instruction
@@ -163,7 +164,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
     
     @Override
-    public Object visitSubtractFrom(AsmPPCParser.SubtractFromContext ctx) {
+    public Object visitSubtractFrom(SubtractFromContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -174,7 +175,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
 
 
     @Override
-    public Object visitLabelDefinition(AsmPPCParser.LabelDefinitionContext ctx) {
+    public Object visitLabelDefinition(LabelDefinitionContext ctx) {
         String labelID = ctx.Numbers().getText();
         Label label = AsmUtils.getOrNewLabel(labelsDefined, labelID);
         asmInstructions.add(label);
@@ -182,7 +183,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitValue(AsmPPCParser.ValueContext ctx) {
+    public Object visitValue(ValueContext ctx) {
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
@@ -196,7 +197,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     // if we created a register which will be mapped to the return Register, we have to add to "pendingRegisters", 
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
-    public Object visitRegister(AsmPPCParser.RegisterContext ctx) {
+    public Object visitRegister(RegisterContext ctx) {
         String registerNumber = ctx.Numbers().getText();
         int registerID = Integer.parseInt(registerNumber);
         if (asmRegisters.containsKey(registerID)) {
@@ -221,15 +222,15 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     // We just have to read the constraints, and based on their type, understand if they are going to be mapped
     // to the args registers or to the return register.
     @Override
-    public Object visitAsmMetadataEntries(AsmPPCParser.AsmMetadataEntriesContext ctx) {
-        List<AsmPPCParser.ConstraintContext> constraints = ctx.constraint();
+    public Object visitAsmMetadataEntries(AsmMetadataEntriesContext ctx) {
+        List<ConstraintContext> constraints = ctx.constraint();
         boolean isOutputRegistersInitialized = returnRegister == null;
         // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
         // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
         // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
         // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
         for (int i = 0; i < constraints.size(); i++) {
-            AsmPPCParser.ConstraintContext constraint = constraints.get(i);
+            ConstraintContext constraint = constraints.get(i);
             if (isConstraintOutputConstraint(constraint)) {
                 continue;
             }
@@ -260,19 +261,8 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitPpcFence(AsmPPCParser.PpcFenceContext ctx) {
-        String barrier = ctx.PPCFence().getText();
-        Event fence = switch (barrier) {
-            case "sync" ->
-                EventFactory.Power.newSyncBarrier();
-            case "isync" ->
-                EventFactory.Power.newISyncBarrier();
-            case "lwsync" ->
-                EventFactory.Power.newLwSyncBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
+    public Object visitPpcFence(PpcFenceContext ctx) {
+        asmInstructions.add(EventFactory.Power.newBarrier(ctx.PPCFence().getText()));
         return null;
     }
 

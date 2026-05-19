@@ -9,13 +9,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /*
     This analysis computes the Use-Def graph of a function.
@@ -34,7 +28,8 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
 
     private Map<RegReader, Map<Register, Set<RegWriter>>> useDefGraph;
 
-    private UseDefAnalysis() { }
+    private UseDefAnalysis() {
+    }
 
     public static UseDefAnalysis forFunction(Function function) {
         final UseDefAnalysis useDefAnalysis = new UseDefAnalysis();
@@ -60,12 +55,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
         return new WritersView(new HashMap<>());
     }
 
-    private static final class WritersView implements Writers {
-        private final Map<Register, Set<RegWriter>> useDefByRegister;
-
-        private WritersView(Map<Register, Set<RegWriter>> useDefByRegister) {
-            this.useDefByRegister = useDefByRegister;
-        }
+    private record WritersView(Map<Register, Set<RegWriter>> useDefByRegister) implements Writers {
 
         @Override
         public Set<Register> getUsedRegisters() {
@@ -78,12 +68,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
         }
     }
 
-    private static final class RegisterInfo implements RegisterWriters {
-        private final Set<RegWriter> useDefSet;
-
-        private RegisterInfo(Set<RegWriter> useDefSet) {
-            this.useDefSet = useDefSet;
-        }
+    private record RegisterInfo(Set<RegWriter> useDefSet) implements RegisterWriters {
 
         @Override
         public boolean mustBeInitialized() {

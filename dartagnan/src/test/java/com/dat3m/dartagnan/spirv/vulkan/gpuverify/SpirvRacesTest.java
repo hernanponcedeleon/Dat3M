@@ -343,7 +343,7 @@ public class SpirvRacesTest {
 
     @Test
     public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
     private VerificationTask mkTask() throws Exception {

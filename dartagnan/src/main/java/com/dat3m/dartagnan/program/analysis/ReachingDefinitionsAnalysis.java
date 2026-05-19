@@ -11,7 +11,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REACHING_DEFINITIONS_METHOD;
 
@@ -98,7 +99,7 @@ public interface ReachingDefinitionsAnalysis {
     enum Method { BACKWARD, FORWARD }
 
     @Options
-    public final class Config {
+    final class Config {
 
         @Option(name = REACHING_DEFINITIONS_METHOD,
                 description = "Specifies the static analysis algorithm, that collects the relationship between"

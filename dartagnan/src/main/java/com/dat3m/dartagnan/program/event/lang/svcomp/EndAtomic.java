@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
@@ -54,14 +53,14 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     private void findEnclosedEvents(BranchEquivalence eq) {
         enclosedEvents = new ArrayList<>();
         if (eq.areMutuallyExclusive(begin, this) || this.getLocalId() < begin.getLocalId()) {
-            logger.warn("BeginAtomic" + begin.getLocalId() + "can't reach EndAtomic " + this.getLocalId());
+            logger.warn("BeginAtomic {} can't reach EndAtomic {}", begin.getLocalId(), this.getLocalId());
         }
 
         Event e = begin.getSuccessor();
         while (e.getLocalId() < this.getLocalId()) {
             if (!eq.areMutuallyExclusive(begin, e)) {
                 if (!eq.isImplied(e, begin)) {
-                    logger.warn(e + " is inside atomic block but can be reached from the outside");
+                    logger.warn("{} is inside atomic block but can be reached from the outside", e);
                 }
                 enclosedEvents.add(e);
                 e.addTags(RMW);

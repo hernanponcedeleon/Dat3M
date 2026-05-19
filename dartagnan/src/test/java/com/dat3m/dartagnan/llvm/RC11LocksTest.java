@@ -74,11 +74,11 @@ public class RC11LocksTest extends AbstractCTest {
 
     // @Test
     public void testAssume() throws Exception {
-        testModelChecker(Method.EAGER);
+        testSolver(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        testModelChecker(Method.LAZY);
+        testSolver(Method.LAZY);
     }
 }

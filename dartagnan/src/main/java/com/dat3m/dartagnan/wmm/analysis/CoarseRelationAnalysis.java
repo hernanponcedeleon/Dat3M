@@ -7,15 +7,19 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.*;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static java.util.stream.Collectors.toSet;
 
 public class CoarseRelationAnalysis extends NativeRelationAnalysis {
@@ -44,7 +48,8 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
 
     @Override
     protected void processSCC(Propagator propagator, Set<DependencyGraph<Relation>.Node> scc, Map<Relation, List<Delta>> qGlobal, Map<Relation, List<Definition>> dependents) {
-        if (scc.stream().map(DependencyGraph.Node::getContent).noneMatch(Relation::isInternal)) {
+        final Wmm wmm = task.getMemoryModel();
+        if (scc.stream().map(DependencyGraph.Node::getContent).noneMatch(wmm::isInternal)) {
             return;
         }
         super.processSCC(propagator, scc, qGlobal, dependents);
@@ -65,18 +70,23 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
     }
 
     private final class EmptyInitializer extends NativeRelationAnalysis.Initializer {
-        final MutableKnowledge defaultKnowledge;
+        final MutableKnowledge defaultBinaryKnowledge;
+        final MutableKnowledge defaultUnaryKnowledge;
 
         EmptyInitializer() {
-            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph mayBin = new MapEventGraph();
+            MutableEventGraph mayUn = new MapEventGraph();
             Set<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toSet());
-            events.forEach(x -> may.addRange(x, events));
-            defaultKnowledge = new MutableKnowledge(may, new MapEventGraph());
+            events.forEach(x -> mayBin.addRange(x, events));
+            events.forEach(x -> mayUn.add(x, x));
+            defaultBinaryKnowledge = new MutableKnowledge(mayBin, new MapEventGraph());
+            defaultUnaryKnowledge = new MutableKnowledge(mayUn, new MapEventGraph());
         }
 
         @Override
         public MutableKnowledge visitDefinition(Definition def) {
-            return !def.getDefinedRelation().isInternal() ? defaultKnowledge
+            return !task.getMemoryModel().isInternal(def.getDefinedRelation())
+                    ? (def.getDefinedRelation().isSet() ? defaultUnaryKnowledge : defaultBinaryKnowledge)
                     : new MutableKnowledge(new MapEventGraph(), new MapEventGraph());
         }
     }

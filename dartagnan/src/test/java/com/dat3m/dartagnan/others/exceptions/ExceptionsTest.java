@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.others.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import java.lang.UnsupportedOperationException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -33,7 +33,7 @@ public class ExceptionsTest {
     public void noThread() {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         // Thread 1 does not exist
-        pb.addChild(1, new Skip());
+        pb.addChildWithoutSourceLoc(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
@@ -73,17 +73,17 @@ public class ExceptionsTest {
         EventFactory.newJump(null, EventFactory.newLabel("DUMMY"));
     }
 
-    @Test(expected = MalformedProgramException.class)
+    @Test(expected = ParsingException.class)
     public void IllegalJump() throws Exception {
         new ProgramParser().parse(new File(getTestResourcePath("exceptions/IllegalJump.litmus")));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ParsingException.class)
     public void LocationNotInitialized() throws Exception {
         new ProgramParser().parse(new File(getTestResourcePath("exceptions/LocationNotInitialized.litmus")));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ParsingException.class)
     public void RegisterNotInitialized() throws Exception {
         new ProgramParser().parse(new File(getTestResourcePath("exceptions/RegisterNotInitialized.litmus")));
     }

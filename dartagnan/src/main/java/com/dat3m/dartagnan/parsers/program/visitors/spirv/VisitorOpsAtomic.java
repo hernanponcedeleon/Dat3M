@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 import java.util.Set;
 
@@ -33,8 +32,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        SpirvLoad event = newSpirvLoad(register, ptr, scope, tags);
-        return builder.addEvent(event);
+        return builder.addEvent(newLoad(register, ptr, scope, tags));
     }
 
     @Override
@@ -44,8 +42,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        SpirvStore event = newSpirvStore(ptr, value, scope, tags);
-        return builder.addEvent(event);
+        return builder.addEvent(newStore(ptr, value, scope, tags));
     }
 
     @Override
@@ -56,8 +53,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
-        SpirvXchg event = newSpirvXchg(register, ptr, value, scope, tags);
-        return builder.addEvent(event);
+        return builder.addEvent(newXchg(register, ptr, value, scope, tags));
     }
 
     @Override
@@ -160,8 +156,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         neqTags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         Expression value = builder.getExpression(valCtx.getText());
         Expression cmp = builder.getExpression(cmpCtx.getText());
-        SpirvCmpXchg event = newSpirvCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags);
-        return builder.addEvent(event);
+        return builder.addEvent(newCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags));
     }
 
     private Event visitAtomicOpIncDec(
@@ -208,8 +203,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
-        SpirvRmw event = newSpirvRmw(register, ptr, op, value, scope, tags);
-        return builder.addEvent(event);
+        return builder.addEvent(newRmw(register, ptr, op, value, scope, tags));
     }
 
     private String getScopeTag(String scopeId) {

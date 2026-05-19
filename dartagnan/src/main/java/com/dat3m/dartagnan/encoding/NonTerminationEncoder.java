@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -270,10 +269,7 @@ public class NonTerminationEncoder {
 
     private boolean arePossiblyEquivalent(Iteration a, Iteration b) {
         // TODO: We should also compare the contained events.
-        if (a.loop != b.loop || a.body.size() != b.body.size()) {
-            return false;
-        }
-        return true;
+        return a.loop == b.loop && a.body.size() == b.body.size();
     }
 
     private boolean arePossiblyInfixSuffixMatching(Iteration a, Iteration b) {
@@ -438,7 +434,7 @@ public class NonTerminationEncoder {
                 totalEnc.add(bmgr.not(bmgr.and(isInSuffixVar(iter), isInInfixVar(iter))));
             }
 
-            final Iteration last = iters.get(iters.size() - 1);;
+            final Iteration last = iters.get(iters.size() - 1);
             final BooleanFormula loopIsNonterminating = loop.nontermCases.stream()
                     .map(this::isNonterminating)
                     .reduce(bmgr.makeFalse(), bmgr::or);

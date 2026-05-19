@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
@@ -12,7 +13,6 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SameInstruction;
-
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,8 @@ public class ExecutionGraphVisualizer {
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     private final Map<String, BiPredicate<EventModel, EventModel>> filter = new HashMap<>();
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private List<String> relsToShow;
+    private static final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
+    private Set<String> relsToShow;
 
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
@@ -53,6 +54,8 @@ public class ExecutionGraphVisualizer {
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
         this.colorMap = new ColorMap();
+
+        relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
     public ExecutionGraphVisualizer setSyntacticContext(SyntacticContextAnalysis synContext) {
@@ -77,7 +80,7 @@ public class ExecutionGraphVisualizer {
 
     private void setRelationsToShow(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
+        relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
@@ -126,14 +129,14 @@ public class ExecutionGraphVisualizer {
 
     private void addEvents(ExecutionModelNext model) {
         for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) {
-                // This skips init threads.
-                return;
+
+            if (IRHelper.isInitThread(tm.getThread())) {
+                continue;
             }
 
             graphviz.beginSubgraph("T" + tm.getId());
 
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             for (List<EventModel> instruction : instructions) {
                 for (EventModel event : instruction) {
                     appendNode(event, nodeLabel(event));
@@ -188,7 +191,9 @@ public class ExecutionGraphVisualizer {
         for (String name : relsToShow) {
             RelationModel rm = getRelationModel(model, name);
             if (rm == null) {
-                logger.warn("Relation with the name {} does not exist", name);
+                if (!OPTIONAL_RELATIONS.contains(name)) {
+                    logger.warn("Relation with the name {} does not exist", name);
+                }
                 continue;
             }
             // For PO and CO we do not show the transitive edges in witness.
@@ -368,7 +373,7 @@ public class ExecutionGraphVisualizer {
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-            if (config != null) { visualizer.setRelationsToShow(config); }
+            visualizer.setRelationsToShow(config);
             visualizer.setSyntacticContext(synContext)
                       .setFilter(RF, rfFilter)
                       .setFilter(CO, coFilter)
@@ -402,6 +407,7 @@ public class ExecutionGraphVisualizer {
                              fileNameBase,
                              synContext,
                              true,
-                             null);
+                             Configuration.defaultConfiguration()
+        );
     }
 }

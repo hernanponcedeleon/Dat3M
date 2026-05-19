@@ -2,13 +2,14 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-
+import com.google.common.io.Files;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
@@ -35,6 +36,11 @@ public class ProgramParser {
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
             EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM);
 
+    public static boolean isSupported(Path filePath) {
+        final String extension = "." + Files.getFileExtension(filePath.getFileName().toString());
+        return SUPPORTED_EXTENSIONS.contains(extension);
+    }
+
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
             file = compileWithClang(file, "");
@@ -45,7 +51,7 @@ public class ProgramParser {
         try (FileInputStream stream = new FileInputStream(file)) {
             ParserInterface parser = getConcreteParser(file);
             CharStream charStream = CharStreams.fromStream(stream);
-            program = parser.parse(charStream);
+            program = parseAndWrap(parser, charStream);
         }
         program.setName(file.getName());
         return program;
@@ -56,6 +62,7 @@ public class ProgramParser {
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
+        final ParserInterface parser;
         switch (format) {
             case EXTENSION_C, EXTENSION_I -> {
                 File file = path.isEmpty() ?
@@ -72,20 +79,31 @@ public class ProgramParser {
                 return p;
             }
             case EXTENSION_LL -> {
-                return new ParserLlvm().parse(CharStreams.fromString(raw));
+                parser = new ParserLlvm();
             }
             case EXTENSION_SPVASM -> {
-                return new ParserSpirv().parse(CharStreams.fromString(raw));
+                parser = new ParserSpirv();
             }
             case EXTENSION_SPV_DIS -> {
-                logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
-                return new ParserSpirv().parse(CharStreams.fromString(raw));
+                logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
+                parser = new ParserSpirv();
             }
             case EXTENSION_LITMUS -> {
-                return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
+                parser = getConcreteLitmusParser(raw.toUpperCase());
             }
+            default -> throw new ParsingException("Unknown input file type");
         }
-        throw new ParsingException("Unknown input file type");
+        return parseAndWrap(parser, CharStreams.fromString(raw));
+    }
+
+    private Program parseAndWrap(ParserInterface parser, CharStream charStream) {
+        try {
+            return parser.parse(charStream);
+        } catch (RuntimeException exception) {
+            // Wrap into ParsingException.
+            throw exception instanceof ParsingException ? exception
+                    : new ParsingException(exception, exception.getMessage());
+        }
     }
 
     private ParserInterface getConcreteParser(File file) throws IOException {
@@ -94,7 +112,7 @@ public class ProgramParser {
             return new ParserLlvm();
         }
         if (name.endsWith(EXTENSION_SPV_DIS)) {
-                logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
+                logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
             return new ParserSpirv();
         }
         if (name.endsWith(EXTENSION_SPVASM)) {

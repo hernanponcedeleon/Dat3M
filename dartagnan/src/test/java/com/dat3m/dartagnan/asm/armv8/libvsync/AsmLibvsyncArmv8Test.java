@@ -76,7 +76,7 @@ public class AsmLibvsyncArmv8Test {
     public void testAllSolvers() throws Exception {
         // TODO : RefinementSolver takes too long to run, we have to investigate this
         // assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.LAZY));
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
 

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,13 +33,13 @@ public class AssumeSolver extends ModelChecker {
 
     protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        task.getMemoryModel().configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task, analysisContext, config);
         return analysisContext;
     }
 
@@ -54,8 +53,8 @@ public class AssumeSolver extends ModelChecker {
 
         context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
@@ -63,14 +62,13 @@ public class AssumeSolver extends ModelChecker {
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model encoding");
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
-        // For validation this contains information.
-        // For verification graph.encode() just returns ctx.mkTrue()
-        prover.writeComment("Witness encoding");
-        prover.addConstraint(task.getWitness().encode(context));
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        // Adding bounds
+        prover.writeComment("Bounds over variables");
+        prover.addConstraint(programEncoder.encodeBounds());
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);

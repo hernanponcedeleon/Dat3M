@@ -81,23 +81,23 @@ public class AnalysisTest {
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel(0, "alt");
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), alt));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Local e1 = newLocal(r1, r0);
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Label join = b.getOrCreateLabel(0, "join");
-        b.addChild(0, newGoto(join));
-        b.addChild(0, alt);
+        b.addChildWithoutSourceLoc(0, newGoto(join));
+        b.addChildWithoutSourceLoc(0, alt);
         Local e2 = newLocal(r1, value(2));
-        b.addChild(0, e2);
-        b.addChild(0, join);
+        b.addChildWithoutSourceLoc(0, e2);
+        b.addChildWithoutSourceLoc(0, join);
         Local e3 = newLocal(r2, r0);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
         Local e4 = newLocal(r2, r1);
-        b.addChild(0, e4);
+        b.addChildWithoutSourceLoc(0, e4);
         Local e5 = newLocal(r0, r2);
-        b.addChild(0, e5);
+        b.addChildWithoutSourceLoc(0, e5);
 
         Program program = b.build();
         Compilation.newInstance().run(program);
@@ -140,69 +140,69 @@ public class AnalysisTest {
         Register r3 = b.getOrNewRegister(0, "r3");
         //  if * {
         Label skip0 = b.getOrCreateLabel(0, "skip0");
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip0));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), skip0));
         //      r0 = r0
         Local r00 = newLocal(r0, r0);
-        b.addChild(0, r00);
+        b.addChildWithoutSourceLoc(0, r00);
         //  }
-        b.addChild(0, skip0);
+        b.addChildWithoutSourceLoc(0, skip0);
         //  r1 = r0
         Local r10 = newLocal(r1, r0);
-        b.addChild(0, r10);
+        b.addChildWithoutSourceLoc(0, r10);
         //  r2 = r0
         Local r20 = newLocal(r2, r0);
-        b.addChild(0, r20);
+        b.addChildWithoutSourceLoc(0, r20);
         //  r3 = 0
         Local r30 = newLocal(r3, expressions.makeZero(types.getArchType()));
-        b.addChild(0, r30);
+        b.addChildWithoutSourceLoc(0, r30);
         //  do {
         Label begin = b.getOrCreateLabel(0, "begin");
-        b.addChild(0, begin);
+        b.addChildWithoutSourceLoc(0, begin);
         //      if * {
         Label skip1 = b.getOrCreateLabel(0, "skip1");
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip1));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), skip1));
         //          r0 = r1
         Local r01 = newLocal(r0, r1);
-        b.addChild(0, r01);
+        b.addChildWithoutSourceLoc(0, r01);
         //          r1 = r1
         Local r11 = newLocal(r1, r1);
-        b.addChild(0, r11);
+        b.addChildWithoutSourceLoc(0, r11);
         //          r2 = r1
         Local r21 = newLocal(r2, r1);
-        b.addChild(0, r21);
+        b.addChildWithoutSourceLoc(0, r21);
         //      }
-        b.addChild(0, skip1);
+        b.addChildWithoutSourceLoc(0, skip1);
         //      r3 = r1
         Local r31 = newLocal(r3, r1);
-        b.addChild(0, r31);
+        b.addChildWithoutSourceLoc(0, r31);
         //  } while *
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), begin));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), begin));
         //  if * {
         Label skip2 = b.getOrCreateLabel(0, "skip2");
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip2));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), skip2));
         //      r0 = r2
         Local r02 = newLocal(r0, r2);
-        b.addChild(0, r02);
+        b.addChildWithoutSourceLoc(0, r02);
         //      r1 = r2
         Local r12 = newLocal(r1, r2);
-        b.addChild(0, r12);
+        b.addChildWithoutSourceLoc(0, r12);
         //  }
-        b.addChild(0, skip2);
+        b.addChildWithoutSourceLoc(0, skip2);
         //  r2 = r2
         Local r22 = newLocal(r2, r2);
-        b.addChild(0, r22);
+        b.addChildWithoutSourceLoc(0, r22);
         //  if * {
         Label skip3 = b.getOrCreateLabel(0, "skip3");
-        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip3));
+        b.addChildWithoutSourceLoc(0, newJump(b.newConstant(types.getBooleanType()), skip3));
         //      r3 = r2
         Local r32 = newLocal(r3, r2);
-        b.addChild(0, r32);
+        b.addChildWithoutSourceLoc(0, r32);
         //  }
-        b.addChild(0, skip3);
+        b.addChildWithoutSourceLoc(0, skip3);
         //  return (r0 + r1) ^ (r2 | r3)
         Return ret = newFunctionReturn(
                 expressions.makeIntXor(expressions.makeAdd(r0, r1), expressions.makeIntOr(r2, r3)));
-        b.addChild(0, ret);
+        b.addChildWithoutSourceLoc(0, ret);
 
         Program program = b.build();
         Configuration config = Configuration.builder()
@@ -268,15 +268,15 @@ public class AnalysisTest {
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         //In C11, this is well-defined: ((uint64_t*) ((uintptr_t) x * 1))
-        b.addChild(0, newLocal(r0, mult(x, 1)));
+        b.addChildWithoutSourceLoc(0, newLocal(r0, mult(x, 1)));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Store e1 = newStore(plus(r0, 8));
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(x);
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(y);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -315,14 +315,14 @@ public class AnalysisTest {
 
         b.newThread(0);
         Store e0 = newStore(plus(x, 8));
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(r0);
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(plus(r0, 8), r0);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -361,24 +361,24 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, b.newConstant(type)));
+        b.addChildWithoutSourceLoc(0, newLocal(r0, b.newConstant(type)));
         Label l0 = b.getOrCreateLabel(0,"l0");
-        b.addChild(0, newJump(expressions.makeOr(
+        b.addChildWithoutSourceLoc(0, newJump(expressions.makeOr(
                 expressions.makeGT(r0, expressions.makeOne(type), true),
                 expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Store e1 = newStore(plus(x, 8));
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(plus(x, 16));
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
-        b.addChild(0, newLocal(r1, expressions.makeZero(type)));
+        b.addChildWithoutSourceLoc(0, newLocal(r1, expressions.makeZero(type)));
         Store e3 = newStore(expressions.makeAdd(
                 expressions.makeAdd(x, mult(r0, 16)),
                 mult(r1, 32)));
-        b.addChild(0, e3);
-        b.addChild(0, l0);
+        b.addChildWithoutSourceLoc(0, e3);
+        b.addChildWithoutSourceLoc(0, l0);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -418,13 +418,13 @@ public class AnalysisTest {
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Store e1 = newStore(x, plus(r0, 8));
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(plus(x, 16));
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(r0);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -464,16 +464,16 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, mult(x, 0)));
-        b.addChild(0, newLocal(r0, y));
+        b.addChildWithoutSourceLoc(0, newLocal(r0, mult(x, 0)));
+        b.addChildWithoutSourceLoc(0, newLocal(r0, y));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Store e1 = newStore(x);
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(y);
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(z);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -513,16 +513,16 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, y));
+        b.addChildWithoutSourceLoc(0, newLocal(r0, y));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
-        b.addChild(0, newLocal(r0, mult(x, 0)));
+        b.addChildWithoutSourceLoc(0, e0);
+        b.addChildWithoutSourceLoc(0, newLocal(r0, mult(x, 0)));
         Store e1 = newStore(x);
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Store e2 = newStore(y);
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(z);
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
@@ -553,15 +553,15 @@ public class AnalysisTest {
         Register r2 = b.getOrNewRegister(0, "r2");
         Register r3 = b.getOrNewRegister(0, "r3");
         Load e0 = newLoad(r0, y); // reads x
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Load e1 = newLoad(r1, r0); // reads y
-        b.addChild(0, e1);
+        b.addChildWithoutSourceLoc(0, e1);
         Load e2 = newLoad(r2, r1); // reads x
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Load e3 = newLoad(r3, r2); // reads y
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
         Store e4 = newStore(y, r3); // stores y
-        b.addChild(0, e4);
+        b.addChildWithoutSourceLoc(0, e4);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, FULL);
@@ -591,18 +591,18 @@ public class AnalysisTest {
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
         Load e0 = newLoad(r0, y); // reads x
-        b.addChild(0, e0);
+        b.addChildWithoutSourceLoc(0, e0);
         Label l0 = newLabel("l0");
-        b.addChild(0, newJump(expressions.makeEQ(r0, x), l0));
+        b.addChildWithoutSourceLoc(0, newJump(expressions.makeEQ(r0, x), l0));
         Load e1 = newLoad(r0, x); // reads y
-        b.addChild(0, e1);
-        b.addChild(0, l0);
+        b.addChildWithoutSourceLoc(0, e1);
+        b.addChildWithoutSourceLoc(0, l0);
         Load e2 = newLoad(r1, r0); // reads x
-        b.addChild(0, e2);
+        b.addChildWithoutSourceLoc(0, e2);
         Load e3 = newLoad(r2, r1); // reads y
-        b.addChild(0, e3);
+        b.addChildWithoutSourceLoc(0, e3);
         Store e4 = newStore(r0, r2); // stores y
-        b.addChild(0, e4);
+        b.addChildWithoutSourceLoc(0, e4);
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, FULL);
@@ -696,7 +696,6 @@ public class AnalysisTest {
                 .withBound(1)
                 .withTarget(Arch.C11)
                 .build(program, wmm, EnumSet.of(PROGRAM_SPEC));
-        wmm.configureAll(task.getConfig());
         preprocessProgram(task, task.getConfig());
         final Relation loc = wmm.getRelation(LOC);
         final List<Integer> sizes = new LinkedList<>();
@@ -742,8 +741,8 @@ public class AnalysisTest {
             for (int offset = 0; offset < 9; offset++) {
                 final MemoryObject x = b.getOrNewMemoryObject(String.format("x%d:%d", i, offset), OBJECT_SIZE);
                 final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, pointerType));
-                b.addChild(0, newLoad(r, x));
-                b.addChild(0, newLoad(s, address));
+                b.addChildWithoutSourceLoc(0, newLoad(r, x));
+                b.addChildWithoutSourceLoc(0, newLoad(s, address));
                 if (0 < offset && offset < rBytes) {
                     exp.append(offset);
                 }
@@ -801,9 +800,9 @@ public class AnalysisTest {
         IntegerType u32 = types.getIntegerType(32);
         IntegerType u64 = types.getIntegerType(64);
         Register r64 = b.getOrNewRegister(0, "r64", u64);
-        b.addChild(0, newRMWLoadExclusive(r64, x));
-        b.addChild(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true));
-        b.addChild(1, newStore(x, expressions.makeValue(0, u32)));
+        b.addChildWithoutSourceLoc(0, newRMWLoadExclusive(r64, x));
+        b.addChildWithoutSourceLoc(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true, false));
+        b.addChildWithoutSourceLoc(1, newStore(x, expressions.makeValue(0, u32)));
 
         Program program = b.build();
         Wmm wmm = new Wmm();

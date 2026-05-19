@@ -44,11 +44,15 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs") && !name.startsWith("floats")) {
+        if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")
+                && !name.equals("memcpy_s") && !name.startsWith("floats")) {
             builder.setOption(OptionNames.USE_INTEGERS, "true");
         }
         if (name.equals("recursion")) {
             builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
+        }
+        if (name.equals("memcpy_s")) {
+            builder.setOption(OptionNames.MIXED_SIZE, "true");
         }
         return builder;
     }
@@ -123,11 +127,11 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Test
     public void testAssume() throws Exception {
-        testModelChecker(Method.EAGER);
+        testSolver(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        testModelChecker(Method.LAZY);
+        testSolver(Method.LAZY);
     }
 }

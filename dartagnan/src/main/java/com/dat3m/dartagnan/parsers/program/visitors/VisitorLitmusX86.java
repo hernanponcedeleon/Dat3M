@@ -1,25 +1,21 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
-import com.dat3m.dartagnan.parsers.LitmusX86Parser;
+import com.dat3m.dartagnan.parsers.LitmusX86Parser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
-
-    private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.TSO);
     private final TypeFactory types = programBuilder.getTypeFactory();
@@ -35,7 +31,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     // Entry point
 
     @Override
-    public Object visitMain(LitmusX86Parser.MainContext ctx) {
+    public Object visitMain(MainContext ctx) {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
@@ -48,27 +44,27 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
 
     @Override
-    public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
+    public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
+    public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value, ctx.getStart().getLine());
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorRegisterLocation(LitmusX86Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+    public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
         return null;
     }
 
     @Override
-    public Object visitVariableDeclaratorLocationLocation(LitmusX86Parser.VariableDeclaratorLocationLocationContext ctx) {
+    public Object visitVariableDeclaratorLocationLocation(VariableDeclaratorLocationLocationContext ctx) {
         programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
@@ -78,8 +74,8 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
 
     @Override
-    public Object visitThreadDeclaratorList(LitmusX86Parser.ThreadDeclaratorListContext ctx) {
-        for(LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()){
+    public Object visitThreadDeclaratorList(ThreadDeclaratorListContext ctx) {
+        for(ThreadIdContext threadCtx : ctx.threadId()){
             programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
@@ -91,7 +87,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     // Instruction list (the program itself)
 
     @Override
-    public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
+    public Object visitInstructionRow(InstructionRowContext ctx) {
         for(int i = 0; i < threadCount; i++){
             mainThread = i;
             visitInstruction(ctx.instruction(i));
@@ -100,76 +96,76 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
+    public Object visitLoadValueToRegister(LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+        return append(EventFactory.newLocal(register, constant), ctx);
     }
 
     @Override
-    public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
+    public Object visitLoadLocationToRegister(LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(register, object));
+        return append(EventFactory.newLoad(register, object), ctx);
     }
 
     @Override
-    public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
+    public Object visitStoreValueToLocation(StoreValueToLocationContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant));
+        return append(EventFactory.newStore(object, constant), ctx);
     }
 
     @Override
-    public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
+    public Object visitStoreRegisterToLocation(StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(object, register));
+        return append(EventFactory.newStore(object, register), ctx);
     }
 
     @Override
-    public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
+    public Object visitExchangeRegisterLocation(ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(object, register));
+        return append(EventFactory.X86.newExchange(object, register), ctx);
     }
 
     @Override
-    public Object visitIncrementLocation(LitmusX86Parser.IncrementLocationContext ctx) {
+    public Object visitIncrementLocation(IncrementLocationContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("INC is not implemented");
+        throw new UnsupportedOperationException("INC is not implemented");
     }
 
     @Override
-    public Object visitCompareRegisterValue(LitmusX86Parser.CompareRegisterValueContext ctx) {
+    public Object visitCompareRegisterValue(CompareRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("CMP is not implemented");
+        throw new UnsupportedOperationException("CMP is not implemented");
     }
 
     @Override
-    public Object visitCompareLocationValue(LitmusX86Parser.CompareLocationValueContext ctx) {
+    public Object visitCompareLocationValue(CompareLocationValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("CMP is not implemented");
+        throw new UnsupportedOperationException("CMP is not implemented");
     }
 
     @Override
-    public Object visitAddRegisterRegister(LitmusX86Parser.AddRegisterRegisterContext ctx) {
+    public Object visitAddRegisterRegister(AddRegisterRegisterContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("ADD is not implemented");
+        throw new UnsupportedOperationException("ADD is not implemented");
     }
 
     @Override
-    public Object visitAddRegisterValue(LitmusX86Parser.AddRegisterValueContext ctx) {
+    public Object visitAddRegisterValue(AddRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new ParsingException("ADD is not implemented");
+        throw new UnsupportedOperationException("ADD is not implemented");
     }
 
     @Override
-    public Object visitFence(LitmusX86Parser.FenceContext ctx) {
-        String name = ctx.getText().toLowerCase();
-        if(fences.contains(name)) {
-            return programBuilder.addChild(mainThread, EventFactory.newFence(name));
-        }
-        throw new ParsingException("Unrecognised fence " + name);
+    public Object visitFence(FenceContext ctx) {
+        return append(EventFactory.X86.newMemoryFence(ctx.getText().toLowerCase()), ctx);
+    }
+
+    private Event append(Event event, ParserRuleContext ctx) {
+        return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
 }

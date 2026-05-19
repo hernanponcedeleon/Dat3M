@@ -12,9 +12,17 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ROUNDING_MODE_FLOATS;
+import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
 public class Program {
 
@@ -25,19 +33,35 @@ public class Program {
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
-    private String name;
-    private SpecificationType specificationType = SpecificationType.ASSERT;
-    private Expression spec;
-    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
-    private final List<Thread> threads;
-    private final List<Function> functions;
+    @Options
+    private static class SemanticConfig {
+        @Option(name = ROUNDING_MODE_FLOATS,
+                description = "Default rounding mode for floating point operations (default NEAREST_TIES_TO_EVEN).",
+                secure = true)
+        private FloatingPointRoundingMode floatRoundingMode = NEAREST_TIES_TO_EVEN;
+    }
+
+    // Shape
+    private final List<Function> functions = new ArrayList<>();
+    private final List<Thread> threads = new ArrayList<>();
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Entrypoint entrypoint = new Entrypoint.None();
-    private Arch arch;
-    private int unrollingBound = 0;
-    private boolean isCompiled;
+
+    // Spec
+    private SpecificationType specificationType = SpecificationType.ASSERT;
+    private Expression spec;
+    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
+
+    // Semantic options
+    private final SemanticConfig semanticConfig = new SemanticConfig();
+
+    // Metadata
     private final SourceLanguage format;
+    private String name;
+    private int unrollingBound = 0;
+    private Arch arch;
+    private boolean isCompiled;
 
     private int nextThreadId = 0;
     private int nextConstantId = 0;
@@ -51,8 +75,6 @@ public class Program {
     public Program(String name, Memory memory, SourceLanguage format) {
         this.name = name;
         this.memory = memory;
-        this.threads = new ArrayList<>();
-        this.functions = new ArrayList<>();
         this.format = format;
 
         this.filterSpec = ExpressionFactory.getInstance().makeTrue();
@@ -127,6 +149,20 @@ public class Program {
         Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
     }
+
+    public FloatingPointRoundingMode getFloatRoundingMode() {
+        return semanticConfig.floatRoundingMode;
+    }
+
+    public void setFloatRoundingMode(FloatingPointRoundingMode roundingMode) {
+         this.semanticConfig.floatRoundingMode = roundingMode;
+    }
+
+    public void injectConfig(Configuration configuration) throws InvalidConfigurationException {
+        configuration.inject(semanticConfig);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     public void addThread(Thread t) {
         threads.add(t);

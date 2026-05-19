@@ -74,7 +74,7 @@ public class AsmLibvsyncArmv7Test {
 
     @Test
     public void testAllSolvers() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.LAZY));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.LAZY));
     }
 
     private VerificationTask mkTask() throws Exception {

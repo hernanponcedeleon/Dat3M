@@ -49,7 +49,7 @@ RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
 
 // misc
-Literal                     : [a-z]+;
+Literal                     : [a-zA-Z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 
 /*
-    A PredicateHiearchy has the following uses:
+    A PredicateHierarchy has the following uses:
         - it maintains the dependency structure of CAATPredicates
         - it initializes/populates derived CAATPredicates
         - it propagates changes topologically along the dependency structure
@@ -170,7 +170,7 @@ public class PredicateHierarchy {
         if (withinRecGroup) {
             // Limits propagation to EventGraphs in the same recursive Group.
             Set<DependencyGraph<CAATPredicate>.Node> recGroup = dependencyGraph.get(target).getSCC();
-            dependents = dependents.stream().filter(recGroup::contains).collect(Collectors.toList());
+            dependents = dependents.stream().filter(recGroup::contains).toList();
         }
         for (DependencyGraph<CAATPredicate>.Node dependent : dependents) {
             Task newTask = new Task(target, dependent.getContent(), newlyAdded, dependent.getTopologicalIndex());
@@ -212,23 +212,13 @@ public class PredicateHierarchy {
     // ================= Internal structures ===================
 
 
-    private static class Task implements Comparable<Task> {
-        private final CAATPredicate from;
-        private final CAATPredicate target;
-        private final Collection<? extends Derivable> added;
-        private final int priority;
-
-        public Task(CAATPredicate from, CAATPredicate target, Collection<? extends Derivable> added, int priority) {
-            this.from = from;
-            this.target = target;
-            this.added = added;
-            this.priority = priority;
-        }
+    private record Task(CAATPredicate from, CAATPredicate target, Collection<? extends Derivable> added,
+                        int priority) implements Comparable<Task> {
 
         @Override
-        public int compareTo(Task o) {
-            return this.priority - o.priority;
-        }
+            public int compareTo(Task o) {
+                return this.priority - o.priority;
+            }
 
-    }
+        }
 }

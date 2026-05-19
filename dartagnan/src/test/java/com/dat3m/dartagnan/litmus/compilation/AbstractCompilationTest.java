@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -84,7 +84,8 @@ public abstract class AbstractCompilationTest {
                 .setOption(TARGET, targetProvider.get().name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true");
+                .setOption(USE_INTEGERS, "true")
+                .setOption(METHOD, Method.EAGER.asStringOption());
 
         return additionalConfig(configBase).build();
     }
@@ -131,10 +132,8 @@ public abstract class AbstractCompilationTest {
             return;
         }
 
-        try (ModelChecker s1 = ModelChecker.create(task1Provider.get(), Method.EAGER);
-             ModelChecker s2 = ModelChecker.create(task2Provider.get(), Method.EAGER)) {
-            s1.setShutdownManager(shutdownManagerProvider.get());
-            s2.setShutdownManager(shutdownManagerProvider.get());
+        try (TaskSolver s1 = TaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
+             TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
 
             s1.run();
             if (!s1.hasModel()) {
@@ -154,9 +153,9 @@ public abstract class AbstractCompilationTest {
 
     private static boolean isRcuOrSrcu(Event e) {
         // The following have features (RCU and SRCU) that hardware models do not support
-        return Stream.of(
-                Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
-                Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC)
-                .anyMatch(e::hasTag);
+        return Stream.of(Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
+                        Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC,
+                        Tag.Linux.AFTER_SRCU_READ_UNLOCK
+                ).anyMatch(e::hasTag);
     }
 }

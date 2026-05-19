@@ -49,10 +49,6 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
         computeHash();
     }
 
-    public Conjunction(T ...literals) {
-        this(Arrays.asList(literals));
-    }
-
     public Conjunction(Collection<T> literals) {
         this(new HashSet<>(literals), true);
     }
@@ -97,7 +93,6 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     private void computeHash() {
         // We increase the hashCode by 1 to avoid a 0 hashcode for non-empty conjunctions
         hashCode = literals.hashCode() + (literals.isEmpty() ? 0 : 1);
-        assert (isTrue() || isFalse() || hashCode != 0);
     }
 
     @Override

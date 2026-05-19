@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.others.exceptions;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +36,7 @@ public class ArrayIllegalTest {
         this.path = path;
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = ParsingException.class)
     public void test() throws Exception {
         new ProgramParser().parse(new File(path));
     }

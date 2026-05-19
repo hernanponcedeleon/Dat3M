@@ -136,7 +136,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
     public void onDomainInit(CAATPredicate predicate, Domain<?> domain) {
         super.onDomainInit(predicate, domain);
         cleanUp();
-        int domSize = domain.size();;
+        int domSize = domain.size();
         markedNodes.ensureCapacity(domSize);
         nodeMap = new Node[domSize];
         for (int i = 0; i < domSize; i++) {

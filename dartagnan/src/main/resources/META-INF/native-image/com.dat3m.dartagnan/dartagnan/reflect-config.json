@@ -1,5 +1,15 @@
 [
     {
+      "name":"com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer",
+      "allDeclaredFields": true,
+      "queryAllDeclaredMethods": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.verification.TaskSolver",
+        "allDeclaredFields": true,
+        "queryAllDeclaredMethods": true
+    },
+    {
         "name": "com.dat3m.dartagnan.wmm.RelationNameRepository",
         "allDeclaredFields": true,
         "allDeclaredMethods": true
@@ -14,10 +24,6 @@
     },
     {
         "name": "com.dat3m.dartagnan.wmm.axiom.Emptiness",
-        "allDeclaredConstructors": true
-    },
-    {
-        "name": "com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom",
         "allDeclaredConstructors": true
     },
     {
@@ -50,12 +56,22 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.encoding.ActiveSetAnalysis",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
         "name":"com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
       {
         "name":"com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
@@ -136,11 +152,6 @@
       },
       {
         "name":"com.dat3m.dartagnan.witness.graphml.WitnessBuilder",
-        "allDeclaredFields":true,
-        "queryAllDeclaredMethods":true
-      },
-      {
-        "name":"com.dat3m.dartagnan.wmm.Wmm$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },

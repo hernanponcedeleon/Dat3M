@@ -18,7 +18,7 @@ class VisitorArm7 extends VisitorBase {
 
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
-        RMWStoreExclusive store = newRMWStoreExclusiveWithMo(e.getAddress(), e.getMemValue(), false, e.getMo());
+        Store store = newRMWStoreExclusiveWithMo(e.getAddress(), e.getMemValue(), false, false, e.getMo());
 
         return eventSequence(
                 store,
@@ -33,14 +33,14 @@ class VisitorArm7 extends VisitorBase {
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         return eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress()),
-                isAtomicAcquire(e.getMo()) ? AArch64.DMB.newISHBarrier() : null
+                isAtomicAcquire(e.getMo()) ? newDmbIsh() : null
         );
     }
 
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         return eventSequence(
-                isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
+                isAtomicRelease(e.getMo()) ? newDmbIsh() : null,
                 newStore(e.getAddress(), e.getMemValue())
         );
     }
@@ -51,7 +51,7 @@ class VisitorArm7 extends VisitorBase {
         final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
         return eventSequence(
                 load,
-                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
+                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? newDmbIsh() : null,
                 newRMWStore(load, e.getAddress(), value)
         );
     }
@@ -62,7 +62,7 @@ class VisitorArm7 extends VisitorBase {
         final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
         return eventSequence(
                 load,
-                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
+                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? newDmbIsh() : null,
                 newRMWStore(load, e.getAddress(), value)
         );
     }
@@ -81,5 +81,9 @@ class VisitorArm7 extends VisitorBase {
             case Tag.C11.MO_ACQUIRE, Tag.C11.MO_RELAXED -> false;
             default -> throw new UnsupportedOperationException("Unsupported memory order");
         };
+    }
+
+    private Event newDmbIsh() {
+        return AArch64.newBarrier("DMB", "ISH");
     }
 }

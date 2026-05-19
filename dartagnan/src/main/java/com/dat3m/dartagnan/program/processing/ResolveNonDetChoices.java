@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.lang.svcomp.NonDetChoice;
+import com.dat3m.dartagnan.program.event.lang.dat3m.NonDetChoice;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 public class ResolveNonDetChoices implements ProgramProcessor {

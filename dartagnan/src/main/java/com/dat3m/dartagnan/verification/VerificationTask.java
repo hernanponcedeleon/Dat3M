@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
@@ -18,7 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
-Represents a verification task.
+    Represents a verification task.
  */
 public class VerificationTask {
 
@@ -27,18 +26,19 @@ public class VerificationTask {
     private final Wmm memoryModel;
     private final ProgressModel.Hierarchy progressModel;
     private final EnumSet<Property> property;
-    private final WitnessGraph witness;
     private final Configuration config;
 
     protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                               EnumSet<Property> property, WitnessGraph witness, Configuration config)
+                               EnumSet<Property> property, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.progressModel = checkNotNull(progressModel);
         this.property = checkNotNull(property);
-        this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
+
+        // TODO: Is it a good idea to inject configs into the program here?
+        program.injectConfig(config);
     }
 
     public static VerificationTaskBuilder builder() {
@@ -49,23 +49,16 @@ public class VerificationTask {
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
-    public WitnessGraph getWitness() { return witness; }
     public EnumSet<Property> getProperty() { return property; }
 
 
     // ==================== Builder =====================
 
     public static class VerificationTaskBuilder {
-        protected WitnessGraph witness = new WitnessGraph();
         protected ConfigurationBuilder config = Configuration.builder();
         protected ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
         protected VerificationTaskBuilder() { }
-
-        public VerificationTaskBuilder withWitness(WitnessGraph witness) {
-            this.witness = checkNotNull(witness, "Witness may not be null.");
-            return this;
-        }
 
         public VerificationTaskBuilder withTarget(Arch target) {
             checkNotNull(target, "Target may not be null.");
@@ -99,8 +92,13 @@ public class VerificationTask {
             return this;
         }
 
+        public VerificationTaskBuilder withOption(String option, String value) {
+            this.config.setOption(option, value);
+            return this;
+        }
+
         public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, progressModel, property, witness, config.build());
+            return new VerificationTask(program, memoryModel, progressModel, property, config.build());
         }
     }
 }

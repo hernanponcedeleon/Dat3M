@@ -154,16 +154,11 @@ public class CAATSolver {
 
         @Override
         public String toString() {
-            switch (this) {
-                case CONSISTENT:
-                    return "Consistent";
-                case INCONSISTENT:
-                    return "Inconsistent";
-                case INCONCLUSIVE:
-                    return "Inconclusive";
-                default:
-                    throw new UnsupportedOperationException("The enum value " + this.name() + "is not known.");
-            }
+            return switch (this) {
+                case CONSISTENT -> "Consistent";
+                case INCONSISTENT -> "Inconsistent";
+                case INCONCLUSIVE -> "Inconclusive";
+            };
         }
     }
 

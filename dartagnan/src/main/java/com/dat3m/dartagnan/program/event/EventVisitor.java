@@ -1,17 +1,14 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.*;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
-import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.*;
+import com.dat3m.dartagnan.program.event.arch.tso.*;
+import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.dat3m.NonDetChoice;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
@@ -45,6 +42,8 @@ public interface EventVisitor<T> {
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
+    // Threading
+    default T visitThreadArgument(ThreadArgument e) { return visitEvent(e); }
     // Annotations
     default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
 
@@ -54,8 +53,8 @@ public interface EventVisitor<T> {
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
     default T visitXchg(Xchg xchg) { return visitMemEvent(xchg); }
     default T visitCas(CAS cas) { return visitMemEvent(cas); }
-    default T visitRMWOp(RMWOp rmwOp) { return visitMemEvent(rmwOp); };
-    default T visitRMWFetchOp(RMWFetchOp rmwOp) { return visitMemEvent(rmwOp); };
+    default T visitRMWOp(RMWOp rmwOp) { return visitMemEvent(rmwOp); }
+    default T visitRMWFetchOp(RMWFetchOp rmwOp) { return visitMemEvent(rmwOp); }
 
     // ------------------ Linux Events ------------------
     default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
@@ -95,6 +94,7 @@ public interface EventVisitor<T> {
     // ------------------ SVCOMP Events ------------------
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
+    default T visitNonDetChoice(NonDetChoice e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
