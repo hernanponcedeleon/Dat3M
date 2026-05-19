@@ -19,6 +19,7 @@ variableDeclarator
     |   type location LBracket constant RBracket (Equals initArray)? #typedArrayDeclarator
     |   location Equals constant #variableDeclaratorLocation
     |   location Equals Amp? location #variableDeclaratorLocationLocation
+    |   Ast Identifier Equals location #variableDeclaratorPointerLocation
     |   type threadId Colon register64 (Equals constant)? #typedRegisterDeclarator
     |   threadId Colon register64 Equals constant #variableDeclaratorRegister
     |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
@@ -376,7 +377,6 @@ expr32
 
 address
     :   register64 (Comma offset)?
-    |   'X' Identifier
     ;
 
 offset
@@ -764,11 +764,13 @@ SXTW :  'SXTW' ; // Zero extends a 32-bit word (signed)
 
 Register64
     :   'X' DigitSequence
+    |   'X' Identifier // symbolic register
     |   'XZR' // zero register
     ;
 
 Register32
     :   'W' DigitSequence
+    |   'W' Identifier // symbolic register
     |   'WZR' // zero register
     ;
 

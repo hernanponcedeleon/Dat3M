@@ -135,11 +135,19 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
+    public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
     public Object visitVariableSymbolicDeclaratorRegisterLocation(VariableSymbolicDeclaratorRegisterLocationContext ctx) {
         // We do not know to which thread a symbolic register belogns to until its usage,
-        // thus we create a Register for each thread
+        // thus we create a 64bits Register (thus the X) for each thread
         for (Integer tid : programBuilder.getThreadIds()) {
-            programBuilder.initRegEqLocPtr(tid, ctx.Identifier().getText(), ctx.location().getText(), i64, ctx.getStart().getLine());
+            final String regName = "X" + ctx.Identifier().getText();
+            final int lineOfCode = ctx.getStart().getLine();
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), i64, lineOfCode);
         }
         return null;
     }
@@ -478,8 +486,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     private Expression parseAddress(AddressContext ctx) {
-        final String id = ctx.register64() != null ? ctx.register64().id : ctx.Identifier().getText();
-        final Register base = programBuilder.getOrErrorRegister(mainThread, id);
+        final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.register64().id);
         if (ctx.offset() == null) {
             return base;
         }
