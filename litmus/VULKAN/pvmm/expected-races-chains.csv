@@ -27,6 +27,11 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3.2-y-problem-chains-chain-vis-a,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
 3.2-y-problem-chains-chain-vis-b,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 ,,,,,,,,
+3.2-z-problem-chains-chain-av-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3.2-z-problem-chains-chain-av-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
+3.2-z-problem-chains-chain-vis-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3.2-z-problem-chains-chain-vis-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
+,,,,,,,,
 3.3-problem-race-both-a,PASS,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL
 3.3-problem-race-both-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3.3-problem-race-chain-a,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
