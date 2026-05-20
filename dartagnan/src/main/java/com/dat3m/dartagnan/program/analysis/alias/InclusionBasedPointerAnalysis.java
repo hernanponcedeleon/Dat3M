@@ -128,12 +128,13 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     public static InclusionBasedPointerAnalysis<?> fromConfig(Program program, Context analysisContext, AliasAnalysis.Config config) {
         final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
-        final var analysis = switch (config.method) {
-            case FIELD_INSENSITIVE -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.VoidTrait(), program, def);
-            case FINITE_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.Offsets(), program, def);
-            case LINEAR_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.SdLinear(), program, def);
-            case LINEAR_MD_FIELDS -> new InclusionBasedPointerAnalysis<>(new ModifierTrait.MdLinear(), program, def);
+        final ModifierTrait<?> trait = switch (config.method) {
+            case FIELD_INSENSITIVE -> new ModifierTrait.VoidTrait();
+            case FINITE_FIELDS -> new ModifierTrait.Offsets();
+            case LINEAR_FIELDS -> new ModifierTrait.SdLinear();
+            case LINEAR_MD_FIELDS -> new ModifierTrait.MdLinear();
         };
+        final var analysis = new InclusionBasedPointerAnalysis<>(trait, program, def);
         analysis.run(program, config);
         if (config.detectMixedSizeAccesses) {
             analysis.detectMixedSizeAccesses();
@@ -699,10 +700,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         } else {
             addIntoCyclesSuccesses++;
         }
-        list.removeIf(o -> {
-            if (!element.source.equals(o.source)) return false;
-            return trait.mustInclude(element.modifier, o.modifier);
-        });
+        list.removeIf(o -> element.source.equals(o.source) && trait.mustInclude(element.modifier, o.modifier));
         list.add(element);
         return true;
     }
