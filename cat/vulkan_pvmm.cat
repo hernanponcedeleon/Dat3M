@@ -121,32 +121,34 @@ let VISWG = (R | SEMVIS) & WG
 let AVSG = (W | SEMAV) & SG
 let VISSG = (R | SEMVIS) & SG
 
+let apo = po? & avvisinc
+let ahb = hb & avvisinc
+
 let avsg = [AVSG]
-let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
-let avqf = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?)); [AVQF]
-let avdv = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?)); [AVDV]
+let avwg = (chains & (avsg; (ssg & ahb))?); [AVWG]
+let avqf = (chains & ((avsg; (ssg & ahb))?; (avwg; (swg & ahb))?)); [AVQF]
+let avdv = (chains & ((avsg; (ssg & ahb))?; (avwg; (swg & ahb))?; (avqf; (sqf & ahb))?)); [AVDV]
 
 let vissg = [VISSG]
-let viswg = [VISWG]; (chains & (((hb & ssg & avvisinc); vissg)?))
-let visqf = [VISQF]; (chains & (((hb & swg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?))
-let visdv = [VISDV]; (chains & (((hb & sqf & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & ssg & avvisinc); vissg)?))
-
-// location order, relates memory accesses to the same location
-let flocord(TAG, ord, av, scope, vis) =
-    [W & TAG]; (ord & avvisinc); av; (hb & scope); ([W & TAG] | (vis; (ord & avvisinc); [R & TAG]))
+let viswg = [VISWG]; (chains & (((ssg & ahb); vissg)?))
+let visqf = [VISQF]; (chains & (((swg & ahb); viswg)?; ((ssg & ahb); vissg)?))
+let visdv = [VISDV]; (chains & (((sqf & ahb); visqf)?; ((swg & ahb); viswg)?; ((ssg & ahb); vissg)?))
 
 let locord = loc & (
     ([R]; ssw+; [R | W]) |
     ([R & NONPRIV]; hb; [(R | W) & NONPRIV]) |
-    flocord(M, hb, [AVDEVICE], hb, [VISDEVICE]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hb; [VISDEVICE]; hb; [R]) |
     vloc & (
         (hb & int) |
-        flocord(NONPRIV, po?, avsg, ssg, vissg) |
-        flocord(NONPRIV, po?, avwg, swg, viswg) |
-        flocord(NONPRIV, po?, avqf, sqf, visqf) |
-        flocord(NONPRIV, po?, avdv, hb, visdv)
-    )
-)
+        ([W & NONPRIV]; apo; avsg; (hb & ssg); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avwg; (hb & swg); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avqf; (hb & sqf); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avdv; hb; [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avsg; (hb & ssg); vissg; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avwg; (hb & swg); viswg; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avqf; (hb & sqf); visqf; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avdv; hb; visdv; apo; [R & NONPRIV])))
 
 // From-read is defined based on scoped modification order
 // instead of coherence. For reads that read-from init, they
