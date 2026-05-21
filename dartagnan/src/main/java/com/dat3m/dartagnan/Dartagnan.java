@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
@@ -98,6 +99,7 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
+                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), Utils.getNameWithoutExtension(progFile), o.generateWitnessForUnknown());
             } catch (Exception e) {
                 summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
             }

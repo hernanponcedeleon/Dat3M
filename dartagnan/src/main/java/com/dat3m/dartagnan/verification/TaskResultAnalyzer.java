@@ -175,7 +175,7 @@ public class TaskResultAnalyzer {
         return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
-    public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename, String details,
+    public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForUnknown) throws IOException {
         if (!solver.hasModel()
                 || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
