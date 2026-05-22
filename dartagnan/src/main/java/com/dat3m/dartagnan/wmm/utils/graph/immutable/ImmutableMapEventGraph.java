@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.utils.graph.immutable;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -145,7 +146,7 @@ public class ImmutableMapEventGraph implements ImmutableEventGraph {
         if (other instanceof ImmutableMapEventGraph iOther) {
             return iOther;
         }
-        if (other instanceof LazyEventGraph || other instanceof MapEventGraph) {
+        if (other instanceof LazyEventGraph || other instanceof MapEventGraph || other instanceof IndexedEventGraph) {
             return new ImmutableMapEventGraph(other.getOutMap());
         }
         throw new IllegalArgumentException("Unexpected type of event graph " + other.getClass().getSimpleName());
