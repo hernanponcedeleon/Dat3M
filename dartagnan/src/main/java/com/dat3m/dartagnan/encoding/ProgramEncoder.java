@@ -90,7 +90,6 @@ public class ProgramEncoder {
 
     public BooleanFormula encodeFullProgram() {
         return bmgr.and(
-                encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeEventSemantics(),
@@ -98,24 +97,6 @@ public class ProgramEncoder {
                 encodeFilter(),
                 encodeDependencies()
         );
-    }
-
-    public BooleanFormula encodeConstants() {
-        List<BooleanFormula> enc = new ArrayList<>();
-        final ExpressionFactory exprs = context.getExpressionFactory();
-        for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            if (context.useIntegers && value.getType() instanceof IntegerType intType) {
-                // This special case is for when we encode BVs with integers.
-                final Expression min = exprs.makeValue(intType.getMinimumValue(value.isSigned()), intType);
-                final Expression max = exprs.makeValue(intType.getMaximumValue(value.isSigned()), intType);
-                final Expression constraints = exprs.makeAnd(
-                        exprs.makeGTE(value, min, value.isSigned()),
-                        exprs.makeLTE(value, max, value.isSigned())
-                );
-                enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
-            }
-        }
-        return bmgr.and(enc);
     }
 
     // ====================================== Control flow ======================================

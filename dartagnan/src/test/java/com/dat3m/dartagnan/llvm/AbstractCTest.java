@@ -49,16 +49,16 @@ public abstract class AbstractCTest {
         return additionalConfig(configBase).build();
     }
 
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "true");
-    }
-
     protected Provider<String> getProgramPathProvider() {
         return () -> getTestResourcePath(name + ".ll");
     }
 
     protected Provider<Integer> getBoundProvider() {
         return () -> 1;
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder;
     }
 
     protected Provider<Solvers> getSolverProvider() {
