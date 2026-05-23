@@ -26,7 +26,6 @@ import com.dat3m.dartagnan.smt.TupleFormula;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -55,10 +54,6 @@ public class ExpressionEncoder {
         this.bmgr = fmgr.getBooleanFormulaManager();
 
         this.roundingMode = context.getTask().getProgram().getFloatRoundingMode();
-    }
-
-    private IntegerFormulaManager integerFormulaManager() {
-        return fmgr.getIntegerFormulaManager();
     }
 
     private BitvectorFormulaManager bitvectorFormulaManager() {
@@ -209,7 +204,7 @@ public class ExpressionEncoder {
             Preconditions.checkArgument(expression.getType() instanceof IntegerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
-            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
+            assert typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
         }
 

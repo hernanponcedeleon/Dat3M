@@ -44,9 +44,7 @@ public class FormulaManagerExt {
     public EncodingUtils getEncodingUtils() { return encUtils; }
 
     public boolean hasSameType(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula && right instanceof NumeralFormula.IntegerFormula) {
-            return true;
-        } else if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
+        if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
             return true;
         } else if (left instanceof BitvectorFormula x && right instanceof BitvectorFormula y) {
             final BitvectorFormulaManager bvmgr = getBitvectorFormulaManager();
@@ -66,9 +64,7 @@ public class FormulaManagerExt {
     public BooleanFormula equal(Formula left, Formula right) {
         Preconditions.checkArgument(hasSameType(left, right));
 
-        if (left instanceof NumeralFormula.IntegerFormula l) {
-            return getIntegerFormulaManager().equal(l, (NumeralFormula.IntegerFormula) right);
-        } else if (left instanceof BitvectorFormula l) {
+        if (left instanceof BitvectorFormula l) {
             return getBitvectorFormulaManager().equal(l, (BitvectorFormula) right);
         } else if (left instanceof BooleanFormula l) {
             return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);

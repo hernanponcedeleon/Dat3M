@@ -30,7 +30,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -763,10 +762,6 @@ public class ProgramEncoder {
                 enc.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
                 enc.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
             }
-        } else if (variable instanceof IntegerFormula ivar) {
-            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-            enc.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
-            enc.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
         }
         return bmgr.and(enc);
     }
