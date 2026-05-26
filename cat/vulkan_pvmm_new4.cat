@@ -190,7 +190,7 @@ let avwghb = obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | (avwg3;
 let avqfhb = obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3)
 let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3; ithb3)
 
-let locordd = loc & (
+let locordb = loc & (
     (IW * (M \ IW)) |
     ([R]; ssw+; [R | W]) |
     ([W]; schb; [AVDEVICE]; hbsc; [W]) |
@@ -202,11 +202,7 @@ let locordd = loc & (
     )
 )
 
-let locorddrr = ((R * R) & locordd)+
-let locorddww = ((W * W) & locordd)+
-let locorddwr = locorddww?; ((W * R) & locordd)
-let locorddrw = locorddrr?; ((R * W) & locordd); locorddww?
-let locord = locorddww | locorddrw | locorddwr
+let locord = ((locordb & (W * W))*; locordb) | (locordb+ & (R * W))
 
 (***********************)
 (* Memory Model Axioms *)

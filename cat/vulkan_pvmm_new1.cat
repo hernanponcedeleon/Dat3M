@@ -198,20 +198,15 @@ let locordh = loc & (
 
 let locordp = vloc & po
 
-let locordd = loc & (NONPRIV * NONPRIV) & (
+let locordb = loc & (NONPRIV * NONPRIV) & (
     ([R]; (schbsc | schbsca | asfr); [R | W]) |
     vloc & (po |
         ((W * W) & (asmo | (ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb)) |
         ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
     ))
 
-let locorddrr = ((R * R) & locordd)+
-let locorddww = ((W * W) & locordd)+
-let locorddwr = locorddww?; ((W * R) & locordd)
-let locorddrw = locorddrr?; ((R * W) & locordd); locorddww?
-let locorddd = locorddww | locorddrw | locorddwr
-
-let locord = locordh | (locordh?; locordp) | (locordh?; locorddd)
+let locordd = ((locordb & (W * W))*; locordb) | (locordb+ & (R * W))
+let locord = locordh | (locordh?; locordp) | (locordh?; locordd)
 
 (***********************)
 (* Memory Model Axioms *)
