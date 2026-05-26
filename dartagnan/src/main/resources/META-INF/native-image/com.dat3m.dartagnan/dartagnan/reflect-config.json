@@ -68,7 +68,7 @@
       {
         "name":"com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config",
         "allDeclaredFields":true,
-        "allDeclaredMethods":true
+        "queryAllDeclaredMethods":true
       },
       {
         "name":"com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis$Config",

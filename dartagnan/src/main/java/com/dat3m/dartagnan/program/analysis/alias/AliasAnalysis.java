@@ -74,21 +74,9 @@ public interface AliasAnalysis {
     @Options
     final class Config {
 
-        Alias method = Alias.getDefault();
-
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
-        private void setMethod(String methodString) {
-            if (methodString == null) {
-                return;
-            }
-            methodString = methodString.toUpperCase();
-            method = switch (methodString) {
-                case "FULL" -> Alias.LINEAR_MD_FIELDS;
-                case "FIELD_SENSITIVE" -> Alias.LINEAR_FIELDS;
-                default -> Alias.valueOf(methodString);
-            };
-        }
+        Alias method = Alias.getDefault();
 
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +
