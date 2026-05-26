@@ -98,37 +98,37 @@ let ithb23 = ithb(SC23, SEMSC23)
 let hb = po | ithb0 | ithb1 | ithb2 | ithb3 |
          ithb01 | ithb02 | ithb03 | ithb12 | ithb13 | ithb23
 
-let avinc0 = (po | (chains & ithb0)); [SEMAV & SEMSC0]
-let avinc1 = (po | (chains & ithb1)); [SEMAV & SEMSC1]
-let avinc2 = (po | (chains & ithb2)); [SEMAV & SEMSC2]
-let avinc3 = (po | (chains & ithb3)); [SEMAV & SEMSC3]
+let avinc0 = (chains & ithb0); [SEMAV & SEMSC0]
+let avinc1 = (chains & ithb1); [SEMAV & SEMSC1]
+let avinc2 = (chains & ithb2); [SEMAV & SEMSC2]
+let avinc3 = (chains & ithb3); [SEMAV & SEMSC3]
 
-let visinc0 = [SEMVIS & SEMSC0]; (po | (chains & ithb0))
-let visinc1 = [SEMVIS & SEMSC1]; (po | (chains & ithb1))
-let visinc2 = [SEMVIS & SEMSC2]; (po | (chains & ithb2))
-let visinc3 = [SEMVIS & SEMSC3]; (po | (chains & ithb3))
+let visinc0 = [SEMVIS & SEMSC0]; (chains & ithb0)
+let visinc1 = [SEMVIS & SEMSC1]; (chains & ithb1)
+let visinc2 = [SEMVIS & SEMSC2]; (chains & ithb2)
+let visinc3 = [SEMVIS & SEMSC3]; (chains & ithb3)
 
-let avsg0 = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po & avinc0)?; [SG]
+let avsg0 = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC0 & SEMAV])?; [SG]
 let avwg0 = avsg0; (ssg & avinc0)?; [WG]
 let avqf0 = avwg0; (swg & avinc0)?; [QF]
 let avdv0 = avqf0; (sqf & avinc0)?; [DV]
 
-let avsg1 = [W & NONPRIV & SC1]; (po & vloc)?; [W & NONPRIV]; (po & avinc1)?; [SG]
+let avsg1 = [W & NONPRIV & SC1]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC1 & SEMAV])?; [SG]
 let avwg1 = avsg1; (ssg & avinc1)?; [WG]
 let avqf1 = avwg1; (swg & avinc1)?; [QF]
 let avdv1 = avqf1; (sqf & avinc1)?; [DV]
 
-let avsg2 = [W & NONPRIV & SC2]; (po & vloc)?; [W & NONPRIV]; (po & avinc2)?; [SG]
+let avsg2 = [W & NONPRIV & SC2]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC2 & SEMAV])?; [SG]
 let avwg2 = avsg2; (ssg & avinc2)?; [WG]
 let avqf2 = avwg2; (swg & avinc2)?; [QF]
 let avdv2 = avqf2; (sqf & avinc2)?; [DV]
 
-let avsg3 = [W & NONPRIV & SC3]; (po & vloc)?; [W & NONPRIV]; (po & avinc3)?; [SG]
+let avsg3 = [W & NONPRIV & SC3]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC3 & SEMAV])?; [SG]
 let avwg3 = avsg3; (ssg & avinc3)?; [WG]
 let avqf3 = avwg3; (swg & avinc3)?; [QF]
 let avdv3 = avqf3; (sqf & avinc3)?; [DV]
 
-let vissg0b = [SG]; (po & visinc0)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC0]
+let vissg0b = [SG]; ([SEMSC0 & SEMVIS]; po)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC0]
 let vissg0 = vissg0b; (vloc & ssg & (ithb0; vissg0b))?
 let viswg0b = [WG]; (ssg & visinc0)?; vissg0
 let viswg0 = viswg0b; (vloc & swg & (ithb0; viswg0b))?
@@ -137,7 +137,7 @@ let visqf0 = visqf0b; (vloc & sqf & (ithb0; visqf0b))?
 let visdv0b = [DV]; (sqf & visinc0)?; visqf0
 let visdv0 = visdv0b; (vloc & (ithb0; visdv0b))?
 
-let vissg1b = [SG]; (po & visinc1)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC1]
+let vissg1b = [SG]; ([SEMSC1 & SEMVIS]; po)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC1]
 let vissg1 = vissg1b; (vloc & ssg & (ithb1; vissg1b))?
 let viswg1b = [WG]; (ssg & visinc1)?; vissg1
 let viswg1 = viswg1b; (vloc & swg & (ithb1; viswg1b))?
@@ -146,7 +146,7 @@ let visqf1 = visqf1b; (vloc & sqf & (ithb1; visqf1b))?
 let visdv1b = [DV]; (sqf & visinc1)?; visqf1
 let visdv1 = visdv1b; (vloc & (ithb1; visdv1b))?
 
-let vissg2b = [SG]; (po & visinc2)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC2]
+let vissg2b = [SG]; ([SEMSC2 & SEMVIS]; po)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC2]
 let vissg2 = vissg2b; (vloc & ssg & (ithb2; vissg2b))?
 let viswg2b = [WG]; (ssg & visinc2)?; vissg2
 let viswg2 = viswg2b; (vloc & swg & (ithb2; viswg2b))?
@@ -155,7 +155,7 @@ let visqf2 = visqf2b; (vloc & sqf & (ithb2; visqf2b))?
 let visdv2b = [DV]; (sqf & visinc2)?; visqf2
 let visdv2 = visdv2b; (vloc & (ithb2; visdv2b))?
 
-let vissg3b = [SG]; (po & visinc3)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC3]
+let vissg3b = [SG]; ([SEMSC3 & SEMVIS]; po)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC3]
 let vissg3 = vissg3b; (vloc & ssg & (ithb3; vissg3b))?
 let viswg3b = [WG]; (ssg & visinc3)?; vissg3
 let viswg3 = viswg3b; (vloc & swg & (ithb3; viswg3b))?
