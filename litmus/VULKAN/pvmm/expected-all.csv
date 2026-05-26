@@ -49,6 +49,12 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3.4-y-problem-race-r-r-w,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL
 3.4-y-problem-race-r-w-rw-a,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL
 3.4-y-problem-race-r-w-rw-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3.4-y-problem-race-r-w-rw-c,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3.4-y-problem-race-r-w-rw-d,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3.4-y-problem-race-r-w-rw-e,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,FAIL
+3.4-y-problem-race-r-w-rw-f,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3.4-y-problem-race-r-w-rw-g,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3.4-y-problem-race-r-w-rw-h,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 ,,,,,,,,
 4.1.2-fix-semsc-nonpriv,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
 4.1.2-fix-semsc-nonpriv-rw-priv,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS
