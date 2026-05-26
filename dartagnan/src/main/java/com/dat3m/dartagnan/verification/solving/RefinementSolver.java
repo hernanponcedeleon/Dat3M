@@ -604,8 +604,8 @@ public class RefinementSolver extends ModelChecker {
     private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
 
     private PolaritySeparator computePolaritySeparator(Wmm wmm) {
-        final Set<Constraint> positives = new HashSet<>();
-        final Set<Constraint> negatives = new HashSet<>();
+        final Set<Constraint> positives = new LinkedHashSet<>();
+        final Set<Constraint> negatives = new LinkedHashSet<>();
         final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
             private boolean polarity = true;
 
@@ -707,10 +707,10 @@ public class RefinementSolver extends ModelChecker {
      */
     private void instrumentPolaritySeparation(Wmm wmm) {
         final PolaritySeparator separator = computePolaritySeparator(wmm);
-        final Set<Difference> negDiff = separator.negatives().stream()
+        final List<Difference> negDiff = separator.negatives().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
                 .filter(diff -> !separator.negatives().contains(diff.getSubtrahend().getDefinition()))
-                .collect(Collectors.toSet());
+                .distinct().toList();
 
         final Map<Relation, Relation> replacements = new HashMap<>();
         int counter = 0;
