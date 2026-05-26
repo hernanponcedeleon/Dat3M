@@ -294,7 +294,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     }
 
     private IndexedSet<Event> outSetAt(int index) {
-        return (IndexedSet<Event>) map[index];
+        return index < 0 || index >= map.length ? null : (IndexedSet<Event>) map[index];
     }
 
     private IndexedSet<Event> ensureOutSetAt(int index) {

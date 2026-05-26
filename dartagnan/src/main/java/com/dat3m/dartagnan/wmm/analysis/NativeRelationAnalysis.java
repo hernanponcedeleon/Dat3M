@@ -31,6 +31,7 @@ import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +62,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final ReachingDefinitionsAnalysis definitions;
     protected final AliasAnalysis alias;
     protected final WmmAnalysis wmmAnalysis;
+    protected final VisibilityAnalysis visibility;
     protected final Map<Relation, MutableKnowledge> knowledgeMap = new HashMap<>();
     protected final IndexedSet.Domain<Event> dom;
     protected final Delta EMPTY;
+    protected final Map<Thread, Set<Event>> threadEvents = new HashMap<>();
     protected final EventGraph execMutuallyExclusive;
     protected final EventGraph execImplies;
     protected final MutableEventGraph mutex;
@@ -75,9 +78,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         definitions = context.requires(ReachingDefinitionsAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
+        visibility = VisibilityAnalysis.newInstance(task.getMemoryModel());
         dom = new IndexedSet.Domain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE));
-        final MutableEventGraph execMutex = new IndexedEventGraph(dom);
-        final MutableEventGraph impliedInverse = new IndexedEventGraph(dom);
+        EMPTY = new Delta(newGraph(), newGraph());
+        for (Thread thread : task.getProgram().getThreads()) {
+            threadEvents.put(thread, newSet(thread.getEventsWithAllTags(VISIBLE)));
+        }
+        final MutableEventGraph execMutex = newGraph();
+        final MutableEventGraph impliedInverse = newGraph();
         for (int i = 0; i < dom.size(); i++) {
             final Event e2 = dom.element(i);
             impliedInverse.add(e2, e2);
@@ -97,8 +105,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
         execMutuallyExclusive = execMutex;
         execImplies = impliedInverse;
-        EMPTY = new Delta(new IndexedEventGraph(dom), new IndexedEventGraph(dom));
-        mutex = new IndexedEventGraph(dom);
+        mutex = newGraph();
     }
 
     /**
@@ -135,8 +142,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         Propagator p = new Propagator();
         Initializer init = getInitializer();
         for (Relation r : relations) {
-            MutableEventGraph may = new IndexedEventGraph(dom);
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            final boolean mayInvisible = visibility.mayHaveInvisibleEvents(r);
+            MutableEventGraph may = mayInvisible ? new MapEventGraph() : newGraph();
+            MutableEventGraph must = mayInvisible ? new MapEventGraph() : newGraph();
             if (r.getDependencies().isEmpty()) {
                 final Knowledge k = r.getDefinition().accept(init);
                 may.addAll(k.getMaySet());
@@ -224,7 +232,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
             // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
             //  We should reconsider our algorithm.
-            Delta toAdd = Delta.combine(qLocal.remove(relation), dom);
+            Delta toAdd = combine(qLocal.remove(relation));
             if (relation.getDefinition() instanceof Difference difference) {
                 // Our propagated update may be "too large" so we reduce it.
                 MutableKnowledge k = knowledgeMap.get(difference.getSubtrahend());
@@ -232,7 +240,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 toAdd.must.removeAll(k.getMaySet());
             }
 
-            Delta delta = joinSet(knowledgeMap.get(relation), List.of(toAdd), dom);
+            Delta delta = joinSet(knowledgeMap.get(relation), toAdd);
             if (delta.may.isEmpty() && delta.must.isEmpty()) {
                 continue;
             }
@@ -249,6 +257,19 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .add(d);
             }
         }
+    }
+
+    private Delta combine(List<Delta> deltas) {
+        if (deltas.size() == 1) {
+            return deltas.get(0);
+        }
+        final var mayDelta = new EventGraph[deltas.size()];
+        final var mustDelta = new EventGraph[deltas.size()];
+        for (int i = 0; i < deltas.size(); i++) {
+            mayDelta[i] = deltas.get(i).may;
+            mustDelta[i] = deltas.get(i).must;
+        }
+        return new Delta(MutableEventGraph.union(mayDelta), MutableEventGraph.union(mustDelta));
     }
 
     @Override
@@ -269,31 +290,28 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
             }
         }
-        ExtendedPropagator propagator = new ExtendedPropagator();
         // repeat until convergence
         while (!q.isEmpty()) {
             Relation relation = q.keySet().iterator().next();
             logger.trace("Extended knowledge update for '{}'", relation);
             MutableKnowledge knowledge = knowledgeMap.get(relation);
-            ExtendedDelta delta = join(knowledge, q.remove(relation), dom);
+            ExtendedDelta delta = join(knowledge, q.remove(relation));
             if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
                 continue;
             }
             mutex.addAll(MutableEventGraph.difference(delta.enabled, knowledge.getMaySet()));
             mutex.addAll(MutableEventGraph.intersection(delta.disabled, knowledge.getMustSet()));
-            propagator.origin = relation;
-            EventGraph disabled = propagator.disabled = delta.disabled;
-            EventGraph enabled = propagator.enabled = delta.enabled;
             for (Constraint c : dependents.getOrDefault(relation, List.of())) {
                 logger.trace("Extended propagation from '{}' to '{}'", relation, c);
                 for (Map.Entry<Relation, ExtendedDelta> e :
-                        c.accept(new IncrementalKnowledgeCloser(relation, disabled, enabled)).entrySet()) {
+                        c.accept(new IncrementalKnowledgeCloser(relation, delta.enabled)).entrySet()) {
                     q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
                 }
                 if (!(c instanceof Definition)) {
                     continue;
                 }
-                for (Map.Entry<Relation, ExtendedDelta> e : c.accept(propagator).entrySet()) {
+                for (Map.Entry<Relation, ExtendedDelta> e :
+                        c.accept(new ExtendedPropagator(relation, delta.disabled, delta.enabled)).entrySet()) {
                     q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
                 }
             }
@@ -305,37 +323,62 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new Initializer();
     }
 
-    private static Delta joinSet(MutableKnowledge k, List<Delta> l, IndexedSet.Domain<Event> dom) {
-        verify(!l.isEmpty(), "empty update");
+    private Delta joinSet(MutableKnowledge k, Delta d) {
         MutableEventGraph may = k.getMaySet();
         MutableEventGraph must = k.getMustSet();
         // NOTE optimization due to initial deltas carrying references to knowledge sets
-        MutableEventGraph maySet = may.isEmpty() || l.get(0).may == may ? may : new IndexedEventGraph(dom);
-        MutableEventGraph mustSet = must.isEmpty() || l.get(0).must == must ? must : new IndexedEventGraph(dom);
-        for (Delta d : l) {
-            d.may.apply((e1, e2) -> {
-                if (may.add(e1, e2)) {
-                    maySet.add(e1, e2);
-                }
-            });
-            d.must.apply((e1, e2) -> {
-                if (must.add(e1, e2)) {
-                    mustSet.add(e1, e2);
-                }
-            });
-        }
+        MutableEventGraph maySet = may.isEmpty() || d.may == may ? may : newGraph();
+        MutableEventGraph mustSet = must.isEmpty() || d.must == must ? must : newGraph();
+        d.may.apply((e1, e2) -> {
+            if (may.add(e1, e2)) {
+                maySet.add(e1, e2);
+            }
+        });
+        d.must.apply((e1, e2) -> {
+            if (must.add(e1, e2)) {
+                mustSet.add(e1, e2);
+            }
+        });
         return new Delta(maySet, mustSet);
     }
 
-    private static ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l, IndexedSet.Domain<Event> dom) {
+    private ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l) {
         verify(!l.isEmpty(), "empty update in extended analysis");
         MutableEventGraph may = k.getMaySet();
         MutableEventGraph must = k.getMustSet();
-        MutableEventGraph disableSet = new IndexedEventGraph(dom);
-        MutableEventGraph enableSet = new IndexedEventGraph(dom);
-        l.stream().map(d -> d.disabled).map(g -> new IndexedEventGraph(dom, g)).forEach(e -> e.filter(may::remove).apply(disableSet::add));
-        l.stream().map(d -> d.enabled).map(g -> new IndexedEventGraph(dom, g)).forEach(e -> e.filter(must::add).apply(enableSet::add));
+        MutableEventGraph disableSet = newGraph();
+        MutableEventGraph enableSet = newGraph();
+        l.stream().map(d -> d.disabled).map(MutableEventGraph::from).forEach(e -> e.filter(may::remove).apply(disableSet::add));
+        l.stream().map(d -> d.enabled).map(MutableEventGraph::from).forEach(e -> e.filter(must::add).apply(enableSet::add));
         return new ExtendedDelta(disableSet, enableSet);
+    }
+
+    private Set<Event> newSet() {
+        return new IndexedSet<>(dom);
+    }
+
+    private Set<Event> newSet(Collection<Event> copy) {
+        if (copy instanceof IndexedSet<Event> c) {
+            final var set = new IndexedSet<>(c.domain());
+            set.addAll(c);
+            return set;
+        }
+        return new HashSet<>(copy);
+    }
+
+    private MutableEventGraph newGraph() {
+        return new IndexedEventGraph(dom);
+    }
+
+    private MutableEventGraph newGraph(EventGraph other) {
+        return MutableEventGraph.from(other);
+    }
+
+    private MutableEventGraph newGraph(Class<? extends EventGraph> cls) {
+        if (cls.equals(MapEventGraph.class)) {
+            return new MapEventGraph();
+        }
+        return new IndexedEventGraph(dom);
     }
 
     private void retainImplyWith(Set<Event> set, Event implied, Event with) {
@@ -347,7 +390,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private final class InitialKnowledgeCloser implements Constraint.Visitor<Map<Relation, ExtendedDelta>> {
 
-        public InitialKnowledgeCloser() {}
+        private InitialKnowledgeCloser() {}
 
         @Override
         public Map<Relation, ExtendedDelta> visitConstraint(Constraint constraint) {
@@ -360,7 +403,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 return Map.of();
             }
             Relation rel = axiom.getRelation();
-            return Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), new IndexedEventGraph(dom)));
+            return Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), newGraph()));
         }
 
         @Override
@@ -371,7 +414,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             Relation rel = axiom.getRelation();
             MutableKnowledge k = knowledgeMap.get(rel);
             MutableEventGraph d = k.getMaySet().filter(Tuple::isLoop);
-            return Map.of(rel, new ExtendedDelta(d, new IndexedEventGraph(dom)));
+            return Map.of(rel, new ExtendedDelta(d, newGraph()));
         }
 
         @Override
@@ -384,16 +427,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableKnowledge knowledge = knowledgeMap.get(rel);
             EventGraph may = knowledge.getMaySet();
             EventGraph must = knowledge.getMustSet();
-            MutableEventGraph newDisabled = new IndexedEventGraph(dom);
+            MutableEventGraph newDisabled = newGraph();
             may.filter((e1, e2) -> Tuple.isLoop(e1, e2) || must.contains(e2, e1)).apply(newDisabled::add);
             Map<Event, Set<Event>> mustOut = new HashMap<>();
-            must.filter((e1, e2) -> !Tuple.isLoop(e1, e2)).apply((e1, e2) -> mustOut.computeIfAbsent(e1, x -> new IndexedSet<>(dom)).add(e2));
+            must.filter((e1, e2) -> !Tuple.isLoop(e1, e2)).apply((e1, e2) -> mustOut.computeIfAbsent(e1, x -> newSet()).add(e2));
             EventGraph current = knowledge.getMustSet();
             do {
-                MutableEventGraph next = new IndexedEventGraph(dom);
+                MutableEventGraph next = newGraph();
                 current.filter(Tuple::isLoop).apply((x, y) -> {
-                    final Set<Event> range = new IndexedSet<>(dom);
-                    range.addAll(mustOut.getOrDefault(y, Set.of()));
+                    final Set<Event> range = newSet(mustOut.getOrDefault(y, Set.of()));
                     retainImplyWith(range, y, x);
                     range.removeAll(execMutuallyExclusive.getRange(x));
                     range.removeIf(z -> !newDisabled.add(z, x));
@@ -403,7 +445,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             } while (!current.isEmpty());
             newDisabled.retainAll(knowledge.getMaySet());
             logger.debug("disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
-            return Map.of(rel, new ExtendedDelta(newDisabled, new IndexedEventGraph(dom)));
+            return Map.of(rel, new ExtendedDelta(newDisabled, newGraph()));
         }
 
         @Override
@@ -421,15 +463,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private final class IncrementalKnowledgeCloser implements Constraint.Visitor<Map<Relation, ExtendedDelta>> {
         private final Relation changed;
-        private final EventGraph disabled;
         private final EventGraph enabled;
 
-        public IncrementalKnowledgeCloser(
-                Relation changed,
-                EventGraph disabled,
-                EventGraph enabled) {
+        private IncrementalKnowledgeCloser(Relation changed, EventGraph enabled) {
             this.changed = changed;
-            this.disabled = disabled;
             this.enabled = enabled;
         }
 
@@ -446,27 +483,25 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             long t0 = System.currentTimeMillis();
             MutableKnowledge knowledge = knowledgeMap.get(rel);
             EventGraph may = knowledge.getMaySet();
-            MutableEventGraph newDisabled = new IndexedEventGraph(dom);
+            MutableEventGraph newDisabled = newGraph();
             enabled.filter((e1, e2) -> may.contains(e2, e1)).apply((e1, e2) -> newDisabled.add(e2, e1));
             Map<Event, Set<Event>> mustIn = new HashMap<>();
             Map<Event, Set<Event>> mustOut = new HashMap<>();
             knowledge.getMustSet().filter((e1, e2) -> !Tuple.isLoop(e1, e2)).apply((e1, e2) -> {
-                mustIn.computeIfAbsent(e2, x -> new IndexedSet<>(dom)).add(e1);
-                mustOut.computeIfAbsent(e1, x -> new IndexedSet<>(dom)).add(e2);
+                mustIn.computeIfAbsent(e2, x -> newSet()).add(e1);
+                mustOut.computeIfAbsent(e1, x -> newSet()).add(e2);
             });
 
             EventGraph current = enabled;
             do {
-                MutableEventGraph next = new IndexedEventGraph(dom);
+                MutableEventGraph next = newGraph();
                 current.filter((x, y) -> !Tuple.isLoop(x, y)).apply((x, y) -> {
-                    final Set<Event> nextY = new IndexedSet<>(dom);
-                    nextY.addAll(mustIn.getOrDefault(x, Set.of()));
+                    final Set<Event> nextY = newSet(mustIn.getOrDefault(x, Set.of()));
                     retainImplyWith(nextY, x, y);
                     nextY.removeAll(execMutuallyExclusive.getRange(y));
                     nextY.removeIf(w -> !newDisabled.add(y, w));
                     nextY.forEach(w -> next.add(w, y));
-                    final Set<Event> nextX = new IndexedSet<>(dom);
-                    nextX.addAll(mustOut.getOrDefault(y, Set.of()));
+                    final Set<Event> nextX = newSet(mustOut.getOrDefault(y, Set.of()));
                     retainImplyWith(nextX, y, x);
                     nextX.removeAll(execMutuallyExclusive.getRange(x));
                     nextX.removeIf(z -> !newDisabled.add(z, x));
@@ -476,7 +511,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             } while (!current.isEmpty());
             newDisabled.retainAll(knowledge.getMaySet());
             logger.debug("Disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
-            return Map.of(rel, new ExtendedDelta(newDisabled, new IndexedEventGraph(dom)));
+            return Map.of(rel, new ExtendedDelta(newDisabled, newGraph()));
         }
     }
 
@@ -485,15 +520,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitDefinition(Definition def) {
-            return new MutableKnowledge(new IndexedEventGraph(dom), new IndexedEventGraph(dom));
+            if (visibility.mayHaveInvisibleEvents(def.getDefinedRelation())) {
+                return new MutableKnowledge(new MapEventGraph(), new MapEventGraph());
+            }
+            return new MutableKnowledge(newGraph(), newGraph());
         }
 
         @Override
         public MutableKnowledge visitFree(Free def) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
-            MutableEventGraph may = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
+            MutableEventGraph may = newGraph();
 
-            final IndexedSet<Event> full = new IndexedSet<>(dom);
+            final Set<Event> full = newSet();
             dom.iterator().forEachRemaining(full::add);
             for (Event e1 : OneTimeIterable.create(dom.iterator())) {
                 if (def.getDefinedRelation().isSet()) {
@@ -508,14 +546,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitExternal(External ext) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             List<Thread> threads = program.getThreads();
             for (int i = 0; i < threads.size(); i++) {
                 Thread t1 = threads.get(i);
-                List<Event> visible1 = visibleEvents(t1);
+                Set<Event> visible1 = threadEvents.get(t1);
                 for (int j = i + 1; j < threads.size(); j++) {
                     Thread t2 = threads.get(j);
-                    for (Event e2 : visibleEvents(t2)) {
+                    for (Event e2 : threadEvents.get(t2)) {
                         for (Event e1 : visible1) {
                             // No test for `execMutuallyExclusive`, since that currently does not span across threads
                             must.add(e1, e2);
@@ -524,14 +562,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitInternal(Internal internal) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             for (Thread t : program.getThreads()) {
-                List<Event> events = visibleEvents(t);
+                Set<Event> events = threadEvents.get(t);
                 for (Event e1 : events) {
                     final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
                     final Set<Event> rangeEvents = events.stream()
@@ -540,29 +578,28 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     must.addRange(e1, rangeEvents);
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitTagSet(TagSet tagSet) {
-            final MutableEventGraph must = new IndexedEventGraph(dom);
+            final MutableEventGraph must = newGraph();
             program.getThreadEventsWithAllTags(tagSet.getTag()).forEach(e -> must.add(e, e));
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitProgramOrder(ProgramOrder po) {
             final Filter type = po.getFilter();
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             for (Thread t : program.getThreads()) {
                 final List<Event> events = t.getEvents().stream().filter(type::apply).toList();
-                final IndexedSet<Event> remainingEvents = new IndexedSet<>(dom);
-                remainingEvents.addAll(events);
+                final Set<Event> remainingEvents = newSet(events);
                 for (final Event e1 : events) {
-                    final Set<Event> range = new IndexedSet<>(remainingEvents);
+                    remainingEvents.remove(e1);
+                    final Set<Event> range = newSet(remainingEvents);
                     range.removeAll(execMutuallyExclusive.getRange(e1));
                     must.addRange(e1, range);
-                    remainingEvents.remove(e1);
                 }
                 // Events of the same instruction are not program-ordered
                 for (InstructionBoundary end : t.getEvents(InstructionBoundary.class)) {
@@ -575,15 +612,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitControlDependency(DirectControlDependency ctrlDep) {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = new MapEventGraph();
             for (Thread thread : program.getThreads()) {
+                final Set<Event> events = threadEvents.get(thread);
                 for (CondJump jump : thread.getEvents(CondJump.class)) {
                     if (jump.isGoto() || jump.isDead()) {
                         continue; // There is no point in ctrl-edges from unconditional jumps.
@@ -599,13 +637,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         ctrlDependentEvents = jump.getSuccessor().getSuccessors();
                     }
 
-                    final Set<Event> range = new IndexedSet<>(dom);
-                    range.addAll(ctrlDependentEvents);
-                    range.removeAll(execMutuallyExclusive.getRange(jump));
-                    must.addRange(jump, range);
+                    ctrlDependentEvents.stream()
+                            .filter(e -> !exec.areMutuallyExclusive(jump, e))
+                            .forEach(e -> must.add(jump, e));
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
@@ -621,19 +658,19 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitCASDependency(CASDependency casDep) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             for (Event e : program.getThreadEvents()) {
                 if (e.hasTag(IMM.CASDEPORIGIN)) {
                     // The target of a CASDep is always the successor of the origin
                     must.add(e, e.getSuccessor());
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitSameInstruction(SameInstruction si) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
                 List<Event> events = end.getInstructionEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
                 for (int i = 0; i < events.size(); i++) {
@@ -647,13 +684,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Event e : program.getThreadEventsWithAllTags(VISIBLE)) {
                 must.add(e, e);
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitLinuxCriticalSections(LinuxCriticalSections rscs) {
-            MutableEventGraph may = new IndexedEventGraph(dom);
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph may = newGraph();
+            MutableEventGraph must = newGraph();
             //assume locks and unlocks are distinct
             Map<Event, Set<Event>> mayMap = new HashMap<>();
             Map<Event, Set<Event>> mustMap = new HashMap<>();
@@ -694,7 +731,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public MutableKnowledge visitAMOPairs(AMOPairs amo) {
             // ----- Compute must set -----
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             // RMWLoad -> RMWStore
             for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
                 must.add(store.getLoadEvent(), store);
@@ -712,13 +749,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitLXSXPairs(LXSXPairs lxsx) {
-            final MutableEventGraph must = new IndexedEventGraph(dom);
-            final MutableEventGraph may = new IndexedEventGraph(dom);
+            final MutableEventGraph must = newGraph();
+            final MutableEventGraph may = newGraph();
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
                 // Currently likely empty, because mixed-size accesses are the only cause
@@ -808,7 +845,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             List<Store> allWrites = program.getThreadEvents(Store.class);
             List<Store> nonInitWrites = program.getThreadEvents(Store.class);
             nonInitWrites.removeIf(Init.class::isInstance);
-            MutableEventGraph may = new IndexedEventGraph(dom);
+            MutableEventGraph may = newGraph();
             for (Store w1 : program.getThreadEvents(Store.class)) {
                 // It is possible to have multiple initial writes
                 // to the same memory location via different virtual memory aliases
@@ -820,7 +857,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             may.apply((e1, e2) -> {
                 MemoryCoreEvent w1 = (MemoryCoreEvent) e1;
                 MemoryCoreEvent w2 = (MemoryCoreEvent) e2;
@@ -847,8 +884,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public MutableKnowledge visitReadFrom(ReadFrom rf) {
             logger.trace("Computing knowledge about read-from");
             final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
-            MutableEventGraph may = new IndexedEventGraph(dom);
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph may = newGraph();
+            MutableEventGraph must = newGraph();
             List<Load> loadEvents = program.getThreadEvents(Load.class);
             for (Store e1 : program.getThreadEvents(Store.class)) {
                 final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
@@ -876,7 +913,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 // Remove future reads
                 may.removeIf(Tuple::isBackward);
                 // Remove past reads
-                MutableEventGraph deletedEdges = new IndexedEventGraph(dom);
+                MutableEventGraph deletedEdges = newGraph();
                 Map<Event, List<Event>> writesByRead = new HashMap<>();
                 may.apply((e1, e2) -> writesByRead.computeIfAbsent(e2, x -> new ArrayList<>()).add(e1));
                 for (Load read : program.getThreadEvents(Load.class)) {
@@ -953,7 +990,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSameLocation(SameLocation loc) {
-            MutableEventGraph may = new IndexedEventGraph(dom);
+            MutableEventGraph may = newGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
             for (MemoryCoreEvent e1 : events) {
                 final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
@@ -963,7 +1000,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             may.apply((e1, e2) -> {
                 if (alias.mustAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)) {
                     must.add(e1, e2);
@@ -973,8 +1010,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private MutableKnowledge computeInternalDependencies(Set<UsageType> usageTypes) {
-            MutableEventGraph may = new IndexedEventGraph(dom);
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph must = new MapEventGraph();
 
             for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 final ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(regReader);
@@ -1009,7 +1046,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public MutableKnowledge visitSameScope(SameScope sc) {
             final String specificScope = sc.getSpecificScope();
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             List<Event> events = program.getThreadEvents().stream()
                     .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
                     .toList();
@@ -1035,12 +1072,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
 
         @Override
         public MutableKnowledge visitSyncBarrier(SyncBar syncBar) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class).stream()
                     .filter(e -> !(e instanceof NamedBarrier))
                     .toList();
@@ -1057,7 +1094,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .forEach(e2 -> must.add(e1, e2));
             }
 
-            MutableEventGraph may = new IndexedEventGraph(dom, must);
+            MutableEventGraph may = MutableEventGraph.from(must);
             List<NamedBarrier> namedBarriers = program.getThreadEvents(NamedBarrier.class);
             for (NamedBarrier e1 : namedBarriers) {
                 String id = e1.getInstanceId();
@@ -1085,8 +1122,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSyncFence(SyncFence syncFence) {
-            MutableEventGraph may = new IndexedEventGraph(dom);
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph may = newGraph();
+            MutableEventGraph must = newGraph();
             List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, Tag.PTX.SC);
             for (Event e1 : fenceEventsSC) {
                 final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
@@ -1101,8 +1138,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
-            MutableEventGraph may = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
+            MutableEventGraph may = newGraph();
             Map<MemoryCoreEvent, VirtualMemoryObject> map = computeVirtualAddressMap();
             map.forEach((e1, a1) -> {
                 final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
@@ -1141,7 +1178,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSyncWith(SyncWith syncWith) {
-            MutableEventGraph must = new IndexedEventGraph(dom);
+            MutableEventGraph must = newGraph();
             List<Event> events = new ArrayList<>(program.getThreadEventsWithAllTags(VISIBLE));
             events.removeIf(Init.class::isInstance);
             for (Event e1 : events) {
@@ -1157,7 +1194,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            return new MutableKnowledge(must, new IndexedEventGraph(dom, must));
+            return new MutableKnowledge(must, MutableEventGraph.from(must));
         }
     }
 
@@ -1165,6 +1202,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         Relation origin;
         MutableEventGraph disabled;
         MutableEventGraph enabled;
+
+        private ExtendedPropagator(Relation r, MutableEventGraph d, MutableEventGraph e) {
+            origin = r;
+            disabled = d;
+            enabled = e;
+        }
 
         @Override
         public Map<Relation, ExtendedDelta> visitDefinition(Definition def) {
@@ -1178,11 +1221,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
-                    map.put(o, new ExtendedDelta(disabled, new IndexedEventGraph(dom)));
+                    map.put(o, new ExtendedDelta(disabled, newGraph()));
                 }
             }
             if (operands.contains(origin)) {
-                MutableEventGraph d = new IndexedEventGraph(dom);
+                MutableEventGraph d = newGraph();
                 disabled.apply((e1, e2) -> {
                     if (operands.stream().noneMatch(o -> knowledgeMap.get(o).getMaySet().contains(e1, e2))) {
                         d.add(e1, e2);
@@ -1234,7 +1277,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             if (origin.equals(r2)) {
                 MutableKnowledge k1 = knowledgeMap.get(r1);
                 map.put(r0, new ExtendedDelta(MutableEventGraph.intersection(enabled, k1.getMaySet()), MutableEventGraph.intersection(disabled, k1.getMustSet())));
-                map.put(r1, new ExtendedDelta(MutableEventGraph.difference(disabled, knowledgeMap.get(r0).getMaySet()), new IndexedEventGraph(dom)));
+                map.put(r1, new ExtendedDelta(MutableEventGraph.difference(disabled, knowledgeMap.get(r0).getMaySet()), newGraph()));
             }
             return map;
         }
@@ -1244,10 +1287,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final Relation r0 = comp.getDefinedRelation();
             final Relation r1 = comp.getLeftOperand();
             final Relation r2 = comp.getRightOperand();
-            MutableEventGraph d0 = new IndexedEventGraph(dom);
-            MutableEventGraph e0 = new IndexedEventGraph(dom);
-            MutableEventGraph d1 = new IndexedEventGraph(dom);
-            MutableEventGraph d2 = new IndexedEventGraph(dom);
+            MutableEventGraph d0 = newGraph();
+            MutableEventGraph e0 = newGraph();
+            MutableEventGraph d1 = newGraph();
+            MutableEventGraph d2 = newGraph();
             MutableKnowledge k0 = knowledgeMap.get(r0);
             MutableKnowledge k1 = knowledgeMap.get(r1);
             MutableKnowledge k2 = knowledgeMap.get(r2);
@@ -1256,13 +1299,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 Map<Event, Set<Event>> mustIn2 = k2.getMustSet().getInMap();
                 Map<Event, Set<Event>> mayIn2 = k2.getMaySet().getInMap();
                 disabled.apply((x, z) -> {
-                    final Set<Event> disableZ = new IndexedSet<>(dom);
-                    disableZ.addAll(mustOut1.getOrDefault(x, Set.of()));
+                    final Set<Event> disableZ = newSet(mustOut1.getOrDefault(x, Set.of()));
                     retainImplyWith(disableZ, x, z);
                     disableZ.retainAll(mayIn2.getOrDefault(z, Set.of()));
                     disableZ.forEach(y -> d2.add(y, z));
-                    final Set<Event> disableX = new IndexedSet<>(dom);
-                    disableX.addAll(mustIn2.getOrDefault(z, Set.of()));
+                    final Set<Event> disableX = newSet(mustIn2.getOrDefault(z, Set.of()));
                     retainImplyWith(disableX, z, x);
                     disableX.retainAll(k1.getMaySet().getRange(x));
                     d1.addRange(x, disableX);
@@ -1287,8 +1328,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             map.put(r0, new ExtendedDelta(d0, e0));
-            map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, new IndexedEventGraph(dom))).disabled.addAll(d1);
-            map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, new IndexedEventGraph(dom))).disabled.addAll(d2);
+            map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, newGraph())).disabled.addAll(d1);
+            map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, newGraph())).disabled.addAll(d2);
             return map;
         }
 
@@ -1312,12 +1353,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 EventGraph mayOut1,
                 EventGraph mayOut2
         ) {
-            MutableEventGraph result = new IndexedEventGraph(dom);
+            MutableEventGraph result = newGraph();
             for (Event e1 : disOut1.getDomain()) {
                 final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
                 for (Event e : disOut1.getRange(e1)) {
-                    Set<Event> e2Set = new IndexedSet<>(dom);
-                    e2Set.addAll(mayOut2.getRange(e));
+                    final Set<Event> e2Set = newSet(mayOut2.getRange(e));
                     e2Set.removeAll(e1Mutex);
                     e2Set.removeAll(result.getRange(e1));
                     if (!e2Set.isEmpty()) {
@@ -1340,16 +1380,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 EventGraph must2,
                 EventGraph may0
         ) {
-            MutableEventGraph e0 = new IndexedEventGraph(dom);
-            MutableEventGraph d2 = new IndexedEventGraph(dom);
+            MutableEventGraph e0 = newGraph();
+            MutableEventGraph d2 = newGraph();
             for (Event x : enable1.getDomain()) {
                 final Set<Event> mutexX = execMutuallyExclusive.getRange(x);
                 for (Event y : enable1.getRange(x)) {
-                    final IndexedSet<Event> enableX = new IndexedSet<>(dom);
-                    enableX.addAll(may2.getRange(y));
+                    final Set<Event> enableX = newSet(may2.getRange(y));
                     enableX.removeAll(mutexX);
                     if (!enableX.isEmpty()) {
-                        final Set<Event> disableY = new IndexedSet<>(enableX);
+                        final Set<Event> disableY = newSet(enableX);
                         enableX.retainAll(must2.getRange(y));
                         retainImplyWith(enableX, y, x);
                         e0.addRange(x, enableX);
@@ -1367,7 +1406,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final Relation r0 = inv.getDefinedRelation();
             final Relation r1 = inv.getOperand();
             if (origin.equals(r0)) {
-                return Map.of(r1, new ExtendedDelta(disabled.inverse(), new IndexedEventGraph(dom)));
+                return Map.of(r1, new ExtendedDelta(disabled.inverse(), newGraph()));
             }
             if (origin.equals(r1)) {
                 return Map.of(r0, new ExtendedDelta(disabled.inverse(), enabled.inverse()));
@@ -1379,9 +1418,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public Map<Relation, ExtendedDelta> visitTransitiveClosure(TransitiveClosure trans) {
             final Relation r0 = trans.getDefinedRelation();
             final Relation r1 = trans.getOperand();
-            MutableEventGraph d0 = new IndexedEventGraph(dom);
-            MutableEventGraph e0 = new IndexedEventGraph(dom);
-            MutableEventGraph d1 = new IndexedEventGraph(dom);
+            MutableEventGraph d0 = newGraph();
+            MutableEventGraph e0 = newGraph();
+            MutableEventGraph d1 = newGraph();
             MutableKnowledge k0 = knowledgeMap.get(r0);
             MutableKnowledge k1 = knowledgeMap.get(r1);
             if (origin.equals(r1)) {
@@ -1406,10 +1445,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 e0.addAll(enabled);
                 enabled.apply((x, y) -> {
                     if (!Tuple.isLoop(x, y)) {
-                        final IndexedSet<Event> enableX = new IndexedSet<>(dom);
-                        enableX.addAll(mayOut0.getOrDefault(y, Set.of()));
+                        final Set<Event> enableX = newSet(mayOut0.getOrDefault(y, Set.of()));
                         enableX.removeAll(execMutuallyExclusive.getRange(x));
-                        final Set<Event> disableY = new IndexedSet<>(enableX);
+                        final Set<Event> disableY = newSet(enableX);
                         retainImplyWith(enableX, y, x);
                         enableX.retainAll(k0.getMustSet().getRange(y));
                         e0.addRange(x, enableX);
@@ -1427,13 +1465,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 d1.addAll(EventGraph.intersection(disabled, k1.getMaySet()));
                 disabled.apply((x, z) -> {
                     if (!Tuple.isLoop(x, z)) {
-                        final Set<Event> disableZ = new IndexedSet<>(dom);
-                        disableZ.addAll(k1.getMustSet().getRange(x));
+                        final Set<Event> disableZ = newSet(k1.getMustSet().getRange(x));
                         retainImplyWith(disableZ, x, z);
                         disableZ.retainAll(mayIn0.getOrDefault(z, Set.of()));
                         disableZ.forEach(y -> d0.add(y, z));
-                        final Set<Event> disableX = new IndexedSet<>(dom);
-                        disableX.addAll(mustIn0.getOrDefault(z, Set.of()));
+                        final Set<Event> disableX = newSet(mustIn0.getOrDefault(z, Set.of()));
                         retainImplyWith(disableX, z, x);
                         disableX.retainAll(k1.getMaySet().getRange(x));
                         d1.addRange(x, disableX);
@@ -1441,10 +1477,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 });
                 enabled.apply((y, z) -> {
                     if (!Tuple.isLoop(y, z)) {
-                        final IndexedSet<Event> enableZ = new IndexedSet<>(dom);
-                        enableZ.addAll(mayIn1.getOrDefault(y, Set.of()));
+                        final Set<Event> enableZ = newSet(mayIn1.getOrDefault(y, Set.of()));
                         enableZ.removeAll(execMutuallyExclusive.getRange(z));
-                        final IndexedSet<Event> disableY = new IndexedSet<>(enableZ);
+                        final Set<Event> disableY = newSet(enableZ);
                         retainImplyWith(enableZ, y, z);
                         enableZ.retainAll(mustIn1.getOrDefault(y, Set.of()));
                         enableZ.forEach(x -> e0.add(x, z));
@@ -1456,7 +1491,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             }
             return Map.of(
                     r0, new ExtendedDelta(d0, e0),
-                    r1, new ExtendedDelta(d1, new IndexedEventGraph(dom)));
+                    r1, new ExtendedDelta(d1, newGraph()));
         }
 
         @Override
@@ -1465,18 +1500,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 return Map.of();
             }
             //TODO use transitivity
-            MutableEventGraph e = new IndexedEventGraph(dom);
+            MutableEventGraph e = newGraph();
             disabled.apply((x, y) -> {
                 if (alias.mustAlias((MemoryCoreEvent) x, (MemoryCoreEvent) y)) {
                     e.add(y, x);
                 }
             });
-            return Map.of(coDef.getDefinedRelation(), new ExtendedDelta(new IndexedEventGraph(dom), e));
+            return Map.of(coDef.getDefinedRelation(), new ExtendedDelta(newGraph(), e));
         }
-    }
-
-    private static List<Event> visibleEvents(Thread t) {
-        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
     }
 
     protected static final class Delta {
@@ -1487,19 +1518,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public Delta(MutableEventGraph maySet, MutableEventGraph mustSet) {
             may = maySet;
             must = mustSet;
-        }
-
-        public static Delta combine(List<Delta> deltas, IndexedSet.Domain<Event> dom) {
-            if (deltas.size() == 1) {
-                return deltas.get(0);
-            }
-            MutableEventGraph mayDelta = new IndexedEventGraph(dom);
-            MutableEventGraph mustDelta = new IndexedEventGraph(dom);
-            for (Delta d : deltas) {
-                mayDelta.addAll(d.may);
-                mustDelta.addAll(d.must);
-            }
-            return new Delta(mayDelta, mustDelta);
         }
     }
 
@@ -1582,8 +1600,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public Delta visitComposition(Composition comp) {
             final Relation r1 = comp.getLeftOperand();
             final Relation r2 = comp.getRightOperand();
-            MutableEventGraph maySet = new IndexedEventGraph(dom);
-            MutableEventGraph mustSet = new IndexedEventGraph(dom);
+            MutableEventGraph maySet = newGraph(getKnowledge(comp.getDefinedRelation()).getMaySet().getClass());
+            MutableEventGraph mustSet = newGraph(getKnowledge(comp.getDefinedRelation()).getMustSet().getClass());
             if (r1.equals(source)) {
                 computeComposition(maySet, may, getKnowledge(r2).getMaySet(), true);
                 computeComposition(mustSet, must, getKnowledge(r2).getMustSet(), false);
@@ -1595,32 +1613,72 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new Delta(maySet, mustSet);
         }
 
-        private void computeComposition(MutableEventGraph result, EventGraph left, EventGraph right, final boolean isMay) {
+        private void computeComposition(MutableEventGraph result, EventGraph left, EventGraph right, boolean isMay) {
+            final boolean visibleOnly = result instanceof IndexedEventGraph;
             for (Event e1 : left.getDomain()) {
-                final Set<Event> update = new IndexedSet<>(dom);
+                final Set<Event> update = visibleOnly ? new IndexedSet<>(dom) : new HashSet<>();
                 for (Event e : left.getRange(e1)) {
-                    final Set<Event> impliesE = execImplies.getRange(e);
+                    final Set<Event> impliesE = visibleOnly ? execImplies.getRange(e) : impliesEvent(e);
+                    final Set<Event> rightRange = right.getRange(e);
                     if (isMay || impliesE.contains(e1)) {
-                        update.addAll(right.getRange(e));
+                        update.addAll(rightRange);
                     } else {
-                        final Set<Event> range = new IndexedSet<>(dom);
-                        range.addAll(right.getRange(e));
+                        final Set<Event> range = newSet(rightRange);
                         range.retainAll(impliesE);
                         update.addAll(range);
                     }
                 }
-                update.removeAll(execMutuallyExclusive.getRange(e1));
+                update.removeAll(visibleOnly ? execMutuallyExclusive.getRange(e1) : excludesEvent(e1));
                 result.addRange(e1, update);
             }
+        }
+
+        // Helper function for `idd^+`, etc.
+        // IndexedSet does not provide entries for invisible events.
+        private Set<Event> impliesEvent(Event impliedEvent) {
+            return new AbstractSet<>() {
+                @Override
+                public boolean contains(Object key) {
+                    return key instanceof Event e && exec.isImplied(e, impliedEvent);
+                }
+                @Override
+                public int size() {
+                    //FIXME This is shamelessly exaggerated.
+                    return Integer.MAX_VALUE;
+                }
+                @Override
+                public Iterator<Event> iterator() {
+                    throw new UnsupportedOperationException("");
+                }
+            };
+        }
+
+        // Helper function for `idd^+`, etc.
+        // IndexedSet does not provide entries for invisible events.
+        private Set<Event> excludesEvent(Event excludedEvent) {
+            return new AbstractSet<>() {
+                @Override
+                public boolean contains(Object key) {
+                    return key instanceof Event e && exec.areMutuallyExclusive(e, excludedEvent);
+                }
+                @Override
+                public int size() {
+                    return Integer.MAX_VALUE;
+                }
+                @Override
+                public Iterator<Event> iterator() {
+                    throw new UnsupportedOperationException();
+                }
+            };
         }
 
         @Override
         public Delta visitProjection(Projection projection) {
             if (projection.getOperand().equals(source)) {
                 final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
-                final MutableEventGraph maySet = new IndexedEventGraph(NativeRelationAnalysis.this.dom);
+                final MutableEventGraph maySet = newGraph();
                 (dom ? may.getDomain() : may.getRange()).forEach(e -> maySet.add(e, e));
-                final MutableEventGraph mustSet = new IndexedEventGraph(NativeRelationAnalysis.this.dom);
+                final MutableEventGraph mustSet = newGraph();
                 must.apply((e1, e2) -> {
                     final Event e = dom ? e1 : e2;
                     if (execImplies.contains(dom ? e2 : e1, e)) {
@@ -1641,8 +1699,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             }
             final Knowledge domain = knowledgeMap.get(product.getDomain());
             final Knowledge range = knowledgeMap.get(product.getRange());
-            final MutableEventGraph maySet = new IndexedEventGraph(dom);
-            final MutableEventGraph mustSet = new IndexedEventGraph(dom);
+            final MutableEventGraph maySet = newGraph();
+            final MutableEventGraph mustSet = newGraph();
             if (isRange) {
                 computeCartesianProduct(maySet, domain.getMaySet(), may);
                 computeCartesianProduct(mustSet, domain.getMustSet(), must);
@@ -1655,13 +1713,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void computeCartesianProduct(MutableEventGraph target, EventGraph domain, EventGraph range) {
-            final IndexedSet<Event> newRange = new IndexedSet<>(dom);
-            newRange.addAll(range.getDomain());
+            final Set<Event> newRange = newSet(range.getDomain());
             newRange.removeIf(x -> !range.contains(x, x));
 
             for (Event e1 : domain.getDomain()) {
                 if (domain.contains(e1, e1)) {
-                    final Set<Event> e1Range = new IndexedSet<>(newRange);
+                    final Set<Event> e1Range = newSet(newRange);
                     e1Range.removeAll(execMutuallyExclusive.getRange(e1));
                     target.addRange(e1, e1Range);
                 }
@@ -1696,13 +1753,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private MutableEventGraph computeTransitiveClosure(EventGraph oldOuter, MutableEventGraph inner, boolean isMay) {
-            MutableEventGraph outer = new IndexedEventGraph(dom, oldOuter);
+            MutableEventGraph outer = MutableEventGraph.from(oldOuter);
             MutableEventGraph update = inner.filter(outer::add);
-            MutableEventGraph updateComposition = new IndexedEventGraph(dom);
+            MutableEventGraph updateComposition = newGraph(oldOuter.getClass());
             computeComposition(updateComposition, inner, oldOuter, isMay);
             update.addAll(updateComposition.filter(outer::add));
             while (!update.isEmpty()) {
-                MutableEventGraph t = new IndexedEventGraph(dom);
+                MutableEventGraph t = newGraph(oldOuter.getClass());
                 computeComposition(t, inner, update, isMay);
                 update = t.filter(outer::add);
             }
