@@ -48,7 +48,7 @@ public enum Arch implements OptionInterface {
         if (!forcePartialCo) {
             return !Arrays.asList(coNotTotal).contains(arch);
         }
-        return true;
+        return false;
     }
 
     // used to check if supports virtual addressing.

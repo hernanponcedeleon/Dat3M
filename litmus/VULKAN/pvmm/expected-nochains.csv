@@ -166,7 +166,7 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 ,,,,,,,,
 3-new-vloc-av-atom-0,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-new-vloc-av-atom-1,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL,FAIL
-3-new-vloc-av-atom-2,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3-new-vloc-av-atom-2,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL,FAIL
 3-new-vloc-av-nonpriv-0,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-new-vloc-av-nonpriv-1,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-new-vloc-av-nonpriv-2,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
