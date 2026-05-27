@@ -99,7 +99,7 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
-                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), Utils.getNameWithoutExtension(progFile), o.generateWitnessForUnknown());
+                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), getWitnessFilename(progFile, o), o.generateWitnessForUnknown());
             } catch (Exception e) {
                 summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
             }
@@ -180,5 +180,11 @@ public class Dartagnan extends BaseOptions {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
         }
+    }
+
+    private static String getWitnessFilename(File progFile, BaseOptions options) {
+        return options.hasWitnessFilename()
+                ? options.getWitnessFilename()
+                : Utils.getNameWithoutExtension(progFile);
     }
 }
