@@ -191,7 +191,7 @@ public class TaskResultAnalyzer {
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                return generateGraphvizFile(model, 1, (x, y) -> true,
+                return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory() + "/", filename,
                         synContext, witnessType.convertToPng(), task.getConfig());
