@@ -54,8 +54,9 @@ let SEMSC0123 = SEMSC012 & SEMSC3
 
 (* Relations *)
 let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
-let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
+let mutordatom = (vloc & ((IW * ATOM) | (ATOM * IW))) | ((vloc & inscope & (ATOM * ATOM)) \ id)
 let asmo = co & mutordatom
+let asrf = rf & mutordatom
 
 let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
 let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
@@ -69,10 +70,10 @@ let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
-    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
-    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
+    ([REL & ATOM]; rs; asrf; [ACQ & ATOM]) |                                               // atomic->atomic
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; asrf; [ACQ & ATOM]) |                       // fence->atomic
+    ([REL & ATOM]; rs; asrf; [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; asrf; [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
     ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
 )
@@ -107,41 +108,25 @@ let visinc1 = [SEMVIS & SEMSC1]; (chains & ithb1)
 let visinc2 = [SEMVIS & SEMSC2]; (chains & ithb2)
 let visinc3 = [SEMVIS & SEMSC3]; (chains & ithb3)
 
-let avsg0b = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC0 & SEMAV])?; [SG]
-let avsg0 = (vloc & ssg & (avsg0b; ithb0))?; avsg0b
-let avwg0b = avsg0; (ssg & avinc0)?; [WG]
-let avwg0 = (vloc & swg & (avwg0b; ithb0))?; avwg0b
-let avqf0b = avwg0; (swg & avinc0)?; [QF]
-let avqf0 = (vloc & sqf & (avqf0b; ithb0))?; avqf0b
-let avdv0b = avqf0; (sqf & avinc0)?; [DV]
-let avdv0 = (vloc & (avdv0b; ithb0))?; avdv0b
+let avsg0 = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC0 & SEMAV])?; [SG]
+let avwg0 = avsg0; (ssg & avinc0)?; [WG]
+let avqf0 = avwg0; (swg & avinc0)?; [QF]
+let avdv0 = avqf0; (sqf & avinc0)?; [DV]
 
-let avsg1b = [W & NONPRIV & SC1]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC1 & SEMAV])?; [SG]
-let avsg1 = (vloc & ssg & (avsg1b; ithb1))?; avsg1b
-let avwg1b = avsg1; (ssg & avinc1)?; [WG]
-let avwg1 = (vloc & swg & (avwg1b; ithb1))?; avwg1b
-let avqf1b = avwg1; (swg & avinc1)?; [QF]
-let avqf1 = (vloc & sqf & (avqf1b; ithb1))?; avqf1b
-let avdv1b = avqf1; (sqf & avinc1)?; [DV]
-let avdv1 = (vloc & (avdv1b; ithb1))?; avdv1b
+let avsg1 = [W & NONPRIV & SC1]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC1 & SEMAV])?; [SG]
+let avwg1 = avsg1; (ssg & avinc1)?; [WG]
+let avqf1 = avwg1; (swg & avinc1)?; [QF]
+let avdv1 = avqf1; (sqf & avinc1)?; [DV]
 
-let avsg2b = [W & NONPRIV & SC2]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC2 & SEMAV])?; [SG]
-let avsg2 = (vloc & ssg & (avsg2b; ithb2))?; avsg2b
-let avwg2b = avsg2; (ssg & avinc2)?; [WG]
-let avwg2 = (vloc & swg & (avwg2b; ithb2))?; avwg2b
-let avqf2b = avwg2; (swg & avinc2)?; [QF]
-let avqf2 = (vloc & sqf & (avqf2b; ithb2))?; avqf2b
-let avdv2b = avqf2; (sqf & avinc2)?; [DV]
-let avdv2 = (vloc & (avdv2b; ithb2))?; avdv2b
+let avsg2 = [W & NONPRIV & SC2]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC2 & SEMAV])?; [SG]
+let avwg2 = avsg2; (ssg & avinc2)?; [WG]
+let avqf2 = avwg2; (swg & avinc2)?; [QF]
+let avdv2 = avqf2; (sqf & avinc2)?; [DV]
 
-let avsg3b = [W & NONPRIV & SC3]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC3 & SEMAV])?; [SG]
-let avsg3 = (vloc & ssg & (avsg3b; ithb3))?; avsg3b
-let avwg3b = avsg3; (ssg & avinc3)?; [WG]
-let avwg3 = (vloc & swg & (avwg3b; ithb3))?; avwg3b
-let avqf3b = avwg3; (swg & avinc3)?; [QF]
-let avqf3 = (vloc & sqf & (avqf3b; ithb3))?; avqf3b
-let avdv3b = avqf3; (sqf & avinc3)?; [DV]
-let avdv3 = (vloc & (avdv3b; ithb3))?; avdv3b
+let avsg3 = [W & NONPRIV & SC3]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC3 & SEMAV])?; [SG]
+let avwg3 = avsg3; (ssg & avinc3)?; [WG]
+let avqf3 = avwg3; (swg & avinc3)?; [QF]
+let avdv3 = avqf3; (sqf & avinc3)?; [DV]
 
 let vissg0b = [SG]; ([SEMSC0 & SEMVIS]; po)?; [R & NONPRIV]; (po & vloc)?; [R & NONPRIV & SC0]
 let vissg0 = vissg0b; (vloc & ssg & (ithb0; vissg0b))?
@@ -179,8 +164,8 @@ let visqf3 = visqf3b; (vloc & sqf & (ithb3; visqf3b))?
 let visdv3b = [DV]; (sqf & visinc3)?; visqf3
 let visdv3 = visdv3b; (vloc & (ithb3; visdv3b))?
 
-let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
-let hbsc = (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
+let schb = po | ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
+let hbsc = po | (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
 let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
 let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
               (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
@@ -189,41 +174,48 @@ let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
               (ithb13 & ((SC1 * SC3) | (SC3 * SC1))) |
               (ithb23 & ((SC2 * SC3) | (SC3 * SC2)))
 
+let vissg = vissg0 | vissg1 | vissg2 | vissg3
+let viswg = viswg0 | viswg1 | viswg2 | viswg3
+let visqf = visqf0 | visqf1 | visqf2 | visqf3
+let visdv = visdv0 | visdv1 | visdv2 | visdv3
+
+let obsghb = [SG]; asrf; schb?
+let obwghb = [WG]; asrf; schb?
+let obqfhb = [QF]; asrf; schb?
+let obdvhb = [DV]; asrf; schb?
+
+let avsghb = obsghb | (avsg0; ithb0) | (avsg1; ithb1) | (avsg2; ithb2) | (avsg3; ithb3)
+let avwghb = obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | (avwg3; ithb3)
+let avqfhb = obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3)
+let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3; ithb3)
+
 let locordh = loc & (
     (IW * (M \ IW)) |
-    ([R]; ssw+; [R | W]) |
+    ([R]; ssw+; [W]) |
     ([W]; schb; [AVDEVICE]; hbsc; [W]) |
     ([W]; schb; [AVDEVICE]; hb; [VISDEVICE]; hbsc; [R]))
 
-let locordp = vloc & int & (po | schbsc)
+let locordp = vloc & po
 
-let locordww = (avsg0; (ithb0 & ssg)) | (avwg0; (ithb0 & swg)) | (avqf0; (ithb0 & sqf)) | (avdv0; ithb0) |
-               (avsg1; (ithb1 & ssg)) | (avwg1; (ithb1 & swg)) | (avqf1; (ithb1 & sqf)) | (avdv1; ithb1) |
-               (avsg2; (ithb2 & ssg)) | (avwg2; (ithb2 & swg)) | (avqf2; (ithb2 & sqf)) | (avdv2; ithb2) |
-               (avsg3; (ithb3 & ssg)) | (avwg3; (ithb3 & swg)) | (avqf3; (ithb3 & sqf)) | (avdv3; ithb3)
+let locordb = loc & (NONPRIV * NONPRIV) & (
+    ([R]; (schbsc | schbsca); [R | W]) |
+    vloc & (po |
+        ((W * W) & (asmo | (ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb)) |
+        ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
+    ))
 
-let locordwr = (avsg0; (ithb0 & ssg); vissg0) | (avwg0; (ithb0 & swg); viswg0) | (avqf0; (ithb0 & sqf); visqf0) | (avdv0; ithb0; visdv0) |
-               (avsg1; (ithb1 & ssg); vissg1) | (avwg1; (ithb1 & swg); viswg1) | (avqf1; (ithb1 & sqf); visqf1) | (avdv1; ithb1; visdv1) |
-               (avsg2; (ithb2 & ssg); vissg2) | (avwg2; (ithb2 & swg); viswg2) | (avqf2; (ithb2 & sqf); visqf2) | (avdv2; ithb2; visdv2) |
-               (avsg3; (ithb3 & ssg); vissg3) | (avwg3; (ithb3 & swg); viswg3) | (avqf3; (ithb3 & sqf); visqf3) | (avdv3; ithb3; visdv3)
-
-let locordd = loc & (
-    (vloc & (NONPRIV * NONPRIV) & po) |
-    ([R & NONPRIV]; (schbsc | schbsca); [(R | W) & NONPRIV]) |
-    vloc & (
-        ([W & NONPRIV]; locordww; [W & NONPRIV]) |
-        ([W & NONPRIV]; locordwr; [R & NONPRIV])
-    )
-)
-
-let locord = locordh | (locordh?; locordp) | (locordh?; ((W * W) & locordd)*; locordd)
+let locordd = ((locordb & (W * W))*; locordb) | (locordb+ & (R * W))
+let locord = locordh | (locordh?; locordp) | (locordh?; locordd)
 
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
 
+// each ithb instance should be irreflexive
+irreflexive schbsc as consistent-ithb
+
 // consistent communication
-acyclic (locord | (mutordatom & (co | rf | fr))) as consistency-cycle
+acyclic locord as consistency-cycle
 irreflexive locord; (co | rf | fr) as irreflexive-locord
 
 // rmw events are atomic

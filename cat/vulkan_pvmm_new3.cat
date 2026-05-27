@@ -54,7 +54,7 @@ let SEMSC0123 = SEMSC012 & SEMSC3
 
 (* Relations *)
 let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
-let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
+let mutordatom = (vloc & ((IW * ATOM) | (ATOM * IW))) | ((vloc & inscope & (ATOM * ATOM)) \ id)
 let asmo = co & mutordatom
 let asrf = rf & mutordatom
 
@@ -164,8 +164,8 @@ let visqf3 = visqf3b; (vloc & sqf & (ithb3; visqf3b))?
 let visdv3b = [DV]; (sqf & visinc3)?; visqf3
 let visdv3 = visdv3b; (vloc & (ithb3; visdv3b))?
 
-let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
-let hbsc = (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
+let schb = po | ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
+let hbsc = po | (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
 let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
 let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
               (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
@@ -197,14 +197,15 @@ let locordh = loc & (
 
 let locordp = vloc & po
 
-let locordd = loc & (NONPRIV * NONPRIV) & (
-    ([R]; (schbsc | schbsca); [W]) |
-    vloc & (asmo | (asrf?; po) |
+let locordb = loc & (NONPRIV * NONPRIV) & (
+    ([R]; (schbsc | schbsca); [R | W]) |
+    vloc & (po |
         ((W * W) & ((ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb)) |
         ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
     ))
 
-let locord = locordh | (locordh?; locordp) | (locordh?; ((W * W) & locordd)*; locordd)
+let locordd = ((locordb & (W * W))*; locordb) | (locordb+ & (R * W))
+let locord = locordh | (locordh?; locordp) | (locordh?; locordd)
 
 (***********************)
 (* Memory Model Axioms *)
