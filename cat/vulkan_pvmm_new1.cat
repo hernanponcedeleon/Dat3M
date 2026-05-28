@@ -21,7 +21,9 @@ VULKAN
 (*  Auxiliaries *)
 (*******************)
 
-(* Tags *)
+// Host-happens-before
+let hhb = (po | ssw)+
+
 let QF = QF | DV
 let WG = WG | QF
 let SG = SG | WG
@@ -95,9 +97,6 @@ let ithb03 = ithb(SC03, SEMSC03)
 let ithb12 = ithb(SC12, SEMSC12)
 let ithb13 = ithb(SC13, SEMSC13)
 let ithb23 = ithb(SC23, SEMSC23)
-
-let hb = po | ithb0 | ithb1 | ithb2 | ithb3 |
-         ithb01 | ithb02 | ithb03 | ithb12 | ithb13 | ithb23
 
 let avinc0 = (chains & ithb0); [SEMAV & SEMSC0]
 let avinc1 = (chains & ithb1); [SEMAV & SEMSC1]
@@ -194,7 +193,7 @@ let locordh = loc & (
     (IW * (M \ IW)) |
     ([R]; ssw+; [W]) |
     ([W]; schb; [AVDEVICE]; hbsc; [W]) |
-    ([W]; schb; [AVDEVICE]; hb; [VISDEVICE]; hbsc; [R]))
+    ([W]; schb; [AVDEVICE]; hhb; [VISDEVICE]; hbsc; [R]))
 
 let locordp = vloc & po
 
