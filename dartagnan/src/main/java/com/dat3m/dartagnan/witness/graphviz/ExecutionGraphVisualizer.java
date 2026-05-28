@@ -370,7 +370,6 @@ public class ExecutionGraphVisualizer {
                                             Configuration config) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
-        System.out.println("Trying to store windows in " + fileVio.getAbsolutePath());
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
@@ -384,11 +383,9 @@ public class ExecutionGraphVisualizer {
             if (convert) {
                 fileVio = Graphviz.convert(fileVio);
             }
-            System.out.println("Succeed to store windows in " + fileVio.getAbsolutePath());
             logger.info("Witness stored into {}.", fileVio.getAbsolutePath());
             return fileVio;
         } catch (Exception e) {
-            System.out.println("Failed to store windows in " + fileVio.getAbsolutePath());
             logger.error(e.getMessage());
         }
 

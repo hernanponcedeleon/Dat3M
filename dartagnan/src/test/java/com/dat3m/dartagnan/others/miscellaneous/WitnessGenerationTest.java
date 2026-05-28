@@ -17,7 +17,6 @@ public class WitnessGenerationTest {
 
     @Test
     public void testGeneratesDefaultWitness() throws Exception {
-        System.out.println("Output Directory Resolved To: " + outputDir.toAbsolutePath());
         final String programName = "ttas-acq2rx";
         final Path programPath = testDir.resolve(programName + ".ll");
         final Path witnessPath = outputDir.resolve(programName + ".png");

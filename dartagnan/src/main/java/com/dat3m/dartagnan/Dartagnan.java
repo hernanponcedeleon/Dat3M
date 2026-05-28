@@ -74,7 +74,6 @@ public class Dartagnan extends BaseOptions {
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         ResultSummary summary = null;
         for (File progFile : progFiles) {
-            System.out.println(progFile);
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
@@ -195,15 +194,13 @@ public class Dartagnan extends BaseOptions {
         command.add(programPath.toAbsolutePath().toString());
         command.addAll(Arrays.asList(options));
 
-        System.out.println(command);
-
         ProcessBuilder pb = new ProcessBuilder(command);
         Process process = pb.start();
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {
             String error = new String(process.getErrorStream().readAllBytes());
-            System.out.print("Dartagnan finished with exit code " + exitCode + ". Error: " + error);
+            logger.warn("Dartagnan finished with exit code {}. Error:", exitCode, error);
         }
     }
 }
