@@ -181,4 +181,21 @@ public class Dartagnan extends BaseOptions {
             return List.of();
         }
     }
+
+    public static void runAsApplication(Path programPath, Path catPath, String... options) throws Exception {
+        final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
+        final Path dat3mJar = dat3mHome.resolve("dartagnan/target/dartagnan.jar");
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-jar");
+        command.add(dat3mJar.toAbsolutePath().toString());
+        command.add(catPath.toAbsolutePath().toString());
+        command.add(programPath.toAbsolutePath().toString());
+        command.addAll(Arrays.asList(options));
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        Process process = pb.start();
+        process.waitFor();
+    }
 }

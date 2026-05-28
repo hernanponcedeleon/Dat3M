@@ -1,82 +1,50 @@
+package com.dat3m.dartagnan.others.miscellaneous;
+
+import com.dat3m.dartagnan.Dartagnan;
+
 import org.junit.Test;
-import static org.junit.Assert.*;
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.*;
 
 public class WitnessGenerationTest {
 
+    private final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
+    private final Path testDir = dat3mHome.resolve("dartagnan/src/test/resources/locks");
+    private final Path catPath = dat3mHome.resolve("cat/vmm.cat");
+    private final Path outputDir = dat3mHome.resolve("output");
+
     @Test
     public void testGeneratesDefaultWitness() throws Exception {
-        final String dat3mHome = System.getenv("DAT3M_HOME");
-        assertNotNull("DAT3M_HOME environment variable is not set!", dat3mHome);
-        
         final String programName = "ttas-acq2rx";
-        File expectedFile = Paths.get(dat3mHome, "output", programName + ".png").toFile();
+        final Path programPath = testDir.resolve(programName + ".ll");
+        final Path witnessPath = outputDir.resolve(programName + ".png");
 
-        ProcessBuilder pb = new ProcessBuilder(
-            "java",
-            "-jar",
-            dat3mHome + "/dartagnan.jar",
-            "cat/vmm.cat",
-            dat3mHome + "/dartagnan/src/test/resources/locks/" + programName + ".ll",
-            "--witness=png"
-        );        
-        
-        Process process = pb.start();
-        boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-
-        assertTrue("Witness not found at: " + expectedFile.getAbsolutePath(), expectedFile.exists());
+        Dartagnan.runAsApplication(programPath, catPath, "--witness=png");
+        assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
     }
 
     @Test
     public void testGeneratesWitnessWithFilename() throws Exception {
-        final String dat3mHome = System.getenv("DAT3M_HOME");
-        assertNotNull("DAT3M_HOME environment variable is not set!", dat3mHome);
-        
         final String programName = "ttas-acq2rx";
         final String witnessName = "witness";
-        File expectedFile = Paths.get(dat3mHome, "output", witnessName + ".png").toFile();
+        final Path programPath = testDir.resolve(programName + ".ll");
+        final Path witnessPath = outputDir.resolve(witnessName + ".png");
 
-        ProcessBuilder pb = new ProcessBuilder(
-            "java",
-            "-jar",
-            dat3mHome + "/dartagnan.jar",
-            "cat/vmm.cat",
-            dat3mHome + "/dartagnan/src/test/resources/locks/" + programName + ".ll",
-            "--witness=png",
-            "--witness.filename=" + witnessName
-        );        
-        
-        Process process = pb.start();
-        boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-
-        assertTrue("Witness not found at: " + expectedFile.getAbsolutePath(), expectedFile.exists());
+        Dartagnan.runAsApplication(programPath, catPath, "--witness=png", "--witness.filename=" + witnessName);
+        assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
     }
 
     @Test
     public void testShowRelationsWitness() throws Exception {
-        final String dat3mHome = System.getenv("DAT3M_HOME");
-        assertNotNull("DAT3M_HOME environment variable is not set!", dat3mHome);
-        
         final String programName = "ttas-acq2rx";
-        File expectedFile = Paths.get(dat3mHome, "output", programName + ".dot").toFile();
+        final Path programPath = testDir.resolve(programName + ".ll");
+        final Path witnessPath = outputDir.resolve(programName + ".dot");
 
-        ProcessBuilder pb = new ProcessBuilder(
-            "java",
-            "-jar",
-            dat3mHome + "/dartagnan.jar",
-            "cat/vmm.cat",
-            dat3mHome + "/dartagnan/src/test/resources/locks/" + programName + ".ll",
-            "--witness=png",
-            "--witness.show=ppo"
-        );        
-        
-        Process process = pb.start();
-        boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+        Dartagnan.runAsApplication(programPath, catPath, "--witness=png", "--witness.show=ppo");
 
-        final String witnessContent = Files.readString(expectedFile.toPath());
+        final String witnessContent = Files.readString(witnessPath);
         final String expectedSnippet = "ppo";
 
         assertTrue("The witness  does not show the expected relations: " + expectedSnippet, witnessContent.contains(expectedSnippet));
