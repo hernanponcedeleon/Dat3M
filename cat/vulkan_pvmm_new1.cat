@@ -83,8 +83,8 @@ let sw = inscope & (
 
 let ithb(SC, SEMSC) = (ssw |
         ([SEMSC]; sw; [SEMSC]) |
-        ([(NONPRIV & SC) | SEMSC]; po; [REL & SEMSC]) |
-        ([ACQ & SEMSC]; po; [(NONPRIV & SC) | SEMSC])
+        ([SC | SEMSC]; po; [REL & SEMSC]) |
+        ([ACQ & SEMSC]; po; [SC | SEMSC])
     )+
 
 let ithb0 = ithb(SC0, SEMSC0)
@@ -204,15 +204,12 @@ let locordb = loc & (NONPRIV * NONPRIV) & (
         ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
     ))
 
-let locordd = ((locordb & (W * W))*; locordb) | (locordb+ & (R * W))
-let locord = locordh | (locordh?; locordp) | (locordh?; locordd)
+let locordd = ((locordb & (W * W))*; (locordb & (W * M))) | (locordb+ & (R * W))
+let locord = (locordh | (locordh?; locordp) | (locordh?; locordd)) \ id
 
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
-
-// each ithb instance should be irreflexive
-irreflexive schbsc as consistent-ithb
 
 // consistent communication
 acyclic locord as consistency-cycle
@@ -222,7 +219,7 @@ irreflexive locord; (co | rf | fr) as irreflexive-locord
 empty rmw & ((fr & ext); (co & ext)) as atomic
 
 // consistent coherence order
-empty ((W * W) & locord) \ co \ id as consistent-co
+empty ((W * W) & locord) \ co as consistent-co
 empty ((W * W) & mutordatom) \ co \ co^-1
 
 (***************)
