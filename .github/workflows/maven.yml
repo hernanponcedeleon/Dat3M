@@ -133,7 +133,11 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Create Output Directory
-        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
+        run: mkdir -p "$DAT3M_OUTPUT"
+
+      - name: Debug Environment
+        run: |
+          ls -ld "$DAT3M_OUTPUT" || echo "Directory does not exist!"
 
       - name: Other tests
         run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
