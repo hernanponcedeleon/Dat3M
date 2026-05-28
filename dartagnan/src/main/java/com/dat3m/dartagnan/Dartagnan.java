@@ -194,6 +194,8 @@ public class Dartagnan extends BaseOptions {
         command.add(programPath.toAbsolutePath().toString());
         command.addAll(Arrays.asList(options));
 
+        System.out.println(command);
+
         ProcessBuilder pb = new ProcessBuilder(command);
         Process process = pb.start();
         process.waitFor();
