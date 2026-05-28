@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 public final class IndexedSet<E> extends AbstractSet<E> {
     // assert Arrays.stream(domain).allMatch(o -> o instanceof E)
     private final Object[] domain;
-    private final Map<Object, Integer> index;
+    private final int[] index;
     private long[] member;
     // assert 0 <= loneMember && loneMember <= domain.length
     private int loneMember;
@@ -23,7 +23,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         this(domain.domain, domain.index, null, domain.domain.length);
     }
 
-    private IndexedSet(Object[] d, Map<Object, Integer> i, long[] m, int l) {
+    private IndexedSet(Object[] d, int[] i, long[] m, int l) {
         domain = d;
         index = i;
         member = m;
@@ -36,12 +36,12 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     public static final class Domain<E> {
         private final Object[] domain;
-        private final Map<Object, Integer> index;
+        private final int[] index;
         public Domain(Collection<E> elements) {
             domain = elements.toArray();
             index = newIndex(domain);
         }
-        private Domain(Object[] d, Map<Object, Integer> i) {
+        private Domain(Object[] d, int[] i) {
             domain = d;
             index = i;
         }
@@ -65,7 +65,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             return domain.length;
         }
         public int indexOf(Object key) {
-            return index.getOrDefault(key, domain.length);
+            return IndexedSet.indexOf(domain, index, key);
         }
         @Override
         public int hashCode() {
@@ -153,8 +153,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean contains(Object o) {
-        final Integer i = index.get(o);
-        return i != null && (member == null ? loneMember == i : (member[i / 64] & (1L << (i % 64))) != 0L);
+        final int i = indexOf(domain, index, o);
+        return i != -1 && (member == null ? loneMember == i : (member[i / 64] & (1L << (i % 64))) != 0L);
     }
 
     @Override
@@ -206,8 +206,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean add(E element) {
-        final Integer i = index.get(element);
-        if (i == null) {
+        final int i = indexOf(domain, index, element);
+        if (i == -1) {
             throw new ObjectOutOfDomainException();
         }
         return !exchange(i, true);
@@ -215,8 +215,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean remove(Object element) {
-        final Integer i = index.get(element);
-        return i != null && exchange(i, false);
+        final int i = indexOf(domain, index, element);
+        return i != -1 && exchange(i, false);
     }
 
     @Override
@@ -227,8 +227,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         final var otherSet = unwrap(other) instanceof IndexedSet<?> o ? o : null;
         final var add = otherSet != null && otherSet.member != null && index == otherSet.index ? otherSet.member : newBits(domain.length);
         for (Object element : otherSet != null && add == otherSet.member ? Set.of() : other) {
-            final Integer i = index.get(element);
-            if (i == null) {
+            final int i = indexOf(domain, index, element);
+            if (i == -1) {
                 throw new ObjectOutOfDomainException();
             }
             add[i / 64] |= 1L << (i % 64);
@@ -370,13 +370,48 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return count;
     }
 
-    private static Map<Object, Integer> newIndex(Object[] domain) {
-        final var map = new HashMap<Object, Integer>();
-        for (Object element : domain) {
-            final Object old = map.put(element, map.size());
-            assert old == null : "Trying to create an index for a non-set collection.";
+    private static final float HASH_TABLE_FILL_FACTOR = 1.5f;
+
+    private static int[] newIndex(Object[] domain) {
+        final int[] index = new int[(int) (domain.length * HASH_TABLE_FILL_FACTOR) << 1];
+        Arrays.fill(index, -1);
+        // Try to insert all elements at their bucket's front.
+        for (int i = 0; i < domain.length; i++) {
+            final int hash = domain[i].hashCode();
+            int h = hash % (index.length >> 1) << 1;
+            if (index[h] == -1) {
+                index[h] = i;
+                index[h | 1] = hash;
+            }
         }
-        return Map.copyOf(map);
+        // Insert all elements with birthday problem.
+        for (int i = 0; i < domain.length; i++) {
+            final int hash = domain[i].hashCode();
+            int h = (hash % (index.length >> 1)) << 1;
+            if (index[h] != i) {
+                do {
+                    if (index[h | 1] == hash && domain[i].equals(domain[index[h]])) {
+                        throw new IllegalArgumentException("Trying to create an index for a non-set collection.");
+                    }
+                    h += 2;
+                    h = h < index.length ? h : 0;
+                } while (index[h] != -1);
+                index[h] = i;
+                index[h | 1] = hash;
+            }
+        }
+        return index;
+    }
+
+    private static int indexOf(Object[] domain, int[] index, Object key) {
+        final int hash = key.hashCode();
+        int h = (hash % (index.length >> 1)) << 1;
+        int fast;
+        while ((fast = index[h]) != -1 && (index[h | 1] != hash || !domain[fast].equals(key))) {
+            h += 2;
+            h = h < index.length ? h : 0;
+        }
+        return fast;
     }
 
     private static <E> Collection<E> unwrap(Collection<E> collection) {

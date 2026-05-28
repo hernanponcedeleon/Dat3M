@@ -14,7 +14,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     // `domain != null`
     // `map != null`
     // `map.length == domain.size()`
-    // `Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(domain))`
+    // `Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(eventDomain))`
     // `size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()`
     private final IndexedSet.Domain<Event> eventDomain;
     private final IndexedSet[] map;
@@ -55,7 +55,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public boolean contains(Event e1, Event e2) {
-        final IndexedSet<Event> set = outSet(e1);
+        final IndexedSet<Event> set = outSetAt(eventDomain.indexOf(e1));
         return set != null && set.contains(e2);
     }
 
@@ -142,7 +142,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public Set<Event> getRange(Event e) {
-        final IndexedSet<Event> range = outSet(e);
+        final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
         return range == null ? Set.of() : new IndexedSet.Immutable<>(range);
     }
 
@@ -162,7 +162,8 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public boolean add(Event e1, Event e2) {
         final int index = eventDomain.indexOf(e1);
-        final IndexedSet<Event> outSet = ensureOutSetAt(index);
+        final IndexedSet<Event> foundOutSet = outSetAt(index);
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
         map[index] = outSet;
         final boolean changed = outSet.add(e2);
         size += changed ? 1 : 0;
@@ -186,8 +187,9 @@ public final class IndexedEventGraph implements MutableEventGraph {
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
                 if (otherOutSet != null) {
-                    final IndexedSet<Event> outSet = ensureOutSetAt(index);
-                    diff -= outSet.size();
+                    final IndexedSet<Event> foundOutSet = outSetAt(index);
+                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
+                    diff -= foundOutSet == null ? 0 : outSet.size();
                     outSet.addAll(otherOutSet);
                     diff += outSet.size();
                     map[index] = outSet;
@@ -264,13 +266,14 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public boolean addRange(Event e, Set<Event> range) {
         final int index = eventDomain.indexOf(e);
-        final IndexedSet<Event> outSet = ensureOutSetAt(index);
-        final int oldSize = outSet.size();
+        final IndexedSet<Event> foundOutSet = outSetAt(index);
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
+        final int oldSize = foundOutSet == null ? 0 : outSet.size();
         outSet.addAll(range);
-        final int diff = outSet.size() - oldSize;
-        map[index] = outSet.isEmpty() ? null : outSet;
-        size += diff;
-        return diff > 0;
+        final int newSize = outSet.size();
+        map[index] = newSize == 0 ? null : outSet;
+        size += newSize - oldSize;
+        return newSize > oldSize;
     }
 
     @Override
@@ -289,15 +292,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
         return changed;
     }
 
-    private IndexedSet<Event> outSet(Event key) {
-        return outSetAt(eventDomain.indexOf(key));
-    }
-
     private IndexedSet<Event> outSetAt(int index) {
         return index < 0 || index >= map.length ? null : (IndexedSet<Event>) map[index];
-    }
-
-    private IndexedSet<Event> ensureOutSetAt(int index) {
-        return (IndexedSet<Event>) Objects.requireNonNullElseGet(map[index], () -> new IndexedSet<>(eventDomain));
     }
 }
