@@ -42,7 +42,7 @@ public class WitnessGenerationTest {
         final Path programPath = testDir.resolve(programName + ".ll");
         final Path witnessPath = outputDir.resolve(programName + ".dot");
 
-        Dartagnan.runAsApplication(programPath, catPath, "--witness=png", "--witness.show=ppo");
+        Dartagnan.runAsApplication(programPath, catPath, "--witness=dot", "--witness.show=ppo");
 
         final String witnessContent = Files.readString(witnessPath);
         final String expectedSnippet = "ppo";
