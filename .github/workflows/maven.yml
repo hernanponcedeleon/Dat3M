@@ -138,6 +138,9 @@ jobs:
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
 
+      - name: Verify Graphviz
+        run: dot -V
+
       - name: Debug Environment
         run: |
           ls -ld "$DAT3M_OUTPUT" || echo "Directory does not exist!"
