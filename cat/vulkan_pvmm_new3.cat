@@ -56,7 +56,7 @@ let SEMSC0123 = SEMSC012 & SEMSC3
 
 (* Relations *)
 let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
-let mutordatom = (vloc & ((IW * ATOM) | (ATOM * IW))) | ((vloc & inscope & (ATOM * ATOM)) \ id)
+let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
 let asmo = co & mutordatom
 let asrf = rf & mutordatom
 
