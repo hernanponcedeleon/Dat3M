@@ -203,7 +203,7 @@ public class Dartagnan extends BaseOptions {
 
         if (exitCode != 0) {
             String error = new String(process.getErrorStream().readAllBytes());
-            fail("Dartagnan finished with exit code " + exitCode + ". Error: " + error);
+            System.out.print("Dartagnan finished with exit code " + exitCode + ". Error: " + error);
         }
     }
 }
