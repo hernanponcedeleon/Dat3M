@@ -74,6 +74,7 @@ public class Dartagnan extends BaseOptions {
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         ResultSummary summary = null;
         for (File progFile : progFiles) {
+            System.out.println(progFile);
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
