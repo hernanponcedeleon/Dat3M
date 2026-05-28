@@ -177,6 +177,7 @@ public class TaskResultAnalyzer {
 
     public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForUnknown) throws IOException {
+        System.out.println("Here");
         if (!solver.hasModel()
                 || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
                 || witnessType == WitnessType.NONE) {
@@ -184,6 +185,7 @@ public class TaskResultAnalyzer {
         }
 
         final VerificationTask task = solver.getTask();
+        System.out.println(witnessType);
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
