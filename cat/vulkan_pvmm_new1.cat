@@ -229,7 +229,8 @@ empty ((W * W) & mutordatom) \ co \ co^-1
 (* Data Races *)
 (***************)
 
-let ord = mutordatom | locord | locord^-1
+// let ord = mutordatom | locord | locord^-1
+let ord = locord | locord^-1
 // (IW * IW) is used as a workaround for the Dartagnan virtual memory bug
 let dr = loc \ id \ ord \ (R * R) \ (IW * IW)
 flag ~empty dr as racy
