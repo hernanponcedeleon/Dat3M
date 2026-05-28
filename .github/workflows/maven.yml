@@ -47,6 +47,9 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
+      - name: Create Output Directory
+        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
+
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
@@ -72,6 +75,9 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
+      - name: Create Output Directory
+        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
+
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
@@ -96,6 +102,9 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
+      - name: Create Output Directory
+        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
+
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
@@ -119,6 +128,9 @@ jobs:
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Create Output Directory
+        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
 
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
@@ -146,6 +158,9 @@ jobs:
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Create Output Directory
+        run: mkdir -p ${{ env.DAT3M_OUTPUT }}
 
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
