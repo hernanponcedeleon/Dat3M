@@ -199,6 +199,11 @@ public class Dartagnan extends BaseOptions {
 
         ProcessBuilder pb = new ProcessBuilder(command);
         Process process = pb.start();
-        process.waitFor();
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            String error = new String(process.getErrorStream().readAllBytes());
+            fail("Dartagnan finished with exit code " + exitCode + ". Error: " + error);
+        }
     }
 }
