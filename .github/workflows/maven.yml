@@ -141,6 +141,9 @@ jobs:
       - name: Verify Graphviz
         run: dot -V
 
+      - name: Build jar file # used by some unit tests
+        run: mvn clean install -DskipTests
+
       - name: Debug Environment
         run: |
           ls -ld "$DAT3M_OUTPUT" || echo "Directory does not exist!"
