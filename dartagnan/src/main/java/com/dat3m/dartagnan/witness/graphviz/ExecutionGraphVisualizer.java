@@ -386,6 +386,7 @@ public class ExecutionGraphVisualizer {
             logger.info("Witness stored into {}.", fileVio.getAbsolutePath());
             return fileVio;
         } catch (Exception e) {
+            System.out.println("Failed to store windows in " + fileVio.getAbsolutePath());
             logger.error(e.getMessage());
         }
 
