@@ -187,7 +187,9 @@ public class Dartagnan extends BaseOptions {
 
     public static void runAsApplication(Path programPath, Path catPath, String... options) throws Exception {
         final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
-        final Path dat3mJar = dat3mHome.resolve("dartagnan/target/dartagnan.jar");
+        final Path dat3mJar = dat3mHome.resolve("dartagnan")
+                                       .resolve("target")
+                                       .resolve("dartagnan.jar");
 
         List<String> command = new ArrayList<>();
         command.add("java");
