@@ -73,6 +73,7 @@ public class Dartagnan extends BaseOptions {
         final OutputLogger output = new OutputLogger(catFile, config);
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         ResultSummary summary = null;
+        int it = 0;
         for (File progFile : progFiles) {
             try {
                 // ----------- Generate verification task -----------
@@ -99,7 +100,9 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
-                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), Utils.getNameWithoutExtension(progFile), o.generateWitnessForUnknown());
+                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + String.valueOf(it) : "");
+                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), witnessFileName, o.generateWitnessForUnknown());
+                it++;
             } catch (Exception e) {
                 summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
             }
@@ -202,5 +205,11 @@ public class Dartagnan extends BaseOptions {
             String error = new String(process.getErrorStream().readAllBytes());
             logger.warn("Dartagnan finished with exit code {}. Error:", exitCode, error);
         }
+    }
+
+    private static String getWitnessFilename(File progFile, BaseOptions options, String postfix) {
+        return options.hasWitnessFilename()
+                ? options.getWitnessFilename() + postfix
+                : Utils.getNameWithoutExtension(progFile);
     }
 }

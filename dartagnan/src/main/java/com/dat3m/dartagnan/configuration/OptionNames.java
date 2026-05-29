@@ -69,7 +69,6 @@ public class OptionNames {
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
-    public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generateGraphvizDebugFiles";
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
     // SMT solver Options
