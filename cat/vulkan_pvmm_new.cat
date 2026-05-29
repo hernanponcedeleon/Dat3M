@@ -1,6 +1,4 @@
 VULKAN
-(* Vulkan Memory Model *)
-(* With availability-visibility chains supported *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -14,19 +12,18 @@ VULKAN
 // SC0, SC1, SC2, SC3: storage class 0, 1, 2, 3
 // SEMSC0, SEMSC1, SEMSC2, SEMSC3: storage class semantics 0, 1, 2, 3
 // SG, WG, QF, DV: subgroup, workgroup, queuefamily, device domains
-// AV, VIS: availability, visibility
+// SEMAV, SEMVIS: availability and visibility semantics
 // AVDEVICE, VISDEVICE: availability, visibility op to the device domain
 
-(*******************)
 (*  Auxiliaries *)
-(*******************)
 
-(* Tags *)
 let QF = QF | DV
 let WG = WG | QF
 let SG = SG | WG
 
 let vloc = vloc & loc
+
+(* Definitions *)
 
 let SC01 = SC0 | SC1
 let SC02 = SC0 | SC2
@@ -52,36 +49,29 @@ let SEMSC023 = SEMSC02 & SEMSC3
 let SEMSC123 = SEMSC12 & SEMSC3
 let SEMSC0123 = SEMSC012 & SEMSC3
 
-(* Relations *)
-let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
-let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
-let asmo = co & mutordatom
-
 let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
 let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
 
-let posctosem = po & sc2sem
-let posemtosc = po & sem2sc
+let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
+let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
+let asmo = co & mutordatom
 
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
 let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
-// synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
-    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
-    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
-    // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
+    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & F]; (po & sem2sc); [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; (po & sc2sem); [ACQ & F]) |
+    ([REL & F]; (po & sem2sc); [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; (po & sc2sem); [ACQ & F]) |
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])
 )
 
 let ithb(SC, SEMSC) = (ssw |
         ([SEMSC]; sw; [SEMSC]) |
         ([(NONPRIV & SC) | SEMSC]; po; [REL & SEMSC]) |
-        ([ACQ & SEMSC]; po; [(NONPRIV & SC) | SEMSC])
-    )+
+        ([ACQ & SEMSC]; po; [(NONPRIV & SC) | SEMSC]))+
 
 let ithb0 = ithb(SC0, SEMSC0)
 let ithb1 = ithb(SC1, SEMSC1)
@@ -97,15 +87,15 @@ let ithb23 = ithb(SC23, SEMSC23)
 let hb = po | ithb0 | ithb1 | ithb2 | ithb3 |
          ithb01 | ithb02 | ithb03 | ithb12 | ithb13 | ithb23
 
-let avinc0 = (chains & ithb0); [SEMAV & SEMSC0]
-let avinc1 = (chains & ithb1); [SEMAV & SEMSC1]
-let avinc2 = (chains & ithb2); [SEMAV & SEMSC2]
-let avinc3 = (chains & ithb3); [SEMAV & SEMSC3]
+let avinc0 = (chain & ithb0); [SEMAV & SEMSC0]
+let avinc1 = (chain & ithb1); [SEMAV & SEMSC1]
+let avinc2 = (chain & ithb2); [SEMAV & SEMSC2]
+let avinc3 = (chain & ithb3); [SEMAV & SEMSC3]
 
-let visinc0 = [SEMVIS & SEMSC0]; (chains & ithb0)
-let visinc1 = [SEMVIS & SEMSC1]; (chains & ithb1)
-let visinc2 = [SEMVIS & SEMSC2]; (chains & ithb2)
-let visinc3 = [SEMVIS & SEMSC3]; (chains & ithb3)
+let visinc0 = [SEMVIS & SEMSC0]; (chain & ithb0)
+let visinc1 = [SEMVIS & SEMSC1]; (chain & ithb1)
+let visinc2 = [SEMVIS & SEMSC2]; (chain & ithb2)
+let visinc3 = [SEMVIS & SEMSC3]; (chain & ithb3)
 
 let avsg0b = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC0 & SEMAV])?; [SG]
 let avsg0 = (vloc & ssg & (avsg0b; ithb0))?; avsg0b
@@ -211,29 +201,20 @@ let locord = loc & (
     )
 )
 
-(***********************)
-(* Memory Model Axioms *)
-(***********************)
+(* Constraints *)
 
-// locord, rf, fr, asmo must not form cycles
 let sfr = rf^-1; (asmo | (loc & (IW * (W \ IW))))
-acyclic (locord | rf | sfr | asmo) as consistency-cycle
 
-// load cannot read-from a value that is shadowed by another write
+empty rmw & ((fr & ext); (co & ext)) as atomic
+acyclic (locord | rf | sfr | asmo) as consistency-cycle
 empty rf & ([W]; locord; ([W]; locord)+) as consistency-rf
 
-// rmw events are atomic
-empty rmw & ((fr & ext); (co & ext)) as atomic
-
-// consistent coherence order
 empty ((W * W) & locord) \ co \ id as consistent-co
 empty ((W * W) & mutordatom) \ co \ co^-1
 empty ((IW * (W \ IW)) & loc & vloc) \ co
 
-(***************)
-(* Data Races *)
-(***************)
+(* Data race *)
 
-let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
-let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
+let ord = mutordatom | locord | locord^-1
+let dr = loc \ id \ ord \ (R * R) \ (IW * _) \ (_ * IW)
 flag ~empty dr as racy

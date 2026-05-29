@@ -18,4 +18,4 @@ empty (([R] \ [range(rf)]);loc;[IW])
 flag ~empty [UB] as undefined-behavior
 
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
-let chains = [E]
+let chain = [E]

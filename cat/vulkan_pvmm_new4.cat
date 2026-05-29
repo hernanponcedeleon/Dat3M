@@ -1,6 +1,4 @@
 VULKAN
-(* Vulkan Memory Model *)
-(* With availability-visibility chains supported *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -14,12 +12,10 @@ VULKAN
 // SC0, SC1, SC2, SC3: storage class 0, 1, 2, 3
 // SEMSC0, SEMSC1, SEMSC2, SEMSC3: storage class semantics 0, 1, 2, 3
 // SG, WG, QF, DV: subgroup, workgroup, queuefamily, device domains
-// AV, VIS: availability, visibility
+// SEMAV, SEMVIS: availability and visibility semantics
 // AVDEVICE, VISDEVICE: availability, visibility op to the device domain
 
-(*******************)
 (*  Auxiliaries *)
-(*******************)
 
 // Host-happens-before
 let hhb = (po | ssw)+
@@ -29,6 +25,8 @@ let WG = WG | QF
 let SG = SG | WG
 
 let vloc = vloc & loc
+
+(* Definitions *)
 
 let SC01 = SC0 | SC1
 let SC02 = SC0 | SC2
@@ -54,31 +52,25 @@ let SEMSC023 = SEMSC02 & SEMSC3
 let SEMSC123 = SEMSC12 & SEMSC3
 let SEMSC0123 = SEMSC012 & SEMSC3
 
-(* Relations *)
+let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
+let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
+
 let inscope = (DV * DV) | (sqf & (QF * QF)) | (swg & (WG * WG)) | (ssg & (SG * SG))
 let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
 let asmo = co & mutordatom
 let asrf = rf & mutordatom
 let asfr = fr & mutordatom
 
-let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
-let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
-
-let posctosem = po & sc2sem
-let posemtosc = po & sem2sc
-
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
 let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
-// synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
-    ([REL & ATOM]; rs; asrf; [ACQ & ATOM]) |                                               // atomic->atomic
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; asrf; [ACQ & ATOM]) |                       // fence->atomic
-    ([REL & ATOM]; rs; asrf; [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; asrf; [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
-    // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
+    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & F]; (po & sem2sc); [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; (po & sc2sem); [ACQ & F]) |
+    ([REL & F]; (po & sem2sc); [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; (po & sc2sem); [ACQ & F]) |
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])
 )
 
 let ithb(SC, SEMSC) = (ssw |
@@ -98,15 +90,15 @@ let ithb12 = ithb(SC12, SEMSC12)
 let ithb13 = ithb(SC13, SEMSC13)
 let ithb23 = ithb(SC23, SEMSC23)
 
-let avinc0 = (chains & ithb0); [SEMAV & SEMSC0]
-let avinc1 = (chains & ithb1); [SEMAV & SEMSC1]
-let avinc2 = (chains & ithb2); [SEMAV & SEMSC2]
-let avinc3 = (chains & ithb3); [SEMAV & SEMSC3]
+let avinc0 = (chain & ithb0); [SEMAV & SEMSC0]
+let avinc1 = (chain & ithb1); [SEMAV & SEMSC1]
+let avinc2 = (chain & ithb2); [SEMAV & SEMSC2]
+let avinc3 = (chain & ithb3); [SEMAV & SEMSC3]
 
-let visinc0 = [SEMVIS & SEMSC0]; (chains & ithb0)
-let visinc1 = [SEMVIS & SEMSC1]; (chains & ithb1)
-let visinc2 = [SEMVIS & SEMSC2]; (chains & ithb2)
-let visinc3 = [SEMVIS & SEMSC3]; (chains & ithb3)
+let visinc0 = [SEMVIS & SEMSC0]; (chain & ithb0)
+let visinc1 = [SEMVIS & SEMSC1]; (chain & ithb1)
+let visinc2 = [SEMVIS & SEMSC2]; (chain & ithb2)
+let visinc3 = [SEMVIS & SEMSC3]; (chain & ithb3)
 
 let avsg0 = [W & NONPRIV & SC0]; (po & vloc)?; [W & NONPRIV]; (po; [SEMSC0 & SEMAV])?; [SG]
 let avwg0 = avsg0; (ssg & avinc0)?; [WG]
@@ -203,24 +195,16 @@ let locordb = loc & (
 
 let locord = (((locordb & (W * W))*; (locordb & (W * M))) | (locordb+ & (R * W))) \ id
 
-(***********************)
-(* Memory Model Axioms *)
-(***********************)
+(* Constraints *)
 
-// consistent communication
+empty rmw & ((fr & ext); (co & ext)) as atomic
 acyclic locord as consistency-cycle
 irreflexive locord; (co | rf | fr) as irreflexive-locord
 
-// rmw events are atomic
-empty rmw & ((fr & ext); (co & ext)) as atomic
-
-// consistent coherence order
 empty ((W * W) & locord) \ co as consistent-co
 empty ((W * W) & mutordatom) \ co \ co^-1
 
-(***************)
-(* Data Races *)
-(***************)
+(* Data race *)
 
 // let ord = mutordatom | locord | locord^-1
 let ord = locord | locord^-1
