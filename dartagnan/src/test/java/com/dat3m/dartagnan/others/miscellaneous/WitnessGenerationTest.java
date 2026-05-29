@@ -8,6 +8,8 @@ import java.nio.file.Files;
 
 import static org.junit.Assert.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+
 public class WitnessGenerationTest {
 
     private final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
@@ -21,7 +23,7 @@ public class WitnessGenerationTest {
         final Path programPath = testDir.resolve(programName + ".ll");
         final Path witnessPath = outputDir.resolve(programName + ".png");
 
-        Dartagnan.runAsApplication(programPath, catPath, "--witness=png");
+        Dartagnan.runAsApplication(programPath, catPath, String.format("--%s=png", WITNESS));
         assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
     }
 
@@ -32,7 +34,7 @@ public class WitnessGenerationTest {
         final Path programPath = testDir.resolve(programName + ".ll");
         final Path witnessPath = outputDir.resolve(witnessName + ".png");
 
-        Dartagnan.runAsApplication(programPath, catPath, "--witness=png", "--witness.filename=" + witnessName);
+        Dartagnan.runAsApplication(programPath, catPath, String.format("--%s=png", WITNESS), String.format("--%s=%s", WITNESS_FILENAME, witnessName));
         assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
     }
 
@@ -41,12 +43,12 @@ public class WitnessGenerationTest {
         final String programName = "ttas-acq2rx";
         final Path programPath = testDir.resolve(programName + ".ll");
         final Path witnessPath = outputDir.resolve(programName + ".dot");
+        final String relToShow = "ppo";
 
-        Dartagnan.runAsApplication(programPath, catPath, "--witness=dot", "--witness.show=ppo");
+        Dartagnan.runAsApplication(programPath, catPath, String.format("--%s=dot", WITNESS), String.format("--%s=%s", WITNESS_SHOW, relToShow));
 
         final String witnessContent = Files.readString(witnessPath);
-        final String expectedSnippet = "ppo";
 
-        assertTrue("The witness  does not show the expected relations: " + expectedSnippet, witnessContent.contains(expectedSnippet));
+        assertTrue("The witness  does not show the expected relations: " + relToShow, witnessContent.contains(relToShow));
     }
 }
