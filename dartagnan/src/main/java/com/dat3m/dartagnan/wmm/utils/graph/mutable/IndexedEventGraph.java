@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils.graph.mutable;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.collections.OneTimeIterable;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
@@ -16,11 +17,11 @@ public final class IndexedEventGraph implements MutableEventGraph {
     // `map.length == domain.size()`
     // `Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(eventDomain))`
     // `size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()`
-    private final IndexedSet.Domain<Event> eventDomain;
+    private final IndexedDomain<Event> eventDomain;
     private final IndexedSet[] map;
     private int size;
 
-    public IndexedEventGraph(IndexedSet.Domain<Event> d) {
+    public IndexedEventGraph(IndexedDomain<Event> d) {
         this(d, 0);
     }
 
@@ -28,18 +29,18 @@ public final class IndexedEventGraph implements MutableEventGraph {
         this(g.eventDomain, g);
     }
 
-    public IndexedEventGraph(IndexedSet.Domain<Event> d, EventGraph g) {
+    public IndexedEventGraph(IndexedDomain<Event> d, EventGraph g) {
         this(d, 0);
         //TODO assume this graph is empty
         addAll(g);
     }
 
-    private IndexedEventGraph(IndexedSet.Domain<Event> d, int ignore) {
+    private IndexedEventGraph(IndexedDomain<Event> d, int ignore) {
         eventDomain = d;
         map = new IndexedSet[d.size()];
     }
 
-    public IndexedSet.Domain<Event> eventDomain() {
+    public IndexedDomain<Event> eventDomain() {
         return eventDomain;
     }
 
@@ -143,7 +144,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public Set<Event> getRange(Event e) {
         final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
-        return range == null ? Set.of() : new IndexedSet.Immutable<>(range);
+        return range == null ? Set.of() : range.unmodifiableView();
     }
 
     @Override

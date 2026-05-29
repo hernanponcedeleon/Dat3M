@@ -9,95 +9,48 @@ import java.util.function.Predicate;
 /// Compact subset of a collection using a bitvector.
 public final class IndexedSet<E> extends AbstractSet<E> {
     // assert Arrays.stream(domain).allMatch(o -> o instanceof E)
-    private final Object[] domain;
+    private final IndexedDomain<E> domain;
+    private final Object[] elements;
     private final int[] index;
     private long[] member;
     // assert 0 <= loneMember && loneMember <= domain.length
     private int loneMember;
 
     public IndexedSet(IndexedSet<E> list) {
-        this(list.domain, list.index, list.member == null ? null : Arrays.copyOf(list.member, list.member.length), list.loneMember);
+        this(list.domain, nullableCopy(list.member), list.loneMember);
     }
 
-    public IndexedSet(Domain<E> domain) {
-        this(domain.domain, domain.index, null, domain.domain.length);
+    public IndexedSet(IndexedDomain<E> elements) {
+        this(elements, null, elements.elements.length);
     }
 
-    private IndexedSet(Object[] d, int[] i, long[] m, int l) {
+    private IndexedSet(IndexedDomain<E> d, long[] m, int l) {
         domain = d;
-        index = i;
+        elements = d.elements;
+        index = d.index;
         member = m;
         loneMember = l;
     }
 
-    public Domain<E> domain() {
-        return new Domain<>(domain, index);
+    /// Returns the domain associated with this subset.
+    public IndexedDomain<E> domain() {
+        return domain;
     }
 
-    public static final class Domain<E> {
-        private final Object[] domain;
-        private final int[] index;
-        public Domain(Collection<E> elements) {
-            domain = elements.toArray();
-            index = newIndex(domain);
-        }
-        private Domain(Object[] d, int[] i) {
-            domain = d;
-            index = i;
-        }
-        public Iterator<E> iterator() {
-            return new Iterator<>() {
-                private int i = 0;
-                @Override
-                public boolean hasNext() {
-                    return i < domain.length;
-                }
-                @Override
-                public E next() {
-                    return (E) domain[i++];
-                }
-            };
-        }
-        public E element(int index) {
-            return (E) domain[index];
-        }
-        public int size() {
-            return domain.length;
-        }
-        public int indexOf(Object key) {
-            return IndexedSet.indexOf(domain, index, key);
-        }
-        @Override
-        public int hashCode() {
-            return domain.hashCode();
-        }
-        @Override
-        public boolean equals(Object other) {
-            return other instanceof Domain<?> o && domain == o.domain;
-        }
+    /// Returns a life view on this set.
+    public Set<E> unmodifiableView() {
+        return new Immutable<>(this);
     }
 
-    public IndexedSet<E> and(Collection<E> other) {
-        final var and = new IndexedSet<>(this);
-        and.retainAll(other);
-        return and;
-    }
-
-    public IndexedSet<E> or(Collection<E> other) {
-        final var or = new IndexedSet<>(this);
-        or.addAll(other);
-        return or;
-    }
-
-    /// returns `true` if the element at `index` was contained in this set.
+    /// Returns `true` if the element at `index` was contained in this set.
     public boolean exchange(int index, boolean value) {
-        assert 0 <= index && index < domain.length;
+        assert 0 <= index && index < elements.length;
         if (member == null) {
             if (loneMember == index) {
-                loneMember = value ? loneMember : domain.length;
+                loneMember = value ? loneMember : elements.length;
                 return true;
             }
-            if (value && loneMember == domain.length) {
+            if (value && loneMember == elements.length) {
                 loneMember = index;
                 return false;
             }
@@ -109,13 +62,13 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         final long mask = 1L << (index % 64);
         final boolean change = value == ((member[index / 64] & mask) == 0L);
         member[index / 64] ^= change ? mask : 0L;
-        shrinkIfPossible();
+        //shrinkIfPossible(); // This would be too costly.
         return change != value;
     }
 
     public Iterator<Integer> indexIterator() {
         if (member == null) {
-            return (loneMember == domain.length ? List.<Integer>of() : List.of(loneMember)).iterator();
+            return (loneMember == elements.length ? List.<Integer>of() : List.of(loneMember)).iterator();
         }
         return new Iterator<>() {
             private int pageindex;
@@ -148,23 +101,48 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public int size() {
-        return member == null ? loneMember == domain.length ? 0 : 1 : bitCount(member);
+        return member == null ? loneMember == elements.length ? 0 : 1 : bitCount(member);
     }
 
     @Override
     public boolean contains(Object o) {
-        final int i = indexOf(domain, index, o);
-        return i != -1 && (member == null ? loneMember == i : (member[i / 64] & (1L << (i % 64))) != 0L);
+        final int i = IndexedDomain.indexOf(elements, index, o);
+        return i != -1 && test(member, loneMember, i);
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> other) {
+        if (unwrap(other) instanceof IndexedSet<?> o && domain == o.domain) {
+            if (o.member == null) {
+                return o.loneMember == elements.length || test(member, loneMember, o.loneMember);
+            }
+            if (member != null) {
+                for (int i = 0; i < member.length; i++) {
+                    if (0L != (~member[i] & o.member[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return super.containsAll(other);
+    }
+
+    private static boolean test(long[] member, int loneMember, int index) {
+        return member == null ? loneMember == index : (member[index / 64] & (1L << (index % 64))) != 0L;
     }
 
     @Override
     public Iterator<E> iterator() {
-        return Iterators.transform(indexIterator(), i -> (E) domain[i]);
+        return Iterators.transform(indexIterator(), i -> (E) elements[i]);
     }
 
     @Override
     public Spliterator<E> spliterator() {
-        return member == null ? loneMember == domain.length ? List.<E>of().spliterator() : List.of((E) domain[loneMember]).spliterator() : new Split(0, domain.length);
+        if (member == null) {
+            return (loneMember == elements.length ? List.<E>of() : List.of((E) elements[loneMember])).spliterator();
+        }
+        return new Split(0, elements.length);
     }
 
     private final class Split implements Spliterator<E> {
@@ -179,7 +157,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             if (from >= to) {
                 return false;
             }
-            action.accept((E) domain[from]);
+            action.accept((E) elements[from]);
             from++;
             return true;
         }
@@ -201,21 +179,21 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public void clear() {
         member = null;
-        loneMember = domain.length;
+        loneMember = elements.length;
     }
 
     @Override
     public boolean add(E element) {
-        final int i = indexOf(domain, index, element);
+        final int i = IndexedDomain.indexOf(elements, index, element);
         if (i == -1) {
-            throw new ObjectOutOfDomainException();
+            throw new ObjectOutOfDomainException(element);
         }
         return !exchange(i, true);
     }
 
     @Override
     public boolean remove(Object element) {
-        final int i = indexOf(domain, index, element);
+        final int i = IndexedDomain.indexOf(elements, index, element);
         return i != -1 && exchange(i, false);
     }
 
@@ -224,25 +202,28 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         if (other.isEmpty()) {
             return false;
         }
-        final var otherSet = unwrap(other) instanceof IndexedSet<?> o ? o : null;
-        final var add = otherSet != null && otherSet.member != null && index == otherSet.index ? otherSet.member : newBits(domain.length);
-        for (Object element : otherSet != null && add == otherSet.member ? Set.of() : other) {
-            final int i = indexOf(domain, index, element);
+        final var otherSet = unwrap(other) instanceof IndexedSet<?> o && domain == o.domain ? o : null;
+        if (otherSet != null && otherSet.member == null) {
+            return otherSet.loneMember != -1 && exchange(otherSet.loneMember, true);
+        }
+        final var add = otherSet != null ? otherSet.member : newBits(elements.length);
+        for (Object element : otherSet != null ? Set.of() : other) {
+            final int i = IndexedDomain.indexOf(elements, index, element);
             if (i == -1) {
-                throw new ObjectOutOfDomainException();
+                throw new ObjectOutOfDomainException(element);
             }
             add[i / 64] |= 1L << (i % 64);
         }
         if (member == null) {
-            final boolean otherMissesLoneMember = loneMember != domain.length
+            final boolean otherMissesLoneMember = loneMember != elements.length
                     && (add[loneMember / 64] & (1L << (loneMember % 64))) == 0L;
             final int size = bitCount(add) + (otherMissesLoneMember ? 1 : 0);
-            if (size == 0 || size == 1 && loneMember != domain.length) {
+            if (size == 0 || size == 1 && loneMember != elements.length) {
                 return false;
             }
             if (size == 1) {
                 final int newLoneMember = lowestBit(add);
-                assert newLoneMember < domain.length;
+                assert newLoneMember < elements.length;
                 loneMember = newLoneMember;
                 return true;
             }
@@ -261,11 +242,11 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean removeAll(Collection<?> other) {
         if (member == null) {
-            final boolean changed = loneMember != domain.length && other.contains(domain[loneMember]);
-            loneMember = changed ? domain.length : loneMember;
+            final boolean changed = loneMember != elements.length && other.contains(elements[loneMember]);
+            loneMember = changed ? elements.length : loneMember;
             return changed;
         }
-        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && index == o.index) {
+        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && domain == o.domain) {
             assert member.length == o.member.length;
             boolean changed = false;
             for (int pageindex = 0; pageindex < member.length; pageindex++) {
@@ -282,11 +263,11 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean retainAll(Collection<?> other) {
         if (member == null) {
-            final boolean changed = loneMember != domain.length && !other.contains(domain[loneMember]);
-            loneMember = changed ? domain.length : loneMember;
+            final boolean changed = loneMember != elements.length && !other.contains(elements[loneMember]);
+            loneMember = changed ? elements.length : loneMember;
             return changed;
         }
-        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && index == o.index) {
+        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && domain == o.domain) {
             assert member.length == o.member.length;
             boolean changed = false;
             for (int pageindex = 0; pageindex < member.length; pageindex++) {
@@ -303,8 +284,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean removeIf(Predicate<? super E> filter) {
         if (member == null) {
-            final boolean changed = loneMember != domain.length && filter.test((E) domain[loneMember]);
-            loneMember = changed ? domain.length : loneMember;
+            final boolean changed = loneMember != elements.length && filter.test((E) elements[loneMember]);
+            loneMember = changed ? elements.length : loneMember;
             return changed;
         }
         boolean changed = false;
@@ -312,10 +293,10 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             long cache = member[blockindex];
             if (cache != 0L) {
                 long changes = 0L;
-                final long finalMask = blockindex != member.length - 1 ? 0L : 2L << ((63 + domain.length) % 64);
+                final long finalMask = blockindex != member.length - 1 ? 0L : 2L << ((63 + elements.length) % 64);
                 int i = blockindex * 64;
                 for (long mask = 1L; mask != finalMask; mask <<= 1) {
-                    if ((cache & mask) != 0L && filter.test((E) domain[i])) {
+                    if ((cache & mask) != 0L && filter.test((E) elements[i])) {
                         changes |= mask;
                     }
                     i++;
@@ -330,17 +311,17 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     private void ensureMemberArray() {
         if (member == null) {
-            member = newBits(domain.length);
-            if (loneMember != domain.length) {
+            member = newBits(elements.length);
+            if (loneMember != elements.length) {
                 member[loneMember / 64] |= 1L << (loneMember % 64);
             }
-            loneMember = domain.length;
+            loneMember = elements.length;
         }
     }
 
     private void shrinkIfPossible() {
         if (member != null && bitCount(member) <= 1) {
-            loneMember = Integer.min(lowestBit(member), domain.length);
+            loneMember = Integer.min(lowestBit(member), elements.length);
             member = null;
         }
     }
@@ -370,55 +351,15 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return count;
     }
 
-    private static final float HASH_TABLE_FILL_FACTOR = 1.5f;
-
-    private static int[] newIndex(Object[] domain) {
-        final int[] index = new int[(int) (domain.length * HASH_TABLE_FILL_FACTOR) << 1];
-        Arrays.fill(index, -1);
-        // Try to insert all elements at their bucket's front.
-        for (int i = 0; i < domain.length; i++) {
-            final int hash = domain[i].hashCode();
-            int h = hash % (index.length >> 1) << 1;
-            if (index[h] == -1) {
-                index[h] = i;
-                index[h | 1] = hash;
-            }
-        }
-        // Insert all elements with birthday problem.
-        for (int i = 0; i < domain.length; i++) {
-            final int hash = domain[i].hashCode();
-            int h = (hash % (index.length >> 1)) << 1;
-            if (index[h] != i) {
-                do {
-                    if (index[h | 1] == hash && domain[i].equals(domain[index[h]])) {
-                        throw new IllegalArgumentException("Trying to create an index for a non-set collection.");
-                    }
-                    h += 2;
-                    h = h < index.length ? h : 0;
-                } while (index[h] != -1);
-                index[h] = i;
-                index[h | 1] = hash;
-            }
-        }
-        return index;
-    }
-
-    private static int indexOf(Object[] domain, int[] index, Object key) {
-        final int hash = key.hashCode();
-        int h = (hash % (index.length >> 1)) << 1;
-        int fast;
-        while ((fast = index[h]) != -1 && (index[h | 1] != hash || !domain[fast].equals(key))) {
-            h += 2;
-            h = h < index.length ? h : 0;
-        }
-        return fast;
+    private static long[] nullableCopy(long[] array) {
+        return array == null ? null : Arrays.copyOf(array, array.length);
     }
 
     private static <E> Collection<E> unwrap(Collection<E> collection) {
         return collection instanceof Immutable<E> i ? i.wrapped : collection;
     }
 
-    public static final class Immutable<E> extends AbstractSet<E> {
+    private static final class Immutable<E> extends AbstractSet<E> {
         private final IndexedSet<E> wrapped;
         public Immutable(IndexedSet<E> w) { wrapped = w; }
         @Override
@@ -434,6 +375,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     }
 
     public static final class ObjectOutOfDomainException extends IllegalArgumentException {
-        private ObjectOutOfDomainException() {}
+        private ObjectOutOfDomainException(Object element) { super(element.toString()); }
     }
 }

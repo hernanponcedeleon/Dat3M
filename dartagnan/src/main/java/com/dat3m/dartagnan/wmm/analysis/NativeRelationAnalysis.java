@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
@@ -78,7 +79,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
         visibility = VisibilityAnalysis.newInstance(task.getMemoryModel());
-        final var dom = new IndexedSet.Domain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE));
+        final var dom = new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE));
         visibleEvents = new IndexedSet<>(dom);
         EMPTY = new Delta(newGraph(), newGraph());
         for (Thread thread : task.getProgram().getThreads()) {

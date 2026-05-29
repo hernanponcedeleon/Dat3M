@@ -16,7 +16,7 @@ public class IndexedSetTest {
         for (int i = 0; i < objects.length; i++) {
             objects[i] = new Object();
         }
-        final var dom = new IndexedSet.Domain<>(Arrays.asList(objects));
+        final var dom = new IndexedDomain<>(Arrays.asList(objects));
         // Test the empty set.
         final var empty = new IndexedSet<>(dom);
         assertTrue(empty.isEmpty());

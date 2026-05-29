@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils.graph.mutable;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.collections.IndexedSet;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public interface MutableEventGraph extends EventGraph {
 
     static MutableEventGraph union(EventGraph... operands) {
         if (operands.length > 0 && operands[0] instanceof IndexedEventGraph firstOperand) {
-            final IndexedSet.Domain<Event> domain = firstOperand.eventDomain();
+            final IndexedDomain<Event> domain = firstOperand.eventDomain();
             if (Arrays.stream(operands, 1, operands.length)
                     .allMatch(operand -> operand instanceof IndexedEventGraph o && o.eventDomain().equals(domain))) {
                 final MutableEventGraph union = new IndexedEventGraph(firstOperand);
