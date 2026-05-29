@@ -25,7 +25,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -123,11 +123,13 @@ public class Dartagnan extends BaseOptions {
 
     private static void printVersion() throws Exception {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-        final FileReader fileReader = new FileReader(getHomeDirectory() + "/pom.xml");
-        final String base = mvnReader.read(fileReader).getVersion();
-        final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
+        final Path pomPath = Path.of(getHomeDirectory(), "pom.xml");
 
-        System.out.println(version);
+        try (BufferedReader reader = Files.newBufferedReader(pomPath)) {
+            final String base = mvnReader.read(reader).getVersion();
+            final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
+            System.out.println(version);
+        }
     }
 
     private static Configuration loadConfigurationFromArgs(String[] args) throws InvalidConfigurationException, IOException {
