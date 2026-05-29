@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
+import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {
@@ -76,7 +77,7 @@ public class SVCOMPRunner extends BaseOptions {
         String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get();
         File fileProgram = new File(programPath);
         // To be sure we do not mixed benchmarks, if the bounds file exists, delete it
-        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
+        final String boundsFilePath = getHomeDirectory() + "/bounds.csv";
         new File(boundsFilePath).delete();
 
         String[] argKeyword = Arrays.stream(args)
@@ -95,16 +96,16 @@ public class SVCOMPRunner extends BaseOptions {
         while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
             if (r.nativeExecution) {
-                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
+                cmd.add(getHomeDirectory() + "/dartagnan/target/dartagnan");
                 cmd.add("-DlogLevel=INFO");
                 cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-                cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
+                cmd.add("-Djava.library.path=" + getHomeDirectory() + "/dartagnan/target/libs/");
             } else {
                 cmd.add("java");
                 cmd.add("-DlogLevel=info");
                 cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
                 cmd.add("-jar");
-                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar");
+                cmd.add(getHomeDirectory() + "/dartagnan/target/dartagnan.jar");
             }
             cmd.add(fileModel.toString());
             cmd.add(programPath);

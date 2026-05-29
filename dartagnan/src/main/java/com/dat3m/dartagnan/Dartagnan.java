@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
+import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
 public class Dartagnan extends BaseOptions {
@@ -122,7 +123,7 @@ public class Dartagnan extends BaseOptions {
 
     private static void printVersion() throws Exception {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-        final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
+        final FileReader fileReader = new FileReader(getHomeDirectory() + "/pom.xml");
         final String base = mvnReader.read(fileReader).getVersion();
         final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
 
@@ -182,30 +183,6 @@ public class Dartagnan extends BaseOptions {
         } catch (IOException e) {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
-        }
-    }
-
-    public static void runAsApplication(Path programPath, Path catPath, String... options) throws Exception {
-        final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
-        final Path dat3mJar = dat3mHome.resolve("dartagnan")
-                                       .resolve("target")
-                                       .resolve("dartagnan.jar");
-
-        List<String> command = new ArrayList<>();
-        command.add("java");
-        command.add("-jar");
-        command.add(dat3mJar.toAbsolutePath().toString());
-        command.add(catPath.toAbsolutePath().toString());
-        command.add(programPath.toAbsolutePath().toString());
-        command.addAll(Arrays.asList(options));
-
-        ProcessBuilder pb = new ProcessBuilder(command);
-        Process process = pb.start();
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            String error = new String(process.getErrorStream().readAllBytes());
-            logger.warn("Dartagnan finished with exit code {}. Error:", exitCode, error);
         }
     }
 

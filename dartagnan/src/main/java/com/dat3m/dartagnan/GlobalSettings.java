@@ -18,7 +18,11 @@ public class GlobalSettings {
     // --------------------
 
     public static String getHomeDirectory() {
-        if (USE_TEST_PATH) {
+        return getHomeDirectory(false);
+    }
+
+    public static String getHomeDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
             return "target";
         }
         String env = System.getenv("DAT3M_HOME");
@@ -30,7 +34,11 @@ public class GlobalSettings {
     }
 
     public static String getCatDirectory() {
-        if (USE_TEST_PATH) {
+        return getCatDirectory(false);
+    }
+
+    public static String getCatDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
             return "../cat";
         }
         String env = System.getenv("DAT3M_HOME");
@@ -45,7 +53,11 @@ public class GlobalSettings {
     }
 
     public static String getOutputDirectory() {
-        if (USE_TEST_PATH) {
+        return getOutputDirectory(false);
+    }
+
+    public static String getOutputDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
             return "target/output";
         }
         String env = System.getenv("DAT3M_OUTPUT");
