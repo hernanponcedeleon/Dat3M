@@ -13,8 +13,12 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 public class WitnessGenerationTest {
 
     private final Path dat3mHome = Path.of(System.getenv("DAT3M_HOME"));
-    private final Path testDir = dat3mHome.resolve("dartagnan/src/test/resources/locks");
-    private final Path catPath = dat3mHome.resolve("cat/vmm.cat");
+    private final Path testDir = dat3mHome.resolve("dartagnan")
+                                     .resolve("src")
+                                     .resolve("test")
+                                     .resolve("resources")
+                                     .resolve("locks");
+    private final Path catPath = dat3mHome.resolve("cat").resolve("vmm.cat");
     private final Path outputDir = dat3mHome.resolve("output");
 
     @Test
