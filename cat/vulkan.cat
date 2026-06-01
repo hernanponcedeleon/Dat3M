@@ -158,9 +158,7 @@ let locord = loc & (
         ([W & NONPRIV]; apo; avqf; (hb & sqf); visqf; apo; [R & NONPRIV]) |
         ([W & NONPRIV]; apo; avdv; hb; visdv; apo; [R & NONPRIV])))
 
-// The definition of the original Vulkan model is too restrictive and forbids CoWW-RR
-// let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
-let fr = ((rf & locord)^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 
 (* Constraints *)
 
