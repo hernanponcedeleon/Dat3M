@@ -146,7 +146,7 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3-problem-vloc-old-vis-chain4-c,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-old-vis-chain4-d,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-old-vis-chain4-e,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
-3-problem-vloc-old-vis-chain4-f,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-old-vis-chain4-f,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-old-vis-chain4-g,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-old-vis-chain4-h,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-old-vis-chain5-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
