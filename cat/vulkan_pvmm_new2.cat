@@ -55,8 +55,6 @@ VULKAN
      ssw       = system synchronizes with (by host)
 *)
 
-(*  Auxiliaries *)
-
 // Host-happens-before
 let hhb = (po | ssw)+
 
@@ -65,8 +63,6 @@ let WG = WG | QF
 let SG = SG | WG
 
 let vloc = vloc & loc
-
-(* Definitions *)
 
 let SC01 = SC0 | SC1
 let SC02 = SC0 | SC2

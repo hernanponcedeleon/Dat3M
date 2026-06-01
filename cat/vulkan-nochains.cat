@@ -55,15 +55,11 @@ VULKAN
      ssw       = system synchronizes with (by host)
 *)
 
-(* Auxiliaries *)
-
 let QF = QF | DV
 let WG = WG | QF
 let SG = SG | WG
 
 let vloc = vloc & loc
-
-(* Definitions *)
 
 let SC01 = SC0 | SC1
 let SC02 = SC0 | SC2
@@ -158,9 +154,9 @@ let locord = loc & (
         ([W & NONPRIV]; apo; avqf; (hb & sqf); visqf; apo; [R & NONPRIV]) |
         ([W & NONPRIV]; apo; avdv; hb; visdv; apo; [R & NONPRIV])))
 
-let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
-
 (* Constraints *)
+
+let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 
 empty rmw & ((fr & ext); (asmo & ext)) as atomic
 acyclic (locord | rf | fr | asmo) as consistency-cycle
