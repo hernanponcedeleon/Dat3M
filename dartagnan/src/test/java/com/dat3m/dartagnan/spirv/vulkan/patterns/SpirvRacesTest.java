@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Arch.addVulkanPartialCoConstraints;
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
@@ -63,23 +62,6 @@ public class SpirvRacesTest {
         assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
-    @Test
-    public void testPartialCo() throws Exception {
-        Arch.forcePartialCo = true;
-        Configuration config = Configuration.builder()
-                .copyFrom(TestHelper.getBasicConfig())
-                .setOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter))
-                .build();
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(config)
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
-        addVulkanPartialCoConstraints(mcm);
-        VerificationTask task = builder.build(program, mcm, EnumSet.of(CAT_SPEC));
-        assertEquals(expected, TestHelper.createAndRunSolver(task, Method.EAGER));
-        Arch.forcePartialCo = false;
-    }
     private VerificationTask mkTask() throws Exception {
         Configuration config = Configuration.builder()
                 .copyFrom(TestHelper.getBasicConfig())

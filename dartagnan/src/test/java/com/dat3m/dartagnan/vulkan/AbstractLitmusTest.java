@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.vulkan;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
@@ -34,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.Arch.addVulkanPartialCoConstraints;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
@@ -163,31 +161,5 @@ public abstract class AbstractLitmusTest {
             checker.run();
             assertEquals(expected, checker.getResult());
         }
-    }
-
-    @Test
-    public void testAssumePartialCo() throws Exception {
-        Arch.forcePartialCo = true;
-        VerificationTask task = taskProvider.get();
-        addVulkanPartialCoConstraints(task.getMemoryModel());
-        try (ModelChecker checker = AssumeSolver.create(task)) {
-            checker.setShutdownManager(shutdownManagerProvider.get());
-            checker.run();
-            assertEquals(expected, checker.getResult());
-        }
-        Arch.forcePartialCo = false;
-    }
-
-    @Test
-    public void testRefinementPartialCo() throws Exception {
-        Arch.forcePartialCo = true;
-        VerificationTask task = taskProvider.get();
-        addVulkanPartialCoConstraints(task.getMemoryModel());
-        try (ModelChecker checker = RefinementSolver.create(task)) {
-            checker.setShutdownManager(shutdownManagerProvider.get());
-            checker.run();
-            assertEquals(expected, checker.getResult());
-        }
-        Arch.forcePartialCo = false;
     }
 }

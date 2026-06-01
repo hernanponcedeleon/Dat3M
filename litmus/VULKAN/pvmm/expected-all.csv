@@ -33,8 +33,8 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3.3-x-problem-race-ssw,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 ,,,,,,,,,
 3.4-problem-race-asmo3-a,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
-3.4-problem-race-asmo3-b,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
-3.4-problem-race-asmo3-c,PASS,PASS,PASS,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3.4-problem-race-asmo3-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3.4-problem-race-asmo3-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 ,,,,,,,,,
 3.4-problem-race-mp3-atom-wrr,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3.4-problem-race-mp3-atom-wrw,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS

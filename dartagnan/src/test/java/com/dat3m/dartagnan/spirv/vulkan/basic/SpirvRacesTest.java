@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Arch.addVulkanPartialCoConstraints;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -50,20 +49,6 @@ public class SpirvRacesTest {
     @Test
     public void test() throws Exception {
         assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
-    }
-
-    @Test
-    public void testPartialCo() throws Exception {
-        Arch.forcePartialCo = true;
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(TestHelper.getBasicConfig())
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
-        addVulkanPartialCoConstraints(mcm);
-        VerificationTask task = builder.build(program, mcm, EnumSet.of(CAT_SPEC));
-        assertEquals(expected, TestHelper.createAndRunSolver(task, Method.EAGER));
-        Arch.forcePartialCo = false;
     }
 
     private VerificationTask mkTask() throws Exception {
