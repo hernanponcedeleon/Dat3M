@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
@@ -40,12 +41,15 @@ public interface MutableEventGraph extends EventGraph {
 
     static MutableEventGraph union(EventGraph... operands) {
         if (operands.length > 0 && operands[0] instanceof IndexedEventGraph firstOperand) {
-            final IndexedDomain<Event> domain = firstOperand.eventDomain();
+            final IndexedDomain<Event> firstDomain = firstOperand.eventDomain();
             if (Arrays.stream(operands, 1, operands.length)
-                    .allMatch(operand -> operand instanceof IndexedEventGraph o && o.eventDomain().equals(domain))) {
-                final MutableEventGraph union = new IndexedEventGraph(firstOperand);
-                for (int i = 1; i < operands.length; i++) {
-                    union.addAll(operands[i]);
+                    .allMatch(operand -> operand instanceof IndexedEventGraph o && o.eventDomain().isCompatible(firstDomain))) {
+                final IndexedDomain<Event> largestDomain = Arrays.stream(operands)
+                        .map(o -> ((IndexedEventGraph) o).eventDomain())
+                        .max(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
+                final MutableEventGraph union = new IndexedEventGraph(largestDomain);
+                for (EventGraph operand : operands) {
+                    union.addAll(operand);
                 }
                 return union;
             }

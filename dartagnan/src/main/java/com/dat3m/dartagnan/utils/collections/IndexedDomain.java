@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils.collections;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
 
 /// Used for compact sets, see `IndexedSet`.
 public final class IndexedDomain<E> {
@@ -10,6 +9,7 @@ public final class IndexedDomain<E> {
 
     final Object[] elements;
     final int[] index;
+    final Map<IndexedDomain<?>, Boolean> compatibilityMap = new HashMap<>();
 
     public IndexedDomain(Collection<E> elements) {
         this.elements = elements.toArray();
@@ -28,14 +28,19 @@ public final class IndexedDomain<E> {
         return indexOf(elements, index, key);
     }
 
-    @Override
-    public int hashCode() {
-        return elements.hashCode();
+    /// Returns `true` if this describes a subset of other or vice versa.
+    public boolean isCompatible(IndexedDomain<?> other) {
+        return this == other || compatibilityMap.computeIfAbsent(other, this::computeCompatible);
     }
 
-    @Override
-    public boolean equals(Object other) {
-        return other instanceof IndexedDomain<?> o && elements == o.elements;
+    private boolean computeCompatible(IndexedDomain<?> other) {
+        final int length = Integer.min(elements.length, other.elements.length);
+        for (int i = 0; i < length; i++) {
+            if (!elements[i].equals(other.elements[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static int indexOf(Object[] domain, int[] index, Object key) {

@@ -183,7 +183,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public boolean addAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.equals(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
@@ -208,7 +208,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public boolean removeAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.equals(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
@@ -233,7 +233,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public boolean retainAll(EventGraph other) {
         int diff = 0;
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.equals(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> outSet = outSetAt(index);
                 if (outSet != null) {
