@@ -118,10 +118,10 @@ let ithb023 = ithb(SC023, SEMSC023)
 let ithb123 = ithb(SC123, SEMSC123)
 let ithb0123 = ithb(SC0123, SEMSC0123)
 
-let hb = (po |
+let hb = po |
     ithb0 | ithb1 | ithb2 | ithb3 |
     ithb01 | ithb02 | ithb03 | ithb12 | ithb13 | ithb23 |
-    ithb012 | ithb013 | ithb023 | ithb123 | ithb0123)
+    ithb012 | ithb013 | ithb023 | ithb123 | ithb0123
 
 let avvisinc = ([SG]; vloc) | (vloc; [SG]) | (sc2sem; [SEMAV]) | ([SEMVIS]; sem2sc)
 let apo = po? & avvisinc
