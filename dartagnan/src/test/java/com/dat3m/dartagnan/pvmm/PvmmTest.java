@@ -238,27 +238,40 @@ public class PvmmTest {
                 System.out.println(programPath);
                 for (Map.Entry<String, Result> resultEntry : programEntry.getValue().entrySet()) {
                     Result result = resultEntry.getValue() == PASS ? FAIL : PASS;
-                    String modelPath = getRootPath("cat/" + resultEntry.getKey() + ".cat");
-                    System.out.println(modelPath);
-                    Program program = new ProgramParser().parse(new File(programPath));
-                    Wmm mcm = new ParserCat(libs.get(typeEntry.getKey())).parse(new File(modelPath));
-                    Property property = CAT_SPEC;
-                    if (result == PASS) {
-                        property = PROGRAM_SPEC;
-                        program.setSpecification(Program.SpecificationType.EXISTS, program.getFilterSpecification());
-                    }
-                    VerificationTask task = mkTask(program, mcm, property);
-                    try (ModelChecker mc = AssumeSolver.create(task)) {
-                        mc.run();
-                        assertTrue(mc.hasModel());
-                        RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
-                        Set<Relation> relations = task.getMemoryModel().getRelations();
-                        Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, mc.getProver().getModel());
-                        data = translateEventIds(task.getProgram(), data);
-                        log("races", resultEntry.getKey(), task.getProgram(), typeEntry.getKey(), data);
-                    }
+                    doLogRaces(programPath, typeEntry.getKey(), resultEntry.getKey(), result, false);
                 }
             }
+        }
+    }
+
+    private void doLogRaces(String programPath, String modelType, String model, Result result, boolean asmoFix) throws Exception {
+        String modelPath = getRootPath("cat/" + model + ".cat");
+        System.out.println(modelPath);
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat(libs.get(modelType)).parse(new File(modelPath));
+        if (asmoFix) {
+            removeAxiom(mcm, "consistent-asmo");
+        }
+        Property property = CAT_SPEC;
+        if (result == PASS) {
+            property = PROGRAM_SPEC;
+            program.setSpecification(Program.SpecificationType.EXISTS, program.getFilterSpecification());
+        }
+        VerificationTask task = mkTask(program, mcm, property);
+        try (ModelChecker mc = AssumeSolver.create(task)) {
+            mc.run();
+            if (asmoFix) {
+                assertTrue(mc.hasModel());
+            }
+            if (mc.hasModel()) {
+                RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+                Set<Relation> relations = task.getMemoryModel().getRelations();
+                Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, mc.getProver().getModel());
+                data = translateEventIds(task.getProgram(), data);
+                log("races", model, task.getProgram(), modelType, data);
+                return;
+            }
+            doLogRaces(programPath, modelType, model, result, true);
         }
     }
 

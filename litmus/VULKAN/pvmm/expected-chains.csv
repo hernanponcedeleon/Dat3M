@@ -65,13 +65,13 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3-problem-vloc-av-chain2-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain2-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-av-chain2-d,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
-3-problem-vloc-av-chain3-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-av-chain3-a,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain3-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
-3-problem-vloc-av-chain3-c,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
-3-problem-vloc-av-chain3-d,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-av-chain3-c,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-av-chain3-d,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain3-e,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain3-f,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
-3-problem-vloc-av-chain3-g,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-av-chain3-g,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain3-h,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-av-chain4-a,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain4-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
@@ -103,7 +103,7 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3-problem-vloc-av-chain9-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain9-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-av-chain9-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
-3-problem-vloc-av-chain10-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-av-chain10-a,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain10-b,FAIL,FAIL,FAIL,PASS,PASS,PASS,PASS,PASS,PASS
 3-problem-vloc-av-chain10-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-av-chain11-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
