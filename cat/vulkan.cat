@@ -157,7 +157,16 @@ let locord = loc & (
 (* Constraints *)
 let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 
+// Enforce co from initial writes for final state assertions
+empty (loc & (IW * (W \ IW))) \ co
+
+// asmo is a strict partial order, i.e. is transitive and irreflexive
+// Here, we enforce the transitivity while the irreflexivity is enforce in consistency-cycle constraint
+empty (asmo; asmo) \ asmo
+
+// mutually ordered atomic writes must be ordered by asmo in either direction
 empty ((W * W) & mutordatom) \ asmo \ asmo^-1 as consistent-asmo
+
 empty rmw & ((fr & ext); (asmo & ext)) as atomic
 acyclic (locord | rf | fr | asmo) as consistency-cycle
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
