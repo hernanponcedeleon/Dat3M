@@ -155,7 +155,7 @@ let locord = loc & (
         ([W & NONPRIV]; apo; avdv; hb; visdv; apo; [R & NONPRIV])))
 
 (* Constraints *)
-let fr = (rf^-1 ; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = rf^-1; (asmo | ((W * W) & locord) | ((IW * (W \ IW)) & loc))
 
 // Mutually ordered atomic writes must be ordered by asmo in either direction,
 // translation from Alloy rai[asmo] = (W -> W) & mutordatom.
