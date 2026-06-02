@@ -87,8 +87,8 @@ let asmo = co & mutordatom
 let asrf = rf & mutordatom
 let asfr = fr & mutordatom
 
-let rs = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
-let swra = [REL]; ([F]; (po & sem2sc))?; rs; (rf & mutordatom); ((po & sc2sem); [F])?; [ACQ]
+let rs = [REL]; ([F]; (po & sem2sc))?; [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let swra = rs; (rf & mutordatom); ((po & sc2sem); [F])?; [ACQ]
 let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
 let sw = inscope & (swra | swbar)
 
