@@ -154,8 +154,6 @@ public class SVCOMPRunner extends BaseOptions {
     }
     
     public static String getNameWithoutExtension(Path path) {
-       String fileName = path.getFileName().toString();
-        int dotIndex = fileName.lastIndexOf('.');
-        return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+        return com.google.common.io.Files.getNameWithoutExtension(path.toString());
     }
 }
