@@ -84,7 +84,6 @@ public abstract class AbstractCompilationTest {
                 .setOption(TARGET, targetProvider.get().name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true")
                 .setOption(METHOD, Method.EAGER.asStringOption());
 
         return additionalConfig(configBase).build();

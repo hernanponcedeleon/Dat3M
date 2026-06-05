@@ -85,7 +85,7 @@ public abstract class AbstractLitmusTest {
     }
 
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(USE_INTEGERS, "true");
+        return builder;
     }
 
     protected abstract Provider<Arch> getTargetProvider();

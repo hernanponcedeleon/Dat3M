@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+import java.nio.file.Path;
 
 import java.util.EnumSet;
 
@@ -85,9 +86,9 @@ public abstract class BaseOptions {
             name = CAT_INCLUDE,
             description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
     )
-    private String catIncludePath = GlobalSettings.getCatDirectory();
+    private Path catIncludePath = GlobalSettings.getCatDirectory();
 
-    public String getCatIncludePath() {
+    public Path getCatIncludePath() {
         return catIncludePath;
     }
 

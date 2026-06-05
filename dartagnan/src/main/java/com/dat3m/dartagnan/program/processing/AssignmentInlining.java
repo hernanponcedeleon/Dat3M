@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -24,8 +25,8 @@ import java.util.Map;
     or it leads to simplifications(*).
     To achieve this, the pass scans the code twice: once to collect usage statistics and once to perform the inlining.
 
-    (*) Currently, we aggressively inline ConstructExprs because they are likely to get combined with an ExtractExpr
-        and then removed by SCCP.
+    (*) Currently, we aggressively inline ConstructExpr and ITEExpr because they are likely to allow for
+        more simplifications.
  */
 public class AssignmentInlining implements FunctionProcessor {
 
@@ -93,7 +94,7 @@ public class AssignmentInlining implements FunctionProcessor {
         };
 
         private boolean allowsSimplification(Event curEvent, Register replacedReg, Expression inlineValue) {
-            return inlineValue instanceof ConstructExpr;
+            return inlineValue instanceof ConstructExpr || inlineValue instanceof ITEExpr;
         }
 
         private Processor(Function function) {

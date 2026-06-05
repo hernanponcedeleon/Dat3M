@@ -1,4 +1,5 @@
 // clspv sb.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// spirv-opt --upgrade-memory-model a.spv -o a.spv
 // spirv-dis a.spv > sb.spvasm
 
 #ifdef ACQ2RX
@@ -21,4 +22,4 @@ __kernel void test(global atomic_uint* x, global atomic_uint* y, global uint* r0
         atomic_store_explicit(y, 1, mo_rel);
         *r1 = atomic_load_explicit(x, mo_acq);
     }
-} 
+}

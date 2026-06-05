@@ -43,11 +43,6 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "false");
-    }
-
-    @Override
     protected long getTimeout() {
         return 300000;
     }

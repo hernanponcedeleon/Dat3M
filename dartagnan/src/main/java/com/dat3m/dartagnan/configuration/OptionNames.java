@@ -31,7 +31,6 @@ public class OptionNames {
     public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 
     // Encoding Options
-    public static final String USE_INTEGERS = "encoding.integers";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_RELEVANT_SETS = "encoding.wmm.reduceAcyclicityRelevantSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
@@ -70,7 +69,6 @@ public class OptionNames {
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
-    public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generateGraphvizDebugFiles";
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
     // SMT solver Options
