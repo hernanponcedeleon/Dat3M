@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 
@@ -76,6 +77,32 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         return null;
     }
 
+    @Override
+    public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorSymbolic(VariableDeclaratorSymbolicContext ctx) {
+        // We do not know to which thread a symbolic register belogns to until its usage,
+        // thus we create a register for each thread
+        for (Integer tid : programBuilder.getThreadIds()) {
+            final String regName = ctx.symRegister().getText();
+            final int lineOfCode = ctx.getStart().getLine();
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
+        final int arraySize = toInt(ctx.constant());
+        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
+        return null;
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
@@ -101,6 +128,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         }
         return null;
     }
+
+	@Override
+	public Object visitMv(MvContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return append(EventFactory.newLocal(r1, r2), ctx);
+	}
 
 	@Override
 	public Object visitLi(LiContext ctx) {
@@ -175,6 +209,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)), ctx);
+	}
+
+	@Override
+	public Object visitLd(LdContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
@@ -256,4 +297,16 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
+
+    private int toInt(ConstantContext ctx) {
+        final int radix = ctx.hex == null ? 10 : 16;
+        final TerminalNode node = ctx.hex == null ? ctx.DigitSequence() : ctx.HexDigitSequence();
+        return Integer.parseInt(node.getText(), radix);
+    }
+
+    private int typeBytes(TypeContext ignore) {
+        //defaults to 64 bits
+        return 8;
+    }
+
 }

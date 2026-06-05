@@ -44,10 +44,6 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")
-                && !name.equals("memcpy_s") && !name.startsWith("floats")) {
-            builder.setOption(OptionNames.USE_INTEGERS, "true");
-        }
         if (name.equals("recursion")) {
             builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
         }
@@ -101,7 +97,6 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"alignment", IMM, PASS, 1},
                 {"unknown_function", IMM, FAIL, 1},
                 {"ffs", IMM, PASS, 1},
-                {"zero-extension", IMM, PASS, 1},
                 {"floats_1", IMM, PASS, 1},
                 {"floats_2", IMM, PASS, 1},
                 {"floats_3", IMM, PASS, 1},

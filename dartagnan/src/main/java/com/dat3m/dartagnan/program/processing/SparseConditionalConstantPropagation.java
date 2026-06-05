@@ -118,6 +118,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             // Update event with propagation data
             propagator.propagationMap = propagationMap;
             if (cur instanceof RegReader regReader && !cur.hasTag(Tag.NOOPT)) {
+                propagator.setAllowDestroyDeps(regReader.hasTag(Tag.NO_CARRY_DEPS));
                 regReader.transformExpressions(propagator);
             }
             reachableEvents.add(cur);
@@ -202,6 +203,10 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
     private static class ConstantPropagator extends ExprSimplifier {
 
         private Map<Register, Expression> propagationMap;
+
+        public void setAllowDestroyDeps(boolean allow) {
+            this.aggressive = allow;
+        }
 
         ConstantPropagator() {
             super(false);

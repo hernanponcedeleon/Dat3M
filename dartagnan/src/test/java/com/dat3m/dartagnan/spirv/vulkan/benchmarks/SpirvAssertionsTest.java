@@ -63,14 +63,23 @@ public class SpirvAssertionsTest {
 
                 {"xf-barrier-2.1.2.spvasm", 4, PASS},
                 {"xf-barrier-3.1.3.spvasm", 9, PASS},
-                // TODO: IMO should pass (spinloop handling?)
-                // {"xf-barrier-1.1.2.spvasm", 2, PASS},
+                {"xf-barrier-1.1.2.spvasm", 2, PASS},
                 {"xf-barrier-2.1.1.spvasm", 2, PASS},
                 {"xf-barrier-fail1.spvasm", 4, FAIL},
                 {"xf-barrier-fail2.spvasm", 4, FAIL},
                 {"xf-barrier-fail3.spvasm", 4, FAIL},
                 {"xf-barrier-fail4.spvasm", 4, FAIL},
                 {"xf-barrier-weakest.spvasm", 4, FAIL},
+
+                {"xf-barrier-local-2.1.2.spvasm", 4, FAIL},
+                {"xf-barrier-local-3.1.3.spvasm", 9, FAIL},
+                {"xf-barrier-local-2.1.1.spvasm", 2, FAIL},
+                {"xf-barrier-local-1.1.2.spvasm", 2, PASS},
+                {"xf-barrier-local-fail1.spvasm", 4, FAIL},
+                {"xf-barrier-local-fail2.spvasm", 4, FAIL},
+                {"xf-barrier-local-fail3.spvasm", 4, FAIL},
+                {"xf-barrier-local-fail4.spvasm", 4, FAIL},
+                {"xf-barrier-local-weakest.spvasm", 4, FAIL},
         });
     }
 

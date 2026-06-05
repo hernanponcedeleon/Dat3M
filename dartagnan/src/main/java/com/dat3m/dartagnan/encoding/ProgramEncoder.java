@@ -30,7 +30,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -90,7 +89,6 @@ public class ProgramEncoder {
 
     public BooleanFormula encodeFullProgram() {
         return bmgr.and(
-                encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeEventSemantics(),
@@ -98,24 +96,6 @@ public class ProgramEncoder {
                 encodeFilter(),
                 encodeDependencies()
         );
-    }
-
-    public BooleanFormula encodeConstants() {
-        List<BooleanFormula> enc = new ArrayList<>();
-        final ExpressionFactory exprs = context.getExpressionFactory();
-        for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            if (context.useIntegers && value.getType() instanceof IntegerType intType) {
-                // This special case is for when we encode BVs with integers.
-                final Expression min = exprs.makeValue(intType.getMinimumValue(value.isSigned()), intType);
-                final Expression max = exprs.makeValue(intType.getMaximumValue(value.isSigned()), intType);
-                final Expression constraints = exprs.makeAnd(
-                        exprs.makeGTE(value, min, value.isSigned()),
-                        exprs.makeLTE(value, max, value.isSigned())
-                );
-                enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
-            }
-        }
-        return bmgr.and(enc);
     }
 
     // ====================================== Control flow ======================================
@@ -782,10 +762,6 @@ public class ProgramEncoder {
                 enc.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
                 enc.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
             }
-        } else if (variable instanceof IntegerFormula ivar) {
-            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-            enc.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
-            enc.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
         }
         return bmgr.and(enc);
     }

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 
 public class GlobalSettings {
 
@@ -17,46 +18,66 @@ public class GlobalSettings {
 
     // --------------------
 
-    public static String getHomeDirectory() {
-        if (USE_TEST_PATH) {
-            return "target";
+    public static Path getHomeDirectory() {
+        return getHomeDirectory(false);
+    }
+
+    public static Path getHomeDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
+            return Path.of("target");
         }
         String env = System.getenv("DAT3M_HOME");
         if (env == null) {
             logger.warn("Environment variable DAT3M_HOME not set. Default to empty path.");
-            return "";
+            return Path.of("");
         }
-        return env;
+        return Path.of(env);
     }
 
-    public static String getCatDirectory() {
-        if (USE_TEST_PATH) {
-            return "../cat";
-        }
-        String env = System.getenv("DAT3M_HOME");
-        env = env == null ? "" : env;
-        return env + "/cat";
+    public static Path getCatDirectory() {
+        return getCatDirectory(false);
     }
 
-    public static String getOrCreateOutputDirectory() throws IOException {
-        String path = getOutputDirectory();
-        Files.createDirectories(Paths.get(path));
+    public static Path getCatDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
+            return Path.of("..", "cat");
+        }
+        return getHomeDirectory(skipUnitTestCheck).resolve("cat");
+    }
+
+    public static Path getOrCreateOutputDirectory() throws IOException {
+        Path path = getOutputDirectory();
+        Files.createDirectories(path);
         return path;
     }
 
-    public static String getOutputDirectory() {
-        if (USE_TEST_PATH) {
-            return "target/output";
+    public static Path getOutputDirectory() {
+        return getOutputDirectory(false);
+    }
+
+    public static Path getOutputDirectory(boolean skipUnitTestCheck) {
+        if (USE_TEST_PATH && !skipUnitTestCheck) {
+            return Path.of("target", "output");
         }
         String env = System.getenv("DAT3M_OUTPUT");
         if (env != null) {
-            return env;
+            return Path.of(env);
         }
-        String home = getHomeDirectory();
-        if (!home.isEmpty()) {
-            return home + "/output";
-        }
-        return "output";
+        return getHomeDirectory(skipUnitTestCheck).resolve("output");
+    }
+
+    public static Path getLibraryDirectory() {
+        return getHomeDirectory()
+                .resolve("dartagnan")
+                .resolve("target")
+                .resolve("libs");
+    }
+
+    public static Path getExecutablePath(boolean jar) {
+        return getHomeDirectory(true)
+                .resolve("dartagnan")
+                .resolve("target")
+                .resolve(jar ? "dartagnan.jar" : "dartagnan");
     }
 
     private static boolean isJUnitTest() {

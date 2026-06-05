@@ -19,6 +19,9 @@ variableDeclarator
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
     |   variableDeclaratorLocationLocation
+    |   variableDeclaratorPointerLocation
+    |   variableDeclaratorSymbolic
+    |   variableDeclaratorArray
     ;
 
 variableDeclaratorLocation
@@ -35,6 +38,31 @@ variableDeclaratorRegisterLocation
 
 variableDeclaratorLocationLocation
     :   location Equals Amp? location
+    ;
+
+variableDeclaratorPointerLocation
+    :   Ast Identifier Equals location
+    ;
+
+variableDeclaratorSymbolic
+    :   type symRegister Equals location
+    ;
+
+variableDeclaratorArray
+    :   type? location LBracket constant RBracket (Equals initArray)?
+    ;
+
+initArray
+    :   LBrace arrayElement* (Comma arrayElement)* RBrace
+    ;
+
+arrayElement
+    :   constant
+    |   Ast? (Amp? location | LPar Amp? location RPar)
+    ;
+
+type
+    :   Identifier
     ;
 
 variableList
@@ -64,6 +92,7 @@ instructionRow
 
 instruction
     :
+    |   mv
     |   li
     |   xor
     |   and
@@ -73,6 +102,7 @@ instruction
     |   andi
     |   ori
     |   addi
+    |   ld
     |   lw
     |   sw
     |   lr
@@ -83,10 +113,19 @@ instruction
     |   amoor
     |   amoswap
     |   amoadd
+    |   return
+    ;
+
+mv
+    :   Mv register Comma register
     ;
 
 li
     :   Li register Comma constant
+    ;
+
+ld
+    :   Ld (Period moRISCV)* register Comma offset LPar register RPar
     ;
 
 lw
@@ -180,12 +219,18 @@ amoadd
     :   Amoadd Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
     
+return
+    :   Ret
+    ;
+
 location
-    :   Identifier
+    :   Period? Identifier
+    |   LBracket Identifier RBracket
     ;
 
 register
     :   Register
+    |   symRegister
     ;
 
 offset
@@ -275,8 +320,16 @@ Lr
     :   'lr'
     ;
 
+Ld
+    :   'ld'
+    ;
+
 Lw
     :   'lw'
+    ;
+
+Mv
+    :   'mv'
     ;
 
 Sc
@@ -305,6 +358,10 @@ Xor
 
 Xori
     :   'xori'
+    ;
+
+Ret
+    :   'ret'
     ;
 
 ReadRead
@@ -372,6 +429,10 @@ Register
     |   's' DigitSequence
     |   't' DigitSequence
     |   'x' DigitSequence
+    ;
+
+symRegister
+    :   Percent Identifier
     ;
 
 Label

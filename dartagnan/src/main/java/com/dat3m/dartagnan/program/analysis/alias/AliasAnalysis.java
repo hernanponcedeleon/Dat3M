@@ -57,11 +57,7 @@ public interface AliasAnalysis {
         Config c = new Config(config, detectMixedSizeAccesses);
         logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
-        AliasAnalysis a = switch (c.method) {
-            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, c);
-            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, c);
-            case FULL -> InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, c);
-        };
+        AliasAnalysis a = InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, c);
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, c));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
             a = VirtualAliasAnalysis.wrap(a, c);
@@ -77,9 +73,10 @@ public interface AliasAnalysis {
 
     @Options
     final class Config {
+
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
-        private Alias method = Alias.getDefault();
+        Alias method = Alias.getDefault();
 
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +

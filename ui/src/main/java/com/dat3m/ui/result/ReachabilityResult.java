@@ -65,7 +65,7 @@ public class ReachabilityResult {
 
                 final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
                 verdict = resultAnalyzer.getSummaryFromSolver(solver, "").toUIString();
-                witnessFile = resultAnalyzer.generateWitnessIfAble(solver, WitnessType.PNG, "dat3m", "", false);
+                witnessFile = resultAnalyzer.generateWitnessIfAble(solver, WitnessType.PNG, "dat3m", false);
             }
         } catch (InterruptedException e) {
             verdict = "TIMEOUT";

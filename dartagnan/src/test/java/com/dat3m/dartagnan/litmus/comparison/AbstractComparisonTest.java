@@ -77,7 +77,6 @@ public abstract class AbstractComparisonTest {
                 .setOption(SOLVER, Z3.name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true")
                 .setOption(METHOD, Method.EAGER.asStringOption());
 
         return additionalConfig(configBase).build();

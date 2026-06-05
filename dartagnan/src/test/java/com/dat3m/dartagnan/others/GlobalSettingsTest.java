@@ -10,10 +10,11 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 
 public class GlobalSettingsTest {
 
-    private final Path pathOutputDirectory = Paths.get("target/output");
+    private final Path pathOutputDirectory = getOutputDirectory();
 
     @Test
     public void shouldCreateOutputDirectoryInCreateMode() throws IOException {

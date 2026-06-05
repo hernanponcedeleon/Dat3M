@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.ExitCode;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -14,7 +13,9 @@ import org.sosy_lab.common.configuration.Options;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {
@@ -73,11 +75,10 @@ public class SVCOMPRunner extends BaseOptions {
             throw new IllegalArgumentException("CAT model not given or format not recognized");
         }
         File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
-        String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get();
-        File fileProgram = new File(programPath);
+        Path programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).map(Path::of).findFirst().get();
         // To be sure we do not mixed benchmarks, if the bounds file exists, delete it
-        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
-        new File(boundsFilePath).delete();
+        Path boundsFilePath = getHomeDirectory().resolve("bounds.csv");
+        Files.deleteIfExists(boundsFilePath);
 
         String[] argKeyword = Arrays.stream(args)
             .filter(s->s.startsWith("-"))
@@ -95,19 +96,19 @@ public class SVCOMPRunner extends BaseOptions {
         while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
             if (r.nativeExecution) {
-                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
+                cmd.add(getExecutablePath(false).toString());
                 cmd.add("-DlogLevel=INFO");
-                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-                cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
+                cmd.add("-DLOGNAME=" + getNameWithoutExtension(programPath));
+                cmd.add("-Djava.library.path=" + getLibraryDirectory());
             } else {
                 cmd.add("java");
                 cmd.add("-DlogLevel=info");
-                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
+                cmd.add("-DLOGNAME=" + getNameWithoutExtension(programPath));
                 cmd.add("-jar");
-                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar");
+                cmd.add(getExecutablePath(true).toString());
             }
             cmd.add(fileModel.toString());
-            cmd.add(programPath);
+            cmd.add(programPath.toString());
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
@@ -152,4 +153,7 @@ public class SVCOMPRunner extends BaseOptions {
             collect(Collectors.toList());
     }
     
+    public static String getNameWithoutExtension(Path path) {
+        return com.google.common.io.Files.getNameWithoutExtension(path.toString());
+    }
 }

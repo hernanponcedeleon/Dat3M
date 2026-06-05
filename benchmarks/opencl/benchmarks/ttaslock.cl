@@ -1,4 +1,13 @@
+// Currently, clspv inserts Coherent decorations only if accesses are separated
+// by a global control barrier, ignoring release-acquire synchronization.
+// To work around this, we manually insert Coherent decoration for variable 'x'
+// before upgrading the memory model.
+
 // clspv ttaslock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// spirv-dis a.spv > ttaslock.spvasm
+// Add 'OpDecorate %18 Coherent' (id might be different depending on clspv version)
+// spirv-as ttaslock.spvasm -o a.spv
+// spirv-opt --upgrade-memory-model a.spv -o a.spv
 // spirv-dis a.spv > ttaslock.spvasm
 
 #ifdef ACQ2RX
@@ -39,4 +48,4 @@ __kernel void mutex_test(global atomic_uint* l, global int* x, global int* A) {
     *x = a + 1;
     unlock(l);
     A[get_global_id(0)] = a;
-}  
+}
