@@ -15,7 +15,7 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getExecutablePath;
 
 public class TestHelper {
 
@@ -39,11 +39,7 @@ public class TestHelper {
     }
 
     public static void runDartagnanApplication(Path programPath, Path catPath, String... options) throws Exception {
-        final Path dat3mHome = Path.of(getHomeDirectory(true));
-        final Path dat3mJar = dat3mHome.resolve("dartagnan")
-                                       .resolve("target")
-                                       .resolve("dartagnan.jar");
-
+        final Path dat3mJar = getExecutablePath(true);
         List<String> command = new ArrayList<>();
         command.add("java");
         command.add("-jar");

@@ -13,10 +13,10 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 public class WitnessGenerationTest {
 
-    private final Path dat3mHome = Path.of(getHomeDirectory(true));
+    private final Path dat3mHome = getHomeDirectory(true);
     private final Path testDir = dat3mHome.resolve("dartagnan").resolve(getTestResourcePath("locks"));
-    private final Path catPath = Path.of(getCatDirectory(true)).resolve("vmm.cat");
-    private final Path outputDir = Path.of(getOutputDirectory(true));
+    private final Path catPath = getCatDirectory(true).resolve("vmm.cat");
+    private final Path outputDir = getOutputDirectory(true);
 
     @Test
     public void testGeneratesDefaultWitness() throws Exception {

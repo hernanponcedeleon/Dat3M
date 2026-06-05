@@ -83,7 +83,7 @@ public class Dartagnan extends BaseOptions {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
-                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(catFile);
+                final Wmm mcm = new ParserCat(o.getCatIncludePath()).parse(catFile);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
                         .withProgressModel(o.getProgressModel());
@@ -123,7 +123,7 @@ public class Dartagnan extends BaseOptions {
 
     private static void printVersion() throws Exception {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-        final Path pomPath = Path.of(getHomeDirectory(), "pom.xml");
+        final Path pomPath = getHomeDirectory().resolve("pom.xml");
 
         try (BufferedReader reader = Files.newBufferedReader(pomPath)) {
             final String base = mvnReader.read(reader).getVersion();

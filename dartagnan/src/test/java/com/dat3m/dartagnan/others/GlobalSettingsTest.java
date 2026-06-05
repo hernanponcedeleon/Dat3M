@@ -14,7 +14,7 @@ import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 
 public class GlobalSettingsTest {
 
-    private final Path pathOutputDirectory = Paths.get(getOutputDirectory());
+    private final Path pathOutputDirectory = getOutputDirectory();
 
     @Test
     public void shouldCreateOutputDirectoryInCreateMode() throws IOException {
