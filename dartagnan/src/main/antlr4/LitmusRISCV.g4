@@ -19,6 +19,7 @@ variableDeclarator
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
     |   variableDeclaratorLocationLocation
+    |   variableDeclaratorPointerLocation
     |   variableDeclaratorSymbolic
     |   variableDeclaratorArray
     ;
@@ -37,6 +38,10 @@ variableDeclaratorRegisterLocation
 
 variableDeclaratorLocationLocation
     :   location Equals Amp? location
+    ;
+
+variableDeclaratorPointerLocation
+    :   Ast Identifier Equals location
     ;
 
 variableDeclaratorSymbolic
@@ -87,6 +92,7 @@ instructionRow
 
 instruction
     :
+    |   mv
     |   li
     |   xor
     |   and
@@ -96,6 +102,7 @@ instruction
     |   andi
     |   ori
     |   addi
+    |   ld
     |   lw
     |   sw
     |   lr
@@ -109,8 +116,16 @@ instruction
     |   return
     ;
 
+mv
+    :   Mv register Comma register
+    ;
+
 li
     :   Li register Comma constant
+    ;
+
+ld
+    :   Ld (Period moRISCV)* register Comma offset LPar register RPar
     ;
 
 lw
@@ -305,8 +320,16 @@ Lr
     :   'lr'
     ;
 
+Ld
+    :   'ld'
+    ;
+
 Lw
     :   'lw'
+    ;
+
+Mv
+    :   'mv'
     ;
 
 Sc

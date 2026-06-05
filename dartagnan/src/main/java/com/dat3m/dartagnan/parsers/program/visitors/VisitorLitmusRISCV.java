@@ -78,6 +78,12 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
     public Object visitVariableDeclaratorSymbolic(VariableDeclaratorSymbolicContext ctx) {
         // We do not know to which thread a symbolic register belogns to until its usage,
         // thus we create a register for each thread
@@ -122,6 +128,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         }
         return null;
     }
+
+	@Override
+	public Object visitMv(MvContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return append(EventFactory.newLocal(r1, r2), ctx);
+	}
 
 	@Override
 	public Object visitLi(LiContext ctx) {
@@ -196,6 +209,13 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)), ctx);
+	}
+
+	@Override
+	public Object visitLd(LdContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return append(EventFactory.RISCV.newLoad(r1, ra, getMo(ctx.moRISCV())), ctx);
 	}
 
 	@Override
