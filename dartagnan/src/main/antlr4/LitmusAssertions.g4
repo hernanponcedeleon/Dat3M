@@ -125,7 +125,7 @@ GreaterEquals
     ;
 
 Identifier
-    :   (Underscore | Percent)* Letter+ (Letter | Digit | Underscore)*
+    :   (Underscore)* Letter+ (Letter | Digit | Underscore)*
     ;
 
 DigitSequence

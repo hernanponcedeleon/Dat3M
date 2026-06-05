@@ -23,7 +23,7 @@ variableDeclarator
     |   type threadId Colon register64 (Equals constant)? #typedRegisterDeclarator
     |   threadId Colon register64 Equals constant #variableDeclaratorRegister
     |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
-    |   type Identifier Equals location #variableSymbolicDeclaratorRegisterLocation
+    |   type Register64 Equals location #variableSymbolicDeclaratorRegisterLocation
     ;
 
 initArray
@@ -764,13 +764,12 @@ SXTW :  'SXTW' ; // Zero extends a 32-bit word (signed)
 
 Register64
     :   'X' DigitSequence
-    |   'X' Identifier // symbolic register
+    |   'X'? Percent Identifier // symbolic register
     |   'XZR' // zero register
     ;
 
 Register32
     :   'W' DigitSequence
-    |   'W' Identifier // symbolic register
     |   'WZR' // zero register
     ;
 

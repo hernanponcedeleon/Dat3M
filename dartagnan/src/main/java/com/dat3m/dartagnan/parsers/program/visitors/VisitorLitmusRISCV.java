@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 
@@ -73,6 +74,26 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocationLocation(VariableDeclaratorLocationLocationContext ctx) {
         programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorSymbolic(VariableDeclaratorSymbolicContext ctx) {
+        // We do not know to which thread a symbolic register belogns to until its usage,
+        // thus we create a register for each thread
+        for (Integer tid : programBuilder.getThreadIds()) {
+            final String regName = ctx.symRegister().getText();
+            final int lineOfCode = ctx.getStart().getLine();
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
+        final int arraySize = toInt(ctx.constant());
+        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
         return null;
     }
 
@@ -256,4 +277,16 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
     }
+
+    private int toInt(ConstantContext ctx) {
+        final int radix = ctx.hex == null ? 10 : 16;
+        final TerminalNode node = ctx.hex == null ? ctx.DigitSequence() : ctx.HexDigitSequence();
+        return Integer.parseInt(node.getText(), radix);
+    }
+
+    private int typeBytes(TypeContext ignore) {
+        //defaults to 64 bits
+        return 8;
+    }
+
 }
