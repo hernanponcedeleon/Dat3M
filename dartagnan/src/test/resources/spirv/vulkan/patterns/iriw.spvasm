@@ -13,12 +13,13 @@
 ; Schema: 0
                OpCapability Shader
                OpCapability VulkanMemoryModel
-               OpMemoryModel Logical Vulkan
+               OpExtension "SPV_KHR_vulkan_memory_model"
          %77 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %22 "test" %gl_LocalInvocationID %10 %14 %15 %16 %17 %18 %19
                OpSource OpenCL_C 200
          %78 = OpString "test"
-         %79 = OpString " __kernel"
+         %79 = OpString "__kernel"
          %82 = OpString "x"
          %85 = OpString "y"
          %88 = OpString "r0"
@@ -87,14 +88,14 @@
          %30 = OpAccessChain %_ptr_StorageBuffer_uint %18 %uint_0 %uint_0
          %31 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %uint_0
          %33 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
-         %34 = OpLoad %uint %33
+         %34 = OpLoad %uint %33 Aligned 16
          %36 = OpIEqual %bool %34 %uint_0
                OpSelectionMerge %45 None
                OpBranchConditional %36 %39 %45
          %39 = OpLabel
-               OpAtomicStore %26 %uint_1 %uint_68 %uint_1
+               OpAtomicStore %26 %uint_5 %uint_68 %uint_1
          %42 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
-         %43 = OpLoad %uint %42
+         %43 = OpLoad %uint %42 Aligned 16
                OpBranch %45
          %45 = OpLabel
          %46 = OpPhi %uint %34 %23 %43 %39
@@ -102,21 +103,21 @@
                OpSelectionMerge %52 None
                OpBranchConditional %47 %50 %52
          %50 = OpLabel
-               OpAtomicStore %27 %uint_1 %uint_68 %uint_1
+               OpAtomicStore %27 %uint_5 %uint_68 %uint_1
                OpBranch %52
          %52 = OpLabel
          %53 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
-         %54 = OpLoad %uint %53
+         %54 = OpLoad %uint %53 Aligned 16
          %56 = OpIEqual %bool %54 %uint_2
                OpSelectionMerge %66 None
                OpBranchConditional %56 %59 %66
          %59 = OpLabel
-         %61 = OpAtomicLoad %uint %26 %uint_1 %uint_66
-               OpStore %28 %61
-         %62 = OpAtomicLoad %uint %27 %uint_1 %uint_66
-               OpStore %29 %62
+         %61 = OpAtomicLoad %uint %26 %uint_5 %uint_66
+               OpStore %28 %61 Aligned 4
+         %62 = OpAtomicLoad %uint %27 %uint_5 %uint_66
+               OpStore %29 %62 Aligned 4
          %63 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
-         %64 = OpLoad %uint %63
+         %64 = OpLoad %uint %63 Aligned 16
                OpBranch %66
          %66 = OpLabel
          %67 = OpPhi %uint %54 %52 %64 %59
@@ -124,10 +125,10 @@
                OpSelectionMerge %76 None
                OpBranchConditional %69 %72 %76
          %72 = OpLabel
-         %73 = OpAtomicLoad %uint %27 %uint_1 %uint_66
-               OpStore %30 %73
-         %74 = OpAtomicLoad %uint %26 %uint_1 %uint_66
-               OpStore %31 %74
+         %73 = OpAtomicLoad %uint %27 %uint_5 %uint_66
+               OpStore %30 %73 Aligned 4
+         %74 = OpAtomicLoad %uint %26 %uint_5 %uint_66
+               OpStore %31 %74 Aligned 4
                OpBranch %76
          %76 = OpLabel
                OpReturn
