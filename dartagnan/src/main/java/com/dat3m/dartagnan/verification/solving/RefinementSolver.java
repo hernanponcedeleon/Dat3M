@@ -96,11 +96,6 @@ public class RefinementSolver extends ModelChecker {
             toUppercase=true)
     private boolean printCovReport = false;
 
-    @Option(name=GRAPHVIZ_DEBUG_FILES,
-            description="This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
-                    " It is very expensive and should only be used for debugging purposes.")
-    private boolean generateGraphvizDebugFiles = false;
-
     // ================================================================================================================
     // Data classes
 
@@ -388,12 +383,6 @@ public class RefinementSolver extends ModelChecker {
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
-            if (generateGraphvizDebugFiles && iteration.smtStatus == SMTStatus.SAT) {
-                try (IREvaluator evaluator = context.newEvaluator(prover)) {
-                    final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
-                    generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
-                }
-            }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
                 if (trace.size() == 1) {
@@ -869,38 +858,4 @@ public class RefinementSolver extends ModelChecker {
         return report;
     }
 
-    // This code is pure debugging code that will generate graphical representations
-    // of each refinement iteration.
-    // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(
-            VerificationTask task, ExecutionModelNext model, int iterationCount, DNF<CoreLiteral> reasons) {
-        // =============== Visualization code ==================
-        // The edgeFilter filters those co/rf that belong to some violation reason
-        BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
-            for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
-                for (CoreLiteral lit : cube.getLiterals()) {
-                    if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getEventModelByEvent(edgeLit.getSource()) == e1 &&
-                                model.getEventModelByEvent(edgeLit.getTarget()) == e2) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        };
-
-        String programName = task.getProgram().getName();
-        programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/refinement/%s-%s-debug/", getOutputDirectory(), programName,
-                task.getProgram().getArch());
-        String fileNameBase = String.format("%s-%d", programName, iterationCount);
-        final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
-        // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                emptySynContext);
-        // File with all edges
-        generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", emptySynContext);
-    }
 }

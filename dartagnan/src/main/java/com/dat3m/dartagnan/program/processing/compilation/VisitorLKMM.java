@@ -149,7 +149,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
         return eventSequence(
-                newFence(e.getName())
+                newFence(e.getMo())
         );
     }
 

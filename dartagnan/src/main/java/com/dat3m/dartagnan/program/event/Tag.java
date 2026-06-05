@@ -12,6 +12,7 @@ import java.util.Set;
         (2) Tags used only internally (prefixed with a double underscore "__");
  */
 public final class Tag {
+
     private Tag() { }
 
     public static final String VISIBLE          = "_";
@@ -38,6 +39,10 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String NO_INSTRUCTION   = "__NO_INSTRUCTION";
+    // Marks events that do not carry deps, either because an analysis said so
+    // or because the event is internally generated and should not affect the program semantics.
+    // TODO: Respect this tag when computing idd and its variants.
+    public static final String NO_CARRY_DEPS    = "__NO_CARRY_DEPS";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

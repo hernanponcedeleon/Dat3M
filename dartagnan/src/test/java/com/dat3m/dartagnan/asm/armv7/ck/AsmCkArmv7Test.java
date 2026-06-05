@@ -51,7 +51,7 @@ public class AsmCkArmv7Test {
 
     @Test
     public void testAllSolvers() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunModelChecker(mkTask(), Method.LAZY));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.LAZY));
     }
 
 

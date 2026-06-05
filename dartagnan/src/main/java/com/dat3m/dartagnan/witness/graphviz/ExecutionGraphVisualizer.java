@@ -360,7 +360,7 @@ public class ExecutionGraphVisualizer {
     }
 
     public static File generateGraphvizFile(ExecutionModelNext model,
-                                            int iterationCount,
+                                            String graphName,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
                                             String directoryName,
@@ -377,7 +377,7 @@ public class ExecutionGraphVisualizer {
             visualizer.setSyntacticContext(synContext)
                       .setFilter(RF, rfFilter)
                       .setFilter(CO, coFilter)
-                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+                      .generateGraphOfExecutionModel(writer, graphName, model);
 
             writer.flush();
             if (convert) {
@@ -393,14 +393,14 @@ public class ExecutionGraphVisualizer {
     }
 
     public static void generateGraphvizFile(ExecutionModelNext model,
-                                            int iterationCount,
+                                            String graphName,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
                                             String directoryName,
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext) {
         generateGraphvizFile(model,
-                             iterationCount,
+                             graphName,
                              rfFilter,
                              coFilter,
                              directoryName,

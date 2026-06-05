@@ -1,4 +1,5 @@
 // clspv iriw.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// spirv-opt --upgrade-memory-model a.spv -o a.spv
 // spirv-dis a.spv > iriw.spvasm
 
 __kernel void test(global atomic_uint* x, global atomic_uint* y, global uint* r0, global uint* r1, global uint* r2, global uint* r3) {
@@ -16,4 +17,4 @@ __kernel void test(global atomic_uint* x, global atomic_uint* y, global uint* r0
         *r2 = atomic_load_explicit(y, memory_order_acquire);
         *r3 = atomic_load_explicit(x, memory_order_acquire);
     }
-} 
+}

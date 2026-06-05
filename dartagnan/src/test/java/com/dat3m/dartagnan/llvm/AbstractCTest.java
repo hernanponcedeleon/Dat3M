@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -49,16 +49,16 @@ public abstract class AbstractCTest {
         return additionalConfig(configBase).build();
     }
 
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "true");
-    }
-
     protected Provider<String> getProgramPathProvider() {
         return () -> getTestResourcePath(name + ".ll");
     }
 
     protected Provider<Integer> getBoundProvider() {
         return () -> 1;
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder;
     }
 
     protected Provider<Solvers> getSolverProvider() {
@@ -112,11 +112,11 @@ public abstract class AbstractCTest {
             .around(timeout);
 
 
-    protected void testModelChecker(Method method) throws Exception {
-        try (ModelChecker checker = ModelChecker.create(taskProvider.get(), method)) {
-            checker.setShutdownManager(shutdownManagerProvider.get());
-            checker.run();
-            assertEquals(expected, checker.getResult());
+    protected void testSolver(Method method) throws Exception {
+        try (TaskSolver solver = TaskSolver.createWithMethod(taskProvider.get(), method)
+                .withShutdownManager(shutdownManagerProvider.get())) {
+            solver.run();
+            assertEquals(expected, solver.getResult());
         }
     }
 

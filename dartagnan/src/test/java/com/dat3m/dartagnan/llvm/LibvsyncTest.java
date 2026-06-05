@@ -43,11 +43,6 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "false");
-    }
-
-    @Override
     protected long getTimeout() {
         return 300000;
     }
@@ -85,11 +80,11 @@ public class LibvsyncTest extends AbstractCTest {
 
     // @Test
     public void testAssume() throws Exception {
-        testModelChecker(Method.EAGER);
+        testSolver(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        testModelChecker(Method.LAZY);
+        testSolver(Method.LAZY);
     }
 }

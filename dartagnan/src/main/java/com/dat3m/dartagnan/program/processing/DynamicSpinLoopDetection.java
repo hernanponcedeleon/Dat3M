@@ -185,7 +185,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private Event newSpinTerminator(Expression guard, LoopData loop) {
         final Function func = loop.getStart().getFunction();
-        final Event terminator = EventFactory.newTerminator(func, guard, Tag.SPINLOOP, Tag.NONTERMINATION);
+        final Event terminator = EventFactory.newTerminator(func, guard, Tag.SPINLOOP, Tag.NONTERMINATION, Tag.NO_CARRY_DEPS);
         terminator.copyAllMetadataFrom(loop.getStart());
         return terminator;
     }

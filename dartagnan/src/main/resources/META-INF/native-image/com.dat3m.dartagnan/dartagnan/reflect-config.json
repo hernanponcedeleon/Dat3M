@@ -1,5 +1,15 @@
 [
     {
+      "name":"com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer",
+      "allDeclaredFields": true,
+      "queryAllDeclaredMethods": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.verification.TaskSolver",
+        "allDeclaredFields": true,
+        "queryAllDeclaredMethods": true
+    },
+    {
         "name": "com.dat3m.dartagnan.wmm.RelationNameRepository",
         "allDeclaredFields": true,
         "allDeclaredMethods": true

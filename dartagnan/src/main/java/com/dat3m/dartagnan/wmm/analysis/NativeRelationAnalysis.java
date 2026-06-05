@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -461,7 +460,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     protected class Initializer implements Definition.Visitor<MutableKnowledge> {
         final Program program = task.getProgram();
-        final WitnessGraph witness = task.getWitness();
 
         @Override
         public MutableKnowledge visitDefinition(Definition def) {
@@ -817,11 +815,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 });
             }
 
-            // Must-co from violation witness
-            if (!witness.isEmpty()) {
-                must.addAll(witness.getCoherenceKnowledge(program, alias));
-            }
-
             logger.debug("Initial may set size for memory order: {}", may.size());
             return new MutableKnowledge(may, must);
         }
@@ -927,15 +920,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
-            }
-
-            // Must-rf from violation witness
-            if (!witness.isEmpty()) {
-                EventGraph g = witness.getReadFromKnowledge(program, alias);
-                must.addAll(g);
-                for (Event r : g.getRange()) {
-                    may.removeIf((e1, e2) -> e2 == r && !g.contains(e1, e2));
-                }
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());

@@ -9,8 +9,10 @@ import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.Printer;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
@@ -31,16 +33,13 @@ import static com.google.common.base.Verify.verify;
 
 public final class OptionInfo implements Comparable<OptionInfo> {
 
-    public static void collectOptions() {
-        stream().sorted().forEach(System.out::print);
-    }
-
     public static Stream<OptionInfo> stream() {
         return classes().flatMap(OptionInfo::collectOptions);
     }
 
     private static Stream<Class<?>> classes() {
         return Stream.of(
+                TaskSolver.class,
                 RelationNameRepository.class,
                 OptionNames.class,
                 Acyclicity.class,
@@ -71,7 +70,8 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 RefinementSolver.class,
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
-                WmmProcessingManager.class
+                WmmProcessingManager.class,
+                ExecutionGraphVisualizer.class
         );
     }
 

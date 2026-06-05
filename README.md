@@ -133,6 +133,7 @@ Please feel free to [contact us](mailto:hernanl.leon@huawei.com) in case of ques
 
 Awards
 ======
+- Gold and Silver Medal @ SVCOMP 2026
 - Gold and Silver Medal @ SVCOMP 2025
 - Gold Medal (x2) @ SVCOMP 2024
 - Gold Medal @ SVCOMP 2023

@@ -5,7 +5,7 @@
 
     <groupId>com.dat3m</groupId>
     <artifactId>dat3m</artifactId>
-    <version>4.4.0-alpha</version>
+    <version>4.5.0-alpha</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/hernanponcedeleon/Dat3M</url>

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -94,11 +96,12 @@ public class BranchTest {
         VerificationTask task = VerificationTask.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)
+                .withOption(METHOD, Method.EAGER.asStringOption())
                 .build(program, wmm, EnumSet.of(Property.PROGRAM_SPEC));
 
-        try (ModelChecker checker = ModelChecker.create(task, Method.EAGER)) {
-            checker.run();
-            assertEquals(expected, checker.getResult());
+        try (TaskSolver solver = TaskSolver.create(task)) {
+            solver.run();
+            assertEquals(expected, solver.getResult());
         }
     }
 }

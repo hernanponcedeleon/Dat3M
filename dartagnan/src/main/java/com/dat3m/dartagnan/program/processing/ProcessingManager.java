@@ -140,7 +140,8 @@ public class ProcessingManager implements ProgramProcessor {
                         FunctionProcessor.chain(
                                 ResolveAborts.newInstance(),
                                 RemoveDeadNullChecks.newInstance(),
-                                MemToReg.fromConfig(config)
+                                MemToReg.fromConfig(config),
+                                SROA.newInstance()
                         ), Target.THREADS, true
                 ),
                 simplifyBoundedProgram,

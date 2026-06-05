@@ -29,7 +29,7 @@ public class LFDSTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 1000000;
+        return 1500000;
     }
 
     protected Provider<Integer> getBoundProvider() {
@@ -91,11 +91,11 @@ public class LFDSTest extends AbstractCTest {
 
     // @Test
     public void testAssume() throws Exception {
-        testModelChecker(Method.EAGER);
+        testSolver(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        testModelChecker(Method.LAZY);
+        testSolver(Method.LAZY);
     }
 }
