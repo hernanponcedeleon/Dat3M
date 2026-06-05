@@ -42,7 +42,7 @@ public class GlobalSettings {
         if (USE_TEST_PATH && !skipUnitTestCheck) {
             return Path.of("..", "cat");
         }
-        return getHomeDirectory().resolve("cat");
+        return getHomeDirectory(skipUnitTestCheck).resolve("cat");
     }
 
     public static Path getOrCreateOutputDirectory() throws IOException {
@@ -63,7 +63,7 @@ public class GlobalSettings {
         if (env != null) {
             return Path.of(env);
         }
-        return getHomeDirectory().resolve("output");
+        return getHomeDirectory(skipUnitTestCheck).resolve("output");
     }
 
     public static Path getLibraryDirectory() {

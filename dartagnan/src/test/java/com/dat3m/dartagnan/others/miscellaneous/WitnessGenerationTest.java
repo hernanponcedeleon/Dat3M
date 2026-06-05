@@ -22,10 +22,13 @@ public class WitnessGenerationTest {
     public void testGeneratesDefaultWitness() throws Exception {
         final String programName = "ttas-acq2rx";
         final Path programPath = testDir.resolve(programName + ".ll");
-        final Path witnessPath = outputDir.resolve(programName + ".png");
+        final Path pngPath = outputDir.resolve(programName + ".png");
+        final Path dotPath = outputDir.resolve(programName + ".dot");
 
         runDartagnanApplication(programPath, catPath, String.format("--%s=png", WITNESS));
-        assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
+        assertTrue("Witness not found at: " + pngPath.toAbsolutePath().toString(), Files.exists(pngPath));
+        Files.deleteIfExists(pngPath);
+        Files.deleteIfExists(dotPath);
     }
 
     @Test
@@ -33,23 +36,27 @@ public class WitnessGenerationTest {
         final String programName = "ttas-acq2rx";
         final String witnessName = "witness";
         final Path programPath = testDir.resolve(programName + ".ll");
-        final Path witnessPath = outputDir.resolve(witnessName + ".png");
+        final Path pngPath = outputDir.resolve(witnessName + ".png");
+        final Path dotPath = outputDir.resolve(programName + ".dot");
 
         runDartagnanApplication(programPath, catPath, String.format("--%s=png", WITNESS), String.format("--%s=%s", WITNESS_FILENAME, witnessName));
-        assertTrue("Witness not found at: " + witnessPath.toAbsolutePath().toString(), Files.exists(witnessPath));
+        assertTrue("Witness not found at: " + pngPath.toAbsolutePath().toString(), Files.exists(pngPath));
+        Files.deleteIfExists(pngPath);
+        Files.deleteIfExists(dotPath);
     }
 
     @Test
     public void testShowRelationsWitness() throws Exception {
         final String programName = "ttas-acq2rx";
         final Path programPath = testDir.resolve(programName + ".ll");
-        final Path witnessPath = outputDir.resolve(programName + ".dot");
+        final Path dotPath = outputDir.resolve(programName + ".dot");
         final String relToShow = "ppo";
 
         runDartagnanApplication(programPath, catPath, String.format("--%s=dot", WITNESS), String.format("--%s=%s", WITNESS_SHOW, relToShow));
 
-        final String witnessContent = Files.readString(witnessPath);
+        final String witnessContent = Files.readString(dotPath);
 
         assertTrue("The witness  does not show the expected relations: " + relToShow, witnessContent.contains(relToShow));
+        Files.deleteIfExists(dotPath);
     }
 }
