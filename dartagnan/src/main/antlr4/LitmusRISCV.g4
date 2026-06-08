@@ -45,7 +45,7 @@ variableDeclaratorPointerLocation
     ;
 
 variableDeclaratorSymbolic
-    :   type symRegister Equals location
+    :   type SymRegister Equals location
     ;
 
 variableDeclaratorArray
@@ -230,7 +230,7 @@ location
 
 register
     :   Register
-    |   symRegister
+    |   SymRegister
     ;
 
 offset
@@ -431,7 +431,7 @@ Register
     |   'x' DigitSequence
     ;
 
-symRegister
+SymRegister
     :   Percent Identifier
     ;
 
