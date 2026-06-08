@@ -65,11 +65,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final Map<Relation, MutableKnowledge> knowledgeMap = new HashMap<>();
     protected final IndexedSet<Event> allEvents;
     protected final IndexedSet<Event> allVisibleEvents;
-    protected final Map<Thread, Set<Event>> threadEvents = new HashMap<>();
     protected final Map<Thread, Set<Event>> threadVisibleEvents = new HashMap<>();//TODO remove
     protected final Delta EMPTY;
-    protected final EventGraph execMutuallyExclusive;
-    protected final EventGraph execImplies;
     protected final MutableEventGraph mutex;
 
     protected NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
@@ -80,48 +77,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
         visibility = VisibilityAnalysis.newInstance(task.getMemoryModel());
-        final List<Event> eventsList = task.getProgram().getThreadEvents();
-        // Sort visible events before invisible events to make both domains compatible.
-        eventsList.sort(Comparator.comparing(e -> !e.hasTag(VISIBLE)));
-        final var eventsDomain =new IndexedDomain<>(eventsList);
-        allEvents = new IndexedSet<>(eventsDomain);
-        final var visibleEventsDomain = new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE));
-        allVisibleEvents = new IndexedSet<>(visibleEventsDomain);
-        EMPTY = new Delta(new IndexedEventGraph(eventsDomain), new IndexedEventGraph(eventsDomain));
-        final MutableEventGraph execMutex = new IndexedEventGraph(eventsDomain);
-        final MutableEventGraph impliedInverse = new IndexedEventGraph(eventsDomain);
-        execMutuallyExclusive = execMutex;
-        execImplies = impliedInverse;
-        mutex = newGraph();
-        for (Thread thread : task.getProgram().getThreads()) {
-            final Set<Event> events = newSet(thread.getEvents());
-            threadEvents.put(thread, events);
-            allEvents.addAll(events);
-            final Set<Event> visibleEvents = newSet(thread.getEventsWithAllTags(VISIBLE));
-            threadVisibleEvents.put(thread, visibleEvents);
-            allVisibleEvents.addAll(visibleEvents);
-        }
-        //TODO This can be optimized in ExecutionAnalysis!
-        for (int i = 0; i < eventsDomain.size(); i++) {
-            final Event e1 = eventsDomain.element(i);
-            final IndexedSet<Event> set = new IndexedSet<>(eventsDomain);
-            for (int j = 0; j < eventsDomain.size(); j++) {
-                if (exec.isImplied(eventsDomain.element(j), e1)) {
-                    set.exchange(j, true);
-                }
-            }
-            impliedInverse.addRange(e1, set);
-        }
-        for (int i = 0; i < eventsDomain.size(); i++) {
-            final Event e1 = eventsDomain.element(i);
-            for (int j = i + 1; j < eventsDomain.size(); j++) {
-                final Event e2 = eventsDomain.element(j);
-                if (exec.areMutuallyExclusive(e1, e2)) {
-                    execMutex.add(e1, e2);
-                    execMutex.add(e2, e1);
-                }
-            }
-        }
+        allEvents = new IndexedSet<>(exec.eventDomain());
+        allVisibleEvents = new IndexedSet<>(new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE)));
+        EMPTY = new Delta(new IndexedEventGraph(exec.eventDomain()), new IndexedEventGraph(exec.eventDomain()));
+        mutex = new IndexedEventGraph(exec.eventDomain());
     }
 
     /**
@@ -186,6 +145,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     @Override
     public void run() {
         logger.trace("Start");
+        initializeEventDomain();
         final Wmm memoryModel = task.getMemoryModel();
         final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
@@ -395,8 +355,19 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new IndexedEventGraph(((IndexedEventGraph) other).eventDomain());
     }
 
+    private void initializeEventDomain() {
+        for (Thread thread : task.getProgram().getThreads()) {
+            final Set<Event> events = new IndexedSet<>(exec.eventDomain());
+            events.addAll(thread.getEvents());
+            allEvents.addAll(events);
+            final Set<Event> visibleEvents = newSet(thread.getEventsWithAllTags(VISIBLE));
+            threadVisibleEvents.put(thread, visibleEvents);
+            allVisibleEvents.addAll(visibleEvents);
+        }
+    }
+
     private void retainImplyWith(Set<Event> set, Event implied, Event with) {
-        final Set<Event> impliesImplied = execImplies.getRange(implied);
+        final Set<Event> impliesImplied = execImplying(implied);
         if (!impliesImplied.contains(with)) {
             set.retainAll(impliesImplied);
         }
@@ -451,7 +422,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 for (Event e : current.getDomain()) {
                     if (current.getRange(e).contains(e)) {
                         final Set<Event> range = newSet(mustOut.getOrDefault(e, Set.of()));
-                        range.removeAll(execMutuallyExclusive.getRange(e));
+                        range.removeAll(execExcluding(e));
                         range.removeIf(z -> !newDisabled.add(z, e));
                         next.addRange(e, range);
                     }
@@ -513,12 +484,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 current.filter((x, y) -> !Tuple.isLoop(x, y)).apply((x, y) -> {
                     final Set<Event> nextY = newSet(mustIn.getOrDefault(x, Set.of()));
                     retainImplyWith(nextY, x, y);
-                    nextY.removeAll(execMutuallyExclusive.getRange(y));
+                    nextY.removeAll(execExcluding(y));
                     nextY.removeIf(w -> !newDisabled.add(y, w));
                     nextY.forEach(w -> next.add(w, y));
                     final Set<Event> nextX = newSet(mustOut.getOrDefault(y, Set.of()));
                     retainImplyWith(nextX, y, x);
-                    nextX.removeAll(execMutuallyExclusive.getRange(x));
+                    nextX.removeAll(execExcluding(x));
                     nextX.removeIf(z -> !newDisabled.add(z, x));
                     next.addRange(x, nextX);
                 });
@@ -580,7 +551,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Thread t : program.getThreads()) {
                 Set<Event> events = threadVisibleEvents.get(t);
                 for (Event e1 : events) {
-                    final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                    final Set<Event> e1Mutex = execExcluding(e1);
                     final Set<Event> rangeEvents = events.stream()
                             .filter(e2 -> !e1Mutex.contains(e2))
                             .collect(toSet());
@@ -607,7 +578,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 for (final Event e1 : events) {
                     remainingEvents.remove(e1);
                     final Set<Event> range = newSet(remainingEvents);
-                    range.removeAll(execMutuallyExclusive.getRange(e1));
+                    range.removeAll(execExcluding(e1));
                     must.addRange(e1, range);
                 }
                 // Events of the same instruction are not program-ordered
@@ -709,17 +680,17 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
                         continue;
                     }
-                    final Set<Event> unlockMutex = execMutuallyExclusive.getRange(unlock);
+                    final Set<Event> unlockMutex = execExcluding(unlock);
                     // iteration order assures that all intermediaries were already iterated
                     for (Event lock : locks) {
                         if (unlock.getGlobalId() < lock.getGlobalId() ||
                                 unlockMutex.contains(lock) ||
                                 Stream.concat(mustMap.getOrDefault(lock, Set.of()).stream(),
                                                 mustMap.getOrDefault(unlock, Set.of()).stream())
-                                        .anyMatch(e -> execImplies.contains(e, lock) || execImplies.contains(e, unlock))) {
+                                        .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
                             continue;
                         }
-                        final Set<Event> lockMutex = execMutuallyExclusive.getRange(lock);
+                        final Set<Event> lockMutex = execExcluding(lock);
                         boolean noIntermediary =
                                 lockMutex.containsAll(mayMap.getOrDefault(unlock, Set.of())) &&
                                         unlockMutex.containsAll(mayMap.getOrDefault(lock, Set.of()));
@@ -750,7 +721,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).toList();
                 for (int i = 0; i < block.size(); i++) {
                     final Event e = block.get(i);
-                    final Set<Event> eMutex = execMutuallyExclusive.getRange(e);
+                    final Set<Event> eMutex = execExcluding(e);
                     for (int j = i + 1; j < block.size(); j++) {
                         if (!eMutex.contains(block.get(j))) {
                             must.add(e, block.get(j));
@@ -791,9 +762,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                     final boolean requiresMatchingAddresses = store.doesRequireMatchingAddresses();
                     final int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
-                            .filter(i -> execImplies.contains(events.get(i), store))
+                            .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
-                    final Set<Event> storeMutex = execMutuallyExclusive.getRange(store);
+                    final Set<Event> storeMutex = execExcluding(store);
                     final List<Event> candidates = events.subList(start, end).stream()
                             .filter(e -> !storeMutex.contains(e))
                             .toList();
@@ -801,13 +772,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     for (int i = 0; i < size; i++) {
                         final Event load = candidates.get(i);
                         final List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> execImplies.contains(e, load))) {
+                        if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
                         final List<Event> loads = transactionMap.getOrDefault(load, List.of(load));
                         // Only match with the last load of an instruction.
                         if (loads.get(loads.size() - 1).equals(load)) {
-                            final Set<Event> loadMutex = execMutuallyExclusive.getRange(load);
+                            final Set<Event> loadMutex = execExcluding(load);
                             final boolean noIntermediaries = loadMutex.containsAll(intermediaries);
                             addLXSX(may, must, loads, stores, noIntermediaries, requiresMatchingAddresses);
                         }
@@ -859,7 +830,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 // It is possible to have multiple initial writes
                 // to the same memory location via different virtual memory aliases
                 final List<Store> writes = w1 instanceof Init ? allWrites : nonInitWrites;
-                final Set<Event> w1Mutex = execMutuallyExclusive.getRange(w1);
+                final Set<Event> w1Mutex = execExcluding(w1);
                 for (Store w2 : writes) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !w1Mutex.contains(w2) && alias.mayAlias(w1, w2)) {
                         may.add(w1, w2);
@@ -897,7 +868,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph must = newGraph();
             List<Load> loadEvents = program.getThreadEvents(Load.class);
             for (Store e1 : program.getThreadEvents(Store.class)) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (Load e2 : loadEvents) {
                     if (alias.mayAlias(e1, e2) && !e1Mutex.contains(e2)) {
                         may.add(e1, e2);
@@ -943,7 +914,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         for (MemoryCoreEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                             // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                             // executed
-                            if ((execImplies.contains(w2, w1) || execImplies.contains(w2, read))
+                            if ((exec.isImplied(w1, w2) || exec.isImplied(read, w2))
                                     && (alias.mustAlias(w1, w2) || alias.mustAlias(w2, read))) {
                                 deletedWrites.add(w1);
                                 break;
@@ -984,7 +955,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         // then the read won't be able to read any external writes
                         boolean hasImpliedWrites = writes.stream()
                                 .anyMatch(w -> w.getGlobalId() < r.getGlobalId()
-                                        && execImplies.contains(w, r) && alias.mustAlias(r, w));
+                                        && exec.isImplied(r, w) && alias.mustAlias(r, w));
                         if (hasImpliedWrites) {
                             may.removeIf((e1, e2) -> e2 == r && Tuple.isCrossThread(e1, e2));
                         }
@@ -1002,7 +973,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = newGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
             for (MemoryCoreEvent e1 : events) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && !e1Mutex.contains(e2)) {
                         may.add(e1, e2);
@@ -1060,7 +1031,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
                     .toList();
             for (Event e1 : events) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (Event e2 : events) {
                     if (e1Mutex.contains(e2)) {
                         continue;
@@ -1094,7 +1065,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 String id = e1.getInstanceId();
                 String scope = e1.getExecScope();
                 ScopeHierarchy hierarchy = e1.getThread().getScopeHierarchy();
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 barriers.stream()
                         .filter(e2 -> id.equals(e2.getInstanceId()))
                         .filter(e2 -> hierarchy.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope))
@@ -1109,7 +1080,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 String id = e1.getInstanceId();
                 String scope = e1.getExecScope();
                 ScopeHierarchy hierarchy = e1.getThread().getScopeHierarchy();
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 namedBarriers.stream()
                         .filter(e2 -> id.equals(e2.getInstanceId()))
                         .filter(e2 -> hierarchy.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope))
@@ -1135,7 +1106,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph must = newGraph();
             List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, Tag.PTX.SC);
             for (Event e1 : fenceEventsSC) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (Event e2 : fenceEventsSC) {
                     if (!e1Mutex.contains(e2)) {
                         may.add(e1, e2);
@@ -1151,7 +1122,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = newGraph();
             Map<MemoryCoreEvent, VirtualMemoryObject> map = computeVirtualAddressMap();
             map.forEach((e1, a1) -> {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 map.forEach((e2, a2) -> {
                     if (a1.equals(a2) && !e1Mutex.contains(e2)) {
                         if (alias.mustAlias(e1, e2)) {
@@ -1191,7 +1162,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             List<Event> events = new ArrayList<>(program.getThreadEventsWithAllTags(VISIBLE));
             events.removeIf(Init.class::isInstance);
             for (Event e1 : events) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
@@ -1364,7 +1335,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         ) {
             MutableEventGraph result = newGraph();
             for (Event e1 : disOut1.getDomain()) {
-                final Set<Event> e1Mutex = execMutuallyExclusive.getRange(e1);
+                final Set<Event> e1Mutex = execExcluding(e1);
                 for (Event e : disOut1.getRange(e1)) {
                     final Set<Event> e2Set = newSet(mayOut2.getRange(e));
                     e2Set.removeAll(e1Mutex);
@@ -1392,7 +1363,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph e0 = newGraph();
             MutableEventGraph d2 = newGraph();
             for (Event x : enable1.getDomain()) {
-                final Set<Event> mutexX = execMutuallyExclusive.getRange(x);
+                final Set<Event> mutexX = execExcluding(x);
                 for (Event y : enable1.getRange(x)) {
                     final Set<Event> enableX = newSet(may2.getRange(y));
                     enableX.removeAll(mutexX);
@@ -1455,7 +1426,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 enabled.apply((x, y) -> {
                     if (!Tuple.isLoop(x, y)) {
                         final Set<Event> enableX = newSet(mayOut0.getOrDefault(y, Set.of()));
-                        enableX.removeAll(execMutuallyExclusive.getRange(x));
+                        enableX.removeAll(execExcluding(x));
                         final Set<Event> disableY = newSet(enableX);
                         retainImplyWith(enableX, y, x);
                         enableX.retainAll(k0.getMustSet().getRange(y));
@@ -1487,7 +1458,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 enabled.apply((y, z) -> {
                     if (!Tuple.isLoop(y, z)) {
                         final Set<Event> enableZ = newSet(mayIn1.getOrDefault(y, Set.of()));
-                        enableZ.removeAll(execMutuallyExclusive.getRange(z));
+                        enableZ.removeAll(execExcluding(z));
                         final Set<Event> disableY = newSet(enableZ);
                         retainImplyWith(enableZ, y, z);
                         enableZ.retainAll(mustIn1.getOrDefault(y, Set.of()));
@@ -1627,7 +1598,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Event e1 : left.getDomain()) {
                 final Set<Event> update = new IndexedSet<>(eventDomain);
                 for (Event e : left.getRange(e1)) {
-                    final Set<Event> impliesE = execImplies.getRange(e);
+                    final Set<Event> impliesE = execImplying(e);
                     final Set<Event> rightRange = right.getRange(e);
                     if (isMay || impliesE.contains(e1)) {
                         update.addAll(rightRange);
@@ -1637,7 +1608,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         update.addAll(range);
                     }
                 }
-                update.removeAll(execMutuallyExclusive.getRange(e1));
+                update.removeAll(execExcluding(e1));
                 result.addRange(e1, update);
             }
         }
@@ -1651,7 +1622,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final MutableEventGraph mustSet = newGraph();
                 must.apply((e1, e2) -> {
                     final Event e = dom ? e1 : e2;
-                    if (execImplies.contains(dom ? e2 : e1, e)) {
+                    if (exec.isImplied(e, dom ? e2 : e1)) {
                         mustSet.add(e, e);
                     }
                 });
@@ -1689,7 +1660,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Event e1 : domain.getDomain()) {
                 if (domain.contains(e1, e1)) {
                     final Set<Event> e1Range = newSet(newRange);
-                    e1Range.removeAll(execMutuallyExclusive.getRange(e1));
+                    e1Range.removeAll(execExcluding(e1));
                     target.addRange(e1, e1Range);
                 }
             }
@@ -1752,5 +1723,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public MutableEventGraph getMustSet() {
             return (MutableEventGraph) must;
         }
+    }
+
+    private Set<Event> execImplying(Event event) {
+        return exec.implyingEvents(event);
+    }
+
+    private Set<Event> execExcluding(Event event) {
+        return exec.excludingEvents(event);
     }
 }
