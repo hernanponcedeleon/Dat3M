@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +77,32 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         return null;
     }
 
+    @Override
+    public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorSymbolic(VariableDeclaratorSymbolicContext ctx) {
+        // We do not know to which thread a symbolic register belogns to until its usage,
+        // thus we create a register for each thread
+        for (Integer tid : programBuilder.getThreadIds()) {
+            final String regName = ctx.SymRegister().getText();
+            final int lineOfCode = ctx.getStart().getLine();
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
+        final int arraySize = toInt(ctx.constant());
+        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
+        return null;
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
@@ -107,6 +134,20 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return append(EventFactory.newLocal(register, constant), ctx);
+    }
+
+    @Override
+    public Object visitLd(LdContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        return append(EventFactory.Power.newLoad(r1, ra), ctx);
+    }
+
+    @Override
+    public Object visitLwa(LwaContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        return append(EventFactory.Power.newLoad(r1, ra), ctx);
     }
 
     @Override
@@ -215,5 +256,16 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     private Event append(Event event, ParserRuleContext ctx) {
         return programBuilder.addChild(mainThread, event, ctx.getStart().getLine());
+    }
+
+    private int toInt(ConstantContext ctx) {
+        final int radix = ctx.hex == null ? 10 : 16;
+        final TerminalNode node = ctx.hex == null ? ctx.DigitSequence() : ctx.HexDigitSequence();
+        return Integer.parseInt(node.getText(), radix);
+    }
+
+    private int typeBytes(TypeContext ignore) {
+        //defaults to 64 bits
+        return 8;
     }
 }

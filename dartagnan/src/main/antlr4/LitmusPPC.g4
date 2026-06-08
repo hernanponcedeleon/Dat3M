@@ -15,6 +15,9 @@ variableDeclarator
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
     |   variableDeclaratorLocationLocation
+    |   variableDeclaratorPointerLocation
+    |   variableDeclaratorSymbolic
+    |   variableDeclaratorArray
     ;
 
 variableDeclaratorLocation
@@ -31,6 +34,31 @@ variableDeclaratorRegisterLocation
 
 variableDeclaratorLocationLocation
     :   location Equals Amp? location
+    ;
+
+variableDeclaratorPointerLocation
+    :   Ast Identifier Equals location
+    ;
+
+variableDeclaratorSymbolic
+    :   type SymRegister Equals location
+    ;
+
+variableDeclaratorArray
+    :   type? location LBracket constant RBracket (Equals initArray)?
+    ;
+
+initArray
+    :   LBrace arrayElement* (Comma arrayElement)* RBrace
+    ;
+
+arrayElement
+    :   constant
+    |   Ast? (Amp? location | LPar Amp? location RPar)
+    ;
+
+type
+    :   Identifier
     ;
 
 variableList
@@ -61,6 +89,8 @@ instructionRow
 instruction
     :
     |   li
+    |   ld
+    |   lwa
     |   lwz
     |   lwzx
     |   lwarx
@@ -78,6 +108,14 @@ instruction
 
 li
     :   Li register Comma constant
+    ;
+
+ld
+    :   Ld register Comma offset LPar register RPar
+    ;
+
+lwa
+    :   Lwa register Comma offset LPar register RPar
     ;
 
 lwz
@@ -133,12 +171,13 @@ fence
     ;
 
 location
-    :   Identifier
+    :   Period? Identifier
     |   LBracket Identifier RBracket
     ;
 
 register
     :   Register
+    |   SymRegister
     ;
 
 offset
@@ -198,6 +237,12 @@ Bge
 Li  :   'li'
     ;
 
+Ld  :   'ld'
+    ;
+
+Lwa :   'lwa'
+    ;
+
 Lwarx:   'lwarx'
     ;
 
@@ -238,6 +283,10 @@ Cmpw
 
 Register
     :   'r' DigitSequence
+    ;
+
+SymRegister
+    :   Percent Identifier
     ;
 
 Label

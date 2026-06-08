@@ -88,7 +88,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         // We do not know to which thread a symbolic register belogns to until its usage,
         // thus we create a register for each thread
         for (Integer tid : programBuilder.getThreadIds()) {
-            final String regName = ctx.symRegister().getText();
+            final String regName = ctx.SymRegister().getText();
             final int lineOfCode = ctx.getStart().getLine();
             programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
         }
