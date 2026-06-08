@@ -85,10 +85,10 @@ let inscope = (ssg & (SG * SG)) | (swg & (WG * WG)) | (sqf & (QF * QF)) | (DV * 
 let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
 let asmo = co & mutordatom
 let asrf = rf & mutordatom
-let asfr = fr & mutordatom
+let ascom = (mutordatom & (co | rf | fr))+
 
 let rs = [REL]; ([F]; (po & sem2sc))?; [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
-let swra = rs; (rf & mutordatom); ((po & sc2sem); [F])?; [ACQ]
+let swra = rs; asrf; ((po & sc2sem); [F])?; [ACQ]
 let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
 let sw = inscope & (swra | swbar)
 
@@ -204,9 +204,9 @@ let locordb = loc & (
     ([R]; ssw+; [R | W]) |
     ([W]; schb; [AVDEVICE]; hbsc; [W]) |
     ([W]; schb; [AVDEVICE]; hhb; [VISDEVICE]; hbsc; [R]) |
-    ([R & NONPRIV]; (schbsc | schbsca | asfr); [(R | W) & NONPRIV]) |
-    vloc & (po |
-        ([W & NONPRIV]; (asmo | (ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb); [W & NONPRIV]) |
+    ([R & NONPRIV]; (schbsc | schbsca); [(R | W) & NONPRIV]) |
+    vloc & (po | ascom |
+        ([W & NONPRIV]; ((ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb); [W & NONPRIV]) |
         ([W & NONPRIV]; ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)); [R & NONPRIV])
     )
 )
