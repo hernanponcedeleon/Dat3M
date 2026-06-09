@@ -106,6 +106,16 @@ let ithb12 = ithb(SC12, SEMSC12)
 let ithb13 = ithb(SC13, SEMSC13)
 let ithb23 = ithb(SC23, SEMSC23)
 
+let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
+let hbsc = (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
+let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
+let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
+              (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
+              (ithb03 & ((SC0 * SC3) | (SC3 * SC0))) |
+              (ithb12 & ((SC1 * SC2) | (SC2 * SC1))) |
+              (ithb13 & ((SC1 * SC3) | (SC3 * SC1))) |
+              (ithb23 & ((SC2 * SC3) | (SC3 * SC2)))
+
 let avinc0 = (chain & ithb0); [SEMAV & SEMSC0]
 let avinc1 = (chain & ithb1); [SEMAV & SEMSC1]
 let avinc2 = (chain & ithb2); [SEMAV & SEMSC2]
@@ -197,16 +207,6 @@ let locordwr = (avsg0; (ithb0 & ssg); vissg0) | (avwg0; (ithb0 & swg); viswg0) |
                (avsg1; (ithb1 & ssg); vissg1) | (avwg1; (ithb1 & swg); viswg1) | (avqf1; (ithb1 & sqf); visqf1) | (avdv1; ithb1; visdv1) |
                (avsg2; (ithb2 & ssg); vissg2) | (avwg2; (ithb2 & swg); viswg2) | (avqf2; (ithb2 & sqf); visqf2) | (avdv2; ithb2; visdv2) |
                (avsg3; (ithb3 & ssg); vissg3) | (avwg3; (ithb3 & swg); viswg3) | (avqf3; (ithb3 & sqf); visqf3) | (avdv3; ithb3; visdv3)
-
-let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
-let hbsc = (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
-let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
-let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
-              (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
-              (ithb03 & ((SC0 * SC3) | (SC3 * SC0))) |
-              (ithb12 & ((SC1 * SC2) | (SC2 * SC1))) |
-              (ithb13 & ((SC1 * SC3) | (SC3 * SC1))) |
-              (ithb23 & ((SC2 * SC3) | (SC3 * SC2)))
 
 let locord = loc & (
     (IW * (M \ IW)) |
