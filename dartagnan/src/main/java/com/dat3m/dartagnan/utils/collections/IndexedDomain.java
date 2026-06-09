@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.utils.collections;
 import java.util.*;
 
 /// Used for compact sets, see `IndexedSet`.
+// This implementation contains an immutable hash table to look up an index by element.
 public final class IndexedDomain<E> {
 
     private static final float HASH_TABLE_FILL_FACTOR = 1.5f;
@@ -16,20 +17,33 @@ public final class IndexedDomain<E> {
         index = newIndex(this.elements);
     }
 
-    public E element(int index) {
-        return (E) elements[index];
-    }
-
     public int size() {
         return elements.length;
+    }
+
+    public E element(int index) {
+        return (E) elements[index];
     }
 
     public int indexOf(Object key) {
         return indexOf(elements, index, key);
     }
 
-    /// Returns `true` if this describes a subset of other or vice versa.
-    public boolean isCompatible(IndexedDomain<?> other) {
+    public IndexedSet<E> emptySet() {
+        return new IndexedSet<>(this).toUnmodifiableView();
+    }
+
+    public IndexedSet<E> newSet() {
+        return new IndexedSet<>(this);
+    }
+
+    public IndexedSet<E> newSet(Collection<? extends E> copy) {
+        final IndexedSet<E> set = new IndexedSet<>(this);
+        set.addAll(copy);
+        return set;
+    }
+
+    public boolean isCompatibleWith(IndexedDomain<?> other) {
         return this == other || compatibilityMap.computeIfAbsent(other, this::computeCompatible);
     }
 

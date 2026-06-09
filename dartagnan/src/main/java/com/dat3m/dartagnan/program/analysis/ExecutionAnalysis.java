@@ -98,7 +98,7 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     private void computeImplyingEvents() {
         final Map<Thread, IndexedSet<Event>> threadEvents = new HashMap<>();
         for (Thread thread : program.getThreads()) {
-            final var events = new IndexedSet<>(eventDomain);
+            final var events = eventDomain.newSet();
             events.addAll(thread.getEvents());
             threadEvents.put(thread, events);
         }
@@ -130,12 +130,10 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         // -x- = (=>; (-x- & int); <=)
         final Map<BranchEquivalence.Class, Set<Event>> eventsByBranch = new HashMap<>();
         for (BranchEquivalence.Class c1 : eq.getAllEquivalenceClasses()) {
-            final Set<Event> events = new IndexedSet<>(eventDomain);
-            events.addAll(c1);
-            eventsByBranch.put(c1, events);
+            eventsByBranch.put(c1, eventDomain.newSet(c1));
         }
         for (BranchEquivalence.Class c1 : eq.getAllEquivalenceClasses()) {
-            final var excludingEvents = new IndexedSet<>(eventDomain);
+            final var excludingEvents = eventDomain.newSet();
             for (BranchEquivalence.Class c2 : c1.getExclusiveClasses()) {
                 excludingEvents.addAll(eventsByBranch.get(c2));
             }

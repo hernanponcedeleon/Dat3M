@@ -12,17 +12,20 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private final int[] index;
     private final boolean modifiable;
     private long[] member;
+    // Used for sets with `size() <= 1` to make them even more compact.
+    // This is especially useful for identity graphs.
     // assert -1 <= loneMember && loneMember < domain.length
     private int loneMember;
     // assert memberMayBeEmpty || member == null || bitCount(member) > 0
     private boolean memberMayBeEmpty;
 
-    public IndexedSet(IndexedSet<E> list) {
-        this(list.domain, nullableCopy(list.member), list.loneMember, true);
+    public IndexedSet(IndexedSet<E> copy) {
+        this(copy.domain, nullableCopy(copy.member), copy.loneMember, true);
+        memberMayBeEmpty = copy.memberMayBeEmpty;
     }
 
-    public IndexedSet(IndexedDomain<E> elements) {
-        this(elements, null, -1, true);
+    IndexedSet(IndexedDomain<E> domain) {
+        this(domain, null, -1, true);
     }
 
     private IndexedSet(IndexedDomain<E> d, long[] m, int l, boolean f) {
@@ -34,19 +37,18 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         modifiable = f;
     }
 
-    /// Returns the domain associated with this subset.
     public IndexedDomain<E> domain() {
         return domain;
     }
 
-    /// Returns a shallow copy of this set that rejects modifications.
     public IndexedSet<E> toUnmodifiableView() {
         return new IndexedSet<>(domain, member, loneMember, false);
     }
 
-    /// Returns `true` if the element at `index` was contained in this set.
     public boolean exchange(int index, boolean value) {
-        assert 0 <= index && index < elements.length;
+        if (index < 0 || elements.length <= index) {
+            throw new IndexOutOfBoundsException("0 <= %d < %d".formatted(index, elements.length));
+        }
         checkModifiable();
         if (member == null) {
             if (loneMember == index) {
@@ -69,7 +71,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return change != value;
     }
 
-    /// Returns the domain indexes of the elements contained by this set, in ascending order.
     public int[] toIndexArray() {
         if (member == null) {
             return loneMember == -1 ? new int[0] : new int[]{loneMember};
@@ -90,7 +91,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     }
 
     public boolean disjoint(IndexedSet<?> other) {
-        if (!domain.isCompatible(other.domain)) {
+        if (!domain.isCompatibleWith(other.domain)) {
             return Collections.disjoint(this, other);
         }
         if (member == null) {
@@ -126,7 +127,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean containsAll(Collection<?> other) {
-        if (other instanceof IndexedSet<?> o && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && domain.isCompatibleWith(o.domain)) {
             if (o.member == null) {
                 return o.loneMember == -1 || test(elements.length, member, loneMember, o.loneMember);
             }
@@ -230,7 +231,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean addAll(Collection<? extends E> other) {
         checkModifiable();
-        final var otherSet = other instanceof IndexedSet<?> o && domain.isCompatible(o.domain) ? o : null;
+        final var otherSet = other instanceof IndexedSet<?> o && domain.isCompatibleWith(o.domain) ? o : null;
         if (otherSet != null && otherSet.member == null) {
             checkObjectInDomain(otherSet.loneMember < elements.length, otherSet.elements, otherSet.loneMember);
             return otherSet.loneMember != -1 && exchange(otherSet.loneMember, true);
@@ -296,7 +297,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
-        if (other instanceof IndexedSet<?> o && o.member != null && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && o.member != null && domain.isCompatibleWith(o.domain)) {
             boolean changed = false;
             final int length = Integer.min(member.length, o.member.length);
             for (int pageindex = 0; pageindex < length; pageindex++) {
@@ -325,7 +326,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
-        if (other instanceof IndexedSet<?> o && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && domain.isCompatibleWith(o.domain)) {
             if (o.member == null) {
                 loneMember = o.loneMember != -1 && test(elements.length, member, -1, o.loneMember) ? o.loneMember : -1;
                 final boolean changed = (loneMember == -1 ? 0 : 1) < bitCount(member);

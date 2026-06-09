@@ -43,7 +43,8 @@ public interface MutableEventGraph extends EventGraph {
         if (operands.length > 0 && operands[0] instanceof IndexedEventGraph firstOperand) {
             final IndexedDomain<Event> firstDomain = firstOperand.eventDomain();
             if (Arrays.stream(operands, 1, operands.length)
-                    .allMatch(operand -> operand instanceof IndexedEventGraph o && o.eventDomain().isCompatible(firstDomain))) {
+                    .allMatch(operand -> operand instanceof IndexedEventGraph o
+                            && o.eventDomain().isCompatibleWith(firstDomain))) {
                 final IndexedDomain<Event> largestDomain = Arrays.stream(operands)
                         .map(o -> ((IndexedEventGraph) o).eventDomain())
                         .max(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();

@@ -9,14 +9,16 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+/// Maps domain-side events to the set of connected range-side events.
+// This implementation uses `IndexedDomain` to organise its elements.
 public final class IndexedEventGraph implements MutableEventGraph {
-    // Invariants
-    // `domain != null`
-    // `map != null`
-    // `map.length == domain.size()`
-    // `Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(eventDomain))`
-    // `size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()`
+    // assert eventDomain != null
+    // assert map != null
+    // assert map.length == eventDomain.size()
+    // assert Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(eventDomain))
+    // assert size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()
     private final IndexedDomain<Event> eventDomain;
+    private final IndexedSet<Event> emptySet;
     private final IndexedSet[] map;
     private int size;
 
@@ -30,12 +32,12 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     public IndexedEventGraph(IndexedDomain<Event> d, EventGraph g) {
         this(d, 0);
-        //TODO assume this graph is empty
         addAll(g);
     }
 
     private IndexedEventGraph(IndexedDomain<Event> d, int ignore) {
         eventDomain = d;
+        emptySet = d.emptySet();
         map = new IndexedSet[d.size()];
     }
 
@@ -66,7 +68,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
                 for (int j : outSet.toIndexArray()) {
-                    inverse.map[j] = Objects.requireNonNullElseGet(inverse.map[j], () -> new IndexedSet<>(eventDomain));
+                    inverse.map[j] = Objects.requireNonNullElseGet(inverse.map[j], eventDomain::newSet);
                     inverse.map[j].exchange(i, true);
                 }
             }
@@ -110,7 +112,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
             final IndexedSet<Event> outSet = outSetAt(index);
             if (outSet != null) {
                 for (Event e2 : outSet) {
-                    final Set<Event> set = inMap.computeIfAbsent(e2, k -> new IndexedSet<>(eventDomain));
+                    final Set<Event> set = inMap.computeIfAbsent(e2, k -> eventDomain.newSet());
                     ((IndexedSet<Event>) set).exchange(index, true);
                 }
             }
@@ -119,8 +121,8 @@ public final class IndexedEventGraph implements MutableEventGraph {
     }
 
     @Override
-    public Set<Event> getDomain() {
-        final IndexedSet<Event> domain = new IndexedSet<>(eventDomain);
+    public IndexedSet<Event> getDomain() {
+        final IndexedSet<Event> domain = eventDomain.newSet();
         for (int i = 0; i < map.length; i++) {
             if (map[i] != null) {
                 domain.exchange(i, true);
@@ -130,8 +132,8 @@ public final class IndexedEventGraph implements MutableEventGraph {
     }
 
     @Override
-    public Set<Event> getRange() {
-        final IndexedSet<Event> range = new IndexedSet<>(eventDomain);
+    public IndexedSet<Event> getRange() {
+        final IndexedSet<Event> range = eventDomain.newSet();
         for (IndexedSet<Event> outSet : map) {
             if (outSet != null) {
                 range.addAll(outSet);
@@ -141,9 +143,9 @@ public final class IndexedEventGraph implements MutableEventGraph {
     }
 
     @Override
-    public Set<Event> getRange(Event e) {
+    public IndexedSet<Event> getRange(Event e) {
         final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
-        return range == null ? Set.of() : range.toUnmodifiableView();
+        return range == null ? emptySet : range.toUnmodifiableView();
     }
 
     @Override
@@ -163,7 +165,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     public boolean add(Event e1, Event e2) {
         final int index = eventDomain.indexOf(e1);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
-        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
         map[index] = outSet;
         final boolean changed = outSet.add(e2);
         size += changed ? 1 : 0;
@@ -182,13 +184,13 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public boolean addAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
                 if (otherOutSet != null) {
                     final IndexedSet<Event> foundOutSet = outSetAt(index);
-                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
+                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
                     diff -= foundOutSet == null ? 0 : outSet.size();
                     outSet.addAll(otherOutSet);
                     diff += outSet.size();
@@ -207,7 +209,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
 
     @Override
     public boolean removeAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
@@ -232,7 +234,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public boolean retainAll(EventGraph other) {
         int diff = 0;
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatible(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> outSet = outSetAt(index);
                 if (outSet != null) {
@@ -267,7 +269,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     public boolean addRange(Event e, Set<Event> range) {
         final int index = eventDomain.indexOf(e);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
-        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : new IndexedSet<>(eventDomain);
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
         final int oldSize = foundOutSet == null ? 0 : outSet.size();
         outSet.addAll(range);
         final int newSize = outSet.size();

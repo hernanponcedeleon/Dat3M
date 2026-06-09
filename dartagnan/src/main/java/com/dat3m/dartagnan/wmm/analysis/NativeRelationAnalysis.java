@@ -65,7 +65,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final Map<Relation, MutableKnowledge> knowledgeMap = new HashMap<>();
     protected final IndexedSet<Event> allEvents;
     protected final IndexedSet<Event> allVisibleEvents;
-    protected final Map<Thread, Set<Event>> threadVisibleEvents = new HashMap<>();//TODO remove
+    protected final Map<Thread, Set<Event>> threadVisibleEvents = new HashMap<>();
     protected final Delta EMPTY;
     protected final MutableEventGraph mutex;
 
@@ -77,10 +77,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
         visibility = VisibilityAnalysis.newInstance(task.getMemoryModel());
-        allEvents = new IndexedSet<>(exec.eventDomain());
-        allVisibleEvents = new IndexedSet<>(new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE)));
+        allEvents = exec.eventDomain().newSet();
+        allVisibleEvents = new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE)).newSet();
         EMPTY = new Delta(new IndexedEventGraph(exec.eventDomain()), new IndexedEventGraph(exec.eventDomain()));
         mutex = new IndexedEventGraph(exec.eventDomain());
+        if (!allEvents.domain().isCompatibleWith(allVisibleEvents.domain())) {
+            logger.warn("Incompatible IndexDomain.  Analysis performance may suffer.");
+        }
     }
 
     /**
@@ -330,17 +333,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new ExtendedDelta(disableSet, enableSet);
     }
 
-    private Set<Event> newSet() {
-        return new IndexedSet<>(allVisibleEvents.domain());
-    }
-
     private Set<Event> newSet(Collection<Event> copy) {
-        if (copy instanceof IndexedSet<Event> c) {
-            final var set = new IndexedSet<>(c.domain());
-            set.addAll(c);
-            return set;
-        }
-        return new HashSet<>(copy);
+        return copy instanceof IndexedSet<Event> c ? new IndexedSet<>(c) : new HashSet<>(copy);
     }
 
     private boolean disjoint(Collection<?> left, Collection<?> right) {
@@ -364,11 +358,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private void initializeEventDomain() {
         for (Thread thread : task.getProgram().getThreads()) {
-            final Set<Event> events = new IndexedSet<>(exec.eventDomain());
-            events.addAll(thread.getEvents());
-            allEvents.addAll(events);
-            final Set<Event> visibleEvents = new IndexedSet<>(allVisibleEvents.domain());
-            visibleEvents.addAll(thread.getEventsWithAllTags(VISIBLE));
+            allEvents.addAll(exec.eventDomain().newSet(thread.getEvents()));
+            final Set<Event> visibleEvents = allVisibleEvents.domain().newSet(thread.getEventsWithAllTags(VISIBLE));
             threadVisibleEvents.put(thread, visibleEvents);
             allVisibleEvents.addAll(visibleEvents);
         }
@@ -575,18 +566,17 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final Filter type = po.getFilter();
             final IndexedDomain<Event> eventDomain = (type.toString().equals(VISIBLE) ? allVisibleEvents : allEvents).domain();
             final MutableEventGraph must = newGraph();
-            for (Thread t : program.getThreads()) {
-                final List<Event> events = t.getEvents().stream().filter(type::apply).toList();
-                final Set<Event> remainingEvents = new IndexedSet<>(eventDomain);
-                remainingEvents.addAll(events);
-                for (final Event e1 : events) {
+            for (Thread thread : program.getThreads()) {
+                final List<Event> threadEvents = thread.getEvents().stream().filter(type::apply).toList();
+                final Set<Event> remainingEvents = eventDomain.newSet(threadEvents);
+                for (final Event e1 : threadEvents) {
                     remainingEvents.remove(e1);
                     final Set<Event> range = newSet(remainingEvents);
                     range.removeAll(execExcluding(e1));
                     must.addRange(e1, range);
                 }
                 // Events of the same instruction are not program-ordered
-                for (InstructionBoundary end : t.getEvents(InstructionBoundary.class)) {
+                for (InstructionBoundary end : thread.getEvents(InstructionBoundary.class)) {
                     List<Event> transactionEvents = end.getInstructionEvents().stream().filter(type::apply).toList();
                     for (int i = 0; i < transactionEvents.size(); i++) {
                         Event e2 = transactionEvents.get(i);
@@ -1338,7 +1328,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final MutableEventGraph disOut0 = newGraph();
             final IndexedDomain<Event> eventDomain = ((IndexedEventGraph) mayOut2).eventDomain();
             for (Event e1 : disOut1.getDomain()) {
-                final Set<Event> e2Set = new IndexedSet<>(eventDomain);
+                final Set<Event> e2Set = eventDomain.newSet();
                 for (Event e : disOut1.getRange(e1)) {
                     e2Set.addAll(mayOut2.getRange(e));
                 }
@@ -1592,7 +1582,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         private void computeComposition(MutableEventGraph result, EventGraph left, EventGraph right, boolean isMay) {
             final IndexedDomain<Event> eventDomain = ((IndexedEventGraph) result).eventDomain();
             for (Event e1 : left.getDomain()) {
-                final Set<Event> update = new IndexedSet<>(eventDomain);
+                final Set<Event> update = eventDomain.newSet();
                 for (Event e : left.getRange(e1)) {
                     final Set<Event> impliesE = execImplying(e);
                     final Set<Event> rightRange = right.getRange(e);

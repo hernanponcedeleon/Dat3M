@@ -159,7 +159,7 @@ public class ActiveSetAnalysis {
             propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
                     MutableEventGraph.from(relevant));
         });
-        // FIXME: This method is the most expensive one to compute (80% of runtime)
+        // FIXME: This method is the most expensive one to compute (40% of runtime)
         //  Bottom-up computation of NativeRA is just implemented inefficiently
         ra.collectDiscrepancies(relations, propagationQueue);
 
@@ -278,22 +278,22 @@ public class ActiveSetAnalysis {
             final MutableEventGraph result = new IndexedEventGraph(exec.eventDomain());
             final IndexedDomain<Event> eventDomain = k.getMaySet() instanceof IndexedEventGraph g ? g.eventDomain()
                     : exec.eventDomain();
-            final IndexedSet<Event> EMPTY = new IndexedSet<>(eventDomain);
+            final IndexedSet<Event> EMPTY = eventDomain.emptySet();
             final Map<Event, IndexedSet<Event>> map = new HashMap<>();
             final Map<Event, IndexedSet<Event>> mapInverse = new HashMap<>();
             EventGraph current = k.getMustSet();
             while (!current.isEmpty()) {
                 final MutableEventGraph next = new IndexedEventGraph(eventDomain);
                 current.apply((x, y) -> {
-                    map.computeIfAbsent(x, e -> new IndexedSet<>(eventDomain)).add(y);
-                    mapInverse.computeIfAbsent(y, e -> new IndexedSet<>(eventDomain)).add(x);
+                    map.computeIfAbsent(x, e -> eventDomain.newSet()).add(y);
+                    mapInverse.computeIfAbsent(y, e -> eventDomain.newSet()).add(x);
                 });
                 for (Event x : current.getDomain()) {
                     final Set<Event> implyingX = exec.implyingEvents(x);
                     final Set<Event> excludingX = exec.excludingEvents(x);
                     final IndexedSet<Event> precedingX = mapInverse.getOrDefault(x, EMPTY);
                     for (Event y : current.getRange(x)) {
-                        final Set<Event> zSet = map.getOrDefault(y, EMPTY);
+                        final Set<Event> zSet = new IndexedSet<>(map.getOrDefault(y, EMPTY));
                         final Set<Event> implyingY = exec.implyingEvents(y);
                         if (!implyingY.contains(x)) {
                             zSet.retainAll(implyingY);
@@ -458,8 +458,7 @@ public class ActiveSetAnalysis {
             for (Event e1 : news.getDomain()) {
                 final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
                 for (Event e3 : news.getRange(e1)) {
-                    final IndexedSet<Event> e2Set = new IndexedSet<>(exec.eventDomain());
-                    e2Set.addAll(k0MayIn.getRange(e3));
+                    final IndexedSet<Event> e2Set = exec.eventDomain().newSet(k0MayIn.getRange(e3));
                     e2Set.retainAll(e1k0May);
                     factors.addRange(e1, e2Set);
                     factors2.addRange(e3, e2Set);

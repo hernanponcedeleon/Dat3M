@@ -18,12 +18,12 @@ public class IndexedSetTest {
         }
         final var dom = new IndexedDomain<>(Arrays.asList(objects));
         // Test the empty set.
-        final var empty = new IndexedSet<>(dom);
+        final IndexedSet<?> empty = dom.newSet();
         assertTrue(empty.isEmpty());
         assertEquals(0, empty.size());
         assertFalse(empty.iterator().hasNext());
         // Test a filled set.
-        final var some = new IndexedSet<>(dom);
+        final IndexedSet<?> some = dom.newSet();
         for (int i = 1; i < objects.length; i += i) {
             final boolean old = some.exchange(i, true);
             assertFalse(old);
@@ -39,8 +39,7 @@ public class IndexedSetTest {
         for (int i = 1; i < objects.length; i += i) {
             assertTrue(some.contains(objects[i]));
         }
-        final var all = new IndexedSet<>(dom);
-        all.addAll(Arrays.asList(objects));
+        final IndexedSet<?> all = dom.newSet(Arrays.asList(objects));
         assertEquals(Set.of(objects), all);
         final var someComplement = new IndexedSet<>(all);
         someComplement.removeAll(some);
