@@ -14,6 +14,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private long[] member;
     // assert -1 <= loneMember && loneMember < domain.length
     private int loneMember;
+    // assert memberMayBeEmpty || member == null || bitCount(member) > 0
+    private boolean memberMayBeEmpty;
 
     public IndexedSet(IndexedSet<E> list) {
         this(list.domain, nullableCopy(list.member), list.loneMember, true);
@@ -109,6 +111,11 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public int size() {
         return member == null ? loneMember == -1 ? 0 : 1 : bitCount(member);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return member == null ? loneMember == -1 : memberMayBeEmpty && size() == 0;
     }
 
     @Override
@@ -215,7 +222,9 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean remove(Object element) {
         final int i = IndexedDomain.indexOf(elements, index, element);
-        return i != -1 && exchange(i, false);
+        final boolean changed = i != -1 && exchange(i, false);
+        memberMayBeEmpty |= changed;
+        return changed;
     }
 
     @Override
@@ -298,6 +307,13 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             shrinkIfPossible();
             return changed;
         }
+        if (other.size() < size()) {
+            boolean changed = false;
+            for (Object o : other) {
+                changed |= remove(o);
+            }
+            return changed;
+        }
         return removeIf(other::contains);
     }
 
@@ -309,7 +325,13 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
-        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && domain.isCompatible(o.domain)) {
+            if (o.member == null) {
+                loneMember = o.loneMember != -1 && test(elements.length, member, -1, o.loneMember) ? o.loneMember : -1;
+                final boolean changed = (loneMember == -1 ? 0 : 1) < bitCount(member);
+                member = null;
+                return changed;
+            }
             boolean changed = false;
             final int length = Integer.min(member.length, o.member.length);
             for (int pageindex = 0; pageindex < length; pageindex++) {
@@ -361,9 +383,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private void ensureMemberArray() {
         if (member == null) {
             member = newBits(elements.length);
-            if (loneMember != -1) {
-                member[loneMember / 64] |= 1L << (loneMember % 64);
-            }
+            memberMayBeEmpty = loneMember == -1;
+            member[loneMember / 64] |= loneMember == -1 ? 0L : 1L << (loneMember % 64);
             loneMember = -1;
         }
     }
@@ -374,6 +395,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = elements.length <= loneMember ? -1 : loneMember;
             member = null;
         }
+        memberMayBeEmpty = false;
     }
 
     private static long[] newBits(int length) {
