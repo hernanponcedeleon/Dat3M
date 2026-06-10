@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
+import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -18,7 +20,7 @@ import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -66,12 +68,13 @@ public class ActiveSetAnalysis {
 
     private final Wmm memoryModel;
     private final Context analysisContext;
+    private final ExecutionAnalysis exec;
     private final RelationAnalysis ra;
 
-    private Map<Definition, EventGraph> definition2ActiveSets;
+    private Map<Definition, IndexedEventGraph> definition2ActiveSets;
     // TODO: Can be generalized to any non-defining constraint (we have only axioms right now)
     //  It could also be generalized to defining constraints
-    private Map<Axiom, EventGraph> axiom2RelevantSets;
+    private Map<Axiom, IndexedEventGraph> axiom2RelevantSets;
 
     public EventGraph getActiveSet(Definition definition) {
         return definition2ActiveSets.get(definition);
@@ -86,6 +89,7 @@ public class ActiveSetAnalysis {
     private ActiveSetAnalysis(Wmm memoryModel, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         this.memoryModel = memoryModel;
         this.analysisContext = analysisContext;
+        this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
 
         config.inject(this);
@@ -141,7 +145,7 @@ public class ActiveSetAnalysis {
         //  TODO: Do we consider this as part of the active set computation?
         //   Should we also do a "worst-case" here if active sets are disabled?
         final AxiomRelevantSets axiomRelevantSetsVisitor = new AxiomRelevantSets();
-        axiom2RelevantSets = Maps.toMap(axioms, a -> a.accept(axiomRelevantSetsVisitor));
+        axiom2RelevantSets = Maps.toMap(axioms, a -> (IndexedEventGraph) a.accept(axiomRelevantSetsVisitor));
 
         if (!enableActiveSetComputation) {
             initToMaximalActiveSets();
@@ -151,7 +155,7 @@ public class ActiveSetAnalysis {
         // ---- Initialize active set propagation queue ----
         final Map<Relation, List<EventGraph>> propagationQueue = new HashMap<>();
         axioms.forEach(a -> {
-            final EventGraph relevant = filterUnknowns(axiom2RelevantSets.get(a), a.getRelation());
+            final EventGraph relevant = filterUnknowns(new IndexedEventGraph(axiom2RelevantSets.get(a)), a.getRelation());
             propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
                     MutableEventGraph.from(relevant));
         });
@@ -161,16 +165,16 @@ public class ActiveSetAnalysis {
 
         // ---- Compute active sets----
         final ActiveSetPropagator propagator = new ActiveSetPropagator();
-        final Map<Definition, MutableEventGraph> activeSets = new HashMap<>();
-        relations.forEach(r -> activeSets.put(r.getDefinition(), new MapEventGraph()));
+        final Map<Definition, IndexedEventGraph> activeSets = new HashMap<>();
+        relations.forEach(r -> activeSets.put(r.getDefinition(), new IndexedEventGraph(exec.eventDomain())));
 
         while (!propagationQueue.isEmpty()) {
             final Relation r = propagationQueue.keySet().iterator().next();
             logger.trace("Update active set of '{}'", r);
             final MutableEventGraph active = activeSets.get(r.getDefinition());
-            final MutableEventGraph update = new MapEventGraph();
+            final var update = new IndexedEventGraph(exec.eventDomain());
 
-            propagationQueue.remove(r).forEach(news -> news.filter(active::add).apply(update::add));
+            propagationQueue.remove(r).forEach(news -> update.addAll(news.filter(active::add)));
             propagator.propagateAndUpdateQueue(r.getDefinition(), update, propagationQueue);
         }
 
@@ -185,9 +189,10 @@ public class ActiveSetAnalysis {
         final Map<Relation, List<EventGraph>> discrepancies = new HashMap<>();
         ra.collectDiscrepancies(relations, discrepancies);
 
-        final Map<Definition, MutableEventGraph> activeSets = Maps.newHashMapWithExpectedSize(relations.size());
+        final Map<Definition, IndexedEventGraph> activeSets = Maps.newHashMapWithExpectedSize(relations.size());
         for (Relation rel : relations) {
-            final MutableEventGraph active = MapEventGraph.from(getUnknowns(rel));
+            final var active = new IndexedEventGraph(exec.eventDomain());
+            active.addAll(getUnknowns(rel));
             discrepancies.get(rel).forEach(active::addAll);
 
             activeSets.put(rel.getDefinition(), active);
@@ -201,12 +206,11 @@ public class ActiveSetAnalysis {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends EventGraph> T filterUnknowns(T graph, Relation relation) {
-        RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
-        EventGraph may = k.getMaySet();
-        EventGraph must = k.getMustSet();
-        // TODO: This returns a new graph, is this intended?
-        return (T) graph.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
+    private MutableEventGraph filterUnknowns(EventGraph graph, Relation relation) {
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
+        final MutableEventGraph result = MutableEventGraph.intersection(graph, k.getMaySet());
+        result.removeAll(k.getMustSet());
+        return result;
     }
 
     // ================================================================================================
@@ -232,7 +236,6 @@ public class ActiveSetAnalysis {
         @Override
         public EventGraph visitAcyclicity(Acyclicity axiom) {
             logger.info("Computing relevant set for {}", axiom);
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             // ====== Construct [Event -> Successor] mapping ======
             final Relation rel = axiom.getRelation();
             EventGraph maySet = ra.getKnowledge(rel).getMaySet();
@@ -240,7 +243,7 @@ public class ActiveSetAnalysis {
 
             // ====== Compute SCCs ======
             DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-            final MutableEventGraph result = new MapEventGraph();
+            final MutableEventGraph result = new IndexedEventGraph(exec.eventDomain());
             for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
                 for (DependencyGraph<Event>.Node node1 : scc) {
                     for (DependencyGraph<Event>.Node node2 : scc) {
@@ -272,36 +275,47 @@ public class ActiveSetAnalysis {
         // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
         // NOTE: Assumes that the must-set of rel+ is acyclic.
         private static EventGraph transitivelyDerivableMustEdges(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
-            MutableEventGraph result = new MapEventGraph();
-            Map<Event, Set<Event>> map = new HashMap<>();
-            Map<Event, Set<Event>> mapInverse = new HashMap<>();
+            final MutableEventGraph result = new IndexedEventGraph(exec.eventDomain());
+            final IndexedDomain<Event> eventDomain = k.getMaySet() instanceof IndexedEventGraph g ? g.eventDomain()
+                    : exec.eventDomain();
+            final IndexedSet<Event> EMPTY = new IndexedSet<>(eventDomain);
+            final Map<Event, IndexedSet<Event>> map = new HashMap<>();
+            final Map<Event, IndexedSet<Event>> mapInverse = new HashMap<>();
             EventGraph current = k.getMustSet();
             while (!current.isEmpty()) {
-                MutableEventGraph next = new MapEventGraph();
+                final MutableEventGraph next = new IndexedEventGraph(eventDomain);
                 current.apply((x, y) -> {
-                    map.computeIfAbsent(x, e -> new HashSet<>()).add(y);
-                    mapInverse.computeIfAbsent(y, e -> new HashSet<>()).add(x);
+                    map.computeIfAbsent(x, e -> new IndexedSet<>(eventDomain)).add(y);
+                    mapInverse.computeIfAbsent(y, e -> new IndexedSet<>(eventDomain)).add(x);
                 });
-                current.apply((x, y) -> {
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
-                    for (Event z : map.getOrDefault(y, Set.of())) {
-                        if (!implies && !exec.isImplied(z, y) || exec.areMutuallyExclusive(x, z)) {
-                            continue;
+                for (Event x : current.getDomain()) {
+                    final Set<Event> implyingX = exec.implyingEvents(x);
+                    final Set<Event> excludingX = exec.excludingEvents(x);
+                    final IndexedSet<Event> precedingX = mapInverse.getOrDefault(x, EMPTY);
+                    for (Event y : current.getRange(x)) {
+                        final Set<Event> zSet = map.getOrDefault(y, EMPTY);
+                        final Set<Event> implyingY = exec.implyingEvents(y);
+                        if (!implyingY.contains(x)) {
+                            zSet.retainAll(implyingY);
                         }
-                        if (result.add(x, z)) {
-                            next.add(x, z);
+                        zSet.removeAll(excludingX);
+                        for (Event z : zSet) {
+                            if (result.add(x, z)) {
+                                next.add(x, z);
+                            }
+                        }
+                        final Set<Event> wSet = new IndexedSet<>(precedingX);
+                        if (!implyingX.contains(y)) {
+                            wSet.retainAll(implyingX);
+                        }
+                        wSet.removeAll(exec.excludingEvents(y));
+                        for (Event w : wSet) {
+                            if (result.add(w, y)) {
+                                next.add(w, y);
+                            }
                         }
                     }
-                    for (Event w : mapInverse.getOrDefault(x, Set.of())) {
-                        if (!implied && !exec.isImplied(w, x) || exec.areMutuallyExclusive(w, y)) {
-                            continue;
-                        }
-                        if (result.add(w, y)) {
-                            next.add(w, y);
-                        }
-                    }
-                });
+                }
                 current = next;
             }
             return result;
@@ -365,29 +379,29 @@ public class ActiveSetAnalysis {
 
             final Relation r1 = comp.getLeftOperand();
             final Relation r2 = comp.getRightOperand();
-            final MutableEventGraph set1 = new MapEventGraph();
-            final MutableEventGraph set2 = new MapEventGraph();
+            final MutableEventGraph set1 = new IndexedEventGraph(exec.eventDomain());
+            final MutableEventGraph set2In = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-            Map<Event, Set<Event>> out = ra.getKnowledge(r1).getMaySet().getOutMap();
-            news.apply((e1, e2) -> {
-                for (Event e : out.getOrDefault(e1, Set.of())) {
-                    if (k2.getMaySet().contains(e, e2)) {
-                        if (!k1.getMustSet().contains(e1, e)) {
-                            set1.add(e1, e);
-                        }
-                        if (!k2.getMustSet().contains(e, e2)) {
-                            set2.add(e, e2);
-                        }
-                    }
+            final EventGraph may2In = k2.getMaySet().inverse();
+            for (Event e1 : news.getDomain()) {
+                final Set<Event> e1may1 = k1.getMaySet().getRange(e1);
+                for (Event e3 : news.getRange(e1)) {
+                    final Set<Event> e2Set = new IndexedSet<>((IndexedSet<Event>) may2In.getRange(e3));
+                    e2Set.retainAll(e1may1);
+                    set1.addRange(e1, e2Set);
+                    set2In.addRange(e3, e2Set);
                 }
-            });
+            }
+            final MutableEventGraph set2 = set2In.inverse();
+            set1.removeAll(k1.getMustSet());
+            set2.removeAll(k2.getMustSet());
             return map(r1, set1, r2, set2);
         }
 
         @Override
         public Map<Relation, EventGraph> visitProjection(Projection projection) {
-            final MutableEventGraph result = new MapEventGraph();
+            final MutableEventGraph result = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(projection.getOperand());
             final EventGraph mayGraph = k1.getMaySet();
             final EventGraph mustGraph = k1.getMustSet();
@@ -418,8 +432,8 @@ public class ActiveSetAnalysis {
         public Map<Relation, EventGraph> visitProduct(CartesianProduct product) {
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(product.getDomain());
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(product.getRange());
-            final MutableEventGraph set1 = new MapEventGraph();
-            final MutableEventGraph set2 = new MapEventGraph();
+            final MutableEventGraph set1 = new IndexedEventGraph(exec.eventDomain());
+            final MutableEventGraph set2 = new IndexedEventGraph(exec.eventDomain());
             for (Event e1 : news.getDomain()) {
                 if (k1.getMaySet().contains(e1, e1) && !k1.getMustSet().contains(e1, e1)) {
                     set1.add(e1, e1);
@@ -437,27 +451,28 @@ public class ActiveSetAnalysis {
         public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
             final Relation rel = trans.getDefinedRelation();
             final Relation r1 = trans.getOperand();
-            MutableEventGraph factors = new MapEventGraph();
+            final var factors = new IndexedEventGraph(exec.eventDomain());
+            final var factors2 = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-            Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();
-            news.apply((e1, e2) -> {
-                for (Event e : out.getOrDefault(e1, Set.of())) {
-                    if (k0.getMaySet().contains(e, e2)) {
-                        if (!k0.getMustSet().contains(e1, e)) {
-                            factors.add(e1, e);
-                        }
-                        if (!k0.getMustSet().contains(e, e2)) {
-                            factors.add(e, e2);
-                        }
-                    }
+            final EventGraph k0MayIn = k0.getMaySet().inverse();
+            for (Event e1 : news.getDomain()) {
+                final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
+                for (Event e3 : news.getRange(e1)) {
+                    final IndexedSet<Event> e2Set = new IndexedSet<>(exec.eventDomain());
+                    e2Set.addAll(k0MayIn.getRange(e3));
+                    e2Set.retainAll(e1k0May);
+                    factors.addRange(e1, e2Set);
+                    factors2.addRange(e3, e2Set);
                 }
-            });
+            }
+            factors.addAll(factors2.inverse());
+            factors.removeAll(k0.getMustSet());
             return map(rel, factors, r1, filterUnknowns(news, r1));
         }
 
         @Override
         public Map<Relation, EventGraph> visitLinuxCriticalSections(LinuxCriticalSections rscs) {
-            MutableEventGraph queue = new MapEventGraph();
+            MutableEventGraph queue = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rscs.getDefinedRelation());
             Map<Event, Set<Event>> in = k0.getMaySet().getInMap();
             Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();
