@@ -140,7 +140,7 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
                 excludingEvents.addAll(eventsByBranch.get(c2));
             }
             for (Event e1 : c1) {
-                eventsByExcludingEvent.put(e1, excludingEvents.unmodifiableView());
+                eventsByExcludingEvent.put(e1, excludingEvents.toUnmodifiableView());
             }
         }
     }

@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.utils.graph.mutable;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
-import com.dat3m.dartagnan.utils.collections.OneTimeIterable;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.*;
@@ -66,7 +65,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
-                for (int j : OneTimeIterable.create(outSet.indexIterator())) {
+                for (int j : outSet.toIndexArray()) {
                     inverse.map[j] = Objects.requireNonNullElseGet(inverse.map[j], () -> new IndexedSet<>(eventDomain));
                     inverse.map[j].exchange(i, true);
                 }
@@ -144,7 +143,7 @@ public final class IndexedEventGraph implements MutableEventGraph {
     @Override
     public Set<Event> getRange(Event e) {
         final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
-        return range == null ? Set.of() : range.unmodifiableView();
+        return range == null ? Set.of() : range.toUnmodifiableView();
     }
 
     @Override

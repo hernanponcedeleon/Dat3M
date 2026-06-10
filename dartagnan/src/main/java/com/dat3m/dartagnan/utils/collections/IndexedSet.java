@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.utils.collections;
 
-import com.google.common.collect.Iterators;
-
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -12,24 +10,26 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private final IndexedDomain<E> domain;
     private final Object[] elements;
     private final int[] index;
+    private final boolean modifiable;
     private long[] member;
-    // assert 0 <= loneMember && loneMember <= domain.length
+    // assert -1 <= loneMember && loneMember < domain.length
     private int loneMember;
 
     public IndexedSet(IndexedSet<E> list) {
-        this(list.domain, nullableCopy(list.member), list.loneMember);
+        this(list.domain, nullableCopy(list.member), list.loneMember, true);
     }
 
     public IndexedSet(IndexedDomain<E> elements) {
-        this(elements, null, -1);
+        this(elements, null, -1, true);
     }
 
-    private IndexedSet(IndexedDomain<E> d, long[] m, int l) {
+    private IndexedSet(IndexedDomain<E> d, long[] m, int l, boolean f) {
         domain = d;
         elements = d.elements;
         index = d.index;
         member = m;
         loneMember = l;
+        modifiable = f;
     }
 
     /// Returns the domain associated with this subset.
@@ -37,14 +37,15 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return domain;
     }
 
-    /// Returns a life view on this set.
-    public Set<E> unmodifiableView() {
-        return new Immutable<>(this);
+    /// Returns a shallow copy of this set that rejects modifications.
+    public IndexedSet<E> toUnmodifiableView() {
+        return new IndexedSet<>(domain, member, loneMember, false);
     }
 
     /// Returns `true` if the element at `index` was contained in this set.
     public boolean exchange(int index, boolean value) {
         assert 0 <= index && index < elements.length;
+        checkModifiable();
         if (member == null) {
             if (loneMember == index) {
                 loneMember = value ? loneMember : -1;
@@ -66,37 +67,43 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return change != value;
     }
 
-    public Iterator<Integer> indexIterator() {
+    /// Returns the domain indexes of the elements contained by this set, in ascending order.
+    public int[] toIndexArray() {
         if (member == null) {
-            return (loneMember == -1 ? List.<Integer>of() : List.of(loneMember)).iterator();
+            return loneMember == -1 ? new int[0] : new int[]{loneMember};
         }
-        return new Iterator<>() {
-            private int pageindex;
-            private int index;
-            private long cache;
-            {
-                cache = member[0];
-                advance();
+        final var buffer = new int[elements.length];
+        int bufferpointer = 0;
+        for (int pageindex = 0; pageindex < member.length; pageindex++) {
+            long page = member[pageindex];
+            while (page != 0L) {
+                int next = Long.numberOfTrailingZeros(page);
+                page &= ~(1L << next);
+                buffer[bufferpointer++] = 64 * pageindex + next;
             }
-            @Override
-            public boolean hasNext() {
-                return pageindex < member.length;
+        }
+        final var array = new int[bufferpointer];
+        System.arraycopy(buffer, 0, array, 0, bufferpointer);
+        return array;
+    }
+
+    public boolean disjoint(IndexedSet<?> other) {
+        if (!domain.isCompatible(other.domain)) {
+            return Collections.disjoint(this, other);
+        }
+        if (member == null) {
+            return loneMember == -1 || !test(other.elements.length, other.member, other.loneMember, loneMember);
+        }
+        if (other.member == null) {
+            return other.loneMember == -1 || !test(elements.length, member, loneMember, other.loneMember);
+        }
+        int length = Integer.min(member.length, other.member.length);
+        for (int pageindex = 0; pageindex < length; pageindex++) {
+            if ((member[pageindex] & other.member[pageindex]) != 0L) {
+                return false;
             }
-            @Override
-            public Integer next() {
-                final int next = pageindex * 64 + index;
-                index++;
-                advance();
-                return next;
-            }
-            private void advance() {
-                while (cache == 0L && ++pageindex < member.length) {
-                    cache = member[pageindex];
-                }
-                index = Long.numberOfTrailingZeros(cache);
-                cache &= ~(1L << index);
-            }
-        };
+        }
+        return true;
     }
 
     @Override
@@ -112,7 +119,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean containsAll(Collection<?> other) {
-        if (unwrap(other) instanceof IndexedSet<?> o && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && domain.isCompatible(o.domain)) {
             if (o.member == null) {
                 return o.loneMember == -1 || test(elements.length, member, loneMember, o.loneMember);
             }
@@ -138,7 +145,18 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public Iterator<E> iterator() {
-        return Iterators.transform(indexIterator(), i -> (E) elements[i]);
+        return new Iterator<>() {
+            private final int[] indexArray = toIndexArray();
+            private int progress;
+            @Override
+            public boolean hasNext() {
+                return progress < indexArray.length;
+            }
+            @Override
+            public E next() {
+                return (E) elements[indexArray[progress++]];
+            }
+        };
     }
 
     @Override
@@ -182,6 +200,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public void clear() {
+        checkModifiable();
         member = null;
         loneMember = -1;
     }
@@ -189,9 +208,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public boolean add(E element) {
         final int i = IndexedDomain.indexOf(elements, index, element);
-        if (i == -1) {
-            throw new ObjectOutOfDomainException(element);
-        }
+        checkObjectInDomain(i != -1, element, -1);
         return !exchange(i, true);
     }
 
@@ -203,19 +220,16 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean addAll(Collection<? extends E> other) {
-        final var otherSet = unwrap(other) instanceof IndexedSet<?> o && domain.isCompatible(o.domain) ? o : null;
+        checkModifiable();
+        final var otherSet = other instanceof IndexedSet<?> o && domain.isCompatible(o.domain) ? o : null;
         if (otherSet != null && otherSet.member == null) {
-            if (elements.length <= otherSet.loneMember) {
-                throw new ObjectOutOfDomainException(otherSet.elements[otherSet.loneMember]);
-            }
+            checkObjectInDomain(otherSet.loneMember < elements.length, otherSet.elements, otherSet.loneMember);
             return otherSet.loneMember != -1 && exchange(otherSet.loneMember, true);
         }
         final var add = otherSet != null ? otherSet.member : newBits(elements.length);
         for (Object element : otherSet != null ? Set.of() : other) {
             final int i = IndexedDomain.indexOf(elements, index, element);
-            if (i == -1) {
-                throw new ObjectOutOfDomainException(element);
-            }
+            checkObjectInDomain(i != -1, element, -1);
             add[i / 64] |= 1L << (i % 64);
         }
         // Check if there is at least one element to add.
@@ -234,9 +248,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             for (int i = add.length - 1; i >= 0; i--) {
                 if (add[i] != 0L) {
                     int lastIndex = 64 * i + 63 - Long.numberOfLeadingZeros(add[i]);
-                    if (elements.length <= lastIndex) {
-                        throw new ObjectOutOfDomainException(otherSet.elements[lastIndex]);
-                    }
+                    checkObjectInDomain(lastIndex < elements.length, otherSet.elements, lastIndex);
                     break;
                 }
             }
@@ -269,12 +281,13 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean removeAll(Collection<?> other) {
+        checkModifiable();
         if (member == null) {
             final boolean changed = loneMember != -1 && other.contains(elements[loneMember]);
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
-        if (unwrap(other) instanceof IndexedSet<?> o && o.member != null && domain.isCompatible(o.domain)) {
+        if (other instanceof IndexedSet<?> o && o.member != null && domain.isCompatible(o.domain)) {
             boolean changed = false;
             final int length = Integer.min(member.length, o.member.length);
             for (int pageindex = 0; pageindex < length; pageindex++) {
@@ -290,6 +303,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean retainAll(Collection<?> other) {
+        checkModifiable();
         if (member == null) {
             final boolean changed = loneMember != -1 && !other.contains(elements[loneMember]);
             loneMember = changed ? -1 : loneMember;
@@ -317,6 +331,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean removeIf(Predicate<? super E> filter) {
+        checkModifiable();
         if (member == null) {
             final boolean changed = loneMember != -1 && filter.test((E) elements[loneMember]);
             loneMember = changed ? -1 : loneMember;
@@ -390,26 +405,15 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return array == null ? null : Arrays.copyOf(array, array.length);
     }
 
-    private static <E> Collection<E> unwrap(Collection<E> collection) {
-        return collection instanceof Immutable<E> i ? i.wrapped : collection;
+    private void checkModifiable() {
+        if (!modifiable) {
+            throw new UnsupportedOperationException("This %s is unmodifiable!".formatted(getClass().getSimpleName()));
+        }
     }
 
-    private static final class Immutable<E> extends AbstractSet<E> {
-        private final IndexedSet<E> wrapped;
-        public Immutable(IndexedSet<E> w) { wrapped = w; }
-        @Override
-        public int size() { return wrapped.size(); }
-        @Override
-        public Iterator<E> iterator() { return wrapped.iterator(); }
-        @Override
-        public Spliterator<E> spliterator() { return wrapped.spliterator(); }
-        @Override
-        public boolean contains(Object key) { return wrapped.contains(key); }
-        @Override
-        public boolean isEmpty() { return wrapped.isEmpty(); }
-    }
-
-    public static final class ObjectOutOfDomainException extends NoSuchElementException {
-        private ObjectOutOfDomainException(Object element) { super(element.toString()); }
+    private void checkObjectInDomain(boolean condition, Object element, int index) {
+        if (!condition) {
+            throw new NoSuchElementException((index == -1 ? element : ((Object[]) element)[index]).toString());
+        }
     }
 }
