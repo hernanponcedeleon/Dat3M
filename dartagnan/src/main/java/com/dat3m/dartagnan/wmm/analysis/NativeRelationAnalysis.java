@@ -324,12 +324,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l) {
         verify(!l.isEmpty(), "empty update in extended analysis");
-        MutableEventGraph may = k.getMaySet();
-        MutableEventGraph must = k.getMustSet();
-        MutableEventGraph disableSet = newGraph();
-        MutableEventGraph enableSet = newGraph();
-        l.stream().map(d -> d.disabled).map(this::newGraph).forEach(e -> e.filter(may::remove).apply(disableSet::add));
-        l.stream().map(d -> d.enabled).map(this::newGraph).forEach(e -> e.filter(must::add).apply(enableSet::add));
+        final MutableEventGraph disableSet = newGraph();
+        final MutableEventGraph enableSet = newGraph();
+        for (ExtendedDelta delta : l) {
+            disableSet.addAll(delta.disabled);
+            enableSet.addAll(delta.enabled);
+        }
+        disableSet.retainAll(k.getMaySet());
+        k.getMaySet().removeAll(disableSet);
+        enableSet.removeAll(k.getMustSet());
+        k.getMustSet().addAll(enableSet);
         return new ExtendedDelta(disableSet, enableSet);
     }
 
@@ -1198,12 +1202,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 }
             }
             if (operands.contains(origin)) {
-                MutableEventGraph d = newGraph();
-                disabled.apply((e1, e2) -> {
-                    if (operands.stream().noneMatch(o -> knowledgeMap.get(o).getMaySet().contains(e1, e2))) {
-                        d.add(e1, e2);
-                    }
-                });
+                MutableEventGraph d = newGraph(disabled);
+                for (Relation operand : operands) {
+                    d.removeAll(knowledgeMap.get(operand).getMaySet());
+                }
                 map.put(rel, new ExtendedDelta(d, enabled));
             }
             return map;
@@ -1270,32 +1272,53 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             if (origin.equals(r0)) {
                 final EventGraph mustIn2 = k2.getMustSet().inverse();
                 final EventGraph mayIn2 = k2.getMaySet().inverse();
-                disabled.apply((x, z) -> {
-                    final Set<Event> disableZ = newSet(k1.getMustSet().getRange(x));
-                    retainImplyWith(disableZ, x, z);
-                    disableZ.retainAll(mayIn2.getRange(z));
-                    disableZ.forEach(y -> d2.add(y, z));
-                    final Set<Event> disableX = newSet(mustIn2.getRange(z));
-                    retainImplyWith(disableX, z, x);
-                    disableX.retainAll(k1.getMaySet().getRange(x));
-                    d1.addRange(x, disableX);
-                });
+                for (Event x : disabled.getDomain()) {
+                    for (Event z : disabled.getRange(x)) {
+                        final Set<Event> disableZ = newSet(k1.getMustSet().getRange(x));
+                        retainImplyWith(disableZ, x, z);
+                        disableZ.retainAll(mayIn2.getRange(z));
+                        disableZ.forEach(y -> d2.add(y, z));
+                        final Set<Event> disableX = newSet(mustIn2.getRange(z));
+                        retainImplyWith(disableX, z, x);
+                        disableX.retainAll(k1.getMaySet().getRange(x));
+                        d1.addRange(x, disableX);
+                    }
+                }
             }
 
-            if (origin.equals(r1)) {
-                List<EventGraph> result = handleCompositionChild(disabled, enabled,
-                        k0.getMaySet(), k1.getMaySet(), k2.getMaySet(), k2.getMustSet());
-                result.get(0).getOutMap().forEach((e1, value) -> value.forEach(e2 -> d0.add(e1, e2)));
-                result.get(1).getOutMap().forEach((e1, value) -> value.forEach(e2 -> e0.add(e1, e2)));
-                result.get(2).getOutMap().forEach((e1, value) -> value.forEach(e2 -> d2.add(e1, e2)));
+            if (origin.equals(r1) && !enabled.isEmpty()) {
+                EventGraph mayOut0 = k0.getMaySet();
+                EventGraph mayOut2 = k2.getMaySet();
+                EventGraph mustOut2 = k2.getMustSet();
+                List<EventGraph> result = handleCompositionEnabledSet(enabled, mayOut2, mustOut2, mayOut0);
+                e0.addAll(result.get(0));
+                d2.addAll(result.get(1));
             }
 
-            if (origin.equals(r2)) {
-                List<EventGraph> result = handleCompositionChild(disabled.inverse(), enabled.inverse(),
-                        k0.getMaySet().inverse(), k2.getMaySet().inverse(), k1.getMaySet().inverse(), k1.getMustSet().inverse());
-                result.get(0).getOutMap().forEach((e2, value) -> value.forEach(e1 -> d0.add(e1, e2)));
-                result.get(1).getOutMap().forEach((e2, value) -> value.forEach(e1 -> e0.add(e1, e2)));
-                result.get(2).getOutMap().forEach((e2, value) -> value.forEach(e1 -> d1.add(e1, e2)));
+            if (origin.equals(r2) && !enabled.isEmpty()) {
+                EventGraph mayIn0 = k0.getMaySet().inverse();
+                EventGraph mayIn1 = k1.getMaySet().inverse();
+                EventGraph mustIn1 = k1.getMustSet().inverse();
+                List<EventGraph> result = handleCompositionEnabledSet(enabled.inverse(), mayIn1, mustIn1, mayIn0);
+                e0.addAll(result.get(0).inverse());
+                d1.addAll(result.get(1).inverse());
+            }
+
+            if ((origin.equals(r1) || origin.equals(r2)) && !disabled.isEmpty()) {
+                // Compute d0 := may0 \ (may1 ; may2)
+                final boolean originIsLeft = origin.equals(r1);
+                final Set<Event> disabledDomain = disabled.getDomain();
+                for (Event x : originIsLeft ? disabledDomain : k0.getMaySet().getDomain()) {
+                    if (originIsLeft || !disjoint(disabledDomain, k1.getMaySet().getRange(x))) {
+                        final Set<Event> zDisabled = newSet(k0.getMaySet().getRange(x));
+                        final Set<Event> zWithAlternatives = allEvents.domain().newSet();
+                        for (Event y : k1.getMaySet().getRange(x)) {
+                            zWithAlternatives.addAll(k2.getMaySet().getRange(y));
+                        }
+                        zDisabled.removeAll(zWithAlternatives);
+                        d0.addRange(x, zDisabled);
+                    }
+                }
             }
 
             Map<Relation, ExtendedDelta> map = new HashMap<>();
@@ -1303,42 +1326,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, newGraph())).disabled.addAll(d1);
             map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, newGraph())).disabled.addAll(d2);
             return map;
-        }
-
-        private List<EventGraph> handleCompositionChild(
-                EventGraph disOut1,
-                EventGraph enOut1,
-                EventGraph mayOut0,
-                EventGraph mayOut1,
-                EventGraph mayOut2,
-                EventGraph mustOut2
-        ) {
-            List<EventGraph> result = handleCompositionEnabledSet(enOut1, mayOut2, mustOut2, mayOut0);
-            EventGraph disOut0 = handleCompositionDisabledSet(disOut1, mayOut1, mayOut2);
-            EventGraph enOut0 = result.get(0);
-            EventGraph disOut2 = result.get(1);
-            return List.of(disOut0, enOut0, disOut2);
-        }
-
-        private EventGraph handleCompositionDisabledSet(
-                EventGraph disOut1,
-                EventGraph mayOut1,
-                EventGraph mayOut2
-        ) {
-            final MutableEventGraph disOut0 = newGraph();
-            final IndexedDomain<Event> eventDomain = ((IndexedEventGraph) mayOut2).eventDomain();
-            for (Event e1 : disOut1.getDomain()) {
-                final Set<Event> e2Set = eventDomain.newSet();
-                for (Event e : disOut1.getRange(e1)) {
-                    e2Set.addAll(mayOut2.getRange(e));
-                }
-                e2Set.removeAll(execExcluding(e1));
-                for (Event eAlt : mayOut1.getRange(e1)) {
-                    e2Set.removeAll(mayOut2.getRange(eAlt));
-                }
-                disOut0.addRange(e1, e2Set);
-            }
-            return disOut0;
         }
 
         private List<EventGraph> handleCompositionEnabledSet(
@@ -1391,23 +1378,27 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableKnowledge k0 = knowledgeMap.get(r0);
             MutableKnowledge k1 = knowledgeMap.get(r1);
             if (origin.equals(r1)) {
-                final EventGraph mayIn0 = k0.getMaySet().inverse();
-                disabled.apply((x, y) -> {
-                    Set<Event> alternatives = k1.getMaySet().getRange(x);
-                    if (k0.getMaySet().contains(x, y)
-                            && disjoint(alternatives, mayIn0.getRange(y))) {
-                        d0.add(x, y);
-                    }
-                    if (!Tuple.isLoop(x, y)) {
-                        for (Event z : k0.getMaySet().getRange(y)) {
-                            if (k0.getMaySet().contains(x, z)
-                                    && !alternatives.contains(z)
-                                    && disjoint(alternatives, mayIn0.getRange(z))) {
-                                d0.add(x, z);
-                            }
+                final EventGraph may0 = k0.getMaySet();
+                final Set<Event> disabledDomain = disabled.getDomain();
+                // disable may0 \ may1+
+                Set<Event> xSet = newSet(may0.getDomain());
+                xSet.removeIf(x -> disjoint(disabledDomain, may0.getRange(x)));
+                for (Event x : xSet) {
+                    final Set<Event> disableX = newSet(may0.getRange(x));
+                    Set<Event> ySet = allEvents.domain().newSet();
+                    ySet.add(x);
+                    while (!disableX.isEmpty() && !ySet.isEmpty()) {
+                        EventGraph graph = k1.getMaySet();
+                        final Set<Event> zSet = allEvents.domain().newSet();
+                        for (Event y : ySet) {
+                            zSet.addAll(graph.getRange(y));
                         }
+                        zSet.retainAll(disableX);
+                        disableX.removeAll(zSet);
+                        ySet = zSet;
                     }
-                });
+                    d0.addRange(x, disableX);
+                }
                 e0.addAll(enabled);
                 enabled.apply((x, y) -> {
                     if (!Tuple.isLoop(x, y)) {
