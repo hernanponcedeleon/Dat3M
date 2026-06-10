@@ -209,6 +209,7 @@ let locordp = vloc & po
 let locordb = loc & (NONPRIV * NONPRIV) & (
     ([R]; (schbsc | schbsca); [R | W]) |
     vloc & (po |
+        (mutordatom & (co | rf | fr)) |
         ((W * W) & ((ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb)) |
         ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
     ))
@@ -227,7 +228,7 @@ empty ((W * W) & mutordatom) \ co \ co^-1
 
 (* Data race *)
 
-let ord = mutordatom | locord | locord^-1
+let ord = locord | locord^-1
 // (IW * IW) is used as a workaround for the Dartagnan virtual memory bug
 let dr = loc \ id \ ord \ (R * R) \ (IW * IW)
 flag ~empty dr as racy
