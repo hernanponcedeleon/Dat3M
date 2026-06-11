@@ -134,7 +134,9 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
-        public static final String DEFAULT_MO = MO_SC;
+        public static final String DEFAULT_MO           = MO_SC;
+
+        public static final String NORETURN             = "NORETURN";
 
         public static String loadMO(String mo) {
             return switch (mo) {
@@ -153,6 +155,7 @@ public final class Tag {
                 default                 -> MO_RELAXED;
             };
         }
+
     }
 
     // =============================================================================================

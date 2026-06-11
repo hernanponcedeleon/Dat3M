@@ -442,6 +442,10 @@ public class EventFactory {
             return newFetchOp(register, address, value, IntBinaryOp.ADD, mo);
         }
 
+        public static AtomicOp newRMWOp(Expression address, Expression value, IntBinaryOp op, String mo) {
+            return new AtomicOp(address, op, value, mo);
+        }
+
         public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
             if (!(register.getType() instanceof IntegerType integerType)) {
                 throw new IllegalArgumentException(

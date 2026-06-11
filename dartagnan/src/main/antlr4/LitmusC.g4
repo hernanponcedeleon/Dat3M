@@ -84,9 +84,9 @@ re locals [IntBinaryOp op, String mo]
         | AtomicDecReturnRelease LPar address = re RPar {$op = IntBinaryOp.SUB; $mo = Linux.MO_RELEASE;})                                   # reAtomicOpReturn
     
     |   ( C11AtomicAddExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
-        | C11AtomicAdd         LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.ADD;}
+        | AtomicFetchAdd       LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.ADD;}            // Linux and C11 use the same atomic_fetch_add
         | C11AtomicSubExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
-        | C11AtomicSub         LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.SUB;}
+        | AtomicFetchSub       LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.SUB;}            // Linux and C11 use the same atomic_fetch_sub
         | C11AtomicOrExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
         | C11AtomicOr          LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.OR;}
         | C11AtomicXorExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}
@@ -178,6 +178,21 @@ nre locals [IntBinaryOp op, String mo, String name]
         | AtomicSub LPar value = re Comma address = re RPar {$op = IntBinaryOp.SUB;}
         | AtomicInc LPar address = re RPar {$op = IntBinaryOp.ADD;}
         | AtomicDec LPar address = re RPar {$op = IntBinaryOp.SUB;})                                                                        # nreAtomicOp
+
+    |   ( C11StoreAddExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
+        | C11StoreAdd          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
+        | C11StoreSubExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
+        | C11StoreSub          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
+        | C11StoreAndExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.AND;}
+        | C11StoreAnd          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.AND;}
+        | C11StoreOrExplicit   LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
+        | C11StoreOr           LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
+        | C11StoreXorExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}
+        | C11StoreXor          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}
+        | C11StoreMinExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SMIN;}
+        | C11StoreMin          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SMIN;}
+        | C11StoreMaxExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SMAX;}
+        | C11StoreMax          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SMAX;})                      # nreC11AtomicOp
 
     |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = Linux.MO_ONCE;}
         | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;}

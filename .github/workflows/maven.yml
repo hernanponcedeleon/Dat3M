@@ -178,6 +178,12 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Build jar file # used by some unit tests
+        run: mvn clean install -DskipTests
+
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots -Pnative install
 
