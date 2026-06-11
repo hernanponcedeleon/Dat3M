@@ -92,6 +92,26 @@ public class VisitorC11 extends VisitorBase {
     }
 
     @Override
+    public List<Event> visitAtomicOp(AtomicOp e) {
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummyReg = e.getFunction().newRegister(e.getAccessType());
+        Load load = newRMWLoad(dummyReg, address);
+        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(dummyReg, e.getOperator(), e.getOperand()));
+        RMWStore store = newRMWStoreWithMo(load, address, dummyReg, Tag.C11.storeMO(mo));
+
+        load.addTags(Tag.C11.ATOMIC, Tag.C11.NORETURN); // Note that the load has no mo, but is still atomic!
+        store.addTags(Tag.C11.NORETURN);
+
+        return tagList(e, eventSequence(
+                load,
+                localOp,
+                store
+        ));
+    }
+
+    @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         return tagList(e, eventSequence(
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), loadMO(e.getMo()))
