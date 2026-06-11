@@ -76,55 +76,35 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
+    // Variable declarator list
 
     @Override
-    public Object visitTypedVariableDeclarator(TypedVariableDeclaratorContext ctx) {
-        final int typeBytes = typeBytes(ctx.type());
+    public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         if (ctx.constant() != null) {
-            final IntegerType type = types.getIntegerType(8 * typeBytes);
-            programBuilder.initLocEqConst(ctx.location().getText(), parseValue(ctx.constant(), type));
+            IntLiteral value = parseValue(ctx.constant(), i64);
+            programBuilder.initLocEqConst(ctx.location().getText(), value);
         } else {
-            programBuilder.newMemoryObject(ctx.location().getText(), typeBytes);
+            programBuilder.newMemoryObject(ctx.location().getText(), 8); // 64 bits
         }
         return null;
     }
 
     @Override
-    public Object visitTypedArrayDeclarator(TypedArrayDeclaratorContext ctx) {
-        final int typeBytes = typeBytes(ctx.type());
-        final int arraySize = toInt(ctx.constant());
-        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
-        return null;
-    }
-
-    @Override
-    public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), parseValue(ctx.constant(), i64));
-        return null;
-    }
-
-    @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), i64), ctx.getStart().getLine());
-        return null;
-    }
-
-    @Override
-    public Object visitTypedRegisterDeclarator(TypedRegisterDeclaratorContext ctx) {
-        final int typeSize = typeBytes(ctx.type());
-        final IntegerType type = types.getIntegerType(8 * typeSize);
-        if (ctx.constant() == null) {
-            programBuilder.getOrNewRegister(ctx.threadId().id, ctx.register64().id, type);
+        final int tid = ctx.threadId().id;
+        final String rid = ctx.register64().id;
+        if (ctx.constant() != null) {
+            IntLiteral value = parseValue(ctx.constant(), i64);
+            programBuilder.initRegEqConst(tid, rid, value, ctx.getStart().getLine());
         } else {
-            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type), ctx.getStart().getLine());
+            programBuilder.getOrNewRegister(tid, rid, i64);
         }
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), i64, ctx.getStart().getLine());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().getText(), ctx.location().getText(), i64, ctx.getStart().getLine());
         return null;
     }
 
@@ -141,14 +121,21 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitVariableSymbolicDeclaratorRegisterLocation(VariableSymbolicDeclaratorRegisterLocationContext ctx) {
+    public Object visitVariableDeclaratorSymbolic(VariableDeclaratorSymbolicContext ctx) {
         // We do not know to which thread a symbolic register belogns to until its usage,
-        // thus we create a 64bits Register (thus the X) for each thread
+        // thus we create a 64bits register (thus the X) for each thread
         for (Integer tid : programBuilder.getThreadIds()) {
-            final String regName = "X" + ctx.Register64().getText();
+            final String regName = "X" + ctx.SymRegister().getText();
             final int lineOfCode = ctx.getStart().getLine();
-            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), i64, lineOfCode);
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
         }
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
+        final int arraySize = toInt(ctx.constant());
+        programBuilder.newMemoryObject(ctx.location().getText(), 8 * arraySize);
         return null;
     }
 
