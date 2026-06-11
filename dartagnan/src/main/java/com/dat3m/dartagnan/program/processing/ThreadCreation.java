@@ -75,7 +75,6 @@ public class ThreadCreation implements ProgramProcessor {
     private final IntegerType threadStateType = types.getIntegerType(2);
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
         compiler = Compilation.fromConfig(config);
     }
 
