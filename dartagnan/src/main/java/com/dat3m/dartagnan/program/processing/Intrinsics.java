@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,8 +216,6 @@ public class Intrinsics {
         LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
         LLVM_THREADLOCAL("llvm.threadlocal.address.p0", false, false, true, true, Intrinsics::inlineLLVMThreadLocal),
-        // --------------------------- C26 ---------------------------
-        C26_ATOMIC_OP("__C26_atomic_op", true, true, true, true, Intrinsics::handleC26AtomicOP),
         // --------------------------- LKMM ---------------------------
         LKMM_LOAD("__LKMM_load", false, true, true, true, Intrinsics::handleLKMMIntrinsic),
         LKMM_STORE("__LKMM_store", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
@@ -300,13 +297,14 @@ public class Intrinsics {
 
         private boolean matches(String funcName) {
             boolean isPrefix = switch(this) {
-                case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET, LLVM_EXPECT, LLVM_OBJECTSIZE, C26_ATOMIC_OP -> true;
+                case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET, LLVM_EXPECT, LLVM_OBJECTSIZE -> true;
                 default -> false;
             };
             BiPredicate<String, String> matchingFunction = isPrefix ? String::startsWith : String::equals;
             return variants.stream().anyMatch(v -> matchingFunction.test(funcName, v));
         }
     }
+
 
     @FunctionalInterface
     private interface Replacer {
@@ -1430,62 +1428,6 @@ public class Intrinsics {
         return expressions.makeAnd(
                 expressions.makeLTE(minValue, value, true),
                 expressions.makeLTE(value, maxValue, true)
-        );
-    }
-
-    // --------------------------------------------------------------------------------------------------------
-    // C26 atomics
-
-    private enum COp {
-        // WARNING: The order here must match with the enum defined in c26.h
-        C_ADD(IntBinaryOp.ADD),
-        C_SUB(IntBinaryOp.SUB),
-        C_AND(IntBinaryOp.AND),
-        C_OR(IntBinaryOp.OR),
-        C_XOR(IntBinaryOp.XOR),
-        C_MIN(IntBinaryOp.SMIN),
-        C_MAX(IntBinaryOp.SMAX);
-
-        private final IntBinaryOp op;
-        COp(IntBinaryOp op) {
-            this.op = op;
-        }
-    }
-
-    private IntBinaryOp toCOp(Expression opCode) {
-        if (!(opCode instanceof IntLiteral literal)) {
-            throw new UnsupportedOperationException("Variable op code \"" + opCode + "\"");
-        }
-        final COp[] cOps = COp.values();
-        final int index = literal.getValue().intValueExact();
-        Preconditions.checkArgument(0 <= index && index < cOps.length, "Invalid op code %s", opCode);
-        return cOps[index].op;
-    }
-
-    private String toCMemoryOrder(Expression moCode) {
-        if (!(moCode instanceof IntLiteral literal)) {
-            throw new UnsupportedOperationException("Variable memory order \"" + moCode + "\"");
-        }
-
-        return switch (literal.getValueAsInt()) {
-            case 0 -> Tag.C11.MO_RELAXED;
-            case 1 -> Tag.C11.MO_CONSUME;
-            case 2 -> Tag.C11.MO_ACQUIRE;
-            case 3 -> Tag.C11.MO_RELEASE;
-            case 4 -> Tag.C11.MO_ACQUIRE_RELEASE;
-            case 5 -> Tag.C11.MO_SC;
-            default -> throw new IllegalArgumentException("Invalid memory order value " + literal.getValueAsInt());
-        };
-    }
-
-    private List<Event> handleC26AtomicOP(FunctionCall call) {
-        final Expression address = call.getArguments().get(0);
-        final Expression value = call.getArguments().get(1);
-        final Expression opCode = call.getArguments().get(2);
-        final Expression moCode = call.getArguments().get(3);
-
-        return List.of(
-                EventFactory.Atomic.newRMWOp(address, value, toCOp(opCode), toCMemoryOrder(moCode))
         );
     }
 
