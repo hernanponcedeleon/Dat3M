@@ -1357,7 +1357,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final Set<Event> disabledDomain = disabled.getDomain();
                 // disable may0 \ may1+
                 Set<Event> xSet = newSet(may0.getDomain());
-                xSet.removeIf(x -> disjoint(disabledDomain, may0.getRange(x)));
+                xSet.removeIf(x -> !disabledDomain.contains(x) && disjoint(disabledDomain, may0.getRange(x)));
                 for (Event x : xSet) {
                     final Set<Event> disableX = newSet(may0.getRange(x));
                     Set<Event> ySet = allEvents.domain().newSet();
