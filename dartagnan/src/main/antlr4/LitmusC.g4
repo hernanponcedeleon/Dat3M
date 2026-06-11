@@ -84,9 +84,9 @@ re locals [IntBinaryOp op, String mo]
         | AtomicDecReturnRelease LPar address = re RPar {$op = IntBinaryOp.SUB; $mo = Linux.MO_RELEASE;})                                   # reAtomicOpReturn
     
     |   ( C11AtomicAddExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
-        | C11AtomicAdd         LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.ADD;}
+        | AtomicFetchAdd       LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.ADD;}            // Linux and C11 use the same atomic_fetch_add
         | C11AtomicSubExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
-        | C11AtomicSub         LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.SUB;}
+        | AtomicFetchSub       LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.SUB;}            // Linux and C11 use the same atomic_fetch_sub
         | C11AtomicOrExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
         | C11AtomicOr          LPar address = re Comma value = re                                  RPar {$op = IntBinaryOp.OR;}
         | C11AtomicXorExplicit LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}

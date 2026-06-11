@@ -11,10 +11,8 @@ C11AtomicSCAS                 :   'atomic_compare_exchange_strong' | 'SCAS';
 C11AtomicWCASExplicit         :   'atomic_compare_exchange_weak_explicit';
 C11AtomicWCAS                 :   'atomic_compare_exchange_weak' | 'WCAS';
 C11AtomicFence                :   'atomic_thread_fence';
-C11AtomicAddExplicit          :   'atomic_fetch_add_explicit';
-C11AtomicAdd                  :   'atomic_fetch_add';
-C11AtomicSubExplicit          :   'atomic_fetch_sub_explicit';
-C11AtomicSub                  :   'atomic_fetch_sub';
+C11AtomicAddExplicit          :   'atomic_fetch_add_explicit'; // The non explicit case is in LinuxLexer. Linux and C11 use the same atomic_fetch_add
+C11AtomicSubExplicit          :   'atomic_fetch_sub_explicit'; // The non explicit case is in LinuxLexer. Linux and C11 use the same atomic_fetch_sub
 C11AtomicOrExplicit           :   'atomic_fetch_or_explicit';
 C11AtomicOr                   :   'atomic_fetch_or';
 C11AtomicXorExplicit          :   'atomic_fetch_xor_explicit';
