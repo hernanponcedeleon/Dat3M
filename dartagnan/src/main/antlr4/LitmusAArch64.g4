@@ -15,15 +15,41 @@ variableDeclaratorList
     ;
 
 variableDeclarator
-    :   type location (Equals constant)? #typedVariableDeclarator
-    |   type location LBracket constant RBracket (Equals initArray)? #typedArrayDeclarator
-    |   location Equals constant #variableDeclaratorLocation
-    |   location Equals Amp? location #variableDeclaratorLocationLocation
-    |   Ast Identifier Equals location #variableDeclaratorPointerLocation
-    |   type threadId Colon register64 (Equals constant)? #typedRegisterDeclarator
-    |   threadId Colon register64 Equals constant #variableDeclaratorRegister
-    |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
-    |   type Register64 Equals location #variableSymbolicDeclaratorRegisterLocation
+    :   variableDeclaratorLocation
+    |   variableDeclaratorRegister
+    |   variableDeclaratorRegisterLocation
+    |   variableDeclaratorLocationLocation
+    |   variableDeclaratorPointerLocation
+    |   variableDeclaratorSymbolic
+    |   variableDeclaratorArray
+    ;
+
+variableDeclaratorLocation
+    :   type? location (Equals constant)?
+    ;
+
+variableDeclaratorRegister
+    :   type? threadId Colon register64 (Equals constant)?
+    ;
+
+variableDeclaratorRegisterLocation
+    :   threadId Colon register64 Equals Amp? location
+    ;
+
+variableDeclaratorLocationLocation
+    :   location Equals Amp? location
+    ;
+
+variableDeclaratorPointerLocation
+    :   Ast Identifier Equals location
+    ;
+
+variableDeclaratorSymbolic
+    :   type SymRegister Equals location
+    ;
+
+variableDeclaratorArray
+    :   type? location LBracket constant RBracket (Equals initArray)?
     ;
 
 initArray
@@ -408,6 +434,7 @@ expressionConversion returns[boolean signed]
 
 register64 returns[String id]
     :   r = Register64 {$id = $r.text;}
+    |   SymRegister
     ;
 
 register32 returns[String id]
@@ -764,13 +791,16 @@ SXTW :  'SXTW' ; // Zero extends a 32-bit word (signed)
 
 Register64
     :   'X' DigitSequence
-    |   'X'? Percent Identifier // symbolic register
     |   'XZR' // zero register
     ;
 
 Register32
     :   'W' DigitSequence
     |   'WZR' // zero register
+    ;
+
+SymRegister
+    :   Percent Identifier
     ;
 
 LitmusLanguage

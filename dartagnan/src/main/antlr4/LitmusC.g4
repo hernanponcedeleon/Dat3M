@@ -316,7 +316,6 @@ pointerTypeSpecifier
 typeSpecifier
     :   (Volatile)? basicTypeSpecifier Ast*
     |   (Volatile)? atomicTypeSpecifier Ast*
-    |   (Volatile)? Ast*
     ;
 
 basicTypeSpecifier
