@@ -434,7 +434,7 @@ expressionConversion returns[boolean signed]
 
 register64 returns[String id]
     :   r = Register64 {$id = $r.text;}
-    |   SymRegister
+    |   r = SymRegister {$id = $r.text;}
     ;
 
 register32 returns[String id]
@@ -800,7 +800,7 @@ Register32
     ;
 
 SymRegister
-    :   Percent Identifier
+    :   'X'? Percent Identifier
     ;
 
 LitmusLanguage
