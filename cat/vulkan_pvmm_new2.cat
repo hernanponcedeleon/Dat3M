@@ -178,9 +178,9 @@ let visqf = visqf0 | visqf1 | visqf2 | visqf3
 let visdv = visdv0 | visdv1 | visdv2 | visdv3
 
 let sgvis = (vloc & (po; [R & NONPRIV]))?
-let wgvis = (vloc & ((ssg & schb); vissg))?; sgvis
-let qfvis = (vloc & ((swg & schb); viswg))?; wgvis
-let dvvis = (vloc & ((sqf & schb); visqf))?; qfvis
+let wgvis = (vloc & ssg & (schb; vissg))?; sgvis
+let qfvis = (vloc & swg & (schb; viswg))?; wgvis
+let dvvis = (vloc & sqf & (schb; visqf))?; qfvis
 
 let vissghb = vissg; sgvis
 let viswghb = viswg; wgvis
