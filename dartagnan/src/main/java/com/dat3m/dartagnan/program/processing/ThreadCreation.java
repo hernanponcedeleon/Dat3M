@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 
@@ -63,7 +62,6 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
  * The thread number is determined by the thread grid.
  */
 
-@Options
 public class ThreadCreation implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadCreation.class);
