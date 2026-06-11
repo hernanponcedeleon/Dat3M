@@ -14,7 +14,6 @@ assertionList
     :   AssertionExists a = assertion Semi?
     |   AssertionNot AssertionExists a = assertion Semi?
     |   AssertionForall a = assertion Semi?
-    |   AssertionFinal a = assertion Semi? assertionListExpectationList
     ;
 
 assertion
@@ -42,14 +41,6 @@ constant
     |   hex=HexDigitSequence
     ;
 
-assertionListExpectationList
-    :   AssertionWith (assertionListExpectation)+
-    ;
-
-assertionListExpectation
-    :   AssertionListExpectationTest Colon AssertionNot? AssertionExists Semi
-    ;
-
 assertionCompare returns [IntCmpOp op]
     :   (Equals | EqualsEquals) {$op = IntCmpOp.EQ;}
     |   NotEquals               {$op = IntCmpOp.NEQ;}
@@ -64,13 +55,6 @@ threadId returns [int id]
     |   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-AssertionListExpectationTest
-    :   'tso'
-    |   'cc'
-    |   'optic'
-    |   'default'
-    ;
-
 AssertionAnd
     :   '/\\'
     ;
@@ -81,10 +65,6 @@ AssertionOr
 
 AssertionExists
     :   'exists'
-    ;
-
-AssertionFinal
-    :   'final'
     ;
 
 AssertionForall
@@ -98,10 +78,6 @@ AssertionFilter
 AssertionNot
     :   Tilde
     |   'not'
-    ;
-
-AssertionWith
-    :   'with'
     ;
 
 ThreadIdentifier

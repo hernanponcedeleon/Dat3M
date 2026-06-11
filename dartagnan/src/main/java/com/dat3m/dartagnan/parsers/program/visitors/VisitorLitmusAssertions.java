@@ -71,7 +71,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         Expression ass = ctx.assertion().accept(this);
         if (ctx.AssertionNot() != null) {
             programBuilder.setAssert(NOT_EXISTS, ass);
-        } else if (ctx.AssertionExists() != null || ctx.AssertionFinal() != null) {
+        } else if (ctx.AssertionExists() != null) {
             programBuilder.setAssert(EXISTS, ass);
         } else if (ctx.AssertionForall() != null) {
             programBuilder.setAssert(FORALL, ass);
