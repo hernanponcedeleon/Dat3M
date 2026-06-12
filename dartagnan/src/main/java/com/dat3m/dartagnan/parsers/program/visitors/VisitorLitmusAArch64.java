@@ -80,11 +80,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
         if (ctx.constant() != null) {
-            IntLiteral value = parseValue(ctx.constant(), i64);
+            final IntegerType type = types.getIntegerType(8 * typeBytes);
+            final IntLiteral value = parseValue(ctx.constant(), type);
             programBuilder.initLocEqConst(ctx.location().getText(), value);
         } else {
-            programBuilder.newMemoryObject(ctx.location().getText(), 8); // 64 bits
+            programBuilder.newMemoryObject(ctx.location().getText(), typeBytes);
         }
         return null;
     }
@@ -94,7 +96,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final int tid = ctx.threadId().id;
         final String rid = ctx.register64().id;
         if (ctx.constant() != null) {
-            IntLiteral value = parseValue(ctx.constant(), i64);
+            final IntLiteral value = parseValue(ctx.constant(), i64);
             programBuilder.initRegEqConst(tid, rid, value, ctx.getStart().getLine());
         } else {
             programBuilder.getOrNewRegister(tid, rid, i64);
@@ -127,15 +129,16 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         for (Integer tid : programBuilder.getThreadIds()) {
             final String regName = "X" + ctx.SymRegister().getText();
             final int lineOfCode = ctx.getStart().getLine();
-            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), i64, lineOfCode);
         }
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
         final int arraySize = toInt(ctx.constant());
-        programBuilder.newMemoryObject(ctx.location().getText(), 8 * arraySize);
+        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
         return null;
     }
 

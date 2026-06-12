@@ -49,7 +49,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
+    // Variable declarator list
 
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
