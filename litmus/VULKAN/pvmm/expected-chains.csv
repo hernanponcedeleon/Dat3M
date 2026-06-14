@@ -163,6 +163,10 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 3-problem-vloc-vis-chain11-d,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-vis-chain11-e,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-problem-vloc-vis-chain11-f,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3-problem-vloc-vis-chain12-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
+3-problem-vloc-vis-chain12-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3-problem-vloc-vis-chain12-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+3-problem-vloc-vis-chain12-d,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 ,,,,,,,,,
 3-new-vloc-av-atom-0,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 3-new-vloc-av-atom-1,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
