@@ -56,7 +56,7 @@ VULKAN
 *)
 
 // Host-happens-before
-let hhb = (po | ssw)+
+let hhb = po | ssw+
 
 let QF = QF | DV
 let WG = WG | QF
