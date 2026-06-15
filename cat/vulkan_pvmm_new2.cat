@@ -148,81 +148,76 @@ let avqf3 = avwg3; (swg & avinc3)?; [QF]
 let avdv3 = avqf3; (sqf & avinc3)?; [DV]
 
 let vissg0 = [SG]; ([SEMVIS & SEMSC0]; po)?; [R & NONPRIV & SC0]
-let viswg0 = [WG]; (visinc0 & ssg)?; vissg0
-let visqf0 = [QF]; (visinc0 & swg)?; viswg0
-let visdv0 = [DV]; (visinc0 & sqf)?; visqf0
+let viswg0 = [WG]; (ssg & visinc0)?; vissg0
+let visqf0 = [QF]; (swg & visinc0)?; viswg0
+let visdv0 = [DV]; (sqf & visinc0)?; visqf0
 
 let vissg1 = [SG]; ([SEMVIS & SEMSC1]; po)?; [R & NONPRIV & SC1]
-let viswg1 = [WG]; (visinc1 & ssg)?; vissg1
-let visqf1 = [QF]; (visinc1 & swg)?; viswg1
-let visdv1 = [DV]; (visinc1 & sqf)?; visqf1
+let viswg1 = [WG]; (ssg & visinc1)?; vissg1
+let visqf1 = [QF]; (swg & visinc1)?; viswg1
+let visdv1 = [DV]; (sqf & visinc1)?; visqf1
 
 let vissg2 = [SG]; ([SEMVIS & SEMSC2]; po)?; [R & NONPRIV & SC2]
-let viswg2 = [WG]; (visinc2 & ssg)?; vissg2
-let visqf2 = [QF]; (visinc2 & swg)?; viswg2
-let visdv2 = [DV]; (visinc2 & sqf)?; visqf2
+let viswg2 = [WG]; (ssg & visinc2)?; vissg2
+let visqf2 = [QF]; (swg & visinc2)?; viswg2
+let visdv2 = [DV]; (sqf & visinc2)?; visqf2
 
 let vissg3 = [SG]; ([SEMVIS & SEMSC3]; po)?; [R & NONPRIV & SC3]
-let viswg3 = [WG]; (visinc3 & ssg)?; vissg3
-let visqf3 = [QF]; (visinc3 & swg)?; viswg3
-let visdv3 = [DV]; (visinc3 & sqf)?; visqf3
+let viswg3 = [WG]; (ssg & visinc3)?; vissg3
+let visqf3 = [QF]; (swg & visinc3)?; viswg3
+let visdv3 = [DV]; (sqf & visinc3)?; visqf3
 
 let vissg = vissg0 | vissg1 | vissg2 | vissg3
 let viswg = viswg0 | viswg1 | viswg2 | viswg3
 let visqf = visqf0 | visqf1 | visqf2 | visqf3
 let visdv = visdv0 | visdv1 | visdv2 | visdv3
 
-let sgvis = vloc & (po?; [R & NONPRIV])
+let sgvis = (vloc & po)?; [R & NONPRIV]
 let wgvis = vloc & ssg & ((schb; vissg)?; sgvis)
 let qfvis = vloc & swg & ((schb; viswg)?; wgvis)
 let dvvis = vloc & sqf & ((schb; visqf)?; qfvis)
 
-let obsghb = [SG]; asrf; (po | schb)?
-let obwghb = [WG]; asrf; (po | schb)?
-let obqfhb = [QF]; asrf; (po | schb)?
+let obsghb = ssg & ([SG]; asrf; (po | schb)?)
+let obwghb = swg & ([WG]; asrf; (po | schb)?)
+let obqfhb = sqf & ([QF]; asrf; (po | schb)?)
 let obdvhb = [DV]; asrf; (po | schb)?
 
-let avsghb = obsghb | (avsg0; ithb0) | (avsg1; ithb1) | (avsg2; ithb2) | (avsg3; ithb3)
-let avwghb = obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | (avwg3; ithb3)
-let avqfhb = obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3)
+let avsghb = ssg & (obsghb | (avsg0; ithb0) | (avsg1; ithb1) | (avsg2; ithb2) | (avsg3; ithb3))
+let avwghb = swg & (obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | (avwg3; ithb3))
+let avqfhb = sqf & (obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3))
 let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3; ithb3)
-
-let vissghb = vissg; sgvis
-let viswghb = viswg; wgvis
-let visqfhb = visqf; qfvis
-let visdvhb = visdv; dvvis
 
 let locordh = loc & (
     (IW * (M \ IW)) |
-    ([R]; ssw+; [W]) |
+    ([R]; ssw+; [R | W]) |
     ([W]; schb; [AVDEVICE]; hbsc; [W]) |
     ([W]; schb; [AVDEVICE]; hhb; [VISDEVICE]; hbsc; [R]))
 
 let locordp = vloc & po
 
-let locordb = loc & (NONPRIV * NONPRIV) & (
+let locordi = loc & (NONPRIV * NONPRIV) & (
     ([R]; (schbsc | schbsca); [R | W]) |
-    vloc & (po |
-        (mutordatom & (co | rf | fr)) |
-        ((W * W) & ((ssg & avsghb) | (swg & avwghb) | (sqf & avqfhb) | avdvhb)) |
-        ((W * R) & ((ssg & (avsghb; vissghb)) | (swg & (avwghb; viswghb)) | (sqf & (avqfhb; visqfhb)) | (avdvhb; visdvhb)))
+    vloc & (po | (mutordatom & (co | rf | fr)) |
+        ([W]; (avsghb | avwghb | avqfhb | avdvhb); [W]) |
+        ([W]; avsghb; vissg; sgvis; [R]) |
+        ([W]; avwghb; viswg; wgvis; [R]) |
+        ([W]; avqfhb; visqf; qfvis; [R]) |
+        ([W]; avdvhb; visdv; dvvis; [R])
     ))
 
-let locordd = ((locordb & (W * W))*; (locordb & (W * M))) | (locordb+ & (R * W))
+let locordd = (locordi+ & (R * W)) | ((locordi & (W * W))*; (locordi & (W * (R | W))))
 let locord = locordh | (locordh?; (locordp | locordd)) \ id
 
 (* Constraints *)
 
-empty rmw & ((fr & ext); (co & ext)) as atomic
-acyclic locord as consistency-cycle
-irreflexive locord; (co | rf | fr) as irreflexive-locord
-
 empty ((W * W) & locord) \ co as consistent-co
 empty ((W * W) & mutordatom) \ co \ co^-1
+empty rmw & ((fr & ext); (co & ext)) as atomic
+irreflexive locord; (co | rf | fr) as irreflexive-locord
+acyclic locord as consistency-cycle
 
 (* Data race *)
 
-let ord = locord | locord^-1
 // (IW * IW) is used as a workaround for the Dartagnan virtual memory bug
-let dr = loc \ id \ ord \ (R * R) \ (IW * IW)
+let dr = loc \ id \ (R * R) \ (IW * IW) \ locord \ locord^-1
 flag ~empty dr as racy
