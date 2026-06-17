@@ -73,6 +73,10 @@ public class GlobalSettings {
                 .resolve("libs");
     }
 
+    public static Path getIncludeDirectory() {
+        return getHomeDirectory().resolve("include");
+    }
+
     public static Path getExecutablePath(boolean jar) {
         return getHomeDirectory(true)
                 .resolve("dartagnan")

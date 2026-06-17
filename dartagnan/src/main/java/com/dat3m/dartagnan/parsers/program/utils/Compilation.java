@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getIncludeDirectory;
 import static java.util.Arrays.asList;
 
 public class Compilation {
@@ -22,7 +22,7 @@ public class Compilation {
         final String outputFileName = getOutputName(file, ".ll");
 
         ArrayList<String> cmd = new ArrayList<>(
-                asList("clang", "-I", getHomeDirectory() + "/include", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "-o", outputFileName));
+                asList("clang", "-I", getIncludeDirectory().toString(), "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "-o", outputFileName));
         // We use cflags when using the UI and fallback top CFLAGS otherwise
         cflags = cflags.isEmpty() ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
         // Needed to handle more than one flag in CFLAGS
