@@ -65,6 +65,9 @@ test,vulkan_pvmm,vulkan_chains_union,vulkan_chains_new,vulkan_pvmm_new,vulkan_pv
 4-semsc-mp3-sc-fence,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 4-semsc-mp3-sc-fence-all,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 ,,,,,,,,,
+4-semsc-lb-a,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,PASS,FAIL
+4-semsc-lb-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
+,,,,,,,,,
 x-barrier-a,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS
 x-barrier-b,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
 x-barrier-c,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL
