@@ -206,7 +206,7 @@ let locordh = loc & (
 
 let locordp = vloc & po
 
-let locordb = loc & (NONPRIV * NONPRIV) & (
+let locordi = loc & (NONPRIV * NONPRIV) & (
     ([R]; (schbsc | schbsca); [R | W]) |
     vloc & (po |
         (mutordatom & (co | rf | fr)) |
@@ -214,8 +214,8 @@ let locordb = loc & (NONPRIV * NONPRIV) & (
         ((W * R) & ((ssg & (avsghb; vissg)) | (swg & (avwghb; viswg)) | (sqf & (avqfhb; visqf)) | (avdvhb; visdv)))
     ))
 
-let locordd = ((locordb & (W * W))*; (locordb & (W * M))) | (locordb+ & (R * W))
-let locord = (locordh | (locordh?; locordp) | (locordh?; locordd)) \ id
+let locordd = ext & (([R]; locordi+; [W]) | (([W]; locordi; [W])*; ([W]; locordi)))
+let locord = locordh | (locordh?; (locordp | locordd))
 
 (* Constraints *)
 

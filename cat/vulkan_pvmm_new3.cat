@@ -205,7 +205,7 @@ let locordi = loc & (NONPRIV * NONPRIV) & (
         ([W]; avdvhb; visdv; dvvis?; [R])
     ))
 
-let locordd = (locordi+ & (R * W)) | ((locordi & (W * W))*; (locordi & (W * (R | W))))
+let locordd = ext & (([R]; locordi+; [W]) | (([W]; locordi; [W])*; ([W]; locordi)))
 let locord = locordh | (locordh?; (locordp | locordd))
 
 (* Constraints *)
