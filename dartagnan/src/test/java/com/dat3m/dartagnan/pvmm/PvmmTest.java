@@ -88,7 +88,7 @@ public class PvmmTest {
                     String[] values = line.split(",");
                     if (values.length > 0) {
                         Map<String, Result> data = new HashMap<>();
-                        for (int i = 1; i < values.length; i++) {
+                        for (int i = 1; i < models.length; i++) {
                             data.put(models[i], Result.valueOf(values[i]));
                         }
                         result.put(values[0], data);
