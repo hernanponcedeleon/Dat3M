@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.utils.graph.mutable;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
+import com.dat3m.dartagnan.wmm.utils.graph.AbstractEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.*;
@@ -11,7 +12,7 @@ import java.util.function.BiPredicate;
 
 /// Maps domain-side events to the set of connected range-side events.
 // This implementation uses `IndexedDomain` to organise its elements.
-public final class IndexedEventGraph implements MutableEventGraph {
+public final class IndexedEventGraph extends AbstractEventGraph implements MutableEventGraph {
     // assert eventDomain != null
     // assert map != null
     // assert map.length == eventDomain.size()

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils.graph.immutable;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.wmm.utils.graph.AbstractEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.google.common.collect.ImmutableMap;
@@ -11,7 +12,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-public class LazyEventGraph implements ImmutableEventGraph {
+public class LazyEventGraph extends AbstractEventGraph implements ImmutableEventGraph {
 
     private final Set<Event> domain;
     private final Set<Event> range;
@@ -129,29 +130,6 @@ public class LazyEventGraph implements ImmutableEventGraph {
         return Objects.equals(domain, that.domain)
                 && Objects.equals(range, that.range)
                 && Objects.equals(function, that.function);
-    }
-
-    @Override
-    public int hashCode() {
-        throw new UnsupportedOperationException(LazyEventGraph.class.getSimpleName()
-                + " should not be used as a key");
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("[");
-        for (Event e1 : domain.stream().sorted().toList()) {
-            for (Event e2 : range.stream().sorted().toList()) {
-                if (function.test(e1, e2)) {
-                    sb.append("(")
-                            .append(e1.getGlobalId())
-                            .append(",")
-                            .append(e2.getGlobalId())
-                            .append(")");
-                }
-            }
-        }
-        return sb.append("]").toString();
     }
 
     public static LazyEventGraph empty() {
