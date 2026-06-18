@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 0 * * 4'  # Run weekly
+    - cron: '0 0 * * 5'  # Run weekly
   workflow_dispatch:
 
 jobs:
@@ -177,6 +177,12 @@ jobs:
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Set DAT3M_OUTPUT
+        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
+
+      - name: Create Output Directory
+        run: mkdir -p "$DAT3M_OUTPUT"
 
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
