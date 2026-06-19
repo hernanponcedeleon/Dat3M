@@ -1,6 +1,7 @@
 VULKAN
 {}
 {
+ssw 0 4;
 ssw 2 3;
 ssw 3 4;
 }
