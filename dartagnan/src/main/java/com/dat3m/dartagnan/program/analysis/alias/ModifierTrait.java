@@ -233,7 +233,7 @@ public interface ModifierTrait <Modifier> {
         public Md shrinkToBounds(Md modifier, int objectSize) {
             final int remainingSize = objectSize - modifier.offset;
             for (final int a : modifier.alignment) {
-                if (a > 0 ? a < remainingSize : -a < remainingSize && -a <= modifier.offset) {
+                if (a > 0 ? a < remainingSize : -a < remainingSize || -a <= modifier.offset) {
                     return modifier;
                 }
             }
