@@ -9,7 +9,7 @@ export DAT3M_HOME=$(pwd)
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    cmd="java -jar dartagnan/target/dartagnan.jar --version"
+    cmd="dartagnan --version"
 else
     propertypath=$1
     programpath=$2

@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
-import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
 
 @Options
 public class TaskSolver implements AutoCloseable {
@@ -88,12 +87,6 @@ public class TaskSolver implements AutoCloseable {
 
     private void initModelChecker() throws InvalidConfigurationException {
         Preconditions.checkState(modelChecker == null, "Model checker already initialized");
-
-        if (task.getProperty().contains(DATARACEFREEDOM) && method != Method.EAGER) {
-            // For DATARACEFREEDOM, we always use EAGER
-            logger.warn("Method {} is not supported for property {}. Using EAGER instead.", method, DATARACEFREEDOM);
-            method = Method.EAGER;
-        }
 
         modelChecker = switch (method) {
             case EAGER -> AssumeSolver.create(task);

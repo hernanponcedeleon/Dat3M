@@ -41,7 +41,7 @@ public class SVCOMPRunner extends BaseOptions {
         // We always enable PROGRAM_SPEC to detect calls to unknown functions.
         // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
         if(p.contains("no-data-race")) {
-            property = EnumSet.of(Property.DATARACEFREEDOM, Property.PROGRAM_SPEC);
+            property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
         } else if(p.contains("termination")) {
             property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
         } else if(p.contains("valid-memsafety")) {

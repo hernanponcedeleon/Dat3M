@@ -3,6 +3,12 @@ SVCOMP
 (* All communication relations *)
 let com = (rf | fr | co)
 
+let sw = [RMW | A]; rmw^-1? ;(com & ext); [RMW | A]
+let hb = (sw | po)+
+
 (* Sequential consistency *)
-let hb = po | (com & int) | (rmw^-1? ; (com & ext))
 acyclic hb as sc
+
+let conflict = (ext & ((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW))
+let dr = conflict \ (hb | hb^-1)
+flag ~empty dr as data-race
