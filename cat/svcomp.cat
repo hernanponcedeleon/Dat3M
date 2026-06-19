@@ -9,6 +9,7 @@ let hb = (sw | po)+
 (* Sequential consistency *)
 acyclic hb as sc
 
+(* Data Races *)
 let conflict = (ext & ((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW))
 let dr = conflict \ (hb | hb^-1)
 flag ~empty dr as data-race
