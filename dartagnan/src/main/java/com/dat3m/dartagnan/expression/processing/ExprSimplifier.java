@@ -196,12 +196,13 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         // Case:
-        //    (1) ext(x) cmp ext(y)  <=>  x cmp y  (if size(x)==size(y))
+        //    (1) ext(x) cmp ext(y)  <=>  x cmp y  (if size(x)==size(y) && signed(cmp) => signed(ext))
         //    (2) c' = ext(c) for constants of small size
         // Result:
         //     ext(x) cmp c' <=> ext(x) cmp ext(c) <=> x cmp c
         if (left instanceof IntSizeCast cast && cast.isExtension()
                 && right instanceof IntLiteral lit
+                && ((!op.isSigned() || cast.preservesSign()) || op == IntCmpOp.EQ || op == IntCmpOp.NEQ)
                 && IntegerHelper.getNumRequiredBits(lit.getValue()) <= cast.getSourceType().getBitWidth()) {
             final Expression x = cast.getOperand();
             final Expression c = expressions.makeValue(lit.getValue(), cast.getSourceType());
