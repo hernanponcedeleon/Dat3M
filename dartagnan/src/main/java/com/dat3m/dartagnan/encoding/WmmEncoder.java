@@ -465,29 +465,41 @@ public class WmmEncoder {
 
         @Override
         public Void visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation inner = trans.getOperand();
             final Relation rel = trans.getDefinedRelation();
-            final Relation r1 = trans.getOperand();
             final EventGraph relMustSet = ra.getKnowledge(rel).getMustSet();
             final EventGraph relMaySet = ra.getKnowledge(rel).getMaySet();
-            final EventGraph r1MaySet = ra.getKnowledge(r1).getMaySet();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final EventGraph innerMaySet = ra.getKnowledge(inner).getMaySet();
+
+            // TODO: Maybe add a helper method to get cache-backed encoder
+            //  Or let EncodingContext always cache edges?
+            final Map<Event, Map<Event, BooleanFormula>> varCache = new HashMap<>();
+            final EncodingContext.EdgeEncoder innerEdge = (x, y) ->
+                    varCache.computeIfAbsent(x, key -> new HashMap<>())
+                    .computeIfAbsent(y, key -> context.edge(rel, x, y));
+
+            final Map<Event, Map<Event, BooleanFormula>> varCache2 = new HashMap<>();
+            final EncodingContext.EdgeEncoder transEdge = (x, y) ->
+                    varCache2.computeIfAbsent(x, key -> new HashMap<>())
+                            .computeIfAbsent(y, key -> context.edge(inner, x, y));
+
             getActiveSet(trans).apply((e1, e2) -> {
-                BooleanFormula edge = enc0.encode(e1, e2);
+                final BooleanFormula edge = innerEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
                     enc.add(bmgr.equivalence(edge, execution(e1, e2)));
                 } else {
-                    BooleanFormula orClause = bmgr.makeFalse();
-                    if (r1MaySet.contains(e1, e2)) {
-                        orClause = bmgr.or(orClause, enc1.encode(e1, e2));
+                    final List<BooleanFormula> orClause = new ArrayList<>();
+                    if (innerMaySet.contains(e1, e2)) {
+                        orClause.add(transEdge.encode(e1, e2));
                     }
-                    for (Event e : r1MaySet.getRange(e1)) {
+                    for (Event e : innerMaySet.getRange(e1)) {
                         if (e.getGlobalId() != e1.getGlobalId() && e.getGlobalId() != e2.getGlobalId() && relMaySet.contains(e, e2)) {
-                            BooleanFormula tVar = relMustSet.contains(e1, e) ? enc0.encode(e1, e) : enc1.encode(e1, e);
-                            orClause = bmgr.or(orClause, bmgr.and(tVar, enc0.encode(e, e2)));
+                            final BooleanFormula tVar = relMustSet.contains(e1, e) ? innerEdge.encode(e1, e) : transEdge.encode(e1, e);
+                            orClause.add(bmgr.and(tVar, innerEdge.encode(e, e2)));
                         }
                     }
-                    enc.add(bmgr.equivalence(edge, orClause));
+
+                    enc.add(bmgr.equivalence(edge, bmgr.or(orClause)));
                 }
             });
             return null;
