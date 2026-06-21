@@ -420,25 +420,25 @@ public class WmmEncoder {
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            EncodingContext.EdgeEncoder enc2 = context.edge(r2);
+            EncodingContext.EdgeEncoder enc1 = context.edge(r1).withCache();
+            EncodingContext.EdgeEncoder enc2 = context.edge(r2).withCache();
             final EventGraph a1 = EventGraph.union(getActiveSet(r1.getDefinition()), k1.getMustSet());
             final EventGraph a2 = EventGraph.union(getActiveSet(r2.getDefinition()), k2.getMustSet());
             Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
             getActiveSet(comp).apply((e1, e2) -> {
-                BooleanFormula expr = bmgr.makeFalse();
+                final List<BooleanFormula> orClause = new ArrayList<>();
                 if (k.getMustSet().contains(e1, e2)) {
-                    expr = execution(e1, e2);
+                    orClause.add(execution(e1, e2));
                 } else {
                     for (Event e : out.getOrDefault(e1, Set.of())) {
                         if (k2.getMaySet().contains(e, e2)) {
                             verify(a1.contains(e1, e) && a2.contains(e, e2),
                                     "Failed to properly propagate active sets across composition at triple: (%s, %s, %s).", e1, e, e2);
-                            expr = bmgr.or(expr, bmgr.and(enc1.encode(e1, e), enc2.encode(e, e2)));
+                            orClause.add(bmgr.and(enc1.encode(e1, e), enc2.encode(e, e2)));
                         }
                     }
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), expr));
+                enc.add(bmgr.equivalence(enc0.encode(e1, e2), bmgr.or(orClause)));
             });
             return null;
         }
@@ -1079,20 +1079,22 @@ public class WmmEncoder {
 
             // --- Create encoding ---
             final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
-            List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final EncodingContext.EdgeEncoder smtCycleVar =
+                    ((EncodingContext.EdgeEncoder)(x, y) -> getSMTCycleVar(rel, x, y)).withCache();
+            List<BooleanFormula> enc = new ArrayList<>();
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2)));
+                enc.add(bmgr.implication(cond, smtCycleVar.encode(e1, e2)));
             });
 
             // Encode triangle rules
             for (Event[] tri : triangles) {
                 BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
                         context.execution(tri[0], tri[2])
-                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1]), getSMTCycleVar(rel, tri[1], tri[2]));
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2])));
+                        : bmgr.and(smtCycleVar.encode(tri[0], tri[1]), smtCycleVar.encode(tri[1], tri[2]));
+                enc.add(bmgr.implication(cond, smtCycleVar.encode(tri[0], tri[2])));
             }
 
             //  --- Encode inconsistent assignments ---
@@ -1106,8 +1108,8 @@ public class WmmEncoder {
                 Set<Event> out = vertEleOutEdges.get(e1);
                 for (Event e2: out) {
                     if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
-                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(rel, e1, e2);
-                        enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(rel, e2, e1))));
+                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : smtCycleVar.encode(e1, e2);
+                        enc.add(bmgr.implication(cond, bmgr.not(smtCycleVar.encode(e2, e1))));
                     }
                 }
             }
