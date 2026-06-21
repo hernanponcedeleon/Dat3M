@@ -471,31 +471,22 @@ public class WmmEncoder {
             final EventGraph relMaySet = ra.getKnowledge(rel).getMaySet();
             final EventGraph innerMaySet = ra.getKnowledge(inner).getMaySet();
 
-            // TODO: Maybe add a helper method to get cache-backed encoder
-            //  Or let EncodingContext always cache edges?
-            final Map<Event, Map<Event, BooleanFormula>> varCache = new HashMap<>();
-            final EncodingContext.EdgeEncoder innerEdge = (x, y) ->
-                    varCache.computeIfAbsent(x, key -> new HashMap<>())
-                    .computeIfAbsent(y, key -> context.edge(rel, x, y));
-
-            final Map<Event, Map<Event, BooleanFormula>> varCache2 = new HashMap<>();
-            final EncodingContext.EdgeEncoder transEdge = (x, y) ->
-                    varCache2.computeIfAbsent(x, key -> new HashMap<>())
-                            .computeIfAbsent(y, key -> context.edge(inner, x, y));
+            final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
+            final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
 
             getActiveSet(trans).apply((e1, e2) -> {
-                final BooleanFormula edge = innerEdge.encode(e1, e2);
+                final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
                     enc.add(bmgr.equivalence(edge, execution(e1, e2)));
                 } else {
                     final List<BooleanFormula> orClause = new ArrayList<>();
                     if (innerMaySet.contains(e1, e2)) {
-                        orClause.add(transEdge.encode(e1, e2));
+                        orClause.add(innerEdge.encode(e1, e2));
                     }
                     for (Event e : innerMaySet.getRange(e1)) {
-                        if (e.getGlobalId() != e1.getGlobalId() && e.getGlobalId() != e2.getGlobalId() && relMaySet.contains(e, e2)) {
-                            final BooleanFormula tVar = relMustSet.contains(e1, e) ? innerEdge.encode(e1, e) : transEdge.encode(e1, e);
-                            orClause.add(bmgr.and(tVar, innerEdge.encode(e, e2)));
+                        if (e != e1 && e != e2 && relMaySet.contains(e, e2)) {
+                            final BooleanFormula tVar = relMustSet.contains(e1, e) ? transEdge.encode(e1, e) : innerEdge.encode(e1, e);
+                            orClause.add(bmgr.and(tVar, transEdge.encode(e, e2)));
                         }
                     }
 
