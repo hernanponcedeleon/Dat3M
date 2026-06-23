@@ -74,7 +74,7 @@ public class ActiveSetAnalysis {
     private Map<Definition, IndexedEventGraph> definition2ActiveSets;
     // TODO: Can be generalized to any non-defining constraint (we have only axioms right now)
     //  It could also be generalized to defining constraints
-    private Map<Axiom, IndexedEventGraph> axiom2RelevantSets;
+    private Map<Axiom, EventGraph> axiom2RelevantSets;
 
     public EventGraph getActiveSet(Definition definition) {
         return definition2ActiveSets.get(definition);
@@ -145,7 +145,7 @@ public class ActiveSetAnalysis {
         //  TODO: Do we consider this as part of the active set computation?
         //   Should we also do a "worst-case" here if active sets are disabled?
         final AxiomRelevantSets axiomRelevantSetsVisitor = new AxiomRelevantSets();
-        axiom2RelevantSets = Maps.toMap(axioms, a -> (IndexedEventGraph) a.accept(axiomRelevantSetsVisitor));
+        axiom2RelevantSets = Maps.toMap(axioms, a -> a.accept(axiomRelevantSetsVisitor));
 
         if (!enableActiveSetComputation) {
             initToMaximalActiveSets();
@@ -155,7 +155,7 @@ public class ActiveSetAnalysis {
         // ---- Initialize active set propagation queue ----
         final Map<Relation, List<EventGraph>> propagationQueue = new HashMap<>();
         axioms.forEach(a -> {
-            final EventGraph relevant = filterUnknowns(new IndexedEventGraph(axiom2RelevantSets.get(a)), a.getRelation());
+            final EventGraph relevant = filterUnknowns(axiom2RelevantSets.get(a), a.getRelation());
             propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
                     MutableEventGraph.from(relevant));
         });
@@ -380,20 +380,20 @@ public class ActiveSetAnalysis {
             final Relation r1 = comp.getLeftOperand();
             final Relation r2 = comp.getRightOperand();
             final MutableEventGraph set1 = new IndexedEventGraph(exec.eventDomain());
-            final MutableEventGraph set2In = new IndexedEventGraph(exec.eventDomain());
+            final MutableEventGraph set2Inverse = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-            final EventGraph may2In = k2.getMaySet().inverse();
+            final EventGraph may2Inverse = k2.getMaySet().inverse();
             for (Event e1 : news.getDomain()) {
                 final Set<Event> e1may1 = k1.getMaySet().getRange(e1);
                 for (Event e3 : news.getRange(e1)) {
-                    final Set<Event> e2Set = new IndexedSet<>((IndexedSet<Event>) may2In.getRange(e3));
+                    final Set<Event> e2Set = exec.eventDomain().newSet(may2Inverse.getRange(e3));
                     e2Set.retainAll(e1may1);
                     set1.addRange(e1, e2Set);
-                    set2In.addRange(e3, e2Set);
+                    set2Inverse.addRange(e3, e2Set);
                 }
             }
-            final MutableEventGraph set2 = set2In.inverse();
+            final MutableEventGraph set2 = set2Inverse.inverse();
             set1.removeAll(k1.getMustSet());
             set2.removeAll(k2.getMustSet());
             return map(r1, set1, r2, set2);
@@ -452,19 +452,20 @@ public class ActiveSetAnalysis {
             final Relation rel = trans.getDefinedRelation();
             final Relation r1 = trans.getOperand();
             final var factors = new IndexedEventGraph(exec.eventDomain());
-            final var factors2 = new IndexedEventGraph(exec.eventDomain());
+            final var factorsInverse = new IndexedEventGraph(exec.eventDomain());
             final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
             final EventGraph k0MayIn = k0.getMaySet().inverse();
             for (Event e1 : news.getDomain()) {
                 final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
                 for (Event e3 : news.getRange(e1)) {
+                    // Compute { e2 | e1 -may(r0)> e2 -may(r0)> e3 }.
                     final IndexedSet<Event> e2Set = exec.eventDomain().newSet(k0MayIn.getRange(e3));
                     e2Set.retainAll(e1k0May);
                     factors.addRange(e1, e2Set);
-                    factors2.addRange(e3, e2Set);
+                    factorsInverse.addRange(e3, e2Set);
                 }
             }
-            factors.addAll(factors2.inverse());
+            factors.addAll(factorsInverse.inverse());
             factors.removeAll(k0.getMustSet());
             return map(rel, factors, r1, filterUnknowns(news, r1));
         }

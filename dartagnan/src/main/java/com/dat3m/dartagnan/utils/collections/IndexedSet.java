@@ -5,8 +5,15 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /// Compact subset of a collection using a bitvector.
+// This implementation has two forms:
+// - In its <i>array form</i>,
+//   it contains a bit array where the bit at position `domain.indexOf(e)` is set iff `e` is contained.
+// - It can only maintain its <i>loneMember form</i>,
+//   if it contains up to one element, in which case it stores its index.
+// Instances can be in <i>array form</i>, even if they contain less than two elements.
+// This happens e.g. after `addAll(Set.of(e1))` and `addAll(Set.of(e1,e2)); remove(e1)`.
+// This is because the check would be too expensive.
 public final class IndexedSet<E> extends AbstractSet<E> {
-    // assert Arrays.stream(domain).allMatch(o -> o instanceof E)
     private final IndexedDomain<E> domain;
     private final Object[] elements;
     private final int[] index;
@@ -14,9 +21,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private long[] member;
     // Used for sets with `size() <= 1` to make them even more compact.
     // This is especially useful for identity graphs.
-    // assert -1 <= loneMember && loneMember < domain.length
     private int loneMember;
-    // assert memberMayBeEmpty || member == null || bitCount(member) > 0
+    // False if `member != null` and at least one bit is set in `member`.  True gives no guarantees.
     private boolean memberMayBeEmpty;
 
     public IndexedSet(IndexedSet<E> copy) {
@@ -67,7 +73,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         final long mask = 1L << (index % 64);
         final boolean change = value == ((member[index / 64] & mask) == 0L);
         member[index / 64] ^= change ? mask : 0L;
-        //shrinkIfPossible(); // This would be too costly.
         return change != value;
     }
 
@@ -141,14 +146,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             }
         }
         return super.containsAll(other);
-    }
-
-    private static boolean test(int size, long[] member, int loneMember, int index) {
-        assert 0 <= index;
-        if (size <= index) {
-            return false;
-        }
-        return member == null ? loneMember == index : (member[index / 64] & (1L << (index % 64))) != 0L;
     }
 
     @Override
@@ -285,7 +282,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             member[pageindex] ^= changes;
             changed |= changes != 0L;
         }
-        //shrinkIfPossible();
         return changed;
     }
 
@@ -379,6 +375,14 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         }
         shrinkIfPossible();
         return changed;
+    }
+
+    private static boolean test(int size, long[] member, int loneMember, int index) {
+        assert 0 <= index;
+        if (size <= index) {
+            return false;
+        }
+        return member == null ? loneMember == index : (member[index / 64] & (1L << (index % 64))) != 0L;
     }
 
     private void ensureMemberArray() {
