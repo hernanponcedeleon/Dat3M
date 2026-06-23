@@ -146,7 +146,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     @Override
     public IndexedSet<Event> getRange(Event e) {
         final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
-        return range == null ? emptySet : range.toUnmodifiableView();
+        return range == null ? emptySet : range.toUnmodifiableCopy();
     }
 
     @Override

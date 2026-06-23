@@ -24,6 +24,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private int loneMember;
     // False if `member != null` and at least one bit is set in `member`.  True gives no guarantees.
     private boolean memberMayBeEmpty;
+    private boolean copyOnWrite;
 
     public IndexedSet(IndexedSet<E> copy) {
         this(copy.domain, nullableCopy(copy.member), copy.loneMember, true);
@@ -47,7 +48,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return domain;
     }
 
-    public IndexedSet<E> toUnmodifiableView() {
+    public IndexedSet<E> toUnmodifiableCopy() {
+        copyOnWrite = member != null;
         return new IndexedSet<>(domain, member, loneMember, false);
     }
 
@@ -70,6 +72,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             }
         }
         ensureMemberArray();
+        checkCopyOnWrite();
         final long mask = 1L << (index % 64);
         final boolean change = value == ((member[index / 64] & mask) == 0L);
         member[index / 64] ^= change ? mask : 0L;
@@ -275,6 +278,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             }
         }
         ensureMemberArray();
+        checkCopyOnWrite();
         boolean changed = false;
         final int length = Integer.min(member.length, add.length);
         for (int pageindex = 0; pageindex < length; pageindex++) {
@@ -293,6 +297,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
+        checkCopyOnWrite();
         if (other instanceof IndexedSet<?> o && o.member != null && domain.isCompatibleWith(o.domain)) {
             boolean changed = false;
             final int length = Integer.min(member.length, o.member.length);
@@ -322,6 +327,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
+        checkCopyOnWrite();
         if (other instanceof IndexedSet<?> o && domain.isCompatibleWith(o.domain)) {
             if (o.member == null) {
                 loneMember = o.loneMember != -1 && test(elements.length, member, -1, o.loneMember) ? o.loneMember : -1;
@@ -356,6 +362,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
+        checkCopyOnWrite();
         boolean changed = false;
         for (int blockindex = 0; blockindex < member.length; blockindex++) {
             long cache = member[blockindex];
@@ -435,6 +442,15 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private void checkModifiable() {
         if (!modifiable) {
             throw new UnsupportedOperationException("This %s is unmodifiable!".formatted(getClass().getSimpleName()));
+        }
+    }
+
+    private void checkCopyOnWrite() {
+        if (copyOnWrite) {
+            copyOnWrite = false;
+            final long[] newMember = new long[member.length];
+            System.arraycopy(member, 0, newMember, 0, member.length);
+            member = newMember;
         }
     }
 

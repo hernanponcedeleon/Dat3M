@@ -30,7 +30,7 @@ public final class IndexedDomain<E> {
     }
 
     public IndexedSet<E> emptySet() {
-        return new IndexedSet<>(this).toUnmodifiableView();
+        return new IndexedSet<>(this).toUnmodifiableCopy();
     }
 
     public IndexedSet<E> newSet() {
