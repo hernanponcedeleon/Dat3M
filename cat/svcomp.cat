@@ -7,10 +7,9 @@ let com = (rf | fr | co)
 acyclic po | (com & int) | (rmw^-1? ; (com & ext))
 
 (* Data Races *)
-let Atomic = RMW | A
-let sw = [Atomic]; rmw^-1? ;(com & ext); [Atomic]
+let sw = [A]; rmw^-1? ;(com & ext); [A]
 let hb = (po | sw)+
-let conflict = (ext & ((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW))
-let dr = conflict \ (hb | hb^-1 | (Atomic * Atomic))
+let conflict = (ext & ((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW) | (A * A))
+let dr = conflict \ (hb | hb^-1)
 
 flag ~empty dr as data-race
