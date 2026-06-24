@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils.collections;
 
+import com.google.common.base.Preconditions;
+
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -382,6 +384,17 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         }
         shrinkIfPossible();
         return changed;
+    }
+
+    public static <E> IndexedSet<E> intersection(Collection<E> left, Collection<E> right) {
+        final var indexedLeft = left instanceof IndexedSet<E> s ? s : null;
+        final var indexedRight = right instanceof IndexedSet<E> s ? s : null;
+        Preconditions.checkArgument(indexedLeft != null || indexedRight != null, "Missing domain for intersection.");
+        final boolean useLeftDomain = indexedRight == null
+                || (indexedLeft != null && indexedLeft.domain.size() < indexedRight.domain.size());
+        final IndexedSet<E> intersection = new IndexedSet<>(useLeftDomain ? indexedLeft : indexedRight);
+        intersection.retainAll(useLeftDomain ? right : left);
+        return intersection;
     }
 
     private static boolean test(int size, long[] member, int loneMember, int index) {

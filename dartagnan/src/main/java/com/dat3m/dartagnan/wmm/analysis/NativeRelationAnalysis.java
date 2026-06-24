@@ -59,7 +59,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     protected final VerificationTask task;
     protected final Context analysisContext;
-    protected final EventDomainRepository domainRepository;
     protected final ExecutionAnalysis exec;
     protected final ReachingDefinitionsAnalysis definitions;
     protected final AliasAnalysis alias;
@@ -75,12 +74,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
         task = checkNotNull(t);
         analysisContext = context;
-        domainRepository = context.requires(EventDomainRepository.class);
+        final EventDomainRepository domainRepository = context.requires(EventDomainRepository.class);
         exec = context.requires(ExecutionAnalysis.class);
         definitions = context.requires(ReachingDefinitionsAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
-        relationEventDomains = RelationEventDomains.newInstance(task.getMemoryModel());
+        relationEventDomains = context.requires(RelationEventDomains.class);
         allEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.ALL).newSet();
         allVisibleEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.VISIBLE).newSet();
         EMPTY = new Delta(new IndexedEventGraph(allEvents.domain()), new IndexedEventGraph(allEvents.domain()));
@@ -1249,14 +1248,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final EventGraph mustIn2 = k2.getMustSet().inverse();
                 final EventGraph mayIn2 = k2.getMaySet().inverse();
                 for (Event x : disabled.getDomain()) {
+                    final Set<Event> mayOut1X = k1.getMaySet().getRange(x);
+                    final Set<Event> mustOut1X = k1.getMustSet().getRange(x);
                     for (Event z : disabled.getRange(x)) {
-                        final Set<Event> disableZ = newSet(k1.getMustSet().getRange(x));
+                        final Set<Event> disableZ = IndexedSet.intersection(mustOut1X, mayIn2.getRange(z));
                         retainImplyWith(disableZ, x, z);
-                        disableZ.retainAll(mayIn2.getRange(z));
                         disableZ.forEach(y -> d2.add(y, z));
-                        final Set<Event> disableX = newSet(mustIn2.getRange(z));
+                        final Set<Event> disableX = IndexedSet.intersection(mayOut1X, mustIn2.getRange(z));
                         retainImplyWith(disableX, z, x);
-                        disableX.retainAll(k1.getMaySet().getRange(x));
                         d1.addRange(x, disableX);
                     }
                 }
@@ -1318,8 +1317,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     final Set<Event> enableX = newSet(may2.getRange(y));
                     enableX.removeAll(mutexX);
                     if (!enableX.isEmpty()) {
-                        final Set<Event> disableY = newSet(enableX);
-                        enableX.retainAll(must2.getRange(y));
+                        final Set<Event> disableY = IndexedSet.intersection(enableX, must2.getRange(y));
                         retainImplyWith(enableX, y, x);
                         e0.addRange(x, enableX);
                         disableY.removeAll(may0.getRange(x));
@@ -1694,7 +1692,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     private IndexedEventGraph newGraph(Relation relation) {
-        return new IndexedEventGraph(domainRepository.getDomain(relationEventDomains.smallestDomainBound(relation)));
+        return new IndexedEventGraph(relationEventDomains.smallestDomain(relation));
     }
 
     private MutableEventGraph newGraphWithDomain(EventGraph other) {

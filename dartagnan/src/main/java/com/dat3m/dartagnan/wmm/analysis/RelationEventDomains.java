@@ -1,8 +1,12 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.filter.TagFilter;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,29 +25,37 @@ import static java.util.Collections.disjoint;
 // This analysis describes where that compact representation could not fit.
 public final class RelationEventDomains {
 
+    private final EventDomainRepository repository;
     private final Set<Relation> relationsWithInvisibleDomain = new HashSet<>();
     private final Set<Relation> relationsWithInvisibleRange = new HashSet<>();
 
-    private RelationEventDomains() {}
+    private RelationEventDomains(EventDomainRepository r) {
+        repository = r;
+    }
 
-    public static RelationEventDomains newInstance(Wmm memoryModel) {
-        final var analysis = new RelationEventDomains();
+    public static RelationEventDomains newInstance(Wmm memoryModel, Context analyses) {
+        final EventDomainRepository repository = analyses.requires(EventDomainRepository.class);
+        final var analysis = new RelationEventDomains(repository);
         analysis.run(memoryModel);
         return analysis;
     }
 
-    public DomainBound smallestDomainBound(Relation relation, Dimension dimension) {
-        final Set<Relation> relations = switch (dimension) {
+    public IndexedDomain<Event> smallestDomain(Relation relation, Dimension dimension) {
+        final Set<Relation> invisibleSet = switch (dimension) {
             case DOMAIN -> relationsWithInvisibleDomain;
             case RANGE -> relationsWithInvisibleRange;
         };
-        return relations.contains(relation) ? DomainBound.ALL : DomainBound.VISIBLE;
+        return repository.getDomain(getBound(relation, invisibleSet));
     }
 
-    public DomainBound smallestDomainBound(Relation relation) {
-        final DomainBound domain = smallestDomainBound(relation, Dimension.DOMAIN);
-        final DomainBound range = smallestDomainBound(relation, Dimension.RANGE);
-        return domain.compareTo(range) > 0 ? domain : range;
+    public IndexedDomain<Event> smallestDomain(Relation relation) {
+        final DomainBound domainBound = getBound(relation, relationsWithInvisibleDomain);
+        final DomainBound rangeBound = getBound(relation, relationsWithInvisibleRange);
+        return repository.getDomain(domainBound.compareTo(rangeBound) > 0 ? domainBound : rangeBound);
+    }
+
+    private DomainBound getBound(Relation relation, Set<Relation> invisibleSet) {
+        return invisibleSet.contains(relation) ? DomainBound.ALL : DomainBound.VISIBLE;
     }
 
     private void run(Wmm memoryModel) {
