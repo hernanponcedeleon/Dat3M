@@ -18,23 +18,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
-
 public interface ExecutionAnalysis {
 
     boolean isImplied(Event start, Event implied);
     boolean areMutuallyExclusive(Event a, Event b);
 
-    IndexedDomain<Event> eventDomain();
     Set<Event> implyingEvents(Event implied);
     Set<Event> excludingEvents(Event event);
 
     static ExecutionAnalysis fromConfig(Program program, ProgressModel.Hierarchy progressModel, Context context, Configuration config)
             throws InvalidConfigurationException {
+        final EventDomainRepository eventDomainRepository = context.requires(EventDomainRepository.class);
         final BranchEquivalence eq = context.requires(BranchEquivalence.class);
-        final var exec = new DefaultExecutionAnalysis(program, eq, progressModel);
-        exec.run();
-        return exec;
+        return new DefaultExecutionAnalysis(program, eventDomainRepository, eq, progressModel);
     }
 }
 
@@ -48,20 +44,18 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     private final BranchEquivalence eq;
     private final ProgressModel.Hierarchy progressModel;
     private final Thread lowestIdThread; // For HSA
-    private final IndexedDomain<Event> eventDomain;
     private final Map<Event, Set<Event>> eventsByImpliedEvent = new HashMap<>();
     private final Map<Event, Set<Event>> eventsByExcludingEvent = new HashMap<>();
 
-    DefaultExecutionAnalysis(Program program, BranchEquivalence eq, ProgressModel.Hierarchy progressModel) {
+    DefaultExecutionAnalysis(Program program, EventDomainRepository domainRepository, BranchEquivalence eq,
+            ProgressModel.Hierarchy progressModel) {
         this.program = program;
         this.eq = eq;
         this.progressModel = progressModel;
 
         this.lowestIdThread = program.getThreads().stream().min(Comparator.comparingInt(Thread::getId)).get();
-        final List<Event> allEventList = program.getThreadEvents();
-        // Sort all visible events to the front.  This allows more compact representations in e.g. RelationAnalysis.
-        allEventList.sort((a, b) -> a.hasTag(VISIBLE) ? b.hasTag(VISIBLE) ? 0 : -1 : b.hasTag(VISIBLE) ? 1 : 0);
-        this.eventDomain = new IndexedDomain<>(allEventList);
+
+        computeResults(domainRepository.getDomain(EventDomainRepository.DomainBound.ALL));
     }
 
     @Override
@@ -76,11 +70,6 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     }
 
     @Override
-    public IndexedDomain<Event> eventDomain() {
-        return eventDomain;
-    }
-
-    @Override
     public Set<Event> implyingEvents(Event implied) {
         return eventsByImpliedEvent.get(implied);
     }
@@ -90,12 +79,12 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         return eventsByExcludingEvent.get(excluded);
     }
 
-    void run() {
-        computeImplyingEvents();
-        computeMutuallyExclusiveEvents();
+    private void computeResults(IndexedDomain<Event> eventDomain) {
+        computeImplyingEvents(eventDomain);
+        computeMutuallyExclusiveEvents(eventDomain);
     }
 
-    private void computeImplyingEvents() {
+    private void computeImplyingEvents(IndexedDomain<Event> eventDomain) {
         // (=> & int)
         for (Thread thread : program.getThreads()) {
             final IndexedSet<Event> events = eventDomain.newSet(thread.getEvents());
@@ -128,7 +117,7 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         }
     }
 
-    private void computeMutuallyExclusiveEvents() {
+    private void computeMutuallyExclusiveEvents(IndexedDomain<Event> eventDomain) {
         // -x- = (=>; (-x- & int); <=)
         final Map<Event, Set<Event>> eventsByRepresentative = new HashMap<>();
         for (BranchEquivalence.Class class1 : eq.getAllEquivalenceClasses()) {

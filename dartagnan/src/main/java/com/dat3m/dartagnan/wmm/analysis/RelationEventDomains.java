@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound;
 import com.dat3m.dartagnan.program.filter.TagFilter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -12,34 +13,36 @@ import java.util.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static java.util.Collections.disjoint;
 
-/// Checks whether invisible events may participate in a relation.
+/// Estimates boundaries for the domains and ranges of relations.
 // This analysis is used by NativeRelationAnalysis, where bit vectors are used as a compact representation.
 // Because invisible events are sparsely used there, the bit vectors only index visible events.
 // For the remaining sets, a different representation has to be used, e.g. HashSet.
 // This analysis describes where that compact representation could not fit.
-public class VisibilityAnalysis {
+public final class RelationEventDomains {
 
     private final Set<Relation> relationsWithInvisibleDomain = new HashSet<>();
     private final Set<Relation> relationsWithInvisibleRange = new HashSet<>();
 
-    private VisibilityAnalysis() {}
+    private RelationEventDomains() {}
 
-    public boolean mayHaveInvisibleDomain(Relation relation) {
-        return relationsWithInvisibleDomain.contains(relation);
-    }
-
-    public boolean mayHaveInvisibleRange(Relation relation) {
-        return relationsWithInvisibleRange.contains(relation);
-    }
-
-    public boolean mayHaveInvisibleEvents(Relation relation) {
-        return mayHaveInvisibleDomain(relation) || mayHaveInvisibleRange(relation);
-    }
-
-    public static VisibilityAnalysis newInstance(Wmm memoryModel) {
-        final var analysis = new VisibilityAnalysis();
+    public static RelationEventDomains newInstance(Wmm memoryModel) {
+        final var analysis = new RelationEventDomains();
         analysis.run(memoryModel);
         return analysis;
+    }
+
+    public DomainBound smallestDomainBound(Relation relation, Projection.Dimension dimension) {
+        final Set<Relation> relations = switch (dimension) {
+            case DOMAIN -> relationsWithInvisibleDomain;
+            case RANGE -> relationsWithInvisibleRange;
+        };
+        return relations.contains(relation) ? DomainBound.ALL : DomainBound.VISIBLE;
+    }
+
+    public DomainBound smallestDomainBound(Relation relation) {
+        final DomainBound domain = smallestDomainBound(relation, Projection.Dimension.DOMAIN);
+        final DomainBound range = smallestDomainBound(relation, Projection.Dimension.RANGE);
+        return domain.compareTo(range) > 0 ? domain : range;
     }
 
     private void run(Wmm memoryModel) {

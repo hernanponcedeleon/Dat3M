@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -57,11 +58,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     protected final VerificationTask task;
     protected final Context analysisContext;
+    protected final EventDomainRepository domainRepository;
     protected final ExecutionAnalysis exec;
     protected final ReachingDefinitionsAnalysis definitions;
     protected final AliasAnalysis alias;
     protected final WmmAnalysis wmmAnalysis;
-    protected final VisibilityAnalysis visibility;
+    protected final RelationEventDomains relationEventDomains;
     protected final Map<Relation, MutableKnowledge> knowledgeMap = new HashMap<>();
     protected final IndexedSet<Event> allEvents;
     protected final IndexedSet<Event> allVisibleEvents;
@@ -72,18 +74,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
         task = checkNotNull(t);
         analysisContext = context;
+        domainRepository = context.requires(EventDomainRepository.class);
         exec = context.requires(ExecutionAnalysis.class);
         definitions = context.requires(ReachingDefinitionsAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
-        visibility = VisibilityAnalysis.newInstance(task.getMemoryModel());
-        allEvents = exec.eventDomain().newSet();
-        allVisibleEvents = new IndexedDomain<>(task.getProgram().getThreadEventsWithAllTags(VISIBLE)).newSet();
-        EMPTY = new Delta(new IndexedEventGraph(exec.eventDomain()), new IndexedEventGraph(exec.eventDomain()));
-        mutex = new IndexedEventGraph(exec.eventDomain());
-        if (!allEvents.domain().isCompatibleWith(allVisibleEvents.domain())) {
-            logger.warn("Incompatible IndexedDomain. Analysis performance may suffer.");
-        }
+        relationEventDomains = RelationEventDomains.newInstance(task.getMemoryModel());
+        allEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.ALL).newSet();
+        allVisibleEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.VISIBLE).newSet();
+        EMPTY = new Delta(new IndexedEventGraph(allEvents.domain()), new IndexedEventGraph(allEvents.domain()));
+        mutex = new IndexedEventGraph(allEvents.domain());
     }
 
     /**
@@ -336,7 +336,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private void initializeEventDomain() {
         for (Thread thread : task.getProgram().getThreads()) {
-            allEvents.addAll(exec.eventDomain().newSet(thread.getEvents()));
+            allEvents.addAll(thread.getEvents());
             final Set<Event> visibleEvents = allVisibleEvents.domain().newSet(thread.getEventsWithAllTags(VISIBLE));
             threadVisibleEvents.put(thread, visibleEvents);
             allVisibleEvents.addAll(visibleEvents);
@@ -1693,8 +1693,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     private IndexedEventGraph newGraph(Relation relation) {
-        final IndexedSet<Event> events = visibility.mayHaveInvisibleEvents(relation) ? allEvents : allVisibleEvents;
-        return new IndexedEventGraph(events.domain());
+        return new IndexedEventGraph(domainRepository.getDomain(relationEventDomains.smallestDomainBound(relation)));
     }
 
     private MutableEventGraph newGraphWithDomain(EventGraph other) {
