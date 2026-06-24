@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.Dimension;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 
 import java.util.*;
 
@@ -40,12 +40,10 @@ public final class RelationEventDomains {
         return analysis;
     }
 
-    public DomainBound smallestDomainBound(Relation relation, Dimension dimension) {
-        final Set<Relation> invisibleSet = switch (dimension) {
-            case DOMAIN -> relationsWithInvisibleDomain;
-            case RANGE -> relationsWithInvisibleRange;
-        };
-        return getBound(relation, invisibleSet);
+    public IndexedEventGraph newGraph(Relation relation) {
+        final DomainBound domainBound = getBound(relation, relationsWithInvisibleDomain);
+        final DomainBound rangeBound = getBound(relation, relationsWithInvisibleRange);
+        return new IndexedEventGraph(repository.getDomain(domainBound), repository.getDomain(rangeBound));
     }
 
     public IndexedDomain<Event> smallestDomain(Relation relation) {

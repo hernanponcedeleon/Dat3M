@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.wmm.utils.graph.mutable;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.graph.AbstractEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.base.Preconditions;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -13,38 +15,45 @@ import java.util.function.BiPredicate;
 /// Maps domain-side events to the set of connected range-side events.
 // This implementation uses `IndexedDomain` to organise its elements.
 public final class IndexedEventGraph extends AbstractEventGraph implements MutableEventGraph {
-    // assert eventDomain != null
-    // assert map != null
-    // assert map.length == eventDomain.size()
-    // assert Arrays.stream(map).allMatch(m -> m == null || m.domain().equals(eventDomain))
-    // assert size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()
-    private final IndexedDomain<Event> eventDomain;
-    private final IndexedSet<Event> emptySet;
+    // Corresponds to the set of elements with `map[i] != null && !map[i].isEmpty()`
+    private final IndexedSet<Event> domain;
+    // Placeholder for `getRange(Event)`, refers to the range event domain.
+    private final IndexedSet<Event> emptyRange;
+    // Does never contain empty sets.
     private final IndexedSet<Event>[] map;
+    // Always corresponds to the sum of sizes in `map`.
     private int size;
 
-    public IndexedEventGraph(IndexedDomain<Event> d) {
-        this(d, 0);
+    public IndexedEventGraph(IndexedDomain<Event> domain) {
+        this(domain, domain);
     }
 
-    public IndexedEventGraph(IndexedEventGraph g) {
-        this(g.eventDomain, g);
+    public IndexedEventGraph(IndexedDomain<Event> domain, IndexedDomain<Event> range) {
+        this(domain.newSet(), range.emptySet(), 0);
     }
 
-    public IndexedEventGraph(IndexedDomain<Event> d, EventGraph g) {
-        this(d, 0);
-        addAll(g);
+    public IndexedEventGraph(IndexedEventGraph original) {
+        this(new IndexedSet<>(original.domain), original.emptyRange, 0);
+        addAll(original);
+    }
+
+    public IndexedEventGraph(IndexedDomain<Event> domain, IndexedDomain<Event> range, EventGraph original) {
+        this(domain.newSet(), range.emptySet(), 0);
+        addAll(original);
     }
 
     @SuppressWarnings("unchecked")
-    private IndexedEventGraph(IndexedDomain<Event> d, int ignore) {
-        eventDomain = d;
-        emptySet = d.emptySet();
-        map = (IndexedSet<Event>[]) new IndexedSet[d.size()];
+    private IndexedEventGraph(IndexedSet<Event> d, IndexedSet<Event> r, int ignore) {
+        domain = d;
+        emptyRange = r;
+        map = (IndexedSet<Event>[]) new IndexedSet[d.domain().size()];
     }
 
-    public IndexedDomain<Event> eventDomain() {
-        return eventDomain;
+    public IndexedDomain<Event> eventDomain(Dimension dimension) {
+        return switch (dimension) {
+            case DOMAIN -> domain.domain();
+            case RANGE -> emptyRange.domain();
+        };
     }
 
     @Override
@@ -59,19 +68,20 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean contains(Event e1, Event e2) {
-        final IndexedSet<Event> set = outSetAt(eventDomain.indexOf(e1));
+        final IndexedSet<Event> set = outSetAt(domain.domain().indexOf(e1));
         return set != null && set.contains(e2);
     }
 
     @Override
     public IndexedEventGraph inverse() {
-        final var inverse = new IndexedEventGraph(eventDomain, 0);
+        final var inverse = new IndexedEventGraph(rangeEvents().newSet(), domainEvents().emptySet(), 0);
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
                 for (int j : outSet.toIndexArray()) {
-                    inverse.map[j] = Objects.requireNonNullElseGet(inverse.map[j], eventDomain::newSet);
+                    inverse.map[j] = Objects.requireNonNullElseGet(inverse.map[j], domainEvents()::newSet);
                     inverse.map[j].exchange(i, true);
+                    inverse.domain.exchange(j, true);
                 }
             }
         }
@@ -80,15 +90,16 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     }
 
     @Override
-    public MutableEventGraph filter(BiPredicate<Event, Event> f) {
-        final IndexedEventGraph out = new IndexedEventGraph(eventDomain);
+    public IndexedEventGraph filter(BiPredicate<Event, Event> f) {
+        final var out = new IndexedEventGraph(domainEvents().newSet(), emptyRange, 0);
         for (int i = 0; i < map.length; i++) {
-            final Event e1 = eventDomain.element(i);
+            final Event e1 = domainEvents().element(i);
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
                 final IndexedSet<Event> set = new IndexedSet<>(outSet);
                 set.removeIf(e2 -> !f.test(e1, e2));
                 out.map[i] = set.isEmpty() ? null : set;
+                out.domain.exchange(i, !set.isEmpty());
                 out.size += set.size();
             }
         }
@@ -101,7 +112,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
-                outMap.put(eventDomain.element(i), new IndexedSet<>(outSet));
+                outMap.put(domainEvents().element(i), new IndexedSet<>(outSet));
             }
         }
         return outMap;
@@ -114,7 +125,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
             final IndexedSet<Event> outSet = outSetAt(index);
             if (outSet != null) {
                 for (Event e2 : outSet) {
-                    final Set<Event> set = inMap.computeIfAbsent(e2, k -> eventDomain.newSet());
+                    final Set<Event> set = inMap.computeIfAbsent(e2, k -> domainEvents().newSet());
                     ((IndexedSet<Event>) set).exchange(index, true);
                 }
             }
@@ -124,18 +135,12 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public IndexedSet<Event> getDomain() {
-        final IndexedSet<Event> domain = eventDomain.newSet();
-        for (int i = 0; i < map.length; i++) {
-            if (map[i] != null) {
-                domain.exchange(i, true);
-            }
-        }
-        return domain;
+        return domain.toUnmodifiableCopy();
     }
 
     @Override
     public IndexedSet<Event> getRange() {
-        final IndexedSet<Event> range = eventDomain.newSet();
+        final IndexedSet<Event> range = rangeEvents().newSet();
         for (IndexedSet<Event> outSet : map) {
             if (outSet != null) {
                 range.addAll(outSet);
@@ -146,8 +151,8 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public IndexedSet<Event> getRange(Event e) {
-        final IndexedSet<Event> range = outSetAt(eventDomain.indexOf(e));
-        return range == null ? emptySet : range.toUnmodifiableCopy();
+        final IndexedSet<Event> range = outSetAt(rangeEvents().indexOf(e));
+        return range == null ? emptyRange : range.toUnmodifiableCopy();
     }
 
     @Override
@@ -155,7 +160,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> range = outSetAt(i);
             if (range != null) {
-                final Event e1 = eventDomain.element(i);
+                final Event e1 = domain.domain().element(i);
                 for (Event e2 : range) {
                     f.accept(e1, e2);
                 }
@@ -165,9 +170,9 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean add(Event e1, Event e2) {
-        final int index = eventDomain.indexOf(e1);
+        final int index = domainEvents().indexOf(e1);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
-        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : rangeEvents().newSet();
         map[index] = outSet;
         final boolean changed = outSet.add(e2);
         size += changed ? 1 : 0;
@@ -176,7 +181,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean remove(Event e1, Event e2) {
-        final int index = eventDomain.indexOf(e1);
+        final int index = domainEvents().indexOf(e1);
         final IndexedSet<Event> outSet = outSetAt(index);
         final boolean changed = outSet != null && outSet.remove(e2);
         map[index] = changed && outSet.isEmpty() ? null : map[index];
@@ -186,13 +191,15 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean addAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther
+                && domain.domain().isCompatibleWith(indexedOther.domain.domain())
+                && emptyRange.domain().isCompatibleWith(indexedOther.emptyRange.domain())) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
                 if (otherOutSet != null) {
                     final IndexedSet<Event> foundOutSet = outSetAt(index);
-                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
+                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : emptyRange.domain().newSet();
                     diff -= foundOutSet == null ? 0 : outSet.size();
                     outSet.addAll(otherOutSet);
                     diff += outSet.size();
@@ -211,7 +218,9 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean removeAll(EventGraph other) {
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther
+                && domainEvents().isCompatibleWith(indexedOther.domainEvents())
+                && rangeEvents().isCompatibleWith(indexedOther.rangeEvents())) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
@@ -236,7 +245,9 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     @Override
     public boolean retainAll(EventGraph other) {
         int diff = 0;
-        if (other instanceof IndexedEventGraph indexedOther && eventDomain.isCompatibleWith(indexedOther.eventDomain)) {
+        if (other instanceof IndexedEventGraph indexedOther
+                && domainEvents().isCompatibleWith(indexedOther.domainEvents())
+                && rangeEvents().isCompatibleWith(indexedOther.rangeEvents())) {
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> outSet = outSetAt(index);
                 if (outSet != null) {
@@ -256,7 +267,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                 final IndexedSet<Event> outSet = outSetAt(index);
                 if (outSet != null) {
                     diff -= outSet.size();
-                    outSet.retainAll(other.getRange(eventDomain.element(index)));
+                    outSet.retainAll(other.getRange(domainEvents().element(index)));
                     diff += outSet.size();
                     map[index] = outSet.isEmpty() ? null : outSet;
                 }
@@ -269,9 +280,9 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean addRange(Event e, Set<Event> range) {
-        final int index = eventDomain.indexOf(e);
+        final int index = domainEvents().indexOf(e);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
-        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : eventDomain.newSet();
+        final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : rangeEvents().newSet();
         final int oldSize = foundOutSet == null ? 0 : outSet.size();
         outSet.addAll(range);
         final int newSize = outSet.size();
@@ -284,7 +295,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     public boolean removeIf(BiPredicate<Event, Event> f) {
         boolean changed = false;
         for (int index = 0; index < map.length; index++) {
-            final Event e1 = eventDomain.element(index);
+            final Event e1 = domainEvents().element(index);
             final IndexedSet<Event> outSet = outSetAt(index);
             if (outSet != null) {
                 final int oldSize = outSet.size();
@@ -294,6 +305,74 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
             }
         }
         return changed;
+    }
+
+    public static IndexedEventGraph union(EventGraph... operands) {
+        final IndexedDomain<Event> domain = Arrays.stream(operands)
+                .filter(IndexedEventGraph.class::isInstance)
+                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.DOMAIN))
+                .max(Comparator.comparingInt(IndexedDomain::size))
+                .orElseThrow(() -> new IllegalArgumentException("Missing domain for graph union."));
+        final IndexedDomain<Event> range = Arrays.stream(operands)
+                .filter(IndexedEventGraph.class::isInstance)
+                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.RANGE))
+                .max(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
+        final var union = new IndexedEventGraph(domain.newSet(), range.emptySet(), 0);
+        Arrays.stream(operands).forEach(union::addAll);
+        return union;
+    }
+
+    public static IndexedEventGraph intersection(EventGraph... operands) {
+        final IndexedDomain<Event> domain = Arrays.stream(operands)
+                .filter(IndexedEventGraph.class::isInstance)
+                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.DOMAIN))
+                .min(Comparator.comparingInt(IndexedDomain::size))
+                .orElseThrow(() -> new IllegalArgumentException("Missing domain for graph intersection."));
+        final IndexedDomain<Event> range = Arrays.stream(operands)
+                .filter(IndexedEventGraph.class::isInstance)
+                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.RANGE))
+                .min(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
+        final var intersection = new IndexedEventGraph(domain.newSet(), range.emptySet(), 0);
+        final EventGraph smallest = Arrays.stream(operands)
+                .min(Comparator.comparingInt(EventGraph::size))
+                .orElseThrow();
+        Arrays.stream(operands).filter(operand -> operand != smallest).forEach(intersection::retainAll);
+        return intersection;
+    }
+
+    public static IndexedEventGraph difference(EventGraph minuend, EventGraph subtrahend) {
+        Preconditions.checkArgument(minuend instanceof IndexedEventGraph, "Missing domain for graph difference.");
+        final var difference = new IndexedEventGraph((IndexedEventGraph) minuend);
+        difference.removeAll(subtrahend);
+        return difference;
+    }
+
+    public static boolean isUnionFeasible(EventGraph... operands) {
+        if (operands.length == 0 || !(operands[0] instanceof IndexedEventGraph firstOperand)) {
+            return false;
+        }
+        final IndexedDomain<Event> firstDomain = firstOperand.eventDomain(Dimension.DOMAIN);
+        final IndexedDomain<Event> firstRange = firstOperand.eventDomain(Dimension.RANGE);
+        return Arrays.stream(operands, 1, operands.length)
+                .allMatch(operand -> operand instanceof IndexedEventGraph o
+                        && o.eventDomain(Dimension.DOMAIN).isCompatibleWith(firstDomain)
+                        && o.eventDomain(Dimension.RANGE).isCompatibleWith(firstRange));
+    }
+
+    public static boolean isIntersectionFeasible(EventGraph... operands) {
+        return Arrays.stream(operands).anyMatch(IndexedEventGraph.class::isInstance);
+    }
+
+    public static boolean isDifferenceFeasible(EventGraph minuend, EventGraph ignoreSubtrahend) {
+        return minuend instanceof IndexedEventGraph;
+    }
+
+    private IndexedDomain<Event> domainEvents() {
+        return domain.domain();
+    }
+
+    private IndexedDomain<Event> rangeEvents() {
+        return emptyRange.domain();
     }
 
     private IndexedSet<Event> outSetAt(int index) {
