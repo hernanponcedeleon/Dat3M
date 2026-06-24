@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
@@ -1568,7 +1569,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Delta visitProjection(Projection projection) {
             if (projection.getOperand().equals(source)) {
-                final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+                final boolean dom = projection.getDimension() == Dimension.DOMAIN;
                 final MutableEventGraph maySet = newGraph(projection.getDefinedRelation());
                 (dom ? may.getDomain() : may.getRange()).forEach(e -> maySet.add(e, e));
                 final MutableEventGraph mustSet = newGraphWithDomain(maySet);

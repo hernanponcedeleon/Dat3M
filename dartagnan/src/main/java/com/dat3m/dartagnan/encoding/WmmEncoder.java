@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.definition.TagSet;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
@@ -449,7 +450,7 @@ public class WmmEncoder {
             final Relation r1 = projection.getOperand();
             final EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             final EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
             final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
             getActiveSet(projection).apply((e1, e2) -> {

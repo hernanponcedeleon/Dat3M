@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 
 import java.util.List;
 
@@ -10,8 +11,6 @@ public class Projection extends Definition {
     private final Relation r1;
 
     private final Dimension dimension;
-
-    public enum Dimension { DOMAIN, RANGE }
 
     public Projection(Relation r0, Relation r1, Dimension dimension) {
         super(Relation.checkIsSet(r0), switch (dimension) { case DOMAIN -> "domain(%s)"; case RANGE -> "range(%s)"; });

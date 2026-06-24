@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
@@ -479,7 +480,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             final RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
             final EventGraph mayGraph = knowledge.getMaySet();
             final EventGraph mustGraph = knowledge.getMustSet();
-            final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = definition.getDimension() == Dimension.DOMAIN;
             final long start = System.currentTimeMillis();
             final Set<Event> maySet = dom ? mayGraph.getDomain() : mayGraph.getRange();
             final Set<Event> mustSet = new HashSet<>();

@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
@@ -410,7 +411,7 @@ public class ActiveSetAnalysis {
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(projection.getOperand());
             final EventGraph mayGraph = k1.getMaySet();
             final EventGraph mustGraph = k1.getMustSet();
-            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final Map<Event, Set<Event>> altMap = dom ? mayGraph.getOutMap() : mayGraph.getInMap();
             news.apply((e1, e2) -> {
                 assert e1.equals(e2);

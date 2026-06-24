@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -28,9 +27,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -39,6 +35,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -54,16 +51,13 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
-import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 /*
@@ -536,7 +530,7 @@ public class RefinementSolver extends ModelChecker {
 
         // [R \ range(rf)];loc;[W]
         final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Projection.Dimension.RANGE));
+        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Dimension.RANGE));
         final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
         final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
         final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));

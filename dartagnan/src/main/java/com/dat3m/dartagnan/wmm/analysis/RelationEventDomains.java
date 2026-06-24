@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 
 import java.util.*;
 
@@ -31,7 +32,7 @@ public final class RelationEventDomains {
         return analysis;
     }
 
-    public DomainBound smallestDomainBound(Relation relation, Projection.Dimension dimension) {
+    public DomainBound smallestDomainBound(Relation relation, Dimension dimension) {
         final Set<Relation> relations = switch (dimension) {
             case DOMAIN -> relationsWithInvisibleDomain;
             case RANGE -> relationsWithInvisibleRange;
@@ -40,8 +41,8 @@ public final class RelationEventDomains {
     }
 
     public DomainBound smallestDomainBound(Relation relation) {
-        final DomainBound domain = smallestDomainBound(relation, Projection.Dimension.DOMAIN);
-        final DomainBound range = smallestDomainBound(relation, Projection.Dimension.RANGE);
+        final DomainBound domain = smallestDomainBound(relation, Dimension.DOMAIN);
+        final DomainBound range = smallestDomainBound(relation, Dimension.RANGE);
         return domain.compareTo(range) > 0 ? domain : range;
     }
 
