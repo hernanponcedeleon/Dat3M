@@ -195,6 +195,7 @@ jobs:
           echo "DAT3M_HOME is: $DAT3M_HOME"
           echo "DAT3M_OUTPUT is: $DAT3M_OUTPUT"
           ls -ld "$DAT3M_OUTPUT"
+          java -jar "$DAT3M_HOME/dartagnan/target/dartagnan.jar" --version
           mvn --batch-mode --update-snapshots -Pnative install
           ls -ld "$DAT3M_OUTPUT"
 
