@@ -4,12 +4,13 @@ SVCOMP
 let com = (rf | fr | co)
 
 (* Sequential consistency *)
-acyclic po | (com & int) | (rmw^-1? ; (com & ext))
+let hb-consistency = po | (com & int) | (rmw^-1? ; (com & ext))
+acyclic hb-consistency
 
 (* Data Races *)
 let sw = [A]; rmw^-1? ;(com & ext); [A]
-let hb = (po | sw)+
+let hb-race = (po | sw)+
 let conflict = (ext & ((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW) | (A * A))
-let dr = conflict \ (hb | hb^-1)
+let dr = conflict \ (hb-race | hb-race^-1)
 
 flag ~empty dr as data-race
