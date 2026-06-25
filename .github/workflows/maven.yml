@@ -153,7 +153,7 @@ jobs:
   weekly:
     name: All tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout development branch
         uses: actions/checkout@v4
@@ -191,7 +191,12 @@ jobs:
         run: mvn clean install -DskipTests
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -Pnative install
+        run: |
+          echo "DAT3M_HOME is: $DAT3M_HOME"
+          echo "DAT3M_OUTPUT is: $DAT3M_OUTPUT"
+          ls -ld "$DAT3M_OUTPUT"
+          mvn --batch-mode --update-snapshots -Pnative install
+          ls -ld "$DAT3M_OUTPUT"
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile
