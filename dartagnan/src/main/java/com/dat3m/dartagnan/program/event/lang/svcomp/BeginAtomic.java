@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 public class BeginAtomic extends AbstractEvent {
 
     public BeginAtomic() {
-        addTags(Tag.RMW);
+        addTags(Tag.RMW, Tag.C11.ATOMIC);
     }
 
     protected BeginAtomic(BeginAtomic other) {
