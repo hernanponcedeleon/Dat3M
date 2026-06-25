@@ -70,8 +70,6 @@ public class VisibilityAnalysis {
         @Override
         public Result visitControlDependency(DirectControlDependency ctrl) { return Result.YY; }
         @Override
-        public Result visitFree(Free free) { return Result.YY; }
-        @Override
         public Result visitProgramOrder(ProgramOrder po) {
             // This could be more accurate.
             return re(!(po.getFilter() instanceof TagFilter) || isInvisibleTag(po.getFilter().toString()));
@@ -137,7 +135,7 @@ public class VisibilityAnalysis {
 
     private boolean isInvisibleTag(String tag) {
         return switch (tag) {
-            case VISIBLE, MEMORY, READ, WRITE, FENCE, INIT -> false;
+            case VISIBLE, MEMORY, READ, WRITE, FENCE, INIT, Vulkan.CBAR, Vulkan.AVDEVICE, Vulkan.VISDEVICE -> false;
             default -> true;
         };
     }

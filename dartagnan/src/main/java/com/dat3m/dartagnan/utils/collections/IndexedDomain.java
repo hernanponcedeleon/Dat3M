@@ -8,12 +8,13 @@ public final class IndexedDomain<E> {
 
     private static final float HASH_TABLE_FILL_FACTOR = 1.5f;
 
-    final Object[] elements;
+    final E[] elements;
     final int[] index;
     final Map<IndexedDomain<?>, Boolean> compatibilityMap = new HashMap<>();
 
+    @SuppressWarnings("unchecked")
     public IndexedDomain(Collection<E> elements) {
-        this.elements = elements.toArray();
+        this.elements = (E[]) elements.toArray();
         index = newIndex(this.elements);
     }
 
@@ -22,7 +23,7 @@ public final class IndexedDomain<E> {
     }
 
     public E element(int index) {
-        return (E) elements[index];
+        return elements[index];
     }
 
     public int indexOf(Object key) {
@@ -57,7 +58,7 @@ public final class IndexedDomain<E> {
         return true;
     }
 
-    static int indexOf(Object[] domain, int[] index, Object key) {
+    static <E> int indexOf(E[] domain, int[] index, Object key) {
         final int hash = key.hashCode();
         int h = (hash % (index.length >> 1)) << 1;
         int fast;
@@ -68,7 +69,7 @@ public final class IndexedDomain<E> {
         return fast;
     }
 
-    private static int[] newIndex(Object[] domain) {
+    private static <E> int[] newIndex(E[] domain) {
         final int[] index = new int[(int) (domain.length * HASH_TABLE_FILL_FACTOR) << 1];
         Arrays.fill(index, -1);
         // Try to insert all elements at their bucket's front.

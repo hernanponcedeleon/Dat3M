@@ -96,15 +96,9 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     }
 
     private void computeImplyingEvents() {
-        final Map<Thread, IndexedSet<Event>> threadEvents = new HashMap<>();
-        for (Thread thread : program.getThreads()) {
-            final var events = eventDomain.newSet();
-            events.addAll(thread.getEvents());
-            threadEvents.put(thread, events);
-        }
         // (=> & int)
         for (Thread thread : program.getThreads()) {
-            final IndexedSet<Event> events = threadEvents.get(thread);
+            final IndexedSet<Event> events = eventDomain.newSet(thread.getEvents());
             for (Event e1 : events) {
                 final IndexedSet<Event> implying = new IndexedSet<>(events);
                 implying.removeIf(e2 -> !implied(e2, e1));
@@ -112,11 +106,16 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
             }
         }
         // (=> & ext) = (=> & int) ; (((=> & ext); [ThreadCreate|ThreadStart]) \ id); (=> & int)
-        for (Thread thread : program.getThreads()) {
+        for (Thread t1 : program.getThreads()) {
+            final List<Event> e1List = t1.getEvents();
             for (Thread t2 : program.getThreads()) {
+                if (t1 == t2) {
+                    continue;
+                }
                 final ThreadStart s = t2.getEntry();
-                for (Event e2 : thread == t2 ? List.<Event>of() : s.isSpawned() ? List.of(s, s.getCreator()) : List.of(s)) {
-                    for (Event e1 : threadEvents.get(thread)) {
+                final List<Event> e2List = s.isSpawned() ? List.of(s, s.getCreator()) : List.of(s);
+                for (Event e1 : e1List) {
+                    for (Event e2 : e2List) {
                         if (implied(e1, e2)) {
                             eventsByImpliedEvent.get(e2).addAll(eventsByImpliedEvent.get(e1));
                         }
@@ -124,20 +123,23 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
                 }
             }
         }
+        for (Map.Entry<Event, Set<Event>> entry : eventsByImpliedEvent.entrySet()) {
+            entry.setValue(((IndexedSet<Event>) entry.getValue()).toUnmodifiableCopy());
+        }
     }
 
     private void computeMutuallyExclusiveEvents() {
         // -x- = (=>; (-x- & int); <=)
-        final Map<BranchEquivalence.Class, Set<Event>> eventsByBranch = new HashMap<>();
-        for (BranchEquivalence.Class c1 : eq.getAllEquivalenceClasses()) {
-            eventsByBranch.put(c1, eventDomain.newSet(c1));
+        final Map<Event, Set<Event>> eventsByRepresentative = new HashMap<>();
+        for (BranchEquivalence.Class class1 : eq.getAllEquivalenceClasses()) {
+            eventsByRepresentative.put(class1.getRepresentative(), eventDomain.newSet(class1));
         }
-        for (BranchEquivalence.Class c1 : eq.getAllEquivalenceClasses()) {
+        for (BranchEquivalence.Class class1 : eq.getAllEquivalenceClasses()) {
             final var excludingEvents = eventDomain.newSet();
-            for (BranchEquivalence.Class c2 : c1.getExclusiveClasses()) {
-                excludingEvents.addAll(eventsByBranch.get(c2));
+            for (BranchEquivalence.Class class2 : class1.getExclusiveClasses()) {
+                excludingEvents.addAll(eventsByRepresentative.get(class2.getRepresentative()));
             }
-            for (Event e1 : c1) {
+            for (Event e1 : class1) {
                 eventsByExcludingEvent.put(e1, excludingEvents.toUnmodifiableCopy());
             }
         }

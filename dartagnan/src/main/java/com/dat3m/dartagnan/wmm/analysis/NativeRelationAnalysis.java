@@ -82,7 +82,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         EMPTY = new Delta(new IndexedEventGraph(exec.eventDomain()), new IndexedEventGraph(exec.eventDomain()));
         mutex = new IndexedEventGraph(exec.eventDomain());
         if (!allEvents.domain().isCompatibleWith(allVisibleEvents.domain())) {
-            logger.warn("Incompatible IndexDomain.  Analysis performance may suffer.");
+            logger.warn("Incompatible IndexedDomain. Analysis performance may suffer.");
         }
     }
 

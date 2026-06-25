@@ -20,7 +20,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     // assert size == Arrays.stream(map).filter(Objects::nonNull).mapToInt(IndexedSet::size).sum()
     private final IndexedDomain<Event> eventDomain;
     private final IndexedSet<Event> emptySet;
-    private final IndexedSet[] map;
+    private final IndexedSet<Event>[] map;
     private int size;
 
     public IndexedEventGraph(IndexedDomain<Event> d) {
@@ -36,10 +36,11 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         addAll(g);
     }
 
+    @SuppressWarnings("unchecked")
     private IndexedEventGraph(IndexedDomain<Event> d, int ignore) {
         eventDomain = d;
         emptySet = d.emptySet();
-        map = new IndexedSet[d.size()];
+        map = (IndexedSet<Event>[]) new IndexedSet[d.size()];
     }
 
     public IndexedDomain<Event> eventDomain() {
@@ -296,6 +297,6 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     }
 
     private IndexedSet<Event> outSetAt(int index) {
-        return index < 0 || index >= map.length ? null : (IndexedSet<Event>) map[index];
+        return index < 0 || index >= map.length ? null : map[index];
     }
 }

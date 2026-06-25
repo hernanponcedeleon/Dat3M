@@ -15,7 +15,7 @@ import java.util.function.Predicate;
 // This is because the check would be too expensive.
 public final class IndexedSet<E> extends AbstractSet<E> {
     private final IndexedDomain<E> domain;
-    private final Object[] elements;
+    private final E[] elements;
     private final int[] index;
     private final boolean modifiable;
     private long[] member;
@@ -24,7 +24,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private int loneMember;
     // False if `member != null` and at least one bit is set in `member`.  True gives no guarantees.
     private boolean memberMayBeEmpty;
-    private boolean copyOnWrite;
+    private transient boolean copyOnWrite;
 
     public IndexedSet(IndexedSet<E> copy) {
         this(copy.domain, nullableCopy(copy.member), copy.loneMember, true);
@@ -162,7 +162,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             }
             @Override
             public E next() {
-                return (E) elements[indexArray[progress++]];
+                return elements[indexArray[progress++]];
             }
         };
     }
@@ -170,7 +170,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     @Override
     public Spliterator<E> spliterator() {
         if (member == null) {
-            return (loneMember == -1 ? List.<E>of() : List.of((E) elements[loneMember])).spliterator();
+            return (loneMember == -1 ? List.<E>of() : List.of(elements[loneMember])).spliterator();
         }
         return new Split(0, elements.length);
     }
@@ -187,7 +187,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             if (from >= to) {
                 return false;
             }
-            action.accept((E) elements[from]);
+            action.accept(elements[from]);
             from++;
             return true;
         }
@@ -358,7 +358,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     public boolean removeIf(Predicate<? super E> filter) {
         checkModifiable();
         if (member == null) {
-            final boolean changed = loneMember != -1 && filter.test((E) elements[loneMember]);
+            final boolean changed = loneMember != -1 && filter.test(elements[loneMember]);
             loneMember = changed ? -1 : loneMember;
             return changed;
         }
@@ -371,7 +371,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
                 final long finalMask = blockindex != member.length - 1 ? 0L : 2L << ((63 + elements.length) % 64);
                 int i = blockindex * 64;
                 for (long mask = 1L; mask != finalMask; mask <<= 1) {
-                    if ((cache & mask) != 0L && filter.test((E) elements[i])) {
+                    if ((cache & mask) != 0L && filter.test(elements[i])) {
                         changes |= mask;
                     }
                     i++;
