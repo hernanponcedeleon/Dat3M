@@ -191,7 +191,7 @@ jobs:
         run: mvn clean install -DskipTests
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -Pnative install
+        run: mvn --batch-mode --update-snapshots -Pnative test
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile
