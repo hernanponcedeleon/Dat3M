@@ -332,10 +332,10 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                 .filter(IndexedEventGraph.class::isInstance)
                 .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.RANGE))
                 .min(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
-        final var intersection = new IndexedEventGraph(domain.newSet(), range.emptySet(), 0);
         final EventGraph smallest = Arrays.stream(operands)
                 .min(Comparator.comparingInt(EventGraph::size))
                 .orElseThrow();
+        final var intersection = new IndexedEventGraph(domain, range, smallest);
         Arrays.stream(operands).filter(operand -> operand != smallest).forEach(intersection::retainAll);
         return intersection;
     }

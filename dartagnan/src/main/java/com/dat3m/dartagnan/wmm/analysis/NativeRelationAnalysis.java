@@ -1543,8 +1543,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Delta visitDifference(Difference diff) {
             if (diff.getMinuend().equals(source)) {
-                Knowledge k = getKnowledge(diff.getSubtrahend());
-                return new Delta(IndexedEventGraph.difference(may, k.getMustSet()), IndexedEventGraph.difference(must, k.getMaySet()));
+                final Knowledge k = getKnowledge(diff.getSubtrahend());
+                final IndexedEventGraph mayDelta = IndexedEventGraph.difference(may, k.getMustSet());
+                final IndexedEventGraph mustDelta = IndexedEventGraph.difference(must, k.getMaySet());
+                return new Delta(mayDelta, mustDelta);
             }
             return EMPTY;
         }
@@ -1557,7 +1559,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final IndexedEventGraph maySet = newGraphWithDomain(k0.getMaySet());
             final IndexedEventGraph mustSet = newGraphWithDomain(k0.getMustSet());
             if (r1.equals(source)) {
-                final Knowledge k2 = getKnowledge(r1);
+                final Knowledge k2 = getKnowledge(r2);
                 computeComposition(maySet, may, k2.getMaySet(), true);
                 computeComposition(mustSet, must, k2.getMustSet(), false);
             }
