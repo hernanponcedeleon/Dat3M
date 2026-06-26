@@ -15,8 +15,9 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -41,68 +42,19 @@ public class EventGraphStaticTest {
 
     @Parameterized.Parameters
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][]{
-                // resultClass, leftClass, rightClass
-                {MapEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {LazyEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {ImmutableMapEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {MutableEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {ImmutableEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {EventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-        });
+        final List<Object[]> data = new ArrayList<>();
+        final List<Object> resultClasses = List.of(MapEventGraph.class, LazyEventGraph.class,
+                ImmutableMapEventGraph.class, MutableEventGraph.class, ImmutableEventGraph.class, EventGraph.class);
+        final List<Object> operandClasses = List.of(MapEventGraph.class, ImmutableMapEventGraph.class,
+                LazyEventGraph.class);
+        for (Object resultClass : resultClasses) {
+            for (Object leftClass : operandClasses) {
+                for (Object rightClass : operandClasses) {
+                    data.add(new Object[]{resultClass, leftClass, rightClass});
+                }
+            }
+        }
+        return data;
     }
 
     @Test
