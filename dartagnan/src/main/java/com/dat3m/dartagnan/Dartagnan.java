@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
-import static com.dat3m.dartagnan.utils.GitInfo.*;
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
@@ -52,7 +52,7 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-        initGitInfo();
+        initEnvironmentInfo();
 
         if (Arrays.asList(args).contains("--help")) {
             printOptions();
@@ -62,7 +62,7 @@ public class Dartagnan extends BaseOptions {
             return;
         }
 
-        logGitInfo();
+        logEnvironmentInfo();
 
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
