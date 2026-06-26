@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
+import static com.dat3m.dartagnan.utils.SysInfo.*;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
@@ -63,6 +64,8 @@ public class Dartagnan extends BaseOptions {
         }
 
         logGitInfo();
+        logOSInfo();
+        logClangInfo();
 
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
