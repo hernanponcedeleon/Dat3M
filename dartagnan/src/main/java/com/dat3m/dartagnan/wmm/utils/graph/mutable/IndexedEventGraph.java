@@ -176,6 +176,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         map[index] = outSet;
         final boolean changed = outSet.add(e2);
         size += changed ? 1 : 0;
+        domain.exchange(index, true);
         return changed;
     }
 
@@ -186,6 +187,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         final boolean changed = outSet != null && outSet.remove(e2);
         map[index] = changed && outSet.isEmpty() ? null : map[index];
         size -= changed ? 1 : 0;
+        domain.exchange(index, map[index] != null);
         return changed;
     }
 
@@ -204,6 +206,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                     outSet.addAll(otherOutSet);
                     diff += outSet.size();
                     map[index] = outSet;
+                    domain.exchange(index, true);
                 }
             }
             size += diff;
@@ -230,6 +233,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                     outSet.removeAll(otherOutSet);
                     diff += outSet.size();
                     map[index] = outSet.isEmpty() ? null : outSet;
+                    domain.exchange(index, map[index] != null);
                 }
             }
             size += diff;
@@ -260,6 +264,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                     } else {
                         map[index] = null;
                     }
+                    domain.exchange(index, map[index] != null);
                 }
             }
         } else {
@@ -270,6 +275,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                     outSet.retainAll(other.getRange(domainEvents().element(index)));
                     diff += outSet.size();
                     map[index] = outSet.isEmpty() ? null : outSet;
+                    domain.exchange(index, map[index] != null);
                 }
             }
         }
@@ -287,6 +293,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         outSet.addAll(range);
         final int newSize = outSet.size();
         map[index] = newSize == 0 ? null : outSet;
+        domain.exchange(index, map[index] != null);
         size += newSize - oldSize;
         return newSize > oldSize;
     }
@@ -302,6 +309,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                 changed |= outSet.removeIf(e2 -> f.test(e1, e2));
                 size -= oldSize - outSet.size();
                 map[index] = outSet.isEmpty() ? null : outSet;
+                domain.exchange(index, map[index] != null);
             }
         }
         return changed;
@@ -323,20 +331,12 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     }
 
     public static IndexedEventGraph intersection(EventGraph... operands) {
-        final IndexedDomain<Event> domain = Arrays.stream(operands)
+        final IndexedEventGraph indexedOperand = Arrays.stream(operands)
                 .filter(IndexedEventGraph.class::isInstance)
-                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.DOMAIN))
-                .min(Comparator.comparingInt(IndexedDomain::size))
-                .orElseThrow(() -> new IllegalArgumentException("Missing domain for graph intersection."));
-        final IndexedDomain<Event> range = Arrays.stream(operands)
-                .filter(IndexedEventGraph.class::isInstance)
-                .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.RANGE))
-                .min(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
-        final EventGraph smallest = Arrays.stream(operands)
-                .min(Comparator.comparingInt(EventGraph::size))
-                .orElseThrow();
-        final var intersection = new IndexedEventGraph(domain, range, smallest);
-        Arrays.stream(operands).filter(operand -> operand != smallest).forEach(intersection::retainAll);
+                .map(IndexedEventGraph.class::cast)
+                .findAny().orElseThrow(() -> new IllegalArgumentException("Missing domain for graph intersection."));
+        final var intersection = new IndexedEventGraph(indexedOperand);
+        Arrays.stream(operands).filter(operand -> operand != indexedOperand).forEach(intersection::retainAll);
         return intersection;
     }
 
