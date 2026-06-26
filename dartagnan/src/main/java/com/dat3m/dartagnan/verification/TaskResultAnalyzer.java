@@ -120,11 +120,6 @@ public class TaskResultAnalyzer {
                 return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, TERMINATION_VIOLATION);
             }
 
-            if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
-                reason = ResultSummary.SVCOMP_RACE_REASON;
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, DATA_RACE_FREEDOM_VIOLATION);
-            }
-
             if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
                 reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
                 for (MemoryObject o : p.getMemory().getObjects()) {
