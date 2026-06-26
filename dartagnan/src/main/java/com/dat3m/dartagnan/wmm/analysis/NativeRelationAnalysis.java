@@ -1317,7 +1317,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     final Set<Event> enableX = newSet(may2.getRange(y));
                     enableX.removeAll(mutexX);
                     if (!enableX.isEmpty()) {
-                        final Set<Event> disableY = IndexedSet.intersection(enableX, must2.getRange(y));
+                        final Set<Event> disableY = newSet(enableX);
+                        enableX.retainAll(must2.getRange(y));
                         retainImplyWith(enableX, y, x);
                         e0.addRange(x, enableX);
                         disableY.removeAll(may0.getRange(x));

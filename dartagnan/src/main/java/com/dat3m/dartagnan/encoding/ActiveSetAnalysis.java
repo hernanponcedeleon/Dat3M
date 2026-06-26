@@ -178,7 +178,7 @@ public class ActiveSetAnalysis {
             final Relation r = propagationQueue.keySet().iterator().next();
             logger.trace("Update active set of '{}'", r);
             final MutableEventGraph active = activeSets.get(r.getDefinition());
-            final var update = newGraph(r);
+            final IndexedEventGraph update = newGraph(r);
 
             propagationQueue.remove(r).forEach(news -> update.addAll(news.filter(active::add)));
             propagator.propagateAndUpdateQueue(r.getDefinition(), update, propagationQueue);
@@ -197,7 +197,7 @@ public class ActiveSetAnalysis {
 
         final Map<Definition, IndexedEventGraph> activeSets = Maps.newHashMapWithExpectedSize(relations.size());
         for (Relation rel : relations) {
-            final var active = newGraph(rel);
+            final IndexedEventGraph active = newGraph(rel);
             active.addAll(getUnknowns(rel));
             discrepancies.get(rel).forEach(active::addAll);
 
@@ -456,8 +456,8 @@ public class ActiveSetAnalysis {
         public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
             final Relation rel = trans.getDefinedRelation();
             final Relation r1 = trans.getOperand();
-            final var factors = newGraph(rel);
-            final var factorsInverse = newGraph(rel);
+            final IndexedEventGraph factors = newGraph(rel);
+            final IndexedEventGraph factorsInverse = newGraph(rel);
             final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
             final EventGraph k0MayIn = k0.getMaySet().inverse();
             for (Event e1 : news.getDomain()) {

@@ -40,12 +40,12 @@ public final class RelationEventDomains {
         return analysis;
     }
 
-    public IndexedDomain<Event> smallestDomain(Relation relation, Dimension dimension) {
+    public DomainBound smallestDomainBound(Relation relation, Dimension dimension) {
         final Set<Relation> invisibleSet = switch (dimension) {
             case DOMAIN -> relationsWithInvisibleDomain;
             case RANGE -> relationsWithInvisibleRange;
         };
-        return repository.getDomain(getBound(relation, invisibleSet));
+        return getBound(relation, invisibleSet);
     }
 
     public IndexedDomain<Event> smallestDomain(Relation relation) {
