@@ -456,7 +456,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     final Set<Event> nextY = newSet(mustIn.getRange(x));
                     retainImplyWith(nextY, x, y);
                     nextY.removeAll(execExcluding(y));
-                    nextY.removeIf(w -> !newDisabled.add(y, w));
+                    nextY.removeAll(newDisabled.getRange(y));
+                    newDisabled.addRange(y, nextY);
                     nextY.forEach(w -> next.add(w, y));
                     final Set<Event> nextX = newSet(mustOut.getRange(y));
                     retainImplyWith(nextX, y, x);
