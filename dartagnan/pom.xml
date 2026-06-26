@@ -60,13 +60,6 @@
             <version>${z3.version}</version>
         </dependency>
 
-        <!-- Yices2 dependency (OS independent) -->
-        <dependency>
-            <groupId>org.sosy-lab</groupId>
-            <artifactId>javasmt-yices2</artifactId>
-            <version>${yices2-api.version}</version>
-        </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>

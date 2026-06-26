@@ -596,13 +596,6 @@
                     <type>dylib</type>
                     <classifier>libz3java-x64</classifier>
                 </dependency>
-
-                <!-- Yices2 dependencies -->
-                <dependency>
-                    <groupId>org.sosy-lab</groupId>
-                    <artifactId>javasmt-yices2</artifactId>
-                    <version>${yices2-api.version}</version>
-                </dependency>
             </dependencies>
             <build>
                 <pluginManagement>
@@ -672,13 +665,6 @@
                     <version>${z3.version}</version>
                     <type>dylib</type>
                     <classifier>libz3java-arm64</classifier>
-                </dependency>
-
-                <!-- Yices2 dependencies -->
-                <dependency>
-                    <groupId>org.sosy-lab</groupId>
-                    <artifactId>javasmt-yices2</artifactId>
-                    <version>${yices2-api.version}</version>
                 </dependency>
              </dependencies>
             <build>
