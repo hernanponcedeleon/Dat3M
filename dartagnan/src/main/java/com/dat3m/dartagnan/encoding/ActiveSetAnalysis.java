@@ -244,22 +244,17 @@ public class ActiveSetAnalysis {
             logger.info("Computing relevant set for {}", axiom);
             // ====== Construct [Event -> Successor] mapping ======
             final Relation rel = axiom.getRelation();
-            EventGraph maySet = ra.getKnowledge(rel).getMaySet();
-            Map<Event, Set<Event>> succMap = maySet.getOutMap();
+            final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(rel);
+            final EventGraph maySet = knowledge.getMaySet();
+            final Map<Event, Set<Event>> succMap = maySet.getOutMap();
 
             // ====== Compute SCCs ======
-            DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-            final MutableEventGraph result = newGraph(rel);
+            final DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
+            final IndexedEventGraph result = newGraph(rel);
             for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
-                for (DependencyGraph<Event>.Node node1 : scc) {
-                    for (DependencyGraph<Event>.Node node2 : scc) {
-                        Event e1 = node1.getContent();
-                        Event e2 = node2.getContent();
-                        if (maySet.contains(e1, e2)) {
-                            result.add(e1, e2);
-                        }
-                    }
-                }
+                final IndexedSet<Event> sccEvents = result.eventDomain(Dimension.RANGE).newSet();
+                scc.forEach(n -> sccEvents.add(n.getContent()));
+                sccEvents.forEach(e1 -> result.addRange(e1, IndexedSet.intersection(sccEvents, maySet.getRange(e1))));
             }
 
             if (reduceAcyclicityRelevantSets) {
@@ -502,6 +497,6 @@ public class ActiveSetAnalysis {
     }
 
     private IndexedEventGraph newGraph(Relation relation) {
-        return new IndexedEventGraph(eventDomains.smallestDomain(relation));
+        return eventDomains.newGraph(relation);
     }
 }
