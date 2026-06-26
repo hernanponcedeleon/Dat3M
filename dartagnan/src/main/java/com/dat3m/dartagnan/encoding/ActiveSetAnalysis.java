@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
@@ -72,7 +70,6 @@ public class ActiveSetAnalysis {
 
     private final Wmm memoryModel;
     private final Context analysisContext;
-    private final ExecutionAnalysis exec;
     private final RelationEventDomains eventDomains;
     private final RelationAnalysis ra;
 
@@ -94,7 +91,6 @@ public class ActiveSetAnalysis {
     private ActiveSetAnalysis(Wmm memoryModel, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         this.memoryModel = memoryModel;
         this.analysisContext = analysisContext;
-        this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.eventDomains = analysisContext.requires(RelationEventDomains.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
 
@@ -211,7 +207,6 @@ public class ActiveSetAnalysis {
         return EventGraph.difference(ra.getKnowledge(rel).getMaySet(), ra.getKnowledge(rel).getMustSet());
     }
 
-    @SuppressWarnings("unchecked")
     private MutableEventGraph filterUnknowns(EventGraph graph, Relation relation) {
         final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
         final MutableEventGraph result = MutableEventGraph.intersection(graph, k.getMaySet());
@@ -277,49 +272,8 @@ public class ActiveSetAnalysis {
         // NOTE: Assumes that the must-set of rel+ is acyclic.
         private EventGraph transitivelyDerivableMustEdges(Relation relation) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
-            final IndexedDomain<Event> eventDomain = eventDomains.smallestDomain(relation);
-            final MutableEventGraph result = new IndexedEventGraph(eventDomain);
-            final IndexedSet<Event> EMPTY = eventDomain.emptySet();
-            final Map<Event, IndexedSet<Event>> map = new HashMap<>();
-            final Map<Event, IndexedSet<Event>> mapInverse = new HashMap<>();
-            EventGraph current = k.getMustSet();
-            while (!current.isEmpty()) {
-                final MutableEventGraph next = new IndexedEventGraph(eventDomain);
-                current.apply((x, y) -> {
-                    map.computeIfAbsent(x, e -> eventDomain.newSet()).add(y);
-                    mapInverse.computeIfAbsent(y, e -> eventDomain.newSet()).add(x);
-                });
-                for (Event x : current.getDomain()) {
-                    final Set<Event> implyingX = exec.implyingEvents(x);
-                    final Set<Event> excludingX = exec.excludingEvents(x);
-                    final IndexedSet<Event> precedingX = mapInverse.getOrDefault(x, EMPTY);
-                    for (Event y : current.getRange(x)) {
-                        final Set<Event> zSet = new IndexedSet<>(map.getOrDefault(y, EMPTY));
-                        final Set<Event> implyingY = exec.implyingEvents(y);
-                        if (!implyingY.contains(x)) {
-                            zSet.retainAll(implyingY);
-                        }
-                        zSet.removeAll(excludingX);
-                        for (Event z : zSet) {
-                            if (result.add(x, z)) {
-                                next.add(x, z);
-                            }
-                        }
-                        final Set<Event> wSet = new IndexedSet<>(precedingX);
-                        if (!implyingX.contains(y)) {
-                            wSet.retainAll(implyingX);
-                        }
-                        wSet.removeAll(exec.excludingEvents(y));
-                        for (Event w : wSet) {
-                            if (result.add(w, y)) {
-                                next.add(w, y);
-                            }
-                        }
-                    }
-                }
-                current = next;
-            }
-            return result;
+            final EventGraph transitiveClosure = ra.computeTransitiveClosure(k.getMustSet()).getMustSet();
+            return ra.computeComposition(transitiveClosure, transitiveClosure).getMustSet();
         }
     }
 

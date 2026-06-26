@@ -115,6 +115,25 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     @Override
+    public Knowledge computeComposition(EventGraph left, EventGraph right) {
+        final IndexedDomain<Event> domain = left instanceof IndexedEventGraph g ? g.eventDomain(Dimension.DOMAIN)
+                : allEvents.domain();
+        final IndexedDomain<Event> range = right instanceof IndexedEventGraph g ? g.eventDomain(Dimension.RANGE)
+                : allEvents.domain();
+        return new LazyKnowledge(domain, range, (out, isMay) -> computeComposition(out, left, right, isMay));
+    }
+
+    @Override
+    public Knowledge computeTransitiveClosure(EventGraph operand) {
+        final IndexedEventGraph indexedOperand = operand instanceof IndexedEventGraph g ? g
+                : new IndexedEventGraph(allEvents.domain(), allEvents.domain(), operand);
+        final IndexedDomain<Event> domain = indexedOperand.eventDomain(Dimension.DOMAIN);
+        final IndexedDomain<Event> range = indexedOperand.eventDomain(Dimension.RANGE);
+        return new LazyKnowledge(domain, range, (out, isMay)
+                -> out.addAll(computeTransitiveClosure(out, indexedOperand, isMay)));
+    }
+
+    @Override
     public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
         Propagator p = new Propagator();
         Initializer init = getInitializer();
@@ -1550,26 +1569,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new Delta(maySet, mustSet);
         }
 
-        private void computeComposition(IndexedEventGraph result, EventGraph left, EventGraph right, boolean isMay) {
-            final IndexedDomain<Event> eventDomain = result.eventDomain(Dimension.RANGE);
-            for (Event e1 : left.getDomain()) {
-                final Set<Event> update = eventDomain.newSet();
-                for (Event e : left.getRange(e1)) {
-                    final Set<Event> impliesE = execImplying(e);
-                    final Set<Event> rightRange = right.getRange(e);
-                    if (isMay || impliesE.contains(e1)) {
-                        update.addAll(rightRange);
-                    } else {
-                        final Set<Event> range = newSet(rightRange);
-                        range.retainAll(impliesE);
-                        update.addAll(range);
-                    }
-                }
-                update.removeAll(execExcluding(e1));
-                result.addRange(e1, update);
-            }
-        }
-
         @Override
         public Delta visitProjection(Projection projection) {
             if (projection.getOperand().equals(source)) {
@@ -1650,20 +1649,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             }
             return EMPTY;
         }
-
-        private IndexedEventGraph computeTransitiveClosure(IndexedEventGraph oldOuter, IndexedEventGraph inner, boolean isMay) {
-            final IndexedEventGraph outer = newGraph(oldOuter);
-            IndexedEventGraph update = inner.filter(outer::add);
-            final IndexedEventGraph updateComposition = newGraphWithDomain(oldOuter);
-            computeComposition(updateComposition, inner, oldOuter, isMay);
-            update.addAll(updateComposition.filter(outer::add));
-            while (!update.isEmpty()) {
-                final IndexedEventGraph t = newGraphWithDomain(oldOuter);
-                computeComposition(t, inner, update, isMay);
-                update = t.filter(outer::add);
-            }
-            return outer;
-        }
     }
 
     protected static class MutableKnowledge extends Knowledge {
@@ -1681,6 +1666,72 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public IndexedEventGraph getMustSet() {
             return (IndexedEventGraph) must;
         }
+    }
+
+    @FunctionalInterface
+    private interface LazyKnowledgeEvaluator {
+        void apply(IndexedEventGraph out, boolean isMay);
+    }
+
+    private static final class LazyKnowledge extends Knowledge {
+
+        private final LazyKnowledgeEvaluator evaluator;
+
+        private LazyKnowledge(IndexedDomain<Event> domain, IndexedDomain<Event> range,
+                LazyKnowledgeEvaluator evaluator) {
+            super(new IndexedEventGraph(domain, range), new IndexedEventGraph(domain, range));
+            this.evaluator = evaluator;
+        }
+
+        @Override
+        public IndexedEventGraph getMaySet() {
+            if (may.isEmpty()) {
+                evaluator.apply((IndexedEventGraph) may, true);
+            }
+            return (IndexedEventGraph) may;
+        }
+
+        @Override
+        public IndexedEventGraph getMustSet() {
+            if (must.isEmpty()) {
+                evaluator.apply((IndexedEventGraph) must, false);
+            }
+            return (IndexedEventGraph) must;
+        }
+    }
+
+    private void computeComposition(IndexedEventGraph result, EventGraph left, EventGraph right, boolean isMay) {
+        final IndexedDomain<Event> eventDomain = result.eventDomain(Dimension.RANGE);
+        for (Event e1 : left.getDomain()) {
+            final Set<Event> update = eventDomain.newSet();
+            for (Event e : left.getRange(e1)) {
+                final Set<Event> impliesE = execImplying(e);
+                final Set<Event> rightRange = right.getRange(e);
+                if (isMay || impliesE.contains(e1)) {
+                    update.addAll(rightRange);
+                } else {
+                    final Set<Event> range = newSet(rightRange);
+                    range.retainAll(impliesE);
+                    update.addAll(range);
+                }
+            }
+            update.removeAll(execExcluding(e1));
+            result.addRange(e1, update);
+        }
+    }
+
+    private IndexedEventGraph computeTransitiveClosure(IndexedEventGraph oldOuter, IndexedEventGraph inner, boolean isMay) {
+        final IndexedEventGraph outer = newGraph(oldOuter);
+        IndexedEventGraph update = inner.filter(outer::add);
+        final IndexedEventGraph updateComposition = newGraphWithDomain(oldOuter);
+        computeComposition(updateComposition, inner, oldOuter, isMay);
+        update.addAll(updateComposition.filter(outer::add));
+        while (!update.isEmpty()) {
+            final IndexedEventGraph t = newGraphWithDomain(oldOuter);
+            computeComposition(t, inner, update, isMay);
+            update = t.filter(outer::add);
+        }
+        return outer;
     }
 
     private Set<Event> newSet(Collection<Event> copy) {

@@ -150,6 +150,10 @@ public interface RelationAnalysis {
      */
     void runExtended();
 
+    Knowledge computeComposition(EventGraph left, EventGraph right);
+
+    Knowledge computeTransitiveClosure(EventGraph operand);
+
     @Options
     final class Config {
         @Option(name = RELATION_ANALYSIS,
