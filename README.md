@@ -9,11 +9,11 @@
 
 Requirements
 ======
-* [Maven](https://maven.apache.org/) 3.8 or above
-* [Java](https://openjdk.java.net/projects/jdk/17/) 17 or above
-* [GraalVM](https://www.graalvm.org/) (only if you run in native mode; recommended!) 22 or above for optimal performance
-* [Clang](https://clang.llvm.org) (only to verify C programs) 10 above
-* [Graphviz](https://graphviz.org) (only if option `--witness=png` is used)
+* [Maven](https://maven.apache.org/) version 3.8 or above
+* [Java](https://openjdk.java.net/projects/jdk/17/) version 17 or above
+* [GraalVM](https://www.graalvm.org/) version 22 or above for optimal performance (only if you run in native mode; recommended!)
+* [Clang](https://clang.llvm.org) version 10 or above (only to verify C programs)
+* [Graphviz](https://graphviz.org)
 
 Installation
 ======
