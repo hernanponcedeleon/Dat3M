@@ -416,8 +416,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final IndexedEventGraph next = newGraphWithDomain(may);
                 for (Event e : current.getDomain()) {
                     if (current.getRange(e).contains(e)) {
-                        final Set<Event> range = newSet(mustOut.getRange(e));
-                        range.removeAll(execExcluding(e));
+                        final Set<Event> range = SetUtil.difference(mustOut.getRange(e), execExcluding(e));
                         range.removeIf(z -> !newDisabled.add(z, e));
                         next.addRange(e, range);
                     }
@@ -523,8 +522,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final List<Thread> threads = program.getThreads();
             for (Thread thread : threads) {
                 final Set<Event> thisThread = threadVisibleEvents.get(thread);
-                final Set<Event> otherThread = newSet(allVisibleEvents);
-                otherThread.removeAll(thisThread);
+                final Set<Event> otherThread = SetUtil.difference(allVisibleEvents, thisThread);
                 // No test for `execMutuallyExclusive`, since that currently does not span across threads
                 for (Event e1 : thisThread) {
                     must.addRange(e1, otherThread);
@@ -566,9 +564,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final Set<Event> remainingEvents = eventDomain.newSet(threadEvents);
                 for (final Event e1 : threadEvents) {
                     remainingEvents.remove(e1);
-                    final Set<Event> range = newSet(remainingEvents);
-                    range.removeAll(execExcluding(e1));
-                    must.addRange(e1, range);
+                    must.addRange(e1, SetUtil.difference(remainingEvents, execExcluding(e1)));
                 }
                 // Events of the same instruction are not program-ordered
                 for (InstructionBoundary end : thread.getEvents(InstructionBoundary.class)) {
@@ -1336,8 +1332,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Event x : enable1.getDomain()) {
                 final Set<Event> mutexX = execExcluding(x);
                 for (Event y : enable1.getRange(x)) {
-                    final Set<Event> enableX = newSet(may2.getRange(y));
-                    enableX.removeAll(mutexX);
+                    final Set<Event> enableX = SetUtil.difference(may2.getRange(y), mutexX);
                     if (!enableX.isEmpty()) {
                         final Set<Event> disableY = newSet(enableX);
                         enableX.retainAll(must2.getRange(y));
@@ -1378,8 +1373,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final EventGraph may0 = k0.getMaySet();
                 final Set<Event> disabledDomain = disabled.getDomain();
                 // disable may0 \ may1+
-                Set<Event> xSet = newSet(may0.getDomain());
-                xSet.removeIf(x -> !disabledDomain.contains(x) && disjoint(disabledDomain, may0.getRange(x)));
+                Set<Event> xSet = SetUtil.filter(may0.getDomain(),
+                        x -> disabledDomain.contains(x) || !SetUtil.disjoint(disabledDomain, may0.getRange(x)));
                 for (Event x : xSet) {
                     final Set<Event> disableX = newSet(may0.getRange(x));
                     Set<Event> ySet = allEvents.domain().newSet();
@@ -1399,8 +1394,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 e0.addAll(enabled);
                 enabled.apply((x, y) -> {
                     if (!Tuple.isLoop(x, y)) {
-                        final Set<Event> enableX = newSet(k0.getMaySet().getRange(y));
-                        enableX.removeAll(execExcluding(x));
+                        final Set<Event> enableX = SetUtil.difference(k0.getMaySet().getRange(y), execExcluding(x));
                         final Set<Event> disableY = newSet(enableX);
                         retainImplyWith(enableX, y, x);
                         enableX.retainAll(k0.getMustSet().getRange(y));
@@ -1431,8 +1425,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 });
                 enabled.apply((y, z) -> {
                     if (!Tuple.isLoop(y, z)) {
-                        final Set<Event> enableZ = newSet(mayIn1.getRange(y));
-                        enableZ.removeAll(execExcluding(z));
+                        final Set<Event> enableZ = SetUtil.difference(mayIn1.getRange(y), execExcluding(z));
                         final Set<Event> disableY = newSet(enableZ);
                         retainImplyWith(enableZ, y, z);
                         enableZ.retainAll(mustIn1.getRange(y));
@@ -1613,14 +1606,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void computeCartesianProduct(IndexedEventGraph target, EventGraph domain, EventGraph range) {
-            final Set<Event> newRange = newSet(range.getDomain());
-            newRange.removeIf(x -> !range.contains(x, x));
+            final Set<Event> newRange = SetUtil.filter(range.getDomain(), x -> range.contains(x, x));
 
             for (Event e1 : domain.getDomain()) {
                 if (domain.contains(e1, e1)) {
-                    final Set<Event> e1Range = newSet(newRange);
-                    e1Range.removeAll(execExcluding(e1));
-                    target.addRange(e1, e1Range);
+                    target.addRange(e1, SetUtil.difference(newRange, execExcluding(e1)));
                 }
             }
         }
@@ -1707,16 +1697,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         final IndexedDomain<Event> eventDomain = result.eventDomain(Dimension.RANGE);
         for (Event e1 : left.getDomain()) {
             final Set<Event> update = eventDomain.newSet();
-            for (Event e : left.getRange(e1)) {
-                final Set<Event> impliesE = execImplying(e);
-                final Set<Event> rightRange = right.getRange(e);
-                if (isMay || impliesE.contains(e1)) {
-                    update.addAll(rightRange);
-                } else {
-                    final Set<Event> range = newSet(rightRange);
-                    range.retainAll(impliesE);
-                    update.addAll(range);
-                }
+            for (Event e2 : left.getRange(e1)) {
+                final Set<Event> impliesE = isMay ? null : execImplying(e2);
+                final Set<Event> rightRange = right.getRange(e2);
+                final boolean skipIntersection = impliesE == null || impliesE.contains(e1);
+                update.addAll(skipIntersection ? rightRange : SetUtil.intersection(rightRange, impliesE));
             }
             update.removeAll(execExcluding(e1));
             result.addRange(e1, update);
@@ -1742,10 +1727,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     private boolean disjoint(Collection<?> left, Collection<?> right) {
-        if (left instanceof IndexedSet<?> l && right instanceof IndexedSet<?> r) {
-            return l.disjoint(r);
-        }
-        return Collections.disjoint(left, right);
+        return SetUtil.disjoint(left, right);
     }
 
     private IndexedEventGraph newGraph(IndexedEventGraph other) {

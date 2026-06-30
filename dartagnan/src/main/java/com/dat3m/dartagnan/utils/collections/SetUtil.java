@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.collections;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class SetUtil {
 
@@ -14,7 +15,28 @@ public class SetUtil {
         return Collections.newSetFromMap(new IdentityHashMap<>(capacity));
     }
 
-    public static <T> Set<T> intersection(Set<T> left, Set<T> right) {
+    public static boolean disjoint(Collection<?> left, Collection<?> right) {
+        if (left instanceof IndexedSet<?> l && right instanceof IndexedSet<?> r) {
+            return l.disjoint(r);
+        }
+        return Collections.disjoint(left, right);
+    }
+
+    public static <T> Set<T> union(Collection<T> left, Collection<T> right) {
+        if (left instanceof IndexedSet<T> l && right instanceof IndexedSet<T> r
+                && l.domain().isCompatibleWith(r.domain())) {
+            final boolean useLeft = r.domain().size() < l.domain().size();
+            final Set<T> union = new IndexedSet<>(useLeft ? l : r);
+            union.addAll(useLeft ? r : l);
+            return union;
+        }
+        final boolean useLeft = right.size() < left.size();
+        final Set<T> union = new HashSet<>(useLeft ? left : right);
+        union.addAll(useLeft ? right : left);
+        return union;
+    }
+
+    public static <T> Set<T> intersection(Collection<T> left, Collection<T> right) {
         if (left instanceof IndexedSet<T> || right instanceof IndexedSet<T>) {
             return IndexedSet.intersection(left, right);
         }
@@ -26,6 +48,36 @@ public class SetUtil {
             }
         }
         return intersection;
+    }
+
+    public static <T> Set<T> difference(Collection<T> minuend, Collection<?> subtrahend) {
+        if (minuend instanceof IndexedSet<T> m) {
+            final Set<T> difference = new IndexedSet<>(m);
+            difference.removeAll(subtrahend);
+            return difference;
+        }
+        final Set<T> difference = new HashSet<>();
+        for (T element : minuend) {
+            if (!subtrahend.contains(element)) {
+                difference.add(element);
+            }
+        }
+        return difference;
+    }
+
+    public static <T> Set<T> filter(Collection<T> base, Predicate<? super T> keepInSet) {
+        if (base instanceof IndexedSet<T> b) {
+            final Set<T> filter = new IndexedSet<>(b);
+            filter.removeIf(keepInSet.negate());
+            return filter;
+        }
+        final Set<T> filter = new HashSet<>();
+        for (T element : base) {
+            if (keepInSet.test(element)) {
+                filter.add(element);
+            }
+        }
+        return filter;
     }
 
     /*
