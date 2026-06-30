@@ -184,7 +184,10 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     public boolean remove(Event e1, Event e2) {
         final int index = domainEvents().indexOf(e1);
         final IndexedSet<Event> outSet = outSetAt(index);
-        final boolean changed = outSet != null && outSet.remove(e2);
+        if (outSet == null) {
+            return false;
+        }
+        final boolean changed = outSet.remove(e2);
         map[index] = changed && outSet.isEmpty() ? null : map[index];
         size -= changed ? 1 : 0;
         domain.exchange(index, map[index] != null);

@@ -386,7 +386,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         return changed;
     }
 
-    public static <E> IndexedSet<E> intersection(Collection<E> left, Collection<E> right) {
+    static <E> IndexedSet<E> intersection(Collection<E> left, Collection<E> right) {
         final var indexedLeft = left instanceof IndexedSet<E> s ? s : null;
         final var indexedRight = right instanceof IndexedSet<E> s ? s : null;
         Preconditions.checkArgument(indexedLeft != null || indexedRight != null, "Missing domain for intersection.");

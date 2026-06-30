@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
+import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -1272,10 +1273,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     final Set<Event> mayOut1X = k1.getMaySet().getRange(x);
                     final Set<Event> mustOut1X = k1.getMustSet().getRange(x);
                     for (Event z : disabled.getRange(x)) {
-                        final Set<Event> disableZ = IndexedSet.intersection(mustOut1X, mayIn2.getRange(z));
+                        final Set<Event> disableZ = SetUtil.intersection(mustOut1X, mayIn2.getRange(z));
                         retainImplyWith(disableZ, x, z);
                         disableZ.forEach(y -> d2.add(y, z));
-                        final Set<Event> disableX = IndexedSet.intersection(mayOut1X, mustIn2.getRange(z));
+                        final Set<Event> disableX = SetUtil.intersection(mayOut1X, mustIn2.getRange(z));
                         retainImplyWith(disableX, z, x);
                         d1.addRange(x, disableX);
                     }

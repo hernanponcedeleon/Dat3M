@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.collections.IndexedSet;
+import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -247,9 +247,9 @@ public class ActiveSetAnalysis {
             final DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
             final IndexedEventGraph result = newGraph(rel);
             for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
-                final IndexedSet<Event> sccEvents = result.eventDomain(Dimension.RANGE).newSet();
+                final Set<Event> sccEvents = result.eventDomain(Dimension.RANGE).newSet();
                 scc.forEach(n -> sccEvents.add(n.getContent()));
-                sccEvents.forEach(e1 -> result.addRange(e1, IndexedSet.intersection(sccEvents, maySet.getRange(e1))));
+                sccEvents.forEach(e1 -> result.addRange(e1, SetUtil.intersection(sccEvents, maySet.getRange(e1))));
             }
 
             if (reduceAcyclicityRelevantSets) {
@@ -264,12 +264,10 @@ public class ActiveSetAnalysis {
             return result;
         }
 
-        // Under-approximates the must-set of (rel+ ; rel).
-        // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
-        // and is closed under that operation with the must-set.
-        // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
-        // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
-        // NOTE: Assumes that the must-set of rel+ is acyclic.
+        // Computes the transitively-derivable must edges via `must(relation+ ; relation+)`.
+        // Basically, `exec(x) and exec(z) implies relation(x,z)` is obsolete,
+        // if `exec(x) implies relation(x,y)` and `exec(z) implies relation(y,z)` exist.
+        // NOTE: Assumes that `must(relation)` is acyclic.
         private EventGraph transitivelyDerivableMustEdges(Relation relation) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
             final EventGraph transitiveClosure = ra.computeTransitiveClosure(k.getMustSet()).getMustSet();
@@ -342,7 +340,7 @@ public class ActiveSetAnalysis {
             for (Event e1 : news.getDomain()) {
                 final Set<Event> e1may1 = k1.getMaySet().getRange(e1);
                 for (Event e3 : news.getRange(e1)) {
-                    final Set<Event> e2Set = IndexedSet.intersection(e1may1, may2Inverse.getRange(e3));
+                    final Set<Event> e2Set = SetUtil.intersection(e1may1, may2Inverse.getRange(e3));
                     set1.addRange(e1, e2Set);
                     set2Inverse.addRange(e3, e2Set);
                 }
@@ -413,7 +411,7 @@ public class ActiveSetAnalysis {
                 final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
                 for (Event e3 : news.getRange(e1)) {
                     // Compute { e2 | e1 -may(r0)> e2 -may(r0)> e3 }.
-                    final IndexedSet<Event> e2Set = IndexedSet.intersection(e1k0May, k0MayIn.getRange(e3));
+                    final Set<Event> e2Set = SetUtil.intersection(e1k0May, k0MayIn.getRange(e3));
                     factors.addRange(e1, e2Set);
                     factorsInverse.addRange(e3, e2Set);
                 }

@@ -40,7 +40,6 @@ public interface ExecutionAnalysis {
  */
 class DefaultExecutionAnalysis implements ExecutionAnalysis {
 
-    private final Program program;
     private final BranchEquivalence eq;
     private final ProgressModel.Hierarchy progressModel;
     private final Thread lowestIdThread; // For HSA
@@ -49,13 +48,12 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
 
     DefaultExecutionAnalysis(Program program, EventDomainRepository domainRepository, BranchEquivalence eq,
             ProgressModel.Hierarchy progressModel) {
-        this.program = program;
         this.eq = eq;
         this.progressModel = progressModel;
 
         this.lowestIdThread = program.getThreads().stream().min(Comparator.comparingInt(Thread::getId)).get();
 
-        computeResults(domainRepository.getDomain(EventDomainRepository.DomainBound.ALL));
+        computeResults(program, domainRepository.getDomain(EventDomainRepository.DomainBound.ALL));
     }
 
     @Override
@@ -79,12 +77,12 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         return eventsByExcludingEvent.get(excluded);
     }
 
-    private void computeResults(IndexedDomain<Event> eventDomain) {
-        computeImplyingEvents(eventDomain);
+    private void computeResults(Program program, IndexedDomain<Event> eventDomain) {
+        computeImplyingEvents(program, eventDomain);
         computeMutuallyExclusiveEvents(eventDomain);
     }
 
-    private void computeImplyingEvents(IndexedDomain<Event> eventDomain) {
+    private void computeImplyingEvents(Program program, IndexedDomain<Event> eventDomain) {
         // (=> & int)
         for (Thread thread : program.getThreads()) {
             final IndexedSet<Event> events = eventDomain.newSet(thread.getEvents());

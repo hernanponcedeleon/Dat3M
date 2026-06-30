@@ -14,6 +14,20 @@ public class SetUtil {
         return Collections.newSetFromMap(new IdentityHashMap<>(capacity));
     }
 
+    public static <T> Set<T> intersection(Set<T> left, Set<T> right) {
+        if (left instanceof IndexedSet<T> || right instanceof IndexedSet<T>) {
+            return IndexedSet.intersection(left, right);
+        }
+        final Collection<T> filter = left.size() < right.size() ? right : left;
+        final Set<T> intersection = new HashSet<>();
+        for (T element : filter == right ? left : right) {
+            if (filter.contains(element)) {
+                intersection.add(element);
+            }
+        }
+        return intersection;
+    }
+
     /*
     Like an empty set, but does silently ignore all attempts to modify it without throwing exceptions.
      */
