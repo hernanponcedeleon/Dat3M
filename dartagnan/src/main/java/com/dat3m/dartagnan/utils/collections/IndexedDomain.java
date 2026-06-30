@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.collections;
 
 import java.util.*;
+import java.util.function.Function;
 
 /// Used for compact sets, see `IndexedSet`.
 // This implementation contains an immutable hash table to look up an index by element.
@@ -38,10 +39,32 @@ public final class IndexedDomain<E> {
         return new IndexedSet<>(this);
     }
 
-    public IndexedSet<E> newSet(Collection<? extends E> copy) {
-        final IndexedSet<E> set = new IndexedSet<>(this);
-        set.addAll(copy);
-        return set;
+    public IndexedSet<E> newSet(Collection<? extends E> original) {
+        final IndexedSet<E> copy = new IndexedSet<>(this);
+        copy.addAll(original);
+        return copy;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> IndexedMap<E, V> newMap() {
+        return new IndexedMap<>(newSet(), (V[]) new Object[elements.length]);
+    }
+
+    public <V> IndexedMap<E, V> newMap(Map<E, V> original) {
+        final IndexedMap<E, V> copy = newMap();
+        copy.putAll(original);
+        return copy;
+    }
+
+    public <V> IndexedMap<E, V> newMap(Function<? super E, ? extends V> mapping) {
+        final IndexedMap<E, V> map = newMap();
+        for (int index = 0; index < elements.length; index++) {
+            final V value = mapping.apply(elements[index]);
+            if (value != null) {
+                map.addIndex(index, value);
+            }
+        }
+        return map;
     }
 
     public boolean isCompatibleWith(IndexedDomain<?> other) {
