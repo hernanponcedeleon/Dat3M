@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils.graph.immutable;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.wmm.utils.graph.AbstractEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
@@ -23,8 +24,8 @@ public class LazyEventGraph extends AbstractEventGraph implements ImmutableEvent
 
     public LazyEventGraph(Set<Event> domain, Set<Event> range,
                           BiPredicate<Event, Event> function) {
-        this.domain = ImmutableSet.copyOf(domain);
-        this.range = ImmutableSet.copyOf(range);
+        this.domain = SetUtil.copyOf(domain);
+        this.range = SetUtil.copyOf(range);
         this.function = function;
         this.empty = domain.stream().noneMatch(e1 -> range.stream().anyMatch((e2 -> function.test(e1, e2))));
     }

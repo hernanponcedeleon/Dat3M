@@ -353,7 +353,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new ExtendedDelta(disableSet, enableSet);
     }
 
-    private void initializeEventDomain() {
+    protected void initializeEventDomain() {
         for (Thread thread : task.getProgram().getThreads()) {
             allEvents.addAll(thread.getEvents());
             final Set<Event> visibleEvents = allVisibleEvents.domain().newSet(thread.getEventsWithAllTags(VISIBLE));
