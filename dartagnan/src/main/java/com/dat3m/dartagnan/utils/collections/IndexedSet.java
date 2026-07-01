@@ -21,16 +21,21 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     private final int[] index;
     private final boolean modifiable;
     private long[] member;
+
     // Used for sets with `size() <= 1` to make them even more compact.
     // This is especially useful for identity graphs.
     private int loneMember;
+
     // False if `member != null` and at least one bit is set in `member`.  True gives no guarantees.
     private boolean memberMayBeEmpty;
+
+    // True if `member` is shared with another instance.
     private transient boolean copyOnWrite;
 
-    public IndexedSet(IndexedSet<E> copy) {
-        this(copy.domain, nullableCopy(copy.member), copy.loneMember, true);
-        memberMayBeEmpty = copy.memberMayBeEmpty;
+    public IndexedSet(IndexedSet<E> original) {
+        this(original.domain, original.member, original.loneMember, true);
+        original.copyOnWrite = copyOnWrite = original.member != null;
+        memberMayBeEmpty = original.memberMayBeEmpty;
     }
 
     IndexedSet(IndexedDomain<E> domain) {
@@ -446,10 +451,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             count += Long.bitCount(block);
         }
         return count;
-    }
-
-    private static long[] nullableCopy(long[] array) {
-        return array == null ? null : Arrays.copyOf(array, array.length);
     }
 
     private void checkModifiable() {

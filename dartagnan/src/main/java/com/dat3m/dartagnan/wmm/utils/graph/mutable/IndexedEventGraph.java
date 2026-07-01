@@ -34,7 +34,10 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     public IndexedEventGraph(IndexedEventGraph original) {
         this(new IndexedSet<>(original.domain), original.emptyRange, 0);
-        addAll(original);
+        for (int index = 0; index < map.length; index++) {
+            map[index] = original.map[index] == null ? null : new IndexedSet<>(original.map[index]);
+        }
+        size = original.size;
     }
 
     public IndexedEventGraph(IndexedDomain<Event> domain, IndexedDomain<Event> range, EventGraph original) {
