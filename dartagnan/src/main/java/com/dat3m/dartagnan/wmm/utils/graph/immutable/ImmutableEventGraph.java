@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils.graph.immutable;
 
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 
 import java.util.Arrays;
 
@@ -11,6 +12,10 @@ public interface ImmutableEventGraph extends EventGraph {
     }
 
     static ImmutableEventGraph from(EventGraph other) {
+        if (other instanceof IndexedEventGraph iOther) {
+            final EventGraph copy = iOther.toUnmodifiableCopy();
+            return new LazyEventGraph(copy.getDomain(), copy.getRange(), copy::contains);
+        }
         if (other instanceof ImmutableEventGraph iOther) {
             return iOther;
         }

@@ -21,6 +21,8 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     private final IndexedSet<Event> emptyRange;
     // Does never contain empty sets.
     private final IndexedSet<Event>[] map;
+    // True if modifications are allowed.
+    private final boolean modifiable;
     // Always corresponds to the sum of sizes in `map`.
     private int size;
 
@@ -47,9 +49,14 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @SuppressWarnings("unchecked")
     private IndexedEventGraph(IndexedSet<Event> d, IndexedSet<Event> r, int ignore) {
+        this(d, r, new IndexedSet[d.domain().size()], true);
+    }
+
+    private IndexedEventGraph(IndexedSet<Event> d, IndexedSet<Event> r, IndexedSet<Event>[] v, boolean m) {
         domain = d;
         emptyRange = r;
-        map = (IndexedSet<Event>[]) new IndexedSet[d.domain().size()];
+        map = v;
+        modifiable = m;
     }
 
     public IndexedDomain<Event> eventDomain(Dimension dimension) {
@@ -57,6 +64,17 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
             case DOMAIN -> domain.domain();
             case RANGE -> emptyRange.domain();
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    public IndexedEventGraph toUnmodifiableCopy() {
+        final var mapCopy = (IndexedSet<Event>[]) new IndexedSet[map.length];
+        for (int index = 0; index < map.length; index++) {
+            mapCopy[index] = map[index] == null ? null : map[index].toUnmodifiableCopy();
+        }
+        final var copy = new IndexedEventGraph(domain.toUnmodifiableCopy(), emptyRange, mapCopy, false);
+        copy.size = size;
+        return copy;
     }
 
     @Override
@@ -173,6 +191,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean add(Event e1, Event e2) {
+        checkModifiable();
         final int index = domainEvents().indexOf(e1);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
         final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : rangeEvents().newSet();
@@ -185,6 +204,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean remove(Event e1, Event e2) {
+        checkModifiable();
         final int index = domainEvents().indexOf(e1);
         final IndexedSet<Event> outSet = outSetAt(index);
         if (outSet == null) {
@@ -199,6 +219,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean addAll(EventGraph other) {
+        checkModifiable();
         if (other instanceof IndexedEventGraph indexedOther
                 && domain.domain().isCompatibleWith(indexedOther.domain.domain())
                 && emptyRange.domain().isCompatibleWith(indexedOther.emptyRange.domain())) {
@@ -227,6 +248,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean removeAll(EventGraph other) {
+        checkModifiable();
         if (other instanceof IndexedEventGraph indexedOther
                 && domainEvents().isCompatibleWith(indexedOther.domainEvents())
                 && rangeEvents().isCompatibleWith(indexedOther.rangeEvents())) {
@@ -254,6 +276,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean retainAll(EventGraph other) {
+        checkModifiable();
         int diff = 0;
         if (other instanceof IndexedEventGraph indexedOther
                 && domainEvents().isCompatibleWith(indexedOther.domainEvents())
@@ -292,6 +315,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean addRange(Event e, Set<Event> range) {
+        checkModifiable();
         final int index = domainEvents().indexOf(e);
         final IndexedSet<Event> foundOutSet = outSetAt(index);
         final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : rangeEvents().newSet();
@@ -306,6 +330,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean removeIf(BiPredicate<Event, Event> f) {
+        checkModifiable();
         boolean changed = false;
         for (int index = 0; index < map.length; index++) {
             final Event e1 = domainEvents().element(index);
@@ -383,5 +408,11 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     private IndexedSet<Event> outSetAt(int index) {
         return index < 0 || index >= map.length ? null : map[index];
+    }
+
+    private void checkModifiable() {
+        if (!modifiable) {
+            throw new UnsupportedOperationException("Unmodifiable %s".formatted(getClass().getSimpleName()));
+        }
     }
 }
