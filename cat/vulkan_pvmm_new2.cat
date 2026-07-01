@@ -55,9 +55,6 @@ VULKAN
      ssw       = system synchronizes with (by host)
 *)
 
-// Host-happens-before
-let hhb = po | ssw+
-
 let QF = QF | DV
 let WG = WG | QF
 let SG = SG | WG
@@ -91,10 +88,11 @@ let swra = rs; asrf; ((po & sc2sem); [F])?; [ACQ]
 let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
 let sw = inscope & (swra | swbar)
 
+// TODO: NONPRIV
 let ithb(SC, SEMSC) = (ssw |
     ([SEMSC]; sw; [SEMSC]) |
-    ([SC | SEMSC]; po; [REL & SEMSC]) |
-    ([ACQ & SEMSC]; po; [SC | SEMSC]))+
+    ([(NONPRIV & SC) | SEMSC]; po; [REL & SEMSC]) |
+    ([ACQ & SEMSC]; po; [(NONPRIV & SC) | SEMSC]))+
 
 let ithb0 = ithb(SC0, SEMSC0)
 let ithb1 = ithb(SC1, SEMSC1)
@@ -108,7 +106,6 @@ let ithb13 = ithb(SC13, SEMSC13)
 let ithb23 = ithb(SC23, SEMSC23)
 
 let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
-let hbsc = (ithb0; [SC0]) | (ithb1; [SC1]) | (ithb2; [SC2]) | (ithb3; [SC3])
 let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
 let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
               (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
@@ -187,17 +184,23 @@ let avwghb = swg & (obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | 
 let avqfhb = sqf & (obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3))
 let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3; ithb3)
 
+let ascom = mutordatom & (co | rf | fr)
+
+// TODO: Restrict to host events for cleaner edges
+let hb = (ssw | schbsc | schbsca | ascom)+
+let hhb = hb?; ssw; hb?
+
 let locordh = loc & (
     (IW * (M \ IW)) |
-    ([R]; ssw+; [R | W]) |
-    ([W]; schb; [AVDEVICE]; hbsc; [W]) |
-    ([W]; schb; [AVDEVICE]; hhb; [VISDEVICE]; hbsc; [R]))
+    ([R]; hhb; [R | W]) |
+    ([W]; hhb; [AVDEVICE]; hhb; [W]) |
+    ([W]; hhb; [AVDEVICE]; (po | hhb); [VISDEVICE]; hhb; [R]))
 
 let locordp = vloc & po
 
 let locordi = loc & (NONPRIV * NONPRIV) & (
     ([R]; (schbsc | schbsca); [R | W]) |
-    vloc & (po | (mutordatom & (co | rf | fr)) |
+    vloc & (po | ascom |
         ([W]; (avsghb | avwghb | avqfhb | avdvhb); [W]) |
         ([W]; avsghb; vissg; sgvis; [R]) |
         ([W]; avwghb; viswg; wgvis; [R]) |
@@ -205,7 +208,7 @@ let locordi = loc & (NONPRIV * NONPRIV) & (
         ([W]; avdvhb; visdv; dvvis; [R])
     ))
 
-let locordd = ext & (([R]; locordi+; [W]) | (([W]; locordi; [W])*; ([W]; locordi)))
+let locordd = ext & (([R]; locordi+; [W]) | (([W]; locordi)*; [W]; locordi))
 let locord = locordh | (locordh?; (locordp | locordd))
 
 (* Constraints *)
