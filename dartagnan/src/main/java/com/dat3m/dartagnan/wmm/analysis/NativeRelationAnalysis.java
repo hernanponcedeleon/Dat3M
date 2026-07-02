@@ -65,8 +65,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final WmmAnalysis wmmAnalysis;
     protected final RelationEventDomains relationEventDomains;
     protected final Map<Relation, MutableKnowledge> knowledgeMap = new HashMap<>();
-    protected final IndexedSet<Event> allEvents;
-    protected final IndexedSet<Event> allVisibleEvents;
+    protected final IndexedDomain<Event> allEvents;
+    protected final IndexedDomain<Event> allVisibleEvents;
     protected final Map<Thread, Set<Event>> threadVisibleEvents = new HashMap<>();
     protected final Delta EMPTY;
     protected final IndexedEventGraph mutex;
@@ -80,10 +80,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         alias = context.requires(AliasAnalysis.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
         relationEventDomains = context.requires(RelationEventDomains.class);
-        allEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.ALL).newSet();
-        allVisibleEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.VISIBLE).newSet();
-        EMPTY = new Delta(new IndexedEventGraph(allEvents.domain()), new IndexedEventGraph(allEvents.domain()));
-        mutex = new IndexedEventGraph(allEvents.domain());
+        allEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.ALL);
+        allVisibleEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.VISIBLE);
+        EMPTY = new Delta(new IndexedEventGraph(allEvents), new IndexedEventGraph(allEvents));
+        mutex = new IndexedEventGraph(allEvents);
     }
 
     /**
@@ -118,16 +118,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     @Override
     public Knowledge computeComposition(EventGraph left, EventGraph right) {
         final IndexedDomain<Event> domain = left instanceof IndexedEventGraph g ? g.eventDomain(Dimension.DOMAIN)
-                : allEvents.domain();
+                : allEvents;
         final IndexedDomain<Event> range = right instanceof IndexedEventGraph g ? g.eventDomain(Dimension.RANGE)
-                : allEvents.domain();
+                : allEvents;
         return new LazyKnowledge(domain, range, (out, isMay) -> computeComposition(out, left, right, isMay));
     }
 
     @Override
     public Knowledge computeTransitiveClosure(EventGraph operand) {
         final IndexedEventGraph indexedOperand = operand instanceof IndexedEventGraph g ? g
-                : new IndexedEventGraph(allEvents.domain(), allEvents.domain(), operand);
+                : new IndexedEventGraph(allEvents, allEvents, operand);
         final IndexedDomain<Event> domain = indexedOperand.eventDomain(Dimension.DOMAIN);
         final IndexedDomain<Event> range = indexedOperand.eventDomain(Dimension.RANGE);
         return new LazyKnowledge(domain, range, (out, isMay)
@@ -355,10 +355,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     protected void initializeEventDomain() {
         for (Thread thread : task.getProgram().getThreads()) {
-            allEvents.addAll(thread.getEvents());
-            final Set<Event> visibleEvents = allVisibleEvents.domain().newSet(thread.getEventsWithAllTags(VISIBLE));
-            threadVisibleEvents.put(thread, visibleEvents);
-            allVisibleEvents.addAll(visibleEvents);
+            threadVisibleEvents.put(thread, allVisibleEvents.newSet(thread.getEventsWithAllTags(Tag.VISIBLE)));
         }
     }
 
@@ -505,11 +502,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final IndexedEventGraph must = newGraphForDefinition(def);
             final IndexedEventGraph may = newGraphWithDomain(must);
 
-            for (Event e1 : allVisibleEvents) {
+            for (Event e1 : allVisibleEvents.fullSet()) {
                 if (def.getDefinedRelation().isSet()) {
                     may.add(e1, e1);
                 } else {
-                    may.addRange(e1, allVisibleEvents);
+                    may.addRange(e1, allVisibleEvents.fullSet());
                 }
             }
 
@@ -522,7 +519,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final List<Thread> threads = program.getThreads();
             for (Thread thread : threads) {
                 final Set<Event> thisThread = threadVisibleEvents.get(thread);
-                final Set<Event> otherThread = SetUtil.difference(allVisibleEvents, thisThread);
+                final Set<Event> otherThread = SetUtil.difference(allVisibleEvents.fullSet(), thisThread);
                 // No test for `execMutuallyExclusive`, since that currently does not span across threads
                 for (Event e1 : thisThread) {
                     must.addRange(e1, otherThread);
@@ -557,7 +554,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public MutableKnowledge visitProgramOrder(ProgramOrder po) {
             final Filter type = po.getFilter();
-            final IndexedDomain<Event> eventDomain = (type.toString().equals(VISIBLE) ? allVisibleEvents : allEvents).domain();
+            final IndexedDomain<Event> eventDomain = type.toString().equals(VISIBLE) ? allVisibleEvents : allEvents;
             final IndexedEventGraph must = newGraphForDefinition(po);
             for (Thread thread : program.getThreads()) {
                 final List<Event> threadEvents = thread.getEvents().stream().filter(type::apply).toList();
@@ -976,8 +973,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private MutableKnowledge computeInternalDependencies(Set<UsageType> usageTypes) {
-            final IndexedEventGraph may = new IndexedEventGraph(allEvents.domain());
-            final IndexedEventGraph must = new IndexedEventGraph(allEvents.domain());
+            final IndexedEventGraph may = new IndexedEventGraph(allEvents);
+            final IndexedEventGraph must = new IndexedEventGraph(allEvents);
 
             for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 final ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(regReader);
@@ -1304,7 +1301,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 for (Event x : originIsLeft ? disabledDomain : k0.getMaySet().getDomain()) {
                     if (originIsLeft || !disjoint(disabledDomain, k1.getMaySet().getRange(x))) {
                         final Set<Event> zDisabled = newSet(k0.getMaySet().getRange(x));
-                        final Set<Event> zWithAlternatives = allEvents.domain().newSet();
+                        final Set<Event> zWithAlternatives = allEvents.newSet();
                         for (Event y : k1.getMaySet().getRange(x)) {
                             zWithAlternatives.addAll(k2.getMaySet().getRange(y));
                         }
@@ -1377,11 +1374,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         x -> disabledDomain.contains(x) || !SetUtil.disjoint(disabledDomain, may0.getRange(x)));
                 for (Event x : xSet) {
                     final Set<Event> disableX = newSet(may0.getRange(x));
-                    Set<Event> ySet = allEvents.domain().newSet();
+                    Set<Event> ySet = allEvents.newSet();
                     ySet.add(x);
                     while (!disableX.isEmpty() && !ySet.isEmpty()) {
                         EventGraph graph = k1.getMaySet();
-                        final Set<Event> zSet = allEvents.domain().newSet();
+                        final Set<Event> zSet = allEvents.newSet();
                         for (Event y : ySet) {
                             zSet.addAll(graph.getRange(y));
                         }

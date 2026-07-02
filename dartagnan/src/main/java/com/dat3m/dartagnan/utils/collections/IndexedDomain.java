@@ -12,11 +12,18 @@ public final class IndexedDomain<E> {
     final E[] elements;
     final int[] index;
     final Map<IndexedDomain<?>, Boolean> compatibilityMap = new HashMap<>();
+    final IndexedSet<E> emptySet;
+    final IndexedSet<E> fullSet;
 
     @SuppressWarnings("unchecked")
     public IndexedDomain(Collection<E> elements) {
         this.elements = (E[]) elements.toArray();
         index = newIndex(this.elements);
+        emptySet = new IndexedSet<>(this, null, -1, false);
+        final long[] member = newBits(this.elements.length);
+        Arrays.fill(member, ~0L);
+        member[member.length - 1] &= ~0L >> (64 - (this.elements.length % 64));
+        fullSet = new IndexedSet<>(this, member, -1, false);
     }
 
     public int size() {
@@ -32,15 +39,19 @@ public final class IndexedDomain<E> {
     }
 
     public IndexedSet<E> emptySet() {
-        return new IndexedSet<>(this).toUnmodifiableCopy();
+        return emptySet;
+    }
+
+    public IndexedSet<E> fullSet() {
+        return fullSet;
     }
 
     public IndexedSet<E> newSet() {
-        return new IndexedSet<>(this);
+        return new IndexedSet<>(this, null, -1, true);
     }
 
     public IndexedSet<E> newSet(Collection<? extends E> original) {
-        final IndexedSet<E> copy = new IndexedSet<>(this);
+        final IndexedSet<E> copy = new IndexedSet<>(this, null, -1, true);
         copy.addAll(original);
         return copy;
     }
@@ -79,6 +90,10 @@ public final class IndexedDomain<E> {
             }
         }
         return true;
+    }
+
+    static long[] newBits(int length) {
+        return new long[1 + (length - 1) / 64];
     }
 
     static <E> int indexOf(E[] domain, int[] index, Object key) {

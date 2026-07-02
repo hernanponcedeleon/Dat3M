@@ -38,11 +38,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         this.memberMayBeEmpty = original.memberMayBeEmpty;
     }
 
-    IndexedSet(IndexedDomain<E> domain) {
-        this(domain, null, -1, true);
-    }
-
-    private IndexedSet(IndexedDomain<E> domain, long[] member, int loneMember, boolean modifiable) {
+    IndexedSet(IndexedDomain<E> domain, long[] member, int loneMember, boolean modifiable) {
         this.domain = domain;
         this.elements = domain.elements;
         this.index = domain.index;
@@ -58,6 +54,10 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     public IndexedSet<E> toUnmodifiableCopy() {
         copyOnWrite = member != null;
         return new IndexedSet<>(domain, member, loneMember, false);
+    }
+
+    public boolean test(int index) {
+        return test(elements.length, member, loneMember, index);
     }
 
     public boolean exchange(int index, boolean value) {
@@ -242,7 +242,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             checkObjectInDomain(otherSet.loneMember < elements.length, otherSet.elements, otherSet.loneMember);
             return otherSet.loneMember != -1 && exchange(otherSet.loneMember, true);
         }
-        final var add = otherSet != null ? otherSet.member : newBits(elements.length);
+        final var add = otherSet != null ? otherSet.member : IndexedDomain.newBits(elements.length);
         for (Object element : otherSet != null ? Set.of() : other) {
             final int index = IndexedDomain.indexOf(elements, this.index, element);
             checkObjectInDomain(index != -1, element, -1);
@@ -411,7 +411,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     private void ensureMemberArray() {
         if (member == null) {
-            member = newBits(elements.length);
+            member = IndexedDomain.newBits(elements.length);
             memberMayBeEmpty = loneMember == -1;
             member[loneMember / 64] |= loneMember == -1 ? 0L : 1L << (loneMember % 64);
             loneMember = -1;
@@ -425,10 +425,6 @@ public final class IndexedSet<E> extends AbstractSet<E> {
             member = null;
         }
         memberMayBeEmpty = false;
-    }
-
-    private static long[] newBits(int length) {
-        return new long[1 + (length - 1) / 64];
     }
 
     private static int lowestBit(long[] bits) {
