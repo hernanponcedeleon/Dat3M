@@ -46,9 +46,10 @@ public class SetUtil {
         if (left instanceof IndexedSet<T> || right instanceof IndexedSet<T>) {
             return IndexedSet.intersection(left, right);
         }
-        final Collection<T> filter = left.size() < right.size() ? right : left;
         final Set<T> intersection = new HashSet<>();
-        for (T element : filter == right ? left : right) {
+        final Collection<T> filter = left.size() < right.size() ? right : left;
+        final Collection<T> iterator = filter == right ? left : right;
+        for (T element : iterator) {
             if (filter.contains(element)) {
                 intersection.add(element);
             }

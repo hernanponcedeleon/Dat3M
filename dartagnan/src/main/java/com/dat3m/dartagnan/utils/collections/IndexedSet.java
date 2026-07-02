@@ -34,21 +34,21 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     public IndexedSet(IndexedSet<E> original) {
         this(original.domain, original.member, original.loneMember, true);
-        original.copyOnWrite = copyOnWrite = original.member != null;
-        memberMayBeEmpty = original.memberMayBeEmpty;
+        original.copyOnWrite = this.copyOnWrite = original.member != null;
+        this.memberMayBeEmpty = original.memberMayBeEmpty;
     }
 
     IndexedSet(IndexedDomain<E> domain) {
         this(domain, null, -1, true);
     }
 
-    private IndexedSet(IndexedDomain<E> d, long[] m, int l, boolean f) {
-        domain = d;
-        elements = d.elements;
-        index = d.index;
-        member = m;
-        loneMember = l;
-        modifiable = f;
+    private IndexedSet(IndexedDomain<E> domain, long[] member, int loneMember, boolean modifiable) {
+        this.domain = domain;
+        this.elements = domain.elements;
+        this.index = domain.index;
+        this.member = member;
+        this.loneMember = loneMember;
+        this.modifiable = modifiable;
     }
 
     public IndexedDomain<E> domain() {
@@ -83,6 +83,7 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         final long mask = 1L << (index % 64);
         final boolean change = value == ((member[index / 64] & mask) == 0L);
         member[index / 64] ^= change ? mask : 0L;
+        memberMayBeEmpty = change ? !value : memberMayBeEmpty;
         return change != value;
     }
 
@@ -136,8 +137,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean contains(Object o) {
-        final int i = IndexedDomain.indexOf(elements, index, o);
-        return i != -1 && test(elements.length, member, loneMember, i);
+        final int index = IndexedDomain.indexOf(elements, this.index, o);
+        return index != -1 && test(elements.length, member, loneMember, index);
     }
 
     @Override
@@ -147,8 +148,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
                 return o.loneMember == -1 || test(elements.length, member, loneMember, o.loneMember);
             }
             if (member != null) {
-                for (int i = 0; i < member.length; i++) {
-                    if (0L != (~member[i] & o.member[i])) {
+                for (int pageindex = 0; pageindex < member.length; pageindex++) {
+                    if (0L != (~member[pageindex] & o.member[pageindex])) {
                         return false;
                     }
                 }
@@ -222,17 +223,15 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean add(E element) {
-        final int i = IndexedDomain.indexOf(elements, index, element);
-        checkObjectInDomain(i != -1, element, -1);
-        return !exchange(i, true);
+        final int index = IndexedDomain.indexOf(elements, this.index, element);
+        checkObjectInDomain(index != -1, element, -1);
+        return !exchange(index, true);
     }
 
     @Override
     public boolean remove(Object element) {
-        final int i = IndexedDomain.indexOf(elements, index, element);
-        final boolean changed = i != -1 && exchange(i, false);
-        memberMayBeEmpty |= changed;
-        return changed;
+        final int index = IndexedDomain.indexOf(elements, this.index, element);
+        return index != -1 && exchange(index, false);
     }
 
     @Override
@@ -245,14 +244,14 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         }
         final var add = otherSet != null ? otherSet.member : newBits(elements.length);
         for (Object element : otherSet != null ? Set.of() : other) {
-            final int i = IndexedDomain.indexOf(elements, index, element);
-            checkObjectInDomain(i != -1, element, -1);
-            add[i / 64] |= 1L << (i % 64);
+            final int index = IndexedDomain.indexOf(elements, this.index, element);
+            checkObjectInDomain(index != -1, element, -1);
+            add[index / 64] |= 1L << (index % 64);
         }
         // Check if there is at least one element to add.
         boolean empty = true;
-        for (long block : add) {
-            if (block != 0L) {
+        for (long page : add) {
+            if (page != 0L) {
                 empty = false;
                 break;
             }
@@ -262,9 +261,9 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         }
         if (otherSet != null && elements.length < otherSet.elements.length) {
             // Check if add contains at least one element that does not fit in elements.
-            for (int i = add.length - 1; i >= 0; i--) {
-                if (add[i] != 0L) {
-                    int lastIndex = 64 * i + 63 - Long.numberOfLeadingZeros(add[i]);
+            for (int pageindex = add.length - 1; pageindex >= 0; pageindex--) {
+                if (add[pageindex] != 0L) {
+                    int lastIndex = 64 * pageindex + 63 - Long.numberOfLeadingZeros(add[pageindex]);
                     checkObjectInDomain(lastIndex < elements.length, otherSet.elements, lastIndex);
                     break;
                 }
@@ -350,8 +349,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
                 changed |= changes != 0L;
             }
             if (domain != o.domain) {
-                for (int i = length; !changed && i < member.length; i++) {
-                    changed = member[i] != 0L;
+                for (int pageindex = length; !changed && pageindex < member.length; pageindex++) {
+                    changed = member[pageindex] != 0L;
                 }
                 Arrays.fill(member, length, member.length, 0L);
             }
@@ -371,19 +370,19 @@ public final class IndexedSet<E> extends AbstractSet<E> {
         }
         checkCopyOnWrite();
         boolean changed = false;
-        for (int blockindex = 0; blockindex < member.length; blockindex++) {
-            long cache = member[blockindex];
-            if (cache != 0L) {
+        for (int pageindex = 0; pageindex < member.length; pageindex++) {
+            long page = member[pageindex];
+            if (page != 0L) {
                 long changes = 0L;
-                final long finalMask = blockindex != member.length - 1 ? 0L : 2L << ((63 + elements.length) % 64);
-                int i = blockindex * 64;
-                for (long mask = 1L; mask != finalMask; mask <<= 1) {
-                    if ((cache & mask) != 0L && filter.test(elements[i])) {
+                while (page != 0L) {
+                    final int next = Long.numberOfTrailingZeros(page);
+                    final long mask = 1L << next;
+                    page &= ~mask;
+                    if (filter.test(elements[64 * pageindex + next])) {
                         changes |= mask;
                     }
-                    i++;
                 }
-                member[blockindex] ^= changes;
+                member[pageindex] ^= changes;
                 changed |= changes != 0L;
             }
         }
@@ -434,11 +433,11 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     private static int lowestBit(long[] bits) {
         int lowestBit = 0;
-        for (long block : bits) {
-            if (block == 0L) {
+        for (long page : bits) {
+            if (page == 0L) {
                 lowestBit += 64;
             } else {
-                lowestBit += Long.numberOfTrailingZeros(block);
+                lowestBit += Long.numberOfTrailingZeros(page);
                 break;
             }
         }
@@ -447,8 +446,8 @@ public final class IndexedSet<E> extends AbstractSet<E> {
 
     private static int bitCount(long[] bits) {
         int count = 0;
-        for (long block : bits) {
-            count += Long.bitCount(block);
+        for (long page : bits) {
+            count += Long.bitCount(page);
         }
         return count;
     }

@@ -18,10 +18,19 @@ public class IndexedSetTest {
         }
         final var dom = new IndexedDomain<>(Arrays.asList(objects));
         // Test the empty set.
-        final IndexedSet<?> empty = dom.newSet();
-        assertTrue(empty.isEmpty());
-        assertEquals(0, empty.size());
-        assertFalse(empty.iterator().hasNext());
+        testEmptySetSemantics(dom.emptySet());
+        testEmptySetSemantics(dom.newSet());
+        testEmptySetSemantics(dom.newSet(Set.of()));
+        // Test a new set.
+        final IndexedSet<?> soonEmpty = dom.newSet();
+        soonEmpty.exchange(0, true);
+        soonEmpty.exchange(0, false);
+        testEmptySetSemantics(soonEmpty);
+        soonEmpty.exchange(0, true);
+        soonEmpty.exchange(1, true);
+        soonEmpty.exchange(0, false);
+        soonEmpty.exchange(1, false);
+        testEmptySetSemantics(soonEmpty);
         // Test a filled set.
         final IndexedSet<?> some = dom.newSet();
         for (int i = 1; i < objects.length; i += i) {
@@ -47,5 +56,12 @@ public class IndexedSetTest {
         for (Object o : objects) {
             assertNotEquals(some.contains(o), someComplement.contains(o));
         }
+    }
+
+    private void testEmptySetSemantics(Set<?> set) {
+        assertTrue(set.isEmpty());
+        assertEquals(0, set.size());
+        assertFalse(set.iterator().hasNext());
+        assertTrue(set.containsAll(Set.of()));
     }
 }
