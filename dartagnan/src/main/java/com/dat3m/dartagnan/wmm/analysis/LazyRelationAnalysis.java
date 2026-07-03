@@ -1,24 +1,26 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static java.util.stream.Collectors.toSet;
 
 public class LazyRelationAnalysis extends NativeRelationAnalysis {
@@ -37,7 +39,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                     "LazyRelationAnalysis does not support recursive relations yet. " +
                             "Use another relation analysis method.");
         }
-        this.lazyInitializer = new LazyInitializer();
+        this.lazyInitializer = new LazyInitializer(task, context);
         this.nativeInitializer = super.getInitializer();
     }
 
@@ -57,7 +59,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
     @Override
     public void run() {
-        initializeEventDomain();
         for (Relation relation : task.getMemoryModel().getRelations()) {
             lazyKnowledgeMap.put(relation, lazyInitializer.getKnowledge(relation));
         }
@@ -74,8 +75,19 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
     }
 
     private class LazyInitializer implements Definition.Visitor<RelationAnalysis.Knowledge> {
+        private final Program program;
+        private final ExecutionAnalysis exec;
+        private final AliasAnalysis alias;
+        private final ReachingDefinitionsAnalysis definitions;
+        private final Set<Event> visibleEvents;
 
-        public LazyInitializer() {}
+        public LazyInitializer(VerificationTask task, Context context) {
+            this.program = task.getProgram();
+            this.exec = context.requires(ExecutionAnalysis.class);
+            this.alias = context.requires(AliasAnalysis.class);
+            this.definitions = context.requires(ReachingDefinitionsAnalysis.class);
+            this.visibleEvents = new HashSet<>(program.getThreadEventsWithAllTags(VISIBLE));
+        }
 
         public RelationAnalysis.Knowledge getKnowledge(Relation relation) {
             if (!lazyKnowledgeMap.containsKey(relation)) {
@@ -87,7 +99,8 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
         @Override
         public RelationAnalysis.Knowledge visitDefinition(Definition definition) {
-            if (definition.getConstrainedRelations().size() > 1) {
+            if (definition.getConstrainedRelations().size() > 1 && !(definition instanceof Projection)
+                    && !(definition instanceof Composition) && !(definition instanceof TransitiveClosure)) {
                 throw new UnsupportedOperationException(
                         "Unsupported relation %s.".formatted(definition.getDefinedRelation().getNameOrTerm()));
             }
@@ -102,7 +115,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitFree(Free definition) {
             long start = System.currentTimeMillis();
-            EventGraph may = new LazyEventGraph(allVisibleEvents, allVisibleEvents, (e1, e2) -> true);
+            EventGraph may = new LazyEventGraph(visibleEvents, visibleEvents, (e1, e2) -> true);
             EventGraph must = ImmutableEventGraph.empty();
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
@@ -143,7 +156,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
         @Override
         public RelationAnalysis.Knowledge visitTagSet(TagSet definition) {
-            final Set<Event> domain = Set.copyOf(task.getProgram().getThreadEventsWithAllTags(definition.getTag()));
+            final Set<Event> domain = Set.copyOf(program.getThreadEventsWithAllTags(definition.getTag()));
             final EventGraph must = new LazyEventGraph(domain, domain, Object::equals);
             return new RelationAnalysis.Knowledge(must, must);
         }
@@ -151,7 +164,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitInternal(Internal definition) {
             long start = System.currentTimeMillis();
-            EventGraph must = new LazyEventGraph(allVisibleEvents, allVisibleEvents,
+            EventGraph must = new LazyEventGraph(visibleEvents, visibleEvents,
                     (e1, e2) -> e1.getThread().equals(e2.getThread())
                             && !exec.areMutuallyExclusive(e1, e2));
             time(definition, start, System.currentTimeMillis());
@@ -161,7 +174,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitExternal(External definition) {
             long start = System.currentTimeMillis();
-            EventGraph must = new LazyEventGraph(allVisibleEvents, allVisibleEvents,
+            EventGraph must = new LazyEventGraph(visibleEvents, visibleEvents,
                     (e1, e2) -> !e1.getThread().equals(e2.getThread()));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(must, must);
@@ -170,12 +183,12 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitProgramOrder(ProgramOrder definition) {
             long start = System.currentTimeMillis();
-            Set<Event> domain = allVisibleEvents.stream().filter(e1 -> allVisibleEvents.stream()
+            Set<Event> domain = visibleEvents.stream().filter(e1 -> visibleEvents.stream()
                             .anyMatch(e2 -> e1.getThread().equals(e2.getThread())
                                     && e1.getGlobalId() < e2.getGlobalId()
                                     && !exec.areMutuallyExclusive(e1, e2)))
                     .collect(toSet());
-            Set<Event> range = allVisibleEvents.stream().filter(e2 -> allVisibleEvents.stream()
+            Set<Event> range = visibleEvents.stream().filter(e2 -> visibleEvents.stream()
                             .anyMatch(e1 -> e1.getThread().equals(e2.getThread())
                                     && e1.getGlobalId() < e2.getGlobalId()
                                     && !exec.areMutuallyExclusive(e1, e2)))
@@ -231,58 +244,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             EventGraph must = ImmutableEventGraph.difference(knowledgeMinuend.getMustSet(), knowledgeSubtrahend.getMaySet());
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
-        }
-
-        @Override
-        public RelationAnalysis.Knowledge visitComposition(Composition definition) {
-            final RelationAnalysis.Knowledge left = getKnowledge(definition.getLeftOperand());
-            final RelationAnalysis.Knowledge right = getKnowledge(definition.getRightOperand());
-            final long start = System.currentTimeMillis();
-            final EventGraph may = computeComposition(left.getMaySet(), right.getMaySet()).getMaySet();
-            final EventGraph must = computeComposition(left.getMustSet(), right.getMustSet()).getMustSet();
-            time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(may, must);
-        }
-
-        @Override
-        public RelationAnalysis.Knowledge visitProjection(Projection definition) {
-            final RelationAnalysis.Knowledge operand = getKnowledge(definition.getOperand());
-            final long start = System.currentTimeMillis();
-            final EventGraph may = computeProjection(operand.getMaySet(), definition.getDimension(), false);
-            final var must = computeProjection(operand.getMustSet(), definition.getDimension(), true);
-            time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(may, must);
-        }
-
-        @Override
-        public RelationAnalysis.Knowledge visitTransitiveClosure(TransitiveClosure definition) {
-            final Knowledge operand = getKnowledge(definition.getOperand());
-            final long start = System.currentTimeMillis();
-            final EventGraph maySet = computeTransitiveClosure(operand.getMaySet()).getMaySet();
-            final EventGraph mustSet = computeTransitiveClosure(operand.getMustSet()).getMustSet();
-            time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(maySet, mustSet);
-        }
-
-        private EventGraph computeProjection(EventGraph operand, Dimension dimension, boolean must) {
-            final IndexedDomain<Event> eventDomain = eventDomain(operand, dimension);
-            final EventGraph directed = switch (dimension) {
-                case DOMAIN -> operand;
-                case RANGE -> operand.inverse();
-            };
-            final var projection = new IndexedEventGraph(eventDomain);
-            final IndexedEventGraph o = directed instanceof IndexedEventGraph g ? g
-                    : new IndexedEventGraph(eventDomain, eventDomain, directed);
-            for (Event e : o.getDomain()) {
-                if (must ? o.getRange(e).stream().anyMatch(ee -> exec.isImplied(e, ee)) : !o.getRange(e).isEmpty()) {
-                    projection.add(e, e);
-                }
-            }
-            return projection.toUnmodifiableCopy();
-        }
-
-        private IndexedDomain<Event> eventDomain(EventGraph graph, Dimension dimension) {
-            return graph instanceof IndexedEventGraph g ? g.eventDomain(dimension) : allEvents.domain();
         }
 
         private void time(Definition definition, long start, long end) {

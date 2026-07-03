@@ -154,8 +154,10 @@ public class RelationAnalysisTest {
 
         // Assert may and must sets are equal
         for (Relation relation : wmm.getRelations()) {
-            assertEquals(nativeRa.getKnowledge(relation).getMaySet(), lazyRa.getKnowledge(relation).getMaySet());
-            assertEquals(nativeRa.getKnowledge(relation).getMustSet(), lazyRa.getKnowledge(relation).getMustSet());
+            assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
+                    lazyRa.getKnowledge(relation).getMaySet());
+            assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
+                    lazyRa.getKnowledge(relation).getMustSet());
         }
     }
 

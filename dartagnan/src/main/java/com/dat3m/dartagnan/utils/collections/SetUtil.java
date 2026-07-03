@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.utils.collections;
 
-import com.google.common.collect.ImmutableSet;
-
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -22,10 +20,6 @@ public class SetUtil {
             return l.disjoint(r);
         }
         return Collections.disjoint(left, right);
-    }
-
-    public static <T> Set<T> copyOf(Collection<T> original) {
-        return original instanceof IndexedSet<T> s ? s.toUnmodifiableCopy() : ImmutableSet.copyOf(original);
     }
 
     public static <T> Set<T> union(Collection<T> left, Collection<T> right) {
