@@ -52,6 +52,9 @@ public final class IndexedSet<E> extends AbstractSet<E> {
     }
 
     public IndexedSet<E> toUnmodifiableCopy() {
+        if (!modifiable) {
+            return this;
+        }
         copyOnWrite = member != null;
         return new IndexedSet<>(domain, member, loneMember, false);
     }
