@@ -21,7 +21,7 @@ public final class IndexedDomain<E> {
         emptySet = new IndexedSet<>(this, null, -1, false);
         final long[] member = newBits(this.elements.length);
         Arrays.fill(member, ~0L);
-        member[member.length - 1] &= ~0L >> (64 - (this.elements.length % 64));
+        member[member.length - 1] &= ~0L >>> (64 - (this.elements.length % 64));
         fullSet = new IndexedSet<>(this, member, -1, false);
     }
 
