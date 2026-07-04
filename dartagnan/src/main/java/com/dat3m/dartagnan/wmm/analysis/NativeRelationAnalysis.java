@@ -743,9 +743,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     final int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
-                    final Set<Event> storeMutex = execExcluding(store);
                     final List<Event> candidates = events.subList(start, end).stream()
-                            .filter(e -> !storeMutex.contains(e))
+                            .filter(e -> !exec.areMutuallyExclusive(store, e))
                             .toList();
                     final int size = candidates.size();
                     for (int i = 0; i < size; i++) {
