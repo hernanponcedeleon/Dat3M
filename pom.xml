@@ -605,6 +605,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dylib</type>
+                    <scope>provided</scope>
                     <classifier>libz3-x64</classifier>
                 </dependency>
                 <dependency>
@@ -612,6 +613,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dylib</type>
+                    <scope>provided</scope>
                     <classifier>libz3java-x64</classifier>
                 </dependency>
             </dependencies>
@@ -675,6 +677,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dylib</type>
+                    <scope>provided</scope>
                     <classifier>libz3-arm64</classifier>
                 </dependency>
                 <dependency>
@@ -682,6 +685,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dylib</type>
+                    <scope>provided</scope>
                     <classifier>libz3java-arm64</classifier>
                 </dependency>
              </dependencies>
