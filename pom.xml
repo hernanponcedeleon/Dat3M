@@ -159,6 +159,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libz3-x64</classifier>
                 </dependency>
                 <dependency>
@@ -166,6 +167,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libz3java-x64</classifier>
                 </dependency>
 
@@ -183,6 +185,7 @@
                     <version>${bitwuzla.version}</version>
                     <classifier>libbitwuzlaj</classifier>
                     <type>so</type>
+                    <scope>provided</scope>
                 </dependency>
 
                 <!-- MathSAT5 dependencies -->
@@ -192,6 +195,7 @@
                     <version>${mathsat.version}</version>
                     <classifier>libmathsat5j</classifier>
                     <type>so</type>
+                    <scope>provided</scope>
                 </dependency>
 
                 <!-- Boolector dependencies -->
@@ -200,6 +204,7 @@
                     <artifactId>javasmt-solver-boolector</artifactId>
                     <version>${boolector.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libboolector</classifier>
                 </dependency>
                 <dependency>
@@ -207,6 +212,7 @@
                     <artifactId>javasmt-solver-boolector</artifactId>
                     <version>${boolector.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libminisat</classifier>
                 </dependency>
                 <dependency>
@@ -214,6 +220,7 @@
                     <artifactId>javasmt-solver-boolector</artifactId>
                     <version>${boolector.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libpicosat</classifier>
                 </dependency>
 
@@ -229,6 +236,7 @@
                     <artifactId>javasmt-solver-cvc4</artifactId>
                     <version>${cvc4.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc4</classifier>
                 </dependency>
                 <dependency>
@@ -236,6 +244,7 @@
                     <artifactId>javasmt-solver-cvc4</artifactId>
                     <version>${cvc4.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc4jni</classifier>
                 </dependency>
                 <dependency>
@@ -243,6 +252,7 @@
                     <artifactId>javasmt-solver-cvc4</artifactId>
                     <version>${cvc4.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc4parser</classifier>
                 </dependency>
 
@@ -258,6 +268,7 @@
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc5</classifier>
                 </dependency>
                 <dependency>
@@ -265,6 +276,7 @@
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc5jni</classifier>
                 </dependency>
                 <dependency>
@@ -272,6 +284,7 @@
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libcvc5parser</classifier>
                 </dependency>
                 <dependency>
@@ -279,6 +292,7 @@
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libpoly</classifier>
                 </dependency>
                 <dependency>
@@ -286,6 +300,7 @@
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libpolyxx</classifier>
                 </dependency>
 
@@ -301,6 +316,7 @@
                     <artifactId>javasmt-solver-opensmt</artifactId>
                     <version>${opensmt.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libopensmt</classifier>
                 </dependency>
                 <dependency>
@@ -308,6 +324,7 @@
                     <artifactId>javasmt-solver-opensmt</artifactId>
                     <version>${opensmt.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libopensmtjava</classifier>
                 </dependency>
 
@@ -322,6 +339,7 @@
                     <artifactId>javasmt-solver-yices2</artifactId>
                     <version>${yices2.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libyices2j</classifier>
                 </dependency>
             </dependencies>
@@ -515,6 +533,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libz3-arm64</classifier>
                 </dependency>
                 <dependency>
@@ -522,6 +541,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>so</type>
+                    <scope>provided</scope>
                     <classifier>libz3java-arm64</classifier>
                 </dependency>
             </dependencies>
