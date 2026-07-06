@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -275,7 +276,7 @@ public class ExecutionGraph {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
         } else if (relClass == Projection.class) {
             final RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
-            final boolean dom = ((Projection) relation.getDefinition()).getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = ((Projection) relation.getDefinition()).getDimension() == Dimension.DOMAIN;
             final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
             set = new ProjectionSet(g, dim);
         } else if (relClass == Union.class || relClass == Intersection.class) {

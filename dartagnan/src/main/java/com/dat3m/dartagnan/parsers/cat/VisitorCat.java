@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
 import org.slf4j.Logger;
@@ -334,14 +335,14 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Relation visitExprDomain(ExprDomainContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Projection(r0, r1, Projection.Dimension.DOMAIN));
+        return addDefinition(new Projection(r0, r1, Dimension.DOMAIN));
     }
 
     @Override
     public Relation visitExprRange(ExprRangeContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Projection(r0, r1, Projection.Dimension.RANGE));
+        return addDefinition(new Projection(r0, r1, Dimension.RANGE));
     }
 
     @Override

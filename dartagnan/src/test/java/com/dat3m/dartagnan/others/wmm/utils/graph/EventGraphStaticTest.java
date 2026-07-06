@@ -2,10 +2,12 @@ package com.dat3m.dartagnan.others.wmm.utils.graph;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.junit.Test;
@@ -14,13 +16,11 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -32,6 +32,10 @@ public class EventGraphStaticTest {
     private final Class<?> resultClass;
     private final Class<?> leftClass;
     private final Class<?> rightClass;
+    private final Event e1 = new Skip();
+    private final Event e2 = new Skip();
+    private final Event e3 = new Skip();
+    private final IndexedDomain<Event> eventDomain = new IndexedDomain<>(List.of(e1, e2, e3));
 
     public EventGraphStaticTest(Class<?> resultClass, Class<?> leftClass, Class<?> rightClass) {
         this.resultClass = resultClass;
@@ -41,76 +45,30 @@ public class EventGraphStaticTest {
 
     @Parameterized.Parameters
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][]{
-                // resultClass, leftClass, rightClass
-                {MapEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {MapEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {LazyEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {LazyEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {ImmutableMapEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableMapEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {MutableEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {MutableEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {ImmutableEventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {ImmutableEventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-
-                {EventGraph.class, MapEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, MapEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, MapEventGraph.class, LazyEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, ImmutableMapEventGraph.class, LazyEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, MapEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, ImmutableMapEventGraph.class},
-                {EventGraph.class, LazyEventGraph.class, LazyEventGraph.class},
-        });
+        final List<Object[]> data = new ArrayList<>();
+        final List<Object> resultClasses = List.of(MapEventGraph.class, LazyEventGraph.class,
+                ImmutableMapEventGraph.class, MutableEventGraph.class, ImmutableEventGraph.class, EventGraph.class);
+        final List<Object> operandClasses = List.of(MapEventGraph.class, ImmutableMapEventGraph.class,
+                LazyEventGraph.class, IndexedEventGraph.class);
+        for (Object resultClass : resultClasses) {
+            for (Object leftClass : operandClasses) {
+                for (Object rightClass : operandClasses) {
+                    data.add(new Object[]{resultClass, leftClass, rightClass});
+                }
+            }
+        }
+        for (Object rightClass : operandClasses) {
+            data.add(new Object[]{IndexedEventGraph.class, IndexedEventGraph.class, rightClass});
+        }
+        return data;
     }
 
     @Test
     public void testUnionDisjoint() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -125,7 +83,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "union").apply(new EventGraph[]{left, right});
+        EventGraph result = union(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -158,9 +116,9 @@ public class EventGraphStaticTest {
     @Test
     public void testUnionPartiallyOverlapping() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -174,7 +132,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "union").apply(new EventGraph[]{left, right});
+        EventGraph result = union(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -204,9 +162,9 @@ public class EventGraphStaticTest {
     @Test
     public void testUnionEqual() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -221,7 +179,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "union").apply(new EventGraph[]{left, right});
+        EventGraph result = union(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -251,9 +209,9 @@ public class EventGraphStaticTest {
     @Test
     public void testUnionLeftEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of());
 
@@ -264,7 +222,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "union").apply(new EventGraph[]{left, right});
+        EventGraph result = union(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -291,9 +249,9 @@ public class EventGraphStaticTest {
     @Test
     public void testUnionRightEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -304,7 +262,7 @@ public class EventGraphStaticTest {
         EventGraph right = makeEventGraph(rightClass, Map.of());
 
         // when
-        EventGraph result = getFunction(resultClass, "union").apply(new EventGraph[]{left, right});
+        EventGraph result = union(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -331,9 +289,9 @@ public class EventGraphStaticTest {
     @Test
     public void testIntersectionDisjoint() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -348,7 +306,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "intersection").apply(new EventGraph[]{left, right});
+        EventGraph result = intersection(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -375,9 +333,9 @@ public class EventGraphStaticTest {
     @Test
     public void testIntersectionPartiallyOverlapping() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -391,7 +349,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "intersection").apply(new EventGraph[]{left, right});
+        EventGraph result = intersection(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -418,9 +376,9 @@ public class EventGraphStaticTest {
     @Test
     public void testIntersectionEqual() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -435,7 +393,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "intersection").apply(new EventGraph[]{left, right});
+        EventGraph result = intersection(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -465,9 +423,9 @@ public class EventGraphStaticTest {
     @Test
     public void testIntersectionLeftEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of());
 
@@ -478,7 +436,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getFunction(resultClass, "intersection").apply(new EventGraph[]{left, right});
+        EventGraph result = intersection(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -502,9 +460,9 @@ public class EventGraphStaticTest {
     @Test
     public void testIntersectionRightEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -515,7 +473,7 @@ public class EventGraphStaticTest {
         EventGraph right = makeEventGraph(rightClass, Map.of());
 
         // when
-        EventGraph result = getFunction(resultClass, "intersection").apply(new EventGraph[]{left, right});
+        EventGraph result = intersection(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -539,9 +497,9 @@ public class EventGraphStaticTest {
     @Test
     public void testDifferenceDisjoint() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -556,7 +514,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getDifferenceFunction(resultClass).apply(left, right);
+        EventGraph result = difference(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -586,9 +544,9 @@ public class EventGraphStaticTest {
     @Test
     public void testDifferencePartiallyOverlapping() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -602,7 +560,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getDifferenceFunction(resultClass).apply(left, right);
+        EventGraph result = difference(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -630,9 +588,9 @@ public class EventGraphStaticTest {
     @Test
     public void testDifferenceEqual() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -647,7 +605,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getDifferenceFunction(resultClass).apply(left, right);
+        EventGraph result = difference(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -674,9 +632,9 @@ public class EventGraphStaticTest {
     @Test
     public void testDifferenceLeftEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of());
 
@@ -687,7 +645,7 @@ public class EventGraphStaticTest {
         ));
 
         // when
-        EventGraph result = getDifferenceFunction(resultClass).apply(left, right);
+        EventGraph result = difference(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -711,9 +669,9 @@ public class EventGraphStaticTest {
     @Test
     public void testDifferenceRightEmpty() {
         // given
-        Event e1 = new Skip();
-        Event e2 = new Skip();
-        Event e3 = new Skip();
+        Event e1 = this.e1;
+        Event e2 = this.e2;
+        Event e3 = this.e3;
 
         EventGraph left = makeEventGraph(leftClass, Map.of(
                 e1, Set.of(e2),
@@ -724,7 +682,7 @@ public class EventGraphStaticTest {
         EventGraph right = makeEventGraph(rightClass, Map.of());
 
         // when
-        EventGraph result = getDifferenceFunction(resultClass).apply(left, right);
+        EventGraph result = difference(resultClass, left, right);
 
         // then
         assertTrue(resultClass.isAssignableFrom(result.getClass()));
@@ -748,29 +706,35 @@ public class EventGraphStaticTest {
         assertEquals(Set.of(), right.getRange());
     }
 
-    private Function<EventGraph[], EventGraph> getFunction(Class<?> cls, String name) {
-        return (operands) -> {
-            try {
-                Method method = cls.getMethod(name, EventGraph[].class);
-                return (EventGraph) method.invoke(null, new Object[]{operands});
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
-        };
+    private EventGraph union(Class<?> cls, EventGraph... operands) {
+        final Class<?>[] parameterClasses = {EventGraph[].class};
+        return (EventGraph) invokeStatic(cls, "union", parameterClasses, (Object) operands);
     }
 
-    private BiFunction<EventGraph, EventGraph, EventGraph> getDifferenceFunction(Class<?> cls) {
-        return (left, right) -> {
-            try {
-                Method method = cls.getMethod("difference", EventGraph.class, EventGraph.class);
-                return (EventGraph) method.invoke(null, left, right);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
-        };
+    private EventGraph intersection(Class<?> cls, EventGraph... operands) {
+        final Class<?>[] parameterClasses = {EventGraph[].class};
+        return (EventGraph) invokeStatic(cls, "intersection", parameterClasses, (Object) operands);
+    }
+
+    private EventGraph difference(Class<?> cls, EventGraph minuend, EventGraph subtrahend) {
+        final Class<?>[] parameterClasses = {EventGraph.class, EventGraph.class};
+        return (EventGraph) invokeStatic(cls, "difference", parameterClasses, minuend, subtrahend);
+    }
+
+    private Object invokeStatic(Class<?> cls, String name, Class<?>[] parameterClasses, Object... parameters) {
+        try {
+            return cls.getMethod(name, parameterClasses).invoke(null, parameters);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private EventGraph makeEventGraph(Class<?> cls, Map<Event, Set<Event>> data) {
+        if (cls.isAssignableFrom(IndexedEventGraph.class)) {
+            final var g = new IndexedEventGraph(eventDomain, eventDomain);
+            data.forEach(g::addRange);
+            return g;
+        }
         if (cls.isAssignableFrom(MapEventGraph.class)) {
             return new MapEventGraph(data);
         }
