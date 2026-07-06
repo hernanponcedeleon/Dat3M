@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -105,6 +106,7 @@ public class AnalysisTest {
         MemoryAllocation.newInstance().run(program);
         Configuration config = Configuration.builder().setOption(REACHING_DEFINITIONS_METHOD, method.name()).build();
         Context context = Context.create();
+        context.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.uniform(ProgressModel.FAIR), context, config));
         final ReachingDefinitionsAnalysis rd = ReachingDefinitionsAnalysis.fromConfig(program, context, config);
@@ -642,6 +644,7 @@ public class AnalysisTest {
                 .build();
         ProcessingManager.fromConfig(configuration).run(program);
         Context analysisContext = Context.create();
+        analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.uniform(ProgressModel.FAIR), analysisContext, configuration));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
@@ -752,6 +755,7 @@ public class AnalysisTest {
         program.getThreadEvents(Init.class).forEach(Event::tryDelete);
 
         Context analysisContext = Context.create();
+        analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program,
                 ProgressModel.defaultHierarchy(), analysisContext, config));

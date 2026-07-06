@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -57,6 +58,7 @@ public final class Tearing implements ProgramProcessor {
         AliasAnalysis alias;
         try {
             final Context analysisContext = Context.create();
+            analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
             analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
             analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program,
                     ProgressModel.defaultHierarchy(), analysisContext, configuration));

@@ -32,6 +32,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -586,7 +587,7 @@ public class ExecutionModelManager {
         @Override
         public SetPredicate visitProjection(Projection projection) {
             final RelationGraph graph = getOrCreateGraph(projection.getOperand());
-            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
             return new ProjectionSet(graph, dim);
         }
