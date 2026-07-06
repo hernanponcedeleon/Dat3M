@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils.collections;
 
 import java.util.*;
 
-/// Used for compact sets, see `IndexedSet`.
+// Used for compact sets, see `IndexedSet`.
 // This implementation contains an immutable hash table to look up an index by element.
 public final class IndexedDomain<E> {
 

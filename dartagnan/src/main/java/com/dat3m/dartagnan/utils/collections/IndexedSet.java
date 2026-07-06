@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-/// Compact subset of a collection using a bitvector.
+// Compact subset of a collection using a bitvector.
 // This implementation has two forms:
 // - In its <i>array form</i>,
 //   it contains a bit array where the bit at position `domain.indexOf(e)` is set iff `e` is contained.

@@ -18,7 +18,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static java.util.Collections.disjoint;
 
-/// Estimates boundaries for the domains and ranges of relations.
+// Estimates boundaries for the domains and ranges of relations.
 // This analysis is used by NativeRelationAnalysis, where bit vectors are used as a compact representation.
 // Because invisible events are sparsely used there, the bit vectors only index visible events.
 // For the remaining sets, a different representation has to be used, e.g. HashSet.
