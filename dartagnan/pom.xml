@@ -18,6 +18,11 @@
             <version>${antlr.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.sosy-lab</groupId>
             <artifactId>java-smt</artifactId>
             <version>${java-smt.version}</version>

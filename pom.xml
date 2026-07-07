@@ -42,6 +42,7 @@
 
         <!-- 3rd party library versions -->
         <antlr.version>4.13.0</antlr.version>
+        <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
         <logback.version>1.4.14</logback.version>
         <native-maven-plugin.version>0.11.3</native-maven-plugin.version>
