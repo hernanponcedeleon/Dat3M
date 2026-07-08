@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
@@ -294,8 +293,7 @@ public class ExecutionModelManager {
         @Override
         public Void visitTagSet(TagSet tagSet) {
             SimpleSet rg = (SimpleSet) predicateCache.get(tagSet.getDefinedRelation());
-            executionModel.getEventModelsByFilter(Filter.byTag(tagSet.getTag()))
-                    .forEach(e -> rg.add(new Element(e.getId())));
+            executionModel.getEventModelsByTag(tagSet.getTag()).forEach(e -> rg.add(new Element(e.getId())));
             return null;
         }
 

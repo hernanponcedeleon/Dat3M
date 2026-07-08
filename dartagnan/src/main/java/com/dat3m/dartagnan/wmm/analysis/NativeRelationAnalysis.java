@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
@@ -549,12 +548,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitProgramOrder(ProgramOrder po) {
-            final Filter type = po.getFilter();
-            final IndexedDomain<Event> eventDomain = type.toString().equals(VISIBLE) ? allVisibleEvents : allEvents;
             final IndexedEventGraph must = newGraphForDefinition(po);
             for (Thread thread : program.getThreads()) {
-                final List<Event> threadEvents = thread.getEvents().stream().filter(type::apply).toList();
-                final Set<Event> remainingEvents = eventDomain.newSet(threadEvents);
+                final List<Event> threadEvents = thread.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
+                final Set<Event> remainingEvents = allVisibleEvents.newSet(threadEvents);
                 for (final Event e1 : threadEvents) {
                     remainingEvents.remove(e1);
                     must.addRange(e1, SetUtil.difference(remainingEvents, execExcluding(e1)));
@@ -562,7 +559,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 // Events of the same instruction are not program-ordered
                 for (InstructionBoundary end : thread.getEvents(InstructionBoundary.class)) {
                     final List<Event> transactionEvents = end.getInstructionEvents().stream()
-                            .filter(type::apply)
+                            .filter(e -> e.hasTag(VISIBLE))
                             .toList();
                     for (int i = 0; i < transactionEvents.size(); i++) {
                         final Event e2 = transactionEvents.get(i);

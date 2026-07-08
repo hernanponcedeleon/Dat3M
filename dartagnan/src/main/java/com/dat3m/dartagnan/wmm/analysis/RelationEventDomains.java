@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.filter.TagFilter;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
@@ -83,11 +82,6 @@ public final class RelationEventDomains {
         public Result visitAddressDependency(DirectAddressDependency addr) { return Result.YN; }
         @Override
         public Result visitControlDependency(DirectControlDependency ctrl) { return Result.YY; }
-        @Override
-        public Result visitProgramOrder(ProgramOrder po) {
-            // This could be more accurate.
-            return re(!(po.getFilter() instanceof TagFilter) || isInvisibleTag(po.getFilter().toString()));
-        }
         @Override
         public Result visitProjection(Projection proj) {
             final Set<Relation> relations = switch (proj.getDimension()) {
