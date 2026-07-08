@@ -748,6 +748,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dll</type>
+                    <scope>provided</scope>
                     <classifier>libz3-x64</classifier>
                 </dependency>
                 <dependency>
@@ -755,6 +756,7 @@
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
                     <type>dll</type>
+                    <scope>provided</scope>
                     <classifier>libz3java-x64</classifier>
                 </dependency>
 
@@ -764,6 +766,7 @@
                     <artifactId>javasmt-solver-bitwuzla</artifactId>
                     <version>${bitwuzla.version}</version>
                     <type>dll</type>
+                    <scope>provided</scope>
                     <classifier>libbitwuzlaj</classifier>
                 </dependency>
 
@@ -774,6 +777,7 @@
                     <version>${mathsat.version}</version>
                     <classifier>mathsat5j</classifier>
                     <type>dll</type>
+                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
@@ -781,6 +785,7 @@
                     <version>${mathsat.version}</version>
                     <classifier>mathsat</classifier>
                     <type>dll</type>
+                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
@@ -788,6 +793,7 @@
                     <version>${mathsat.version}</version>
                     <classifier>mpir</classifier>
                     <type>dll</type>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
             <build>
