@@ -55,9 +55,9 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <noFallback>true</noFallback>
                         <buildArgs>
                             <buildArg>-Dlogback.statusListenerClass=</buildArg>
+                            <buildArg>--no-fallback</buildArg>
                         </buildArgs>
                     </configuration>
                 </plugin>
