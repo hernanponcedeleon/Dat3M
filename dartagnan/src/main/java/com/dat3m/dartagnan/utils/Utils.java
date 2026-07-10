@@ -1,10 +1,21 @@
 package com.dat3m.dartagnan.utils;
 
+import com.google.common.io.Files;
+
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
 
     private Utils() {
+    }
+
+    public static String getNameWithoutExtension(File file) {
+        return getNameWithoutExtension(file.getName());
+    }
+
+    public static String getNameWithoutExtension(String fileName) {
+        return Files.getNameWithoutExtension(fileName);
     }
 
     public static String toTimeString(long milliseconds) {

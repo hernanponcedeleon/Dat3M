@@ -35,11 +35,10 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
 @Options
 public final class EncodingContext {
@@ -62,11 +61,6 @@ public final class EncodingContext {
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
     private boolean shouldMergeCFVars = true;
-
-    @Option(name = USE_INTEGERS,
-            description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
-            secure = true)
-    boolean useIntegers = false;
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
@@ -254,6 +248,11 @@ public final class EncodingContext {
     @FunctionalInterface
     public interface EdgeEncoder {
         BooleanFormula encode(Event e1, Event e2);
+
+        default EdgeEncoder withCache() {
+            final Map<Event, Map<Event, BooleanFormula>> cache = new HashMap<>();
+            return (x, y) -> cache.computeIfAbsent(x, k -> new HashMap<>()).computeIfAbsent(y, k2 -> encode(x, y));
+        }
     }
 
     public EdgeEncoder edge(Relation relation) {

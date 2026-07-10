@@ -140,9 +140,6 @@ public class PropertyEncoder {
         if (properties.contains(TRACKABILITY)) {
             trackableViolationEncodings.add(encodeTrackabilityViolations());
         }
-        if (properties.contains(DATARACEFREEDOM)) {
-            trackableViolationEncodings.add(encodeDataRaces());
-        }
         if (properties.contains(CAT_SPEC)) {
             trackableViolationEncodings.addAll(encodeCATSpecificationViolations());
         }
@@ -247,80 +244,6 @@ public class PropertyEncoder {
                 .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), wmmEncoder.encodeAxiomConsistency(ax)))
                 .toList();
         return specViolations;
-    }
-
-    // ======================================================================
-    // ======================================================================
-    // ============================ Data races ==============================
-    // ======================================================================
-    // ======================================================================
-
-    /*
-        This data race encoding is only valid for models with a defined "hb"-relation
-        Typically, this is only the case for SC/SVCOMP.
-        More general notions of data races (for e.g. weak models) can be defined as a flagged axiom
-        inside the .cat, just like C11 and LKMM do.
-    */
-    public TrackableFormula encodeDataRaces() {
-        logger.info("Encoding data races");
-
-        final Wmm memoryModel = this.memoryModel;
-        Preconditions.checkState(memoryModel.containsRelation("hb"),
-                "The provided WMM needs a happens-before relation 'hb' to encode data races.");
-        final Relation hbRelation = memoryModel.getRelation("hb");
-        Preconditions.checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax instanceof Acyclicity && ax.getRelation().equals(hbRelation)),
-                "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
-
-        final EncodingContext ctx = this.context;
-        final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-        final EncodingContext.EdgeEncoder hbEncoder = ctx.edge(hbRelation);
-        final Program program = this.program;
-        final AliasAnalysis alias = this.alias;
-
-        final Predicate<MemoryEvent> canRace = (m -> {
-            final MemoryOrder mo = m.getMetadata(MemoryOrder.class);
-            return mo == null || mo.value().equals(Tag.C11.NONATOMIC);
-        });
-
-        BooleanFormula hasRace = bmgr.makeFalse();
-        for(Thread t1 : program.getThreads()) {
-            for(Thread t2 : program.getThreads()) {
-                if(t1 == t2) {
-                    continue;
-                }
-                for (Event e1 : t1.getEvents()) {
-                    if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
-                        continue;
-                    }
-                    MemoryCoreEvent w = (MemoryCoreEvent)e1;
-                    if (!canRace.test(w)) {
-                        continue;
-                    }
-                    for(Event e2 : t2.getEvents()) {
-                        if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
-                            continue;
-                        }
-                        MemoryCoreEvent m = (MemoryCoreEvent)e2;
-                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
-                            continue;
-                        }
-
-                        final BooleanFormula isConflictingPair = bmgr.and(ctx.execution(m, w), ctx.sameAddress(m, w));
-                        final BooleanFormula isAdjacentInHb = bmgr.and(
-                                hbEncoder.encode(m, w), // In Hb
-                                imgr.equal( // Adjacent (We assume "w-hb->m" cause in a race the store can be assumed to be first)
-                                        ctx.clockVariable("hb", w),
-                                        imgr.add(ctx.clockVariable("hb", m), imgr.makeNumber(1))
-                                )
-                        );
-                        final BooleanFormula isRacingPair = bmgr.and(isConflictingPair, isAdjacentInHb);
-                        hasRace = bmgr.or(hasRace, isRacingPair);
-                    }
-                }
-            }
-        }
-        return new TrackableFormula(bmgr.not(DATARACEFREEDOM.getSMTVariable(ctx)), hasRace);
     }
 
     // ======================================================================

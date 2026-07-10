@@ -41,12 +41,6 @@ public class EBRTest extends AbstractCTest {
         return () -> Solvers.YICES2;
     }
 
-    @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder
-                .setOption(OptionNames.USE_INTEGERS, "false");
-    }
-
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{

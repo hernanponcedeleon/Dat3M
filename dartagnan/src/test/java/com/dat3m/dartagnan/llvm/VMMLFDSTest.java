@@ -31,11 +31,6 @@ public class VMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.USE_INTEGERS, "false");
-    }
-
-    @Override
     protected Provider<String> getProgramPathProvider() {
         return () -> getTestResourcePath("lfds/" + name + ".ll");
     }

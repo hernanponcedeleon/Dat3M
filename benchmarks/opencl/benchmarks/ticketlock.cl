@@ -1,4 +1,13 @@
+// Currently, clspv inserts Coherent decorations only if accesses are separated
+// by a global control barrier, ignoring release-acquire synchronization.
+// To work around this, we manually insert Coherent decoration for variable 'x'
+// before upgrading the memory model.
+
 // clspv ticketlock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// spirv-dis a.spv > ticketlock.spvasm
+// Add 'OpDecorate %19 Coherent' (id might be different depending on clspv version)
+// spirv-as ticketlock.spvasm -o a.spv
+// spirv-opt --upgrade-memory-model a.spv -o a.spv
 // spirv-dis a.spv > ticketlock.spvasm
 
 #ifdef ACQ2RX
@@ -36,4 +45,4 @@ __kernel void mutex_test(global atomic_uint* owner, global atomic_uint* next, gl
     *x = a + 1;
     unlock(owner);
     A[get_global_id(0)] = a;
-} 
+}

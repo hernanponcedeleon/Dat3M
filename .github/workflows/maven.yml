@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 0 * * 4'  # Run weekly
+    - cron: '0 0 * * 5'  # Run weekly
   workflow_dispatch:
 
 jobs:
@@ -47,9 +47,6 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
-      - name: Set DAT3M_OUTPUT
-        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
-
       - name: Asm tests
         run: mvn test -Dtest="com/dat3m/dartagnan/asm/**/*" -f dartagnan/pom.xml
 
@@ -72,9 +69,6 @@ jobs:
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
-      - name: Set DAT3M_OUTPUT
-        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
-
       - name: Litmus tests
         run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*" -f dartagnan/pom.xml
 
@@ -95,9 +89,6 @@ jobs:
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
-
-      - name: Set DAT3M_OUTPUT
-        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: LLVM tests
         run: mvn test -Dtest="com/dat3m/dartagnan/llvm/**/*" -f dartagnan/pom.xml
@@ -123,6 +114,15 @@ jobs:
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
+      - name: Create Output Directory
+        run: mkdir -p "$DAT3M_OUTPUT"
+
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Build jar file # used by some unit tests
+        run: mvn clean install -DskipTests
+
       - name: Other tests
         run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
 
@@ -146,9 +146,6 @@ jobs:
 
       - name: Set DAT3M_HOME
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
-
-      - name: Set DAT3M_OUTPUT
-        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: SPIRV tests
         run: mvn test -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
@@ -184,8 +181,17 @@ jobs:
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
+      - name: Create Output Directory
+        run: mkdir -p "$DAT3M_OUTPUT"
+
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Build jar file # used by some unit tests
+        run: mvn clean install -DskipTests
+
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -Pnative install
+        run: mvn --batch-mode --update-snapshots -Pnative test
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile

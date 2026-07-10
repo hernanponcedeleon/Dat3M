@@ -17,7 +17,7 @@ public class ParserCat {
     private final Path includePath;
 
     public ParserCat() {
-        includePath = Path.of(GlobalSettings.getCatDirectory());
+        includePath = GlobalSettings.getCatDirectory();
     }
 
     public ParserCat(Path includePath) {

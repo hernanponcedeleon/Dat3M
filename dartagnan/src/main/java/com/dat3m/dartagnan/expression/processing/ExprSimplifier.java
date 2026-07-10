@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.expression.processing;
 
 
-import com.dat3m.dartagnan.expression.BinaryExpression;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionKind;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
@@ -17,9 +13,11 @@ import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Preconditions;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import scala.Int;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -29,7 +27,7 @@ public class ExprSimplifier extends ExprTransformer {
     // If set to "false", the simplifier will not destroy register dependencies, i.e.,
     // it will maintain "expr.getRegs() == simplified(expr).getRegs()".
     // For example, "0*r" will not get simplified to "0";
-    private final boolean aggressive;
+    protected boolean aggressive;
 
     public ExprSimplifier(boolean aggressive) {
         this.aggressive = aggressive;
@@ -59,6 +57,34 @@ public class ExprSimplifier extends ExprTransformer {
         ).accept(this);
 
         return hoistedIte;
+    }
+
+    // Tries to push unary operations into ITE expressions.
+    private Expression tryGeneralRewrite(UnaryExpression expression) {
+        final Expression operand = expression.getOperand().accept(this);
+        if (!(operand instanceof ITEExpr ite)) {
+            return null;
+        }
+
+        final ExpressionKind op = expression.getKind();
+        if (op instanceof BoolUnaryOp || op instanceof IntUnaryOp || op instanceof FloatUnaryOp) {
+            // ------- Standard unary expressions -------
+            return expressions.makeITE(
+                    ite.getCondition(),
+                    expressions.makeUnary(expression.getKind(), ite.getTrueCase()),
+                    expressions.makeUnary(expression.getKind(), ite.getFalseCase())
+            ).accept(this);
+        } else if (expression instanceof IntSizeCast cast) {
+            // ------- Integer casts -------
+            return expressions.makeITE(
+                    ite.getCondition(),
+                    expressions.makeIntegerCast(ite.getTrueCase(), cast.getTargetType(), cast.preservesSign()),
+                    expressions.makeIntegerCast(ite.getFalseCase(), cast.getTargetType(), cast.preservesSign())
+            ).accept(this);
+        } else {
+            return null;
+        }
+
     }
 
     @Override
@@ -171,6 +197,20 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeValue(cmpResult);
         }
 
+        // Case:
+        //    (1) ext(x) cmp ext(y)  <=>  x cmp' y  (if size(x)==size(y) and ext==zext implies cmp'=unsigned(cmp))
+        //    (2) c' = ext(c) for constants of small size
+        // Result:
+        //     ext(x) cmp c' <=> ext(x) cmp ext(c) <=> x cmp' c
+        if (left instanceof IntSizeCast cast && cast.isExtension()
+                && right instanceof IntLiteral lit
+                && canRewriteLiteralAsExtension(lit, cast.getSourceType(), cast.preservesSign())) {
+            final Expression x = cast.getOperand();
+            final Expression c = expressions.makeValue(lit.getValue(), cast.getSourceType());
+            final IntCmpOp newOp = cast.preservesSign() ? op : op.toUnsigned();
+            return expressions.makeIntCmp(x, newOp, c);
+        }
+
         // ------- Operations on memory objects and functions -------
         if (left instanceof MemoryObject && right instanceof MemoryObject
                 || left instanceof Function && right instanceof Function) {
@@ -195,6 +235,11 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visitIntSizeCastExpression(IntSizeCast expr) {
+        final Expression rewrite = tryGeneralRewrite(expr);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
         final Expression operand = expr.getOperand().accept(this);
 
         // ------- Operations with constants -------
@@ -213,7 +258,16 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeValue(newValue, expr.getTargetType());
         }
 
-        // TODO: Simplify nested casts
+        // ------- Nested casts -------
+        if (operand instanceof IntSizeCast innerCast) {
+            if (expr.isTruncation()) {
+                return expressions.makeIntegerCast(innerCast.getOperand(), expr.getTargetType(), expr.preservesSign());
+            } else if (innerCast.isExtension()) {
+                if (!innerCast.preservesSign() || expr.preservesSign()) {
+                    return expressions.makeIntegerCast(innerCast.getOperand(), expr.getTargetType(), innerCast.preservesSign());
+                }
+            }
+        }
 
         // TODO: Push casts into operators?
 
@@ -387,10 +441,13 @@ public class ExprSimplifier extends ExprTransformer {
             if (l.getOperands().size() == r.getOperands().size()) {
                 if (l.getOperands().isEmpty()) {
                     return expressions.makeValue(isEq);
-                } else if (l.getOperands().size() == 1) {
-                    final Expression lOp = l.getOperands().get(0);
-                    final Expression rOp = r.getOperands().get(0);
-                    return (isEq ? expressions.makeEQ(lOp, rOp) : expressions.makeNEQ(lOp, rOp)).accept(this);
+                } else {
+                    Expression check = expressions.makeTrue();
+                    for (int i = 0; i < l.getOperands().size(); i++) {
+                        check = expressions.makeAnd(check,
+                                expressions.makeEQ(l.getOperands().get(i), r.getOperands().get(i)));
+                    }
+                    return (isEq ? check : expressions.makeNot(check)).accept(this);
                 }
             }
         }
@@ -477,6 +534,16 @@ public class ExprSimplifier extends ExprTransformer {
 
 
     // =================================== Helper methods ===================================
+
+    private boolean canRewriteLiteralAsExtension(IntLiteral lit, IntegerType sourceType, boolean preservesSign) {
+        if (lit.getType().getBitWidth() <= sourceType.getBitWidth()
+                || IntegerHelper.getNumRequiredBits(lit.getValue()) > sourceType.getBitWidth()) {
+            return false;
+        }
+        final boolean sourceSignBitSet = lit.getValue().testBit(sourceType.getBitWidth() - 1);
+        final boolean afterSignBitSet = lit.getValue().testBit(sourceType.getBitWidth());
+        return (sourceSignBitSet == afterSignBitSet && preservesSign) || (!afterSignBitSet && !preservesSign);
+    }
 
     // An expression is potentially eliminable if it either carries no dependencies
     // or we are in aggressive mode.

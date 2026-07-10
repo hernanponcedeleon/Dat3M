@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
@@ -32,6 +31,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -293,8 +293,7 @@ public class ExecutionModelManager {
         @Override
         public Void visitTagSet(TagSet tagSet) {
             SimpleSet rg = (SimpleSet) predicateCache.get(tagSet.getDefinedRelation());
-            executionModel.getEventModelsByFilter(Filter.byTag(tagSet.getTag()))
-                    .forEach(e -> rg.add(new Element(e.getId())));
+            executionModel.getEventModelsByTag(tagSet.getTag()).forEach(e -> rg.add(new Element(e.getId())));
             return null;
         }
 
@@ -586,7 +585,7 @@ public class ExecutionModelManager {
         @Override
         public SetPredicate visitProjection(Projection projection) {
             final RelationGraph graph = getOrCreateGraph(projection.getOperand());
-            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
             return new ProjectionSet(graph, dim);
         }

@@ -179,6 +179,21 @@ nre locals [IntBinaryOp op, String mo, String name]
         | AtomicInc LPar address = re RPar {$op = IntBinaryOp.ADD;}
         | AtomicDec LPar address = re RPar {$op = IntBinaryOp.SUB;})                                                                        # nreAtomicOp
 
+    |   ( C11StoreAddExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
+        | C11StoreAdd          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.ADD;}
+        | C11StoreSubExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
+        | C11StoreSub          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SUB;}
+        | C11StoreAndExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.AND;}
+        | C11StoreAnd          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.AND;}
+        | C11StoreOrExplicit   LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
+        | C11StoreOr           LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.OR;}
+        | C11StoreXorExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}
+        | C11StoreXor          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.XOR;}
+        | C11StoreMinExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SMIN;}
+        | C11StoreMin          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SMIN;}
+        | C11StoreMaxExplicit  LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar {$op = IntBinaryOp.SMAX;}
+        | C11StoreMax          LPar address = re Comma value = re (Comma openCLScope)? RPar {$op = IntBinaryOp.SMAX;})                      # nreC11AtomicOp
+
     |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = Linux.MO_ONCE;}
         | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;}
         | SmpStoreRelease   LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;}

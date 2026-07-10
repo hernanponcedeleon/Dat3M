@@ -128,7 +128,7 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public ProgramOrder visitProgramOrder(ProgramOrder po) {
-        return new ProgramOrder(translate(po.getDefinedRelation()), po.getFilter());
+        return new ProgramOrder(translate(po.getDefinedRelation()));
     }
 
     @Override

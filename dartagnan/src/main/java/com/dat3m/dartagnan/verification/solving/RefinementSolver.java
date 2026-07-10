@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -28,9 +27,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -39,6 +35,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -54,16 +51,13 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
-import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 /*
@@ -95,11 +89,6 @@ public class RefinementSolver extends ModelChecker {
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;
-
-    @Option(name=GRAPHVIZ_DEBUG_FILES,
-            description="This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
-                    " It is very expensive and should only be used for debugging purposes.")
-    private boolean generateGraphvizDebugFiles = false;
 
     // ================================================================================================================
     // Data classes
@@ -388,12 +377,6 @@ public class RefinementSolver extends ModelChecker {
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
-            if (generateGraphvizDebugFiles && iteration.smtStatus == SMTStatus.SAT) {
-                try (IREvaluator evaluator = context.newEvaluator(prover)) {
-                    final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
-                    generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
-                }
-            }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
                 if (trace.size() == 1) {
@@ -547,7 +530,7 @@ public class RefinementSolver extends ModelChecker {
 
         // [R \ range(rf)];loc;[W]
         final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Projection.Dimension.RANGE));
+        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Dimension.RANGE));
         final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
         final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
         final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
@@ -615,8 +598,8 @@ public class RefinementSolver extends ModelChecker {
     private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
 
     private PolaritySeparator computePolaritySeparator(Wmm wmm) {
-        final Set<Constraint> positives = new HashSet<>();
-        final Set<Constraint> negatives = new HashSet<>();
+        final Set<Constraint> positives = new LinkedHashSet<>();
+        final Set<Constraint> negatives = new LinkedHashSet<>();
         final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
             private boolean polarity = true;
 
@@ -718,10 +701,10 @@ public class RefinementSolver extends ModelChecker {
      */
     private void instrumentPolaritySeparation(Wmm wmm) {
         final PolaritySeparator separator = computePolaritySeparator(wmm);
-        final Set<Difference> negDiff = separator.negatives().stream()
+        final List<Difference> negDiff = separator.negatives().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
                 .filter(diff -> !separator.negatives().contains(diff.getSubtrahend().getDefinition()))
-                .collect(Collectors.toSet());
+                .distinct().toList();
 
         final Map<Relation, Relation> replacements = new HashMap<>();
         int counter = 0;
@@ -869,38 +852,4 @@ public class RefinementSolver extends ModelChecker {
         return report;
     }
 
-    // This code is pure debugging code that will generate graphical representations
-    // of each refinement iteration.
-    // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(
-            VerificationTask task, ExecutionModelNext model, int iterationCount, DNF<CoreLiteral> reasons) {
-        // =============== Visualization code ==================
-        // The edgeFilter filters those co/rf that belong to some violation reason
-        BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
-            for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
-                for (CoreLiteral lit : cube.getLiterals()) {
-                    if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getEventModelByEvent(edgeLit.getSource()) == e1 &&
-                                model.getEventModelByEvent(edgeLit.getTarget()) == e2) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        };
-
-        String programName = task.getProgram().getName();
-        programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/refinement/%s-%s-debug/", getOutputDirectory(), programName,
-                task.getProgram().getArch());
-        String fileNameBase = String.format("%s-%d", programName, iterationCount);
-        final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
-        // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                emptySynContext);
-        // File with all edges
-        generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", emptySynContext);
-    }
 }
