@@ -27,6 +27,7 @@ import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -269,16 +270,16 @@ public class WmmEncoder {
 
     /*
         The returned predicate checks whether a pair of events (x, y) in a given relation <rel>
-        can be unconditionally ordered.
+        can be unconditionally ordered without transitively implying wrong orderings.
         Used to optimize encodings of "acyclic <rel>" and "co".
 
         This optimization tries to omit the guards of certain must-edges, i.e.,
         it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)"
         We can only do this when for a must-edge (x,y) we have
             (i)  exec(y) => exec(x)
-        OR  (ii) for all z: must(z,x) => must(z,y)
+        OR  (ii) for all z: (z, x) in must(rel) => ((z, y) in must(rel) || exec(z) => exec(x))
     */
-    private BiPredicate<Event, Event> getIsUnconditionallyOrderablePredicate(Relation rel) {
+    private BiPredicate<Event, Event> getIsUnconditionallyOrderableChecker(Relation rel) {
         final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
         final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
         final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
@@ -289,8 +290,7 @@ public class WmmEncoder {
             // NOTE: The implication "exec(y) => exec(x)" can also be inverted, but we cannot check both directions!
             // The direction "exec(y) => exec(x)" holds more often for unfair progress models.
             return exec.isImplied(y, x) ||
-                    mustIn.getOrDefault(x, Set.of()).stream()
-                            .allMatch(z -> exec.isImplied(z, x) || mustSet.contains(z, y));
+                    Sets.union(mustIn.get(y), exec.implyingEvents(x)).containsAll(mustIn.getOrDefault(x, Set.of()));
         };
     }
 
@@ -788,7 +788,7 @@ public class WmmEncoder {
         @Override
         public Void visitCoherence(Coherence coDef) {
             final Relation co = coDef.getDefinedRelation();
-            final BiPredicate<Event, Event> alwaysOrdered = getIsUnconditionallyOrderablePredicate(co);
+            final BiPredicate<Event, Event> alwaysOrdered = getIsUnconditionallyOrderableChecker(co);
             final boolean idl = !useSATEncoding;
             final EventGraph maySet = ra.getKnowledge(co).getMaySet();
             final EventGraph mustSet = ra.getKnowledge(co).getMustSet();
@@ -1040,7 +1040,7 @@ public class WmmEncoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             final String clockVarName = rel.getNameOrTerm();
-            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderablePredicate(rel);
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
 
             List<BooleanFormula> enc = new ArrayList<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
@@ -1131,7 +1131,7 @@ public class WmmEncoder {
             final EncodingContext.EdgeEncoder smtCycleVar =
                     ((EncodingContext.EdgeEncoder)(x, y) -> getSMTCycleVar(rel, x, y)).withCache();
             List<BooleanFormula> enc = new ArrayList<>();
-            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderablePredicate(rel);
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cond = alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2);
