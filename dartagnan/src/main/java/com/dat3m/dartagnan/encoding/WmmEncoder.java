@@ -1041,9 +1041,9 @@ public class WmmEncoder {
             final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             final String clockVarName = rel.getNameOrTerm();
             final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
+            final EncodingContext.EdgeEncoder edge = context.edge(rel);
 
             List<BooleanFormula> enc = new ArrayList<>();
-            final EncodingContext.EdgeEncoder edge = context.edge(rel);
             relevantEdges.apply((e1, e2) ->
                 enc.add(bmgr.implication(
                         alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2),
@@ -1126,12 +1126,13 @@ public class WmmEncoder {
             }
 
             // --- Create encoding ---
-            final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
+            final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
             final EncodingContext.EdgeEncoder smtCycleVar =
                     ((EncodingContext.EdgeEncoder)(x, y) -> getSMTCycleVar(rel, x, y)).withCache();
+
             List<BooleanFormula> enc = new ArrayList<>();
-            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cond = alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2);
@@ -1142,7 +1143,7 @@ public class WmmEncoder {
             for (Event[] tri : triangles) {
                 BooleanFormula cond = alwaysOrder.test(tri[0], tri[2])
                         ? bmgr.makeTrue()
-                        : minSet.contains(tri[0], tri[2])
+                        : mustSet.contains(tri[0], tri[2])
                           ? context.execution(tri[0], tri[2])
                         : bmgr.and(smtCycleVar.encode(tri[0], tri[1]), smtCycleVar.encode(tri[1], tri[2]));
                 enc.add(bmgr.implication(cond, smtCycleVar.encode(tri[0], tri[2])));
@@ -1159,7 +1160,7 @@ public class WmmEncoder {
                 Set<Event> out = vertEleOutEdges.get(e1);
                 for (Event e2: out) {
                     if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
-                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : smtCycleVar.encode(e1, e2);
+                        BooleanFormula cond = mustSet.contains(e1, e2) ? bmgr.makeTrue() : smtCycleVar.encode(e1, e2);
                         enc.add(bmgr.implication(cond, bmgr.not(smtCycleVar.encode(e2, e1))));
                     }
                 }
