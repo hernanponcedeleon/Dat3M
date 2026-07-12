@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +14,10 @@ import static com.dat3m.dartagnan.utils.Result.PASS;
 public class OutputLogger {
 
     private final List<ResultSummary> results = new ArrayList<>();
-    private final File modelFile;
+    private final Path modelFile;
     private final Configuration config;
 
-    public OutputLogger(File file, Configuration config) {
+    public OutputLogger(Path file, Configuration config) {
         this.modelFile = file;
         this.config = config;
     }
@@ -52,7 +52,6 @@ public class OutputLogger {
         public static final String PROGRAM_SPEC_REASON = "Program specification violation found";
         public static final String TERMINATION_REASON = "Termination violation found";
         public static final String CAT_SPEC_REASON = "CAT specification violation found";
-        public static final String SVCOMP_RACE_REASON = "SVCOMP data race found";
         public static final String SVCOMP_UNTRACKABLE_OBJECT_REASON = "Untrackable object found";
         public static final String BOUND_REASON = "Not fully unrolled loops";
 
