@@ -139,10 +139,11 @@ public class Dat3M extends JFrame implements ActionListener {
             final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
             // We default to "c" code, if we do not know
             final String format = programEditor.getLoadedFormat().isEmpty() ? ProgramParser.EXTENSION_C : programEditor.getLoadedFormat();
+            final String cflags = options.cflags().isEmpty() ? System.getenv().getOrDefault("CFLAGS", "") : options.cflags();
             final Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(),
-                    programEditor.getLoadedPath(),
                     format,
-                    options.cflags());
+                    cflags
+            );
             program.setName("dat3mUI");
             try {
                 final Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText());

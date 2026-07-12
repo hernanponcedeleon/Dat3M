@@ -101,7 +101,7 @@ public class Dartagnan extends BaseOptions {
 
                 // ----------- Generate output-----------
                 summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
-                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + String.valueOf(it) : "");
+                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + it : "");
                 resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), witnessFileName, o.generateWitnessForUnknown());
                 it++;
             } catch (Exception e) {
