@@ -35,9 +35,11 @@ public class ProgramParser {
     public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
     public static final String EXTENSION_SPVASM = ".spvasm";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
-            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM);
+            EXTENSION_C, EXTENSION_I, EXTENSION_LL,
+            EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM
+    );
 
-    public static boolean isSupported(Path filePath) {
+    public static boolean isSupportedFile(Path filePath) {
         return SUPPORTED_EXTENSIONS.contains(getFileExtension(filePath));
     }
 
@@ -72,18 +74,8 @@ public class ProgramParser {
     }
 
     private Program parse(CharStream sourceCode, String extension) {
-        final ParserInterface parser = switch (extension) {
-            case EXTENSION_LL -> new ParserLlvm();
-            case EXTENSION_SPV_DIS -> {
-                logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
-                yield new ParserSpirv();
-            }
-            case EXTENSION_SPVASM -> new ParserSpirv();
-            case EXTENSION_LITMUS -> inferLitmusParserFromCode(sourceCode);
-            default -> throw new ParsingException("Unknown input file type");
-        };
-
         try {
+            final ParserInterface parser = getParser(sourceCode, extension);
             return parser.parse(sourceCode);
         } catch (RuntimeException exception) {
             // Wrap into ParsingException.
@@ -93,7 +85,22 @@ public class ProgramParser {
         }
     }
 
-    private ParserInterface inferLitmusParserFromCode(CharStream sourceCode) {
+    // =========================== Private Utility =====================================
+
+    private ParserInterface getParser(CharStream sourceCode, String extension) {
+        return switch (extension) {
+            case EXTENSION_LL -> new ParserLlvm();
+            case EXTENSION_SPV_DIS -> {
+                logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
+                yield new ParserSpirv();
+            }
+            case EXTENSION_SPVASM -> new ParserSpirv();
+            case EXTENSION_LITMUS -> getParserForLitmus(sourceCode);
+            default -> throw new ParsingException("Unknown input file type");
+        };
+    }
+
+    private ParserInterface getParserForLitmus(CharStream sourceCode) {
         final String litmusType = getFirstWord(peekFirstLine(sourceCode));
         return switch (litmusType.toUpperCase()) {
             case TYPE_LITMUS_AARCH64 -> new ParserLitmusAArch64();

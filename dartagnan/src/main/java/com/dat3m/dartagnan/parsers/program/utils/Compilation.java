@@ -23,9 +23,9 @@ public class Compilation {
         final Path tempFilePath = Files.createTempFile("dat3m", ".c");
         Files.writeString(tempFilePath, rawCSource);
 
-        final Path clangResultPath = compileWithClang(tempFilePath, cflags);
+        final Path outputFile = compileWithClang(tempFilePath, cflags);
         Files.delete(tempFilePath);
-        return clangResultPath;
+        return outputFile;
     }
 
     public static Path compileWithClang(Path sourceFile, String cflags) throws Exception {
@@ -63,7 +63,6 @@ public class Compilation {
         processBuilder.redirectOutput(log.toFile());
 
         final Process proc = processBuilder.start();
-
         if (proc.waitFor() != 0) {
             final String logString = Files.readString(log, Charsets.UTF_8);
             final String errorMsg = "'%s': %s".formatted(String.join("' '", cmd), logString);

@@ -137,16 +137,18 @@ public class Dat3M extends JFrame implements ActionListener {
         testResult = null;
         try {
             final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-            // We default to "c" code, if we do not know
-            final String format = programEditor.getLoadedFormat().isEmpty() ? ProgramParser.EXTENSION_C : programEditor.getLoadedFormat();
-            final String cflags = options.cflags().isEmpty() ? System.getenv().getOrDefault("CFLAGS", "") : options.cflags();
-            final Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(),
-                    format,
-                    cflags
-            );
+            final String sourceCode = programEditor.getEditorPane().getText();
+            final String format = programEditor.getLoadedFormat().isEmpty()
+                    ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
+                    : programEditor.getLoadedFormat();
+            final String cflags = options.cflags().isEmpty()
+                    ? System.getenv().getOrDefault("CFLAGS", "")
+                    : options.cflags();
+            final Program program = new ProgramParser().parse(sourceCode, format, cflags);
             program.setName("dat3mUI");
             try {
-                final Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText());
+                final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
+                final Wmm targetModel = new ParserCat().parse(wmmCode);
                 testResult = new ReachabilityResult(program, targetModel, options);
             } catch (Exception e) {
                 final String msg = e.getMessage() == null ? "Memory model cannot be parsed" : e.getMessage();

@@ -24,7 +24,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -178,7 +177,7 @@ public class Dartagnan extends BaseOptions {
     private static List<Path> getProgramFiles(Path path) {
         try (Stream<Path> stream = Files.walk(path)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(ProgramParser::isSupported)
+                    .filter(ProgramParser::isSupportedFile)
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
         } catch (IOException e) {
