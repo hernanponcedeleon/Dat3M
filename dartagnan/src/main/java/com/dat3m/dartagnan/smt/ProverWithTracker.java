@@ -144,6 +144,11 @@ public class ProverWithTracker implements ProverEnvironment {
     }
 
     @Override
+    public boolean registerUserPropagator(UserPropagator propagator) {
+        return prover.registerUserPropagator(propagator);
+    }
+
+    @Override
     public <R> R allSat(AllSatCallback<R> arg0, List<BooleanFormula> arg1) throws InterruptedException, SolverException {
         return prover.allSat(arg0, arg1);
     }
