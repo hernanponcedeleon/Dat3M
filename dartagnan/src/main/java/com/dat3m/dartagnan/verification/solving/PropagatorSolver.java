@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagator;
+import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagatorNew;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -74,7 +75,8 @@ public class PropagatorSolver extends ModelChecker {
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         System.out.println("Propagating axioms: " + axiomsToPropagate);
-        AcyclicityPropagator propagator = new AcyclicityPropagator(wmmEncoder, context);
+        //AcyclicityPropagator propagator = new AcyclicityPropagator(wmmEncoder, context);
+        AcyclicityPropagatorNew propagator = new AcyclicityPropagatorNew(wmmEncoder, context);
         axiomsToPropagate.forEach(propagator::registerAxiom);
         prover.registerUserPropagator(propagator);
 
