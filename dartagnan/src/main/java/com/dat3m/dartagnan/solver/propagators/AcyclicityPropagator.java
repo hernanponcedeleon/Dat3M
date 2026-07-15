@@ -32,6 +32,7 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     private final Domain<Event> domain;
 
     private int curLevel = 0;
+    private long numChecks = 0;
     private boolean raisedConflict = false;
 
     // We use a "case" per acyclicity axiom we want to track
@@ -107,6 +108,12 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
             final Case c = lit2Case.get(expr);
             final Edge edge = c.lit2Edge.get(expr);
             propagate(c, edge.withTime(curLevel));
+            numChecks++;
+
+            if (numChecks % 1000000 == 0) {
+                System.out.println("numChecks: " + numChecks);
+                printStatistic();
+            }
         }
     }
 
