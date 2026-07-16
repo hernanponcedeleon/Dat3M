@@ -12,12 +12,12 @@ public class VarGraph {
     final static int UNASSIGNED = 0;
     final static int FALSE = -1;
 
-    int domainSize;
-    Map<BooleanFormula, Edge> var2Edge = new HashMap<>();
-    List<Edge>[] inEdges;
-    List<Edge>[] outEdges;
-    List<Edge> allEdges = new ArrayList<>();
-    List<Edge> dynamicEdges = new ArrayList<>();
+    final int domainSize;
+    final Map<BooleanFormula, Edge> var2Edge = new HashMap<>();
+    final List<Edge>[] inEdges;
+    final List<Edge>[] outEdges;
+    final List<Edge> allEdges = new ArrayList<>();
+    final List<Edge> dynamicEdges = new ArrayList<>();
 
     private final List<Edge> trace = new ArrayList<>();
     private final List<Integer> backtrackPoints = new ArrayList<>();
@@ -56,6 +56,8 @@ public class VarGraph {
             var2Edge.put(edgeVar, edge);
             edge.negEdgeVar = bmgr.not(edgeVar);
             dynamicEdges.add(edge);
+        } else {
+            edge.value = TRUE;
         }
     }
 
@@ -75,8 +77,9 @@ public class VarGraph {
 
     public void assignEdge(Edge e, int value) {
         assert value == TRUE || value == FALSE;
+        assert !e.isMust();
         trace.add(e);
-        e.status = value;
+        e.value = value;
     }
 
     public void assignEdge(Edge e, boolean value) {
@@ -84,12 +87,12 @@ public class VarGraph {
     }
 
     private void unassignEdge(Edge e) {
-        e.status = UNASSIGNED;
+        assert !e.isMust();
+        e.value = UNASSIGNED;
     }
 
-    public Iterable<Edge> getUnassignedEdges() {
-        final var it = new FilteredIterator(dynamicEdges, edge -> edge.status == UNASSIGNED);
-        return () -> it;
+    public Iterable<Edge> getInEdges(int i) {
+        return inEdges[i];
     }
 
     public Iterable<Edge> getTrueOutEdges(int i) {
@@ -97,13 +100,8 @@ public class VarGraph {
         return () -> it;
     }
 
-    public Iterable<Edge> getTrueInEdges(int i) {
-        final var it = new FilteredIterator(outEdges[i], VarGraph::isEnabledEdge);
-        return () -> it;
-    }
-
     private static boolean isEnabledEdge(Edge e) {
-        return e.status == TRUE || e.isMust();
+        return e.value == TRUE;
     }
 
     private final static class FilteredIterator implements Iterator<Edge> {
@@ -144,22 +142,27 @@ public class VarGraph {
     public final static class Edge {
         private final int source;
         private final int target;
-        transient int status = UNASSIGNED;
+        private transient int value = UNASSIGNED;
 
-        private final BooleanFormula edgeVar;
-        transient BooleanFormula negEdgeVar;
+        private final transient BooleanFormula edgeVar;
+        private transient BooleanFormula negEdgeVar;
 
         public int getSource() { return source; }
         public int getTarget() { return target; }
         public BooleanFormula getEdgeVar() { return edgeVar; }
         public BooleanFormula getNegEdgeVar() { return negEdgeVar; }
-        public int getStatus() { return status; }
+        public int getValue() { return value; }
 
         public Edge(int source, int target, BooleanFormula edgeVar) {
             this.source = source;
             this.target = target;
             this.edgeVar = edgeVar;
         }
+
+        public boolean isUnassigned() { return value == UNASSIGNED; }
+        public boolean isTrue() { return value == TRUE; }
+        public boolean isFalse() { return value == FALSE; }
+        public boolean isMust() { return edgeVar == null; }
 
         @Override
         public String toString() {
@@ -168,14 +171,12 @@ public class VarGraph {
 
         @Override
         public int hashCode() {
-            return ((source << 14) - 1) + target;
+            return ((target << 14) - 1) + source;
         }
 
         @Override
         public boolean equals(Object obj) {
             return obj instanceof Edge edge && edge.source == source && edge.target == target;
         }
-
-        public boolean isMust() { return edgeVar == null; }
     }
 }
