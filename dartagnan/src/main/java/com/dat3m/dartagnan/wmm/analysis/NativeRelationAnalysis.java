@@ -400,21 +400,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final MutableKnowledge knowledge = knowledgeMap.get(rel);
             final IndexedEventGraph may = knowledge.getMaySet();
             final IndexedEventGraph must = knowledge.getMustSet();
-            final IndexedEventGraph newDisabled = newGraphWithDomain(may);
-            may.filter((e1, e2) -> Tuple.isLoop(e1, e2) || must.contains(e2, e1)).apply(newDisabled::add);
-            final IndexedEventGraph mustOut = must.filter((e1, e2) -> !Tuple.isLoop(e1, e2));
-            IndexedEventGraph current = must;
-            do {
-                final IndexedEventGraph next = newGraphWithDomain(may);
-                for (Event e : current.getDomain()) {
-                    if (current.getRange(e).contains(e)) {
-                        final Set<Event> range = SetUtil.difference(mustOut.getRange(e), execExcluding(e));
-                        range.removeIf(z -> !newDisabled.add(z, e));
-                        next.addRange(e, range);
-                    }
-                }
-                current = next;
-            } while (!current.isEmpty());
+
+            IndexedEventGraph newDisabled = must.inverse();
+            newDisabled = (IndexedEventGraph) computeTransitiveClosure(newDisabled).getMustSet();
+            may.filter((e1, e2) -> e1 == e2).apply(newDisabled::add);
+
             newDisabled.retainAll(knowledge.getMaySet());
             logger.debug("disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
             return Map.of(rel, new ExtendedDelta(newDisabled, newGraphWithDomain(newDisabled)));
