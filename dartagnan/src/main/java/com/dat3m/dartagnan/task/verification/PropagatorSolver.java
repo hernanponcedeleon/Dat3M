@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagator;
 import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagatorNew;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
@@ -111,7 +110,7 @@ public class PropagatorSolver extends ModelChecker {
             res = FAIL;
         }
 
-        propagator.printStatistic();
+        propagator.printStatistics();
 
         if (logger.isDebugEnabled()) {
             logProverStatistics(logger, prover);
