@@ -163,11 +163,6 @@ public class RefinementSolver extends ModelChecker {
         final Configuration config = task.getConfig();
         final Wmm memoryModel = task.getMemoryModel();
 
-        // TODO: This is a reasonable transformation for all methods (eager/lazy), however,
-        //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
-        //  so we cannot perform property-aware transformation in those pipelines right now.
-        removeFlaggedAxiomsIfNotNeeded(task);
-
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);
@@ -573,15 +568,6 @@ public class RefinementSolver extends ModelChecker {
         }
         constraints.forEach(wmm::addConstraint);
         return constraints;
-    }
-
-    private static void removeFlaggedAxiomsIfNotNeeded(VerificationTask task) {
-        // We remove flagged axioms if we do not check for them.
-        if (!task.getProperty().contains(Property.CAT_SPEC)) {
-            List.copyOf(task.getMemoryModel().getAxioms()).stream()
-                    .filter(Axiom::isFlagged)
-                    .forEach(task.getMemoryModel()::removeConstraint);
-        }
     }
 
     /*
