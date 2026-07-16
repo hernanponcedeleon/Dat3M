@@ -23,5 +23,47 @@
           "returnType": "boolean"
         }
       ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.z3.Z3UserPropagator",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true,
+      "methods":
+      [
+        {
+          "name": "createdWrapper",
+          "parameterTypes": ["long"]
+        },
+        {
+          "name": "decideWrapper",
+          "parameterTypes": ["long", "int", "boolean"]
+        },
+        {
+          "name": "eqWrapper",
+          "parameterTypes": ["long", "long"]
+        },
+        {
+          "name": "finWrapper",
+          "parameterTypes": []
+        },
+        {
+          "name": "fixedWrapper",
+          "parameterTypes": ["long", "long"]
+        },
+        {
+          "name": "freshWrapper",
+          "parameterTypes": ["long"],
+          "returnType": "org.sosy_lab.java_smt.solvers.z3.Z3UserPropagator"
+        },
+        {
+          "name": "popWrapper",
+          "parameterTypes": ["int"]
+        },
+        {
+          "name": "pushWrapper",
+          "parameterTypes": []
+        }
+      ]
     }
 ]
