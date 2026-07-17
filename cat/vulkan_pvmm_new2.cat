@@ -186,15 +186,15 @@ let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3;
 
 let ascom = mutordatom & (co | rf | fr)
 
-// TODO: Restrict to host events for cleaner edges
 let hb = (ssw | schbsc | schbsca | ascom)+
-let hhb = hb?; ssw; hb?
+// TODO: Restrict to host events for cleaner edges
+let hhb = po | hb
 
 let locordh = loc & (
     (IW * (M \ IW)) |
-    ([R]; hhb; [R | W]) |
-    ([W]; hhb; [AVDEVICE]; hhb; [W]) |
-    ([W]; hhb; [AVDEVICE]; (po | hhb); [VISDEVICE]; hhb; [R]))
+    ([R]; hb?; ssw; hb?; [R | W]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hhb; [VISDEVICE]; hb; [R]))
 
 let locordp = vloc & po
 
