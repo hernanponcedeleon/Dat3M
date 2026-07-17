@@ -1,6 +1,6 @@
 Vulkan
 {}
- P0@sg 0, wg 0, qf 0                    | P1@sg 0,wg 1, qf 0                     ;
+ P0@sg 0, wg 0, qf 0                    | P1@sg 0, wg 1, qf 0                    ;
  ld.atom.acq.qf.sc0.semsc0.semsc2 r0, x | ld.atom.acq.qf.sc1.semsc1.semsc2 r1, y ;
  membar.acq.qf.semsc2                   | membar.rel.qf.semsc2                   ;
  st.atom.rel.qf.sc1.semsc1.semsc2 y, 1  | st.atom.rel.qf.sc0.semsc0.semsc2 x, 1  ;
