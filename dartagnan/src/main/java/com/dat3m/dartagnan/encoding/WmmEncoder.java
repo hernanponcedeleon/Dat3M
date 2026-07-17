@@ -14,10 +14,7 @@ import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
+import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Dimension;
@@ -27,7 +24,6 @@ import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -274,24 +270,22 @@ public class WmmEncoder {
         Used to optimize encodings of "acyclic <rel>" and "co".
 
         This optimization tries to omit the guards of certain must-edges, i.e.,
-        it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)"
-        We can only do this when for a must-edge (x,y) we have
-            (i)  exec(y) => exec(x)
-        OR  (ii) for all z: (z, x) in must(rel) => ((z, y) in must(rel) || exec(z) => exec(x))
+        it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)".
+        We can only do so when for a (possibly transitive) must-edge (x,y) we have
+        that all must-predecessors of x are also (transitively) must-predecessors of y.
     */
     private BiPredicate<Event, Event> getIsUnconditionallyOrderableChecker(Relation rel) {
         final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+        final EventGraph mustTrans = ra.computeTransitiveClosure(mustSet).getMustSet();
         final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
+        final Map<Event, Set<Event>> mustInTrans = mustTrans.getInMap();
         final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
-        return (x, y) -> {
-            if (!mustSet.contains(x, y)) {
-                return false;
-            }
-            // NOTE: The implication "exec(y) => exec(x)" can also be inverted, but we cannot check both directions!
-            // The direction "exec(y) => exec(x)" holds more often for unfair progress models.
-            return exec.isImplied(y, x) ||
-                    Sets.union(mustIn.get(y), exec.implyingEvents(x)).containsAll(mustIn.getOrDefault(x, Set.of()));
-        };
+
+        // NOTE: The exec.isImplied check is a performance optimization: it does not improve precision
+        // but allows us to sometimes skip the more expensive inclusion check
+        return (x, y) -> mustTrans.contains(x, y) &&
+                (exec.isImplied(y, x) || mustInTrans.get(y).containsAll(mustIn.getOrDefault(x, Set.of())));
+
     }
 
     private void encodeContradictions(List<BooleanFormula> enc) {
@@ -1053,7 +1047,6 @@ public class WmmEncoder {
                         )
                 ))
             );
-
             return enc;
         }
 
