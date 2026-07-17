@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Assume extends AbstractEvent implements RegReader {
@@ -34,7 +35,7 @@ public class Assume extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

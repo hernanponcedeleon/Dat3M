@@ -15,7 +15,7 @@ public abstract class AbstractEvent implements Event {
 
     private final MetadataMap metadataMap = new MetadataMap();
     private final TagSet tags;
-    private final Set<EventUser> currentUsers = new HashSet<>();
+    private final Set<EventUser> currentUsers = new LinkedHashSet<>();
     // These ids are dynamically changing during processing.
     private transient int globalId = -1; // (Global) ID within a program
     private transient int localId = -1; // (Local) ID within a function

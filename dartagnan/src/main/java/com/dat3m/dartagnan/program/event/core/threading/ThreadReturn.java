@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -44,9 +45,9 @@ public class ThreadReturn extends AbstractEvent implements RegReader {
     @Override
     public Set<Register.Read> getRegisterReads() {
         if (!hasValue()) {
-            return new HashSet<>();
+            return new LinkedHashSet<>();
         }
-        return Register.collectRegisterReads(expression, Register.UsageType.DATA, new HashSet<>());
+        return Register.collectRegisterReads(expression, Register.UsageType.DATA, new LinkedHashSet<>());
     }
 
     @Override

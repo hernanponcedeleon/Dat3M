@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Assert extends AbstractEvent implements RegReader {
@@ -37,7 +38,7 @@ public class Assert extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

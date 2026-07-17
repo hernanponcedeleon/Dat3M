@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -33,7 +34,7 @@ public final class DynamicThreadLocalSet extends AbstractEvent implements RegRea
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> reads = Register.collectRegisterReads(key, Register.UsageType.OTHER, new HashSet<>());
+        final Set<Register.Read> reads = Register.collectRegisterReads(key, Register.UsageType.OTHER, new LinkedHashSet<>());
         return Register.collectRegisterReads(value, Register.UsageType.OTHER, reads);
     }
 

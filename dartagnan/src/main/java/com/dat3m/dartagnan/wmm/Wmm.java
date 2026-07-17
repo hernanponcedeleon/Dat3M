@@ -40,7 +40,7 @@ public class Wmm {
     }
 
     public Set<Relation> getRelations() {
-        return Set.copyOf(relations);
+        return ImmutableSet.copyOf(relations);
     }
 
     public boolean containsRelation(String name) {

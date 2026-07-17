@@ -67,7 +67,7 @@ public class DependencyGraph<T> {
     // ====================================================================
 
     private DependencyGraph(final Iterable<? extends T> items, final Function<? super T, ? extends Iterable<? extends T>> dependencyMap) {
-        nodeMap = new HashMap<>();
+        nodeMap = new LinkedHashMap<>();
         sccs = new ArrayList<>();
         this.dependencyMap = dependencyMap;
 
@@ -174,7 +174,7 @@ public class DependencyGraph<T> {
             }
 
             if (v.lowlink == v.index) {
-                final Set<Node> scc = new HashSet<>();
+                final Set<Node> scc = new LinkedHashSet<>();
                 sccs.add(scc);
                 v.topologicalIndex = ++topIndex;
                 Node w;

@@ -17,6 +17,7 @@ import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /*
@@ -103,7 +104,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> reads = Register.collectRegisterReads(alignment, Register.UsageType.DATA, new HashSet<>());
+        final Set<Register.Read> reads = Register.collectRegisterReads(alignment, Register.UsageType.DATA, new LinkedHashSet<>());
         return Register.collectRegisterReads(arraySize, Register.UsageType.DATA, reads);
     }
 
