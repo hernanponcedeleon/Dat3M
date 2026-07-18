@@ -90,9 +90,11 @@ public final class EncodingContext {
                 .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
                 .toList();
         final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
-        constraintsToEncode = new LinkedHashSet<>(
-                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents()
-        );
+        var depGraph = DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies);
+        // NOTE: This guarantees a deterministic ordering of the constraints to be encoded
+        constraintsToEncode = t.getMemoryModel().getConstraints().stream()
+                .filter(constr -> depGraph.get(constr) != null)
+                .toList();
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {

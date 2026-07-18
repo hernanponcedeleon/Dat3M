@@ -151,39 +151,7 @@ public class BranchReordering implements FunctionProcessor {
 
             // Compute the actual reordering of the branches
             final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
-            //final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
-
-            // TODO: This is a bit hacky: We do not trust the topological ordering given by depGraph and
-            //  instead recompute our own one. If two branches are independent, we order them by their id.
-            final List<DependencyGraph<MovableBranch>.Node> nodes = new ArrayList<>(Lists.reverse(depGraph.getNodes()));
-            int i = 0;
-            while (i < nodes.size() - 1) {
-                final DependencyGraph<MovableBranch>.Node n1 = nodes.get(i);
-                final DependencyGraph<MovableBranch>.Node n2 = nodes.get(i + 1);
-
-                if (n1.getSCC() == n2.getSCC() || n1.getDependents().contains(n2)) {
-                    i++;
-                    continue;
-                }
-
-                if (n1.getContent().id > n2.getContent().id) {
-                    swap(nodes, i, i + 1);
-                    i--;
-                } else {
-                    i++;
-                }
-            }
-
-            final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = new ArrayList<>();
-            Set<DependencyGraph<MovableBranch>.Node> lastScc = null;
-            for (var n : nodes) {
-                if (n.getSCC() != lastScc) {
-                    sccs.add(n.getSCC());
-                    lastScc = n.getSCC();
-                }
-            }
-            // ---------------------
-
+            final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
             final List<MovableBranch> reorderedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
                 final List<MovableBranch> branchesInScc = scc.stream().map(DependencyGraph.Node::getContent)

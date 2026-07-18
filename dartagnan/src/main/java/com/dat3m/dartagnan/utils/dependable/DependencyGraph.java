@@ -67,7 +67,7 @@ public class DependencyGraph<T> {
     // ====================================================================
 
     private DependencyGraph(final Iterable<? extends T> items, final Function<? super T, ? extends Iterable<? extends T>> dependencyMap) {
-        nodeMap = new LinkedHashMap<>();
+        nodeMap = new HashMap<>();
         sccs = new ArrayList<>();
         this.dependencyMap = dependencyMap;
 
