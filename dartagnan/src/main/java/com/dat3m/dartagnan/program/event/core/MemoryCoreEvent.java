@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;

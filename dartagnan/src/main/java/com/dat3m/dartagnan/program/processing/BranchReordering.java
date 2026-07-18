@@ -9,13 +9,10 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDERING;
 
 /*
     This class performs reordering of code as follows
@@ -31,15 +28,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDE
 
 @Options
 public class BranchReordering implements FunctionProcessor {
-
-    // =========================== Configurables ===========================
-
-    @Option(name = DETERMINISTIC_REORDERING,
-            description = "Deterministically reorders branches. Non-deterministic reordering may be used for testing.",
-            secure = true)
-    private boolean reorderDeterministically = true;
-
-    // =====================================================================
 
     private BranchReordering() { }
 
@@ -62,8 +50,8 @@ public class BranchReordering implements FunctionProcessor {
         }
     }
 
-    private class FunctionReordering {
-        private class MovableBranch {
+    private static class FunctionReordering {
+        private static class MovableBranch {
             final int id;
             final List<Event> events = new ArrayList<>();
 
@@ -73,21 +61,12 @@ public class BranchReordering implements FunctionProcessor {
 
             @Override
             public int hashCode() {
-                return reorderDeterministically ? id : super.hashCode();
+                return id;
             }
 
             @Override
             public boolean equals(Object obj) {
-                if (!reorderDeterministically) {
-                    return super.equals(obj);
-                }
-                if (obj == this) {
-                    return true;
-                } else if (obj == null || obj.getClass() != getClass()) {
-                    return false;
-                }
-
-                return id == ((MovableBranch)obj).id;
+                return obj instanceof MovableBranch b && b.id == id;
             }
 
             @Override
@@ -152,21 +131,15 @@ public class BranchReordering implements FunctionProcessor {
             // Compute the actual reordering of the branches
             final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
             final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
+
             final List<MovableBranch> reorderedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
                 final List<MovableBranch> branchesInScc = scc.stream().map(DependencyGraph.Node::getContent)
                         .sorted(Comparator.comparingInt(x -> x.id)).collect(Collectors.toList());
                 reorderedBranches.addAll(computeReordering(branchesInScc));
-
             }
 
             return reorderedBranches;
-        }
-
-        private <T> void swap(List<T> list, int i, int j) {
-            T tmp = list.get(i);
-            list.set(i, list.get(j));
-            list.set(j, tmp);
         }
 
         public void run() {

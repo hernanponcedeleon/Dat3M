@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 

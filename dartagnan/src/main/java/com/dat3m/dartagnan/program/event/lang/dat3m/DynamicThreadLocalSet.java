@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
