@@ -2,16 +2,14 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -20,8 +18,8 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.verification.Result.PASS;
+import static com.dat3m.dartagnan.verification.Result.BOUNDED;
 
 @RunWith(Parameterized.class)
 public class LibvsyncTest extends AbstractCTest {
@@ -60,21 +58,21 @@ public class LibvsyncTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock", C11, UNKNOWN},
+                {"caslock", C11, BOUNDED},
                 {"cachedq", C11, PASS},
-                {"mcslock", C11, UNKNOWN},
-                {"rec_mcslock", C11, UNKNOWN},
-                {"rec_spinlock", C11, UNKNOWN},
-                {"rec_ticketlock", C11, UNKNOWN},
-                {"rwlock", C11, UNKNOWN},
-                {"semaphore", C11, UNKNOWN},
+                {"mcslock", C11, BOUNDED},
+                {"rec_mcslock", C11, BOUNDED},
+                {"rec_spinlock", C11, BOUNDED},
+                {"rec_ticketlock", C11, BOUNDED},
+                {"rwlock", C11, BOUNDED},
+                {"semaphore", C11, BOUNDED},
                 {"seqcount", C11, PASS},
-                {"seqlock", C11, UNKNOWN},
-                {"ticketlock", C11, UNKNOWN},
-                {"ttaslock", C11, UNKNOWN},
-                {"bounded_mpmc_check_empty", C11, UNKNOWN},
-                {"bounded_mpmc_check_full", C11, UNKNOWN},
-                {"bounded_spsc", C11, UNKNOWN},
+                {"seqlock", C11, BOUNDED},
+                {"ticketlock", C11, BOUNDED},
+                {"ttaslock", C11, BOUNDED},
+                {"bounded_mpmc_check_empty", C11, BOUNDED},
+                {"bounded_mpmc_check_full", C11, BOUNDED},
+                {"bounded_spsc", C11, BOUNDED},
         });
     }
 

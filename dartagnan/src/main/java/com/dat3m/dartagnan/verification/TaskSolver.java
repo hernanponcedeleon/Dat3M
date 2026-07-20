@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;

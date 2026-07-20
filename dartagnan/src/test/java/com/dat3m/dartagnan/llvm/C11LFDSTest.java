@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -18,7 +18,7 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class C11LFDSTest extends AbstractCTest {
@@ -59,11 +59,11 @@ public class C11LFDSTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"dglm", C11, UNKNOWN},
+                {"dglm", C11, BOUNDED},
                 {"dglm-CAS-relaxed", C11, FAIL},
-                {"ms", C11, UNKNOWN},
+                {"ms", C11, BOUNDED},
                 {"ms-CAS-relaxed", C11, FAIL},
-                {"treiber", C11, UNKNOWN},
+                {"treiber", C11, BOUNDED},
                 {"treiber-CAS-relaxed", C11, FAIL},
                 {"chase-lev", C11, PASS},
                 // These have an extra thief that violate the assertion

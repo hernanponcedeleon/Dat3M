@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class MiscellaneousTest extends AbstractCTest {
@@ -69,7 +69,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"memtoreg_merging_pointers", IMM, PASS, 1},
                 {"nondet_loop", IMM, FAIL, 1},
                 {"pthread", IMM, PASS, 1},
-                {"recursion", IMM, UNKNOWN, 1},
+                {"recursion", IMM, BOUNDED, 1},
                 {"recursion", IMM, PASS, 2},
                 {"thread_chaining", IMM, PASS, 1},
                 {"thread_inlining", IMM, PASS, 1},
@@ -84,7 +84,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"funcPtrInStaticMemory", IMM, PASS, 1},
                 {"verifierAssert", ARM8, FAIL, 1},
                 {"uninitRead", IMM, FAIL, 1},
-                {"multipleBackJumps", IMM, UNKNOWN, 1},
+                {"multipleBackJumps", IMM, BOUNDED, 1},
                 {"memcpy_s", IMM, PASS, 1},
                 {"staticLoops", IMM, PASS, 1},
                 {"offsetof", IMM, PASS, 1},

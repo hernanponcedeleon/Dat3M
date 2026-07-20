@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -47,8 +47,8 @@ public class SpirvRacesTest {
                 {"atomics/forloop.spvasm", 1, FAIL},
                 {"atomics/histo.spvasm", 1, PASS},
                 {"barrier_intervals/test1.spvasm", 1, PASS},
-                {"barrier_intervals/test3.spvasm", 2, UNKNOWN},
-                {"barrier_intervals/test4.spvasm", 2, UNKNOWN},
+                {"barrier_intervals/test3.spvasm", 2, BOUNDED},
+                {"barrier_intervals/test4.spvasm", 2, BOUNDED},
                 {"basicbarrier.spvasm", 1, PASS},
                 {"basicglobalarray.spvasm", 1, PASS},
                 {"benign_race_tests/fail/writeafterread_addition.spvasm", 1, FAIL},
@@ -79,22 +79,22 @@ public class SpirvRacesTest {
                 {"pointertests/test_return_pointer.spvasm", 1, PASS},
                 {"report_global_id/test1.spvasm", 1, PASS},
                 {"report_global_id/test2.spvasm", 1, FAIL},
-                {"skeletonbinomialoptions.spvasm", 2, UNKNOWN},
+                {"skeletonbinomialoptions.spvasm", 2, BOUNDED},
                 {"sourcelocation_tests/barrier_divergence/pass.spvasm", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_ensures.spvasm", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_requires.spvasm", 1, PASS},
-                {"sourcelocation_tests/race_with_loop.spvasm", 2, UNKNOWN},
+                {"sourcelocation_tests/race_with_loop.spvasm", 2, BOUNDED},
                 {"sourcelocation_tests/races/fail/read_write.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_read.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_write/loop.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_write/normal.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/pass/no_race.spvasm", 1, PASS},
                 {"sourcelocation_tests/races/pass/read_read.spvasm", 1, PASS},
-                {"test_2d_global_index_inference.spvasm", 2, UNKNOWN},
+                {"test_2d_global_index_inference.spvasm", 2, BOUNDED},
                 {"test_2d_local_index_inference_2.spvasm", 1, PASS},
                 {"test_for_benign_read_write_bug.spvasm", 1, FAIL},
                 {"test_local_id_inference.spvasm", 1, PASS},
-                {"test_mod_invariants/global_reduce_strength.spvasm", 1, UNKNOWN},
+                {"test_mod_invariants/global_reduce_strength.spvasm", 1, BOUNDED},
                 {"test_part_load_store/store_int_and_short.spvasm", 1, PASS},
                 {"test_for_ssa_bug.spvasm", 8, PASS},
                 {"test_structs/use_array_element.spvasm", 1, PASS},

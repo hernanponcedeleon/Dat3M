@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -79,7 +79,7 @@ public class SpirvRacesTest {
                 {"sourcelocation_tests/barrier_divergence/pass.spvasm", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_ensures.spvasm", 9, PASS},
                 {"sourcelocation_tests/needs_source_location_requires.spvasm", 9, PASS},
-                {"sourcelocation_tests/race_with_loop.spvasm", 2, UNKNOWN},
+                {"sourcelocation_tests/race_with_loop.spvasm", 2, BOUNDED},
                 {"sourcelocation_tests/races/fail/read_write.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_read.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_write/loop.spvasm", 1, FAIL},
@@ -90,7 +90,7 @@ public class SpirvRacesTest {
                 // {"test_2d_local_index_inference_2.spvasm", 1, PASS},
                 {"test_for_benign_read_write_bug.spvasm", 1, FAIL},
                 // {"test_local_id_inference.spvasm", 1, PASS},
-                {"test_mod_invariants/global_reduce_strength.spvasm", 1, UNKNOWN},
+                {"test_mod_invariants/global_reduce_strength.spvasm", 1, BOUNDED},
                 {"test_part_load_store/store_int_and_short.spvasm", 1, PASS},
                 {"test_for_ssa_bug.spvasm", 9, PASS},
                 {"test_structs/use_array_element.spvasm", 1, PASS},

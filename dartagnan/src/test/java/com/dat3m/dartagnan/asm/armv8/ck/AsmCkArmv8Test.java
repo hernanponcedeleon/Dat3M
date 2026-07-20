@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -51,7 +51,7 @@ public class AsmCkArmv8Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 2, Result.UNKNOWN},
+            {"stack_empty", 2, Result.BOUNDED},
         });
     }
 

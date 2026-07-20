@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -9,7 +9,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.Result.PASS;
 
 public class OutputLogger {
 

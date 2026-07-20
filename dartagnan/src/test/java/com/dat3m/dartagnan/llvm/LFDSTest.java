@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class LFDSTest extends AbstractCTest {
@@ -39,27 +39,27 @@ public class LFDSTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"dglm", TSO, UNKNOWN},
-                {"dglm", ARM8, UNKNOWN},
-                {"dglm", POWER, UNKNOWN},
-                {"dglm", RISCV, UNKNOWN},
-                {"dglm-CAS-relaxed", TSO, UNKNOWN},
+                {"dglm", TSO, BOUNDED},
+                {"dglm", ARM8, BOUNDED},
+                {"dglm", POWER, BOUNDED},
+                {"dglm", RISCV, BOUNDED},
+                {"dglm-CAS-relaxed", TSO, BOUNDED},
                 {"dglm-CAS-relaxed", ARM8, FAIL},
                 {"dglm-CAS-relaxed", POWER, FAIL},
                 {"dglm-CAS-relaxed", RISCV, FAIL},
-                {"ms", TSO, UNKNOWN},
-                {"ms", ARM8, UNKNOWN},
-                {"ms", POWER, UNKNOWN},
-                {"ms", RISCV, UNKNOWN},
-                {"ms-CAS-relaxed", TSO, UNKNOWN},
+                {"ms", TSO, BOUNDED},
+                {"ms", ARM8, BOUNDED},
+                {"ms", POWER, BOUNDED},
+                {"ms", RISCV, BOUNDED},
+                {"ms-CAS-relaxed", TSO, BOUNDED},
                 {"ms-CAS-relaxed", ARM8, FAIL},
                 {"ms-CAS-relaxed", POWER, FAIL},
                 {"ms-CAS-relaxed", RISCV, FAIL},
-                {"treiber", TSO, UNKNOWN},
-                {"treiber", ARM8, UNKNOWN},
-                {"treiber", POWER, UNKNOWN},
-                {"treiber", RISCV, UNKNOWN},
-                {"treiber-CAS-relaxed", TSO, UNKNOWN},
+                {"treiber", TSO, BOUNDED},
+                {"treiber", ARM8, BOUNDED},
+                {"treiber", POWER, BOUNDED},
+                {"treiber", RISCV, BOUNDED},
+                {"treiber-CAS-relaxed", TSO, BOUNDED},
                 {"treiber-CAS-relaxed", ARM8, FAIL},
                 {"treiber-CAS-relaxed", POWER, FAIL},
                 {"treiber-CAS-relaxed", RISCV, FAIL},

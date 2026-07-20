@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -18,7 +18,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class VMMLocksTest extends AbstractCTest {
@@ -55,13 +55,13 @@ public class VMMLocksTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"ttas", C11, UNKNOWN},
+                {"ttas", C11, BOUNDED},
                 {"ttas-acq2rx", C11, FAIL},
                 {"ttas-rel2rx", C11, FAIL},
                 {"ticketlock", C11, PASS},
                 {"ticketlock-acq2rx", C11, FAIL},
                 {"ticketlock-rel2rx", C11, FAIL},
-                {"mutex", C11, UNKNOWN},
+                {"mutex", C11, BOUNDED},
                 {"mutex-acq2rx_futex", C11, FAIL},
                 {"mutex-acq2rx_lock", C11, FAIL},
                 {"mutex-rel2rx_futex", C11, FAIL},
@@ -72,10 +72,10 @@ public class VMMLocksTest extends AbstractCTest {
                 // VMM requires stronger orderings than hardware models (including IMM)
                 {"linuxrwlock", C11, FAIL},
                 // This one uses the correct orderings for VMM
-                {"linuxrwlock-vmm", C11, UNKNOWN},
+                {"linuxrwlock-vmm", C11, BOUNDED},
                 {"linuxrwlock-acq2rx", C11, FAIL},
                 {"linuxrwlock-rel2rx", C11, FAIL},
-                {"mutex_musl", C11, UNKNOWN},
+                {"mutex_musl", C11, BOUNDED},
                 {"mutex_musl-acq2rx_futex", C11, FAIL},
                 {"mutex_musl-acq2rx_lock", C11, FAIL},
                 {"mutex_musl-rel2rx_futex", C11, FAIL},

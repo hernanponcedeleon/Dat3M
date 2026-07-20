@@ -15,18 +15,15 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.google.common.base.Preconditions;
 import org.apache.commons.csv.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -42,8 +39,8 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.getSourceLocationString;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.utils.Result.ERROR;
+import static com.dat3m.dartagnan.verification.Result.*;
+import static com.dat3m.dartagnan.verification.Result.ERROR;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 public class TaskResultAnalyzer {
@@ -144,7 +141,7 @@ public class TaskResultAnalyzer {
             // Only for programs with exists/forall specifications
             reason = ResultSummary.PROGRAM_SPEC_REASON;
             condition = getSpecificationString(p);
-        } else if (result == UNKNOWN && model != null) {
+        } else if (result == BOUNDED && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
@@ -171,9 +168,9 @@ public class TaskResultAnalyzer {
     }
 
     public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
-                                      boolean generateWitnessForUnknown) throws IOException {
+                                      boolean generateWitnessForBounds) throws IOException {
         if (!solver.hasModel()
-                || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
+                || (solver.getResult() == BOUNDED && !generateWitnessForBounds)
                 || witnessType == WitnessType.NONE) {
             return null;
         }

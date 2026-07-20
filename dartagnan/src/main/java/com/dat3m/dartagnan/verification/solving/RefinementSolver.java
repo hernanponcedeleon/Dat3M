@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -267,7 +267,7 @@ public class RefinementSolver extends ModelChecker {
 
             smtStatus = boundTrace.getFinalResult();
             combinedTrace = combinedTrace.concat(boundTrace);
-            res = smtStatus == SMTStatus.UNSAT ? PASS : UNKNOWN;
+            res = smtStatus == SMTStatus.UNSAT ? PASS : BOUNDED;
 
             if (logger.isInfoEnabled()) {
                 final String message = switch (smtStatus) {

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -41,13 +41,13 @@ public class SpirvRacesTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock-1.1.2.spvasm", 2, UNKNOWN},
-                {"caslock-2.1.1.spvasm", 2, UNKNOWN},
+                {"caslock-1.1.2.spvasm", 2, BOUNDED},
+                {"caslock-2.1.1.spvasm", 2, BOUNDED},
                 {"caslock-acq2rx.spvasm", 2, FAIL},
                 {"caslock-rel2rx.spvasm", 2, FAIL},
-                {"caslock-dv2wg-2.1.1.spvasm", 2, UNKNOWN},
+                {"caslock-dv2wg-2.1.1.spvasm", 2, BOUNDED},
                 {"caslock-dv2wg-1.1.2.spvasm", 1, FAIL},
-                {"caslock-dv2wg-2.2.1.spvasm", 2, UNKNOWN},
+                {"caslock-dv2wg-2.2.1.spvasm", 2, BOUNDED},
                 {"caslock-dv2wg-2.2.2.spvasm", 1, FAIL},
                 {"ticketlock-1.1.2.spvasm", 2, PASS},
                 {"ticketlock-2.1.1.spvasm", 2, PASS},

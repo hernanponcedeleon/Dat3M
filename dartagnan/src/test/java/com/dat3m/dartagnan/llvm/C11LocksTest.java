@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -17,7 +17,7 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class C11LocksTest extends AbstractCTest {
@@ -49,16 +49,16 @@ public class C11LocksTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"ttas", C11, UNKNOWN},
+                {"ttas", C11, BOUNDED},
                 {"ttas-acq2rx", C11, FAIL},
                 {"ttas-rel2rx", C11, FAIL},
                 {"ticketlock", C11, PASS},
                 {"ticketlock-acq2rx", C11, FAIL},
                 {"ticketlock-rel2rx", C11, FAIL},
-                {"mutex", C11, UNKNOWN},
-                {"mutex-acq2rx_futex", C11, UNKNOWN},
+                {"mutex", C11, BOUNDED},
+                {"mutex-acq2rx_futex", C11, BOUNDED},
                 {"mutex-acq2rx_lock", C11, FAIL},
-                {"mutex-rel2rx_futex", C11, UNKNOWN},
+                {"mutex-rel2rx_futex", C11, BOUNDED},
                 {"mutex-rel2rx_unlock", C11, FAIL},
                 {"spinlock", C11, PASS},
                 {"spinlock-acq2rx", C11, FAIL},
@@ -67,13 +67,13 @@ public class C11LocksTest extends AbstractCTest {
                 // It could be the case for C11 is unsafe (because it is weaker)
                 // but we are not 100% sure about this
                 {"linuxrwlock", C11, FAIL},
-                {"mutex_musl", C11, UNKNOWN},
-                {"mutex_musl-acq2rx_futex", C11, UNKNOWN},
+                {"mutex_musl", C11, BOUNDED},
+                {"mutex_musl-acq2rx_futex", C11, BOUNDED},
                 {"mutex_musl-acq2rx_lock", C11, FAIL},
-                {"mutex_musl-rel2rx_futex", C11, UNKNOWN},
+                {"mutex_musl-rel2rx_futex", C11, BOUNDED},
                 {"mutex_musl-rel2rx_unlock", C11, FAIL},
                 {"seqlock", C11, PASS},
-                {"clh_mutex", C11, UNKNOWN},
+                {"clh_mutex", C11, BOUNDED},
                 {"clh_mutex-acq2rx", C11, FAIL},
                 {"ticket_awnsb_mutex", C11, PASS},
                 {"ticket_awnsb_mutex-acq2rx", C11, FAIL},

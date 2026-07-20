@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -81,24 +81,24 @@ public class SpirvAssertionsTest {
                 {"builtin-all-321.spvasm", 1, PASS},
                 {"branch-cond-ff.spvasm", 1, PASS},
                 {"branch-cond-ff-inverted.spvasm", 1, PASS},
-                {"branch-cond-bf.spvasm", 1, UNKNOWN},
+                {"branch-cond-bf.spvasm", 1, BOUNDED},
                 {"branch-cond-bf.spvasm", 2, PASS},
-                {"branch-cond-fb.spvasm", 1, UNKNOWN},
+                {"branch-cond-fb.spvasm", 1, BOUNDED},
                 {"branch-cond-fb.spvasm", 2, PASS},
                 {"branch-race.spvasm", 1, PASS},
-                {"branch-loop.spvasm", 2, UNKNOWN},
+                {"branch-loop.spvasm", 2, BOUNDED},
                 {"branch-loop.spvasm", 3, PASS},
                 {"branch-struct-if.spvasm", 1, PASS},
                 {"branch-struct-if-inverted.spvasm", 1, PASS},
                 {"branch-struct-if-else.spvasm", 1, PASS},
                 {"branch-struct-if-else-inverted.spvasm", 1, PASS},
-                {"loop-struct-cond.spvasm", 1, UNKNOWN},
+                {"loop-struct-cond.spvasm", 1, BOUNDED},
                 {"loop-struct-cond.spvasm", 2, PASS},
-                {"loop-struct-cond-suffix.spvasm", 1, UNKNOWN},
+                {"loop-struct-cond-suffix.spvasm", 1, BOUNDED},
                 {"loop-struct-cond-suffix.spvasm", 2, PASS},
-                {"loop-struct-cond-sequence.spvasm", 2, UNKNOWN},
+                {"loop-struct-cond-sequence.spvasm", 2, BOUNDED},
                 {"loop-struct-cond-sequence.spvasm", 3, PASS},
-                {"loop-struct-cond-nested.spvasm", 2, UNKNOWN},
+                {"loop-struct-cond-nested.spvasm", 2, BOUNDED},
                 {"loop-struct-cond-nested.spvasm", 3, PASS},
                 {"phi.spvasm", 1, PASS},
                 {"phi-unstruct-true.spvasm", 1, PASS},

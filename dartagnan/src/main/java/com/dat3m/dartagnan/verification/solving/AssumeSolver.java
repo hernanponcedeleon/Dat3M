@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.slf4j.Logger;
@@ -15,8 +15,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.Result.FAIL;
+import static com.dat3m.dartagnan.verification.Result.PASS;
 import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends ModelChecker {
@@ -83,7 +83,7 @@ public class AssumeSolver extends ModelChecker {
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : Result.UNKNOWN;
+            res = prover.isUnsat() ? PASS : Result.BOUNDED;
         } else {
             res = FAIL;
         }

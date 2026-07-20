@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
+import com.dat3m.dartagnan.verification.Result;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -7,8 +8,8 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.Result.FAIL;
+import static com.dat3m.dartagnan.verification.Result.PASS;
 
 public class ResourceHelper {
 

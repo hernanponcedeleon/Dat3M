@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.Result.*;
 
 @RunWith(Parameterized.class)
 public class IMMLFDSTest extends AbstractCTest {
@@ -46,11 +46,11 @@ public class IMMLFDSTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"dglm", IMM, UNKNOWN},
+                {"dglm", IMM, BOUNDED},
                 {"dglm-CAS-relaxed", IMM, FAIL},
-                {"ms", IMM, UNKNOWN},
+                {"ms", IMM, BOUNDED},
                 {"ms-CAS-relaxed", IMM, FAIL},
-                {"treiber", IMM, UNKNOWN},
+                {"treiber", IMM, BOUNDED},
                 {"treiber-CAS-relaxed", IMM, FAIL},
                 {"chase-lev", IMM, PASS},
                 // These have an extra thief that violate the assertion

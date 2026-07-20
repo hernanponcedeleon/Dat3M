@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.verification.Result;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.common.configuration.Configuration;
