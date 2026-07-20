@@ -117,7 +117,7 @@ public class TaskSolver implements AutoCloseable {
         runtime = System.currentTimeMillis() - startTime;
     }
 
-    public Result getResult() {
+    public ResultStatus getResult() {
         checkHasRun();
         return modelChecker.getResult();
     }

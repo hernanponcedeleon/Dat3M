@@ -39,8 +39,8 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.getSourceLocationString;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.verification.Result.*;
-import static com.dat3m.dartagnan.verification.Result.ERROR;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.ERROR;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 public class TaskResultAnalyzer {
@@ -72,7 +72,7 @@ public class TaskResultAnalyzer {
 
     public ResultSummary getSummaryFromSolver(TaskSolver solver, String programPath) {
         final VerificationTask task = solver.getTask();
-        final Result result = solver.getResult();
+        final ResultStatus result = solver.getResult();
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
         final IREvaluator model = solver.hasModel() ? solver.getModel() : null;

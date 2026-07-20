@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -35,7 +35,7 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
     }
     
-    public LitmusLinuxRacesTest(String path, Result expected) {
+    public LitmusLinuxRacesTest(String path, ResultStatus expected) {
         super(path, expected);
     }
 }

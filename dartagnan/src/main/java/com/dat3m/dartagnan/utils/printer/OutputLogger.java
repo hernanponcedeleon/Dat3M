@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -9,7 +9,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.verification.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 public class OutputLogger {
 
@@ -46,7 +46,7 @@ public class OutputLogger {
     }
 
     public record ResultSummary (
-            String test, String filter, Result result, String condition,
+            String test, String filter, ResultStatus result, String condition,
             String reason, String details, long time, ExitCode code) {
 
         public static final String PROGRAM_SPEC_REASON = "Program specification violation found";

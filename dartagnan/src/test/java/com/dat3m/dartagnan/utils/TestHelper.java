@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.common.configuration.Configuration;
@@ -32,7 +32,7 @@ public class TestHelper {
                 .build();
     }
 
-    public static Result createAndRunSolver(VerificationTask task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
+    public static ResultStatus createAndRunSolver(VerificationTask task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
         try (TaskSolver solver = TaskSolver.createWithMethod(task, method)) {
             solver.run();
             return solver.getResult();

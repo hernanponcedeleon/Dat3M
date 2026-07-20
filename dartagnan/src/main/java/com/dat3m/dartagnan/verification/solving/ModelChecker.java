@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -39,7 +39,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
-import static com.dat3m.dartagnan.verification.Result.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 // Base class for SMT-based model checkers
 public abstract class ModelChecker implements AutoCloseable {
@@ -76,7 +76,7 @@ public abstract class ModelChecker implements AutoCloseable {
     protected EncodingContext context;
     protected ProverWithTracker prover;
 
-    protected Result res = Result.BOUNDED;
+    protected ResultStatus res = ResultStatus.BOUNDED;
 
     protected ModelChecker(VerificationTask task) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
@@ -85,7 +85,7 @@ public abstract class ModelChecker implements AutoCloseable {
         task.getConfig().inject(smtConfig);
     }
 
-    public final Result getResult() {
+    public final ResultStatus getResult() {
         Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
         return res;
     }

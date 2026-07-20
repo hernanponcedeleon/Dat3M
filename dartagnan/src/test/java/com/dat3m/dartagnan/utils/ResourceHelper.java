@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -8,8 +8,8 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.dat3m.dartagnan.verification.Result.FAIL;
-import static com.dat3m.dartagnan.verification.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 public class ResourceHelper {
 
@@ -29,10 +29,10 @@ public class ResourceHelper {
         return toPlatformPath("src/test/resources/" + path);
     }
 
-    public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
+    public static ImmutableMap<String, ResultStatus> getExpectedResults(String arch, String postfix) throws IOException {
         String path = getTestResourcePath(arch + postfix + "-expected.csv");
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            HashMap<String, Result> data = new HashMap<>();
+            HashMap<String, ResultStatus> data = new HashMap<>();
             String str;
             while((str = reader.readLine()) != null){
                 if(str.startsWith("//") || str.isBlank()) {
@@ -62,7 +62,7 @@ public class ResourceHelper {
         }
     }
 
-    public static Result readExpected(String filepath, String property) {
+    public static ResultStatus readExpected(String filepath, String property) {
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
             String str;
             while((str = br.readLine()) != null){

@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.verification.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

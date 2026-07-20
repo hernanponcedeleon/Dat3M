@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.verification;
 
-public enum Result {
+public enum ResultStatus {
     PASS, FAIL, BOUNDED, UNKNOWN, ERROR, INTERRUPTED;
 
-    public Result invert() {
+    public ResultStatus invert() {
         return switch (this) {
             case PASS -> FAIL;
             case FAIL -> PASS;

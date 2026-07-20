@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,8 +21,8 @@ import static com.dat3m.dartagnan.configuration.Arch.OPENCL;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.verification.Result.FAIL;
-import static com.dat3m.dartagnan.verification.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -31,9 +31,9 @@ public class SpirvAssertionsTest {
     private final String modelPath = getRootPath("cat/opencl.cat");
     private final String programPath;
     private final int bound;
-    private final Result expected;
+    private final ResultStatus expected;
 
-    public SpirvAssertionsTest(String file, int bound, Result expected) {
+    public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
         this.programPath = getTestResourcePath("spirv/opencl/barrier/scope/" + file);
         this.bound = bound;
         this.expected = expected;

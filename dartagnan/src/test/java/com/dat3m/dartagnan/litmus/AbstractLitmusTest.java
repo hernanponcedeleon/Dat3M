@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.verification.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
@@ -41,10 +41,10 @@ import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 public abstract class AbstractLitmusTest {
 
     private String path;
-    private final Result expected;
-    private static Map<String, Result> expectedResults;
+    private final ResultStatus expected;
+    private static Map<String, ResultStatus> expectedResults;
 
-    AbstractLitmusTest(String path, Result expected) {
+    AbstractLitmusTest(String path, ResultStatus expected) {
         this.path = path;
         this.expected = expected;
     }
@@ -121,7 +121,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
+    protected final Provider<ResultStatus> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
 
