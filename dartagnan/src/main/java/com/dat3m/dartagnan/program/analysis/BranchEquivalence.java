@@ -58,7 +58,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     @Option(secure = true, name = SIMPLE_BRANCH_EQUIVALENCE,
             description = "If true, put every control-flow branch into its own class. " +
                     "If false, merge branches that are implied by each other into a single class.")
-    private boolean simpleBranchEquivalence = false;
+    private boolean simpleBranchEquivalence = true;
 
     // ============================= State ==============================
 
