@@ -165,7 +165,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         currentInstructionContext = ctx;
         final String name = ctx.n.getText();
         // Check for arity issues to give similar errors as in `let rec`.
-        ctx.e.accept(new ArityInspector());
+        ctx.e.accept(new ArityInspector(Set.of()));
         final Relation definedPredicate = (Relation) ctx.e.accept(this);
         final String alias = createUniqueName(name);
         wmm.addAlias(alias, definedPredicate);
@@ -193,7 +193,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         }
         // Create the recursive relations.
         for (int i = 0; i < recSize; i++) {
-            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector());
+            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector(Set.of(lhsNames)));
             final Relation.Arity arity = probedArity != null ? probedArity : Relation.Arity.BINARY;
             recursiveGroup[i] = wmm.newRelation(createUniqueName(lhsNames[i]), arity);
             recursiveGroup[i].setRecursive();
@@ -242,14 +242,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         final String name = ctx.n.getText();
-        final Object localObject = namespace.get(name);
-        final Object boundObject = localObject != null ? localObject : wmm.getRelation(name);
-        if (boundObject != null) {
-            return boundObject;
-        }
-        final boolean predefinedName = RelationNameRepository.contains(name);
-        final Relation predefined = predefinedName ? wmm.getOrCreatePredefinedRelation(name) : null;
-        return predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
+        final Relation relation = getRelation(name);
+        return relation != null ? relation : addDefinition(new TagSet(wmm.newSet(name), name));
     }
 
     @Override
@@ -432,7 +426,11 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
 
-        private ArityInspector() {}
+        private final Collection<String> recursiveRelations;
+
+        private ArityInspector(Collection<String> recursiveRelations) {
+            this.recursiveRelations = recursiveRelations;
+        }
 
         @Override
         public Relation.Arity visitExpr(ExprContext c) {
@@ -441,8 +439,9 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
         @Override
         public Relation.Arity visitExprBasic(ExprBasicContext c) {
-            final Object object = namespace.get(c.n.getText());
-            return object instanceof Relation r ? r.getArity() : null;
+            final String name = c.n.getText();
+            final Relation relation = getRelation(name);
+            return relation != null ? relation.getArity() : recursiveRelations.contains(name) ? null : Relation.Arity.UNARY;
         }
 
         @Override
@@ -493,6 +492,22 @@ class VisitorCat extends CatBaseVisitor<Object> {
             }
             return k1 == null ? k2 : k1;
         }
+    }
+
+    private Relation getRelation(String name) {
+        final Object fromNamespace = namespace.get(name);
+        final Relation relationFromNamespace = fromNamespace instanceof Relation r ? r : null;
+        if (relationFromNamespace != null) {
+            return relationFromNamespace;
+        }
+        if (fromNamespace != null) {
+            throw new ParsingException("Expected relation, got %s", fromNamespace);
+        }
+        final Relation relationFromGlobalNamespace = wmm.getRelation(name);
+        if (relationFromGlobalNamespace != null) {
+            return relationFromGlobalNamespace;
+        }
+        return RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(name) : null;
     }
 
     private ParsingException parsingException(ParserRuleContext ctx, Throwable cause, String message, Object... arguments) {

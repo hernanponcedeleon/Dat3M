@@ -28,6 +28,16 @@ public class CatParserTest {
         parse("let a = R \\ rf");
     }
 
+    @Test(expected = ParsingException.class)
+    public void typeMismatchWithPredefinedRelation() {
+        parse("let rf1 = rf\nlet a = b & rf1");
+    }
+
+    @Test(expected = ParsingException.class)
+    public void typeMismatchWithPredefinedRelationInRecursion() {
+        parse("let rf1 = rf\nlet rec a = b & rf1");
+    }
+
     @Test
     public void recursiveSet() {
         final String text = """
