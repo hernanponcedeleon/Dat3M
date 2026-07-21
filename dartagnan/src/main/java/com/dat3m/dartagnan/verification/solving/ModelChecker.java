@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -17,14 +17,13 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 
 import com.google.common.base.Preconditions;
@@ -36,10 +35,9 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.utils.Result.*;
 
@@ -166,7 +164,6 @@ public abstract class ModelChecker implements AutoCloseable {
 
     // ====================================== Processing utility ==================================================
 
-
     public static void preprocessProgram(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
@@ -174,11 +171,19 @@ public abstract class ModelChecker implements AutoCloseable {
 
     public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
         final Wmm memoryModel = task.getMemoryModel();
+
+        // We remove flagged axioms if we do not check for them.
+        if (!task.getProperty().contains(Property.CAT_SPEC)) {
+            List.copyOf(task.getMemoryModel().getAxioms()).stream()
+                    .filter(Axiom::isFlagged)
+                    .forEach(task.getMemoryModel()::removeConstraint);
+        }
         WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         final Program program = task.getProgram();
+        analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(),
                 analysisContext, config));
@@ -199,6 +204,7 @@ public abstract class ModelChecker implements AutoCloseable {
 
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
+        analysisContext.register(RelationEventDomains.class, RelationEventDomains.newInstance(task.getMemoryModel(), analysisContext));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 

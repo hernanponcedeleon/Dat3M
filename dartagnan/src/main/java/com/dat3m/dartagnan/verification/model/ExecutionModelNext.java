@@ -1,11 +1,8 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.RelationModel;
 import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.*;
@@ -74,8 +71,8 @@ public class ExecutionModelNext {
                         .toList();
     }
 
-    public List<EventModel> getEventModelsByFilter(Filter filter) {
-        return eventList.stream().filter(e -> filter.apply(e.getEvent())).toList();
+    public List<EventModel> getEventModelsByTag(String tag) {
+        return eventList.stream().filter(e -> e.getEvent().hasTag(tag)).toList();
     }
 
     public EventModel getEventModelById(int id) {

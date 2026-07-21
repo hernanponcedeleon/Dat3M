@@ -1,19 +1,14 @@
 package com.dat3m.dartagnan.wmm.definition;
 
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 
 public class ProgramOrder extends Definition {
 
-    private final Filter filter; //TODO: Do we ever need a po on other events than all visible one's?
-
-    public ProgramOrder(Relation r0, Filter s1) {
-        super(Relation.checkIsRelation(r0), "po(" + s1 + ")");
-        filter = s1;
+    public ProgramOrder(Relation r0) {
+        super(Relation.checkIsRelation(r0), RelationNameRepository.PO);
     }
-
-    public Filter getFilter() { return filter; }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {

@@ -158,7 +158,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
         List<RegWriter> candidates = state.stream()
                 .filter(e -> e.register.equals(register))
                 .map(e -> e.event)
-                .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
+                .filter(e -> reader == null || e == null || !exec.areMutuallyExclusive(reader, e))
                 .toList();
         //NOTE if candidates is empty, the reader is unreachable
         List<RegWriter> mays = candidates.stream()

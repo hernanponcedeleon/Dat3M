@@ -29,18 +29,30 @@ public interface MutableEventGraph extends EventGraph {
     boolean removeIf(BiPredicate<Event, Event> f);
 
     static MutableEventGraph from(EventGraph other) {
+        if (other instanceof IndexedEventGraph o) {
+            return new IndexedEventGraph(o);
+        }
         return MapEventGraph.from(other);
     }
 
     static MutableEventGraph union(EventGraph... operands) {
+        if (IndexedEventGraph.isUnionFeasible(operands)) {
+            return IndexedEventGraph.union(operands);
+        }
         return MapEventGraph.union(operands);
     }
 
     static MutableEventGraph intersection(EventGraph... operands) {
+        if (IndexedEventGraph.isIntersectionFeasible(operands)) {
+            return IndexedEventGraph.intersection(operands);
+        }
         return MapEventGraph.intersection(operands);
     }
 
     static MutableEventGraph difference(EventGraph minuend, EventGraph subtrahend) {
+        if (IndexedEventGraph.isDifferenceFeasible(minuend, subtrahend)) {
+            return IndexedEventGraph.difference(minuend, subtrahend);
+        }
         return MapEventGraph.difference(minuend, subtrahend);
     }
 }

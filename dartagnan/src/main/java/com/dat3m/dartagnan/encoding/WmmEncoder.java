@@ -14,12 +14,10 @@ import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
+import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.definition.TagSet;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
@@ -37,6 +35,7 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
@@ -74,7 +73,7 @@ public class WmmEncoder {
     @Option(name=IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
-    boolean useSATEncoding = false;
+    boolean useSATEncoding = true;
 
     // ==============================================================================================
 
@@ -265,6 +264,30 @@ public class WmmEncoder {
         return transCo;
     }
 
+    /*
+        The returned predicate checks whether a pair of events (x, y) in a given relation <rel>
+        can be unconditionally ordered without transitively implying wrong orderings.
+        Used to optimize encodings of "acyclic <rel>" and "co".
+
+        This optimization tries to omit the guards of certain must-edges, i.e.,
+        it promotes "exec(x) /\ exec(y) => clk(x) < clk(y)" to simply "clk(x) < clk(y)".
+        We can only do so when for a (possibly transitive) must-edge (x,y) we have
+        that all must-predecessors of x are also (transitively) must-predecessors of y.
+    */
+    private BiPredicate<Event, Event> getIsUnconditionallyOrderableChecker(Relation rel) {
+        final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+        final EventGraph mustTrans = ra.computeTransitiveClosure(mustSet).getMustSet();
+        final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
+        final Map<Event, Set<Event>> mustInTrans = mustTrans.getInMap();
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+
+        // NOTE: The exec.isImplied check is a performance optimization: it does not improve precision
+        // but allows us to sometimes skip the more expensive inclusion check
+        return (x, y) -> mustTrans.contains(x, y) &&
+                (exec.isImplied(y, x) || mustInTrans.get(y).containsAll(mustIn.getOrDefault(x, Set.of())));
+
+    }
+
     private void encodeContradictions(List<BooleanFormula> enc) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         ra.getContradictions().apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
@@ -420,25 +443,25 @@ public class WmmEncoder {
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            EncodingContext.EdgeEncoder enc2 = context.edge(r2);
+            EncodingContext.EdgeEncoder enc1 = context.edge(r1).withCache();
+            EncodingContext.EdgeEncoder enc2 = context.edge(r2).withCache();
             final EventGraph a1 = EventGraph.union(getActiveSet(r1.getDefinition()), k1.getMustSet());
             final EventGraph a2 = EventGraph.union(getActiveSet(r2.getDefinition()), k2.getMustSet());
             Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
             getActiveSet(comp).apply((e1, e2) -> {
-                BooleanFormula expr = bmgr.makeFalse();
+                final List<BooleanFormula> orClause = new ArrayList<>();
                 if (k.getMustSet().contains(e1, e2)) {
-                    expr = execution(e1, e2);
+                    orClause.add(execution(e1, e2));
                 } else {
                     for (Event e : out.getOrDefault(e1, Set.of())) {
                         if (k2.getMaySet().contains(e, e2)) {
                             verify(a1.contains(e1, e) && a2.contains(e, e2),
                                     "Failed to properly propagate active sets across composition at triple: (%s, %s, %s).", e1, e, e2);
-                            expr = bmgr.or(expr, bmgr.and(enc1.encode(e1, e), enc2.encode(e, e2)));
+                            orClause.add(bmgr.and(enc1.encode(e1, e), enc2.encode(e, e2)));
                         }
                     }
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), expr));
+                enc.add(bmgr.equivalence(enc0.encode(e1, e2), bmgr.or(orClause)));
             });
             return null;
         }
@@ -449,7 +472,7 @@ public class WmmEncoder {
             final Relation r1 = projection.getOperand();
             final EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             final EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
             final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
             getActiveSet(projection).apply((e1, e2) -> {
@@ -465,29 +488,32 @@ public class WmmEncoder {
 
         @Override
         public Void visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation inner = trans.getOperand();
             final Relation rel = trans.getDefinedRelation();
-            final Relation r1 = trans.getOperand();
             final EventGraph relMustSet = ra.getKnowledge(rel).getMustSet();
             final EventGraph relMaySet = ra.getKnowledge(rel).getMaySet();
-            final EventGraph r1MaySet = ra.getKnowledge(r1).getMaySet();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final EventGraph innerMaySet = ra.getKnowledge(inner).getMaySet();
+
+            final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
+            final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
+
             getActiveSet(trans).apply((e1, e2) -> {
-                BooleanFormula edge = enc0.encode(e1, e2);
+                final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
                     enc.add(bmgr.equivalence(edge, execution(e1, e2)));
                 } else {
-                    BooleanFormula orClause = bmgr.makeFalse();
-                    if (r1MaySet.contains(e1, e2)) {
-                        orClause = bmgr.or(orClause, enc1.encode(e1, e2));
+                    final List<BooleanFormula> orClause = new ArrayList<>();
+                    if (innerMaySet.contains(e1, e2)) {
+                        orClause.add(innerEdge.encode(e1, e2));
                     }
-                    for (Event e : r1MaySet.getRange(e1)) {
-                        if (e.getGlobalId() != e1.getGlobalId() && e.getGlobalId() != e2.getGlobalId() && relMaySet.contains(e, e2)) {
-                            BooleanFormula tVar = relMustSet.contains(e1, e) ? enc0.encode(e1, e) : enc1.encode(e1, e);
-                            orClause = bmgr.or(orClause, bmgr.and(tVar, enc0.encode(e, e2)));
+                    for (Event e : innerMaySet.getRange(e1)) {
+                        if (e != e1 && e != e2 && relMaySet.contains(e, e2)) {
+                            final BooleanFormula tVar = relMustSet.contains(e1, e) ? transEdge.encode(e1, e) : innerEdge.encode(e1, e);
+                            orClause.add(bmgr.and(tVar, transEdge.encode(e, e2)));
                         }
                     }
-                    enc.add(bmgr.equivalence(edge, orClause));
+
+                    enc.add(bmgr.equivalence(edge, bmgr.or(orClause)));
                 }
             });
             return null;
@@ -756,22 +782,25 @@ public class WmmEncoder {
         @Override
         public Void visitCoherence(Coherence coDef) {
             final Relation co = coDef.getDefinedRelation();
-            boolean idl = !useSATEncoding;
-            List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
+            final BiPredicate<Event, Event> alwaysOrdered = getIsUnconditionallyOrderableChecker(co);
+            final boolean idl = !useSATEncoding;
+            final EventGraph maySet = ra.getKnowledge(co).getMaySet();
+            final EventGraph mustSet = ra.getKnowledge(co).getMustSet();
+            final EventGraph transCo = findTransitivelyImpliedCo();
+
+            final List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();
-            EncodingContext.EdgeEncoder edge = context.edge(co);
-            EventGraph maySet = ra.getKnowledge(co).getMaySet();
-            EventGraph mustSet = ra.getKnowledge(co).getMustSet();
-            EventGraph transCo = findTransitivelyImpliedCo();
-            IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            final IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            final EncodingContext.EdgeEncoder edge = context.edge(co);
+
             if (idl) {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----
                 NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
                 for (MemoryCoreEvent w : allWrites) {
                     NumeralFormula.IntegerFormula clock = memoryOrderClock(w);
-                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
+                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.lessThan(zero, clock));
                 }
             }
             // ---- Encode coherences ----
@@ -794,12 +823,24 @@ public class WmmEncoder {
                     } else {
                         enc.add(bmgr.implication(bmgr.or(coF, coB), pairingCond));
                     }
+
                     if (idl) {
-                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z) ? bmgr.makeTrue()
-                                : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))));
-                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
-                                : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))));
+                        if (alwaysOrdered.test(x, z)) {
+                            enc.add(imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z)));
+                        } else if (alwaysOrdered.test(z, x)) {
+                            enc.add(imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x)));
+                        }
+
+                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z)
+                                ? bmgr.makeTrue()
+                                : imgr.lessThan(memoryOrderClock(x), memoryOrderClock(z))
+                        ));
+                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x)
+                                ? bmgr.makeTrue()
+                                : imgr.lessThan(memoryOrderClock(z), memoryOrderClock(x))
+                        ));
                     } else {
+                        // SAT encoding
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!mustSet.contains(x, z) && !mustSet.contains(z, x)) {
                             for (MemoryEvent y : allWrites) {
@@ -993,15 +1034,18 @@ public class WmmEncoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             final String clockVarName = rel.getNameOrTerm();
-            List<BooleanFormula> enc = new ArrayList<>();
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
+
+            List<BooleanFormula> enc = new ArrayList<>();
             relevantEdges.apply((e1, e2) ->
-                    enc.add(bmgr.implication(edge.encode(e1, e2),
-                            imgr.lessThan(
-                                    context.clockVariable(clockVarName, e1),
-                                    context.clockVariable(clockVarName, e2)
-                            )
-                    ))
+                enc.add(bmgr.implication(
+                        alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2),
+                        imgr.lessThan(
+                                context.clockVariable(clockVarName, e1),
+                                context.clockVariable(clockVarName, e2)
+                        )
+                ))
             );
             return enc;
         }
@@ -1075,21 +1119,27 @@ public class WmmEncoder {
             }
 
             // --- Create encoding ---
-            final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
-            List<BooleanFormula> enc = new ArrayList<>();
+            final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            final BiPredicate<Event, Event> alwaysOrder = getIsUnconditionallyOrderableChecker(rel);
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final EncodingContext.EdgeEncoder smtCycleVar =
+                    ((EncodingContext.EdgeEncoder)(x, y) -> getSMTCycleVar(rel, x, y)).withCache();
+
+            List<BooleanFormula> enc = new ArrayList<>();
             // Basic lifting
             relevantEdges.apply((e1, e2) -> {
-                BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2)));
+                BooleanFormula cond = alwaysOrder.test(e1, e2) ? bmgr.makeTrue() : edge.encode(e1, e2);
+                enc.add(bmgr.implication(cond, smtCycleVar.encode(e1, e2)));
             });
 
             // Encode triangle rules
             for (Event[] tri : triangles) {
-                BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
-                        context.execution(tri[0], tri[2])
-                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1]), getSMTCycleVar(rel, tri[1], tri[2]));
-                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2])));
+                BooleanFormula cond = alwaysOrder.test(tri[0], tri[2])
+                        ? bmgr.makeTrue()
+                        : mustSet.contains(tri[0], tri[2])
+                          ? context.execution(tri[0], tri[2])
+                        : bmgr.and(smtCycleVar.encode(tri[0], tri[1]), smtCycleVar.encode(tri[1], tri[2]));
+                enc.add(bmgr.implication(cond, smtCycleVar.encode(tri[0], tri[2])));
             }
 
             //  --- Encode inconsistent assignments ---
@@ -1103,8 +1153,8 @@ public class WmmEncoder {
                 Set<Event> out = vertEleOutEdges.get(e1);
                 for (Event e2: out) {
                     if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
-                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(rel, e1, e2);
-                        enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(rel, e2, e1))));
+                        BooleanFormula cond = mustSet.contains(e1, e2) ? bmgr.makeTrue() : smtCycleVar.encode(e1, e2);
+                        enc.add(bmgr.implication(cond, bmgr.not(smtCycleVar.encode(e2, e1))));
                     }
                 }
             }
