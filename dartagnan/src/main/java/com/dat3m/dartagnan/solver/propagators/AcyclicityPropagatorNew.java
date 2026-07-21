@@ -20,6 +20,10 @@ import java.util.function.Function;
 public class AcyclicityPropagatorNew extends AbstractUserPropagator {
 
     private static final boolean enableTheoryPropagation = true;
+    // Might weaken propagation/learning if set to true?
+    private static final boolean stopOnConflict = false;
+    // If set to true, we can propagate the same edge twice but with different reasons
+    private static final boolean allowDuplicatePropagation = false;
 
     private final RelationAnalysis relationAnalysis;
     private final EncodingContext context;
@@ -113,7 +117,7 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
     public void onPush() {
         curLevel++;
         cases.forEach(c -> c.graph.push());
-        //System.out.println("------- Push: " + curLevel + " -------");
+        // System.out.println("------- Push: " + curLevel + " -------");
     }
 
     @Override
@@ -122,14 +126,15 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
         curLevel -= numPoppedLevels;
         cases.forEach(c -> c.graph.pop(numPoppedLevels));
         alreadyPropagatedEdges.clear();
-        //System.out.println("------- Pop to: " + curLevel + " -------");
+        // System.out.println("------- Pop to: " + curLevel + " -------");
     }
 
 
     @Override
     public void onKnownValue(BooleanFormula expr, boolean value) {
-        if (raisedConflict) {
+        if (raisedConflict && stopOnConflict) {
             // We have a pending conflict
+            // System.out.println("Already conflict; skip " + expr);
             return;
         }
 
@@ -139,6 +144,11 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
         graph.assignEdge(edge, value);
 
         if (value) {
+            if (alreadyPropagatedEdges.contains(edge)) {
+                raisedConflict = true;
+                // System.out.println("Propagation conflict");
+                return;
+            }
             processEdgeAddition(graph, edge);
 
             numChecks++;
@@ -152,15 +162,13 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
     // Checks for cycles caused by adding <edge> and possibly raises a conflict.
     // If no conflict is raised, tries to do theory propagation
     private void processEdgeAddition(VarGraph graph, VarGraph.Edge edge) {
-        if (raisedConflict) {
-            return;
-        }
 
         if (forwardBfsSearch(graph, edge, ingoingMap)) {
             // We found a cycle
             final List<BooleanFormula> conflict = computeCycleReason(edge, ingoingMap);
             trackReason(conflict);
             getBackend().propagateConflict(conflict.toArray(new BooleanFormula[0]));
+            raisedConflict = true;
         } else if (enableTheoryPropagation) {
             backwardBfsPropagate(graph, edge, ingoingMap);
         }
@@ -229,9 +237,12 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
                 }
 
                 final int next = inEdge.getSource();
-                if (ingoingMap[next] != null && !alreadyPropagatedEdges.contains(inEdge)) {
+                if (ingoingMap[next] != null && (allowDuplicatePropagation || !alreadyPropagatedEdges.contains(inEdge))) {
                     assert inEdge.isUnassigned();
                     disabledEdgesToPropagate.add(inEdge);
+                    /*if ( !alreadyPropagatedEdges.contains(inEdge)) {
+                        System.out.println("New prop reason for: " + inEdge);
+                    }*/
                 } else if (inEdge.isTrue() && outgoingMap[next] == null) {
                     outgoingMap[next] = inEdge;
                     workqueue.add(next);
@@ -272,9 +283,11 @@ public class AcyclicityPropagatorNew extends AbstractUserPropagator {
 
             // Propagate
             assert !reason.isEmpty();
-            getBackend().propagateConsequence(reason.toArray(new BooleanFormula[0]), edge.getNegEdgeVar());
+            final BooleanFormula[] propReason = reason.toArray(new BooleanFormula[0]);
+            getBackend().propagateConsequence(propReason, edge.getNegEdgeVar());
             numPropagations++;
             alreadyPropagatedEdges.add(edge);
+
         }
     }
 
