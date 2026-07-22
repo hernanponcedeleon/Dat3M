@@ -26,8 +26,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
 @Options
 public class TaskSolver implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(TaskSolver.class);
-
     // ================================== Configurables ==================================
 
     @Option(
@@ -51,9 +49,9 @@ public class TaskSolver implements AutoCloseable {
     private final VerificationTask task;
 
     private ModelChecker modelChecker;
-    private IREvaluator model;
     private ShutdownManager shutdownManager;
     private long runtime = 0;
+    private TaskResult<?> result;
 
     public VerificationTask getTask() {
         return task;
@@ -68,6 +66,8 @@ public class TaskSolver implements AutoCloseable {
     }
 
     public static TaskSolver create(VerificationTask task) throws InvalidConfigurationException {
+        Preconditions.checkArgument(task.getGoal() instanceof TaskGoal.Verify,
+                "Unsupported goal " + task.getGoal().getClass());
         return new TaskSolver(task);
     }
 
@@ -99,7 +99,9 @@ public class TaskSolver implements AutoCloseable {
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
         final long startTime = System.currentTimeMillis();
 
+        this.result = null;
         initModelChecker();
+
         if (!hasTimeout()) {
             modelChecker.run();
         } else {
@@ -110,16 +112,22 @@ public class TaskSolver implements AutoCloseable {
             timeoutThread.join();
         }
 
-        if (modelChecker.hasModel()) {
-            model = modelChecker.getModel();
-        }
-
+        result = new TaskResult.Verify(
+                modelChecker.getResult(),
+                modelChecker.hasModel() ? modelChecker.getModel() : null,
+                (TaskGoal.Verify) task.getGoal()
+        );
         runtime = System.currentTimeMillis() - startTime;
     }
 
-    public ResultStatus getResult() {
+    public TaskResult<?> getResult() {
         checkHasRun();
-        return modelChecker.getResult();
+        return result;
+    }
+
+    public ResultStatus getResultStatus() {
+        checkHasRun();
+        return result.getStatus();
     }
 
     public long getRuntime() {
@@ -127,28 +135,13 @@ public class TaskSolver implements AutoCloseable {
         return runtime;
     }
 
-    public boolean hasModel() {
-        checkHasRun();
-        return model != null;
-    }
-
-    public IREvaluator getModel() {
-        Preconditions.checkState(hasModel(), "No model available");
-        return model;
-    }
-
-    public ExecutionModelNext getExecutionGraph() {
-        return new ExecutionModelManager().buildExecutionModel(getModel());
-    }
-
     // ===================================== Misc =====================================
 
     @Override
     public void close() {
         // VERY IMPORTANT: Close model before closing model checker!
-        if (model != null) {
-            model.close();
-            model = null;
+        if (result != null && result.hasModel()) {
+            result.getModel().close();
         }
 
         if (modelChecker != null) {
@@ -158,7 +151,7 @@ public class TaskSolver implements AutoCloseable {
     }
 
     protected void checkHasRun() {
-        Preconditions.checkState(modelChecker != null, "Model checker has not run yet.");
+        Preconditions.checkState(result != null, "Model checker has not run yet.");
     }
 
     private Thread createTimeoutThread() {

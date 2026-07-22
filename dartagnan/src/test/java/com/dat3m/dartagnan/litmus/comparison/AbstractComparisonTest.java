@@ -124,7 +124,7 @@ public abstract class AbstractComparisonTest {
              TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
             s1.run();
             s2.run();
-            assertEquals(s1.hasModel(), s2.hasModel());
+            assertEquals(s1.getResult().hasModel(), s2.getResult().hasModel());
         }
     }
 }

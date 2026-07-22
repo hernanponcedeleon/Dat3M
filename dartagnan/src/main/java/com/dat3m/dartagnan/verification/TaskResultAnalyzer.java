@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -71,13 +72,17 @@ public class TaskResultAnalyzer {
     }
 
     public ResultSummary getSummaryFromSolver(TaskSolver solver, String programPath) {
+        if (!(solver.getResult() instanceof TaskResult.Verify result)) {
+            throw new UnsupportedOperationException("Support for " + solver.getResult().getClass() + " is not implemented yet.");
+        }
+
         final VerificationTask task = solver.getTask();
-        final ResultStatus result = solver.getResult();
+        final ResultStatus status = result.getStatus();
         final Program p = task.getProgram();
-        final EnumSet<Property> props = task.getProperty();
-        final IREvaluator model = solver.hasModel() ? solver.getModel() : null;
-        final boolean hasViolationsWithModel = result == FAIL && model != null;
-        final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
+        final EnumSet<Property> props = result.getGoal().properties();
+        final IREvaluator model = result.hasModel() ? result.getModel() : null;
+        final boolean hasViolationsWithModel = status == FAIL && model != null;
+        final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
         final long time = solver.getRuntime();
 
         // ----------------- Generate output of verification result -----------------
@@ -134,14 +139,14 @@ public class TaskResultAnalyzer {
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     reason = ResultSummary.CAT_SPEC_REASON;
-                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, CAT_SPEC_VIOLATION);
+                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, result, synContext), time, CAT_SPEC_VIOLATION);
                 }
             }
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
             reason = ResultSummary.PROGRAM_SPEC_REASON;
             condition = getSpecificationString(p);
-        } else if (result == BOUNDED && model != null) {
+        } else if (status == BOUNDED && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
@@ -159,18 +164,18 @@ public class TaskResultAnalyzer {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
             ExitCode code = BOUNDED_RESULT;
-            return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, code);
+            return new ResultSummary(programPath, filter, status, condition, reason, details.toString(), time, code);
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
+        return new ResultSummary(programPath, filter, status, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
     public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForBounds) throws IOException {
-        if (!solver.hasModel()
-                || (solver.getResult() == BOUNDED && !generateWitnessForBounds)
+        if (!solver.getResult().hasModel()
+                || (solver.getResultStatus() == BOUNDED && !generateWitnessForBounds)
                 || witnessType == WitnessType.NONE) {
             return null;
         }
@@ -179,7 +184,7 @@ public class TaskResultAnalyzer {
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                final ExecutionModelNext model = solver.getExecutionGraph();
+                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(solver.getResult().getModel());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
@@ -241,10 +246,11 @@ public class TaskResultAnalyzer {
         details.append("\n");
     }
 
-    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model, SyntacticContextAnalysis synContext) {
-        if (!task.getProperty().contains(CAT_SPEC)) {
+    private static String getFlaggedPairsOutput(VerificationTask task, TaskResult.Verify result, SyntacticContextAnalysis synContext) {
+        if (!result.getProperties().contains(CAT_SPEC) || !result.hasModel()) {
             return "";
         }
+        final IREvaluator model = result.getModel();
 
         final Wmm wmm = task.getMemoryModel();
         final StringBuilder output = new StringBuilder();

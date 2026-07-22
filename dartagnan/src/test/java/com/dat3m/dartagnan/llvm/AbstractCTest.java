@@ -116,7 +116,7 @@ public abstract class AbstractCTest {
         try (TaskSolver solver = TaskSolver.createWithMethod(taskProvider.get(), method)
                 .withShutdownManager(shutdownManagerProvider.get())) {
             solver.run();
-            assertEquals(expected, solver.getResult());
+            assertEquals(expected, solver.getResultStatus());
         }
     }
 

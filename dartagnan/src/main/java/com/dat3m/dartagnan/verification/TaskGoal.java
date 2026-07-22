@@ -7,4 +7,5 @@ import java.util.EnumSet;
 public sealed interface TaskGoal {
 
     record Verify(EnumSet<Property> properties) implements TaskGoal { }
+
 }

@@ -55,6 +55,10 @@ public class ExecutionModelManager {
     private Wmm wmm;
     private EventDomainNext domain;
 
+    public static ExecutionModelNext fromIREvaluator(IREvaluator evaluator) {
+        return new ExecutionModelManager().buildExecutionModel(evaluator);
+    }
+
     public ExecutionModelManager() {
         setBuilder = new SetPredicateBuilder();
         graphBuilder = new RelationGraphBuilder();

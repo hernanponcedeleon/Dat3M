@@ -25,17 +25,17 @@ public class VerificationTask {
     private final Program program;
     private final Wmm memoryModel;
     private final ProgressModel.Hierarchy progressModel;
-    private final EnumSet<Property> property;
+    private final TaskGoal goal;
     private final Configuration config;
 
     protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                               EnumSet<Property> property, Configuration config)
+                               TaskGoal goal, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.progressModel = checkNotNull(progressModel);
-        this.property = checkNotNull(property);
         this.config = checkNotNull(config);
+        this.goal = checkNotNull(goal);
 
         // TODO: Is it a good idea to inject configs into the program here?
         program.injectConfig(config);
@@ -49,8 +49,7 @@ public class VerificationTask {
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
-    public EnumSet<Property> getProperty() { return property; }
-
+    public TaskGoal getGoal() { return goal; }
 
     // ==================== Builder =====================
 
@@ -98,7 +97,7 @@ public class VerificationTask {
         }
 
         public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, progressModel, property, config.build());
+            return new VerificationTask(program, memoryModel, progressModel, new TaskGoal.Verify(property), config.build());
         }
     }
 }

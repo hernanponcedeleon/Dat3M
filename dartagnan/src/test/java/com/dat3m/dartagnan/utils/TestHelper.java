@@ -35,7 +35,7 @@ public class TestHelper {
     public static ResultStatus createAndRunSolver(VerificationTask task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
         try (TaskSolver solver = TaskSolver.createWithMethod(task, method)) {
             solver.run();
-            return solver.getResult();
+            return solver.getResultStatus();
         }
     }
 

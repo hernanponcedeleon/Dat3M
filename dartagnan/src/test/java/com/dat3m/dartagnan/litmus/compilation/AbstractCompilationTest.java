@@ -135,13 +135,13 @@ public abstract class AbstractCompilationTest {
              TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
 
             s1.run();
-            if (!s1.hasModel()) {
+            if (!s1.getResult().hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
                 // so the compiled code should also not exhibit that behaviour, unless we
                 // know the compilation is broken
                 boolean compilationIsBroken = getCompilationBreakers().contains(path);
                 s2.run();
-                assertEquals(compilationIsBroken, s2.hasModel());
+                assertEquals(compilationIsBroken, s2.getResult().hasModel());
             }
         }
     }

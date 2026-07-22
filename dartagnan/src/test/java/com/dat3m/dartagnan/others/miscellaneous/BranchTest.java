@@ -100,7 +100,7 @@ public class BranchTest {
 
         try (TaskSolver solver = TaskSolver.create(task)) {
             solver.run();
-            assertEquals(expected, solver.getResult());
+            assertEquals(expected, solver.getResultStatus());
         }
     }
 }

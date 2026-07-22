@@ -62,7 +62,7 @@ public class ArrayValidTest {
 
         try (TaskSolver solver = TaskSolver.create(task)) {
             solver.run();
-            assertEquals(PASS, solver.getResult());
+            assertEquals(PASS, solver.getResultStatus());
         }
     }
 }

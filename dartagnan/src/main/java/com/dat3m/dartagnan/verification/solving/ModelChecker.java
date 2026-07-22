@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.TaskGoal;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -96,7 +97,10 @@ public abstract class ModelChecker implements AutoCloseable {
     }
 
     public boolean hasModel() {
-        final Property.Type propType = Property.getCombinedType(context.getTask().getProperty(), context.getTask());
+        if (!(task.getGoal() instanceof TaskGoal.Verify verify)) {
+            return false;
+        }
+        final Property.Type propType = Property.getCombinedType(verify.properties(), context.getTask());
         final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
         final boolean hasPositiveWitnesses  = res == PASS && propType == Property.Type.REACHABILITY;
         final boolean hasReachedBounds      = res == BOUNDED && propType == Property.Type.SAFETY;
@@ -173,7 +177,7 @@ public abstract class ModelChecker implements AutoCloseable {
         final Wmm memoryModel = task.getMemoryModel();
 
         // We remove flagged axioms if we do not check for them.
-        if (!task.getProperty().contains(Property.CAT_SPEC)) {
+        if (!(task.getGoal() instanceof TaskGoal.Verify verify && verify.properties().contains(Property.CAT_SPEC))) {
             List.copyOf(task.getMemoryModel().getAxioms()).stream()
                     .filter(Axiom::isFlagged)
                     .forEach(task.getMemoryModel()::removeConstraint);
