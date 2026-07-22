@@ -1,11 +1,11 @@
-Vulkan storage-class-3
+VULKAN storage-class-3
 {
-  a = 0;
-  b = 0;
-  c = 0;
-  d = 0;
+a=0;
+b=0;
+c=0;
+d=0;
 }
-P0@sg 0, wg 0, qf 0                            | P1@sg 1, wg 0, qf 0                           ;
+ P0@sg 0, wg 0, qf 0                           | P1@sg 1, wg 0, qf 0                           ;
  st.av.wg.sc0 a, 1                             | cbar.acq_rel.wg.semsc0.semsc1.semsc2.semsc3 1 ;
  st.av.wg.sc1 b, 2                             | ld.vis.wg.sc0 r0, a                           ;
  st.av.wg.sc2 c, 3                             | ld.vis.wg.sc1 r1, b                           ;

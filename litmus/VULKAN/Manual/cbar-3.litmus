@@ -1,4 +1,4 @@
-Vulkan cbar-3
+VULKAN cbar-3
 {
 x=1;
 P0:r0=0;
@@ -13,5 +13,5 @@ P1:r1=0;
  goto LC00           | goto LC10           ;
  LC01:               | LC11:               ;
  ld.sc0 r1, x        | ld.sc0 r1, x        ;
-forall
-(P0:r0 == 1 /\ P0:r1 == 1 /\ P1:r0 == 1 /\ P1:r1 == 1)
+
+forall (P0:r0 == 1 /\ P0:r1 == 1 /\ P1:r0 == 1 /\ P1:r1 == 1)
