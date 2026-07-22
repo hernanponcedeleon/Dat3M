@@ -1,16 +1,11 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -46,32 +41,32 @@ public class TaskSolver implements AutoCloseable {
 
     // ====================================== State ======================================
 
-    private final VerificationTask task;
+    private final Task task;
 
     private ModelChecker modelChecker;
     private ShutdownManager shutdownManager;
     private long runtime = 0;
     private TaskResult<?> result;
 
-    public VerificationTask getTask() {
+    public Task getTask() {
         return task;
     }
 
     // =================================== Construction ===================================
 
-    private TaskSolver(VerificationTask task) throws InvalidConfigurationException {
+    private TaskSolver(Task task) throws InvalidConfigurationException {
         this.task = task;
 
         task.getConfig().inject(this);
     }
 
-    public static TaskSolver create(VerificationTask task) throws InvalidConfigurationException {
-        Preconditions.checkArgument(task.getGoal() instanceof TaskGoal.Verify,
-                "Unsupported goal " + task.getGoal().getClass());
+    public static TaskSolver create(Task task) throws InvalidConfigurationException {
+        Preconditions.checkArgument(task instanceof Task.Verify,
+                "Cannot handle task " + task.getClass());
         return new TaskSolver(task);
     }
 
-    public static TaskSolver createWithMethod(VerificationTask task, Method method) throws InvalidConfigurationException {
+    public static TaskSolver createWithMethod(Task task, Method method) throws InvalidConfigurationException {
         final TaskSolver solver = new TaskSolver(task);
         solver.method = method;
         return solver;
@@ -115,7 +110,7 @@ public class TaskSolver implements AutoCloseable {
         result = new TaskResult.Verify(
                 modelChecker.getResult(),
                 modelChecker.hasModel() ? modelChecker.getModel() : null,
-                (TaskGoal.Verify) task.getGoal()
+                (Task.Verify) task
         );
         runtime = System.currentTimeMillis() - startTime;
     }

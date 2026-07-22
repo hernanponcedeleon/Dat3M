@@ -24,9 +24,7 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.TaskGoal;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -153,18 +151,18 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
-    private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
+    private RefinementSolver(Task task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task.getGoal() instanceof TaskGoal.Verify,
-                "Cannot handle goal " + task.getGoal().getClass());
+        Preconditions.checkArgument(task instanceof Task.Verify,
+                "Cannot handle task " + task.getClass());
         task.getConfig().inject(this);
     }
 
-    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
+    public static RefinementSolver create(Task task) throws InvalidConfigurationException  {
         return new RefinementSolver(task);
     }
 
-    protected void preprocess(VerificationTask task) throws InvalidConfigurationException {
+    protected void preprocess(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         final Wmm memoryModel = task.getMemoryModel();
 
@@ -178,7 +176,7 @@ public class RefinementSolver extends ModelChecker {
     @Override
     protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = this.task;
+        final Task task = this.task;
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
         final Configuration config = task.getConfig();
@@ -211,7 +209,7 @@ public class RefinementSolver extends ModelChecker {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
         final Refiner refiner = Refiner.newInstance();
-        final EnumSet<Property> properties = ((TaskGoal.Verify) task.getGoal()).properties();
+        final EnumSet<Property> properties = ((Task.Verify) task).getProperties();
         final Property.Type propertyType = Property.getCombinedType(properties, task);
 
         logger.info("Starting encoding using {}", ctx.getVersion());
@@ -322,7 +320,7 @@ public class RefinementSolver extends ModelChecker {
         // TODO: Check if there is OOB or any aliasing violation
     }
 
-    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
+    private void analyzeInconclusiveness(Task task, Context analysisContext, ExecutionModel model) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         if (alias == null) {
             return;
@@ -367,7 +365,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(Task task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();

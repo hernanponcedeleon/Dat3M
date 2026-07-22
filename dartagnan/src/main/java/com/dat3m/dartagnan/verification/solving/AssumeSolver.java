@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.TaskGoal;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +26,17 @@ public class AssumeSolver extends ModelChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
-    private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
+    private AssumeSolver(Task task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task.getGoal() instanceof TaskGoal.Verify,
-                "Cannot handle goal " + task.getGoal().getClass());
+        Preconditions.checkArgument(task instanceof Task.Verify,
+                "Cannot handle task " + task.getClass());
     }
 
-    public static AssumeSolver create(VerificationTask task) throws InvalidConfigurationException {
+    public static AssumeSolver create(Task task) throws InvalidConfigurationException {
         return new AssumeSolver(task);
     }
 
-    protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
+    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
@@ -75,7 +74,7 @@ public class AssumeSolver extends ModelChecker {
         // Adding bounds
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
-        final EnumSet<Property> properties = ((TaskGoal.Verify)task.getGoal()).properties();
+        final EnumSet<Property> properties = ((Task.Verify) task).getProperties();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(properties);
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);

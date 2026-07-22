@@ -30,7 +30,7 @@ import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -679,7 +679,7 @@ public class AnalysisTest {
         final Configuration config = Configuration.builder()
                 .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();
-        final VerificationTask task = VerificationTask.builder()
+        final Task task = Task.builder()
                 .withConfig(config)
                 .withBound(1)
                 .withTarget(Arch.C11)
@@ -802,7 +802,7 @@ public class AnalysisTest {
         Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
         wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
         Configuration config = Configuration.builder().setOption(MIXED_SIZE, "true").build();
-        VerificationTask task = VerificationTask.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
+        Task task = Task.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
         Context analysisContext = Context.create();
         ModelChecker.preprocessProgram(task, config);
         ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);

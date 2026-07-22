@@ -76,10 +76,10 @@ public class TaskResultAnalyzer {
             throw new UnsupportedOperationException("Support for " + solver.getResult().getClass() + " is not implemented yet.");
         }
 
-        final VerificationTask task = solver.getTask();
+        final Task task = solver.getTask();
         final ResultStatus status = result.getStatus();
         final Program p = task.getProgram();
-        final EnumSet<Property> props = result.getGoal().properties();
+        final EnumSet<Property> props = result.getTask().getProperties();
         final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
         final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
@@ -139,7 +139,7 @@ public class TaskResultAnalyzer {
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     reason = ResultSummary.CAT_SPEC_REASON;
-                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, result, synContext), time, CAT_SPEC_VIOLATION);
+                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(result, synContext), time, CAT_SPEC_VIOLATION);
                 }
             }
         } else if (hasViolationsWithoutWitness) {
@@ -180,7 +180,7 @@ public class TaskResultAnalyzer {
             return null;
         }
 
-        final VerificationTask task = solver.getTask();
+        final Task task = solver.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -246,8 +246,9 @@ public class TaskResultAnalyzer {
         details.append("\n");
     }
 
-    private static String getFlaggedPairsOutput(VerificationTask task, TaskResult.Verify result, SyntacticContextAnalysis synContext) {
-        if (!result.getProperties().contains(CAT_SPEC) || !result.hasModel()) {
+    private static String getFlaggedPairsOutput(TaskResult.Verify result, SyntacticContextAnalysis synContext) {
+        final Task.Verify task = result.getTask();
+        if (!task.getProperties().contains(CAT_SPEC) || !result.hasModel()) {
             return "";
         }
         final IREvaluator model = result.getModel();
@@ -297,7 +298,7 @@ public class TaskResultAnalyzer {
         return sb.toString();
     }
 
-    private static String getFilterString(VerificationTask task) {
+    private static String getFilterString(Task task) {
         if ("true".equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION)))
             return "";
 

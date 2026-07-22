@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
+import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.Task.TaskBuilder;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -84,7 +84,7 @@ public class Dartagnan extends BaseOptions {
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
                 final Wmm mcm = new ParserCat(o.getCatIncludePath()).parse(catFile);
-                final VerificationTaskBuilder builder = VerificationTask.builder()
+                final TaskBuilder builder = Task.builder()
                         .withConfig(config)
                         .withProgressModel(o.getProgressModel());
                 // If the arch has been set during parsing (this only happens for litmus tests)
@@ -93,7 +93,7 @@ public class Dartagnan extends BaseOptions {
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
                     builder.withTarget(p.getArch());
                 }
-                final VerificationTask task = builder.build(p, mcm, o.getProperty());
+                final Task task = builder.build(p, mcm, o.getProperty());
 
                 // ----------- Solve task ----------
                 final TaskSolver taskSolver = TaskSolver.create(task);

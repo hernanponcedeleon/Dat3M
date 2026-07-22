@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -127,7 +127,7 @@ public class RelationAnalysisTest {
         Program program = new ProgramParser().parse(new File(path));
         Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
         Configuration baseConfig = Configuration.builder().build();
-        VerificationTask baseTask = createTask(program, wmm, baseConfig);
+        Task baseTask = createTask(program, wmm, baseConfig);
         preprocessProgram(baseTask, baseTask.getConfig());
         preprocessMemoryModel(baseTask, baseTask.getConfig());
 
@@ -137,7 +137,7 @@ public class RelationAnalysisTest {
                 .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.NATIVE.toString())
                 .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();
-        VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
+        Task nativeTask = createTask(program, wmm, nativeConfig);
         performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
         performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
         RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
@@ -147,7 +147,7 @@ public class RelationAnalysisTest {
         Configuration lazyConfig = Configuration.builder()
                 .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
                 .build();
-        VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
+        Task lazyTask = createTask(program, wmm, lazyConfig);
         performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
         performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
         RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
@@ -161,9 +161,9 @@ public class RelationAnalysisTest {
         }
     }
 
-    private VerificationTask createTask(Program program, Wmm wmm, Configuration config)
+    private Task createTask(Program program, Wmm wmm, Configuration config)
             throws InvalidConfigurationException {
-        return VerificationTask.builder()
+        return Task.builder()
                 .withConfig(config)
                 .withBound(2)
                 .withTarget(target)

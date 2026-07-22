@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -45,7 +45,7 @@ public final class EncodingContext {
 
     private static final Logger logger = LoggerFactory.getLogger(EncodingContext.class);
 
-    private final VerificationTask verificationTask;
+    private final Task task;
     private final Context analysisContext;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
@@ -74,8 +74,8 @@ public final class EncodingContext {
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
-    private EncodingContext(VerificationTask t, Context a, FormulaManager m, Collection<? extends Constraint> c) {
-        verificationTask = checkNotNull(t);
+    private EncodingContext(Task t, Context a, FormulaManager m, Collection<? extends Constraint> c) {
+        task = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
@@ -95,12 +95,12 @@ public final class EncodingContext {
         );
     }
 
-    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
+    public static EncodingContext of(Task task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
         return of(task, analysisContext, formulaManager, task.getMemoryModel().getAxioms());
     }
 
-    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager,
-            Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
+    public static EncodingContext of(Task task, Context analysisContext, FormulaManager formulaManager,
+                                     Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
@@ -109,8 +109,8 @@ public final class EncodingContext {
         return context;
     }
 
-    public VerificationTask getTask() {
-        return verificationTask;
+    public Task getTask() {
+        return task;
     }
 
     public Context getAnalysisContext() {
@@ -305,7 +305,7 @@ public final class EncodingContext {
         // Only for the standard fair progress model we can merge CF variables.
         // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
         //  to classes per thread.
-        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel().isFair();
+        final boolean mergeCFVars = shouldMergeCFVars && task.getProgressModel().isFair();
         if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
                 BooleanFormula v = bmgr.makeVariable("cf " + cls.getRepresentative().getGlobalId());
@@ -314,13 +314,13 @@ public final class EncodingContext {
                 }
             }
         } else {
-            for (Event e : verificationTask.getProgram().getThreadEvents()) {
+            for (Event e : task.getProgram().getThreadEvents()) {
                 controlFlowVariables.put(e, bmgr.makeVariable("cf " + e.getGlobalId()));
             }
         }
 
         // ------- Memory object variables -------
-        for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
+        for (MemoryObject memoryObject : task.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
                     TypeFactory.getInstance().getArchType())
@@ -328,7 +328,7 @@ public final class EncodingContext {
         }
 
         // ------- Event variables  -------
-        for (Event e : verificationTask.getProgram().getThreadEvents()) {
+        for (Event e : task.getProgram().getThreadEvents()) {
             if (e instanceof NamedBarrier b) {
                 syncVariables.put(b, bmgr.makeVariable("sync " + e.getGlobalId()));
             }

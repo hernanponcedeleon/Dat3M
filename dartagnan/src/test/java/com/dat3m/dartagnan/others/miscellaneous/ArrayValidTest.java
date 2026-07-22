@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +54,7 @@ public class ArrayValidTest {
     @Test
     public void test() throws Exception {
         Program program = new ProgramParser().parse(new File(path));
-        VerificationTask task = VerificationTask.builder()
+        Task task = Task.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)
                 .withOption(METHOD, Method.EAGER.asStringOption())

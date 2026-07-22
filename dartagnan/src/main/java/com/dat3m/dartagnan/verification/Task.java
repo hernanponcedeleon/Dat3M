@@ -17,87 +17,100 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
-    Represents a verification task.
+    Represents a task to solve.
  */
-public class VerificationTask {
+public class Task {
 
     // Data objects
     private final Program program;
     private final Wmm memoryModel;
     private final ProgressModel.Hierarchy progressModel;
-    private final TaskGoal goal;
     private final Configuration config;
 
-    protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                               TaskGoal goal, Configuration config)
+    protected Task(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.progressModel = checkNotNull(progressModel);
         this.config = checkNotNull(config);
-        this.goal = checkNotNull(goal);
 
         // TODO: Is it a good idea to inject configs into the program here?
         program.injectConfig(config);
     }
 
-    public static VerificationTaskBuilder builder() {
-        return new VerificationTaskBuilder();
+    public static TaskBuilder builder() {
+        return new TaskBuilder();
     }
 
     public Program getProgram() { return program; }
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
-    public TaskGoal getGoal() { return goal; }
 
-    // ==================== Builder =====================
 
-    public static class VerificationTaskBuilder {
+    // ======================================== Task types =========================================
+
+    // A property verification task
+    public static final class Verify extends Task {
+        private final EnumSet<Property> properties;
+
+        private Verify(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel, Configuration config, EnumSet<Property> properties) throws InvalidConfigurationException {
+            super(program, memoryModel, progressModel, config);
+            this.properties = checkNotNull(properties);
+        }
+
+        public EnumSet<Property> getProperties() { return properties; }
+    }
+
+
+    // ======================================== Builder =========================================
+
+
+    public static class TaskBuilder {
         protected ConfigurationBuilder config = Configuration.builder();
         protected ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
-        protected VerificationTaskBuilder() { }
+        protected TaskBuilder() { }
 
-        public VerificationTaskBuilder withTarget(Arch target) {
+        public TaskBuilder withTarget(Arch target) {
             checkNotNull(target, "Target may not be null.");
             this.config.setOption(TARGET, target.toString());
             return this;
         }
 
-        public VerificationTaskBuilder withBound(int k) {
+        public TaskBuilder withBound(int k) {
             checkArgument(k > 0 , "Unrolling bound must be positive.");
             this.config.setOption(BOUND, Integer.toString(k));
             return this;
         }
 
-        public VerificationTaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
+        public TaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
             this.progressModel = progressModel;
             return this;
         }
 
-        public VerificationTaskBuilder withSolverTimeout(int t) {
+        public TaskBuilder withSolverTimeout(int t) {
             this.config.setOption(TIMEOUT, Integer.toString(t));
             return this;
         }
 
-        public VerificationTaskBuilder withSolver(SolverContextFactory.Solvers solver) {
+        public TaskBuilder withSolver(SolverContextFactory.Solvers solver) {
             this.config.setOption(SOLVER, solver.toString());
             return this;
         }
 
-        public VerificationTaskBuilder withConfig(Configuration config) {
+        public TaskBuilder withConfig(Configuration config) {
             this.config.copyFrom(config);
             return this;
         }
 
-        public VerificationTaskBuilder withOption(String option, String value) {
+        public TaskBuilder withOption(String option, String value) {
             this.config.setOption(option, value);
             return this;
         }
 
-        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, progressModel, new TaskGoal.Verify(property), config.build());
+        public Task.Verify build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new Task.Verify(program, memoryModel, progressModel, config.build(), property);
         }
     }
 }
