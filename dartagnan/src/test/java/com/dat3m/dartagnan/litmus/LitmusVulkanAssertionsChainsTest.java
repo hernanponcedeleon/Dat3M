@@ -13,11 +13,15 @@ import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanAssertionsNoChainTest extends AbstractLitmusTest {
+public class LitmusVulkanAssertionsChainsTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Assertions-No-Chain");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Assertions-Chains");
+    }
+
+    public LitmusVulkanAssertionsChainsTest(String path, Result expected) {
+        super(path, expected);
     }
 
     @Override
@@ -30,12 +34,8 @@ public class LitmusVulkanAssertionsNoChainTest extends AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
-    public LitmusVulkanAssertionsNoChainTest(String path, Result expected) {
-        super(path, expected);
-    }
-
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vulkan-nochains");
+        return Providers.createWmmFromName(() -> "vulkan-chains");
     }
 }
