@@ -157,7 +157,7 @@ let fre = fr & ext
 // follows from the asmo definition let asmo = co & mutordatom.
 empty ((W * W) & mutordatom) \ asmo \ asmo^-1 as consistent-asmo
 
-// Enforcing strict partial order for asmo
+// Enforcing transitive asmo
 empty (asmo; asmo) \ asmo
 
 // Enforcing co from initial writes to other same-location stores
