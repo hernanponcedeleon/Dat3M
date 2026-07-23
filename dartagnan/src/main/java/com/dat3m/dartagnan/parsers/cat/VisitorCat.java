@@ -87,7 +87,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         try {
             super.visitMcm(ctx);
         } catch (RuntimeException e) {
-            throw e instanceof ParsingException ? e : parsingException(currentInstructionContext, e, e.getMessage());
+            throw e instanceof ParsingException ? e : parsingException(e, currentInstructionContext);
         }
         return wmm;
     }
@@ -121,7 +121,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             currentFileName = fileName;
             return parser.mcm().accept(this);
         } catch (IOException e) {
-            throw parsingException(ctx, e, "Error parsing file '%s'", filePath);
+            throw parsingException(e, ctx);
         } finally {
             currentFileName = currentFileParent;
         }
@@ -144,7 +144,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             wmm.addConstraint(axiom);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
                  InvocationTargetException e) {
-            throw parsingException(ctx, e, e.getMessage());
+            throw parsingException(e, ctx);
         }
         return null;
     }
@@ -512,15 +512,15 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private ParsingException parsingException(ParserRuleContext ctx, String message, Object... arguments) {
-        return new ParsingException(message + sourceHint(ctx), arguments);
+        return new ParsingException(messageWithSourceHint(message, ctx), arguments);
     }
 
-    private ParsingException parsingException(ParserRuleContext ctx, Throwable cause, String message, Object... arguments) {
-        return new ParsingException(cause, message + sourceHint(ctx), arguments);
+    private ParsingException parsingException(Throwable cause, ParserRuleContext ctx) {
+        return new ParsingException(cause, messageWithSourceHint(cause.getMessage(), ctx));
     }
 
-    private String sourceHint(ParserRuleContext ctx) {
-        return " (%s at line %d)".formatted(currentFileName, ctx.getStart().getLine());
+    private String messageWithSourceHint(String message, ParserRuleContext ctx) {
+        return message + " (%s at line %d)".formatted(currentFileName, ctx.getStart().getLine());
     }
 }
 
