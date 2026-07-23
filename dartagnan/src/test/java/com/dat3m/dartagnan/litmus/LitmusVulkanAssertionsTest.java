@@ -13,11 +13,15 @@ import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanRacesNoChainTest extends AbstractLitmusTest {
+public class LitmusVulkanAssertionsTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Races-No-Chain");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Assertions");
+    }
+
+    public LitmusVulkanAssertionsTest(String path, Result expected) {
+        super(path, expected);
     }
 
     @Override
@@ -27,15 +31,11 @@ public class LitmusVulkanRacesNoChainTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
-    }
-
-    public LitmusVulkanRacesNoChainTest(String path, Result expected) {
-        super(path, expected);
+        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vulkan-nochains");
+        return Providers.createWmmFromName(() -> "vulkan");
     }
 }
