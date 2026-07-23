@@ -59,9 +59,11 @@ public class VerificationTaskSolver extends TaskSolverBase<VerificationTaskSolve
         initModelChecker();
 
         startRun();
-        modelChecker.setShutdownManager(shutdownManager);
-        modelChecker.run();
-        endRun();
+        try {
+            modelChecker.run();
+        } finally {
+            endRun();
+        }
 
         result = new VerificationResult(task, modelChecker.getResult(),
                 modelChecker.hasModel() ? modelChecker.getModel() : null
