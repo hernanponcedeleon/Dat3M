@@ -144,15 +144,24 @@ let locord = loc &
 // From-read is defined based on scoped modification order
 // instead of coherence. For reads that read-from init, they
 // from-read all writes at the same location.
-
-// The definition of the original Vulkan model is too restrictive and forbids CoWW-RR
-// let fr = (rf^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
-let fr = ((rf & locord)^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = (rf^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 let fre = fr & ext
 
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
+
+// Mutually ordered atomic writes must be ordered by asmo in either direction
+// Translated from Alloy rai[asmo] = (W -> W) & mutordatom
+// The opposite direction, empty asmo \ ((W * W) & mutordatom),
+// follows from the asmo definition let asmo = co & mutordatom.
+empty ((W * W) & mutordatom) \ asmo \ asmo^-1 as consistent-asmo
+
+// Enforcing transitive asmo
+empty (asmo; asmo) \ asmo
+
+// Enforcing co from initial writes to other same-location stores
+empty (loc & (IW * (W \ IW))) \ co
 
 // locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
@@ -167,6 +176,5 @@ empty rmw & (fre; (asmo & ext)) as atomic
 (* Data Races *)
 (***************)
 
-let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
-let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
+let dr = loc \ id \ (R * R) \ (IW * _) \ (_ * IW) \ mutordatom \ locord \ locord^-1
 flag ~empty dr as racy
