@@ -242,7 +242,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         final String name = ctx.n.getText();
-        final Relation relation = getRelation(name);
+        final Relation relation = getRelation(name, ctx);
         return relation != null ? relation : addDefinition(new TagSet(wmm.newSet(name), name));
     }
 
@@ -250,12 +250,12 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Object visitExprCall(ExprCallContext ctx) {
         final String calledFunc = ctx.call.getText();
         if (!(namespace.get(calledFunc) instanceof FuncDefinition funcDef)) {
-            throw parsingException(ctx, null, "Invalid call %s: %s is undefined or no function.", ctx.getText(), calledFunc);
+            throw parsingException(ctx, "Invalid call %s: %s is undefined or no function.", ctx.getText(), calledFunc);
         }
 
         final List<CatParser.ExpressionContext> args = ctx.args.expression();
         if (args.size() != funcDef.params().size()) {
-            throw parsingException(ctx, null, "Invalid call %s to function %s: wrong number of arguments.", ctx.getText(), funcDef);
+            throw parsingException(ctx, "Invalid call %s to function %s: wrong number of arguments.", ctx.getText(), funcDef);
         }
         final List<Object> arguments = ctx.args.expression().stream().map(e -> e.accept(this)).toList();
         final Map<String, Object> functionNamespace = new HashMap<>(funcDef.capturedNamespace());
@@ -387,7 +387,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private void checkNoRecursion(ExpressionContext c) {
         if (relationToBeDefined != null) {
-            throw parsingException(c, null, "Unexpected recursive context at expression: %s.", c.getText());
+            throw parsingException(c, "Unexpected recursive context at expression: %s.", c.getText());
         }
     }
 
@@ -409,7 +409,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         if (o instanceof Relation relation) {
             return relation;
         }
-        throw parsingException(t, null, "Expected relation, got %s %s from expression %s.", o.getClass().getSimpleName(), o, t.getText());
+        final String className = o.getClass().getSimpleName();
+        throw parsingException(t, "Expected relation, got %s %s from expression %s.", className, o, t.getText());
     }
 
     private static CatParser getParser(CharStream input) {
@@ -440,7 +441,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         @Override
         public Relation.Arity visitExprBasic(ExprBasicContext c) {
             final String name = c.n.getText();
-            final Relation relation = getRelation(name);
+            final Relation relation = getRelation(name, c);
             return relation != null ? relation.getArity() : recursiveRelations.contains(name) ? null : Relation.Arity.UNARY;
         }
 
@@ -488,20 +489,20 @@ class VisitorCat extends CatBaseVisitor<Object> {
             final Relation.Arity k1 = e1.accept(this);
             final Relation.Arity k2 = e2.accept(this);
             if (k1 != null && k2 != null && !k1.equals(k2)) {
-                throw parsingException(e1.getParent(), null, "Incompatible kinds %s and %s.", k1, k2);
+                throw parsingException(e1.getParent(), "Incompatible kinds %s and %s.", k1, k2);
             }
             return k1 == null ? k2 : k1;
         }
     }
 
-    private Relation getRelation(String name) {
+    private Relation getRelation(String name, ParserRuleContext ctx) {
         final Object fromNamespace = namespace.get(name);
         final Relation relationFromNamespace = fromNamespace instanceof Relation r ? r : null;
         if (relationFromNamespace != null) {
             return relationFromNamespace;
         }
         if (fromNamespace != null) {
-            throw new ParsingException("Expected relation, got %s", fromNamespace);
+            throw parsingException(ctx, "Expected relation, got %s", fromNamespace);
         }
         final Relation relationFromGlobalNamespace = wmm.getRelation(name);
         if (relationFromGlobalNamespace != null) {
@@ -510,9 +511,16 @@ class VisitorCat extends CatBaseVisitor<Object> {
         return RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(name) : null;
     }
 
+    private ParsingException parsingException(ParserRuleContext ctx, String message, Object... arguments) {
+        return new ParsingException(message + sourceHint(ctx), arguments);
+    }
+
     private ParsingException parsingException(ParserRuleContext ctx, Throwable cause, String message, Object... arguments) {
-        final String format = message + " (%s at line %d)".formatted(currentFileName, ctx.getStart().getLine());
-        return new ParsingException(cause, format, arguments);
+        return new ParsingException(cause, message + sourceHint(ctx), arguments);
+    }
+
+    private String sourceHint(ParserRuleContext ctx) {
+        return " (%s at line %d)".formatted(currentFileName, ctx.getStart().getLine());
     }
 }
 
