@@ -71,12 +71,10 @@ public class TaskResultAnalyzer {
         }
     }
 
-    public ResultSummary getSummaryFromSolver(TaskSolver solver, String programPath) {
-        if (!(solver.getResult() instanceof TaskResult.Verify result)) {
-            throw new UnsupportedOperationException("Support for " + solver.getResult().getClass() + " is not implemented yet.");
-        }
+    public ResultSummary getSummaryFromSolver(VerificationTaskSolver solver, String programPath) {
 
-        final Task task = solver.getTask();
+        final VerificationTask task = solver.getTask();
+        final VerificationResult result = solver.getResult();
         final ResultStatus status = result.getStatus();
         final Program p = task.getProgram();
         final EnumSet<Property> props = result.getTask().getProperties();
@@ -172,7 +170,7 @@ public class TaskResultAnalyzer {
         return new ResultSummary(programPath, filter, status, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
-    public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
+    public File generateWitnessIfAble(VerificationTaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForBounds) throws IOException {
         if (!solver.getResult().hasModel()
                 || (solver.getResultStatus() == BOUNDED && !generateWitnessForBounds)
@@ -246,8 +244,8 @@ public class TaskResultAnalyzer {
         details.append("\n");
     }
 
-    private static String getFlaggedPairsOutput(TaskResult.Verify result, SyntacticContextAnalysis synContext) {
-        final Task.Verify task = result.getTask();
+    private static String getFlaggedPairsOutput(VerificationResult result, SyntacticContextAnalysis synContext) {
+        final VerificationTask task = result.getTask();
         if (!task.getProperties().contains(CAT_SPEC) || !result.hasModel()) {
             return "";
         }

@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -153,7 +154,7 @@ public class RefinementSolver extends ModelChecker {
 
     private RefinementSolver(Task task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task instanceof Task.Verify,
+        Preconditions.checkArgument(task instanceof VerificationTask,
                 "Cannot handle task " + task.getClass());
         task.getConfig().inject(this);
     }
@@ -209,7 +210,7 @@ public class RefinementSolver extends ModelChecker {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
         final Refiner refiner = Refiner.newInstance();
-        final EnumSet<Property> properties = ((Task.Verify) task).getProperties();
+        final EnumSet<Property> properties = ((VerificationTask) task).getProperties();
         final Property.Type propertyType = Property.getCombinedType(properties, task);
 
         logger.info("Starting encoding using {}", ctx.getVersion());

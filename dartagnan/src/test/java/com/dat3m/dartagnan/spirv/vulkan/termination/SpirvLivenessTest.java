@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,7 +104,7 @@ public class SpirvLivenessTest {
         assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
-    private Task mkTask() throws Exception {
+    private VerificationTask mkTask() throws Exception {
         Task.TaskBuilder builder = Task.builder()
                 .withConfig(TestHelper.getBasicConfig())
                 .withBound(bound)

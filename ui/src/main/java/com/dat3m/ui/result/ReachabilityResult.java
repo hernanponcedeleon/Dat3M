@@ -4,8 +4,9 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
-import com.dat3m.dartagnan.verification.TaskSolver;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
@@ -51,7 +52,7 @@ public class ReachabilityResult {
         try {
             final Arch arch = program.getArch() != null ? program.getArch() : options.target();
             final Configuration config = Configuration.builder().setOptions(options.config()).build();
-            final Task task = Task.builder()
+            final VerificationTask task = Task.builder()
                     .withConfig(config)
                     .withBound(options.bound())
                     .withSolverTimeout(options.timeout())
@@ -60,7 +61,7 @@ public class ReachabilityResult {
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
-            try (TaskSolver solver = TaskSolver.create(task)) {
+            try (VerificationTaskSolver solver = VerificationTaskSolver.create(task)) {
                 solver.run();
 
                 final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();

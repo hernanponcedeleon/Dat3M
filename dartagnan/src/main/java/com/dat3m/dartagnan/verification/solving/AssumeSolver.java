@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ public class AssumeSolver extends ModelChecker {
 
     private AssumeSolver(Task task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task instanceof Task.Verify,
+        Preconditions.checkArgument(task instanceof VerificationTask,
                 "Cannot handle task " + task.getClass());
     }
 
@@ -74,7 +75,7 @@ public class AssumeSolver extends ModelChecker {
         // Adding bounds
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
-        final EnumSet<Property> properties = ((Task.Verify) task).getProperties();
+        final EnumSet<Property> properties = ((VerificationTask) task).getProperties();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(properties);
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);

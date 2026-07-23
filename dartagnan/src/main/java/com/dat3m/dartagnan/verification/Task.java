@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
     Represents a task to solve.
  */
-public class Task {
+public abstract class Task {
 
     // Data objects
     private final Program program;
@@ -46,21 +46,6 @@ public class Task {
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
-
-
-    // ======================================== Task types =========================================
-
-    // A property verification task
-    public static final class Verify extends Task {
-        private final EnumSet<Property> properties;
-
-        private Verify(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel, Configuration config, EnumSet<Property> properties) throws InvalidConfigurationException {
-            super(program, memoryModel, progressModel, config);
-            this.properties = checkNotNull(properties);
-        }
-
-        public EnumSet<Property> getProperties() { return properties; }
-    }
 
 
     // ======================================== Builder =========================================
@@ -109,8 +94,8 @@ public class Task {
             return this;
         }
 
-        public Task.Verify build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new Task.Verify(program, memoryModel, progressModel, config.build(), property);
+        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new VerificationTask(program, memoryModel, progressModel, config.build(), property);
         }
     }
 }
