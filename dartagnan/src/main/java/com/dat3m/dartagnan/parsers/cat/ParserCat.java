@@ -26,15 +26,15 @@ public class ParserCat {
 
     public Wmm parse(File file) throws IOException {
         try (FileInputStream stream = new FileInputStream(file)) {
-            return parse(CharStreams.fromStream(stream));
+            return parse(CharStreams.fromStream(stream), file.toString());
         }
     }
 
     public Wmm parse(String raw) {
-        return parse(CharStreams.fromString(raw));
+        return parse(CharStreams.fromString(raw), "<input>");
     }
 
-    private Wmm parse(CharStream charStream){
+    private Wmm parse(CharStream charStream, String currentFileName) {
         CatLexer lexer = new CatLexer(charStream);
         lexer.addErrorListener(new AbortErrorListener());
         lexer.addErrorListener(new DiagnosticErrorListener(true));
@@ -44,6 +44,6 @@ public class ParserCat {
         parser.addErrorListener(new AbortErrorListener());
         parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.mcm();
-        return (Wmm) parserEntryPoint.accept(new VisitorCat(includePath));
+        return (Wmm) parserEntryPoint.accept(new VisitorCat(includePath, currentFileName));
     }
 }
