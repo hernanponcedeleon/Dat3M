@@ -54,8 +54,7 @@ public class RelationAnalysisTest {
                 { "litmus/PTX/Manual", "cat/ptx-v7.5.cat", Arch.PTX },
                 { "litmus/PTX/Memalloy", "cat/ptx-v7.5.cat", Arch.PTX },
                 { "litmus/PTX/Nvidia", "cat/ptx-v7.5.cat", Arch.PTX },
-                { "litmus/VULKAN/Data-Race", "cat/vulkan.cat", Arch.VULKAN },
-                { "litmus/VULKAN/Kronos-Group", "cat/vulkan.cat", Arch.VULKAN },
+                { "litmus/VULKAN/KhronosGroup", "cat/vulkan.cat", Arch.VULKAN },
                 { "litmus/VULKAN/Manual", "cat/vulkan.cat", Arch.VULKAN },
                 { "litmus/X86", "cat/tso.cat", Arch.TSO },
 
