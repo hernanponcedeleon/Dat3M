@@ -21,7 +21,8 @@ public class Compilation {
     private static final Logger logger = LoggerFactory.getLogger(Compilation.class);
 
     public static Path compileWithClang(String rawCSource, String cflags) throws Exception {
-        final Path tempFilePath = Files.createTempFile("dat3m", ".c");
+        final Path tempDir = Path.of(System.getProperty("java.io.tmpdir"));
+        final Path tempFilePath = tempDir.resolve("dat3m-input.c");
         Files.writeString(tempFilePath, rawCSource);
 
         final Path outputFile = compileWithClang(tempFilePath, cflags);
