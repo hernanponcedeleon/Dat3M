@@ -141,9 +141,13 @@ public class Dat3M extends JFrame implements ActionListener {
             final String format = programEditor.getLoadedFormat().isEmpty()
                     ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
                     : programEditor.getLoadedFormat();
-            final String cflags = options.cflags().isEmpty()
+            String cflags = options.cflags().isEmpty()
                     ? System.getenv().getOrDefault("CFLAGS", "")
                     : options.cflags();
+            if (format.equals(ProgramParser.EXTENSION_C) && !programEditor.getLoadedDir().isEmpty()) {
+                // Include directory of loaded C file
+                cflags += " -I" + programEditor.getLoadedDir();
+            }
             final Program program = new ProgramParser().parse(sourceCode, format, cflags);
             program.setName("dat3mUI");
             try {
