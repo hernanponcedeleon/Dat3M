@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.utils.Utils;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +32,14 @@ public class Compilation {
     public static Path compileWithClang(Path sourceFile, String cflags) throws Exception {
         final String outputFileName = getOutputName(sourceFile, ".ll");
 
-        final List<String> clangCmd = new ArrayList<>(List.of(
+        final List<String> clangCmd = ImmutableList.<String>builder().add(
                 "clang",
                 "-I", getIncludeDirectory().toString(),
                 "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info",
                 "-o", outputFileName
-        ));
-        clangCmd.addAll(asList(cflags.split(" ")));
-        clangCmd.add(sourceFile.toAbsolutePath().toString());
+                ).addAll(asList(cflags.split(" ")))
+                .add(sourceFile.toAbsolutePath().toString())
+                .build();
 
         runCmd(clangCmd);
         return Path.of(outputFileName);

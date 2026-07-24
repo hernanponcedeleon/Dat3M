@@ -65,11 +65,11 @@ public class ProgramParser {
             sourceCode = CharStreams.fromPath(compileWithClang(rawSourceCode, cflags));
             extension = EXTENSION_LL;
         } else {
-            sourceCode = CharStreams.fromString(rawSourceCode, "raw_input" + extension);
+            sourceCode = CharStreams.fromString(rawSourceCode, "<input>" + extension);
         }
 
         final Program program = parse(sourceCode, extension);
-        program.setName("raw_input" + extension);
+        program.setName("<input>" + extension);
         return program;
     }
 
@@ -138,7 +138,7 @@ public class ProgramParser {
             }
 
             if (c != '\r') {
-                sb.append((char) c);
+                sb.append(c);
             }
         }
         return sb.toString();
