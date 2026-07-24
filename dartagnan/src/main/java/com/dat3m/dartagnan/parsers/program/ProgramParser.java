@@ -138,7 +138,7 @@ public class ProgramParser {
             }
 
             if (c != '\r') {
-                sb.append(c);
+                sb.append((char) c);
             }
         }
         return sb.toString();
