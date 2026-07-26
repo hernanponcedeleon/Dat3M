@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.function.Supplier;
 
@@ -32,26 +32,22 @@ public class Providers {
         return WmmFromArchitectureProvider.create(archSupplier);
     }
 
-    public static Provider<Wmm> createWmmFromFile(Supplier<File> fileSupplier) {
-        return Provider.fromSupplier(() -> new ParserCat().parse(fileSupplier.get()));
-    }
-
-    public static Provider<Wmm> createWmmFromPath(Supplier<String> pathSupplier) {
-        return createWmmFromFile(() -> new File(pathSupplier.get()));
+    public static Provider<Wmm> createWmmFromPath(Supplier<Path> pathSupplier) {
+        return Provider.fromSupplier(() -> new ParserCat().parse(pathSupplier.get()));
     }
 
     public static Provider<Wmm> createWmmFromName(Supplier<String> nameSupplier) {
-        return createWmmFromPath(() -> getRootPath("cat/" + nameSupplier.get() + ".cat"));
+        return createWmmFromPath(() -> Path.of(getRootPath("cat/" + nameSupplier.get() + ".cat")));
     }
 
     // =========================== Program providers ==============================
 
-    public static Provider<Program> createProgramFromPath(Supplier<String> pathSupplier) {
-        return createProgramFromFile(() -> new File(pathSupplier.get()));
+    public static Provider<Program> createProgramFromPathString(Supplier<String> pathSupplier) {
+        return createProgramFromPath(() -> Path.of(pathSupplier.get()));
     }
 
-    public static Provider<Program> createProgramFromFile(Supplier<File> fileSupplier) {
-        return Provider.fromSupplier(() -> new ProgramParser().parse(fileSupplier.get()));
+    public static Provider<Program> createProgramFromPath(Supplier<Path> pathSupplier) {
+        return Provider.fromSupplier(() -> new ProgramParser().parse(pathSupplier.get()));
     }
 
     // =========================== Task related providers ==============================

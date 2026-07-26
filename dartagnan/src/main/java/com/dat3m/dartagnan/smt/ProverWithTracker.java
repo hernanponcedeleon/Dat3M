@@ -4,69 +4,69 @@ import com.google.common.collect.ImmutableMap;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static java.nio.file.StandardOpenOption.*;
 
 public class ProverWithTracker implements ProverEnvironment {
 
     private final FormulaManager fmgr;
     private final ProverEnvironment prover;
-    private final String fileName;
+    private final Path filePath;
     private final Set<String> declarations;
 
-    public ProverWithTracker(SolverContext ctx, String fileName, ProverOptions... options) {
+    public ProverWithTracker(SolverContext ctx, Path filePath, ProverOptions... options) {
         this.fmgr = ctx.getFormulaManager();
         this.prover = ctx.newProverEnvironment(options);
-        this.fileName = fileName;
+        this.filePath = filePath;
         this.declarations = new HashSet<>();
         init();
     }
 
     // An empty filename means there is no need to dump the encoding
     private boolean dump() {
-        return !fileName.isEmpty();
+        return filePath != null;
     }
 
     private void init() {
-        if(dump()) {
-            try {
-                Files.deleteIfExists(Paths.get(fileName));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            StringBuilder description = new StringBuilder();
-            LocalDate currentDate = LocalDate.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            description.append("Generated on: ").append(currentDate.format(formatter)).append("\n");
-            description.append("Generator: Dartagnan\n");
-            description.append("Application: Bounded model checking for weak memory models\n");
-            description.append("""
-                    Publications:\s
-                    - Hernán Ponce de León, Florian Furbach, Keijo Heljanko, \
-                    Roland Meyer: Dartagnan: Bounded Model Checking for Weak Memory Models \
-                    (Competition Contribution). TACAS (2) 2020: 378-382
-                    - Thomas Haas, Roland Meyer, Hernán Ponce de León: \
-                    CAAT: consistency as a theory. Proc. ACM Program. Lang. 6(OOPSLA2): 114-144 (2022)"""
-            );
-            write("(set-info :smt-lib-version 2.6)\n");
-            write("(set-logic ALL)\n");
-            write("(set-info :category \"industrial\")\n");
-            write("(set-info :source |\n" + description + "\n|)\n");
-            write("(set-info :license \"https://creativecommons.org/licenses/by/4.0/\")\n");
+        if (!dump()) {
+            return;
         }
+
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        StringBuilder description = new StringBuilder();
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        description.append("Generated on: ").append(currentDate.format(formatter)).append("\n");
+        description.append("Generator: Dartagnan\n");
+        description.append("Application: Bounded model checking for weak memory models\n");
+        description.append("""
+                Publications:\s
+                - Hernán Ponce de León, Florian Furbach, Keijo Heljanko, \
+                Roland Meyer: Dartagnan: Bounded Model Checking for Weak Memory Models \
+                (Competition Contribution). TACAS (2) 2020: 378-382
+                - Thomas Haas, Roland Meyer, Hernán Ponce de León: \
+                CAAT: consistency as a theory. Proc. ACM Program. Lang. 6(OOPSLA2): 114-144 (2022)"""
+        );
+        write("(set-info :smt-lib-version 2.6)\n");
+        write("(set-logic ALL)\n");
+        write("(set-info :category \"industrial\")\n");
+        write("(set-info :source |\n" + description + "\n|)\n");
+        write("(set-info :license \"https://creativecommons.org/licenses/by/4.0/\")\n");
     }
 
     @Override
     public void close() {
         if(dump()) {
-            removeDuplicatedDeclarations(fileName);
             write("(exit)\n");
         }
         prover.close();
@@ -149,6 +149,11 @@ public class ProverWithTracker implements ProverEnvironment {
     }
 
     @Override
+    public boolean registerUserPropagator(UserPropagator propagator) {
+        return  prover.registerUserPropagator(propagator);
+    }
+
+    @Override
     public List<BooleanFormula> getUnsatCore() {
         return prover.getUnsatCore();
     }
@@ -165,14 +170,14 @@ public class ProverWithTracker implements ProverEnvironment {
     }
 
     private void write(String content) {
-        if (dump()) {
-            File file = new File(fileName);
-            try (FileWriter writer = new FileWriter(file, true);
-                    PrintWriter printer = new PrintWriter(writer)) {
-                printer.append(removeDuplicatedDeclarations(content));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!dump()) {
+            return;
+        }
+
+        try {
+            Files.writeString(filePath, removeDuplicatedDeclarations(content),  WRITE, APPEND, CREATE);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -181,7 +186,7 @@ public class ProverWithTracker implements ProverEnvironment {
     }
 
     // FIXME: This is only correct as long as no declarations are popped and then
-    // later redeclared (which is currently guarenteed by the way we use the solver)
+    //  later redeclared (which is currently guaranteed by the way we use the solver)
     private StringBuilder removeDuplicatedDeclarations(String content) {
         StringBuilder builder = new StringBuilder();
         for(String line : content.split("\n")) {

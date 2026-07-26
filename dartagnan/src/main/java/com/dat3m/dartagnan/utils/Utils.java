@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.io.Files;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -17,11 +16,6 @@ public class Utils {
 
     public static String getNameWithoutExtension(Path path) {
         return getNameWithoutExtension(path.getFileName().toString());
-    }
-
-
-    public static String getNameWithoutExtension(File file) {
-        return getNameWithoutExtension(file.toPath());
     }
 
     public static String getNameWithoutExtension(String fileName) {

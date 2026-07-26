@@ -92,8 +92,8 @@ public abstract class AbstractComparisonTest {
     protected final Provider<Arch> sourceProvider = getSourceProvider();
     protected final Provider<Arch> targetProvider = getTargetProvider();
     protected final Provider<String> filePathProvider = () -> path;
-    protected final Provider<Program> program1Provider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
+    protected final Provider<Program> program1Provider = Providers.createProgramFromPathString(filePathProvider);
+    protected final Provider<Program> program2Provider = Providers.createProgramFromPathString(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();

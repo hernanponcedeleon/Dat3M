@@ -84,7 +84,7 @@ public abstract class AbstractCTest {
     protected final Provider<Arch> targetProvider = () -> target;
     protected final Provider<String> filePathProvider = getProgramPathProvider();
     protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
+    protected final Provider<Program> programProvider = Providers.createProgramFromPathString(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
