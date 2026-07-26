@@ -21,17 +21,16 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.google.common.base.Preconditions;
 import org.apache.commons.csv.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -170,7 +169,7 @@ public class TaskResultAnalyzer {
         return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
-    public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
+    public Path generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForUnknown) throws IOException {
         if (!solver.hasModel()
                 || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)

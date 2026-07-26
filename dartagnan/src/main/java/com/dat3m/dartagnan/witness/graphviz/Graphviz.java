@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -103,13 +103,13 @@ public class Graphviz {
      * @throws IOException          The program is not installed, or the directory of {@code dotFile} does not exist.
      * @throws InterruptedException The current thread is interrupted while waiting for the command to finish.
      */
-    public static File convert(File dotFile) throws IOException, InterruptedException {
-        final String dotFileName = dotFile.getName();
+    public static Path convert(Path dotFile) throws IOException, InterruptedException {
+        final String dotFileName = dotFile.getFileName().toString();
         final String pngFileName = dotFileName.substring(0, dotFileName.lastIndexOf('.')) + ".png";
-        Process p = new ProcessBuilder().directory(dotFile.getParentFile())
+        Process p = new ProcessBuilder().directory(dotFile.getParent().toFile())
                 .command("dot", "-Tpng", dotFileName, "-o", pngFileName).start();
         p.waitFor(1000, TimeUnit.MILLISECONDS);
 
-        return new File(dotFile.getParentFile(), pngFileName);
+        return dotFile.getParent().resolve(pngFileName);
     }
 }

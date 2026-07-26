@@ -20,9 +20,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -226,8 +226,8 @@ public interface AliasAnalysis {
         String programName = program.getName();
         String programBase = programName.substring(0, programName.lastIndexOf('.'));
         try {
-            File dotFile = new File(getOrCreateOutputDirectory() + "/" + programBase + "-alias.dot");
-            try (var writer = new FileWriter(dotFile)) {
+            final Path dotFile = getOrCreateOutputDirectory().resolve(programBase + "-alias.dot");
+            try (var writer = Files.newBufferedWriter(dotFile)) {
                 graphviz.generateOutput(writer);
                 writer.flush();
                 logger.info("Alias graph written to {}.", dotFile);

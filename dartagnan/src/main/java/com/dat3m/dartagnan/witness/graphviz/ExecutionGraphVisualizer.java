@@ -21,11 +21,11 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BiPredicate;
 
@@ -359,7 +359,7 @@ public class ExecutionGraphVisualizer {
         graphviz.addNode(eventToNode(e), attributes);
     }
 
-    public static File generateGraphvizFile(ExecutionModelNext model,
+    public static Path generateGraphvizFile(ExecutionModelNext model,
                                             String graphName,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
@@ -368,9 +368,15 @@ public class ExecutionGraphVisualizer {
                                             SyntacticContextAnalysis synContext,
                                             boolean convert,
                                             Configuration config) {
-        File fileVio = new File(directoryName + fileNameBase + ".dot");
-        fileVio.getParentFile().mkdirs();
-        try (FileWriter writer = new FileWriter(fileVio)) {
+        Path fileVio = Path.of(directoryName + fileNameBase + ".dot");
+        try {
+            Files.createDirectories(fileVio.getParent());
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            return null;
+        }
+
+        try (Writer writer = Files.newBufferedWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
             visualizer.setRelationsToShow(config);
@@ -383,7 +389,7 @@ public class ExecutionGraphVisualizer {
             if (convert) {
                 fileVio = Graphviz.convert(fileVio);
             }
-            logger.info("Witness stored into {}.", fileVio.getAbsolutePath());
+            logger.info("Witness stored into {}.", fileVio);
             return fileVio;
         } catch (Exception e) {
             logger.error(e.getMessage());

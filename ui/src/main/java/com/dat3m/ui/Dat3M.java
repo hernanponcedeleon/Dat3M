@@ -91,7 +91,7 @@ public class Dat3M extends JFrame implements ActionListener {
     }
 
     private void showViolation(ReachabilityResult testResult) {
-        final String filePath = testResult.getWitnessFile().getAbsolutePath();
+        final String filePath = testResult.getWitnessFile().toAbsolutePath().toString();
 
         // Generate scroll pane with image of violation
         final ImageIcon imageIcon = new ImageIcon(filePath);
