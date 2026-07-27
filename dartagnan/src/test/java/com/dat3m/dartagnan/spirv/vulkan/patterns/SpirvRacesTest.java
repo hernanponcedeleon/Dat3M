@@ -30,7 +30,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvRacesTest {
 
-    private final String modelPath = getRootPath("cat/vulkan.cat");
+    private final String oldModelPath = getRootPath("cat/vulkan.cat");
+    private final String newModelFixed = getRootPath("cat/vulkan-fixed.cat");
     private final String programPath;
     private final boolean filter;
     private final Result expected;
@@ -59,10 +60,11 @@ public class SpirvRacesTest {
 
     @Test
     public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(oldModelPath), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(newModelFixed), Method.EAGER));
     }
 
-    private VerificationTask mkTask() throws Exception {
+    private VerificationTask mkTask(String modelPath) throws Exception {
         Configuration config = Configuration.builder()
                 .copyFrom(TestHelper.getBasicConfig())
                 .setOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter))
