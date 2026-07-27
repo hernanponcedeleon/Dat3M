@@ -16,6 +16,10 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 @RunWith(Parameterized.class)
 public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
 
+    private final String oldModelPath = getRootPath("cat/vulkan.cat");
+    private final String newModelFixed = getRootPath("cat/vulkan-fixed.cat");
+    private final String programPath;
+    private final int bound;
     private final ProgressModel.Hierarchy progressModel;
 
     public TerminationLivenessTest(String file, int bound, ProgressModel.Hierarchy progressModel, VerificationStatus expected) {
@@ -77,9 +81,20 @@ public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
         });
     }
 
-    @Override
-    protected ProgressModel.Hierarchy getProgressModel() { return progressModel; }
+    @Test
+    public void test() throws Exception {
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(oldModelPath), Method.EAGER));
+        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(newModelFixed), Method.EAGER));
+    }
 
-    @Override
-    protected Property getTestedProperty() { return Property.TERMINATION; }
+    private VerificationTask mkTask(String modelPath) throws Exception {
+        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+                .withConfig(TestHelper.getBasicConfig())
+                .withBound(bound)
+                .withProgressModel(progressModel)
+                .withTarget(Arch.VULKAN);
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        return builder.build(program, mcm, EnumSet.of(TERMINATION));
+    }
 }
