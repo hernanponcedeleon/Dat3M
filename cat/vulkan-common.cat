@@ -1,18 +1,38 @@
-VULKAN
+// Vulkan Memory Model
+// Common definitions
+
+// This file contains common definitions for both model versions,
+// with and without availability-visibility chains.
+// A model must define the chains relation before including this file.
 
 // Tags:
+// M, IW, W, R: memory access, initial write, write, read
+// CBAR: control barrier
+// F: fence or control barrier with memory semantics
+// ATOM: atomic memory access
+// RMW: atomic read-modify-write
+// ACQ, REL: acquire, release memory order
 // SC0, SC1, SC2, SC3: storage class 0, 1, 2, 3
 // SEMSC0, SEMSC1, SEMSC2, SEMSC3: storage class semantics 0, 1, 2, 3
-// SG, WG, QF, DV: subgroup, workgroup, queue family, device domains
+// NONPRIV: non-private memory accesses
+// SG, WG, QF, DV: subgroup, workgroup, queue family, device scopes
 // AV, VIS: availability, visibility
-// AVDEVICE, VISDEVICE: availability, visibility operations by host
+// SEMAV, SEMVIS: availability, visibility semantics
+// AVDEVICE, VISDEVICE: availability, visibility operations issued by host
 
 // Base relations:
-// vloc: events accessing the same virtual location, aka same reference (sref)
-// syncbar: synchronize by control barriers of the same dynamic instance
+// id: identity relation
+// po: program order
+// int: internal (events in the same thread)
+// ext: external (events in different threads)
+// rmw: same atomic read-modify-write instruction, relates read-to-write
+// co, rf, fr: coherence order, read-from, from-read
+// loc: same location
+// vloc: same variable (same reference sref in Alloy)
+// syncbar: same dynamic instance of a control barrier
 // ssg: same subgroup
 // swg: same workgroup
-// sqf: same queuefamily
+// sqf: same queue family
 // ssw: system-synchronizes-with
 
 (* Tags *)
@@ -41,17 +61,15 @@ let SEMSC023 = SEMSC02 & SEMSC3
 let SEMSC123 = SEMSC12 & SEMSC3
 let SEMSC0123 = SEMSC012 & SEMSC3
 
-let AVSHADER = (AV | SEMAV) & DV
-let VISSHADER = (VIS | SEMVIS) & DV
-
-let AVQF = (AV | SEMAV) & (DV | QF)
-let VISQF = (VIS | SEMVIS) & (DV | QF)
-
-let AVWG = (AV | SEMAV) & (DV | QF | WG)
-let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
-
 let AVSG = AV | SEMAV
+let AVWG = (AV | SEMAV) & (DV | QF | WG)
+let AVQF = (AV | SEMAV) & (DV | QF)
+let AVSHADER = (AV | SEMAV) & DV
+
 let VISSG = VIS | SEMVIS
+let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
+let VISQF = (VIS | SEMVIS) & (DV | QF)
+let VISSHADER = (VIS | SEMVIS) & DV
 
 (* Relations *)
 
@@ -119,7 +137,7 @@ let locord = loc & (
     ([W]; hb; [AVDEVICE]; hb; [W]) |
     ([W]; hb; [AVDEVICE]; hb; [VISDEVICE]; hb; [R]) |
     ([R & NONPRIV]; hb; [(R | W) & NONPRIV]) |
-    vloc & ((hb & int) |
+    (vloc & ((hb & int) |
         ([W & NONPRIV]; (po? & avvisinc); avsg; (hb & ssg); [W & NONPRIV]) |
         ([W & NONPRIV]; (po? & avvisinc); avwg; (hb & swg); [W & NONPRIV]) |
         ([W & NONPRIV]; (po? & avvisinc); avqf; (hb & sqf); [W & NONPRIV]) |
@@ -127,11 +145,11 @@ let locord = loc & (
         ([W & NONPRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R & NONPRIV]) |
         ([W & NONPRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R & NONPRIV]) |
         ([W & NONPRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R & NONPRIV]) |
-        ([W & NONPRIV]; (po? & avvisinc); avsh; hb; vissh; (po? & avvisinc); [R & NONPRIV])))
+        ([W & NONPRIV]; (po? & avvisinc); avsh; hb; vissh; (po? & avvisinc); [R & NONPRIV]))))
 
 // From-read is derived from asmo and locord instead of co
 // Loads reading an initial write are fr-before all other same-location writes
-let fr = (rf^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = (rf^-1; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 
 (* Constraints *)
 

@@ -3,4 +3,4 @@ VULKAN
 // For architectures without availability-visibility chains
 
 let chains = id
-include "vulkan-common.cat"
+include "vulkan-fixed-common.cat"
