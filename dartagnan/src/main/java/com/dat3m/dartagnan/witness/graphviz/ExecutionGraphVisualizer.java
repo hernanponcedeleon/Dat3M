@@ -363,12 +363,12 @@ public class ExecutionGraphVisualizer {
                                             String graphName,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
-                                            String directoryName,
+                                            Path dir,
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext,
-                                            boolean convert,
+                                            boolean convertToPNG,
                                             Configuration config) {
-        Path fileVio = Path.of(directoryName + fileNameBase + ".dot");
+        Path fileVio = dir.resolve(fileNameBase + ".dot");
         try {
             Files.createDirectories(fileVio.getParent());
         } catch (IOException e) {
@@ -386,7 +386,7 @@ public class ExecutionGraphVisualizer {
                       .generateGraphOfExecutionModel(writer, graphName, model);
 
             writer.flush();
-            if (convert) {
+            if (convertToPNG) {
                 fileVio = Graphviz.convert(fileVio);
             }
             logger.info("Witness stored into {}.", fileVio);
@@ -396,24 +396,5 @@ public class ExecutionGraphVisualizer {
         }
 
         return null;
-    }
-
-    public static void generateGraphvizFile(ExecutionModelNext model,
-                                            String graphName,
-                                            BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> coFilter,
-                                            String directoryName,
-                                            String fileNameBase,
-                                            SyntacticContextAnalysis synContext) {
-        generateGraphvizFile(model,
-                             graphName,
-                             rfFilter,
-                             coFilter,
-                             directoryName,
-                             fileNameBase,
-                             synContext,
-                             true,
-                             Configuration.defaultConfiguration()
-        );
     }
 }

@@ -10,6 +10,14 @@ public class Utils {
     private Utils() {
     }
 
+    public static boolean containsSubpath(Path path, Path subpath) {
+        return path.toString().contains(subpath.toString());
+    }
+
+    public static Path subpath(Path path, int from) {
+        return path.subpath(from, path.getNameCount() - 1);
+    }
+
     public static String getFileExtension(Path path) {
         return Files.getFileExtension(path.getFileName().toString());
     }

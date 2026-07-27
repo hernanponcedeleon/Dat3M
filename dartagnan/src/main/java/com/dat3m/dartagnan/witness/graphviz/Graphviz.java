@@ -110,6 +110,6 @@ public class Graphviz {
                 .command("dot", "-Tpng", dotFileName, "-o", pngFileName).start();
         p.waitFor(1000, TimeUnit.MILLISECONDS);
 
-        return dotFile.getParent().resolve(pngFileName);
+        return dotFile.resolveSibling(pngFileName);
     }
 }

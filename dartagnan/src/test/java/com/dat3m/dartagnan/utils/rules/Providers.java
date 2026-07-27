@@ -42,10 +42,6 @@ public class Providers {
 
     // =========================== Program providers ==============================
 
-    public static Provider<Program> createProgramFromPathString(Supplier<String> pathSupplier) {
-        return createProgramFromPath(() -> Path.of(pathSupplier.get()));
-    }
-
     public static Provider<Program> createProgramFromPath(Supplier<Path> pathSupplier) {
         return Provider.fromSupplier(() -> new ProgramParser().parse(pathSupplier.get()));
     }

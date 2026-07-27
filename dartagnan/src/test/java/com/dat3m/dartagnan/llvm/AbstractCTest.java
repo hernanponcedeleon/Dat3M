@@ -18,6 +18,7 @@ import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
+import java.nio.file.Path;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -82,9 +83,9 @@ public abstract class AbstractCTest {
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> target;
-    protected final Provider<String> filePathProvider = getProgramPathProvider();
+    protected final Provider<Path> filePathProvider = () -> Path.of(getProgramPathProvider().get());
     protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPathString(filePathProvider);
+    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();

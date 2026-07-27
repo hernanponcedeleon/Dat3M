@@ -186,7 +186,7 @@ public class TaskResultAnalyzer {
                 // CO edges only give ordering information which is known if the pair is also in PO
                 return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                        getOrCreateOutputDirectory() + "/", filename,
+                        getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig());
             }
         }

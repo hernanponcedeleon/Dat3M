@@ -16,20 +16,19 @@ public class ProverWithTracker implements ProverEnvironment {
 
     private final FormulaManager fmgr;
     private final ProverEnvironment prover;
-    private final Path filePath;
+    private final Path dumpFilePath;
     private final Set<String> declarations;
 
-    public ProverWithTracker(SolverContext ctx, Path filePath, ProverOptions... options) {
+    public ProverWithTracker(SolverContext ctx, Path dumpFilePath, ProverOptions... options) {
         this.fmgr = ctx.getFormulaManager();
         this.prover = ctx.newProverEnvironment(options);
-        this.filePath = filePath;
+        this.dumpFilePath = dumpFilePath;
         this.declarations = new HashSet<>();
         init();
     }
 
-    // An empty filename means there is no need to dump the encoding
     private boolean dump() {
-        return filePath != null;
+        return dumpFilePath != null;
     }
 
     private void init() {
@@ -38,7 +37,7 @@ public class ProverWithTracker implements ProverEnvironment {
         }
 
         try {
-            Files.deleteIfExists(filePath);
+            Files.deleteIfExists(dumpFilePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -150,7 +149,7 @@ public class ProverWithTracker implements ProverEnvironment {
 
     @Override
     public boolean registerUserPropagator(UserPropagator propagator) {
-        return  prover.registerUserPropagator(propagator);
+        return prover.registerUserPropagator(propagator);
     }
 
     @Override
@@ -175,7 +174,7 @@ public class ProverWithTracker implements ProverEnvironment {
         }
 
         try {
-            Files.writeString(filePath, removeDuplicatedDeclarations(content),  WRITE, APPEND, CREATE);
+            Files.writeString(dumpFilePath, removeDuplicatedDeclarations(content),  WRITE, APPEND, CREATE);
         } catch (IOException e) {
             e.printStackTrace();
         }
