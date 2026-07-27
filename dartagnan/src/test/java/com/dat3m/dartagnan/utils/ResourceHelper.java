@@ -35,7 +35,7 @@ public class ResourceHelper {
         var data = ImmutableMap.<String, Result>builder();
         Files.readAllLines(Path.of(path)).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
             String[] line = str.split(",");
-            if(line.length == 2){
+            if (line.length == 2) {
                 data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
             }
         });
@@ -43,8 +43,10 @@ public class ResourceHelper {
     }
 
     public static ImmutableSet<String> getSkipSet() throws IOException {
-        String path = getTestResourcePath("dartagnan-skip.csv");
-        return Files.readAllLines(Path.of(path)).stream().filter(ResourceHelper::isValidEntry).collect(ImmutableSet.toImmutableSet());
+        return Files.readAllLines(Path.of(getTestResourcePath("dartagnan-skip.csv"))).stream()
+                .filter(ResourceHelper::isValidEntry)
+                .map(ResourceHelper::getRootPath)
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     private static boolean isValidEntry(String line) {
