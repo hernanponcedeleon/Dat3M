@@ -1,0 +1,10 @@
+Vulkan
+{}
+ P0@sg 0, wg 0, qf 0            | P1@sg 1, wg 0, qf 0             | P2@sg 2, wg 0, qf 0 ;
+ st.av.wg.sc0 a, 1              | ld.atom.acq.wg.sc0.semsc0 r0, b | st.atom.wg.sc0 b, 3 ;
+ st.atom.rel.wg.sc0.semsc0 b, 1 | ld.vis.wg.sc0 r1, a             |                     ;
+ st.atom.wg.sc0 b, 2            |                                 |                     ;
+filter
+(P1:r0 == 2)
+exists
+(P1:r0 == 2 /\ P1:r1 == 0)
