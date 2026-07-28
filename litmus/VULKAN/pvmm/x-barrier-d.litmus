@@ -1,0 +1,8 @@
+Vulkan
+{}
+ P0@sg 1, wg 0, qf 0        | P1@sg 1, wg 0, qf 0         ;
+ st.nonpriv.sc0 x, 1        | cbar.wg 0                   ;
+ membar.rel.wg.semsc0.semav | membar.acq.wg.semsc0.semvis ;
+ cbar.wg 0                  | ld.nonpriv.sc0 r0, x        ;
+exists
+(P1:r0 == 0)
