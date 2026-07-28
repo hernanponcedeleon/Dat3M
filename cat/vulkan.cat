@@ -1,6 +1,6 @@
 VULKAN
-(* Vulkan Memory Model *)
-(* For architectures without availability-visibility chains *)
+// Vulkan Memory Model
+// For architectures without availability-visibility chains
 
 let chains = id
 include "vulkan-common.cat"
