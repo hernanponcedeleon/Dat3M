@@ -19,10 +19,10 @@ test,vulkan,vulkan-fixed,
 3.2-x-problem-chains-chain-av-b,PASS,PASS,
 3.2-x-problem-chains-chain-av-c,PASS,PASS,
 3.2-x-problem-chains-chain-av-d,PASS,PASS,
-3.2-x-problem-chains-chain-vis-a,PASS,PASS,
-3.2-x-problem-chains-chain-vis-b,PASS,PASS,
-3.2-x-problem-chains-chain-vis-c,PASS,PASS,
-3.2-x-problem-chains-chain-vis-d,PASS,PASS,
+3.2-x-problem-chains-chain-vis-a,PASS,PASS,Figure15a
+3.2-x-problem-chains-chain-vis-b,PASS,PASS,Figure15b
+3.2-x-problem-chains-chain-vis-c,PASS,PASS,Figure15c
+3.2-x-problem-chains-chain-vis-d,PASS,PASS,Figure15d
 ,,,
 3.2-y-problem-chains-chain-av-a,PASS,PASS,
 3.2-y-problem-chains-chain-av-b,PASS,PASS,
@@ -50,8 +50,8 @@ test,vulkan,vulkan-fixed,
 3.5-problem-chains-fence-vis-a2,PASS,PASS,
 3.5-problem-chains-fence-vis-a3,PASS,PASS,
 ,,,
-3.7-problem-avvisinc-av-a,PASS,PASS,Figure 11a
-3.7-problem-avvisinc-av-b,PASS,PASS,Figure 11b
+3.7-problem-avvisinc-av-a,PASS,PASS,Figure 17a
+3.7-problem-avvisinc-av-b,PASS,PASS,Figure 17b
 3.7-problem-avvisinc-vis-a,PASS,PASS,
 3.7-problem-avvisinc-vis-b,PASS,PASS,
 ,,,
