@@ -6,4 +6,4 @@ ssw 0 1;
  P0@sg 0, wg 0, qf 0 | P1@sg 0, wg 0, qf 1 ;
  st.sc0 x, 1         | st.sc0 x, 2         ;
 
-exists (0 == 0)
+exists (x != 2)

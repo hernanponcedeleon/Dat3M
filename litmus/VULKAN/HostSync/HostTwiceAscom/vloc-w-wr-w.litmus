@@ -1,0 +1,13 @@
+VULKAN
+{}
+{
+ssw 0 1;
+ssw 1 2;
+ssw 3 4;
+ssw 4 5;
+}
+ P0@sg 0, wg 0, qf 0 | P1@sg 0, wg 0, qf 1 | P2@sg 0, wg 0, qf 2 | P3@sg 0, wg 0, qf 3  | P4@sg 0, wg 0, qf 4 | P5@sg 0, wg 0, qf 5 ;
+ st.sc0 a, 1         | avdevice            | st.atom.dv.sc0 a, 2 | ld.atom.dv.sc0 r0, a | avdevice            | st.sc0 a, 3         ;
+
+filter (P3:r0 == 2)
+exists (P3:r0 == 2)

@@ -7,4 +7,4 @@ ssw 0 1;
  ld.sc0 r0, x        | st.sc0 x, 2         ;
  st.sc0 x, 1         |                     ;
 
-exists (P0:r0 == 0)
+exists (x != 2)

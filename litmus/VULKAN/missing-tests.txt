@@ -1,3 +1,2 @@
-HostSync/ascom (similar to ithb)
 HostSync/alias (basic)
 HostSync/host-twice (start with basic)
