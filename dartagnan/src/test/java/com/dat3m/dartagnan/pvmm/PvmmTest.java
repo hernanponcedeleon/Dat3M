@@ -365,4 +365,18 @@ public class PvmmTest {
                 .withTarget(Arch.VULKAN);
         return builder.build(program, mcm, EnumSet.of(property));
     }
+
+    @Test
+    public void myTest() throws Exception {
+        String programPath = getRootPath("litmus/VULKAN/pvmm/test1.litmus");
+        String model = getRootPath("cat/vulkan-old.cat");
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat().parse(new File(model));
+        VerificationTask taskEager = mkTask(program, mcm, CAT_SPEC);
+        try (ModelChecker mc = AssumeSolver.create(taskEager)) {
+            mc.run();
+            System.out.println(printer.print(taskEager.getProgram()));
+            System.out.println(mc.getResult());
+        }
+    }
 }
