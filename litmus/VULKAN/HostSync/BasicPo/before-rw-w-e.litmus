@@ -8,4 +8,4 @@ ssw 1 2;
  ld.sc0 r0, x        | avdevice            | st.sc0 x, 2         ;
  st.sc0 x, 1         | visdevice           |                     ;
 
-exists (P0:r0 == 0)
+exists (x != 2)
