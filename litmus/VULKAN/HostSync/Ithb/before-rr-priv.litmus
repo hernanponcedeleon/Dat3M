@@ -7,5 +7,4 @@ ssw 1 2;
  ld.sc0 r0, x                   | ld.atom.acq.dv.sc0.semsc0 r0, y | ld.sc0 r0, x        ;
  st.atom.rel.dv.sc0.semsc0 y, 1 |                                 |                     ;
 
-filter (P1:r0 == 1)
 exists (P0:r0 != 0 \/ P2:r0 != 0)

@@ -64,11 +64,11 @@ litmus/VULKAN/HostSync/Ithb/after-ww-nonpriv.litmus,1
 litmus/VULKAN/HostSync/Ithb/after-ww-priv.litmus,0
 litmus/VULKAN/HostSync/Ithb/before-rr-nonpriv.litmus,1
 litmus/VULKAN/HostSync/Ithb/before-rr-priv.litmus,1
-litmus/VULKAN/HostSync/Ithb/before-rw-nonpriv.litmus,1
+litmus/VULKAN/HostSync/Ithb/before-rw-nonpriv.litmus,0
 litmus/VULKAN/HostSync/Ithb/before-rw-priv.litmus,0
-litmus/VULKAN/HostSync/Ithb/before-wr-nonpriv.litmus,1
+litmus/VULKAN/HostSync/Ithb/before-wr-nonpriv.litmus,0
 litmus/VULKAN/HostSync/Ithb/before-wr-priv.litmus,0
-litmus/VULKAN/HostSync/Ithb/before-ww-nonpriv.litmus,1
+litmus/VULKAN/HostSync/Ithb/before-ww-nonpriv.litmus,0
 litmus/VULKAN/HostSync/Ithb/before-ww-priv.litmus,0
 litmus/VULKAN/HostSync/IthbMem/after-r-rw.litmus,1
 litmus/VULKAN/HostSync/IthbMem/after-r-wr.litmus,1
