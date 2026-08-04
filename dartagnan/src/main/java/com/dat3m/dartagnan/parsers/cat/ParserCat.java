@@ -24,10 +24,13 @@ public class ParserCat {
         this.includePath = includePath;
     }
 
+    // TODO: Update call-sites to use Path instead of File
     public Wmm parse(File file) throws IOException {
-        try (FileInputStream stream = new FileInputStream(file)) {
-            return parse(CharStreams.fromStream(stream), file.toString());
-        }
+        return parse(file.toPath());
+    }
+
+    public Wmm parse(Path path) throws IOException {
+        return parse(CharStreams.fromPath(path), path.toString());
     }
 
     public Wmm parse(String raw) {

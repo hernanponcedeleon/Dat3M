@@ -2,12 +2,14 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 
@@ -35,7 +37,10 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
 
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder
-                .setOption(MIXED_SIZE, String.valueOf(filePathProvider.get().contains("litmus/AARCH64/mixed/")));
+        final boolean isMixedSize = Utils.containsSubpath(
+                filePathProvider.get(),
+                Path.of("litmus", "AARCH64", "mixed")
+        );
+        return builder.setOption(MIXED_SIZE, String.valueOf(isMixedSize));
     }
 }

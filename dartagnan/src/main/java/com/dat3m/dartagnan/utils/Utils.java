@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.io.Files;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
@@ -10,8 +10,20 @@ public class Utils {
     private Utils() {
     }
 
-    public static String getNameWithoutExtension(File file) {
-        return getNameWithoutExtension(file.getName());
+    public static boolean containsSubpath(Path path, Path subpath) {
+        return path.toString().contains(subpath.toString());
+    }
+
+    public static Path subpath(Path path, int from) {
+        return path.subpath(from, path.getNameCount() - 1);
+    }
+
+    public static String getFileExtension(Path path) {
+        return Files.getFileExtension(path.getFileName().toString());
+    }
+
+    public static String getNameWithoutExtension(Path path) {
+        return getNameWithoutExtension(path.getFileName().toString());
     }
 
     public static String getNameWithoutExtension(String fileName) {

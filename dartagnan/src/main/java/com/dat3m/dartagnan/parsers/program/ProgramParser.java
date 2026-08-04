@@ -2,14 +2,15 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-import com.google.common.io.Files;
+import com.dat3m.dartagnan.utils.Utils;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.List;
 
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
@@ -34,122 +35,113 @@ public class ProgramParser {
     public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
     public static final String EXTENSION_SPVASM = ".spvasm";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
-            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM);
+            EXTENSION_C, EXTENSION_I, EXTENSION_LL,
+            EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM
+    );
 
-    public static boolean isSupported(Path filePath) {
-        final String extension = "." + Files.getFileExtension(filePath.getFileName().toString());
-        return SUPPORTED_EXTENSIONS.contains(extension);
+    public static boolean isSupportedFile(Path filePath) {
+        return SUPPORTED_EXTENSIONS.contains(getFileExtension(filePath));
     }
 
+    // TODO: Change call-sites to use Path instead of File
     public Program parse(File file) throws Exception {
-        if (needsClang(file)) {
-            file = compileWithClang(file, "");
-            return new ProgramParser().parse(file);
+        return parse(file.toPath());
+    }
+
+    public Program parse(Path path) throws Exception {
+        if (needsClang(getFileExtension(path))) {
+            final String cflags = System.getenv().getOrDefault("CFLAGS", "");
+            path = compileWithClang(path, cflags);
         }
 
-        Program program;
-        try (FileInputStream stream = new FileInputStream(file)) {
-            ParserInterface parser = getConcreteParser(file);
-            CharStream charStream = CharStreams.fromStream(stream);
-            program = parseAndWrap(parser, charStream);
-        }
-        program.setName(file.getName());
+        final Program program = parse(CharStreams.fromPath(path), getFileExtension(path));
+        program.setName(path.getFileName().toString());
         return program;
     }
 
-    private boolean needsClang(File f) {
-        return f.getPath().endsWith(EXTENSION_C) || f.getPath().endsWith(EXTENSION_I);
-    }
-
-    public Program parse(String raw, String path, String format, String cflags) throws Exception {
-        final ParserInterface parser;
-        switch (format) {
-            case EXTENSION_C, EXTENSION_I -> {
-                File file = path.isEmpty() ?
-                        // This is for the case where the user fully typed the program instead of loading it
-                        File.createTempFile("dat3m", EXTENSION_C) :
-                        // This is for the case where the user loaded the program
-                        new File(path, "dat3m.c");
-                try (FileWriter writer = new FileWriter(file)) {
-                    writer.write(raw);
-                }
-                file = compileWithClang(file, cflags);
-                Program p = new ProgramParser().parse(file);
-                file.delete();
-                return p;
-            }
-            case EXTENSION_LL -> {
-                parser = new ParserLlvm();
-            }
-            case EXTENSION_SPVASM -> {
-                parser = new ParserSpirv();
-            }
-            case EXTENSION_SPV_DIS -> {
-                logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
-                parser = new ParserSpirv();
-            }
-            case EXTENSION_LITMUS -> {
-                parser = getConcreteLitmusParser(raw.toUpperCase());
-            }
-            default -> throw new ParsingException("Unknown input file type");
+    public Program parse(String rawSourceCode, String extension, String cflags) throws Exception {
+        final CharStream sourceCode;
+        if (needsClang(extension)) {
+            sourceCode = CharStreams.fromPath(compileWithClang(rawSourceCode, cflags));
+            extension = EXTENSION_LL;
+        } else {
+            sourceCode = CharStreams.fromString(rawSourceCode, "<input>" + extension);
         }
-        return parseAndWrap(parser, CharStreams.fromString(raw));
+
+        final Program program = parse(sourceCode, extension);
+        program.setName("<input>" + extension);
+        return program;
     }
 
-    private Program parseAndWrap(ParserInterface parser, CharStream charStream) {
+    private Program parse(CharStream sourceCode, String extension) {
         try {
-            return parser.parse(charStream);
+            final ParserInterface parser = getParser(sourceCode, extension);
+            return parser.parse(sourceCode);
         } catch (RuntimeException exception) {
             // Wrap into ParsingException.
-            throw exception instanceof ParsingException ? exception
+            throw exception instanceof ParsingException
+                    ? exception
                     : new ParsingException(exception, exception.getMessage());
         }
     }
 
-    private ParserInterface getConcreteParser(File file) throws IOException {
-        String name = file.getName();
-        if (name.endsWith(EXTENSION_LL)) {
-            return new ParserLlvm();
-        }
-        if (name.endsWith(EXTENSION_SPV_DIS)) {
+    // =========================== Private Utility =====================================
+
+    private ParserInterface getParser(CharStream sourceCode, String extension) {
+        return switch (extension) {
+            case EXTENSION_LL -> new ParserLlvm();
+            case EXTENSION_SPV_DIS -> {
                 logger.warn("Extension {} is deprecated. Please rename your file to {} instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM);
-            return new ParserSpirv();
-        }
-        if (name.endsWith(EXTENSION_SPVASM)) {
-            return new ParserSpirv();
-        }
-        if (name.endsWith(EXTENSION_LITMUS)) {
-            return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
-        }
-        throw new ParsingException("Unknown input file type");
+                yield new ParserSpirv();
+            }
+            case EXTENSION_SPVASM -> new ParserSpirv();
+            case EXTENSION_LITMUS -> getParserForLitmus(sourceCode);
+            default -> throw new ParsingException("Unknown input file type");
+        };
     }
 
-    private ParserInterface getConcreteLitmusParser(String programText) {
-        if (programText.indexOf(TYPE_LITMUS_AARCH64) == 0) {
-            return new ParserLitmusAArch64();
-        } else if (programText.indexOf(TYPE_LITMUS_C) == 0 || programText.indexOf(TYPE_LITMUS_OPENCL) == 0) {
-            return new ParserLitmusC();
-        } else if (programText.indexOf(TYPE_LITMUS_PPC) == 0) {
-            return new ParserLitmusPPC();
-        } else if (programText.indexOf(TYPE_LITMUS_X86) == 0) {
-            return new ParserLitmusX86();
-        } else if (programText.indexOf(TYPE_LITMUS_RISCV) == 0) {
-            return new ParserLitmusRISCV();
-        } else if (programText.indexOf(TYPE_LITMUS_PTX) == 0) {
-            return new ParserLitmusPTX();
-        } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
-            return new ParserLitmusVulkan();
-        }
-        final int spaceIndex = programText.indexOf(" ");
-        final String litmusFormat = (spaceIndex != -1) ? " " + programText.substring(0, spaceIndex) : "";
-        throw new ParsingException("Unknown litmus format" + litmusFormat);
+    private ParserInterface getParserForLitmus(CharStream sourceCode) {
+        final String litmusType = getFirstWord(peekFirstLine(sourceCode));
+        return switch (litmusType.toUpperCase()) {
+            case TYPE_LITMUS_AARCH64 -> new ParserLitmusAArch64();
+            case TYPE_LITMUS_PPC -> new ParserLitmusPPC();
+            case TYPE_LITMUS_X86 -> new ParserLitmusX86();
+            case TYPE_LITMUS_RISCV -> new ParserLitmusRISCV();
+            case TYPE_LITMUS_PTX -> new ParserLitmusPTX();
+            case TYPE_LITMUS_VULKAN -> new ParserLitmusVulkan();
+            case TYPE_LITMUS_C, TYPE_LITMUS_OPENCL -> new ParserLitmusC();
+            default -> throw new ParsingException("Unknown litmus format" + litmusType);
+        };
     }
 
-    private String readFirstLine(File file) throws IOException {
-        String line;
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
-            line = bufferedReader.readLine();
+    private static String getFileExtension(Path path) {
+        return "." + Utils.getFileExtension(path);
+    }
+
+    private static boolean needsClang(String ext) {
+        return ext.equals(EXTENSION_C) || ext.equals(EXTENSION_I);
+    }
+
+    private static String getFirstWord(String string) {
+        string = string.stripLeading();
+        int endOfFirstWord = string.indexOf(" ");
+        return endOfFirstWord == -1 ? string : string.substring(0, endOfFirstWord);
+    }
+
+    private static String peekFirstLine(CharStream input) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1;; i++) {
+            int c = input.LA(i);
+
+            if (c == IntStream.EOF || c == '\n') {
+                break;
+            }
+
+            if (c != '\r') {
+                sb.append((char) c);
+            }
         }
-        return line;
+        return sb.toString();
+
     }
 }

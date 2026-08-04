@@ -21,17 +21,15 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.google.common.base.Preconditions;
+import com.google.common.base.Charsets;
 import org.apache.commons.csv.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -170,7 +168,7 @@ public class TaskResultAnalyzer {
         return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
     }
 
-    public File generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
+    public Path generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
                                       boolean generateWitnessForUnknown) throws IOException {
         if (!solver.hasModel()
                 || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
@@ -188,7 +186,7 @@ public class TaskResultAnalyzer {
                 // CO edges only give ordering information which is known if the pair is also in PO
                 return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                        getOrCreateOutputDirectory() + "/", filename,
+                        getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig());
             }
         }
@@ -202,11 +200,11 @@ public class TaskResultAnalyzer {
         if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
             return;
         }
-        final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));
+        final Path boundsFile = Path.of(config.getProperty(BOUNDS_SAVE_PATH));
 
         // Parse old entries
         final List<CSVRecord> entries;
-        try (CSVParser parser = CSVParser.parse(new FileReader(boundsFile), CSVFormat.DEFAULT)) {
+        try (CSVParser parser = CSVParser.parse(boundsFile, Charsets.UTF_8, CSVFormat.DEFAULT)) {
             entries = parser.getRecords();
         }
 
@@ -221,7 +219,7 @@ public class TaskResultAnalyzer {
         }
 
         // Write new entries
-        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(boundsFile, false), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(Files.newBufferedWriter(boundsFile), CSVFormat.DEFAULT)) {
             for (CSVRecord entry : entries) {
                 final int entryId = Integer.parseInt(entry.get(0));
                 if (!loopId2UpdatedBound.containsKey(entryId)) {
