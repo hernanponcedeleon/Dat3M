@@ -9,9 +9,6 @@ import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.utils.printer.OutputLogger;
-import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
-import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
@@ -29,10 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -69,11 +63,11 @@ public class Dartagnan extends BaseOptions {
         final Path catFile = getCatFileFromArgs(args);
         final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
+        final OutputGenerator outputGenerator = OutputGenerator.create(config);
+        outputGenerator.setBatchMode(isBatchMode);
 
-        final OutputLogger output = new OutputLogger(catFile, config);
-        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-        ResultSummary summary = null;
-        int it = 0;
+        final List<Output> outputs = new ArrayList<>();
+        Output output = null;
         for (Path progFile : progFiles) {
             try {
                 // ----------- Generate verification task -----------
@@ -99,19 +93,17 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.toString());
-                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + it : "");
-                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), witnessFileName, o.generateWitnessForUnknown());
-                it++;
+                output = outputGenerator.getOutputFromSolver(taskSolver, progFile.toString());
             } catch (Exception e) {
-                summary = resultAnalyzer.getSummaryFromException(e, progFile.toString());
+                output = outputGenerator.getOutputFromException(e, progFile.toString());
             }
-            output.addResult(summary);
+            outputs.add(output);
         }
 
-        output.toStdOut();
+        printOutputs(outputs, catFile.toString(), config);
         // Running batch mode results in normal termination independent of the individual results
-        System.exit((isBatchMode ? NORMAL_TERMINATION : summary.code()).asInt());
+        final int exitCode = (isBatchMode ? NORMAL_TERMINATION : output.exitCode()).asInt();
+        System.exit(exitCode);
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -128,6 +120,25 @@ public class Dartagnan extends BaseOptions {
             final String base = mvnReader.read(reader).getVersion();
             final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
+        }
+    }
+
+    private static void printOutputs(List<Output> outputs, String catFile, Configuration config) {
+        if (outputs.isEmpty()) {
+            return;
+        }
+
+        if (outputs.size() == 1) {
+            System.out.println(outputs.get(0));
+        } else {
+            System.out.println("================ Configuration ==================");
+            System.out.println("cat = " + catFile);
+            System.out.print(config.asPropertiesString()); // it already contains its own \n
+            System.out.println("=================================================");
+            for (Output output : outputs) {
+                System.out.println();
+                System.out.println(output);
+            }
         }
     }
 
@@ -184,11 +195,5 @@ public class Dartagnan extends BaseOptions {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
         }
-    }
-
-    private static String getWitnessFilename(Path progFile, BaseOptions options, String postfix) {
-        return options.hasWitnessFilename()
-                ? options.getWitnessFilename() + postfix
-                : Utils.getNameWithoutExtension(progFile);
     }
 }
