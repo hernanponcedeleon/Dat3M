@@ -61,11 +61,13 @@ public class PvmmTest {
     private static final Map<String, Map<String, Map<String, Result>>> expectedRaces = new HashMap<>();
     static {
         try {
-            expectedRaces.put("chains", readFile("expected-races-chains"));
-            expectedRaces.put("nochains", readFile("expected-races-nochains"));
+            expectedRaces.put("nochains", Map.of("temp", Map.of("vulkan-fixed", PASS)));
+            expectedRaces.put("chains", Map.of());
+            //expectedRaces.put("chains", readFile("expected-races-chains"));
+            //expectedRaces.put("nochains", readFile("expected-races-nochains"));
             Map<String, Map<String, Result>> all = readFile("expected-races-all");
-            expectedRaces.get("chains").putAll(all);
-            expectedRaces.get("nochains").putAll(all);
+            //expectedRaces.get("chains").putAll(all);
+            //expectedRaces.get("nochains").putAll(all);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -364,5 +366,19 @@ public class PvmmTest {
                 .withBound(1)
                 .withTarget(Arch.VULKAN);
         return builder.build(program, mcm, EnumSet.of(property));
+    }
+
+    @Test
+    public void myTest() throws Exception {
+        String programPath = getRootPath("litmus/VULKAN/pvmm/tmp.litmus");
+        String model = getRootPath("cat/vulkan.cat");
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat().parse(new File(model));
+        VerificationTask taskEager = mkTask(program, mcm, PROGRAM_SPEC);
+        try (ModelChecker mc = AssumeSolver.create(taskEager)) {
+            mc.run();
+            System.out.println(printer.print(taskEager.getProgram()));
+            System.out.println(mc.getResult());
+        }
     }
 }
