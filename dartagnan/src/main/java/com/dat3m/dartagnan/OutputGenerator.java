@@ -87,14 +87,6 @@ public class OutputGenerator {
     private int batchIndex = -1;
     private Path witnessFile = null;
 
-    public void setBatchMode(boolean isBatchMode) {
-        this.isBatchMode = isBatchMode;
-    }
-
-    public Optional<Path> getWitnessFile() {
-        return  Optional.ofNullable(witnessFile);
-    }
-
     private OutputGenerator(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
     }
@@ -102,6 +94,16 @@ public class OutputGenerator {
     public static OutputGenerator create(Configuration config) throws InvalidConfigurationException {
         return new OutputGenerator(config);
     }
+
+    public void setBatchMode(boolean isBatchMode) {
+        this.isBatchMode = isBatchMode;
+    }
+
+    public Optional<Path> getWitnessFile() {
+        return Optional.ofNullable(witnessFile);
+    }
+
+    // ====================================================================================
 
     public Output getOutputFromException(Exception exception, String programPath) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
@@ -133,7 +135,8 @@ public class OutputGenerator {
         batchIndex++;
         try {
             witnessFile = generateWitnessIfAble(solver, getWitnessFilename(programPath));
-        } catch (IOException ignored) {
+        } catch (IOException ex) {
+            logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
         }
 
@@ -141,25 +144,21 @@ public class OutputGenerator {
         final String filter = getFilterString(task);
         final SyntacticContextAnalysis synContext = newInstance(p);
 
-        String reason = "";
         StringBuilder details = new StringBuilder();
-        // We only show the condition if this is the reason of the failure
-        String condition = "";
         if (hasViolationsWithModel) {
+
             if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                reason = PROGRAM_SPEC_REASON;
-                condition = getSpecificationString(p);
                 List<Assert> violations = p.getThreadEvents(Assert.class)
                         .stream().filter(model::assertionViolated)
                         .toList();
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programPath, filter, FAIL, condition, reason, details.toString(), time));
+                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                        getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time));
             }
 
             if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
-                reason = TERMINATION_REASON;
                 for (Event e : p.getThreadEvents()) {
                     final boolean isStuckLoop = e instanceof CondJump jump
                             && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
@@ -171,17 +170,18 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new Output(TERMINATION_VIOLATION, toSummary(programPath, filter, FAIL, condition, reason, details.toString(), time));
+                return new Output(TERMINATION_VIOLATION, toSummary(programPath, filter, FAIL,
+                        "", TERMINATION_REASON, details.toString(), time));
             }
 
             if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
-                reason = SVCOMP_UNTRACKABLE_OBJECT_REASON;
                 for (MemoryObject o : p.getMemory().getObjects()) {
                     if (model.isLeaked(o) && !model.isTrackable(o)) {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programPath, filter, FAIL, condition, reason, details.toString(), time));
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programPath, filter, FAIL,
+                        "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time));
             }
 
             if (props.contains(CAT_SPEC)) {
@@ -190,20 +190,21 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    reason = CAT_SPEC_REASON;
-                    return new Output(CAT_SPEC_VIOLATION, toSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time));
+                    return new Output(CAT_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                            "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time));
                 }
             }
+
+            throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            reason = PROGRAM_SPEC_REASON;
-            condition = getSpecificationString(p);
+            return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+                    getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time));
         } else if (result == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
                     .toList();
-            reason = BOUND_REASON;
             for (Event bound : reachedBounds) {
                 details
                         .append("\t")
@@ -215,12 +216,14 @@ public class OutputGenerator {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, result, condition, reason, details.toString(), time));
+            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, result,
+                    "", BOUND_REASON, details.toString(), time));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result, condition, reason, details.toString(), time));
+        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+                "", "", details.toString(), time));
     }
 
     private Path generateWitnessIfAble(TaskSolver solver, String filename) throws IOException {
@@ -241,7 +244,8 @@ public class OutputGenerator {
                 return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory(), filename,
-                        synContext, witnessType.convertToPng(), task.getConfig());
+                        synContext, witnessType.convertToPng(), task.getConfig()
+                );
             }
         }
 
