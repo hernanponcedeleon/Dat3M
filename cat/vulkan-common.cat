@@ -61,12 +61,12 @@ let SEMSC023 = SEMSC02 & SEMSC3
 let SEMSC123 = SEMSC12 & SEMSC3
 let SEMSC0123 = SEMSC012 & SEMSC3
 
-let AVSG = AV | SEMAV
+let AVSG = (AV | SEMAV) & (DV | QF | WG | SG)
 let AVWG = (AV | SEMAV) & (DV | QF | WG)
 let AVQF = (AV | SEMAV) & (DV | QF)
 let AVSHADER = (AV | SEMAV) & DV
 
-let VISSG = VIS | SEMVIS
+let VISSG = (VIS | SEMVIS) & (DV | QF | WG | SG)
 let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
 let VISQF = (VIS | SEMVIS) & (DV | QF)
 let VISSHADER = (VIS | SEMVIS) & DV
