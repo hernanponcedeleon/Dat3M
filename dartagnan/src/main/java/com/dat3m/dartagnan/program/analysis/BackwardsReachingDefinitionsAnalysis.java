@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import java.util.*;
@@ -79,7 +80,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
      */
     public static BackwardsReachingDefinitionsAnalysis forFunction(Function function) {
         final var analysis = new BackwardsReachingDefinitionsAnalysis();
-        final Set<Register> finalRegisters = new HashSet<>();
+        final Set<Register> finalRegisters = new LinkedHashSet<>();
         analysis.initialize(function, finalRegisters);
         analysis.run(function, finalRegisters);
         analysis.postProcess();
@@ -110,7 +111,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
     }
 
     private static Set<Register> finalRegisters(Program program) {
-        final Set<Register> finalRegisters = new HashSet<>();
+        final Set<Register> finalRegisters = new LinkedHashSet<>();
         if (program.getSpecification() != null) {
             finalRegisters.addAll(program.getSpecification().getRegs());
         }
@@ -125,13 +126,13 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
      */
     private static final class ReaderInfo implements Writers {
 
-        private final Set<Register> used;
+        private final ImmutableSet<Register> used;
         private final List<RegWriter> mayWriters = new ArrayList<>();
         private final List<RegWriter> mustWriters = new ArrayList<>();
         private final Set<Register> uninitialized = new HashSet<>();
 
         private ReaderInfo(Set<Register> u) {
-            used = Set.copyOf(u);
+            used = ImmutableSet.copyOf(u);
         }
 
         @Override
@@ -168,7 +169,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
      */
     public static final class Readers {
 
-        private final Set<RegReader> readers = new HashSet<>();
+        private final Set<RegReader> readers = new LinkedHashSet<>();
         private boolean mayBeFinal;
 
         private Readers() {}
@@ -197,10 +198,9 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
         }
         writerMap.put(INITIAL_WRITER, new Readers());
         for (RegReader reader : function.getEvents(RegReader.class)) {
-            final Set<Register> usedRegisters = new HashSet<>();
-            for (Register.Read read : reader.getRegisterReads()) {
-                usedRegisters.add(read.register());
-            }
+            final Set<Register> usedRegisters =  reader.getRegisterReads().stream()
+                    .map(Register.Read::register)
+                    .collect(ImmutableSet.toImmutableSet());
             readerMap.put(reader, new ReaderInfo(usedRegisters));
         }
         readerMap.put(FINAL_READER, new ReaderInfo(finalRegisters));

@@ -32,7 +32,7 @@ public class Wmm {
     }
 
     public List<Constraint> getConstraints() {
-        return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
+        return Stream.concat(relations.stream().map(Relation::getDefinition), constraints.stream()).toList();
     }
 
     public List<Axiom> getAxioms() {
@@ -40,7 +40,7 @@ public class Wmm {
     }
 
     public Set<Relation> getRelations() {
-        return Set.copyOf(relations);
+        return ImmutableSet.copyOf(relations);
     }
 
     public boolean containsRelation(String name) {

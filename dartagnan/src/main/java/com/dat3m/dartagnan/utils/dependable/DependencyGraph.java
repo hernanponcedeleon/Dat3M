@@ -6,6 +6,12 @@ import com.google.common.collect.Lists;
 import java.util.*;
 import java.util.function.Function;
 
+// TODO: The class internally iterates over a HashMap whose keys are the user-provided objects.
+//  If the objects have a non-deterministic hash (e.g. default reference-based hash), the iteration
+//  order and thus the computed topological order may differ.
+//  Using a LinkedHashMap would make this algorithm always deterministic, but we cannot do so right now:
+//   BranchReordering relies on the hash-code-induced ordering to compute a "good" ordering.
+//   NaiveLoopBoundAnnotation fails to detect loop bounds if BranchReordering does not provide a "good" ordering.
 public class DependencyGraph<T> {
 
     //TODO: Maybe add a way to enable Identity-based hashmaps
@@ -16,6 +22,10 @@ public class DependencyGraph<T> {
 
     public Node get(T item) {
         return nodeMap.get(item);
+    }
+
+    public boolean contains(T item) {
+        return nodeMap.containsKey(item);
     }
 
     public List<Node> getNodes() {
@@ -174,7 +184,7 @@ public class DependencyGraph<T> {
             }
 
             if (v.lowlink == v.index) {
-                final Set<Node> scc = new HashSet<>();
+                final Set<Node> scc = new LinkedHashSet<>();
                 sccs.add(scc);
                 v.topologicalIndex = ++topIndex;
                 Node w;

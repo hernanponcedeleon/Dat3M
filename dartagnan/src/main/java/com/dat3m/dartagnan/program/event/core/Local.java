@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Local extends AbstractEvent implements RegWriter, RegReader {
@@ -49,7 +49,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(expr, Register.UsageType.DATA, new HashSet<>());
+        return Register.collectRegisterReads(expr, Register.UsageType.DATA, new LinkedHashSet<>());
     }
 
     @Override

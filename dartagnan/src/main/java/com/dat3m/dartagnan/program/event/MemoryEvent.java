@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -12,7 +12,7 @@ public interface MemoryEvent extends RegReader {
 
     @Override
     default Set<Read> getRegisterReads() {
-        final Set<Read> regReads = new HashSet<>();
+        final Set<Read> regReads = new LinkedHashSet<>();
         getMemoryAccesses().forEach(access -> collectRegisterReads(access.address(), UsageType.ADDR, regReads));
         return regReads;
     }

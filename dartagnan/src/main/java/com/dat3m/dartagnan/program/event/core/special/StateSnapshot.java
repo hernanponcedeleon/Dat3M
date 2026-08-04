@@ -42,7 +42,7 @@ public class StateSnapshot extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(expressions, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(expressions, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

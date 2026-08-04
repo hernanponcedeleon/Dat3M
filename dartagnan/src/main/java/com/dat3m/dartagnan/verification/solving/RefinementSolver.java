@@ -188,7 +188,7 @@ public class RefinementSolver extends ModelChecker {
         performIntervalAnalysis(task, analysisContext, config);
 
         //  ------- Generate refinement model -------
-        final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
+        final Collection<Constraint> wmmConstraintsToEncode = new LinkedHashSet<>(biases);
         // The cut has to be encoded.
         wmmConstraintsToEncode.addAll(generateCut(memoryModel));
 
@@ -484,7 +484,7 @@ public class RefinementSolver extends ModelChecker {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
-        final Set<Constraint> constraintsToCut = new HashSet<>();
+        final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
         for (Constraint c : model.getConstraints()) {
             if (c instanceof Axiom ax && ax.isNegated()) {
                 // (i) Negated axioms
