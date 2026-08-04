@@ -93,7 +93,7 @@ public final class EncodingContext {
         var depGraph = DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies);
         // NOTE: This guarantees a deterministic ordering of the constraints to be encoded
         constraintsToEncode = t.getMemoryModel().getConstraints().stream()
-                .filter(constr -> depGraph.get(constr) != null)
+                .filter(depGraph::contains)
                 .toList();
     }
 
