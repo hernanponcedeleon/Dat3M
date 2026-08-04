@@ -10,6 +10,8 @@ litmus/VULKAN/Barrier/quorum3-fail.litmus,0
 litmus/VULKAN/Barrier/quorum3-pass.litmus,1
 litmus/VULKAN/Barrier/quorum4-fail.litmus,0
 litmus/VULKAN/Barrier/quorum4-pass.litmus,1
+litmus/VULKAN/Coherence/asmo-trans-dec.litmus,1
+litmus/VULKAN/Coherence/asmo-trans-inc.litmus,1
 litmus/VULKAN/HostSync/Basic/rr.litmus,0
 litmus/VULKAN/HostSync/Basic/rw.litmus,0
 litmus/VULKAN/HostSync/Basic/wr-a.litmus,1
