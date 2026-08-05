@@ -8,10 +8,10 @@ AArch64 SB+STR+CASAL+LDR
 0:X4=0; 1:X4=0;
 x=0; y=0;
 }
-P0 | P1 ;
-MOV W0,#1 | MOV W0,#1 ;
-STR W0,[X1] | STR W0,[X1] ;
+P0               | P1 ;
+MOV W0,#1        | MOV W0,#1 ;
+STR W0,[X1]      | STR W0,[X1] ;
 CASAL W4,W0,[X1] | CASAL W4, W0,[X1] ;
-LDR W2,[X3] | LDR W2,[X3] ;
+LDR W2,[X3]      | LDR W2,[X3] ;
 exists
 (0:X2=0 /\ 1:X2=0 /\ x=1 /\ y=1)

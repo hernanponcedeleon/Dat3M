@@ -7878,3 +7878,6 @@ litmus/AARCH64/NoRet/MP+rel+LDADDnoret-dmb.ld.litmus,1
 litmus/AARCH64/NoRet/MP+popl+amo.swpazrp-po.litmus,1
 litmus/AARCH64/NoRet/MP+popl+amo.swpzr-dmb.ld.litmus,1
 litmus/AARCH64/NoRet/MP+popl+amo.swpzr-dsb.ld.litmus,1
+litmus/AARCH64/manual/SB+CASAL+LDR.litmus,0
+litmus/AARCH64/manual/SB+STR+CASAL+LDR.litmus,1
+litmus/AARCH64/manual/SB+STR+CASAL+LDR2.litmus,0
