@@ -1,0 +1,16 @@
+AArch64 SB+CASAL+LDR
+
+(* https://github.com/herd/herdtools7/pull/322 *)
+
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+0:X4=0; 1:X4=0;
+x=0; y=0;
+}
+P0 | P1 ;
+MOV W0,#1 | MOV W0,#1 ;
+CASAL W4,W0,[X1] | CASAL W4, W0,[X1] ;
+LDR W2,[X3] | LDR W2,[X3] ;
+exists
+(0:X2=0 /\ 1:X2=0 /\ x=1 /\ y=1)
