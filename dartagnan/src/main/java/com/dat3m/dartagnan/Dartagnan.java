@@ -67,17 +67,19 @@ public class Dartagnan extends BaseOptions {
 
         final Configuration config;
         final Dartagnan o;
+        final Path catFile;
+        final List<Path> progFiles;
         try {
             config = loadConfigurationFromArgs(args);
             o = new Dartagnan(config);
+            catFile = getCatFileFromArgs(args);
+            progFiles = getProgramFilesFromArgs(args);
         } catch (IOException | InvalidConfigurationException e) {
             logger.error(e.getMessage());
             System.exit(UNKNOWN_ERROR.asInt());
             return;
         }
 
-        final Path catFile = getCatFileFromArgs(args);
-        final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
 
         final OutputLogger output = new OutputLogger(catFile, config);
@@ -160,17 +162,17 @@ public class Dartagnan extends BaseOptions {
                 .build();
     }
 
-    private static Path getCatFileFromArgs(String[] args) {
+    private static Path getCatFileFromArgs(String[] args) throws IOException {
         Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
-                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
+                .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
         logger.info("CAT file path: {}", catFile);
         return catFile;
     }
 
-    private static List<Path> getProgramFilesFromArgs(String[] args) {
+    private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
         final List<Path> files = new ArrayList<>();
         Stream.of(args).map(Paths::get).filter(Files::exists)
                 .forEach(path -> {
@@ -181,7 +183,7 @@ public class Dartagnan extends BaseOptions {
                     }
                 });
         if (files.isEmpty()) {
-            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+            throw new IOException("Path to input program(s) not given or format not recognized");
         }
         return files;
     }
