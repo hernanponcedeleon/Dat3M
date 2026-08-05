@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
+import static com.dat3m.dartagnan.utils.ExitCode.UNKNOWN_ERROR;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
@@ -49,7 +51,7 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         initEnvironmentInfo();
 
@@ -63,8 +65,16 @@ public class Dartagnan extends BaseOptions {
 
         logEnvironmentInfo();
 
-        final Configuration config = loadConfigurationFromArgs(args);
-        final Dartagnan o = new Dartagnan(config);
+        final Configuration config;
+        final Dartagnan o;
+        try {
+            config = loadConfigurationFromArgs(args);
+            o = new Dartagnan(config);
+        } catch (IOException | InvalidConfigurationException e) {
+            logger.error(e.getMessage());
+            System.exit(UNKNOWN_ERROR.asInt());
+            return;
+        }
 
         final Path catFile = getCatFileFromArgs(args);
         final List<Path> progFiles = getProgramFilesFromArgs(args);
@@ -120,7 +130,7 @@ public class Dartagnan extends BaseOptions {
         OptionInfo.stream().sorted().forEach(System.out::print);
     }
 
-    private static void printVersion() throws Exception {
+    private static void printVersion() {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
         final Path pomPath = getHomeDirectory().resolve("pom.xml");
 
@@ -128,6 +138,8 @@ public class Dartagnan extends BaseOptions {
             final String base = mvnReader.read(reader).getVersion();
             final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
+        } catch (IOException | XmlPullParserException e) {
+            logger.warn("Failed to load {}", pomPath);
         }
     }
 
