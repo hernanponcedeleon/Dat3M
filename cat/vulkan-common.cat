@@ -1,0 +1,180 @@
+// Vulkan Memory Model
+// Common definitions
+
+// This file contains common definitions for both model versions,
+// with and without availability-visibility chains.
+// A model must define the chains relation before including this file.
+
+// Tags:
+// M, IW, W, R: memory access, initial write, write, read
+// CBAR: control barrier
+// F: fence or control barrier with memory semantics
+// ATOM: atomic memory access
+// RMW: atomic read-modify-write
+// ACQ, REL: acquire, release memory order
+// SC0, SC1, SC2, SC3: storage class 0, 1, 2, 3
+// SEMSC0, SEMSC1, SEMSC2, SEMSC3: storage class semantics 0, 1, 2, 3
+// NONPRIV: non-private memory accesses
+// SG, WG, QF, DV: subgroup, workgroup, queue family, device scopes
+// AV, VIS: availability, visibility
+// SEMAV, SEMVIS: availability, visibility semantics
+// AVDEVICE, VISDEVICE: availability, visibility operations issued by host
+
+// Base relations:
+// id: identity relation
+// po: program order
+// int: internal (events in the same thread)
+// ext: external (events in different threads)
+// rmw: same atomic read-modify-write instruction, relates read-to-write
+// co, rf, fr: coherence order, read-from, from-read
+// loc: same location
+// vloc: same variable (same reference sref in Alloy)
+// syncbar: same dynamic instance of a control barrier
+// ssg: same subgroup
+// swg: same workgroup
+// sqf: same queue family
+// ssw: system-synchronizes-with
+
+(* Tags *)
+
+let SC01 = SC0 | SC1
+let SC02 = SC0 | SC2
+let SC03 = SC0 | SC3
+let SC12 = SC1 | SC2
+let SC13 = SC1 | SC3
+let SC23 = SC2 | SC3
+let SC012 = SC01 | SC2
+let SC013 = SC01 | SC3
+let SC023 = SC02 | SC3
+let SC123 = SC12 | SC3
+let SC0123 = SC012 | SC3
+
+let SEMSC01 = SEMSC0 & SEMSC1
+let SEMSC02 = SEMSC0 & SEMSC2
+let SEMSC03 = SEMSC0 & SEMSC3
+let SEMSC12 = SEMSC1 & SEMSC2
+let SEMSC13 = SEMSC1 & SEMSC3
+let SEMSC23 = SEMSC2 & SEMSC3
+let SEMSC012 = SEMSC01 & SEMSC2
+let SEMSC013 = SEMSC01 & SEMSC3
+let SEMSC023 = SEMSC02 & SEMSC3
+let SEMSC123 = SEMSC12 & SEMSC3
+let SEMSC0123 = SEMSC012 & SEMSC3
+
+let AVSG = (AV | SEMAV) & (DV | QF | WG | SG)
+let AVWG = (AV | SEMAV) & (DV | QF | WG)
+let AVQF = (AV | SEMAV) & (DV | QF)
+let AVSHADER = (AV | SEMAV) & DV
+
+let VISSG = (VIS | SEMVIS) & (DV | QF | WG | SG)
+let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
+let VISQF = (VIS | SEMVIS) & (DV | QF)
+let VISSHADER = (VIS | SEMVIS) & DV
+
+(* Relations *)
+
+let inscope = (DV * DV) |
+    (sqf & ((DV | QF) * (DV | QF))) |
+    (swg & ((DV | QF | WG) * (DV | QF | WG))) |
+    (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
+
+let avvissem = (SC0123 * AVDEVICE) | (VISDEVICE * SC0123) |
+    (SC0 * (SEMSC0 & SEMAV)) | (SC1 * (SEMSC1 & SEMAV)) |
+    (SC2 * (SEMSC2 & SEMAV)) | (SC3 * (SEMSC3 & SEMAV)) |
+    ((SEMSC0 & SEMVIS) * SC0) | ((SEMSC1 & SEMVIS) * SC1) |
+    ((SEMSC2 & SEMVIS) * SC2) | ((SEMSC3 & SEMVIS) * SC3)
+let avvisset = [AV | VIS]; (vloc & loc)
+let avvisinc = avvissem | avvisset | avvisset^-1
+
+let posctosem = po & ((SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3))
+let posemtosc = po & ((SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3))
+
+let imm(r) = r \ (r; r+)
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
+let asmo = co & mutordatom
+let rs = [REL & ATOM]; (imm(asmo); [RMW])*
+let hypors = [W & ATOM]; (imm(asmo); [RMW])*
+
+// Synchronizes-with is similar to C++,
+// with an additional case for fence->cbar->cbar->fence
+let sw = inscope & (
+    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |
+    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F]))
+
+let ithb(SC, SEMSC) = (ssw |
+    ([SEMSC]; sw; [SEMSC]) |
+    ([SC | SEMSC]; po; [REL & SEMSC]) |
+    ([ACQ & SEMSC]; po; [SC | SEMSC]))+
+
+let hb = (po |
+    ithb(SC0, SEMSC0) | ithb(SC1, SEMSC1) | ithb(SC2, SEMSC2) | ithb(SC3, SEMSC3) |
+    ithb(SC01, SEMSC01) | ithb(SC02, SEMSC02) | ithb(SC03, SEMSC03) |
+    ithb(SC12, SEMSC12) | ithb(SC13, SEMSC13) | ithb(SC23, SEMSC23) |
+    ithb(SC012, SEMSC012) | ithb(SC013, SEMSC013) | ithb(SC023, SEMSC023) |
+    ithb(SC123, SEMSC123) | ithb(SC0123, SEMSC0123))
+
+let avsg = [AVSG]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
+let avqf = (chains & ((avsg; (hb & ssg & avvisinc))?;
+    (avwg; (hb & swg & avvisinc))?)); [AVQF]
+let avsh = (chains & ((avsg; (hb & ssg & avvisinc))?;
+    (avwg; (hb & swg & avvisinc))?;
+    (avqf; (hb & sqf & avvisinc))?)); [AVSHADER]
+
+let vissg = [VISSG]
+let viswg = [VISWG]; (chains & (((hb & ssg & avvisinc); vissg)?))
+let visqf = [VISQF]; (chains & (((hb & swg & avvisinc); viswg)?;
+    ((hb & ssg & avvisinc); vissg)?))
+let vissh = [VISSHADER]; (chains & (((hb & sqf & avvisinc); visqf)?;
+    ((hb & swg & avvisinc); viswg)?;
+    ((hb & ssg & avvisinc); vissg)?))
+
+let locord = loc & (
+    ([R]; ssw+; [R | W]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hb; [VISDEVICE]; hb; [R]) |
+    ([R & NONPRIV]; hb; [(R | W) & NONPRIV]) |
+    (vloc & ((hb & int) |
+        ([W & NONPRIV]; (po? & avvisinc); avsg; (hb & ssg); [W & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avwg; (hb & swg); [W & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avqf; (hb & sqf); [W & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avsh; hb; [W & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R & NONPRIV]) |
+        ([W & NONPRIV]; (po? & avvisinc); avsh; hb; vissh; (po? & avvisinc); [R & NONPRIV]))))
+
+// From-read is derived from asmo and locord instead of co
+// Loads reading an initial write are fr-before all other same-location writes
+let fr = (rf^-1; ((W * W) & locord)) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+
+(* Constraints *)
+
+// Mutually ordered atomic writes must be ordered by asmo in either direction
+// Translated from Alloy rai[asmo] = (W -> W) & mutordatom
+// The opposite direction, empty asmo \ ((W * W) & mutordatom),
+// follows from the asmo definition let asmo = co & mutordatom.
+empty ((W * W) & mutordatom) \ asmo \ asmo^-1 as consistent-asmo
+
+// Enforcing transitive asmo
+empty (asmo; asmo) \ asmo
+
+// Enforcing atomicity of read-modify-write
+empty rmw & ((fr & ext); (asmo & ext)) as atomic
+
+// Enforcing co from initial writes to other same-location stores
+empty (loc & (IW * (W \ IW))) \ co
+
+// Forbidding cycles of locord, rf, fr, asmo
+acyclic (locord | rf | fr | asmo) as consistency-cycle
+
+// Forbidding non-atomic loads to read a value that is shadowed by another write
+empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
+
+(* Data Races *)
+let ordered = mutordatom | locord | locord^-1
+let dr = loc \ id \ ordered \ (R * R) \ (IW * _) \ (_ * IW)
+flag ~empty dr as racy

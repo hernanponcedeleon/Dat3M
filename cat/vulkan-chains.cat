@@ -1,0 +1,6 @@
+VULKAN-CHAINS
+// Vulkan Memory Model
+// For architectures with availability-visibility chains
+
+let chains = _ * _
+include "vulkan-common.cat"

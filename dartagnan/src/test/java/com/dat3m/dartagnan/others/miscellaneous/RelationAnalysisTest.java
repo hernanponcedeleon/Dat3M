@@ -55,7 +55,9 @@ public class RelationAnalysisTest {
                 { "litmus/PTX/Memalloy", "cat/ptx-v7.5.cat", Arch.PTX },
                 { "litmus/PTX/Nvidia", "cat/ptx-v7.5.cat", Arch.PTX },
                 { "litmus/VULKAN/KhronosGroup", "cat/vulkan.cat", Arch.VULKAN },
+                { "litmus/VULKAN/KhronosGroup", "cat/vulkan-chains.cat", Arch.VULKAN },
                 { "litmus/VULKAN/Manual", "cat/vulkan.cat", Arch.VULKAN },
+                { "litmus/VULKAN/Manual", "cat/vulkan-chains.cat", Arch.VULKAN },
                 { "litmus/X86", "cat/tso.cat", Arch.TSO },
 
                 { "dartagnan/src/test/resources/lfds", "cat/c11.cat", Arch.C11 },
@@ -94,6 +96,7 @@ public class RelationAnalysisTest {
                 { "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
 
                 { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/vulkan.cat", Arch.VULKAN },
+                { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/vulkan-chains.cat", Arch.VULKAN },
         });
     }
 
