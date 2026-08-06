@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -61,14 +60,15 @@ public class Dartagnan extends BaseOptions {
         final Dartagnan o = new Dartagnan(config);
 
         final Path catFile = getCatFileFromArgs(args);
+        logger.info("CAT file path: {}", catFile);
         final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
-        final OutputGenerator outputGenerator = OutputGenerator.create(config);
-        outputGenerator.setBatchMode(isBatchMode);
+        final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
         final List<Output> outputs = new ArrayList<>();
         Output output = null;
         for (Path progFile : progFiles) {
+            logger.info("Program path: {}", progFile.normalize());
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
@@ -160,25 +160,19 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static Path getCatFileFromArgs(String[] args) {
-        Path catFile = Arrays.stream(args)
+        return Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
-        logger.info("CAT file path: {}", catFile);
-        return catFile;
     }
 
     private static List<Path> getProgramFilesFromArgs(String[] args) {
-        final List<Path> files = new ArrayList<>();
-        Stream.of(args).map(Paths::get).filter(Files::exists)
-                .forEach(path -> {
-                    List<Path> supported = getProgramFiles(path);
-                    if (!supported.isEmpty()) {
-                        logger.info("Program(s) path: {}", path.normalize());
-                        files.addAll(supported);
-                    }
-                });
+        final List<Path> files = Stream.of(args)
+                .map(Path::of)
+                .filter(Files::exists)
+                .flatMap(path -> getProgramFiles(path).stream())
+                .toList();
         if (files.isEmpty()) {
             throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
         }

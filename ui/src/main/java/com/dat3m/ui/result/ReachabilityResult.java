@@ -15,6 +15,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.witness.WitnessType.NONE;
+import static com.dat3m.dartagnan.witness.WitnessType.PNG;
 
 public class ReachabilityResult {
 
@@ -53,10 +55,9 @@ public class ReachabilityResult {
         try {
             final Arch arch = program.getArch() != null ? program.getArch() : options.target();
             final Configuration config = Configuration.builder()
-                    .setOptions(options.config())
-                    .setOption(WITNESS, WitnessType.PNG.asStringOption())
                     .setOption(WITNESS_FILENAME, "dat3mUI")
-                    .setOption(WITNESS_UNKNOWN, "false")
+                    .setOptions(options.config())
+                    .setOption(WITNESS, options.showWitness() ? PNG.asStringOption() : NONE.asStringOption())
                     .build();
             final VerificationTask task = VerificationTask.builder()
                     .withConfig(config)
@@ -67,7 +68,7 @@ public class ReachabilityResult {
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
-            final OutputGenerator outputGenerator = OutputGenerator.create(config);
+            final OutputGenerator outputGenerator = OutputGenerator.create(false, config);
             try (TaskSolver solver = TaskSolver.create(task)) {
                 solver.run();
 
