@@ -2361,3 +2361,4 @@ litmus/PPC/safe564.litmus,0
 litmus/PPC/safe565.litmus,0
 litmus/PPC/safe566.litmus,0
 litmus/PPC/wrcv2.litmus,0
+litmus/PPC/lwa-vs-lwz.litmus,1

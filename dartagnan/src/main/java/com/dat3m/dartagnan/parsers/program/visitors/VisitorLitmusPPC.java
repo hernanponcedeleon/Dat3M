@@ -146,15 +146,21 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitLwa(LwaContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
+        Register r1b = programBuilder.getOrNewRegister(mainThread, "dummy", types.getIntegerType(32));
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.Power.newLoad(r1, ra), ctx);
+        Expression cast = expressions.makeIntegerCast(r1b, types.getIntegerType(64), true);
+        append(EventFactory.Power.newLoad(r1b, ra), ctx);
+        return append(EventFactory.newLocal(r1, cast), ctx);
     }
 
     @Override
     public Object visitLwz(LwzContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
+        Register r1b = programBuilder.getOrNewRegister(mainThread, "dummy", types.getIntegerType(32));
         Register ra = (Register) ctx.register(1).accept(this);
-        return append(EventFactory.Power.newLoad(r1, ra), ctx);
+        Expression cast = expressions.makeIntegerCast(r1b, types.getIntegerType(64), false);
+        append(EventFactory.Power.newLoad(r1b, ra), ctx);
+        return append(EventFactory.newLocal(r1, cast), ctx);
     }
 
     @Override
