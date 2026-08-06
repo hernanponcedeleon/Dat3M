@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -30,50 +32,25 @@ public class ResourceHelper {
 
     public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
         String path = getTestResourcePath(arch + postfix + "-expected.csv");
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            HashMap<String, Result> data = new HashMap<>();
-            String str;
-            while((str = reader.readLine()) != null){
-                if(str.startsWith("//") || str.isBlank()) {
-                    continue;
-                }
-                String[] line = str.split(",");
-                if(line.length == 2){
-                    data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
-                }
+        var data = ImmutableMap.<String, Result>builder();
+        Files.readAllLines(Path.of(path)).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
+            String[] line = str.split(",");
+            if (line.length == 2) {
+                data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
             }
-            return ImmutableMap.copyOf(data);
-        }
+        });
+        return data.build();
     }
 
     public static ImmutableSet<String> getSkipSet() throws IOException {
-        String path = getTestResourcePath("dartagnan-skip.csv");
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            Set<String> data = new HashSet<>();
-            String str;
-            while((str = reader.readLine()) != null){
-            	if(str.startsWith("//") || str.isBlank()) {
-            		continue;
-                }
-            	data.add(getRootPath(str));
-            }
-            return ImmutableSet.copyOf(data);
-        }
+        return Files.readAllLines(Path.of(getTestResourcePath("dartagnan-skip.csv"))).stream()
+                .filter(ResourceHelper::isValidEntry)
+                .map(ResourceHelper::getRootPath)
+                .collect(ImmutableSet.toImmutableSet());
     }
 
-    public static Result readExpected(String filepath, String property) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
-            String str;
-            while((str = br.readLine()) != null){
-                if (str.contains(property)) {
-                    return br.readLine().contains("false") ? FAIL : PASS;
-                }
-            }
-            throw new IllegalArgumentException("Missing expected result for property " + property);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            System.exit(0);
-        }
-        return null;
+    private static boolean isValidEntry(String line) {
+        return !line.isBlank() && !line.startsWith("//");
     }
+
 }

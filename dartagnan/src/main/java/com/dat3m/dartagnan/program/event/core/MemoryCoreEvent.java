@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -18,7 +18,7 @@ public interface MemoryCoreEvent extends MemoryEvent {
 
     @Override
     default Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new HashSet<>());
+        return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new LinkedHashSet<>());
     }
 
     /*

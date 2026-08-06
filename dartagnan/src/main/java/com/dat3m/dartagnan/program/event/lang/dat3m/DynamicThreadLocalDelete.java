@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -28,7 +28,7 @@ public class DynamicThreadLocalDelete extends AbstractEvent implements RegReader
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(key, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(key, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

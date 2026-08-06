@@ -12,7 +12,7 @@ import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class ReachabilityResult {
 
@@ -21,7 +21,7 @@ public class ReachabilityResult {
     private final UiOptions options;
 
     private String verdict;
-    private File witnessFile;
+    private Path witnessFile;
 
 
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options) {
@@ -39,7 +39,7 @@ public class ReachabilityResult {
         return witnessFile != null;
     }
 
-    public File getWitnessFile() {
+    public Path getWitnessFile() {
         return witnessFile;
     }
 

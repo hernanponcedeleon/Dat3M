@@ -50,7 +50,6 @@ public abstract class BaseOptions {
         return method;
     }
 
-
     @Option(
             name = WITNESS,
             description = "Type of the violation graph to generate in the output directory.")
@@ -86,10 +85,10 @@ public abstract class BaseOptions {
             name = CAT_INCLUDE,
             description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
     )
-    private Path catIncludePath = GlobalSettings.getCatDirectory();
+    private String catIncludePath = GlobalSettings.getCatDirectory().toString();
 
     public Path getCatIncludePath() {
-        return catIncludePath;
+        return Path.of(catIncludePath);
     }
 
     @Option(

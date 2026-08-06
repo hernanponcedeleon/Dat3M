@@ -1058,31 +1058,31 @@ public class WmmEncoder {
             // Build original graph G
             Map<Event, Set<Event>> inEdges = new HashMap<>();
             Map<Event, Set<Event>> outEdges = new HashMap<>();
-            Set<Event> nodes = new HashSet<>();
-            Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
+            Set<Event> nodes = new LinkedHashSet<>();
+            Set<Event> selfloops = new LinkedHashSet<>();         // Special treatment for self-loops
             relevantEdges.apply((e1, e2) -> {
                 if (Tuple.isLoop(e1, e2)) {
                     selfloops.add(e1);
                 } else {
                     nodes.add(e1);
                     nodes.add(e2);
-                    outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(e2);
-                    inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(e1);
+                    outEdges.computeIfAbsent(e1, key -> new LinkedHashSet<>()).add(e2);
+                    inEdges.computeIfAbsent(e2, key -> new LinkedHashSet<>()).add(e1);
                 }
             });
 
             // Handle corner-cases where some node has no ingoing or outgoing edges
             for (Event node : nodes) {
-                outEdges.putIfAbsent(node, new HashSet<>());
-                inEdges.putIfAbsent(node, new HashSet<>());
+                outEdges.putIfAbsent(node, new LinkedHashSet<>());
+                inEdges.putIfAbsent(node, new LinkedHashSet<>());
             }
 
             // Build vertex elimination graph G*, by iteratively modifying G
             Map<Event, Set<Event>> vertEleInEdges = new HashMap<>();
             Map<Event, Set<Event>> vertEleOutEdges = new HashMap<>();
             for (Event e : nodes) {
-                vertEleInEdges.put(e, new HashSet<>(inEdges.get(e)));
-                vertEleOutEdges.put(e, new HashSet<>(outEdges.get(e)));
+                vertEleInEdges.put(e, new LinkedHashSet<>(inEdges.get(e)));
+                vertEleOutEdges.put(e, new LinkedHashSet<>(outEdges.get(e)));
             }
             List<Event[]> triangles = new ArrayList<>();
 

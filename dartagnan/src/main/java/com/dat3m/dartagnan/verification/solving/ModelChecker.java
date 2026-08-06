@@ -35,6 +35,7 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -142,9 +143,9 @@ public abstract class ModelChecker implements AutoCloseable {
     protected void initSMTSolver(Configuration config) throws InvalidConfigurationException {
         Preconditions.checkState(solverContext == null, "SolverContext already initialized");
 
-        final String smtDumpPath = smtConfig.getDumpSmtLib()
-                ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", task.getProgram().getName())
-                : "";
+        final Path smtDumpPath = smtConfig.getDumpSmtLib()
+                ? GlobalSettings.getOutputDirectory().resolve(String.format("%s.smt2", task.getProgram().getName()))
+                : null;
 
         solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
         prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);

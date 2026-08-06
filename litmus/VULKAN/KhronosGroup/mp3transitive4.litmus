@@ -1,0 +1,27 @@
+VULKAN mp3transitive4
+"Invocation 0 makes the write x=1 available to invocation 1."
+"Invocation 1 then does a bulk av operation with device scope."
+"Invocation 2->3 does happens-before"
+"Invocation 3 does a bulk vis op with device scope"
+"Invocation 4 does a bulk vis op with workgroup scope"
+"The happens-before is sufficient even though it uses different"
+"storage class semantics."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/mp3transitive4.test"
+{
+P1:r0=0;
+P2:r0=0;
+P3:r0=0;
+P4:r0=0;
+P4:r1=0;
+v=0;
+w=0;
+x=0;
+y=0;
+z=0;
+}
+ P0@sg 0, wg 0, qf 0                  | P1@sg 1, wg 0, qf 0                         | P2@sg 0, wg 1, qf 0             | P3@sg 0, wg 2, qf 0                           | P4@sg 1, wg 2, qf 0                    ;
+ st.nonpriv.sc0 x, 1                  | ld.atom.acq.wg.sc0.semsc0 r0, y             | ld.atom.acq.dv.sc1.semsc1 r0, z | ld.atom.acq.dv.sc1.semsc0.semsc1.semvis r0, v | ld.atom.acq.wg.sc0.semsc0.semvis r0, w ;
+ st.atom.rel.wg.sc0.semsc0.semav y, 1 | st.atom.rel.dv.sc1.semsc0.semsc1.semav z, 1 | st.atom.rel.dv.sc1.semsc1 v, 1  | st.atom.rel.wg.sc0.semsc0 w, 1                | ld.nonpriv.sc0 r1, x                   ;
+
+filter (P1:r0 == 1 /\ P2:r0 == 1 /\ P3:r0 == 1 /\ P4:r0 == 1)
+exists (P1:r0 == 1 /\ P2:r0 == 1 /\ P3:r0 == 1 /\ P4:r0 == 1 /\ P4:r1 == 0)
