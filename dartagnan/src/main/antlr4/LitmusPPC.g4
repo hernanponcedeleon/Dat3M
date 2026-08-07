@@ -89,6 +89,7 @@ instructionRow
 instruction
     :
     |   li
+    |   lis
     |   ld
     |   lwa
     |   lwz
@@ -99,15 +100,22 @@ instruction
     |   stwcx
     |   mr
     |   addi
+    |   ori
     |   xor
+    |   xoris
     |   cmpw
-    |   label
+    |   cmplwi
+    |   branchLabel
     |   branchCond
     |   fence
     ;
 
 li
     :   Li register Comma constant
+    ;
+
+lis
+    :   Lis register Comma constant
     ;
 
 ld
@@ -150,20 +158,32 @@ addi
     :   Addi register Comma register Comma constant
     ;
 
+ori
+    :   Ori register Comma register Comma constant
+    ;
+
 xor
     :   Xor register Comma register Comma register
+    ;
+
+xoris
+    :   Xoris register Comma register Comma constant
     ;
 
 cmpw
     :   Cmpw register Comma register
     ;
 
-label
-    :   Label Colon
+cmplwi
+    :   Cmplwi register Comma constant
+    ;
+
+branchLabel
+    :   label Colon
     ;
 
 branchCond
-    :   cond Label
+    :   cond label
     ;
 
 fence
@@ -197,6 +217,10 @@ assertionValue
     :   location
     |   threadId Colon register
     |   constant
+    ;
+
+label
+    :   Identifier
     ;
 
 Locations
@@ -237,6 +261,9 @@ Bge
 Li  :   'li'
     ;
 
+Lis :   'lis'
+    ;
+
 Ld  :   'ld'
     ;
 
@@ -273,12 +300,24 @@ Addi
     :   'addi'
     ;
 
+Ori
+    :   'ori'
+    ;
+
 Xor
     :   'xor'
     ;
 
+Xoris
+    :   'xoris'
+    ;
+
 Cmpw
     :   'cmpw'
+    ;
+
+Cmplwi
+    :   'cmplwi'
     ;
 
 Register
@@ -287,10 +326,6 @@ Register
 
 SymRegister
     :   Percent Identifier
-    ;
-
-Label
-    :   'L' Identifier
     ;
 
 LitmusLanguage

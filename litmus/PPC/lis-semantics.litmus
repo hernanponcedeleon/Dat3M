@@ -1,0 +1,10 @@
+PPC lis-semantics
+{
+0:r3=0; 0:r4=0;
+}
+P0             ;
+li r3, 4660    ;
+mr r4, r3      ;
+lis r3, 43981 ;
+
+forall (0:r4 = 4660 /\ 0:r3 = 2882338816)

@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.math.BigInteger;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
@@ -138,6 +139,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLis(LisContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression shifted = expressions.makeLshift(constant, expressions.makeValue(16, archType));
+        append(EventFactory.newLocal(register, shifted), ctx);
+        return null;
+    }
+
+    @Override
     public Object visitLd(LdContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
@@ -227,11 +237,29 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitOri(OriContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        append(EventFactory.newLocal(r1, expressions.makeIntOr(r2, constant)), ctx);
+        return null;
+    }
+
+    @Override
     public Object visitXor(XorContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
         Register r3 = (Register) ctx.register(2).accept(this);
         append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)), ctx);
+        return null;
+    }
+
+    @Override
+    public Object visitXoris(XorisContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant)), ctx);
         return null;
     }
 
@@ -244,8 +272,16 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitCmplwi(CmplwiContext ctx) {
+        Register r1 = (Register) ctx.register().accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, constant));
+        return null;
+    }
+
+    @Override
     public Object visitBranchCond(BranchCondContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         Expression expr = cmp == null ?
             // In PPC, when there is no previous comparison instruction,
@@ -257,8 +293,8 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLabel(LabelContext ctx) {
-        append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
+    public Object visitBranchLabel(BranchLabelContext ctx) {
+        append(programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()), ctx);
         return null;
     }
 
