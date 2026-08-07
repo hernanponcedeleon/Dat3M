@@ -89,6 +89,7 @@ instructionRow
 instruction
     :
     |   li
+    |   lis
     |   ld
     |   lwa
     |   lwz
@@ -99,6 +100,7 @@ instruction
     |   stwcx
     |   mr
     |   addi
+    |   ori
     |   xor
     |   cmpw
     |   branchLabel
@@ -108,6 +110,10 @@ instruction
 
 li
     :   Li register Comma constant
+    ;
+
+lis
+    :   Lis register Comma constant
     ;
 
 ld
@@ -148,6 +154,10 @@ mr
 
 addi
     :   Addi register Comma register Comma constant
+    ;
+
+ori
+    :   Ori register Comma register Comma constant
     ;
 
 xor
@@ -241,6 +251,9 @@ Bge
 Li  :   'li'
     ;
 
+Lis :   'lis'
+    ;
+
 Ld  :   'ld'
     ;
 
@@ -275,6 +288,10 @@ Mr
 
 Addi
     :   'addi'
+    ;
+
+Ori
+    :   'ori'
     ;
 
 Xor

@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.math.BigInteger;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
@@ -138,6 +139,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLis(LisContext ctx) {
+        final Register register = (Register) ctx.register().accept(this);
+        final IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        final Expression shifted = expressions.makeLshift(constant, expressions.makeValue(16, archType));
+        append(EventFactory.newLocal(register, shifted), ctx);
+        return null;
+    }
+
+    @Override
     public Object visitLd(LdContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
@@ -223,6 +233,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r2 = (Register) ctx.register(1).accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         append(EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)), ctx);
+        return null;
+    }
+
+    @Override
+    public Object visitOri(OriContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        append(EventFactory.newLocal(r1, expressions.makeIntOr(r2, constant)), ctx);
         return null;
     }
 
