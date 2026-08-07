@@ -140,9 +140,9 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitLis(LisContext ctx) {
-        final Register register = (Register) ctx.register().accept(this);
-        final IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        final Expression shifted = expressions.makeLshift(constant, expressions.makeValue(16, archType));
+        Register register = (Register) ctx.register().accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression shifted = expressions.makeLshift(constant, expressions.makeValue(16, archType));
         append(EventFactory.newLocal(register, shifted), ctx);
         return null;
     }
@@ -255,10 +255,27 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitXoris(XorisContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant)), ctx);
+        return null;
+    }
+
+    @Override
     public Object visitCmpw(CmpwContext ctx) {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
         lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, r2));
+        return null;
+    }
+
+    @Override
+    public Object visitCmplwi(CmplwiContext ctx) {
+        Register r1 = (Register) ctx.register().accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, constant));
         return null;
     }
 

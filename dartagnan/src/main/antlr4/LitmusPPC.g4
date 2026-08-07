@@ -102,7 +102,9 @@ instruction
     |   addi
     |   ori
     |   xor
+    |   xoris
     |   cmpw
+    |   cmplwi
     |   branchLabel
     |   branchCond
     |   fence
@@ -164,8 +166,16 @@ xor
     :   Xor register Comma register Comma register
     ;
 
+xoris
+    :   Xoris register Comma register Comma constant
+    ;
+
 cmpw
     :   Cmpw register Comma register
+    ;
+
+cmplwi
+    :   Cmplwi register Comma constant
     ;
 
 branchLabel
@@ -298,8 +308,16 @@ Xor
     :   'xor'
     ;
 
+Xoris
+    :   'xoris'
+    ;
+
 Cmpw
     :   'cmpw'
+    ;
+
+Cmplwi
+    :   'cmplwi'
     ;
 
 Register
