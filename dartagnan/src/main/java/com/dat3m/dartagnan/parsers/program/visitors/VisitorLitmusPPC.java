@@ -245,7 +245,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitBranchCond(BranchCondContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         Expression expr = cmp == null ?
             // In PPC, when there is no previous comparison instruction,
@@ -257,8 +257,8 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLabel(LabelContext ctx) {
-        append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
+    public Object visitBranchLabel(BranchLabelContext ctx) {
+        append(programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()), ctx);
         return null;
     }
 

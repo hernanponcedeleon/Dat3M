@@ -101,7 +101,7 @@ instruction
     |   addi
     |   xor
     |   cmpw
-    |   label
+    |   branchLabel
     |   branchCond
     |   fence
     ;
@@ -158,12 +158,12 @@ cmpw
     :   Cmpw register Comma register
     ;
 
-label
-    :   Label Colon
+branchLabel
+    :   label Colon
     ;
 
 branchCond
-    :   cond Label
+    :   cond label
     ;
 
 fence
@@ -197,6 +197,10 @@ assertionValue
     :   location
     |   threadId Colon register
     |   constant
+    ;
+
+label
+    :   Identifier
     ;
 
 Locations
@@ -287,10 +291,6 @@ Register
 
 SymRegister
     :   Percent Identifier
-    ;
-
-Label
-    :   'L' Identifier
     ;
 
 LitmusLanguage
