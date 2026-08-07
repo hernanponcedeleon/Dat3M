@@ -93,6 +93,8 @@ instructionRow
 instruction
     :
     |   mov
+    |   movk
+    |   movn
     |   arithmetic
     |   load
     |   loadPair
@@ -118,6 +120,16 @@ instruction
 mov
     :   MovInstruction r32 = register32 Comma expr32
     |   MovInstruction r64 = register64 Comma expr64
+    ;
+
+movk
+    :   MovKInstruction r32 = register32 Comma expr32
+    |   MovKInstruction r64 = register64 Comma expr64
+    ;
+
+movn
+    :   MovNInstruction r32 = register32 Comma expr32
+    |   MovNInstruction r64 = register64 Comma expr64
     ;
 
 cmp
@@ -724,6 +736,14 @@ CASALH :   'CASALH' ;
 MovInstruction
     :   'MOV'
     |   'MOVZ'
+    ;
+
+MovKInstruction
+    :   'MOVK'
+    ;
+
+MovNInstruction
+    :   'MOVN'
     ;
 
 CmpInstruction
