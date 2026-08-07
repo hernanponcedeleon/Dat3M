@@ -1850,7 +1850,6 @@ litmus/PPC/Z6.5+lwsyncs.litmus,1
 litmus/PPC/Z6.5+po+lwsync+lwsync.litmus,1
 litmus/PPC/Z6.5+po+lwsync+po.litmus,1
 litmus/PPC/Z6.5+po+lwsync+sync.litmus,1
-litmus/PPC/Z6.5+po+lwsync+sync.litmus,1
 litmus/PPC/Z6.5+po+po+lwsync.litmus,1
 litmus/PPC/Z6.5+po+po+sync.litmus,1
 litmus/PPC/Z6.5+po+sync+lwsync.litmus,1
@@ -2362,3 +2361,4 @@ litmus/PPC/safe564.litmus,0
 litmus/PPC/safe565.litmus,0
 litmus/PPC/safe566.litmus,0
 litmus/PPC/wrcv2.litmus,0
+litmus/PPC/lwa-vs-lwz.litmus,1

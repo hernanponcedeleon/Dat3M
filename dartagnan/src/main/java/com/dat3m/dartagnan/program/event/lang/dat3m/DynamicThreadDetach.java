@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public final class DynamicThreadDetach extends AbstractEvent implements RegWriter, RegReader {
@@ -53,7 +53,7 @@ public final class DynamicThreadDetach extends AbstractEvent implements RegWrite
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(tid, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(tid, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

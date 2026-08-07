@@ -11,10 +11,8 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +39,7 @@ public class SVCOMPRunner extends BaseOptions {
         // We always enable PROGRAM_SPEC to detect calls to unknown functions.
         // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
         if(p.contains("no-data-race")) {
-            property = EnumSet.of(Property.DATARACEFREEDOM, Property.PROGRAM_SPEC);
+            property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
         } else if(p.contains("termination")) {
             property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
         } else if(p.contains("valid-memsafety")) {
@@ -74,7 +72,7 @@ public class SVCOMPRunner extends BaseOptions {
         if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
             throw new IllegalArgumentException("CAT model not given or format not recognized");
         }
-        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
+        Path fileModel = Path.of(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
         Path programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).map(Path::of).findFirst().get();
         // To be sure we do not mixed benchmarks, if the bounds file exists, delete it
         Path boundsFilePath = getHomeDirectory().resolve("bounds.csv");

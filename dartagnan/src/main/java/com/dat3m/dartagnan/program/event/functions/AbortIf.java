@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /*
@@ -41,7 +41,7 @@ public class AbortIf extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(condition, Register.UsageType.CTRL, new HashSet<>());
+        return Register.collectRegisterReads(condition, Register.UsageType.CTRL, new LinkedHashSet<>());
     }
 
     @Override

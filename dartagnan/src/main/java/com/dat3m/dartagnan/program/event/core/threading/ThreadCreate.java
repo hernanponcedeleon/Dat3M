@@ -7,10 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ThreadCreate extends AbstractEvent implements RegReader {
@@ -39,7 +36,7 @@ public class ThreadCreate extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> regReads = new HashSet<>();
+        final Set<Register.Read> regReads = new LinkedHashSet<>();
         arguments.forEach(arg -> Register.collectRegisterReads(arg, Register.UsageType.DATA, regReads));
         return regReads;
     }

@@ -51,6 +51,16 @@ public enum IntCmpOp implements ExpressionKind {
         };
     }
 
+    public IntCmpOp toUnsigned() {
+        return switch (this) {
+            case EQ, NEQ, ULT, ULTE, UGT, UGTE -> this;
+            case LT -> ULT;
+            case LTE -> ULTE;
+            case GT -> UGT;
+            case GTE -> UGTE;
+        };
+    }
+
     public boolean isSigned() {
         return switch (this) {
             case EQ, NEQ, GTE, LTE, GT, LT -> true;

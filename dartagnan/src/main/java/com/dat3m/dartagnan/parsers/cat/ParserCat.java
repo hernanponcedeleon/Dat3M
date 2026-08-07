@@ -24,17 +24,20 @@ public class ParserCat {
         this.includePath = includePath;
     }
 
+    // TODO: Update call-sites to use Path instead of File
     public Wmm parse(File file) throws IOException {
-        try (FileInputStream stream = new FileInputStream(file)) {
-            return parse(CharStreams.fromStream(stream));
-        }
+        return parse(file.toPath());
+    }
+
+    public Wmm parse(Path path) throws IOException {
+        return parse(CharStreams.fromPath(path), path.toString());
     }
 
     public Wmm parse(String raw) {
-        return parse(CharStreams.fromString(raw));
+        return parse(CharStreams.fromString(raw), "<input>");
     }
 
-    private Wmm parse(CharStream charStream){
+    private Wmm parse(CharStream charStream, String currentFileName) {
         CatLexer lexer = new CatLexer(charStream);
         lexer.addErrorListener(new AbortErrorListener());
         lexer.addErrorListener(new DiagnosticErrorListener(true));
@@ -44,6 +47,6 @@ public class ParserCat {
         parser.addErrorListener(new AbortErrorListener());
         parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.mcm();
-        return (Wmm) parserEntryPoint.accept(new VisitorCat(includePath));
+        return (Wmm) parserEntryPoint.accept(new VisitorCat(includePath, currentFileName));
     }
 }

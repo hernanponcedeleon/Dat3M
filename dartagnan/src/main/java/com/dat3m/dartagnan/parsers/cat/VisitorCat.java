@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
 import org.slf4j.Logger;
@@ -47,6 +48,9 @@ class VisitorCat extends CatBaseVisitor<Object> {
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
+    // Used for error messages.
+    private String currentFileName;
+    private ParserRuleContext currentInstructionContext;
 
     private record FuncDefinition(String name, List<String> params, String expression,
                                   Map<String, Object> capturedNamespace) {
@@ -60,9 +64,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
         }
     }
 
-    VisitorCat(Path includePath) {
+    VisitorCat(Path includePath, String currentFileName) {
         this.includePath = includePath;
         this.wmm = new Wmm();
+        this.currentFileName = currentFileName;
         includeStdlib();
     }
 
@@ -78,12 +83,18 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitMcm(McmContext ctx) {
-        super.visitMcm(ctx);
+        currentInstructionContext = ctx;
+        try {
+            super.visitMcm(ctx);
+        } catch (RuntimeException e) {
+            throw e instanceof ParsingException ? e : parsingException(e, currentInstructionContext);
+        }
         return wmm;
     }
 
     @Override
     public Object visitLetFuncDefinition(LetFuncDefinitionContext ctx) {
+        currentInstructionContext = ctx;
         final String fname = ctx.fname.getText();
         final List<String> params = ctx.params.NAME().stream().map(Object::toString).toList();
         final String expression = ctx.expression().getText();
@@ -96,6 +107,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitInclude(IncludeContext ctx) {
+        currentInstructionContext = ctx;
         final String fileName = ctx.path.getText().substring(1, ctx.path.getText().length() - 1);
         final Path filePath = includePath.resolve(Path.of(fileName));
         if (!Files.exists(filePath)) {
@@ -103,16 +115,21 @@ class VisitorCat extends CatBaseVisitor<Object> {
             return null;
         }
 
+        final String currentFileParent = currentFileName;
         try {
             final CatParser parser = getParser(CharStreams.fromPath(filePath));
+            currentFileName = fileName;
             return parser.mcm().accept(this);
         } catch (IOException e) {
-            throw new ParsingException(e, String.format("Error parsing file '%s'", filePath));
+            throw parsingException(e, ctx);
+        } finally {
+            currentFileName = currentFileParent;
         }
     }
 
     @Override
     public Void visitAxiomDefinition(AxiomDefinitionContext ctx) {
+        currentInstructionContext = ctx;
         try {
             Relation r = parseAsRelation(ctx.e);
             Constructor<?> constructor = ctx.cls.getConstructor(Relation.class, boolean.class, boolean.class);
@@ -127,7 +144,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             wmm.addConstraint(axiom);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
                  InvocationTargetException e) {
-            throw new ParsingException(ctx.getText());
+            throw parsingException(e, ctx);
         }
         return null;
     }
@@ -145,7 +162,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
+        currentInstructionContext = ctx;
         final String name = ctx.n.getText();
+        // Check for arity issues to give similar errors as in `let rec`.
+        ctx.e.accept(new ArityInspector(Set.of()));
         final Relation definedPredicate = (Relation) ctx.e.accept(this);
         final String alias = createUniqueName(name);
         wmm.addAlias(alias, definedPredicate);
@@ -155,6 +175,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Void visitLetRecDefinition(LetRecDefinitionContext ctx) {
+        currentInstructionContext = ctx;
         final int recSize = ctx.letRecAndDefinition().size() + 1;
         final Relation[] recursiveGroup = new Relation[recSize];
         final String[] lhsNames = new String[recSize];
@@ -172,7 +193,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         }
         // Create the recursive relations.
         for (int i = 0; i < recSize; i++) {
-            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector());
+            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector(Set.of(lhsNames)));
             final Relation.Arity arity = probedArity != null ? probedArity : Relation.Arity.BINARY;
             recursiveGroup[i] = wmm.newRelation(createUniqueName(lhsNames[i]), arity);
             recursiveGroup[i].setRecursive();
@@ -221,29 +242,20 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         final String name = ctx.n.getText();
-        final Object localObject = namespace.get(name);
-        final Object boundObject = localObject != null ? localObject : wmm.getRelation(name);
-        if (boundObject != null) {
-            return boundObject;
-        }
-        final boolean predefinedName = RelationNameRepository.contains(name);
-        final Relation predefined = predefinedName ? wmm.getOrCreatePredefinedRelation(name) : null;
-        return predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
+        final Relation relation = getRelation(name, ctx);
+        return relation != null ? relation : addDefinition(new TagSet(wmm.newSet(name), name));
     }
 
     @Override
     public Object visitExprCall(ExprCallContext ctx) {
         final String calledFunc = ctx.call.getText();
         if (!(namespace.get(calledFunc) instanceof FuncDefinition funcDef)) {
-            final String error = String.format("Invalid call %s: %s is undefined or no function.", ctx.getText(), calledFunc);
-            throw new ParsingException(error);
+            throw parsingException(ctx, "Invalid call %s: %s is undefined or no function.", ctx.getText(), calledFunc);
         }
 
         final List<CatParser.ExpressionContext> args = ctx.args.expression();
         if (args.size() != funcDef.params().size()) {
-            final String error = String.format("Invalid call %s to function %s: wrong number of arguments.",
-                    ctx.getText(), funcDef);
-            throw new ParsingException(error);
+            throw parsingException(ctx, "Invalid call %s to function %s: wrong number of arguments.", ctx.getText(), funcDef);
         }
         final List<Object> arguments = ctx.args.expression().stream().map(e -> e.accept(this)).toList();
         final Map<String, Object> functionNamespace = new HashMap<>(funcDef.capturedNamespace());
@@ -334,14 +346,14 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Relation visitExprDomain(ExprDomainContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Projection(r0, r1, Projection.Dimension.DOMAIN));
+        return addDefinition(new Projection(r0, r1, Dimension.DOMAIN));
     }
 
     @Override
     public Relation visitExprRange(ExprRangeContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Projection(r0, r1, Projection.Dimension.RANGE));
+        return addDefinition(new Projection(r0, r1, Dimension.RANGE));
     }
 
     @Override
@@ -374,8 +386,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private void checkNoRecursion(ExpressionContext c) {
-        if(relationToBeDefined != null) {
-            throw new ParsingException("Unexpected recursive context at expression: " + c.getText());
+        if (relationToBeDefined != null) {
+            throw parsingException(c, "Unexpected recursive context at expression: %s.", c.getText());
         }
     }
 
@@ -397,7 +409,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         if (o instanceof Relation relation) {
             return relation;
         }
-        throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
+        final String className = o.getClass().getSimpleName();
+        throw parsingException(t, "Expected relation, got %s %s from expression %s.", className, o, t.getText());
     }
 
     private static CatParser getParser(CharStream input) {
@@ -414,7 +427,11 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
 
-        private ArityInspector() {}
+        private final Collection<String> recursiveRelations;
+
+        private ArityInspector(Collection<String> recursiveRelations) {
+            this.recursiveRelations = recursiveRelations;
+        }
 
         @Override
         public Relation.Arity visitExpr(ExprContext c) {
@@ -423,8 +440,9 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
         @Override
         public Relation.Arity visitExprBasic(ExprBasicContext c) {
-            final Object object = namespace.get(c.n.getText());
-            return object instanceof Relation r ? r.getArity() : null;
+            final String name = c.n.getText();
+            final Relation relation = getRelation(name, c);
+            return relation != null ? relation.getArity() : recursiveRelations.contains(name) ? null : Relation.Arity.UNARY;
         }
 
         @Override
@@ -470,15 +488,39 @@ class VisitorCat extends CatBaseVisitor<Object> {
         private Relation.Arity join(ExpressionContext e1, ExpressionContext e2) {
             final Relation.Arity k1 = e1.accept(this);
             final Relation.Arity k2 = e2.accept(this);
-            checkCompatible(k1, k2);
+            if (k1 != null && k2 != null && !k1.equals(k2)) {
+                throw parsingException(e1.getParent(), "Incompatible kinds %s and %s.", k1, k2);
+            }
             return k1 == null ? k2 : k1;
         }
+    }
 
-        private static void checkCompatible(Relation.Arity k1, Relation.Arity k2) {
-            if (k1 != null && k2 != null && !k1.equals(k2)) {
-                throw new ParsingException("Incompatible kinds %s and %s".formatted(k1, k2));
-            }
+    private Relation getRelation(String name, ParserRuleContext ctx) {
+        final Object fromNamespace = namespace.get(name);
+        final Relation relationFromNamespace = fromNamespace instanceof Relation r ? r : null;
+        if (relationFromNamespace != null) {
+            return relationFromNamespace;
         }
+        if (fromNamespace != null) {
+            throw parsingException(ctx, "Expected relation, got %s", fromNamespace);
+        }
+        final Relation relationFromGlobalNamespace = wmm.getRelation(name);
+        if (relationFromGlobalNamespace != null) {
+            return relationFromGlobalNamespace;
+        }
+        return RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(name) : null;
+    }
+
+    private ParsingException parsingException(ParserRuleContext ctx, String message, Object... arguments) {
+        return new ParsingException(messageWithSourceHint(message, ctx), arguments);
+    }
+
+    private ParsingException parsingException(Throwable cause, ParserRuleContext ctx) {
+        return new ParsingException(cause, messageWithSourceHint(cause.getMessage(), ctx));
+    }
+
+    private String messageWithSourceHint(String message, ParserRuleContext ctx) {
+        return message + " (%s at line %d)".formatted(currentFileName, ctx.getStart().getLine());
     }
 }
 

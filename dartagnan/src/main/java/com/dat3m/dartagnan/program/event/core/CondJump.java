@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.base.Preconditions;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,7 +56,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new HashSet<>());
+        return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new LinkedHashSet<>());
     }
 
     @Override

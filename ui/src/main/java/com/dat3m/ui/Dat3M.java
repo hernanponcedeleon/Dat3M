@@ -91,7 +91,7 @@ public class Dat3M extends JFrame implements ActionListener {
     }
 
     private void showViolation(ReachabilityResult testResult) {
-        final String filePath = testResult.getWitnessFile().getAbsolutePath();
+        final String filePath = testResult.getWitnessFile().toAbsolutePath().toString();
 
         // Generate scroll pane with image of violation
         final ImageIcon imageIcon = new ImageIcon(filePath);
@@ -137,15 +137,22 @@ public class Dat3M extends JFrame implements ActionListener {
         testResult = null;
         try {
             final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-            // We default to "c" code, if we do not know
-            final String format = programEditor.getLoadedFormat().isEmpty() ? ProgramParser.EXTENSION_C : programEditor.getLoadedFormat();
-            final Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(),
-                    programEditor.getLoadedPath(),
-                    format,
-                    options.cflags());
+            final String sourceCode = programEditor.getEditorPane().getText();
+            final String format = programEditor.getLoadedFormat().isEmpty()
+                    ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
+                    : programEditor.getLoadedFormat();
+            String cflags = options.cflags().isEmpty()
+                    ? System.getenv().getOrDefault("CFLAGS", "")
+                    : options.cflags();
+            if (format.equals(ProgramParser.EXTENSION_C) && !programEditor.getLoadedDir().isEmpty()) {
+                // Include directory of loaded C file
+                cflags += " -I" + programEditor.getLoadedDir();
+            }
+            final Program program = new ProgramParser().parse(sourceCode, format, cflags);
             program.setName("dat3mUI");
             try {
-                final Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText());
+                final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
+                final Wmm targetModel = new ParserCat().parse(wmmCode);
                 testResult = new ReachabilityResult(program, targetModel, options);
             } catch (Exception e) {
                 final String msg = e.getMessage() == null ? "Memory model cannot be parsed" : e.getMessage();

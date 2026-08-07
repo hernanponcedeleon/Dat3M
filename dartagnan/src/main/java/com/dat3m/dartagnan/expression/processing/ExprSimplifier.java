@@ -13,9 +13,11 @@ import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Preconditions;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import scala.Int;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -196,16 +198,17 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         // Case:
-        //    (1) ext(x) cmp ext(y)  <=>  x cmp y  (if size(x)==size(y))
+        //    (1) ext(x) cmp ext(y)  <=>  x cmp' y  (if size(x)==size(y) and ext==zext implies cmp'=unsigned(cmp))
         //    (2) c' = ext(c) for constants of small size
         // Result:
-        //     ext(x) cmp c' <=> ext(x) cmp ext(c) <=> x cmp c
+        //     ext(x) cmp c' <=> ext(x) cmp ext(c) <=> x cmp' c
         if (left instanceof IntSizeCast cast && cast.isExtension()
                 && right instanceof IntLiteral lit
-                && IntegerHelper.getNumRequiredBits(lit.getValue()) <= cast.getSourceType().getBitWidth()) {
+                && canRewriteLiteralAsExtension(lit, cast.getSourceType(), cast.preservesSign())) {
             final Expression x = cast.getOperand();
             final Expression c = expressions.makeValue(lit.getValue(), cast.getSourceType());
-            return expressions.makeIntCmp(x, op, c);
+            final IntCmpOp newOp = cast.preservesSign() ? op : op.toUnsigned();
+            return expressions.makeIntCmp(x, newOp, c);
         }
 
         // ------- Operations on memory objects and functions -------
@@ -531,6 +534,16 @@ public class ExprSimplifier extends ExprTransformer {
 
 
     // =================================== Helper methods ===================================
+
+    private boolean canRewriteLiteralAsExtension(IntLiteral lit, IntegerType sourceType, boolean preservesSign) {
+        if (lit.getType().getBitWidth() <= sourceType.getBitWidth()
+                || IntegerHelper.getNumRequiredBits(lit.getValue()) > sourceType.getBitWidth()) {
+            return false;
+        }
+        final boolean sourceSignBitSet = lit.getValue().testBit(sourceType.getBitWidth() - 1);
+        final boolean afterSignBitSet = lit.getValue().testBit(sourceType.getBitWidth());
+        return (sourceSignBitSet == afterSignBitSet && preservesSign) || (!afterSignBitSet && !preservesSign);
+    }
 
     // An expression is potentially eliminable if it either carries no dependencies
     // or we are in aggressive mode.

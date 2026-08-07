@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 
 import java.util.Arrays;
@@ -45,6 +46,9 @@ public interface EventGraph {
         if (operands.length == 0) {
             return empty();
         }
+        if (IndexedEventGraph.isUnionFeasible(operands)) {
+            return IndexedEventGraph.union(operands);
+        }
         if (Arrays.stream(operands).anyMatch(LazyEventGraph.class::isInstance)) {
             return LazyEventGraph.union(operands);
         }
@@ -58,6 +62,9 @@ public interface EventGraph {
         if (Arrays.stream(operands).anyMatch(EventGraph::isEmpty)) {
             return empty();
         }
+        if (IndexedEventGraph.isIntersectionFeasible(operands)) {
+            return IndexedEventGraph.intersection(operands);
+        }
         if (Arrays.stream(operands).allMatch(LazyEventGraph.class::isInstance)) {
             return LazyEventGraph.intersection(operands);
         }
@@ -70,6 +77,9 @@ public interface EventGraph {
     static EventGraph difference(EventGraph minuend, EventGraph subtrahend) {
         if (minuend.isEmpty()) {
             return empty();
+        }
+        if (IndexedEventGraph.isDifferenceFeasible(minuend, subtrahend)) {
+            return IndexedEventGraph.difference(minuend, subtrahend);
         }
         if (minuend instanceof LazyEventGraph) {
             return LazyEventGraph.difference(minuend, subtrahend);

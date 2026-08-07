@@ -24,7 +24,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
-import static com.dat3m.dartagnan.utils.GitInfo.*;
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
@@ -52,7 +51,7 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-        initGitInfo();
+        initEnvironmentInfo();
 
         if (Arrays.asList(args).contains("--help")) {
             printOptions();
@@ -62,20 +61,20 @@ public class Dartagnan extends BaseOptions {
             return;
         }
 
-        logGitInfo();
+        logEnvironmentInfo();
 
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
 
-        final File catFile = getCatFileFromArgs(args);
-        final List<File> progFiles = getProgramFilesFromArgs(args);
+        final Path catFile = getCatFileFromArgs(args);
+        final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
 
         final OutputLogger output = new OutputLogger(catFile, config);
         final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
         ResultSummary summary = null;
         int it = 0;
-        for (File progFile : progFiles) {
+        for (Path progFile : progFiles) {
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
@@ -100,12 +99,12 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.getPath());
-                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + String.valueOf(it) : "");
+                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.toString());
+                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + it : "");
                 resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), witnessFileName, o.generateWitnessForUnknown());
                 it++;
             } catch (Exception e) {
-                summary = resultAnalyzer.getSummaryFromException(e, progFile.getPath());
+                summary = resultAnalyzer.getSummaryFromException(e, progFile.toString());
             }
             output.addResult(summary);
         }
@@ -149,21 +148,21 @@ public class Dartagnan extends BaseOptions {
                 .build();
     }
 
-    private static File getCatFileFromArgs(String[] args) {
-        File catFile = Arrays.stream(args)
+    private static Path getCatFileFromArgs(String[] args) {
+        Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
-                .map(File::new)
+                .map(Path::of)
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
         logger.info("CAT file path: {}", catFile);
         return catFile;
     }
 
-    private static List<File> getProgramFilesFromArgs(String[] args) {
-        final List<File> files = new ArrayList<>();
+    private static List<Path> getProgramFilesFromArgs(String[] args) {
+        final List<Path> files = new ArrayList<>();
         Stream.of(args).map(Paths::get).filter(Files::exists)
                 .forEach(path -> {
-                    List<File> supported = getProgramFiles(path);
+                    List<Path> supported = getProgramFiles(path);
                     if (!supported.isEmpty()) {
                         logger.info("Program(s) path: {}", path.normalize());
                         files.addAll(supported);
@@ -175,12 +174,11 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    private static List<File> getProgramFiles(Path path) {
+    private static List<Path> getProgramFiles(Path path) {
         try (Stream<Path> stream = Files.walk(path)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(ProgramParser::isSupported)
+                    .filter(ProgramParser::isSupportedFile)
                     .sorted(Comparator.comparing(Path::toString))
-                    .map(Path::toFile)
                     .toList();
         } catch (IOException e) {
             logger.error("There was an I/O error when accessing path {}", path);
@@ -188,7 +186,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static String getWitnessFilename(File progFile, BaseOptions options, String postfix) {
+    private static String getWitnessFilename(Path progFile, BaseOptions options, String postfix) {
         return options.hasWitnessFilename()
                 ? options.getWitnessFilename() + postfix
                 : Utils.getNameWithoutExtension(progFile);

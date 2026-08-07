@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -171,6 +172,44 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register r64 = parseRegister64(ctx.r32, ctx.r64);
         final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
         return append(EventFactory.newLocal(r64, expressions.makeIntegerCast(expr, i64, false)), ctx);
+    }
+
+    @Override
+    public Object visitMovk(MovkContext ctx) {
+        // r64 = (r64 & ~(0xFFFF << shift) & 0xFFFFFFFFFFFFFFFF) | ((imm << shift) & (0xFFFF << shift))
+        final Register r64 = parseRegister64(ctx.r32, ctx.r64);
+        final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
+        final IntegerType iType = (IntegerType)expr.getType();
+        final Expression shift = expr instanceof IntBinaryExpr iBin && iBin.getKind().equals(IntBinaryOp.LSHIFT) ? 
+                                    iBin.getRight() :
+                                    expressions.makeZero(iType);
+        final Expression mask = expressions.makeLshift(expressions.makeValue(new BigInteger("FFFF", 16), iType), shift);
+        final Expression nMask = expressions.makeIntNot(mask);
+        final Expression nMaskAnd = expressions.makeIntAnd(nMask, expressions.makeValue(new BigInteger("FFFFFFFFFFFFFFFF", 16), iType));
+        final Expression cleared_val = expressions.makeIntAnd(r64, nMaskAnd);
+        final Expression shifted_imm = expressions.makeIntAnd(expr, mask);
+        return append(EventFactory.newLocal(r64, expressions.makeIntOr(cleared_val, shifted_imm)), ctx);
+    }
+
+    @Override
+    public Object visitMovn(MovnContext ctx) {
+        // r64 = (((~imm) & 0xFFFF) << shift) | (~(0xFFFF << shift) & 0xFFFFFFFFFFFFFFFF)
+        final Register r64 = parseRegister64(ctx.r32, ctx.r64);
+        final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
+        final IntegerType iType = (IntegerType)expr.getType();
+        final Expression shift = expr instanceof IntBinaryExpr iBin && iBin.getKind().equals(IntBinaryOp.LSHIFT) ? 
+                                    iBin.getRight() :
+                                    expressions.makeZero(iType);
+        final Expression imm = expr instanceof IntBinaryExpr iBin && iBin.getKind().equals(IntBinaryOp.LSHIFT) ? 
+                                    iBin.getLeft() :
+                                    expr;
+        final Expression nImm = expressions.makeIntNot(imm);
+        final Expression ffff = expressions.makeValue(new BigInteger("FFFF", 16), iType);
+        final Expression shifted_imm = expressions.makeLshift(expressions.makeIntAnd(nImm, ffff), shift);
+        final Expression mask = expressions.makeLshift(ffff, shift);
+        final Expression ffffffffffffffff = expressions.makeValue(new BigInteger("FFFFFFFFFFFFFFFF", 16), iType);
+        final Expression unselected_ones = expressions.makeIntAnd(expressions.makeIntNot(mask), ffffffffffffffff);
+        return append(EventFactory.newLocal(r64, expressions.makeIntOr(shifted_imm, unselected_ones)), ctx);
     }
 
     @Override

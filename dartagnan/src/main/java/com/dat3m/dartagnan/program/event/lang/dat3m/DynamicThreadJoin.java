@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 
@@ -84,7 +84,7 @@ public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegRe
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(tid, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(tid, Register.UsageType.OTHER, new LinkedHashSet<>());
     }
 
     @Override

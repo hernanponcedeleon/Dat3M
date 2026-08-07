@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Label extends AbstractEvent {
 
@@ -26,7 +26,7 @@ public class Label extends AbstractEvent {
     public Set<CondJump> getJumpSet() {
         return getUsers().stream()
                 .filter(CondJump.class::isInstance).map(CondJump.class::cast)
-                .collect(Collectors.toSet());
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     @Override

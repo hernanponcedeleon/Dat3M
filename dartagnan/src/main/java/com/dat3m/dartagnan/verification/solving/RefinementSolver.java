@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -28,9 +27,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -39,6 +35,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -54,16 +51,13 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
-import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 /*
@@ -169,11 +163,6 @@ public class RefinementSolver extends ModelChecker {
         final Configuration config = task.getConfig();
         final Wmm memoryModel = task.getMemoryModel();
 
-        // TODO: This is a reasonable transformation for all methods (eager/lazy), however,
-        //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
-        //  so we cannot perform property-aware transformation in those pipelines right now.
-        removeFlaggedAxiomsIfNotNeeded(task);
-
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);
@@ -199,7 +188,7 @@ public class RefinementSolver extends ModelChecker {
         performIntervalAnalysis(task, analysisContext, config);
 
         //  ------- Generate refinement model -------
-        final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
+        final Collection<Constraint> wmmConstraintsToEncode = new LinkedHashSet<>(biases);
         // The cut has to be encoded.
         wmmConstraintsToEncode.addAll(generateCut(memoryModel));
 
@@ -495,7 +484,7 @@ public class RefinementSolver extends ModelChecker {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
-        final Set<Constraint> constraintsToCut = new HashSet<>();
+        final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
         for (Constraint c : model.getConstraints()) {
             if (c instanceof Axiom ax && ax.isNegated()) {
                 // (i) Negated axioms
@@ -536,7 +525,7 @@ public class RefinementSolver extends ModelChecker {
 
         // [R \ range(rf)];loc;[W]
         final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Projection.Dimension.RANGE));
+        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Dimension.RANGE));
         final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
         final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
         final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
@@ -581,15 +570,6 @@ public class RefinementSolver extends ModelChecker {
         return constraints;
     }
 
-    private static void removeFlaggedAxiomsIfNotNeeded(VerificationTask task) {
-        // We remove flagged axioms if we do not check for them.
-        if (!task.getProperty().contains(Property.CAT_SPEC)) {
-            List.copyOf(task.getMemoryModel().getAxioms()).stream()
-                    .filter(Axiom::isFlagged)
-                    .forEach(task.getMemoryModel()::removeConstraint);
-        }
-    }
-
     /*
         The constraints/relations of the Wmm can be categorised into positive and negative,
         depending on whether the number of negations applied to the constraint/relation is even (=positive)
@@ -604,8 +584,8 @@ public class RefinementSolver extends ModelChecker {
     private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
 
     private PolaritySeparator computePolaritySeparator(Wmm wmm) {
-        final Set<Constraint> positives = new HashSet<>();
-        final Set<Constraint> negatives = new HashSet<>();
+        final Set<Constraint> positives = new LinkedHashSet<>();
+        final Set<Constraint> negatives = new LinkedHashSet<>();
         final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
             private boolean polarity = true;
 
@@ -707,10 +687,10 @@ public class RefinementSolver extends ModelChecker {
      */
     private void instrumentPolaritySeparation(Wmm wmm) {
         final PolaritySeparator separator = computePolaritySeparator(wmm);
-        final Set<Difference> negDiff = separator.negatives().stream()
+        final List<Difference> negDiff = separator.negatives().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
                 .filter(diff -> !separator.negatives().contains(diff.getSubtrahend().getDefinition()))
-                .collect(Collectors.toSet());
+                .distinct().toList();
 
         final Map<Relation, Relation> replacements = new HashMap<>();
         int counter = 0;

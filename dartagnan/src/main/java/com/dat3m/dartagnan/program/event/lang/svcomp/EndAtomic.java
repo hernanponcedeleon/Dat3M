@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
-import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.ATOMIC;
 
 public class EndAtomic extends AbstractEvent implements EventUser {
 
@@ -26,7 +26,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
 
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
-        addTags(RMW, SVCOMPATOMIC);
+        addTags(RMW, ATOMIC);
         this.begin.registerUser(this);
     }
 
@@ -63,7 +63,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
                     logger.warn("{} is inside atomic block but can be reached from the outside", e);
                 }
                 enclosedEvents.add(e);
-                e.addTags(RMW);
+                e.addTags(RMW, ATOMIC);
             }
             e = e.getSuccessor();
         }

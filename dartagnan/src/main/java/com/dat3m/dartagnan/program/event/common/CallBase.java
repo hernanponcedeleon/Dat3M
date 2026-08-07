@@ -11,10 +11,7 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.CallEvent;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class CallBase extends AbstractEvent implements CallEvent {
@@ -71,7 +68,7 @@ public abstract class CallBase extends AbstractEvent implements CallEvent {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> regReads = new HashSet<>();
+        final Set<Register.Read> regReads = new LinkedHashSet<>();
         Register.collectRegisterReads(callTarget, UsageType.CTRL, regReads);
         Register.collectRegisterReads(arguments, UsageType.DATA, regReads);
         return regReads;

@@ -38,7 +38,6 @@ litmus/OPENCL/overhauling/ISA2_broken.litmus,1
 litmus/OPENCL/overhauling/MP_ra_dev.litmus,0
 litmus/OPENCL/overhauling/MP_ra_dev_broken.litmus,1
 litmus/OPENCL/overhauling/MP_ra_wg.litmus,1
-litmus/OPENCL/overhauling/MP_ra_dev.litmus,0
 litmus/OPENCL/portedFromC11/auto/a3+sc+Racq.litmus,1
 litmus/OPENCL/portedFromC11/auto/linearisation.litmus,0
 litmus/OPENCL/portedFromC11/auto/a3+sc+Rrlx.litmus,1

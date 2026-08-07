@@ -34,7 +34,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
 
     private final ImmutableSet<String> allowedFormats;
     private String loadedFormat = "";
-    private String loadedPath = "";
+    private String loadedDir = "";
 
     private final Set<ActionListener> actionListeners = new HashSet<>();
 
@@ -90,8 +90,8 @@ public class Editor extends RTextScrollPane implements ActionListener {
         return loadedFormat;
     }
 
-    public String getLoadedPath() {
-        return loadedPath;
+    public String getLoadedDir() {
+        return loadedDir;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
             return;
         }
         final File selectedFile = chooser.getSelectedFile();
-        loadedPath = Objects.requireNonNullElse(selectedFile.getParent(), "");
+        loadedDir = Objects.requireNonNullElse(selectedFile.getParent(), "");
         loadedFormat = allowedFormats.stream().filter(selectedFile.getName()::endsWith).findAny().orElse("");
         if (loadedFormat.isEmpty()) {
             showError("Please select a *" + String.join(", *", allowedFormats) + " file", "Invalid file format");

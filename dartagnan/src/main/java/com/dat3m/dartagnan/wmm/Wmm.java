@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
@@ -33,7 +32,7 @@ public class Wmm {
     }
 
     public List<Constraint> getConstraints() {
-        return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
+        return Stream.concat(relations.stream().map(Relation::getDefinition), constraints.stream()).toList();
     }
 
     public List<Axiom> getAxioms() {
@@ -41,7 +40,7 @@ public class Wmm {
     }
 
     public Set<Relation> getRelations() {
-        return Set.copyOf(relations);
+        return ImmutableSet.copyOf(relations);
     }
 
     public boolean containsRelation(String name) {
@@ -178,7 +177,7 @@ public class Wmm {
         };
         final Relation r = newRelation(name, arity);
         final Definition def = switch (name) {
-            case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
+            case PO -> new ProgramOrder(r);
             case LOC -> new SameLocation(r);
             case ID -> new SetIdentity(r, getOrCreatePredefinedRelation(VISIBLE));
             case INT -> new Internal(r);

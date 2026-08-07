@@ -118,10 +118,10 @@ public class NonTerminationEncoder {
     private final VerificationTask task;
 
     private final List<Loop> allLoops = new ArrayList<>();
-    private final Map<Event, NonterminationCase> nonterm2Case = new HashMap<>();
-    private final Map<LoopAnalysis.LoopIterationInfo, Iteration> iterInfo2Iter = new HashMap<>();
+    private final Map<Event, NonterminationCase> nonterm2Case = new LinkedHashMap<>();
+    private final Map<LoopAnalysis.LoopIterationInfo, Iteration> iterInfo2Iter = new LinkedHashMap<>();
     // Maps an event to all the loop iterations it is contained in (sorted from innermost to outermost loop)
-    private final Map<Event, List<Iteration>> event2Iterations = new HashMap<>();
+    private final Map<Event, List<Iteration>> event2Iterations = new LinkedHashMap<>();
 
     public NonTerminationEncoder(VerificationTask task, EncodingContext context) {
         this.task = task;
