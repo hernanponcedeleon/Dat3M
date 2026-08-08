@@ -299,6 +299,33 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitBranch(BranchContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
+        append(EventFactory.newGoto(label), ctx);
+        return null;
+    }
+
+    @Override
+    public Object visitReturn(ReturnContext ctx) {
+        Label end = programBuilder.getEndOfThreadLabel(mainThread);
+        append(EventFactory.newGoto(end), ctx);
+        return null;
+    }
+
+    @Override
+    public Object visitReturnCond(ReturnCondContext ctx) {
+        Label end = programBuilder.getEndOfThreadLabel(mainThread);
+        CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
+        Expression expr = cmp == null ?
+            // In PPC, when there is no previous comparison instruction,
+            // the value of r0 is used as the branching condition
+            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
+            expressions.makeIntCmp(cmp.left, ctx.condlr().op, cmp.right);
+        append(EventFactory.newJump(expr, end), ctx);
+        return null;
+    }
+
+    @Override
     public Object visitFence(FenceContext ctx) {
         append(EventFactory.Power.newBarrier(ctx.getText().toLowerCase()), ctx);
         return null;

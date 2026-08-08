@@ -106,7 +106,10 @@ instruction
     |   cmpw
     |   cmplwi
     |   branchLabel
+    |   branch
     |   branchCond
+    |   return
+    |   returnCond
     |   fence
     ;
 
@@ -182,8 +185,20 @@ branchLabel
     :   label Colon
     ;
 
+branch
+    :   Branch label
+    ;
+
 branchCond
     :   cond label
+    ;
+
+return
+    :   Blr
+    ;
+
+returnCond
+    :   condlr
     ;
 
 fence
@@ -213,6 +228,15 @@ cond returns [IntCmpOp op]
     |   Blt {$op = IntCmpOp.LT;}
     ;
 
+condlr returns [IntCmpOp op]
+    :   Beqlr {$op = IntCmpOp.EQ;}
+    |   Bnelr {$op = IntCmpOp.NEQ;}
+    |   Bgelr {$op = IntCmpOp.GTE;}
+    |   Blelr {$op = IntCmpOp.LTE;}
+    |   Bgtlr {$op = IntCmpOp.GT;}
+    |   Bltlr {$op = IntCmpOp.LT;}
+    ;
+
 assertionValue
     :   location
     |   threadId Colon register
@@ -232,6 +256,10 @@ Fence
     |   'lwsync'
     |   'isync'
     |   'eieio'
+    ;
+
+Branch
+    :   'b'
     ;
 
 Beq
@@ -256,6 +284,34 @@ Ble
 
 Bge
     :   'bge'
+    ;
+
+Blr
+    :   'blr'
+    ;
+
+Beqlr
+    :   'beqlr'
+    ;
+
+Bnelr
+    :   'bnelr'
+    ;
+
+Bltlr
+    :   'bltlr'
+    ;
+
+Bgtlr
+    :   'bgtlr'
+    ;
+
+Blelr
+    :   'blelr'
+    ;
+
+Bgelr
+    :   'bgelr'
     ;
 
 Li  :   'li'
