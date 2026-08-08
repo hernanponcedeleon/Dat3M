@@ -128,7 +128,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         // We do not know to which thread a symbolic register belogns to until its usage,
         // thus we create a 64bits register (thus the X) for each thread
         for (Integer tid : programBuilder.getThreadIds()) {
-            final String regName = "X" + ctx.SymRegister().getText();
+            final String regName = "X" + ctx.SymRegister64().getText();
             final int lineOfCode = ctx.getStart().getLine();
             programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), i64, lineOfCode);
         }
