@@ -45,7 +45,7 @@ variableDeclaratorPointerLocation
     ;
 
 variableDeclaratorSymbolic
-    :   type SymRegister Equals location
+    :   type SymRegister64 Equals location
     ;
 
 variableDeclaratorArray
@@ -446,11 +446,12 @@ expressionConversion returns[boolean signed]
 
 register64 returns[String id]
     :   r = Register64 {$id = $r.text;}
-    |   r = SymRegister {$id = $r.text;}
+    |   r = SymRegister64 {$id = $r.text;}
     ;
 
 register32 returns[String id]
     :   r = Register32 {$id = $r.text.replace("W","X");}
+    |   r = SymRegister32 {$id = $r.text.replace("W","X");}
     ;
 
 location
@@ -819,8 +820,12 @@ Register32
     |   'WZR' // zero register
     ;
 
-SymRegister
+SymRegister64
     :   'X'? Percent Identifier
+    ;
+
+SymRegister32
+    :   'W'? Percent Identifier
     ;
 
 LitmusLanguage
