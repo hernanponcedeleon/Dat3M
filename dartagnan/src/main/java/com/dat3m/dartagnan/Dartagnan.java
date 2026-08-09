@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
-import static com.dat3m.dartagnan.utils.ExitCode.UNKNOWN_ERROR;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
@@ -64,6 +63,9 @@ public class Dartagnan extends BaseOptions {
 
         logEnvironmentInfo();
 
+        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
+        ResultSummary summary = null;
+
         final Configuration config;
         final Dartagnan o;
         final Path catFile;
@@ -74,16 +76,15 @@ public class Dartagnan extends BaseOptions {
             catFile = getCatFileFromArgs(args);
             progFiles = getProgramFilesFromArgs(args);
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            System.exit(UNKNOWN_ERROR.asInt());
+            summary = resultAnalyzer.getSummaryFromException(e, "Unknown");
+            System.out.println(summary);
+            System.exit(summary.code().asInt());
             return;
         }
 
         final boolean isBatchMode = progFiles.size() > 1;
 
         final OutputLogger output = new OutputLogger(catFile, config);
-        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-        ResultSummary summary = null;
         int it = 0;
         for (Path progFile : progFiles) {
             try {
