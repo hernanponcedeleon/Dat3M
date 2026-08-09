@@ -94,6 +94,8 @@ public final class Tag {
         // Store conditional
         public static final String STCOND       = "X";
 
+        public static final String AMO          = "AMO";
+
         public static String extractStoreMoFromCMo(String cMo) {
             return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
         }
