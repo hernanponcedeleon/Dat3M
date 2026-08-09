@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -41,6 +41,51 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 store,
                 newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
+        );
+    }
+
+    @Override
+    public List<Event> visitXchg(Xchg e) {
+        String mo = e.getMo();
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+
+        String loadMo = e.hasTag(MO_ACQ) || e.hasTag(MO_ACQ_REL) ? MO_ACQ : "";
+        String storeMo = e.hasTag(MO_REL) || e.hasTag(MO_ACQ_REL) ? MO_REL : "";
+
+        Load load = newRMWLoadWithMo(dummy, address, loadMo);
+        load.addTags(AMO);
+        Store store = newRMWStoreWithMo(load, address, e.getValue(), storeMo);
+        store.addTags(AMO);
+
+        return eventSequence(
+                load,
+                store,
+                newLocal(resultRegister, dummy)
+        );
+    }
+
+    @Override
+    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+        String mo = e.getMo();
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Expression value = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
+
+        String loadMo = e.hasTag(MO_ACQ) || e.hasTag(MO_ACQ_REL) ? MO_ACQ : "";
+        String storeMo = e.hasTag(MO_REL) || e.hasTag(MO_ACQ_REL) ? MO_REL : "";
+
+        Load load = newRMWLoadWithMo(dummy, address, loadMo);
+        load.addTags(AMO);
+        Store store = newRMWStoreWithMo(load, address, value, storeMo);
+        store.addTags(AMO);
+
+        return eventSequence(
+                load,
+                store,
+                newLocal(resultRegister, dummy)
         );
     }
 
