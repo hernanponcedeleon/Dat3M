@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -74,7 +73,7 @@ public class Dartagnan extends BaseOptions {
             o = new Dartagnan(config);
             catFile = getCatFileFromArgs(args);
             progFiles = getProgramFilesFromArgs(args);
-        } catch (IOException | InvalidConfigurationException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage());
             System.exit(UNKNOWN_ERROR.asInt());
             return;
@@ -140,7 +139,7 @@ public class Dartagnan extends BaseOptions {
             final String base = mvnReader.read(reader).getVersion();
             final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
-        } catch (IOException | XmlPullParserException e) {
+        } catch (Exception e) {
             logger.warn("Failed to load {}", pomPath);
         }
     }
