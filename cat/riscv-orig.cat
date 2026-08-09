@@ -6,6 +6,13 @@ Partial
 (* Definitions *)
 (***************)
 
+// These are because we split AMOs into a R+W pair
+let R = R | AMO
+let W = W | AMO
+let addr = (addr | amo^-1;addr) \ id
+let data = (data | amo^-1;data) \ id
+let ctrl = (ctrl | amo^-1;ctrl) \ id
+
 (*************)
 (* Utilities *)
 (*************)
@@ -15,9 +22,9 @@ include "riscvfences.cat"
 let po-loc-no-w = po-loc \ (po-loc?;[W];po-loc)
 let rsw = rf^-1;rf
 let AcqRel = AcqRel|Sc (* Compat *)
-let AQ = (Acq|AcqRel)
-let RL = (Rel|AcqRel)
-//let AMO = try AMO with (R & W) (* Compat *)
+// We extend AQ (resp. RL) to the W (resp. R) part of an AMO
+let AQ = (Acq|AcqRel) | range([Acq|AcqRel];amo)
+let RL = (Rel|AcqRel) | domain(amo;[Rel|AcqRel])
 let RCsc = (Acq|Rel|AcqRel) & (AMO|X)
 (*************)
 (* ppo rules *)

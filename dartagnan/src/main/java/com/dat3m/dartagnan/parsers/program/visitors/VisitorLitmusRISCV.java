@@ -268,16 +268,26 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAmoadd(AmoaddContext ctx) {
-		throw new UnsupportedOperationException("No support for amoadd instructions");
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Register ra = programBuilder.getOrNewRegister(mainThread, ctx.register(2).getText(), archType);
+        return append(EventFactory.RISCV.newAmoAdd(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
     }
 
 	@Override
 	public Object visitAmoor(AmoorContext ctx) {
-		throw new UnsupportedOperationException("No support for amoor instructions");	}
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Register ra = programBuilder.getOrNewRegister(mainThread, ctx.register(2).getText(), archType);
+        return append(EventFactory.RISCV.newAmoOr(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
+    }
 
 	@Override
 	public Object visitAmoswap(AmoswapContext ctx) {
-		throw new UnsupportedOperationException("No support for amoswap instructions");
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Register ra = programBuilder.getOrNewRegister(mainThread, ctx.register(2).getText(), archType);
+        return append(EventFactory.RISCV.newAmoSwap(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
 	}
 
 	// =======================================

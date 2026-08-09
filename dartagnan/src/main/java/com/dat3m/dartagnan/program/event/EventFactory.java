@@ -800,6 +800,24 @@ public class EventFactory {
             return Common.newExclusiveStore(status, address, value, toTag(mo));
         }
 
+        public static Event newAmoSwap(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newXchg(register, address, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
+        public static Event newAmoOr(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.OR, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
+        public static Event newAmoAdd(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.ADD, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
         public static Event newFence(String mode) {
             checkArgument(FENCE_MODE.contains(mode), "Invalid fence mode '%s'.", mode);
             return EventFactory.newFence("Fence."+mode);
