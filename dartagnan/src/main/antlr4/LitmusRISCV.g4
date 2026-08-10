@@ -114,6 +114,7 @@ instruction
     |   branchCond
     |   fence
     |   amoor
+    |   amoxor
     |   amoswap
     |   amoadd
     |   return
@@ -452,6 +453,10 @@ amoor
     :   Amoor Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
     
+amoxor
+    :   Amoxor Period size (Period moRISCV)* register Comma register Comma LPar register RPar
+    ;
+    
 amoswap
     :   Amoswap Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
@@ -520,6 +525,10 @@ Addiw
 
 Amoor
     :   'amoor'
+    ;
+
+Amoxor
+    :   'amoxor'
     ;
 
 Amoswap

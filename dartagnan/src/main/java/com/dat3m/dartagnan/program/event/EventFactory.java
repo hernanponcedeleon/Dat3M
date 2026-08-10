@@ -812,6 +812,12 @@ public class EventFactory {
             return swp;
         }
 
+        public static Event newAmoXor(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.XOR, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
         public static Event newAmoAdd(Register register, Expression address, Expression value, MemoryOrder mo) {
             final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.ADD, value);
             swp.addTags(toTag(mo));

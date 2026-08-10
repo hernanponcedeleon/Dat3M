@@ -323,6 +323,14 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitAmoxor(AmoxorContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Register ra = programBuilder.getOrNewRegister(mainThread, ctx.register(2).getText(), archType);
+        return append(EventFactory.RISCV.newAmoXor(r1, ra, r2, getMo(ctx.moRISCV())), ctx);
+    }
+
+    @Override
     public Object visitAmoswap(AmoswapContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
