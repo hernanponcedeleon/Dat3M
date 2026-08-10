@@ -205,9 +205,9 @@ fence
     :   Fence
     ;
 
-location
-    :   Period? Identifier
-    |   LBracket Identifier RBracket
+location returns [String name]
+    :   Period? i = Identifier {$name = $i.text;}
+    |   LBracket i = Identifier RBracket {$name = $i.text;}
     ;
 
 register
