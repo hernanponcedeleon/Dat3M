@@ -800,6 +800,30 @@ public class EventFactory {
             return Common.newExclusiveStore(status, address, value, toTag(mo));
         }
 
+        public static Event newAmoSwap(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newXchg(register, address, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
+        public static Event newAmoOr(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.OR, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
+        public static Event newAmoXor(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.XOR, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
+        public static Event newAmoAdd(Register register, Expression address, Expression value, MemoryOrder mo) {
+            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.ADD, value);
+            swp.addTags(toTag(mo));
+            return swp;
+        }
+
         public static Event newFence(String mode) {
             checkArgument(FENCE_MODE.contains(mode), "Invalid fence mode '%s'.", mode);
             return EventFactory.newFence("Fence."+mode);
@@ -815,7 +839,22 @@ public class EventFactory {
         }
 
         private static final Set<String> FENCE_MODE = Set.of(
-                "r.r", "r.w", "r.rw", "w.r", "w.w", "w.rw", "rw.r", "rw.w", "rw.rw", "tso", "i"
+            "i.i", "i.o", "i.r", "i.w", "i.io", "i.ir", "i.iw", "i.or", "i.ow", "i.rw", "i.ior", "i.iow", "i.irw", "i.orw", "i.iorw",
+            "o.i", "o.o", "o.r", "o.w", "o.io", "o.ir", "o.iw", "o.or", "o.ow", "o.rw", "o.ior", "o.iow", "o.irw", "o.orw", "o.iorw",
+            "r.i", "r.o", "r.r", "r.w", "r.io", "r.ir", "r.iw", "r.or", "r.ow", "r.rw", "r.ior", "r.iow", "r.irw", "r.orw", "r.iorw",
+            "w.i", "w.o", "w.r", "w.w", "w.io", "w.ir", "w.iw", "w.or", "w.ow", "w.rw", "w.ior", "w.iow", "w.irw", "w.orw", "w.iorw",
+            "io.i", "io.o", "io.r", "io.w", "io.io", "io.ir", "io.iw", "io.or", "io.ow", "io.rw", "io.ior", "io.iow", "io.irw", "io.orw", "io.iorw",
+            "ir.i", "ir.o", "ir.r", "ir.w", "ir.io", "ir.ir", "ir.iw", "ir.or", "ir.ow", "ir.rw", "ir.ior", "ir.iow", "ir.irw", "ir.orw", "ir.iorw",
+            "iw.i", "iw.o", "iw.r", "iw.w", "iw.io", "iw.ir", "iw.iw", "iw.or", "iw.ow", "iw.rw", "iw.ior", "iw.iow", "iw.irw", "iw.orw", "iw.iorw",
+            "or.i", "or.o", "or.r", "or.w", "or.io", "or.ir", "or.iw", "or.or", "or.ow", "or.rw", "or.ior", "or.iow", "or.irw", "or.orw", "or.iorw",
+            "ow.i", "ow.o", "ow.r", "ow.w", "ow.io", "ow.ir", "ow.iw", "ow.or", "ow.ow", "ow.rw", "ow.ior", "ow.iow", "ow.irw", "ow.orw", "ow.iorw",
+            "rw.i", "rw.o", "rw.r", "rw.w", "rw.io", "rw.ir", "rw.iw", "rw.or", "rw.ow", "rw.rw", "rw.ior", "rw.iow", "rw.irw", "rw.orw", "rw.iorw",
+            "ior.i", "ior.o", "ior.r", "ior.w", "ior.io", "ior.ir", "ior.iw", "ior.or", "ior.ow", "ior.rw", "ior.ior", "ior.iow", "ior.irw", "ior.orw", "ior.iorw",
+            "iow.i", "iow.o", "iow.r", "iow.w", "iow.io", "iow.ir", "iow.iw", "iow.or", "iow.ow", "iow.rw", "iow.ior", "iow.iow", "iow.irw", "iow.orw", "iow.iorw",
+            "irw.i", "irw.o", "irw.r", "irw.w", "irw.io", "irw.ir", "irw.iw", "irw.or", "irw.ow", "irw.rw", "irw.ior", "irw.iow", "irw.irw", "irw.orw", "irw.iorw",
+            "orw.i", "orw.o", "orw.r", "orw.w", "orw.io", "orw.ir", "orw.iw", "orw.or", "orw.ow", "orw.rw", "orw.ior", "orw.iow", "orw.irw", "orw.orw", "orw.iorw",
+            "iorw.i", "iorw.o", "iorw.r", "iorw.w", "iorw.io", "iorw.ir", "iorw.iw", "iorw.or", "iorw.ow", "iorw.rw", "iorw.ior", "iorw.iow", "iorw.irw", "iorw.orw", "iorw.iorw",
+            "tso", "i"
         );
     }
 
