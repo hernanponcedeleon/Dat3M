@@ -55,7 +55,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
-        programBuilder.initLocEqConst(ctx.location().getText(), value);
+        programBuilder.initLocEqConst(ctx.location().name, value);
         return null;
     }
 
@@ -68,7 +68,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType, ctx.getStart().getLine());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().name, archType, ctx.getStart().getLine());
         return null;
     }
 
@@ -80,7 +80,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().name);
         return null;
     }
 
@@ -91,7 +91,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         for (Integer tid : programBuilder.getThreadIds()) {
             final String regName = ctx.SymRegister().getText();
             final int lineOfCode = ctx.getStart().getLine();
-            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), types.getIntegerType(64), lineOfCode);
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().name, types.getIntegerType(64), lineOfCode);
         }
         return null;
     }
@@ -100,7 +100,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
         final int typeBytes = typeBytes(ctx.type());
         final int arraySize = toInt(ctx.constant());
-        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
+        programBuilder.newMemoryObject(ctx.location().name, typeBytes * arraySize);
         return null;
     }
 

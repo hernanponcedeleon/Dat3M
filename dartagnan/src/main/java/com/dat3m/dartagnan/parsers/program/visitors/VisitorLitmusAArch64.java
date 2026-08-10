@@ -85,9 +85,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if (ctx.constant() != null) {
             final IntegerType type = types.getIntegerType(8 * typeBytes);
             final IntLiteral value = parseValue(ctx.constant(), type);
-            programBuilder.initLocEqConst(ctx.location().getText(), value);
+            programBuilder.initLocEqConst(ctx.location().name, value);
         } else {
-            programBuilder.newMemoryObject(ctx.location().getText(), typeBytes);
+            programBuilder.newMemoryObject(ctx.location().name, typeBytes);
         }
         return null;
     }
@@ -107,7 +107,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().getText(), ctx.location().getText(), i64, ctx.getStart().getLine());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().getText(), ctx.location().name, i64, ctx.getStart().getLine());
         return null;
     }
 
@@ -119,7 +119,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorPointerLocation(VariableDeclaratorPointerLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().getText());
+        programBuilder.initLocEqLocPtr(ctx.Identifier().getText(), ctx.location().name);
         return null;
     }
 
@@ -130,7 +130,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         for (Integer tid : programBuilder.getThreadIds()) {
             final String regName = "X" + ctx.SymRegister64().getText();
             final int lineOfCode = ctx.getStart().getLine();
-            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().getText(), i64, lineOfCode);
+            programBuilder.initRegEqLocPtr(tid.intValue(), regName, ctx.location().name, i64, lineOfCode);
         }
         return null;
     }
@@ -139,7 +139,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitVariableDeclaratorArray(VariableDeclaratorArrayContext ctx) {
         final int typeBytes = typeBytes(ctx.type());
         final int arraySize = toInt(ctx.constant());
-        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
+        programBuilder.newMemoryObject(ctx.location().name, typeBytes * arraySize);
         return null;
     }
 

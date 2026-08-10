@@ -454,9 +454,9 @@ register32 returns[String id]
     |   r = SymRegister32 {$id = $r.text.replace("W","X");}
     ;
 
-location
-    :   Period? Identifier
-    |   LBracket Identifier RBracket
+location returns [String name]
+    :   Period? i = Identifier {$name = $i.text;}
+    |   LBracket i = Identifier RBracket {$name = $i.text;}
     ;
 
 immediate
