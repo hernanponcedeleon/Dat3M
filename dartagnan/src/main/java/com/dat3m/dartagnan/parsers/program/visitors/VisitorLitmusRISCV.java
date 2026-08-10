@@ -28,6 +28,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
+    private final IntegerType i32 = types.getIntegerType(32);
     private int mainThread;
     private int threadCount = 0;
 
@@ -143,6 +144,15 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLui(LuiContext ctx) {
+        Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), i32);
+        Expression shifted = expressions.makeLshift(constant, expressions.makeValue(12, i32));
+        Expression sext = expressions.makeIntegerCast(shifted, archType, true);
+        return append(EventFactory.newLocal(register, sext), ctx);
+    }
+
+    @Override
     public Object visitXor(XorContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
@@ -207,6 +217,17 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitAddiw(AddiwContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression add = expressions.makeAdd(r2, constant);
+        Expression trunc = expressions.makeIntegerCast(add, i32, true);
+        Expression sext = expressions.makeIntegerCast(trunc, archType, true);
+        return append(EventFactory.newLocal(r1, sext), ctx);
+    }
+
+    @Override
     public Object visitLd(LdContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
@@ -243,13 +264,37 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLabel(LabelContext ctx) {
-        return append(programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()), ctx);
+    public Object visitSext(SextContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Expression trunc = expressions.makeIntegerCast(r2, i32, true);
+        Expression sext = expressions.makeIntegerCast(trunc, archType, true);
+        return append(EventFactory.newLocal(r1, sext), ctx);
+    }
+
+    @Override
+    public Object visitZext(ZextContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Expression trunc = expressions.makeIntegerCast(r2, i32, false);
+        Expression zext = expressions.makeIntegerCast(trunc, archType, false);
+        return append(EventFactory.newLocal(r1, zext), ctx);
+    }
+
+    @Override
+    public Object visitBranchLabel(BranchLabelContext ctx) {
+        return append(programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()), ctx);
+    }
+
+    @Override
+    public Object visitBranch(BranchContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
+        return append(EventFactory.newGoto(label), ctx);
     }
 
     @Override
     public Object visitBranchCond(BranchCondContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Expression expr = expressions.makeIntCmp(r1, ctx.cond().op, r2);
