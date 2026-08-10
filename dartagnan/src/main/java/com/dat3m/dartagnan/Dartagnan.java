@@ -49,7 +49,7 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         initEnvironmentInfo();
 
@@ -63,16 +63,28 @@ public class Dartagnan extends BaseOptions {
 
         logEnvironmentInfo();
 
-        final Configuration config = loadConfigurationFromArgs(args);
-        final Dartagnan o = new Dartagnan(config);
+        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
+        ResultSummary summary = null;
 
-        final Path catFile = getCatFileFromArgs(args);
-        final List<Path> progFiles = getProgramFilesFromArgs(args);
+        final Configuration config;
+        final Dartagnan o;
+        final Path catFile;
+        final List<Path> progFiles;
+        try {
+            config = loadConfigurationFromArgs(args);
+            o = new Dartagnan(config);
+            catFile = getCatFileFromArgs(args);
+            progFiles = getProgramFilesFromArgs(args);
+        } catch (Exception e) {
+            summary = resultAnalyzer.getSummaryFromException(e, "Unknown");
+            System.out.println(summary);
+            System.exit(summary.code().asInt());
+            return;
+        }
+
         final boolean isBatchMode = progFiles.size() > 1;
 
         final OutputLogger output = new OutputLogger(catFile, config);
-        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-        ResultSummary summary = null;
         int it = 0;
         for (Path progFile : progFiles) {
             try {
@@ -120,7 +132,7 @@ public class Dartagnan extends BaseOptions {
         OptionInfo.stream().sorted().forEach(System.out::print);
     }
 
-    private static void printVersion() throws Exception {
+    private static void printVersion() {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
         final Path pomPath = getHomeDirectory().resolve("pom.xml");
 
@@ -128,6 +140,8 @@ public class Dartagnan extends BaseOptions {
             final String base = mvnReader.read(reader).getVersion();
             final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
+        } catch (Exception e) {
+            logger.warn("Failed to load {}", pomPath);
         }
     }
 
@@ -148,17 +162,17 @@ public class Dartagnan extends BaseOptions {
                 .build();
     }
 
-    private static Path getCatFileFromArgs(String[] args) {
+    private static Path getCatFileFromArgs(String[] args) throws IOException {
         Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
-                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
+                .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
         logger.info("CAT file path: {}", catFile);
         return catFile;
     }
 
-    private static List<Path> getProgramFilesFromArgs(String[] args) {
+    private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
         final List<Path> files = new ArrayList<>();
         Stream.of(args).map(Paths::get).filter(Files::exists)
                 .forEach(path -> {
@@ -169,7 +183,7 @@ public class Dartagnan extends BaseOptions {
                     }
                 });
         if (files.isEmpty()) {
-            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+            throw new IOException("Path to input program(s) not given or format not recognized");
         }
         return files;
     }
