@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
+import com.dat3m.dartagnan.parsers.program.utils.Pipelines.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Utils;
 import org.antlr.v4.runtime.CharStream;
@@ -11,8 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.*;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getCompilationPipelinePath;
 
 public class ProgramParser {
 
@@ -33,9 +39,14 @@ public class ProgramParser {
     public static final String EXTENSION_LITMUS = ".litmus";
     public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
     public static final String EXTENSION_SPVASM = ".spvasm";
+    public static final String EXTENSION_OPENCL = ".cl";
+    public static final String EXTENSION_SLANG = ".slang";
+    public static final String EXTENSION_GSL = ".comp";
+    public static final String EXTENSION_HLSL = ".hlsl";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
             EXTENSION_C, EXTENSION_I, EXTENSION_LL,
-            EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM
+            EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM,
+            EXTENSION_OPENCL, EXTENSION_SLANG, EXTENSION_GSL, EXTENSION_HLSL
     );
 
     public static boolean isSupportedFile(Path filePath) {
@@ -43,9 +54,17 @@ public class ProgramParser {
     }
 
     public Program parse(Path path) throws Exception {
-        if (needsClang(getFileExtension(path))) {
-            final String cflags = System.getenv().getOrDefault("CFLAGS", "");
-            path = compileWithClang(path, cflags);
+        return parse(path, getCompilationPipelinePath());
+    }
+
+    public Program parse(Path path, Path pipelinesPath) throws Exception {
+        final String extension = getFileExtension(path);
+        final String inputPath = path.toString();
+        final String outputFilename = Utils.getNameWithoutExtension(path);
+        if (Pipelines.needsCompilation(pipelinesPath, extension)) {
+            Pipeline pipeline = Pipelines.getPipeline(pipelinesPath, extension, inputPath, outputFilename);
+            pipeline.execute();
+            path = Path.of(pipeline.output());
         }
 
         final Program program = parse(CharStreams.fromPath(path), getFileExtension(path));

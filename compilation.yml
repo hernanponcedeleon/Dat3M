@@ -1,0 +1,97 @@
+# Only $DAT3M_HOME and $DAT3M_OUTPUT are allowed as an environment variable.
+# Custom paths must be absolute and have the correct write permissions.
+
+workdir: "$DAT3M_OUTPUT"
+
+x-common_commands:
+  upgrade_cmd: &upgrade_cmd
+    name: "Upgrade to Vulkan memory model"
+    tool: "spirv-opt"
+    input: "{basename}.spv"
+    output: "{basename}-vulkan.spv"
+    read_from_workdir: "true"
+    args: ["--upgrade-memory-model", "{cmd_input}", "-o", "{cmd_output}"]
+
+  disassemble_cmd: &disassemble_cmd
+    name: "Disassemble"
+    tool: "spirv-dis"
+    input: "{basename}-vulkan.spv"
+    output: "{basename}.spvasm"
+    read_from_workdir: "true"
+    args: ["{cmd_input}", "-o", "{cmd_output}"]
+
+  annotation_cmd: &annotation_cmd
+    name: "Annotate inputs, outputs and program_spec"
+    tool: "$DAT3M_HOME/scripts/copy_spv_header_annotations.bash"
+    input: "{pipeline_input}"
+    output: "{basename}.spvasm"
+    read_from_workdir: "false"
+    args: ["{cmd_input}", "{cmd_output}"]
+
+pipelines:
+  - pipeline: ".c"
+    input: "{pipeline_input}"
+    output: "{basename}.ll"
+    commands:
+      - name: "Compile"
+        tool: "clang"
+        input: "{pipeline_input}"
+        output: "{basename}.ll"
+        read_from_workdir: "false"
+        args: ["-I", "$DAT3M_HOME/include", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "{cmd_input}", "-o", "{cmd_output}"]
+
+  - pipeline: ".slang"
+    input: "{pipeline_input}"
+    output: "{basename}.spvasm"
+    commands:
+      - name: "Compile"
+        tool: "slangc"
+        input: "{pipeline_input}"
+        output: "{basename}.spv"
+        read_from_workdir: "false"
+        args: ["-target", "spirv", "{cmd_input}", "-o", "{cmd_output}"]
+      - *upgrade_cmd
+      - *disassemble_cmd
+      - *annotation_cmd
+
+  - pipeline: ".cl"
+    input: "{pipeline_input}"
+    output: "{basename}.spvasm"
+    commands:
+      - name: "Compile"
+        tool: "clspv"
+        input: "{pipeline_input}"
+        output: "{basename}.spv"
+        read_from_workdir: "false"
+        args: ["{cmd_input}", "--cl-std=CL2.0", "--inline-entry-points", "--spv-version=1.6", "-o", "{cmd_output}", "-g"]
+      - *upgrade_cmd
+      - *disassemble_cmd
+      - *annotation_cmd
+
+  - pipeline: ".comp"
+    input: "{pipeline_input}"
+    output: "{basename}.spvasm"
+    commands:
+      - name: "Compile"
+        tool: "glslangValidator"
+        input: "{pipeline_input}"
+        output: "{basename}.spv"
+        read_from_workdir: "false"
+        args: ["-V", "{cmd_input}", "--target-env", "vulkan1.3", "-o", "{cmd_output}", "-g"]
+      - *upgrade_cmd
+      - *disassemble_cmd
+      - *annotation_cmd
+
+  - pipeline: ".hlsl"
+    input: "{pipeline_input}"
+    output: "{basename}.spvasm"
+    commands:
+      - name: "Compile"
+        tool: "dxc"
+        input: "{pipeline_input}"
+        output: "{basename}.spv"
+        read_from_workdir: "false"
+        args: ["-T", "cs_6_0", "-E", "main", "-spirv", "{cmd_input}", "-Fo", "{cmd_output}", "-fspv-target-env=vulkan1.1spirv1.4"]
+      - *upgrade_cmd
+      - *disassemble_cmd
+      - *annotation_cmd

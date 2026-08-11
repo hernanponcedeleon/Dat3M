@@ -79,7 +79,7 @@ public class Dartagnan extends BaseOptions {
             Output output;
             try {
                 // ----------- Generate verification task -----------
-                final Program p = new ProgramParser().parse(progFile);
+                final Program p = new ProgramParser().parse(progFile, o.getCompilationPipelinePath());
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
