@@ -24,6 +24,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -175,7 +176,7 @@ public class Dartagnan extends BaseOptions {
                 .map(Path::of)
                 .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
         if (!Files.exists(catFile)) {
-            throw new IOException("CAT file %s does not exist".formatted(catFile));
+            throw new NoSuchFileException("CAT file %s does not exist".formatted(catFile));
         }
         return catFile;
     }
