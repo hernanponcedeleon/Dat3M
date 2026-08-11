@@ -17,6 +17,7 @@ public class OptionNames {
     public static final String CAT_INCLUDE = "cat.include";
     public static final String MIXED_SIZE = "mixedSize";
     public static final String ENTRY = "entry";
+    public static final String COMPILATION_PIPELINE = "compilation.pipeline";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";
