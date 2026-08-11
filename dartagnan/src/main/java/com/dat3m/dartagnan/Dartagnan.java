@@ -169,11 +169,15 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static Path getCatFileFromArgs(String[] args) throws IOException {
-        return Arrays.stream(args)
+        final Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
                 .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
+        if (!Files.exists(catFile)) {
+            throw new IOException("CAT file %s does not exist".formatted(catFile));
+        }
+        return catFile;
     }
 
     private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
