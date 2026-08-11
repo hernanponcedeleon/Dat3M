@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -42,7 +43,13 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
+        // Enable custom exception handler to generate consistent exit code for errors
+        Thread.currentThread().setUncaughtExceptionHandler((t, ex) -> {
+            System.err.println(ex.getMessage());
+            System.exit(ExitCode.UNKNOWN_ERROR.asInt());
+        });
 
         initEnvironmentInfo();
 
@@ -58,17 +65,17 @@ public class Dartagnan extends BaseOptions {
 
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
-
-        final Path catFile = getCatFileFromArgs(args);
-        logger.info("CAT file path: {}", catFile);
+        final Path catFile  = getCatFileFromArgs(args);
         final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
+        logger.info("CAT file path: {}", catFile);
+
         final List<Output> outputs = new ArrayList<>();
-        Output output = null;
         for (Path progFile : progFiles) {
             logger.info("Program path: {}", progFile.normalize());
+            Output output;
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
@@ -102,7 +109,7 @@ public class Dartagnan extends BaseOptions {
 
         printOutputs(outputs, catFile.toString(), config);
         // Running batch mode results in normal termination independent of the individual results
-        final int exitCode = (isBatchMode ? NORMAL_TERMINATION : output.exitCode()).asInt();
+        final int exitCode = (isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode()).asInt();
         System.exit(exitCode);
     }
 
@@ -161,17 +168,15 @@ public class Dartagnan extends BaseOptions {
                 .build();
     }
 
-    private static Path getCatFileFromArgs(String[] args) {
+    private static Path getCatFileFromArgs(String[] args) throws IOException {
         return Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
                 .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
-        logger.info("CAT file path: {}", catFile);
-        return catFile;
     }
 
-    private static List<Path> getProgramFilesFromArgs(String[] args) {
+    private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
         final List<Path> files = Stream.of(args)
                 .map(Path::of)
                 .filter(Files::exists)
