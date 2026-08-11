@@ -42,7 +42,7 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         initEnvironmentInfo();
 
@@ -112,7 +112,7 @@ public class Dartagnan extends BaseOptions {
         OptionInfo.stream().sorted().forEach(System.out::print);
     }
 
-    private static void printVersion() throws Exception {
+    private static void printVersion() {
         final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
         final Path pomPath = getHomeDirectory().resolve("pom.xml");
 
@@ -120,6 +120,8 @@ public class Dartagnan extends BaseOptions {
             final String base = mvnReader.read(reader).getVersion();
             final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
             System.out.println(version);
+        } catch (Exception e) {
+            logger.warn("Failed to load {}", pomPath);
         }
     }
 
@@ -164,7 +166,9 @@ public class Dartagnan extends BaseOptions {
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
-                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized"));
+                .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
+        logger.info("CAT file path: {}", catFile);
+        return catFile;
     }
 
     private static List<Path> getProgramFilesFromArgs(String[] args) {
@@ -174,7 +178,7 @@ public class Dartagnan extends BaseOptions {
                 .flatMap(path -> getProgramFiles(path).stream())
                 .toList();
         if (files.isEmpty()) {
-            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+            throw new IOException("Path to input program(s) not given or format not recognized");
         }
         return files;
     }
