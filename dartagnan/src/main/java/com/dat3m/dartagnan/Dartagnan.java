@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -48,8 +47,9 @@ public class Dartagnan extends BaseOptions {
 
         // Enable custom exception handler to generate consistent exit code for errors
         Thread.currentThread().setUncaughtExceptionHandler((t, ex) -> {
-            System.err.println(ex.getMessage());
-            System.exit(ExitCode.UNKNOWN_ERROR.asInt());
+            final Output output = OutputGenerator.getOutputFromException(ex);
+            System.err.println(output.summary());
+            exit(output.exitCode());
         });
 
         initEnvironmentInfo();
@@ -103,18 +103,22 @@ public class Dartagnan extends BaseOptions {
                 // ----------- Generate output-----------
                 output = outputGenerator.getOutputFromSolver(taskSolver, progFile.toString());
             } catch (Exception e) {
-                output = outputGenerator.getOutputFromException(e, progFile.toString());
+                output = OutputGenerator.getOutputFromException(e, progFile.toString());
             }
             outputs.add(output);
         }
 
         printOutputs(outputs, catFile.toString(), config);
         // Running batch mode results in normal termination independent of the individual results
-        final int exitCode = (isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode()).asInt();
-        System.exit(exitCode);
+        final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode();
+        exit(exitCode);
     }
 
     // ----------------------------------------------------------------------------------------------------
+
+    public static void exit(ExitCode exitCode) {
+        System.exit(exitCode.asInt());
+    }
 
     public static void printOptions() {
         OptionInfo.stream().sorted().forEach(System.out::print);

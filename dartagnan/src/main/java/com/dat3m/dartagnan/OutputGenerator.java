@@ -99,20 +99,24 @@ public class OutputGenerator {
 
     // ====================================================================================
 
-    public Output getOutputFromException(Exception exception, String programPath) {
+    public static Output getOutputFromException(Throwable exception) {
+        return getOutputFromException(exception, null);
+    }
+
+    public static Output getOutputFromException(Throwable exception, String program) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
         final String details = "\t" + message;
-        
+
         if (exception instanceof InterruptedException) {
             final ExitCode exitCode =
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
-                    : message.contains("canceled") ? CANCELED
-                    : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(programPath, "", INTERRUPTED,
+                            : message.contains("canceled") ? CANCELED
+                            : UNKNOWN_ERROR;
+            return new Output(exitCode, toSummary(program, "", INTERRUPTED,
                     "", "", details, 0, null));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(programPath, "", ERROR,
+            return new Output(UNKNOWN_ERROR, toSummary(program, "", ERROR,
                     "", reason, details, 0, null));
         }
     }
@@ -365,6 +369,7 @@ public class OutputGenerator {
     private static String toSummary(String test, String filter, Result result, String condition,
                                     String reason, String details, long time, Path witness) {
 
+        final String shownTest = formatOptional("Test: %s%n", test);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
@@ -372,8 +377,8 @@ public class OutputGenerator {
         final String shownWitness = formatOptional("Witness: %s%n", witness);
         final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
 
-        return String.format("Test: %s%n%sResult: %s%n%s%s%s%s%s",
-                test, shownFilter, result, shownReason, shownCondition, shownDetails, shownWitness, shownTime);
+        return String.format("%s%sResult: %s%n%s%s%s%s%s",
+                shownTest, shownFilter, result, shownReason, shownCondition, shownDetails, shownWitness, shownTime);
     }
 
     private static String formatOptional(String format, Object arg) {
