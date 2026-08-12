@@ -75,7 +75,7 @@ public class ProgramEncoder {
     public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         ProgramEncoder encoder = new ProgramEncoder(context);
         context.getTask().getConfig().inject(encoder);
-        logger.info("{}: {}", INITIALIZE_REGISTERS, context.getTask().getProgram().registersAreDefaultInitialized());
+        logger.info("{}: {}", INITIALIZE_REGISTERS, context.getTask().getProgram().registersAreZeroInitialized());
         logger.info("{}: {}", IGNORE_FILTER_SPECIFICATION, encoder.ignoreFilterSpec);
         return encoder;
     }
@@ -453,7 +453,7 @@ public class ProgramEncoder {
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
-        final boolean initializeRegisters = context.getTask().getProgram().registersAreDefaultInitialized();
+        final boolean initializeRegisters = context.getTask().getProgram().registersAreZeroInitialized();
 
         List<BooleanFormula> enc = new ArrayList<>();
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
@@ -507,7 +507,7 @@ public class ProgramEncoder {
             return bmgr.makeTrue();
         }
 
-        final boolean initializeRegisters = context.getTask().getProgram().registersAreDefaultInitialized();
+        final boolean initializeRegisters = context.getTask().getProgram().registersAreZeroInitialized();
 
         logger.info("Encoding final register values");
         List<BooleanFormula> enc = new ArrayList<>();

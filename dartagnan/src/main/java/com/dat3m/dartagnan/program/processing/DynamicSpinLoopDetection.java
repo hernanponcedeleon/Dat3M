@@ -136,7 +136,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         // ---------------- Instrumentation ----------------
         // Init tracking registers
         for (Register liveReg : loop.writtenLiveRegisters) {
-            final Event initReg = func.getProgram().registersAreDefaultInitialized()
+            final Event initReg = func.getProgram().registersAreZeroInitialized()
                     ? EventFactory.newLocal(liveReg, expressions.makeGeneralZero(liveReg.getType()))
                     : EventFactory.newNonDetChoice(liveReg);
             loop.getStart().getFunction().getEntry().insertAfter(initReg);

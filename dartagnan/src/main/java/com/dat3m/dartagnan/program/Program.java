@@ -160,7 +160,7 @@ public class Program {
         return semanticConfig.floatRoundingMode;
     }
 
-    public boolean registersAreDefaultInitialized() {
+    public boolean registersAreZeroInitialized() {
         return semanticConfig.initializeRegisters;
     }
 
