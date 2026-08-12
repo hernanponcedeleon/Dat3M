@@ -1,9 +1,9 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -13,6 +13,10 @@ import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.nio.file.Path;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.witness.WitnessType.NONE;
+import static com.dat3m.dartagnan.witness.WitnessType.PNG;
 
 public class ReachabilityResult {
 
@@ -50,7 +54,11 @@ public class ReachabilityResult {
 
         try {
             final Arch arch = program.getArch() != null ? program.getArch() : options.target();
-            final Configuration config = Configuration.builder().setOptions(options.config()).build();
+            final Configuration config = Configuration.builder()
+                    .setOption(WITNESS_FILENAME, "dat3mUI")
+                    .setOptions(options.config())
+                    .setOption(WITNESS, options.showWitness() ? PNG.asStringOption() : NONE.asStringOption())
+                    .build();
             final VerificationTask task = VerificationTask.builder()
                     .withConfig(config)
                     .withBound(options.bound())
@@ -60,12 +68,12 @@ public class ReachabilityResult {
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
+            final OutputGenerator outputGenerator = OutputGenerator.create(false, config);
             try (TaskSolver solver = TaskSolver.create(task)) {
                 solver.run();
 
-                final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-                verdict = resultAnalyzer.getSummaryFromSolver(solver, "").toUIString();
-                witnessFile = resultAnalyzer.generateWitnessIfAble(solver, WitnessType.PNG, "dat3m", false);
+                verdict = outputGenerator.getOutputFromSolver(solver, "dat3mUI").summary();
+                witnessFile = outputGenerator.getWitnessFile().orElse(null);
             }
         } catch (InterruptedException e) {
             verdict = "TIMEOUT";

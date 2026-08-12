@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.configuration;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -42,6 +43,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 TaskSolver.class,
                 RelationNameRepository.class,
                 OptionNames.class,
+                OutputGenerator.class,
                 Acyclicity.class,
                 Emptiness.class,
                 Irreflexivity.class,

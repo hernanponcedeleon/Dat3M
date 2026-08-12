@@ -41,47 +41,6 @@ public abstract class BaseOptions {
     }
 
     @Option(
-            name = METHOD,
-            description = "Solver method to be used.",
-            toUppercase = true)
-    private Method method = Method.getDefault();
-
-    public Method getMethod() {
-        return method;
-    }
-
-    @Option(
-            name = WITNESS,
-            description = "Type of the violation graph to generate in the output directory.")
-    private WitnessType witnessType = WitnessType.getDefault();
-
-    public WitnessType getWitnessType() {
-        return witnessType;
-    }
-
-    @Option(name=WITNESS_FILENAME,
-            description="Name for the witness graph file.",
-            secure=true)
-    private String witnessFilename = "";
-
-    public boolean hasWitnessFilename() {
-        return !witnessFilename.isEmpty();
-    }
-
-    public String getWitnessFilename() {
-        return witnessFilename;
-    }
-
-    @Option(name=WITNESS_UNKNOWN,
-            description="Generate witness graph even if result is UNKNOWN.",
-            secure=true)
-    private boolean generateWitnessForUnknown = false;
-
-    public boolean generateWitnessForUnknown() {
-        return generateWitnessForUnknown;
-    }
-
-    @Option(
             name = CAT_INCLUDE,
             description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
     )

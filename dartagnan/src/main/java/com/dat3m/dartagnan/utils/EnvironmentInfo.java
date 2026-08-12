@@ -12,18 +12,19 @@ import java.util.Properties;
 
 public class EnvironmentInfo  {
 
-    private static final Logger logger = LoggerFactory.getLogger(EnvironmentInfo .class);
+    private static final Logger logger = LoggerFactory.getLogger(EnvironmentInfo.class);
 
     private final static Properties properties = new Properties();
 
-    public static void initEnvironmentInfo () throws IOException {
+    public static void initEnvironmentInfo () {
         try (InputStream is = Dartagnan.class.getClassLoader()
                 .getResourceAsStream("git.properties")) {
-            if (is == null) {
-                logger.warn("Failed to load git.properties");
+            if (is != null) {
+                properties.load(is);
                 return;
             }
-            properties.load(is);
+        } catch (IOException e) {
+            logger.warn("Failed to load git.properties");
         }
     }
 

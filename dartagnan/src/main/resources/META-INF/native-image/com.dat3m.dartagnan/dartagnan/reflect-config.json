@@ -1,8 +1,12 @@
 [
     {
-      "name":"com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer",
-      "allDeclaredFields": true,
-      "queryAllDeclaredMethods": true
+        "name":"com.dat3m.dartagnan.OutputGenerator",
+        "allDeclaredFields": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer",
+        "allDeclaredFields": true,
+        "queryAllDeclaredMethods": true
     },
     {
         "name":"com.dat3m.dartagnan.verification.TaskSolver",
