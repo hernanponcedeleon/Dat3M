@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.verification;
+package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
@@ -16,16 +16,24 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
+import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.verification.TaskSolver;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
-import org.apache.commons.csv.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,45 +41,87 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUNDS_SAVE_PATH;
-import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.program.Program.SourceLanguage.*;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.getSourceLocationString;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.utils.Result.ERROR;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
-public class TaskResultAnalyzer {
+@Options
+public class OutputGenerator {
 
-    private static final Logger logger = LoggerFactory.getLogger(TaskResultAnalyzer.class);
+    private static final Logger logger = LoggerFactory.getLogger(OutputGenerator.class);
 
-    private TaskResultAnalyzer() {
+    private static final String PROGRAM_SPEC_REASON = "Program specification violation found";
+    private static final String TERMINATION_REASON = "Termination violation found";
+    private static final String CAT_SPEC_REASON = "CAT specification violation found";
+    private static final String SVCOMP_UNTRACKABLE_OBJECT_REASON = "Untrackable object found";
+    private static final String BOUND_REASON = "Not fully unrolled loops";
+
+    // ==================================== Configurables ====================================
+
+    @Option(
+            name = WITNESS,
+            description = "Type of the violation graph to generate in the output directory.")
+    private WitnessType witnessType = WitnessType.getDefault();
+
+    @Option(name=WITNESS_FILENAME,
+            description="Name for the witness graph file.",
+            secure=true)
+    private String witnessFilename = "";
+
+    @Option(name=WITNESS_UNKNOWN,
+            description="Generate witness graph even if result is UNKNOWN.",
+            secure=true)
+    private boolean generateWitnessForUnknown = false;
+
+    // ====================================================================================
+
+    private final boolean isBatchMode;
+    private int batchIndex = -1;
+    private Path witnessFile = null;
+
+    private OutputGenerator(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
+        this.isBatchMode = isBatchMode;
+        config.inject(this);
     }
 
-    public static TaskResultAnalyzer create() {
-        return new TaskResultAnalyzer();
+    public static OutputGenerator create(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
+        return new OutputGenerator(isBatchMode, config);
     }
 
-    public ResultSummary getSummaryFromException(Exception exception, String programPath) {
+    public Optional<Path> getWitnessFile() {
+        return Optional.ofNullable(witnessFile);
+    }
+
+    // ====================================================================================
+
+    public static Output getOutputFromException(Throwable exception) {
+        return getOutputFromException(exception, null);
+    }
+
+    public static Output getOutputFromException(Throwable exception, String program) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
         final String details = "\t" + message;
 
         if (exception instanceof InterruptedException) {
             final ExitCode exitCode =
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
-                    : message.contains("canceled") ? CANCELED
-                    : UNKNOWN_ERROR;
-            return new ResultSummary(programPath, "", INTERRUPTED, "", "", details, 0, exitCode);
+                            : message.contains("canceled") ? CANCELED
+                            : UNKNOWN_ERROR;
+            return new Output(exitCode, toSummary(program, "", INTERRUPTED,
+                    "", "", details, 0, null));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new ResultSummary(programPath, "", ERROR, "", reason, details, 0, UNKNOWN_ERROR);
+            return new Output(UNKNOWN_ERROR, toSummary(program, "", ERROR,
+                    "", reason, details, 0, null));
         }
     }
 
-    public ResultSummary getSummaryFromSolver(TaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
         final VerificationTask task = solver.getTask();
         final Result result = solver.getResult();
         final Program p = task.getProgram();
@@ -81,29 +131,34 @@ public class TaskResultAnalyzer {
         final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
         final long time = solver.getRuntime();
 
+        // ----------------- Generate optional witness -----------------
+        batchIndex++;
+        try {
+            witnessFile = generateWitnessIfAble(solver, getWitnessFilename(programPath));
+        } catch (IOException ex) {
+            logger.warn("Failed to generate witness file.", ex);
+            witnessFile = null;
+        }
+
         // ----------------- Generate output of verification result -----------------
         final String filter = getFilterString(task);
         final SyntacticContextAnalysis synContext = newInstance(p);
-        String reason = "";
+
         StringBuilder details = new StringBuilder();
-        // We only show the condition if this is the reason of the failure
-        String condition = "";
         if (hasViolationsWithModel) {
 
             if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                reason = ResultSummary.PROGRAM_SPEC_REASON;
-                condition = getSpecificationString(p);
                 List<Assert> violations = p.getThreadEvents(Assert.class)
                         .stream().filter(model::assertionViolated)
                         .toList();
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, PROGRAM_SPEC_VIOLATION);
+                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                        getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
             if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
-                reason = ResultSummary.TERMINATION_REASON;
                 for (Event e : p.getThreadEvents()) {
                     final boolean isStuckLoop = e instanceof CondJump jump
                             && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
@@ -115,17 +170,18 @@ public class TaskResultAnalyzer {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, TERMINATION_VIOLATION);
+                return new Output(TERMINATION_VIOLATION, toSummary(programPath, filter, FAIL,
+                        "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
             if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
-                reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
                 for (MemoryObject o : p.getMemory().getObjects()) {
                     if (model.isLeaked(o) && !model.isTrackable(o)) {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new ResultSummary(programPath, filter, FAIL, condition, reason, details.toString(), time, MEMORY_TRACKABILITY_VIOLATION);
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programPath, filter, FAIL,
+                        "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
             if (props.contains(CAT_SPEC)) {
@@ -134,20 +190,21 @@ public class TaskResultAnalyzer {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    reason = ResultSummary.CAT_SPEC_REASON;
-                    return new ResultSummary(programPath, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model, synContext), time, CAT_SPEC_VIOLATION);
+                    return new Output(CAT_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                            "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
+
+            throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            reason = ResultSummary.PROGRAM_SPEC_REASON;
-            condition = getSpecificationString(p);
+            return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+                    getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
         } else if (result == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
                     .toList();
-            reason = ResultSummary.BOUND_REASON;
             for (Event bound : reachedBounds) {
                 details
                         .append("\t")
@@ -159,17 +216,17 @@ public class TaskResultAnalyzer {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            ExitCode code = BOUNDED_RESULT;
-            return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, code);
+            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, result,
+                    "", BOUND_REASON, details.toString(), time, witnessFile));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new ResultSummary(programPath, filter, result, condition, reason, details.toString(), time, NORMAL_TERMINATION);
+        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+                "", "", details.toString(), time, witnessFile));
     }
 
-    public Path generateWitnessIfAble(TaskSolver solver, WitnessType witnessType, String filename,
-                                      boolean generateWitnessForUnknown) throws IOException {
+    private Path generateWitnessIfAble(TaskSolver solver, String filename) throws IOException {
         if (!solver.hasModel()
                 || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
                 || witnessType == WitnessType.NONE) {
@@ -187,7 +244,8 @@ public class TaskResultAnalyzer {
                 return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory(), filename,
-                        synContext, witnessType.convertToPng(), task.getConfig());
+                        synContext, witnessType.convertToPng(), task.getConfig()
+                );
             }
         }
 
@@ -195,6 +253,13 @@ public class TaskResultAnalyzer {
     }
 
     // =========================================== Utility =================================================
+
+    private String getWitnessFilename(String progFile) {
+        final String batchSuffix = isBatchMode ? "-batch#" + batchIndex : "";
+        return !witnessFilename.isBlank()
+                ? witnessFilename + batchSuffix
+                : Utils.getNameWithoutExtension(progFile);
+    }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
         if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
@@ -255,10 +320,10 @@ public class TaskResultAnalyzer {
                 model.eventGraph(ax.getRelation()).apply((e1, e2) -> {
                     final String callSeparator = " -> ";
                     final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(e1).getContextOfType(SyntacticContextAnalysis.CallContext.class),
+                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
                             callSeparator);
                     final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(e2).getContextOfType(SyntacticContextAnalysis.CallContext.class),
+                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
                             callSeparator);
 
                     violatingPairs
@@ -299,6 +364,28 @@ public class TaskResultAnalyzer {
         final Expression filter = task.getProgram().getFilterSpecification();
         final boolean isTrivialFilter = filter instanceof BoolLiteral bLit && bLit.getValue();
         return isTrivialFilter ? "" : filter.toString();
+    }
+
+    private static String toSummary(String test, String filter, Result result, String condition,
+                                    String reason, String details, long time, Path witness) {
+
+        final String shownTest = formatOptional("Test: %s%n", test);
+        final String shownFilter = formatOptional("Filter: %s%n", filter);
+        final String shownCondition = formatOptional("Condition: %s", condition);
+        final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
+        final String shownDetails = formatOptional("Details:%n%s", details);
+        final String shownWitness = formatOptional("Witness: %s%n", witness);
+        final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
+
+        return String.format("%s%sResult: %s%n%s%s%s%s%s",
+                shownTest, shownFilter, result, shownReason, shownCondition, shownDetails, shownWitness, shownTime);
+    }
+
+    private static String formatOptional(String format, Object arg) {
+        if (arg == null || (arg instanceof String str && str.isEmpty())) {
+            return "";
+        }
+        return String.format(format, arg);
     }
 
 }

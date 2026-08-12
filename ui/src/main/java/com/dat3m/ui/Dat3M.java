@@ -126,10 +126,6 @@ public class Dat3M extends JFrame implements ActionListener {
         imageFrame.getContentPane().add(scrollPane);
         imageFrame.setLocation(x, y);
         imageFrame.setVisible(true);
-
-        optionsPane.getConsolePane().setText(
-                optionsPane.getConsolePane().getText() + "\n" + "Witness file: " + filePath
-        );
     }
 
     private void runTest() {

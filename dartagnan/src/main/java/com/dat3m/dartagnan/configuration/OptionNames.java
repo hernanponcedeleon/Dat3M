@@ -23,6 +23,7 @@ public class OptionNames {
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
     public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";
+    public static final String INITIALIZE_REGISTERS = "modeling.initializeRegisters";
     public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initDynamicAllocations";
     public static final String MULTI_READS = "modeling.multiReads";
 
@@ -34,7 +35,6 @@ public class OptionNames {
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_RELEVANT_SETS = "encoding.wmm.reduceAcyclicityRelevantSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
-    public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
     public static final String IGNORE_FILTER_SPECIFICATION = "encoding.ignoreFilterSpecification";
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
     public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
