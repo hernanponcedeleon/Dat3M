@@ -67,6 +67,7 @@ public class EnumerationSolver extends ModelChecker {
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
         prover.writeComment("Program encoding");
@@ -75,7 +76,9 @@ public class EnumerationSolver extends ModelChecker {
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        // Encode last values and enforce termination
         prover.addConstraint(wmmEncoder.encodeLastCoConstraints());
+        prover.addConstraint(propertyEncoder.encodeProgramTermination());
 
         checkForInterrupts();
 
