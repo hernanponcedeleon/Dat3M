@@ -259,7 +259,8 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register r2 = (Register) ctx.register(1).accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
-        append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, constant)), ctx);
+        Expression shifted = expressions.makeLshift(constant, expressions.makeValue(16, archType));
+        append(EventFactory.newLocal(r1, expressions.makeIntXor(r2, shifted)), ctx);
         return null;
     }
 
