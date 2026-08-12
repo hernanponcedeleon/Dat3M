@@ -21,6 +21,7 @@ import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.ROUNDING_MODE_FLOATS;
 import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
@@ -39,6 +40,11 @@ public class Program {
                 description = "Default rounding mode for floating point operations (default NEAREST_TIES_TO_EVEN).",
                 secure = true)
         private FloatingPointRoundingMode floatRoundingMode = NEAREST_TIES_TO_EVEN;
+
+        @Option(name = INITIALIZE_REGISTERS,
+                description = "Assume registers start off containing zero.",
+                secure = true)
+        private boolean initializeRegisters = false;
     }
 
     // Shape
@@ -152,6 +158,10 @@ public class Program {
 
     public FloatingPointRoundingMode getFloatRoundingMode() {
         return semanticConfig.floatRoundingMode;
+    }
+
+    public boolean registersAreDefaultInitialized() {
+        return semanticConfig.initializeRegisters;
     }
 
     public void setFloatRoundingMode(FloatingPointRoundingMode roundingMode) {

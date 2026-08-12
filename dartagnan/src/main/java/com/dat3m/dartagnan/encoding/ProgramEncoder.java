@@ -49,11 +49,6 @@ public class ProgramEncoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = INITIALIZE_REGISTERS,
-            description = "Assume thread-local variables start off containing zero.",
-            secure = true)
-    private boolean initializeRegisters = false;
-
     @Option(name = IGNORE_FILTER_SPECIFICATION,
             description = "Ignore final states filter",
             secure = true)
@@ -80,7 +75,7 @@ public class ProgramEncoder {
     public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         ProgramEncoder encoder = new ProgramEncoder(context);
         context.getTask().getConfig().inject(encoder);
-        logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);
+        logger.info("{}: {}", INITIALIZE_REGISTERS, context.getTask().getProgram().registersAreDefaultInitialized());
         logger.info("{}: {}", IGNORE_FILTER_SPECIFICATION, encoder.ignoreFilterSpec);
         return encoder;
     }
@@ -458,6 +453,7 @@ public class ProgramEncoder {
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
+        final boolean initializeRegisters = context.getTask().getProgram().registersAreDefaultInitialized();
 
         List<BooleanFormula> enc = new ArrayList<>();
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
@@ -510,6 +506,8 @@ public class ProgramEncoder {
             logger.info("Skipping encoding of final register values: C-Code has no assertions over those values.");
             return bmgr.makeTrue();
         }
+
+        final boolean initializeRegisters = context.getTask().getProgram().registersAreDefaultInitialized();
 
         logger.info("Encoding final register values");
         List<BooleanFormula> enc = new ArrayList<>();
