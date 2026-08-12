@@ -7,11 +7,8 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.utils.printer.OutputLogger;
-import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
-import com.dat3m.dartagnan.verification.TaskResultAnalyzer;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
@@ -27,12 +24,9 @@ import org.sosy_lab.common.configuration.Options;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -49,7 +43,14 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
+        // Enable custom exception handler to generate consistent exit code for errors
+        Thread.currentThread().setUncaughtExceptionHandler((t, ex) -> {
+            final Output output = OutputGenerator.getOutputFromException(ex);
+            System.err.println(output.summary());
+            exit(output.exitCode());
+        });
 
         initEnvironmentInfo();
 
@@ -63,30 +64,19 @@ public class Dartagnan extends BaseOptions {
 
         logEnvironmentInfo();
 
-        final TaskResultAnalyzer resultAnalyzer = TaskResultAnalyzer.create();
-        ResultSummary summary = null;
-
-        final Configuration config;
-        final Dartagnan o;
-        final Path catFile;
-        final List<Path> progFiles;
-        try {
-            config = loadConfigurationFromArgs(args);
-            o = new Dartagnan(config);
-            catFile = getCatFileFromArgs(args);
-            progFiles = getProgramFilesFromArgs(args);
-        } catch (Exception e) {
-            summary = resultAnalyzer.getSummaryFromException(e, "Unknown");
-            System.out.println(summary);
-            System.exit(summary.code().asInt());
-            return;
-        }
-
+        final Configuration config = loadConfigurationFromArgs(args);
+        final Dartagnan o = new Dartagnan(config);
+        final Path catFile  = getCatFileFromArgs(args);
+        final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
+        final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
-        final OutputLogger output = new OutputLogger(catFile, config);
-        int it = 0;
+        logger.info("CAT file path: {}", catFile);
+
+        final List<Output> outputs = new ArrayList<>();
         for (Path progFile : progFiles) {
+            logger.info("Program path: {}", progFile.normalize());
+            Output output;
             try {
                 // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(progFile);
@@ -111,22 +101,24 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                summary = resultAnalyzer.getSummaryFromSolver(taskSolver, progFile.toString());
-                final String witnessFileName = getWitnessFilename(progFile, o, isBatchMode ? "_batch_#" + it : "");
-                resultAnalyzer.generateWitnessIfAble(taskSolver, o.getWitnessType(), witnessFileName, o.generateWitnessForUnknown());
-                it++;
+                output = outputGenerator.getOutputFromSolver(taskSolver, progFile.toString());
             } catch (Exception e) {
-                summary = resultAnalyzer.getSummaryFromException(e, progFile.toString());
+                output = OutputGenerator.getOutputFromException(e, progFile.toString());
             }
-            output.addResult(summary);
+            outputs.add(output);
         }
 
-        output.toStdOut();
+        printOutputs(outputs, catFile.toString(), config);
         // Running batch mode results in normal termination independent of the individual results
-        System.exit((isBatchMode ? NORMAL_TERMINATION : summary.code()).asInt());
+        final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode();
+        exit(exitCode);
     }
 
     // ----------------------------------------------------------------------------------------------------
+
+    public static void exit(ExitCode exitCode) {
+        System.exit(exitCode.asInt());
+    }
 
     public static void printOptions() {
         OptionInfo.stream().sorted().forEach(System.out::print);
@@ -142,6 +134,25 @@ public class Dartagnan extends BaseOptions {
             System.out.println(version);
         } catch (Exception e) {
             logger.warn("Failed to load {}", pomPath);
+        }
+    }
+
+    private static void printOutputs(List<Output> outputs, String catFile, Configuration config) {
+        if (outputs.isEmpty()) {
+            return;
+        }
+
+        if (outputs.size() == 1) {
+            System.out.println(outputs.get(0));
+        } else {
+            System.out.println("================ Configuration ==================");
+            System.out.println("cat = " + catFile);
+            System.out.print(config.asPropertiesString()); // it already contains its own \n
+            System.out.println("=================================================");
+            for (Output output : outputs) {
+                System.out.println();
+                System.out.println(output);
+            }
         }
     }
 
@@ -163,25 +174,23 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static Path getCatFileFromArgs(String[] args) throws IOException {
-        Path catFile = Arrays.stream(args)
+        final Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
                 .findFirst()
                 .map(Path::of)
                 .orElseThrow(() -> new IOException("CAT model not given or format not recognized"));
-        logger.info("CAT file path: {}", catFile);
+        if (!Files.exists(catFile)) {
+            throw new NoSuchFileException("CAT file %s does not exist".formatted(catFile));
+        }
         return catFile;
     }
 
     private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
-        final List<Path> files = new ArrayList<>();
-        Stream.of(args).map(Paths::get).filter(Files::exists)
-                .forEach(path -> {
-                    List<Path> supported = getProgramFiles(path);
-                    if (!supported.isEmpty()) {
-                        logger.info("Program(s) path: {}", path.normalize());
-                        files.addAll(supported);
-                    }
-                });
+        final List<Path> files = Stream.of(args)
+                .map(Path::of)
+                .filter(Files::exists)
+                .flatMap(path -> getProgramFiles(path).stream())
+                .toList();
         if (files.isEmpty()) {
             throw new IOException("Path to input program(s) not given or format not recognized");
         }
@@ -198,11 +207,5 @@ public class Dartagnan extends BaseOptions {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
         }
-    }
-
-    private static String getWitnessFilename(Path progFile, BaseOptions options, String postfix) {
-        return options.hasWitnessFilename()
-                ? options.getWitnessFilename() + postfix
-                : Utils.getNameWithoutExtension(progFile);
     }
 }

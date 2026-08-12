@@ -10,6 +10,14 @@ public class Utils {
     private Utils() {
     }
 
+    public static String replaceExtension(String filePath, String newExtension) {
+        int dotIdx = filePath.lastIndexOf('.');
+        if (dotIdx == -1) {
+            return filePath;
+        }
+        return filePath.substring(0, dotIdx + 1) + newExtension;
+    }
+
     public static boolean containsSubpath(Path path, Path subpath) {
         return path.toString().contains(subpath.toString());
     }

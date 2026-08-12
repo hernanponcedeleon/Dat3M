@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 
+import com.dat3m.dartagnan.utils.Utils;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Path;
@@ -105,7 +107,7 @@ public class Graphviz {
      */
     public static Path convert(Path dotFile) throws IOException, InterruptedException {
         final String dotFileName = dotFile.getFileName().toString();
-        final String pngFileName = dotFileName.substring(0, dotFileName.lastIndexOf('.')) + ".png";
+        final String pngFileName = Utils.replaceExtension(dotFileName, "png");
         Process p = new ProcessBuilder().directory(dotFile.getParent().toFile())
                 .command("dot", "-Tpng", dotFileName, "-o", pngFileName).start();
         p.waitFor(1000, TimeUnit.MILLISECONDS);
