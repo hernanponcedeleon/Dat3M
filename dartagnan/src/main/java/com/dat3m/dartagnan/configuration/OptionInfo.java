@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.encoding.*;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
@@ -73,7 +74,8 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
                 WmmProcessingManager.class,
-                ExecutionGraphVisualizer.class
+                ExecutionGraphVisualizer.class,
+                Program.SemanticConfig.class
         );
     }
 

@@ -65,6 +65,10 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.program.Program$SemanticConfig",
+        "allDeclaredFields":true
+      },
+      {
         "name":"com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
