@@ -264,6 +264,12 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitReturn(ReturnContext ctx) {
+        Label end = programBuilder.getEndOfThreadLabel(mainThread);
+        return append(EventFactory.newGoto(end), ctx);
+    }
+
+    @Override
     public Object visitSext(SextContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
