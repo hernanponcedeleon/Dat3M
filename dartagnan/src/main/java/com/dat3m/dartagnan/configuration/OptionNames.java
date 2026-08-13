@@ -22,9 +22,9 @@ public class OptionNames {
     public static final String PROGRESSMODEL = "modeling.progress";
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
-    public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";
+    public static final String MEMORY_IS_ZEROED = "modeling.initializeMemory";
     public static final String INITIALIZE_REGISTERS = "modeling.initializeRegisters";
-    public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initDynamicAllocations";
+    public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initializeDynamicAllocations";
     public static final String MULTI_READS = "modeling.multiReads";
 
     // Compilation Options

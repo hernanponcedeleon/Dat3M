@@ -35,7 +35,7 @@ public class Program {
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
     @Options
-    private static class SemanticConfig {
+    public static class SemanticConfig {
         @Option(name = ROUNDING_MODE_FLOATS,
                 description = "Default rounding mode for floating point operations (default NEAREST_TIES_TO_EVEN).",
                 secure = true)
