@@ -25,16 +25,13 @@ public class Task {
     private final Program program;
     private final Wmm memoryModel;
     private final ProgressModel.Hierarchy progressModel;
-    private final EnumSet<Property> property;
     private final Configuration config;
 
-    protected Task(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                   EnumSet<Property> property, Configuration config)
+    protected Task(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.progressModel = checkNotNull(progressModel);
-        this.property = checkNotNull(property);
         this.config = checkNotNull(config);
 
         // TODO: Is it a good idea to inject configs into the program here?
@@ -49,7 +46,6 @@ public class Task {
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
-    public EnumSet<Property> getProperty() { return property; }
 
 
     // ==================== Builder =====================
@@ -97,8 +93,8 @@ public class Task {
             return this;
         }
 
-        public Task build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new Task(program, memoryModel, progressModel, property, config.build());
+        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new VerificationTask(program, memoryModel, progressModel, config.build(), property);
         }
     }
 }

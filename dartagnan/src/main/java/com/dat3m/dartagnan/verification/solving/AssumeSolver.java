@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -14,6 +16,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
+
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
@@ -25,6 +29,8 @@ public class AssumeSolver extends ModelChecker {
 
     private AssumeSolver(Task task) throws InvalidConfigurationException {
         super(task);
+        Preconditions.checkArgument(task instanceof VerificationTask,
+                "Task must be of type VerificationTask");
     }
 
     public static AssumeSolver create(Task task) throws InvalidConfigurationException {
@@ -45,6 +51,7 @@ public class AssumeSolver extends ModelChecker {
 
     @Override
     protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+        final VerificationTask task = (VerificationTask) this.task;
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
@@ -70,7 +77,7 @@ public class AssumeSolver extends ModelChecker {
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
+        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperties());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
@@ -93,7 +100,7 @@ public class AssumeSolver extends ModelChecker {
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
-        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
+        res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result {}", res);
     }
 }

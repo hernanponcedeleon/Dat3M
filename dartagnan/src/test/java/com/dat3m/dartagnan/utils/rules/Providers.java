@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -48,7 +49,7 @@ public class Providers {
 
     // =========================== Task related providers ==============================
 
-    public static Provider<Task> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
+    public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
                                             Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Configuration> config) {
         return Provider.fromSupplier(() -> Task.builder().
                 withConfig(config.get()).
@@ -57,8 +58,8 @@ public class Providers {
         );
     }
 
-    public static Provider<Task> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
-                                            Supplier<Arch> targetSupplier, Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
+    public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
+                                                        Supplier<Arch> targetSupplier, Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
         return Provider.fromSupplier(() -> Task.builder().
                 withConfig(config.get()).
                 withTarget(targetSupplier.get()).

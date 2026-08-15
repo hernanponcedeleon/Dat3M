@@ -4,7 +4,8 @@ import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.TaskSolver;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
@@ -61,7 +62,7 @@ public class ReachabilityResult {
                     .setOptions(options.config())
                     .setOption(WITNESS, options.showWitness() ? PNG.asStringOption() : NONE.asStringOption())
                     .build();
-            final Task task = Task.builder()
+            final VerificationTask task = Task.builder()
                     .withConfig(config)
                     .withBound(options.bound())
                     .withSolver(options.solver())
@@ -70,7 +71,8 @@ public class ReachabilityResult {
                     .build(program, wmm, options.properties());
 
             final OutputGenerator outputGenerator = OutputGenerator.create(false, config);
-            try (TaskSolver solver = TaskSolver.create(task).withShutdownManager(shutdownManager)) {
+            try (VerificationTaskSolver solver = VerificationTaskSolver.create(task)
+                    .withShutdownManager(shutdownManager)) {
                 solver.run();
 
                 verdict = outputGenerator.getOutputFromSolver(solver, "dat3mUI").summary();
