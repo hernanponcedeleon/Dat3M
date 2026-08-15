@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,14 +17,14 @@ import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
 public class MiscellaneousTest extends AbstractCTest {
 
     private final int bound;
 
-    public MiscellaneousTest(String name, Arch target, Result expected, int bound) {
+    public MiscellaneousTest(String name, Arch target, ResultStatus expected, int bound) {
         super(name, target, expected);
         this.bound = bound;
     }

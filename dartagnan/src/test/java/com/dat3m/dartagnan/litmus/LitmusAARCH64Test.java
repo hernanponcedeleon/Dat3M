@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
@@ -26,7 +26,7 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return () -> Arch.ARM8;
     }
 
-    public LitmusAARCH64Test(Path path, Result expected) {
+    public LitmusAARCH64Test(Path path, ResultStatus expected) {
         super(path, expected);
     }
 

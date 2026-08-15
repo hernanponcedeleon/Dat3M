@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
@@ -45,7 +45,7 @@ public interface RelationAnalysis {
      *                </ul>
      * @param config  User-defined options to further specify the behavior.
      */
-    static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+    static RelationAnalysis fromConfig(Task task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis.Config c = new RelationAnalysis.Config(config);
         RelationAnalysis a = switch (c.method) {
             case NONE -> CoarseRelationAnalysis.fromConfig(task, context, config);

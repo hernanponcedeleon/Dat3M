@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.witness.WitnessType;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
@@ -62,7 +61,7 @@ public class ReachabilityResult {
                     .setOptions(options.config())
                     .setOption(WITNESS, options.showWitness() ? PNG.asStringOption() : NONE.asStringOption())
                     .build();
-            final VerificationTask task = VerificationTask.builder()
+            final Task task = Task.builder()
                     .withConfig(config)
                     .withBound(options.bound())
                     .withSolver(options.solver())

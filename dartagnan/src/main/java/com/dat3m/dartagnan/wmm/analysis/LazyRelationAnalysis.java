@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -47,7 +47,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
     private final LazyInitializer lazyInitializer;
     private final Initializer nativeInitializer;
 
-    private LazyRelationAnalysis(VerificationTask task, Context context, Configuration config) {
+    private LazyRelationAnalysis(Task task, Context context, Configuration config) {
         super(task, context, config);
         // TODO: Support for recursive relations
         if (task.getMemoryModel().getRelations().stream().anyMatch(Relation::isRecursive)) {
@@ -59,7 +59,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         this.nativeInitializer = super.getInitializer();
     }
 
-    public static LazyRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) {
+    public static LazyRelationAnalysis fromConfig(Task task, Context context, Configuration config) {
         return new LazyRelationAnalysis(task, context, config);
     }
 
@@ -97,7 +97,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         private final ReachingDefinitionsAnalysis definitions;
         private final Set<Event> visibleEvents;
 
-        public LazyInitializer(VerificationTask task, Context context) {
+        public LazyInitializer(Task task, Context context) {
             this.program = task.getProgram();
             this.exec = context.requires(ExecutionAnalysis.class);
             this.alias = context.requires(AliasAnalysis.class);

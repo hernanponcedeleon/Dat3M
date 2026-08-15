@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
@@ -49,30 +48,30 @@ public class TaskSolver implements AutoCloseable {
 
     // ====================================== State ======================================
 
-    private final VerificationTask task;
+    private final Task task;
 
     private ModelChecker modelChecker;
     private IREvaluator model;
     private ShutdownManager shutdownManager;
     private long runtime = 0;
 
-    public VerificationTask getTask() {
+    public Task getTask() {
         return task;
     }
 
     // =================================== Construction ===================================
 
-    private TaskSolver(VerificationTask task) throws InvalidConfigurationException {
+    private TaskSolver(Task task) throws InvalidConfigurationException {
         this.task = task;
 
         task.getConfig().inject(this);
     }
 
-    public static TaskSolver create(VerificationTask task) throws InvalidConfigurationException {
+    public static TaskSolver create(Task task) throws InvalidConfigurationException {
         return new TaskSolver(task);
     }
 
-    public static TaskSolver createWithMethod(VerificationTask task, Method method) throws InvalidConfigurationException {
+    public static TaskSolver createWithMethod(Task task, Method method) throws InvalidConfigurationException {
         final TaskSolver solver = new TaskSolver(task);
         solver.method = method;
         return solver;
@@ -118,7 +117,7 @@ public class TaskSolver implements AutoCloseable {
         runtime = System.currentTimeMillis() - startTime;
     }
 
-    public Result getResult() {
+    public ResultStatus getResult() {
         checkHasRun();
         return modelChecker.getResult();
     }

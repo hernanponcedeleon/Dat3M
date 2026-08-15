@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -98,8 +98,8 @@ public abstract class AbstractComparisonTest {
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
-    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
+    protected final Provider<Task> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
+    protected final Provider<Task> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
