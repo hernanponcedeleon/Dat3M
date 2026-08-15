@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
 
 @NoInterface
 @Options
-public abstract class TaskSolverBase<TSolver, TTask extends Task, TResult extends TaskResult<TTask>> implements TaskSolver<TTask, TResult> {
+public abstract class TaskSolverBase<TSolver, TTask extends Task, TResult extends TaskResult<TTask>> implements TaskSolver {
 
     // ================================== Configurables ==================================
     @Option(
