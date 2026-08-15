@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.configuration;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -39,7 +39,7 @@ public enum Property implements OptionInterface {
         return this.name().toLowerCase();
     }
 
-    public Type getType(VerificationTask context) {
+    public Type getType(Task context) {
         if (this == PROGRAM_SPEC && context.getProgram().hasReachabilitySpecification()) {
             return Type.REACHABILITY;
         } else {
@@ -72,7 +72,7 @@ public enum Property implements OptionInterface {
         return order;
     }
 
-    public static Type getCombinedType(EnumSet<Property> properties, VerificationTask context) {
+    public static Type getCombinedType(EnumSet<Property> properties, Task context) {
         return properties.stream().map(p -> p.getType(context))
                 .reduce((x, y) -> x == y ? x : Type.MIXED)
                 .orElse(Type.SAFETY); // In the odd case that the properties are empty, we consider it a safety spec

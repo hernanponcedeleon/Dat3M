@@ -6,12 +6,12 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,10 +42,10 @@ import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 public abstract class AbstractLitmusTest {
 
     private Path path;
-    private final Result expected;
-    private static Map<Path, Result> expectedResults;
+    private final ResultStatus expected;
+    private static Map<Path, ResultStatus> expectedResults;
 
-    AbstractLitmusTest(Path path, Result expected) {
+    AbstractLitmusTest(Path path, ResultStatus expected) {
         this.path = path;
         this.expected = expected;
     }
@@ -121,9 +121,9 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get()));
+    protected final Provider<ResultStatus> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get()));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
+    protected final Provider<Task> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);

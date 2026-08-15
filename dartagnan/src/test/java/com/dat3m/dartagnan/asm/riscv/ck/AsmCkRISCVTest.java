@@ -5,9 +5,9 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,9 +31,9 @@ public class AsmCkRISCVTest {
     private final Path modelPath = getRootPath("cat/riscv.cat");
     private final Path programPath;
     private final int bound;
-    private final Result expected;
+    private final ResultStatus expected;
 
-    public AsmCkRISCVTest(String file, int bound, Result expected) {
+    public AsmCkRISCVTest(String file, int bound, ResultStatus expected) {
         this.programPath = getTestResourcePath("asm/riscv/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
@@ -42,7 +42,7 @@ public class AsmCkRISCVTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"spsc_queue", 1, Result.PASS},
+            {"spsc_queue", 1, ResultStatus.PASS},
         });
     }
 
@@ -52,8 +52,8 @@ public class AsmCkRISCVTest {
         assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
-    private VerificationTask mkTask() throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+    private Task mkTask() throws Exception {
+        Task.TaskBuilder builder = Task.builder()
                 .withSolver(SolverContextFactory.Solvers.YICES2)
                 .withBound(bound)
                 .withTarget(Arch.RISCV);

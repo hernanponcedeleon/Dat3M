@@ -16,9 +16,9 @@ import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
@@ -40,7 +40,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 // Base class for SMT-based model checkers
 public abstract class ModelChecker implements AutoCloseable {
@@ -69,7 +69,7 @@ public abstract class ModelChecker implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(ModelChecker.class);
 
-    protected final VerificationTask task;
+    protected final Task task;
     protected final SMTConfig smtConfig;
     private ShutdownManager shutdownManager = ShutdownManager.create();
 
@@ -77,16 +77,16 @@ public abstract class ModelChecker implements AutoCloseable {
     protected EncodingContext context;
     protected ProverWithTracker prover;
 
-    protected Result res = Result.UNKNOWN;
+    protected ResultStatus res = ResultStatus.UNKNOWN;
 
-    protected ModelChecker(VerificationTask task) throws InvalidConfigurationException {
+    protected ModelChecker(Task task) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
         this.smtConfig = new SMTConfig();
 
         task.getConfig().inject(smtConfig);
     }
 
-    public final Result getResult() {
+    public final ResultStatus getResult() {
         Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
         return res;
     }
@@ -165,12 +165,12 @@ public abstract class ModelChecker implements AutoCloseable {
 
     // ====================================== Processing utility ==================================================
 
-    public static void preprocessProgram(VerificationTask task, Configuration config) throws InvalidConfigurationException {
+    public static void preprocessProgram(Task task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
     }
 
-    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+    public static void preprocessMemoryModel(Task task, Configuration config) throws InvalidConfigurationException{
         final Wmm memoryModel = task.getMemoryModel();
 
         // We remove flagged axioms if we do not check for them.
@@ -182,7 +182,7 @@ public abstract class ModelChecker implements AutoCloseable {
         WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
-    public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+    public static void performStaticProgramAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         final Program program = task.getProgram();
         analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
@@ -203,13 +203,13 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
-    public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+    public static void performStaticWmmAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationEventDomains.class, RelationEventDomains.newInstance(task.getMemoryModel(), analysisContext));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
-    public static void performIntervalAnalysis(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+    public static void performIntervalAnalysis(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.registerOptional(IntervalAnalysis.class, IntervalAnalysis.fromConfig(task.getProgram(), analysisContext, task.getMemoryModel(), config));
     }
 }

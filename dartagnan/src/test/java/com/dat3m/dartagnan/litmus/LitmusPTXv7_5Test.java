@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -24,7 +24,7 @@ public class LitmusPTXv7_5Test extends AbstractLitmusTest {
         return () -> Arch.PTX;
     }
 
-    public LitmusPTXv7_5Test(Path path, Result expected) {
+    public LitmusPTXv7_5Test(Path path, ResultStatus expected) {
         super(path, expected);
     }
 

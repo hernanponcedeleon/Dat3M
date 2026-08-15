@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -71,7 +71,7 @@ public class CoSymmetryBreaking {
     private static final Logger logger = LoggerFactory.getLogger(CoSymmetryBreaking.class);
 
     private final EncodingContext context;
-    private final VerificationTask task;
+    private final Task task;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
     private final RelationAnalysis ra;

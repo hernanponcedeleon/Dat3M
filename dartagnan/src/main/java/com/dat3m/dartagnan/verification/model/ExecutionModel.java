@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.event.core.Dealloc;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -83,7 +83,7 @@ public class ExecutionModel {
     //======================== Public data ===========================‚
 
     // General data
-    public VerificationTask getTask() {
+    public Task getTask() {
         return ctx.getTask();
     }
     

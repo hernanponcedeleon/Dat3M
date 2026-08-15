@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 public class ResourceHelper {
 
@@ -20,9 +20,9 @@ public class ResourceHelper {
         return Path.of("src", "test", "resources").resolve(path);
     }
 
-    public static ImmutableMap<Path, Result> getExpectedResults(String arch, String postfix) throws IOException {
+    public static ImmutableMap<Path, ResultStatus> getExpectedResults(String arch, String postfix) throws IOException {
         Path path = getTestResourcePath(arch + postfix + "-expected.csv");
-        var data = ImmutableMap.<Path, Result>builder();
+        var data = ImmutableMap.<Path, ResultStatus>builder();
         Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
             String[] line = str.split(",");
             if (line.length == 2) {

@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
     Represents a verification task.
  */
-public class VerificationTask {
+public class Task {
 
     // Data objects
     private final Program program;
@@ -28,8 +28,8 @@ public class VerificationTask {
     private final EnumSet<Property> property;
     private final Configuration config;
 
-    protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                               EnumSet<Property> property, Configuration config)
+    protected Task(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
+                   EnumSet<Property> property, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
@@ -41,8 +41,8 @@ public class VerificationTask {
         program.injectConfig(config);
     }
 
-    public static VerificationTaskBuilder builder() {
-        return new VerificationTaskBuilder();
+    public static TaskBuilder builder() {
+        return new TaskBuilder();
     }
 
     public Program getProgram() { return program; }
@@ -54,51 +54,51 @@ public class VerificationTask {
 
     // ==================== Builder =====================
 
-    public static class VerificationTaskBuilder {
+    public static class TaskBuilder {
         protected ConfigurationBuilder config = Configuration.builder();
         protected ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
-        protected VerificationTaskBuilder() { }
+        protected TaskBuilder() { }
 
-        public VerificationTaskBuilder withTarget(Arch target) {
+        public TaskBuilder withTarget(Arch target) {
             checkNotNull(target, "Target may not be null.");
             this.config.setOption(TARGET, target.toString());
             return this;
         }
 
-        public VerificationTaskBuilder withBound(int k) {
+        public TaskBuilder withBound(int k) {
             checkArgument(k > 0 , "Unrolling bound must be positive.");
             this.config.setOption(BOUND, Integer.toString(k));
             return this;
         }
 
-        public VerificationTaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
+        public TaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
             this.progressModel = progressModel;
             return this;
         }
 
-        public VerificationTaskBuilder withSolverTimeout(int t) {
+        public TaskBuilder withSolverTimeout(int t) {
             this.config.setOption(TIMEOUT, Integer.toString(t));
             return this;
         }
 
-        public VerificationTaskBuilder withSolver(SolverContextFactory.Solvers solver) {
+        public TaskBuilder withSolver(SolverContextFactory.Solvers solver) {
             this.config.setOption(SOLVER, solver.toString());
             return this;
         }
 
-        public VerificationTaskBuilder withConfig(Configuration config) {
+        public TaskBuilder withConfig(Configuration config) {
             this.config.copyFrom(config);
             return this;
         }
 
-        public VerificationTaskBuilder withOption(String option, String value) {
+        public TaskBuilder withOption(String option, String value) {
             this.config.setOption(option, value);
             return this;
         }
 
-        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, progressModel, property, config.build());
+        public Task build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new Task(program, memoryModel, progressModel, property, config.build());
         }
     }
 }
