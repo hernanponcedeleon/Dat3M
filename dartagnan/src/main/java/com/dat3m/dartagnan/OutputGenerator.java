@@ -15,10 +15,9 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -121,12 +120,13 @@ public class OutputGenerator {
         }
     }
 
-    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
-        final Task task = solver.getTask();
-        final ResultStatus status = solver.getResult();
+    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
+        final VerificationTask task = solver.getTask();
+        final VerificationResult result = solver.getResult();
+        final ResultStatus status = solver.getResultStatus();
         final Program p = task.getProgram();
-        final EnumSet<Property> props = task.getProperty();
-        final IREvaluator model = solver.hasModel() ? solver.getModel() : null;
+        final EnumSet<Property> props = task.getProperties();
+        final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
         final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
         final long time = solver.getRuntime();
@@ -134,7 +134,7 @@ public class OutputGenerator {
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         try {
-            witnessFile = generateWitnessIfAble(solver, getWitnessFilename(programPath));
+            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programPath));
         } catch (IOException ex) {
             logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
@@ -226,18 +226,18 @@ public class OutputGenerator {
                 "", "", details.toString(), time, witnessFile));
     }
 
-    private Path generateWitnessIfAble(TaskSolver solver, String filename) throws IOException {
-        if (!solver.hasModel()
-                || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
+    private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
+        if (!result.hasModel()
+                || (result.getStatus() == UNKNOWN && !generateWitnessForUnknown)
                 || witnessType == WitnessType.NONE) {
             return null;
         }
 
-        final Task task = solver.getTask();
+        final Task task = result.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                final ExecutionModelNext model = solver.getExecutionGraph();
+                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(result.getModel());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
@@ -307,8 +307,8 @@ public class OutputGenerator {
         details.append("\n");
     }
 
-    private static String getFlaggedPairsOutput(Task task, IREvaluator model, SyntacticContextAnalysis synContext) {
-        if (!task.getProperty().contains(CAT_SPEC)) {
+    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model, SyntacticContextAnalysis synContext) {
+        if (!task.getProperties().contains(CAT_SPEC)) {
             return "";
         }
 

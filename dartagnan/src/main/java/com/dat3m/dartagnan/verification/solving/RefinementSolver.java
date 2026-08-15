@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -36,6 +37,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Dimension;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -152,6 +154,8 @@ public class RefinementSolver extends ModelChecker {
 
     private RefinementSolver(Task task) throws InvalidConfigurationException {
         super(task);
+        Preconditions.checkArgument(task instanceof VerificationTask,
+                "Task must be of type VerificationTask");
         task.getConfig().inject(this);
     }
 
@@ -173,7 +177,7 @@ public class RefinementSolver extends ModelChecker {
     @Override
     protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        final Task task = this.task;
+        final VerificationTask task = (VerificationTask) this.task;
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
         final Configuration config = task.getConfig();
@@ -206,7 +210,7 @@ public class RefinementSolver extends ModelChecker {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
         final Refiner refiner = Refiner.newInstance();
-        final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
+        final Property.Type propertyType = Property.getCombinedType(task.getProperties(), task);
 
         logger.info("Starting encoding using {}", ctx.getVersion());
         prover.writeComment("Program encoding");
@@ -225,7 +229,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Checking target property.");
         prover.push();
         prover.writeComment("Property encoding");
-        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperties()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();

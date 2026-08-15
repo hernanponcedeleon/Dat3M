@@ -9,7 +9,8 @@ import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.verification.TaskSolver;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.Task.TaskBuilder;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -94,10 +95,10 @@ public class Dartagnan extends BaseOptions {
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
                     builder.withTarget(p.getArch());
                 }
-                final Task task = builder.build(p, mcm, o.getProperty());
+                final VerificationTask task = builder.build(p, mcm, o.getProperty());
 
                 // ----------- Solve task ----------
-                final TaskSolver taskSolver = TaskSolver.create(task);
+                final VerificationTaskSolver taskSolver = VerificationTaskSolver.create(task);
                 taskSolver.run();
 
                 // ----------- Generate output-----------

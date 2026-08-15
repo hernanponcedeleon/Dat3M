@@ -64,6 +64,10 @@ public class ExecutionModelManager {
         edgeModelCache = new HashMap<>();
     }
 
+    public static ExecutionModelNext fromIREvaluator(IREvaluator evaluator) {
+        return new ExecutionModelManager().buildExecutionModel(evaluator);
+    }
+
     public ExecutionModelNext buildExecutionModel(IREvaluator evaluator) {
         executionModel = new ExecutionModelNext();
 
