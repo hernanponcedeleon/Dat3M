@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
     Represents a verification task.
  */
-public class Task {
+public abstract sealed class Task permits VerificationTask {
 
     // Data objects
     private final Program program;

@@ -120,6 +120,14 @@ public class OutputGenerator {
         }
     }
 
+    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
+        if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
+            return getOutputFromSolver(verificationTaskSolver, programPath);
+        }
+
+        throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
+    }
+
     public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();

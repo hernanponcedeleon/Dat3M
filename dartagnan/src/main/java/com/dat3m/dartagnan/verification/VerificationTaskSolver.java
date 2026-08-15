@@ -24,7 +24,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
 
 @Options
-public class VerificationTaskSolver extends TaskSolverBase<VerificationTaskSolver, VerificationTask, VerificationResult> implements AutoCloseable {
+public final class VerificationTaskSolver extends TaskSolverBase<VerificationTaskSolver, VerificationTask, VerificationResult> implements AutoCloseable {
 
     // ================================== Configurables ==================================
 
