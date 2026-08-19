@@ -339,6 +339,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     .get();
 
             unreachableClass.impliedClasses.addAll(this.getAllTypedEqClasses());
+            unreachableClass.exclusiveClasses.addAll(this.getAllTypedEqClasses());
             this.<BranchClass>getAllTypedEqClasses().forEach(c -> c.exclusiveClasses.add(unreachableClass));
         }
 
