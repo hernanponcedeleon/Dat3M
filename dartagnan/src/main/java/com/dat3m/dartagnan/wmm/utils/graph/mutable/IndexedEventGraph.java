@@ -54,8 +54,8 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     public IndexedDomain<Event> eventDomain(Dimension dimension) {
         return switch (dimension) {
-            case DOMAIN -> domain.domain();
-            case RANGE -> emptyRange.domain();
+            case DOMAIN -> domainEvents();
+            case RANGE -> rangeEvents();
         };
     }
 
@@ -71,7 +71,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public boolean contains(Event e1, Event e2) {
-        final IndexedSet<Event> set = outSetAt(domain.domain().indexOf(e1));
+        final IndexedSet<Event> set = outSetAt(domainEvents().indexOf(e1));
         return set != null && set.contains(e2);
     }
 
@@ -163,7 +163,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> range = outSetAt(i);
             if (range != null) {
-                final Event e1 = domain.domain().element(i);
+                final Event e1 = domainEvents().element(i);
                 for (Event e2 : range) {
                     f.accept(e1, e2);
                 }
@@ -200,14 +200,14 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     @Override
     public boolean addAll(EventGraph other) {
         if (other instanceof IndexedEventGraph indexedOther
-                && domain.domain().isCompatibleWith(indexedOther.domain.domain())
-                && emptyRange.domain().isCompatibleWith(indexedOther.emptyRange.domain())) {
+                && domainEvents().isCompatibleWith(indexedOther.domainEvents())
+                && rangeEvents().isCompatibleWith(indexedOther.rangeEvents())) {
             int diff = 0;
             for (int index = 0; index < map.length; index++) {
                 final IndexedSet<Event> otherOutSet = indexedOther.outSetAt(index);
                 if (otherOutSet != null) {
                     final IndexedSet<Event> foundOutSet = outSetAt(index);
-                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : emptyRange.domain().newSet();
+                    final IndexedSet<Event> outSet = foundOutSet != null ? foundOutSet : rangeEvents().newSet();
                     diff -= foundOutSet == null ? 0 : outSet.size();
                     outSet.addAll(otherOutSet);
                     diff += outSet.size();
