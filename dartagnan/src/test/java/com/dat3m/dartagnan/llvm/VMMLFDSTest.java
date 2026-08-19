@@ -25,11 +25,6 @@ public class VMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected boolean isEagerMethodEnabled() {
-        return false;
-    }
-
-    @Override
     protected String getProgramPathPrefix() {
         return "lfds/";
     }
@@ -58,6 +53,9 @@ public class VMMLFDSTest extends AbstractCTest {
     protected Provider<Solvers> getSolverProvider() {
         return () -> Solvers.YICES2;
     }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

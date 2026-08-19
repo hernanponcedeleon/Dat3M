@@ -24,11 +24,6 @@ public class VMMLocksTest extends AbstractCTest {
     }
 
     @Override
-    protected boolean isEagerMethodEnabled() {
-        return false;
-    }
-
-    @Override
     protected String getProgramPathPrefix() {
         return "locks/";
     }
@@ -52,6 +47,9 @@ public class VMMLocksTest extends AbstractCTest {
     protected Provider<Wmm> getWmmProvider() {
         return Providers.createWmmFromName(() -> "vmm");
     }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

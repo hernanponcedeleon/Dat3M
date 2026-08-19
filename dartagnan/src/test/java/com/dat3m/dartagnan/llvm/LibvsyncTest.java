@@ -25,11 +25,6 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected boolean isEagerMethodEnabled() {
-        return false;
-    }
-
-    @Override
     protected String getProgramPathPrefix() {
         return "libvsync/";
     }
@@ -60,6 +55,9 @@ public class LibvsyncTest extends AbstractCTest {
     protected Provider<Wmm> getWmmProvider() {
         return Providers.createWmmFromName(() -> "vmm");
     }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {
