@@ -1,67 +1,30 @@
 package com.dat3m.dartagnan.asm.armv7.ck;
 
+import com.dat3m.dartagnan.asm.AbstractAsmTest;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.java_smt.SolverContextFactory;
 
-import java.nio.file.Path;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.EnumSet;
-
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class AsmCkArmv7Test {
-
-    private final Path modelPath = getRootPath("cat/arm.cat");
-    private final Path programPath;
-    private final int bound;
-    private final ResultStatus expected;
+public class AsmCkArmv7Test extends AbstractAsmTest {
 
     public AsmCkArmv7Test(String file, int bound, ResultStatus expected) {
-        this.programPath = getTestResourcePath("asm/armv7/ck/" + file + ".ll");
-        this.bound = bound;
-        this.expected = expected;
+        super(Arch.ARM7, "asm/armv7/ck/" + file, bound, expected);
     }
 
+    @Override
+    protected String getTargetWmmName() { return "arm"; }
+
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {"clhlock", 1, ResultStatus.PASS},
             {"faslock", 3, ResultStatus.PASS},
             {"spsc_queue", 1, ResultStatus.PASS},
             {"ticketlock", 1, ResultStatus.PASS},
         });
-    }
-
-    @Test
-    public void testAllSolvers() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.LAZY));
-    }
-
-
-    private Task mkTask() throws Exception {
-        Task.TaskBuilder builder = Task.builder()
-                .withSolver(SolverContextFactory.Solvers.YICES2)
-                .withBound(bound)
-                .withTarget(Arch.ARM7);
-        Program program = new ProgramParser().parse(programPath);
-        Wmm mcm = new ParserCat().parse(modelPath);
-        return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));
     }
 }
