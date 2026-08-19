@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.*;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -10,7 +11,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
@@ -24,9 +24,8 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
-public abstract class AbstractCTest {
+public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
 
     protected String name;
     protected Arch target;
@@ -39,9 +38,6 @@ public abstract class AbstractCTest {
     }
 
     // =================== Modifiable behavior ====================
-
-    protected boolean isEagerMethodEnabled() { return true; }
-    protected boolean isLazyMethodEnabled() { return true; }
 
     protected abstract long getTimeout();
 
@@ -125,20 +121,8 @@ public abstract class AbstractCTest {
             .around(taskProvider)
             .around(timeout);
 
-
-    @Test
-    public void testAssume() throws Exception {
-        assumeTrue(isEagerMethodEnabled());
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        assumeTrue(isLazyMethodEnabled());
-        testSolver(Method.LAZY);
-    }
-
-    private void testSolver(Method method) throws Exception {
+    @Override
+    protected void testSolver(Method method) throws Exception {
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
                 .withShutdownManager(shutdownManagerProvider.get())) {
             solver.run();
