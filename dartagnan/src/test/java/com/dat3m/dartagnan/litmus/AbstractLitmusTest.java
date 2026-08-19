@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.AbstractSolverTest;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -14,7 +15,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
@@ -39,7 +39,7 @@ import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
-public abstract class AbstractLitmusTest {
+public abstract class AbstractLitmusTest extends AbstractSolverTest {
 
     private Path path;
     private final ResultStatus expected;
@@ -143,17 +143,12 @@ public abstract class AbstractLitmusTest {
             .around(expectedResultProvider)
             .around(timeout);
 
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        return false;
     }
 
-    //@Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
-    }
-
+    @Override
     protected void testSolver(Method method) throws Exception {
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
                 .withShutdownManager(shutdownManagerProvider.get())) {

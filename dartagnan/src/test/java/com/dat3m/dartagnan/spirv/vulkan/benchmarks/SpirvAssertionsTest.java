@@ -1,46 +1,24 @@
 package com.dat3m.dartagnan.spirv.vulkan.benchmarks;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.nio.file.Path;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest {
-
-    private final Path modelPath = getRootPath("cat/vulkan.cat");
-    private final Path programPath;
-    private final int bound;
-    private final ResultStatus expected;
+public class SpirvAssertionsTest extends AbstractSpirvVulkanTest {
 
     public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
-        this.programPath = getTestResourcePath("spirv/vulkan/benchmarks/" + file);
-        this.bound = bound;
-        this.expected = expected;
+        super("spirv/vulkan/benchmarks/" + file, bound, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"caslock-1.1.2.spvasm", 2, PASS},
                 {"caslock-2.1.1.spvasm", 2, PASS},
@@ -81,20 +59,5 @@ public class SpirvAssertionsTest {
                 {"xf-barrier-local-fail4.spvasm", 4, FAIL},
                 {"xf-barrier-local-weakest.spvasm", 4, FAIL},
         });
-    }
-
-    @Test
-    public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
-    }
-
-    private Task mkTask() throws Exception {
-        Task.TaskBuilder builder = Task.builder()
-                .withConfig(TestHelper.getBasicConfig())
-                .withBound(bound)
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(programPath);
-        Wmm mcm = new ParserCat().parse(modelPath);
-        return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
     }
 }
