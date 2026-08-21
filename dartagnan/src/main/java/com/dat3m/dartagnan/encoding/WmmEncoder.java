@@ -336,6 +336,7 @@ public class WmmEncoder {
 
         // ASSUMPTION: The active set of a static relation is a subset of the most precise may-set.
         //             This holds true as long as our RA computes the most precise may-set for static relations.
+        // FIXME: This assumption is violated by CourseRelationAnalysis: we will produce wrong results!
         private void visitStatic(Definition def) {
             final Relation rel = def.getDefinedRelation();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
@@ -590,6 +591,9 @@ public class WmmEncoder {
                     .get(ReachingDefinitionsAnalysis.class);
             final EncodingContext.EdgeEncoder edge = context.edge(dep.getDefinedRelation());
             getActiveSet(dep).apply((writer, reader) -> {
+                // FIXME: We cannot simply set edges between NO_CARRY_DEPS-annotated events
+                //  to false, because we use the idd-edges also to encode the data flow, not just
+                //  the dependencies.
                 if (!(writer instanceof RegWriter wr) || !(reader instanceof RegReader rr)) {
                     enc.add(bmgr.not(edge.encode(writer, reader)));
                 } else {

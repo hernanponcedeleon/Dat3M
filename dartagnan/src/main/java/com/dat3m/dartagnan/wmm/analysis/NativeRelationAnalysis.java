@@ -569,8 +569,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final IndexedEventGraph must = newGraphForDefinition(ctrlDep);
             for (Thread thread : program.getThreads()) {
                 for (CondJump jump : thread.getEvents(CondJump.class)) {
-                    if (jump.isGoto() || jump.isDead()) {
-                        continue; // There is no point in ctrl-edges from unconditional jumps.
+                    if (jump.isGoto() || jump.isDead() || jump.hasTag(NO_CARRY_DEPS)) {
+                        continue;
                     }
 
                     final List<Event> ctrlDependentEvents;
@@ -598,7 +598,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitInternalDataDependency(DirectDataDependency idd) {
-            // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
+            // FIXME: Our "internal data dependency" relation is quite odd and contains all but address dependencies.
             return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
 
@@ -964,6 +964,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
                     }
+                    // FIXME: We cannot simply skip NO_CARRY_DEPS annotated events
+                    //  because we use the idd-edges also to encode the data flow, not just
+                    //  the dependencies.
                     final var reachDef = state.ofRegister(regRead.register());
                     for (Event regWriter : reachDef.getMayWriters()) {
                         may.add(regWriter, regReader);

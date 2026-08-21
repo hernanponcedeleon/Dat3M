@@ -70,10 +70,12 @@ class VisitorArm8 extends VisitorBase {
         final Store store = newRMWStoreWithMo(load, address, cas.getStoreValue(), storeMo);
         final Expression cmp = expressions.makeEQ(dummy, cas.getExpectedValue());
         final Label casEnd = newLabel("CAS_end");
+        final CondJump checkCond = newJumpUnless(cmp, casEnd);
+        checkCond.addTags(Tag.NO_CARRY_DEPS); // CAS does not carry ctrl-deps!
 
         return eventSequence(
                 load,
-                newJumpUnless(cmp, casEnd),
+                checkCond,
                 store,
                 casEnd,
                 newLocal(resultRegister, dummy)
