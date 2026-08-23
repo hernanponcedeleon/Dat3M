@@ -152,14 +152,12 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
-    private RefinementSolver(Task task) throws InvalidConfigurationException {
+    private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task instanceof VerificationTask,
-                "Task must be of type VerificationTask");
         task.getConfig().inject(this);
     }
 
-    public static RefinementSolver create(Task task) throws InvalidConfigurationException  {
+    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
         return new RefinementSolver(task);
     }
 

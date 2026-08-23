@@ -50,22 +50,22 @@ public class Providers {
     // =========================== Task related providers ==============================
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
-                                            Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Configuration> config) {
-        return Provider.fromSupplier(() -> Task.builder().
-                withConfig(config.get()).
-                withProgressModel(progressModelSupplier.get()).
-                build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get())
+                                                        Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Configuration> config) {
+        return Provider.fromSupplier(() -> Task.builder()
+                .withConfig(config.get())
+                .withProgressModel(progressModelSupplier.get())
+                .build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get())
         );
     }
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
                                                         Supplier<Arch> targetSupplier, Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
-        return Provider.fromSupplier(() -> Task.builder().
-                withConfig(config.get()).
-                withTarget(targetSupplier.get()).
-                withBound(boundSupplier.get()).
-                withProgressModel(progressModelSupplier.get()).
-                build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
+        return Provider.fromSupplier(() -> Task.builder()
+                .withConfig(config.get())
+                .withTarget(targetSupplier.get())
+                .withBound(boundSupplier.get())
+                .withProgressModel(progressModelSupplier.get())
+                .build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
     }
 
 }
