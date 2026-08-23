@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.others.wmm.utils.graph.mutable;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.IndexedEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.junit.Test;
@@ -9,7 +11,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -746,6 +750,26 @@ public class MutableEventGraphTest {
 
         // then
         assertTrue(eventGraph.isEmpty());
+    }
+
+    @Test
+    public void indexedEventGraphIntoSmallerRange() {
+        // given
+        final List<Event> events = new ArrayList<>();
+        for (int i = 0; i < 129; i++) {
+            events.add(new Skip());
+        }
+        final IndexedDomain<Event> larger = new IndexedDomain<>(events);
+        final IndexedDomain<Event> smaller = new IndexedDomain<>(events.subList(0, 65));
+        final IndexedEventGraph eventGraph = new IndexedEventGraph(larger, smaller);
+
+        // when
+        eventGraph.add(events.get(65), events.get(0));
+
+        // then
+        assertTrue(eventGraph.contains(events.get(65), events.get(0)));
+        assertEquals(eventGraph.getRange(events.get(65)), Set.of(events.get(0)));
+        assertEquals(eventGraph.getRange(), Set.of(events.get(0)));
     }
 
     private MutableEventGraph makeEventGraph(Class<?> cls, Map<Event, Set<Event>> data) {
