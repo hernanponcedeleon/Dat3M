@@ -27,13 +27,11 @@ public class AssumeSolver extends ModelChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
-    private AssumeSolver(Task task) throws InvalidConfigurationException {
+    private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
-        Preconditions.checkArgument(task instanceof VerificationTask,
-                "Task must be of type VerificationTask");
     }
 
-    public static AssumeSolver create(Task task) throws InvalidConfigurationException {
+    public static AssumeSolver create(VerificationTask task) throws InvalidConfigurationException {
         return new AssumeSolver(task);
     }
 

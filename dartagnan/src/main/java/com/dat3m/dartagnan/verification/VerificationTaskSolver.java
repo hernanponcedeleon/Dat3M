@@ -1,27 +1,16 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.common.configuration.TimeSpanOption;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.concurrent.TimeUnit;
-
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
-import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
 
 @Options
 public final class VerificationTaskSolver extends TaskSolverBase<VerificationTaskSolver, VerificationTask, VerificationResult> implements AutoCloseable {
