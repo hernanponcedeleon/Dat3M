@@ -1,0 +1,56 @@
+lexer grammar LitmusAsmLexer;
+
+Lbrace: '{' ->mode(DECLARATIONS);
+Preamble: ~'{'+ ->skip;
+
+mode DECLARATIONS;
+Rbrace: '}' ';'? ->mode(THREADS);
+Colon: ':';
+Minus: '-';
+Lbracket: '[';
+Rbracket: ']';
+Amp: '&';
+Equals: '=';
+Lpar: '(';
+Rpar: ')';
+Semi: ';';
+Bar: '|';
+Locations: 'locations';
+Filter: 'filter';
+Exists: 'exists';
+Notexists: 'not exists' | '~' ' '* 'exists';
+Forall: 'forall';
+Final: 'final';
+With: 'with';
+Not: 'not' | '~';
+And: '/\\';
+Or: '\\/';
+Lower: '<';
+Greater: '>';
+Excl: '!';
+Identifier: [a-zA-Z_] [a-zA-Z_0-9]*;
+Digits: [0-9]+;
+Hexdigits: '0x' [0-9a-fA-F]+;
+Whitespace: [ \t\n\r]+ ->skip;
+Comment: '(*' .*? '*)' ->skip;
+ExecConfig: '<<' .*? '>>' -> skip;
+
+mode THREADS;
+ThreadDelim: Bar;
+ThreadEnd: Semi ->mode(INSTRUCTIONS);
+Thread: [a-zA-Z_0-9]+;
+ThreadSpace: [\t\n\r ]+ ->skip;
+ThreadsComment: Comment ->skip;
+
+mode INSTRUCTIONS;
+InstructionRowDelim: Bar;
+InstructionRowEnd: Semi;
+InstructionLocations: Whitespace Locations ->type(Locations),mode(DECLARATIONS);
+InstructionFilter: Whitespace Filter ->type(Filter),mode(DECLARATIONS);
+InstructionExists: Whitespace Exists ->type(Exists),mode(DECLARATIONS);
+InstructionForall: Whitespace Forall ->type(Forall),mode(DECLARATIONS);
+InstructionNotexists: Whitespace Notexists ->type(Notexists),mode(DECLARATIONS);
+InstructionFinal: Whitespace Final ->type(Final),mode(DECLARATIONS);
+InstructionComment: Comment ->skip;
+InstructionWhitespace: Whitespace ->skip;
+Instruction: ~[|;\t\n\r ]+ ([ \t]+ (~[(|;\t\n\r ] | '(' ~[*])+)*;

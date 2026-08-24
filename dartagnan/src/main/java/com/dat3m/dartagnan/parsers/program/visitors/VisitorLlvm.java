@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
 import com.dat3m.dartagnan.parsers.program.*;
+import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Function;
@@ -37,6 +38,7 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -379,44 +381,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewRegister(currentRegisterName, returnType);
 
         if (ctx.inlineAsm() != null) {
-            final String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
-            // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
-            //FIXME ignore side effects of inline assembly
-            final List<ParserAsm> parsers = List.of(
-                    new ParserAsmArm(function, resultRegister, arguments),
-                    new ParserAsmRISCV(function, resultRegister, arguments),
-                    new ParserAsmPPC(function, resultRegister, arguments),
-                    new ParserAsmX86(function, resultRegister, arguments)
-            );
-            Optional<List<Event>> events = Optional.empty();
-            boolean unsupportedEncountered = false;
-            for(ParserAsm parser : parsers){
-                // we have to generate the stream each time as the parser consumes it
-                CharStream charStream = CharStreams.fromString(asmCode);
-                try {
-                    events = tryParse(parser,charStream);
-                    if(events.isPresent()){
-                        block.events.addAll(events.get());
-                        break;
-                    }
-                } catch (UnsupportedOperationException e) {
-                    logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
-                    if(resultRegister != null){
-                        Event nonDeterministicValue = EventFactory.newNonDetChoice(resultRegister);
-                        events = Optional.of(List.of(nonDeterministicValue));
-                    }
-                    unsupportedEncountered = true;
-                    break;
-                }
-            }
-            if(!unsupportedEncountered && events.isEmpty()){
-                String msg = "Ignoring call.";
-                if(resultRegister != null){
-                    block.events.add(EventFactory.newNonDetChoice(resultRegister));
-                    msg = "Setting non deterministic value.";
-                }
-                logger.warn("None of the parsers succeeded for inline assembly '{}'. {}", getSourceTextForContext(ctx), msg);
-            }
+            parseInlineAsm(resultRegister, arguments, ctx.inlineAsm());
             return resultRegister;
         }
 
@@ -437,6 +402,186 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return resultRegister;
     }
 
+    private void parseInlineAsm(Register resultRegister, List<Expression> arguments, InlineAsmContext ctx) {
+        // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
+        // The matching depends on what is specified in the constraints.
+        // On the LLVM side, the inline assembly is called as follows
+        //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
+        // We call "asm registers" the ones appearing inside 'asm code'.
+        // We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
+        // The asm registers must only refer to the llvm registers and the return register. Otherwise, the inline assembly is malformed.
+        // We therefore assume the input to be well formed.
+        // The "clobbers" helps the compiler understand if the inline asm code is going to set conditional flags, perform memory operation and so on.
+        // Examples are ~{memory}, ~{flags}, ...
+        // The constraints tell us how to map asm registers to LLVM ones.
+        // Constraints form a list where each entry can be one of the following:
+        // =r or =&r means we need to map an asm register to the return register. These are called Output constraints
+        // Q, *Q or r means we need to map an LLVM register from 'args' to an asm register. These are called Input constraints
+        // =*m means that the register is a memory location, and is not mapped to any register. These are called Indirect constraints.
+        // a constant X means that a register from 'args' is mapped to the Xth asm register which in turn is mapped to the return register.
+        // Here are some examples to understand what is happening.
+        // We are going to use ARMV7 names for readability "$0, $1, $2, ...", but other inline asm formats follow the same pattern
+        // a) BASE CASE
+        // asm: r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9)
+        // Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r9] ; constraints := [=r, *Q]
+        // Logic:
+        //     1. the first asm register maps to the output, i.e. r10 <- asm_0
+        //     2. the first args register maps to the next asm register, i.e. asm_1 <- r9
+        // b) RETURN REGISTER IS AGGREGATE TYPE
+        // asm: r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9)
+        // Code variables asmRegisters := [asm_0, asm_1, asm_2, asm_3] ; argsRegisters := [r9] ; constraints := [=r, =r, =r, *Q]
+        // Logic:
+        //     1. the first 3 asm registers map to the output, i.e.
+        //         - r10[0] <- asm_0
+        //         - r10[1] <- asm_1
+        //         - r10[2] <- asm_2
+        //      2. the first args register maps to the next asm register, i.e. asm_3 <- r9
+        // c) MULTIPLE ARGS
+        // asm: r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9)
+        // Code variables: asmRegisters := [asm_0, asm_1, asm_2] ; argsRegisters := [r8, r9] ; constraints := [=r, r, *Q]
+        //    1. the first asm register maps to the output, i.e. r10 <- asm_0
+        //    2. the two args registers map to the next two asm registers, i.e.
+        //       - asm_1 <- r8
+        //       - asm_2 <- r9
+        // d) THERE IS NO RETURN REGISTER
+        // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
+        // Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
+        //    1. nothing to be done regarding output, i.e. there is no return register
+        //    2. the two args registers map to the next two asm registers, i.e.
+        //       - asm_0 <- r5
+        //       - asm_1 <- r7
+        // e) THERE IS A MEMORY LOCATION
+        // asm: r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8)
+        // Code variables: asmRegisters := [asm_0, asm_2, asm_3] ; argsRegisters := [r7, r8] ; constraints := [=&r, =*m, r, r]
+        //    1. r10 <- asm_0
+        //    2. we see that =*m is a reference to a memory location, so it would be asm_1 -> MEM and we do nothing
+        //    3. the two args registers map to the next two asm registers,
+        //       - asm_2 <- r7
+        //       - asm_3 <- r8
+        // f) WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
+        // asm: r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
+        // Code variables: asmRegisters := [asm_0, asm_1, asm_2, asm_3, asm_4] ; argsRegisters := [r10, r8] ; constraints := [=&r, =&r, =&r, =&r, *Q, 3]
+        //    1. we have 4 output constraints, so we have an aggregate type for the return register
+        //       - r11[0] <- asm_0
+        //       - r11[1] <- asm_1
+        //       - r11[2] <- asm_2
+        //       - r11[3] <- asm_3
+        //    2. map function parameter to next asm register, i.e. asm_4 <- r10
+        //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
+        // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
+        final ParserAsm parser = ParserAsm.forTarget(program.getArch(), function);
+        final var inputAssignments = new ArrayList<Event>();
+        final var asmRegisters = new ArrayList<Register>();
+        final var constraintCodes = new StringBuilder();
+        final List<Type> outTypes = AsmUtils.getReturnType(resultRegister);
+        final var out = new Expression[outTypes.size()];
+        // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
+        // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed).
+        // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
+        // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
+        final String[] operandConstraints = unescape(ctx.operandConstraints.getText()).split(",");
+        int nonArguments = 0;
+        for (int i = 0; i < operandConstraints.length; i++) {
+            final String constraint = operandConstraints[i].strip();
+            if (constraint.charAt(0) == '~') {
+                // Clobbers
+                continue;
+            }
+            // corresponds to a grammar rule `constraint : '='? [*&]? ([A-Za-z] | [0-9]+);`
+            final boolean eq = constraint.charAt(0) == '=';
+            final boolean ast = constraint.charAt(eq ? 1 : 0) == '*';
+            // Marks early-clobber
+            final boolean amp = constraint.charAt(eq ? 1 : 0) == '&';
+            final String rest = constraint.substring(ast || amp ? eq ? 2 : 1 : eq ? 1 : 0);
+            check(!eq || nonArguments == i, "Mixed-up inline-assembly constraints", ctx);
+            nonArguments += eq ? 1 : 0;
+            final char code = rest.charAt(0);
+            final Register asmRegister = parser.formatLlvmRegister(i, code);
+            constraintCodes.append(code);
+            asmRegisters.add(asmRegister);
+            if (eq) {
+                // Output variables
+                if (!ast) {
+                    out[i] = expressions.makeCast(asmRegister, outTypes.get(i));
+                }
+            } else {
+                // Input variables
+                final Register inputRegister = rest.matches("[0-9]+") ? asmRegisters.get(Integer.parseInt(rest)) : asmRegister;
+                inputAssignments.add(newLocal(inputRegister, expressions.makeCast(arguments.get(i - nonArguments), integerType)));
+            }
+        }
+        // Parse the instruction sequence in the template string.
+        final String asmCode = ctx.template.getText();
+        final StringBuilder asmCodeReplacement = new StringBuilder();
+        for (int i = 1; ;) {
+            final int dollar = asmCode.indexOf('$', i);
+            final int escape = asmCode.indexOf('\\', i);
+            if (escape < 0 && dollar < 0) {
+                asmCodeReplacement.append(asmCode, i, asmCode.length() - 1);
+                break;
+            }
+            if (escape >= 0 && (dollar < 0 || escape < dollar)) {
+                asmCodeReplacement.append(asmCode, i, escape);
+                // either `\\` or `\ff`
+                final boolean slash = asmCode.charAt(escape + 1) == '\\';
+                final char c = slash ? '\\' : (char) Integer.parseInt(asmCode.substring(escape + 1, escape + 3), 16);
+                asmCodeReplacement.append(c);
+                i = escape + (slash ? 2 : 3);
+                continue;
+            }
+            asmCodeReplacement.append(asmCode, i, dollar);
+            if (asmCode.charAt(dollar + 1) == '$') {
+                asmCodeReplacement.append('$');
+                i = dollar + 2;
+                continue;
+            }
+            final int endSimpleForm = IntStream.range(dollar + 1, asmCode.length())
+                    .filter(j -> !Character.isDigit(asmCode.charAt(j)))
+                    .findFirst().orElse(asmCode.length());
+            final boolean isSimpleForm = dollar + 1 < endSimpleForm;
+            check(isSimpleForm || asmCode.charAt(dollar + 1) == '{', "Invalid '$'", ctx);
+            final int colon = isSimpleForm ? -1 : asmCode.indexOf(':', dollar + 2);
+            final int end = isSimpleForm ? -1 : asmCode.indexOf('}', dollar + 2);
+            check(isSimpleForm || end != -1, "Missing '}'", ctx);
+            if (asmCode.startsWith("${:uid}", i)) {
+                asmCodeReplacement.append("__Dat3M_assembler_unique_id");
+            } else if (asmCode.startsWith("${:comment}")) {
+                asmCodeReplacement.append(parser.formatComment());
+            } else if (asmCode.startsWith("${:private}")) {
+                asmCodeReplacement.append(parser.formatPrivateLabelPrefix());
+            } else {
+                final boolean hasColon = colon != -1 && colon < end;
+                final int endIndex = isSimpleForm ? endSimpleForm : hasColon ? colon : end;
+                final int index = Integer.parseInt(asmCode.substring(dollar + (isSimpleForm ? 1 : 2), endIndex));
+                final String modifier = isSimpleForm ? "" : asmCode.substring(hasColon ? colon + 1 : dollar + 2, end);
+                final char constraintCode = constraintCodes.charAt(index);
+                asmCodeReplacement.append(parser.formatArgument(index, constraintCode, modifier));
+            }
+            i = isSimpleForm ? endSimpleForm : end + 1;
+        }
+        //FIXME ignore side effects of inline assembly
+        List<Event> events = null;
+        final CharStream charStream = CharStreams.fromString(asmCodeReplacement.toString());
+        try {
+            events = parser.parse(charStream);
+        } catch (UnsupportedOperationException e) {
+            logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
+            if (resultRegister != null) {
+                Event nonDeterministicValue = EventFactory.newNonDetChoice(resultRegister);
+                events = List.of(nonDeterministicValue);
+            }
+        }
+        if (events != null) {
+            block.events.addAll(inputAssignments);
+            block.events.addAll(events);
+            if (resultRegister != null && out.length == 1) {
+                block.events.add(EventFactory.newLocal(resultRegister, out[0]));
+            } else if (resultRegister != null) {
+                final Expression construct = expressions.makeConstruct(resultRegister.getType(), List.of(out));
+                block.events.add(EventFactory.newLocal(resultRegister, construct));
+            }
+        }
+    }
 
     @Override
     public Expression visitRetTerm(RetTermContext ctx) {
@@ -1537,7 +1682,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return unescape(ident.substring(1)).replace(".loop", ".\\loop");
     }
 
-    private static String unescape(String original) {
+    //TODO visible only to ParserLlvm
+    public static String unescape(String original) {
         final boolean quoted = original.startsWith("\"");
         assert quoted == (original.endsWith("\""));
         final String unquoted = quoted ? original.substring(1, original.length() - 1) : original;
@@ -1651,17 +1797,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     return Optional.of((T)field.node());
                 }
             }
-            return Optional.empty();
-        }
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Helper to parse inline asm code
-    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) {
-        try{
-            List<Event> events = parser.parse(asmCode);
-            return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException ignored) {
             return Optional.empty();
         }
     }

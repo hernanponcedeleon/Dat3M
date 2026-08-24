@@ -14,8 +14,8 @@ public class UnrecognizedTokenListener extends BaseErrorListener {
             int line,
             int charPositionInLine,
             String msg,
-            RecognitionException e
-    ) throws ParsingException {
-        throw new ParsingException(((Token) offendingSymbol).getText());
+            RecognitionException e) {
+        final var token = offendingSymbol instanceof Token t ? t : null;
+        throw new ParsingException(token == null ? msg : token.getText());
     }
 }

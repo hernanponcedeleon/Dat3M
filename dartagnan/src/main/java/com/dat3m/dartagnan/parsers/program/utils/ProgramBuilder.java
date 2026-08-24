@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.metadata.SourceLocation;
@@ -87,31 +86,6 @@ public class ProgramBuilder {
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             if (func.hasBody()) {
                 func.getEvents().forEach(e -> e.setMetadata(new Event.OriginalId(e.getGlobalId())));
-            }
-        }
-    }
-
-    public static void replaceZeroRegisters(Program program, List<String> zeroRegNames) {
-        for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            if (!func.hasBody()) {
-                continue;
-            }
-
-            for (String zeroRegName : zeroRegNames) {
-                Register zr = func.getRegister(zeroRegName);
-                if (zr == null) {
-                    continue;
-                }
-
-                for (RegWriter rw : func.getEvents(RegWriter.class)) {
-                    if (rw.getResultRegister().equals(zr)) {
-                        Register dummy = rw.getThread().getOrNewRegister("__zeroRegDummy_" + zr.getName(), zr.getType());
-                        rw.setResultRegister(dummy);
-                    }
-                }
-                // This comes after the loop to avoid the renaming in the initialization event
-                Event initToZero = EventFactory.newLocal(zr, expressions.makeGeneralZero(zr.getType()));
-                func.getEntry().insertAfter(initToZero);
             }
         }
     }

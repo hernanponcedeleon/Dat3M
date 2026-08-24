@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.LLVMIRLexer;
 import com.dat3m.dartagnan.parsers.LLVMIRParser;
@@ -23,6 +24,7 @@ class ParserLlvm implements ParserInterface {
         CompilationUnitContext parserEntryPoint = parser.compilationUnit();
         DataLayout dataLayout = parseDataLayout(parserEntryPoint);
         Program program = new Program(new Memory(dataLayout.bigEndian), Program.SourceLanguage.LLVM);
+        program.setArch(dataLayout.targetArchitecture);
         VisitorLlvm visitor = new VisitorLlvm(program);
 
         visitor.visitCompilationUnit(parserEntryPoint);
@@ -32,21 +34,31 @@ class ParserLlvm implements ParserInterface {
     }
 
     private static final class DataLayout {
+        Arch targetArchitecture;
         boolean bigEndian;
     }
 
     private static DataLayout parseDataLayout(CompilationUnitContext ctx) {
-        var layout = new DataLayout();
+        final var layout = new DataLayout();
         for (TopLevelEntityContext topLevelEntity : ctx.topLevelEntity()) {
-            TargetDefContext targetDef = topLevelEntity.targetDef();
-            TargetDataLayoutContext targetDataLayout = targetDef == null ? null : targetDef.targetDataLayout();
-            if (targetDataLayout == null) {
-                continue;
+            final TargetDefContext targetDef = topLevelEntity.targetDef();
+            final TargetTripleContext targetTriple = targetDef == null ? null : targetDef.targetTriple();
+            final TargetDataLayoutContext targetDataLayout = targetDef == null ? null : targetDef.targetDataLayout();
+            if (targetTriple != null) {
+                final String architecture = VisitorLlvm.unescape(targetTriple.StringLit().getText()).split("-")[0];
+                layout.targetArchitecture = switch (architecture) {
+                    case "arm" -> Arch.ARM7;
+                    case "arm64" -> Arch.ARM8;
+                    case "riscv" -> Arch.RISCV;
+                    case "x86", "x86_64" -> Arch.TSO;
+                    default -> null;
+                };
             }
-            for (String spec : targetDataLayout.StringLit().getText().split("-")) {
-                parseDataLayout(layout, spec);
+            if (targetDataLayout != null) {
+                for (String spec : VisitorLlvm.unescape(targetDataLayout.StringLit().getText()).split("-")) {
+                    parseDataLayout(layout, spec);
+                }
             }
-            break;
         }
         return layout;
     }

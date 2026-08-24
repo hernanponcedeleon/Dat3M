@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -17,6 +18,22 @@ import java.util.List;
 // this class contains common functions which are independent from the asm grammar
 // and are used in every asm visitor
 public class AsmUtils {
+
+    public static List<Type> getReturnType(Register returnRegister) {
+        if (returnRegister == null) {
+            return List.of();
+        }
+        final Type returnType = returnRegister.getType();
+        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
+            return List.of(returnType);
+        } else if (isReturnRegisterAggregate(returnRegister)) {
+            return ((AggregateType) returnType).getFields().stream().map(TypeOffset::type).toList();
+        } else if (returnType instanceof VoidType) {
+            return List.of();
+        } else {
+            throw new ParsingException("Unknown inline asm return type " + returnType);
+        }
+    }
 
     // Returns the size of the return register
     // null / void -> 0

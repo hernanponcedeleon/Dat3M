@@ -753,12 +753,12 @@ public class EventFactory {
         private X86() {
         }
 
-        public static TSOXchg newExchange(MemoryObject address, Register register) {
+        public static TSOXchg newExchange(Expression address, Register register) {
             return new TSOXchg(address, register);
         }
 
         public static Event newMemoryFence(String type) {
-            final String name = switch (type) {
+            final String name = switch (type.toLowerCase()) {
                 case "mfence" -> type;
                 case "lfence", "sfence" -> throw new UnsupportedOperationException("X86 fence '%s'.".formatted(type));
                 default -> throw new IllegalArgumentException("Invalid X86 fence '%s'".formatted(type));
@@ -801,16 +801,10 @@ public class EventFactory {
             return swp;
         }
 
-        public static Event newAmoOr(Register register, Expression address, Expression value, MemoryOrder mo) {
-            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.OR, value);
-            swp.addTags(toTag(mo));
-            return swp;
-        }
-
-        public static Event newAmoAdd(Register register, Expression address, Expression value, MemoryOrder mo) {
-            final Event swp = EventFactory.Common.newRmwFetchOp(register, address, IntBinaryOp.ADD, value);
-            swp.addTags(toTag(mo));
-            return swp;
+        public static Event newAmo(Register register, Expression address, IntBinaryOp op, Expression value, MemoryOrder mo) {
+            final Event amo = EventFactory.Common.newRmwFetchOp(register, address, op, value);
+            amo.addTags(toTag(mo));
+            return amo;
         }
 
         public static Event newFence(String mode) {

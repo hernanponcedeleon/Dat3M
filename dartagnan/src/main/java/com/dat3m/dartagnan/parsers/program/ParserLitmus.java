@@ -25,10 +25,10 @@ class ParserLitmus implements ParserInterface {
 
     private static ParserInterface getParser(String type) {
         return switch (type.toUpperCase()) {
-            case TYPE_AARCH64 -> new ParserLitmusAArch64();
-            case TYPE_PPC -> new ParserLitmusPPC();
-            case TYPE_X86 -> new ParserLitmusX86();
-            case TYPE_RISCV -> new ParserLitmusRISCV();
+            case TYPE_AARCH64 -> new ParserLitmusAsm(ParserAsmArm::new, false);
+            case TYPE_PPC -> new ParserLitmusAsm(ParserAsmPPC::new, false);
+            case TYPE_X86 -> new ParserLitmusAsm(f -> new ParserAsmX86(f, true, true), true);
+            case TYPE_RISCV -> new ParserLitmusAsm(ParserAsmRISCV::new, false);
             case TYPE_PTX -> new ParserLitmusPTX();
             case TYPE_VULKAN -> new ParserLitmusVulkan();
             case TYPE_C, TYPE_OPENCL -> new ParserLitmusC();

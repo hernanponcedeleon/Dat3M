@@ -1,54 +1,25 @@
 grammar AsmPPC;
 
-options {tokenVocab=AsmPPCLexer;}
+lines : LineEnd* line (LineEnd+ line)* EOF;
+line : label? directive?;
+directive : mnemnonic=Name (operand (Comma operand)*)?;
+operand
+    : Register #operandRegister
+    | Immediate #operandImmediate
+    | Immediate LPar Register RPar #operandAddress
+    | Name par? #operandLabel
+    ;
+label : Name par? Colon;
+par : LPar (term (Comma term)*)? RPar;
+term : par | ColonColon? Name par? term?;
 
-asm                                 
-    :
-    (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries) Quot) EOF?
-;
-
-asmInstrEntries : EndInstruction?(instr(EndInstruction | Semi)*);
-asmMetadataEntries : (constraint Comma)* clobbers;
-
-
-instr 
-    : load 
-    | loadReserve
-    | store
-    | storeConditional
-    | compare
-    | branchNotEqual
-    | nop
-    | add
-    | addImmediateCarry
-    | subtractFrom
-    | labelDefinition
-    | ppcFence
-;
-
-load : Load register Comma register;
-loadReserve : LoadReserve register Comma value Comma register;
-compare : Compare value Comma register Comma register;
-branchNotEqual : BranchNotEqual Numbers Literal;
-store : Store register Comma register;
-storeConditional : StoreConditional register Comma value Comma register; 
-nop : Or value Comma value Comma value;
-add : Add register Comma register Comma register;
-addImmediateCarry : AddImmediateCarry register Comma register Comma value;
-subtractFrom : SubtractFrom register Comma register Comma register;
-labelDefinition : Numbers Colon;
-ppcFence : PPCFence;
-
-constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
-
-outputOpAssign              : Equals Amp? RLiteral;
-inputOpGeneralReg           : RLiteral | Equals? Ast MLiteral;
-overlapInOutRegister        : Numbers;
-
-clobbers : clobber (Comma clobber)*;
-clobber : Tilde LBrace clobberType RBrace;
-
-clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
-
-register : Dollar Numbers;
-value : Numbers;
+LPar : '(';
+RPar : ')';
+LineEnd : '\n';
+Comma : ',';
+Colon : ':';
+ColonColon : '::';
+Register : 'r' [0-9]+;
+Immediate : '-'? [0-9]+;
+Name : [_.A-Za-z] [_.0-9A-Za-z]*;
+WS : [ \t\r]+->skip;

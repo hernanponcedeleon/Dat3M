@@ -297,9 +297,13 @@ value:
 	| LocalIdent;
 
 inlineAsm:
-	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-			unwind = 'unwind'? inlineAsmBody;
-inlineAsmBody : StringLit ',' StringLit;
+	'asm'
+	sideEffect='sideeffect'?
+	alignStackTok='alignstack'?
+	intelDialect='inteldialect'?
+	unwind='unwind'?
+	template=StringLit
+	',' operandConstraints=StringLit;
 
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
