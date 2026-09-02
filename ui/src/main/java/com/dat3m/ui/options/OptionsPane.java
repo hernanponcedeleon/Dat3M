@@ -16,6 +16,7 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -62,8 +63,10 @@ public class OptionsPane extends JPanel {
 
     private final Selector<Arch> targetPane;
 
-    private final BoundField boundField;
-    private final TimeoutField timeoutField;
+    private final SpinnerNumberModel boundModel;
+    private final SpinnerNumberModel timeoutModel;
+    private final JSpinner boundSpinner;
+    private final JSpinner timeoutSpinner;
 
     private final JTextField cflagsField;
 
@@ -107,8 +110,10 @@ public class OptionsPane extends JPanel {
         progressPane = new Selector<>(ProgressModel.class, ProgressModel.orderedValues(), ControlCode.PROGRESS);
         progressPane.setSelectedItem(ProgressModel.getDefault());
 
-        boundField = new BoundField();
-        timeoutField = new TimeoutField();
+        boundModel = new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1);
+        timeoutModel = new SpinnerNumberModel(60, 1, Integer.MAX_VALUE, 1);
+        boundSpinner = new JSpinner(boundModel);
+        timeoutSpinner = new JSpinner(timeoutModel);
         showViolationField = new JCheckBox();
 
         cflagsField = new JTextField();
@@ -134,8 +139,8 @@ public class OptionsPane extends JPanel {
         // optionsPane needs to listen to options to clean the console
         // Alias and Mode do not change the result, and thus we don't listen to them
         targetPane.addActionListener(this::clearConsole);
-        boundField.addActionListener(this::clearConsole);
-        timeoutField.addActionListener(this::clearConsole);
+        boundSpinner.addChangeListener(this::clearConsole);
+        timeoutSpinner.addChangeListener(this::clearConsole);
         clearButton.addActionListener(this::clearConsole);
         propertyFields.values().forEach(propertyField -> propertyField.addActionListener(this::clearConsole));
         progressPane.addActionListener(this::clearConsole);
@@ -151,8 +156,8 @@ public class OptionsPane extends JPanel {
     }
 
     public UiOptions getOptions() {
-        int bound = Integer.parseInt(boundField.getText());
-        int timeout = Integer.parseInt(timeoutField.getText());
+        int bound = boundModel.getNumber().intValue();
+        int timeout = timeoutModel.getNumber().intValue();
         boolean showViolationGraph = showViolationField.isSelected();
         String cflags = cflagsField.getText().strip();
         Arch target = targetPane.getSelectedItem();
@@ -169,15 +174,13 @@ public class OptionsPane extends JPanel {
         scrollConsole.setMaximumSize(new Dimension(OPTWIDTH, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JSplitPane boundsPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        JPanel boundPane = new BoundPane();
-        boundPane.add(boundField);
-        JPanel timeoutPane = new TimeoutPane();
-        timeoutPane.add(timeoutField);
-        boundsPane.setLeftComponent(boundPane);
-        boundsPane.setRightComponent(timeoutPane);
-        boundsPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
-        boundsPane.setDividerSize(0);
+        JPanel boundPane = new JPanel(new FlowLayout(LEFT));
+        boundPane.add(new JLabel("Unrolling: "));
+        boundPane.add(boundSpinner);
+
+        JPanel timeoutPane = new JPanel(new FlowLayout(LEFT));
+        timeoutPane.add(new JLabel("Solver timeout: "));
+        timeoutPane.add(timeoutSpinner);
 
         JPanel cflagsPane = new JPanel(new FlowLayout(LEFT));
         cflagsPane.add(new JLabel("CFLAGS: "));
@@ -196,8 +199,8 @@ public class OptionsPane extends JPanel {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertiesPane, progressPane, boundsPane, showViolationPane, configPane,
-                cflagsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, methodPane, solverPane, propertiesPane, progressPane, boundPane, timeoutPane,
+                showViolationPane, configPane, cflagsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);
@@ -218,9 +221,17 @@ public class OptionsPane extends JPanel {
         setBorder(titledBorder);
     }
 
-    public void clearConsole(ActionEvent ignoreEvent) {
-        // Any change in the (relevant) options clears the console
-        getConsolePane().setText("");
+    public void clearConsole(ActionEvent ignored) {
+        clearConsole();
+    }
+
+    private void clearConsole(ChangeEvent ignored) {
+        clearConsole();
+    }
+
+    private void clearConsole() {
+        // Any change in the relevant options clears the console.
+        consolePane.setText("");
     }
 
     private void handleExtraOptionsButton(ActionEvent e) {
@@ -250,8 +261,8 @@ public class OptionsPane extends JPanel {
                             .collect(Collectors.joining(",")))
                     .setOption(TARGET, targetPane.getSelectedItem().name())
                     .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
-                    .setOption(BOUND, boundField.getText())
-                    .setOption(TIMEOUT, timeoutField.getText())
+                    .setOption(BOUND, boundSpinner.getValue().toString())
+                    .setOption(TIMEOUT, timeoutSpinner.getValue().toString())
                     .build();
             //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
             //But comments missing a whitespace after '#' are treated as directives.
@@ -364,17 +375,21 @@ public class OptionsPane extends JPanel {
     }
 
     private void setBound(String value) {
-        if (value == null) {
-            return;
-        }
-        boundField.setText(value);
+        setSpinnerValue(boundSpinner, value);
     }
 
     private void setTimeout(String value) {
+        setSpinnerValue(timeoutSpinner, value);
+    }
+
+    private static void setSpinnerValue(JSpinner spinner, String value) {
         if (value == null) {
             return;
         }
-        timeoutField.setText(value);
+        try {
+            spinner.setValue(Integer.parseInt(value));
+        } catch (IllegalArgumentException ignore) {
+        }
     }
 
     private JDialog newDialog() {
