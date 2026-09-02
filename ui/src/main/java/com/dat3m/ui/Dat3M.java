@@ -23,6 +23,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.initEnvironmentInfo;
@@ -35,6 +38,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
     private final OptionsPane optionsPane = new OptionsPane();
     private final EditorsPane editorsPane = new EditorsPane();
+    private final ProgramParser programParser;
 
     private ReachabilityResult testResult;
     private SwingWorker<VerificationOutcome, Void> verificationWorker;
@@ -43,8 +47,9 @@ public class Dat3M extends JFrame implements ActionListener {
     private final Timer verificationTimer;
     private long verificationStartTime;
 
-    private Dat3M() {
+    private Dat3M() throws IOException {
         initEnvironmentInfo();
+        programParser = new ProgramParser();
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
@@ -88,8 +93,12 @@ public class Dat3M extends JFrame implements ActionListener {
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
-            Dat3M app = new Dat3M();
-            app.setVisible(true);
+            try {
+                Dat3M app = new Dat3M();
+                app.setVisible(true);
+            } catch (IOException e) {
+                showError(e.getMessage(), "Failed to load compilation pipeline");
+            }
         });
     }
 
@@ -148,7 +157,6 @@ public class Dat3M extends JFrame implements ActionListener {
         final String format = programEditor.getLoadedFormat().isEmpty()
                 ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
                 : programEditor.getLoadedFormat();
-        final String cflags = getCflags(options, format, programEditor);
         final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
 
         testResult = null;
@@ -169,7 +177,7 @@ public class Dat3M extends JFrame implements ActionListener {
                 logEnvironmentInfo();
                 final Program program;
                 try {
-                    program = new ProgramParser().parse(sourceCode, format, cflags);
+                    program = parseSource(sourceCode, format);
                     program.setName("dat3mUI");
                 } catch (Exception e) {
                     return VerificationOutcome.programError(e);
@@ -249,15 +257,14 @@ public class Dat3M extends JFrame implements ActionListener {
         }
     }
 
-    private static String getCflags(UiOptions options, String format, Editor programEditor) {
-        String cflags = options.cflags().isEmpty()
-                ? System.getenv().getOrDefault("CFLAGS", "")
-                : options.cflags();
-        if (format.equals(ProgramParser.EXTENSION_C) && !programEditor.getLoadedDir().isEmpty()) {
-            // Include directory of loaded C file
-            cflags += " -I" + programEditor.getLoadedDir();
+    private Program parseSource(String sourceCode, String format) throws Exception {
+        final Path sourceFile = Files.createTempFile("dat3m-ui-", format);
+        try {
+            Files.writeString(sourceFile, sourceCode);
+            return programParser.parse(sourceFile);
+        } finally {
+            Files.deleteIfExists(sourceFile);
         }
-        return cflags;
     }
 
     private record VerificationOutcome(ReachabilityResult result, String errorTitle, String errorMessage) {

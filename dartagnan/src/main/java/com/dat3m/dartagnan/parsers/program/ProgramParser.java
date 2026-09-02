@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 import static com.dat3m.dartagnan.GlobalSettings.getCompilationPipelinePath;
 
 public class ProgramParser {
@@ -72,20 +71,6 @@ public class ProgramParser {
         return program;
     }
 
-    public Program parse(String rawSourceCode, String extension, String cflags) throws Exception {
-        final CharStream sourceCode;
-        if (needsClang(extension)) {
-            sourceCode = CharStreams.fromPath(compileWithClang(rawSourceCode, cflags));
-            extension = EXTENSION_LL;
-        } else {
-            sourceCode = CharStreams.fromString(rawSourceCode, "<input>" + extension);
-        }
-
-        final Program program = parse(sourceCode, extension);
-        program.setName("<input>" + extension);
-        return program;
-    }
-
     private Program parse(CharStream sourceCode, String extension) {
         try {
             final ParserInterface parser = getParser(sourceCode, extension);
@@ -129,10 +114,6 @@ public class ProgramParser {
 
     private static String getFileExtension(Path path) {
         return "." + Utils.getFileExtension(path);
-    }
-
-    private static boolean needsClang(String ext) {
-        return ext.equals(EXTENSION_C) || ext.equals(EXTENSION_I);
     }
 
     private static String getFirstWord(String string) {
