@@ -38,8 +38,11 @@ public class Dat3M extends JFrame implements ActionListener {
     private SwingWorker<VerificationOutcome, Void> verificationWorker;
     private volatile ShutdownManager shutdownManager;
     private boolean cancellationRequested;
+    private final Timer verificationTimer;
+    private long verificationStartTime;
 
     private Dat3M() {
+        verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
         setTitle("Dat3M");
@@ -146,8 +149,11 @@ public class Dat3M extends JFrame implements ActionListener {
         shutdownManager = manager;
 
         optionsPane.getTestButton().setEnabled(false);
+        optionsPane.getClearButton().setEnabled(false);
         optionsPane.getCancelButton().setEnabled(true);
-        optionsPane.getConsolePane().setText("Running...");
+        verificationStartTime = System.nanoTime();
+        verificationTimer.start();
+        updateVerificationTime();
         verificationWorker = new SwingWorker<>() {
             @Override
             protected VerificationOutcome doInBackground() {
@@ -171,7 +177,9 @@ public class Dat3M extends JFrame implements ActionListener {
 
             @Override
             protected void done() {
+                verificationTimer.stop();
                 optionsPane.getTestButton().setEnabled(true);
+                optionsPane.getClearButton().setEnabled(true);
                 optionsPane.getCancelButton().setEnabled(false);
                 shutdownManager = null;
                 try {
@@ -202,6 +210,20 @@ public class Dat3M extends JFrame implements ActionListener {
             }
         };
         verificationWorker.execute();
+    }
+
+    private void updateVerificationTime() {
+        if (cancellationRequested) {
+            return;
+        }
+        final long elapsedSeconds = (System.nanoTime() - verificationStartTime) / 1_000_000_000;
+        final long hours = elapsedSeconds / 3600;
+        final long minutes = (elapsedSeconds % 3600) / 60;
+        final long seconds = elapsedSeconds % 60;
+        final String elapsedTime = hours > 0
+                ? "%d:%02d:%02d".formatted(hours, minutes, seconds)
+                : "%d:%02d".formatted(minutes, seconds);
+        optionsPane.getConsolePane().setText("Running... " + elapsedTime);
     }
 
     private void cancelVerification() {

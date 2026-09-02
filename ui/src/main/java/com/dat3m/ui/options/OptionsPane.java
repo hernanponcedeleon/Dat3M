@@ -154,6 +154,10 @@ public class OptionsPane extends JPanel {
         return cancelButton;
     }
 
+    public JButton getClearButton() {
+        return clearButton;
+    }
+
     public JTextPane getConsolePane() {
         return consolePane;
     }
@@ -199,7 +203,7 @@ public class OptionsPane extends JPanel {
 
         final List<JComponent> optionRows = List.of(
                 iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
-                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, cancelButton, clearButton
+                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, clearButton, cancelButton
         );
         final GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
