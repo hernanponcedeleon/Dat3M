@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.ui.button.ClearButton;
+import com.dat3m.ui.button.CancelButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
@@ -74,6 +75,7 @@ public class OptionsPane extends JPanel {
 
     private final JButton extraOptionsButton;
     private final JButton testButton;
+    private final JButton cancelButton;
     private final JButton clearButton;
 
     private final JCheckBox showViolationField;
@@ -122,6 +124,7 @@ public class OptionsPane extends JPanel {
         configurationFileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.properties", "properties"));
 
         testButton = new TestButton();
+        cancelButton = new CancelButton();
         clearButton = new ClearButton();
 
         consolePane = new JTextPane();
@@ -145,6 +148,10 @@ public class OptionsPane extends JPanel {
 
     public JButton getTestButton() {
         return testButton;
+    }
+
+    public JButton getCancelButton() {
+        return cancelButton;
     }
 
     public JTextPane getConsolePane() {
@@ -192,7 +199,7 @@ public class OptionsPane extends JPanel {
 
         final List<JComponent> optionRows = List.of(
                 iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
-                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, clearButton
+                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, cancelButton, clearButton
         );
         final GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
