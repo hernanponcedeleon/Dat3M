@@ -30,10 +30,6 @@ public class ReachabilityResult {
     private Path witnessFile;
 
 
-    public ReachabilityResult(Program program, Wmm wmm, UiOptions options) {
-        this(program, wmm, options, null);
-    }
-
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options, ShutdownManager shutdownManager) {
         this.program = program;
         this.wmm = wmm;
