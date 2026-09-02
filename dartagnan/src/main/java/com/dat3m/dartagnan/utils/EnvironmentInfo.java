@@ -10,8 +10,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
 
-public class EnvironmentInfo  {
+public class EnvironmentInfo {
 
     public enum OperatingSystem {
         LINUX, MACOS, WINDOWS, OTHER
@@ -19,9 +20,9 @@ public class EnvironmentInfo  {
 
     private static final Logger logger = LoggerFactory.getLogger(EnvironmentInfo.class);
 
-    private final static Properties properties = new Properties();
+    private static final Properties properties = new Properties();
 
-    public static void initEnvironmentInfo () {
+    public static void initEnvironmentInfo() {
         try (InputStream is = Dartagnan.class.getClassLoader()
                 .getResourceAsStream("git.properties")) {
             if (is != null) {
@@ -33,11 +34,16 @@ public class EnvironmentInfo  {
         }
     }
 
-    public static void logEnvironmentInfo () {
+    public static void logEnvironmentInfo(Set<String> tools) {
         logger.info("Git branch: {}", properties.getProperty("git.branch", "unknown"));
         logger.info("Git commit ID: {}", properties.getProperty("git.commit.id", "unknown"));
         logger.info("OS info: {}", getOSInfo());
-        logger.info("Clang version: {}", getClangInfo());
+        for (String tool : tools) {
+            final String version = getToolVersion(tool);
+            if (!version.equals("unknown")) {
+                logger.info("{} version: {}", tool, version);
+            }
+        }
     }
 
     public static String getGitId() {
@@ -69,18 +75,19 @@ public class EnvironmentInfo  {
                 System.getProperty("os.version"));
     }
 
-    private static String getClangInfo() {
+    private static String getToolVersion(String tool) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("clang", "--version");
+            ProcessBuilder pb = new ProcessBuilder(tool, "--version");
             Process process = pb.start();
+            if (process.waitFor() != 0) {
+                return "unknown";
+            }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream()))) {
                 String firstLine = reader.readLine();
                 return (firstLine != null) ? firstLine : "unknown";
             }
-        } catch (IOException e) {
-            String errorMsg = "Clang not detected or not in PATH";
-            logger.warn("Failed to retrieve clang version: {}", errorMsg, e);
+        } catch (IOException | InterruptedException e) {
             return "unknown";
         }
     }
