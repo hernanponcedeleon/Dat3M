@@ -197,6 +197,27 @@
         ]
       },
       {
+        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines",
+        "allDeclaredConstructors": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true,
+        "allPublicMethods": true
+      },
+      {
+        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline",
+        "allDeclaredConstructors": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true,
+        "allPublicMethods": true
+      },
+      {
+        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline$Command",
+        "allDeclaredConstructors": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true,
+        "allPublicMethods": true
+      },
+      {
         "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsAnnotation",
         "methods": [
           {
