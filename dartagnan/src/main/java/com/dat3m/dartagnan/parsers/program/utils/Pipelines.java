@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,22 +25,62 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 
 public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
-    public static Pipeline getPipeline(Path yamlPath, String extension, String inputPath, String basename) throws IOException {
-        final Pipelines abstractPipelines = parseYaml(yamlPath, inputPath, basename);
-        final String workdir = abstractPipelines.workdir();
-        final Pipeline abstractPipeline = abstractPipelines.pipelines().stream()
+    public Pipelines {
+        Preconditions.checkNotNull(workdir, "Missing workdir in the pipeline configuration file");
+        Preconditions.checkNotNull(pipelines, "Missing pipelines in the pipeline configuration file");
+        pipelines = List.copyOf(pipelines);
+        final Set<String> extensions = new HashSet<>();
+        for (Pipeline pipeline : pipelines) {
+            if (!extensions.add(pipeline.pipeline())) {
+                throw new IllegalArgumentException("Duplicate pipeline for file extension: " + pipeline.pipeline());
+            }
+        }
+    }
+
+    public static Pipelines load(Path yamlPath) throws IOException {
+        try (InputStream inputStream = Files.newInputStream(yamlPath)) {
+            final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .replace("$DAT3M_HOME", getHomeDirectory().toString())
+                    .replace("$DAT3M_OUTPUT", getOutputDirectory().toString());
+            final ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return mapper.convertValue(new Yaml().load(rawData), Pipelines.class);
+        } catch (IllegalArgumentException e) {
+            if (e.getCause() instanceof ValueInstantiationException valueInstantiationException) {
+                throw invalidConfiguration(valueInstantiationException);
+            }
+            throw e;
+        }
+    }
+
+    public boolean needsCompilation(String extension) {
+        return pipelines.stream().anyMatch(pipeline -> extension.equals(pipeline.pipeline()));
+    }
+
+    public Set<String> getTools() {
+        return pipelines.stream()
+                .flatMap(pipeline -> pipeline.commands().stream())
+                .map(Pipeline.Command::tool)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Pipeline getPipeline(String extension, Path inputPath, String basename) {
+        final Pipeline abstractPipeline = pipelines.stream()
                 .filter(p -> extension.equals(p.pipeline()))
                 .findFirst()
                 .orElseThrow(() -> new UnsupportedOperationException("Compilation pipeline not found for file extension: " + extension));
 
         final List<Pipeline.Command> concreteSteps = new ArrayList<>();
         for (Pipeline.Command cmd : abstractPipeline.commands()) {
+            final String commandInput = substitutePipelineTokens(cmd.input(), inputPath, basename);
+            final String commandOutput = substitutePipelineTokens(cmd.output(), inputPath, basename);
             final String concreteInput = cmd.read_from_workdir()
-                    ? Path.of(workdir, cmd.input()).toString()
-                    : inputPath;
-            final String concreteOutput = Path.of(workdir, cmd.output()).toString();
+                    ? Path.of(workdir, commandInput).toString()
+                    : inputPath.toString();
+            final String concreteOutput = Path.of(workdir, commandOutput).toString();
             final List<String> concreteArgs = cmd.args().stream()
-                    .map(arg -> substituteTokens(arg, concreteInput, concreteOutput))
+                    .map(arg -> substitutePipelineTokens(arg, inputPath, basename))
+                    .map(arg -> substituteCommandTokens(arg, concreteInput, concreteOutput))
                     .toList();
 
             concreteSteps.add(new Pipeline.Command(
@@ -54,50 +95,39 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
         return new Pipeline(
                 abstractPipeline.pipeline(),
-                Path.of(workdir, abstractPipeline.input()).toString(),
-                Path.of(workdir, abstractPipeline.output()).toString(),
+                Path.of(workdir, substitutePipelineTokens(abstractPipeline.input(), inputPath, basename)).toString(),
+                Path.of(workdir, substitutePipelineTokens(abstractPipeline.output(), inputPath, basename)).toString(),
                 concreteSteps
         );
     }
 
-    public static Set<String> getTools(Path yamlPath) throws IOException {
-        return parseYaml(yamlPath, "", "").pipelines().stream()
-                .flatMap(pipeline -> pipeline.commands().stream())
-                .map(Pipeline.Command::tool)
-                .collect(Collectors.toSet());
+    private static IOException invalidConfiguration(ValueInstantiationException exception) {
+        final Throwable cause = exception.getCause();
+        final String message = cause != null && cause.getMessage() != null
+                ? cause.getMessage()
+                : exception.getOriginalMessage();
+        return new IOException(message, exception);
     }
 
-    public static boolean needsCompilation(Path yamlPath, String extension) throws IOException {
-        return parseYaml(yamlPath, "", "").pipelines().stream()
-                .map(Pipeline::pipeline)
-                .anyMatch(e -> e.equals(extension));
+    private static String substitutePipelineTokens(String value, Path input, String basename) {
+        return value.replace("{pipeline_input}", input.toString())
+                .replace("{basename}", basename);
     }
 
-    private static Pipelines parseYaml(Path yamlPath, String inputPath, String basename) throws IOException {
-        try (InputStream inputStream = Files.newInputStream(yamlPath)) {
-            final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .replace("$DAT3M_HOME", getHomeDirectory().toString())
-                    .replace("$DAT3M_OUTPUT", getOutputDirectory().toString())
-                    .replace("{pipeline_input}", inputPath)
-                    .replace("{basename}", basename);
-            final ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-            return mapper.convertValue(new Yaml().load(rawData), Pipelines.class);
-        } catch (ValueInstantiationException e) {
-            // Unwrap wrapper to bubble up the clean validation message thrown by the Command constructor
-            // TODO this does not work after introducing Yaml() for anchors
-            Throwable cause = e.getCause();
-            String message = (cause != null && cause.getMessage() != null) ? cause.getMessage() : e.getOriginalMessage();
-            throw new IOException(message, e);
-        }
-    }
-
-    private static String substituteTokens(String arg, String input, String output) {
+    private static String substituteCommandTokens(String arg, String input, String output) {
         return arg.replace("{cmd_input}", input)
                 .replace("{cmd_output}", output);
     }
 
     public record Pipeline(String pipeline, String input, String output, List<Command> commands) {
+
+        public Pipeline {
+            Preconditions.checkNotNull(pipeline, "Missing pipeline extension in the pipeline configuration file");
+            Preconditions.checkNotNull(input, "Missing pipeline input for extension '%s'", pipeline);
+            Preconditions.checkNotNull(output, "Missing pipeline output for extension '%s'", pipeline);
+            Preconditions.checkNotNull(commands, "Missing pipeline commands for extension '%s'", pipeline);
+            commands = List.copyOf(commands);
+        }
 
         private static final Logger logger = LoggerFactory.getLogger(Pipeline.class);
 
@@ -130,6 +160,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 Preconditions.checkNotNull(output, "Entry output for step '%s' is mandatory in the pipeline configuration file", name);
                 Preconditions.checkNotNull(read_from_workdir, "Entry read_from_workdir for step '%s' is mandatory in the pipeline configuration file", name);
                 Preconditions.checkNotNull(args, "Entry args for step '%s' is mandatory in the pipeline configuration file", name);
+                args = List.copyOf(args);
             }
         }
     }
