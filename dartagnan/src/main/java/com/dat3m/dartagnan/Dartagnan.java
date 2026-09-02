@@ -69,8 +69,10 @@ public class Dartagnan extends BaseOptions {
         final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
+        final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
+        final ProgramParser programParser = new ProgramParser(pipelines);
 
-        logEnvironmentInfo(Pipelines.getTools(o.getCompilationPipelinePath()));
+        logEnvironmentInfo(pipelines.getTools());
 
         logger.info("CAT file path: {}", catFile);
 
@@ -80,7 +82,7 @@ public class Dartagnan extends BaseOptions {
             Output output;
             try {
                 // ----------- Generate verification task -----------
-                final Program p = new ProgramParser().parse(progFile, o.getCompilationPipelinePath());
+                final Program p = programParser.parse(progFile);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
