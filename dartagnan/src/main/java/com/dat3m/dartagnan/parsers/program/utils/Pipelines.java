@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
@@ -56,6 +58,13 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 Path.of(workdir, abstractPipeline.output()).toString(),
                 concreteSteps
         );
+    }
+
+    public static Set<String> getTools(Path yamlPath) throws IOException {
+        return parseYaml(yamlPath, "", "").pipelines().stream()
+                .flatMap(pipeline -> pipeline.commands().stream())
+                .map(Pipeline.Command::tool)
+                .collect(Collectors.toSet());
     }
 
     public static boolean needsCompilation(Path yamlPath, String extension) throws IOException {

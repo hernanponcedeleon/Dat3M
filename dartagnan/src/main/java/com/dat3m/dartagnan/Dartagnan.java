@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -62,14 +63,14 @@ public class Dartagnan extends BaseOptions {
             return;
         }
 
-        logEnvironmentInfo();
-
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
         final Path catFile  = getCatFileFromArgs(args);
         final List<Path> progFiles = getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
+
+        logEnvironmentInfo(Pipelines.getTools(o.getCompilationPipelinePath()));
 
         logger.info("CAT file path: {}", catFile);
 
