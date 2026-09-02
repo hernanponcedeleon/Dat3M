@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Locale;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -84,8 +85,14 @@ public class EnvironmentInfo {
             }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream()))) {
-                String firstLine = reader.readLine();
-                return (firstLine != null) ? firstLine : "unknown";
+                List<String> lines = reader.lines()
+                        .map(String::trim)
+                        .filter(line -> !line.isEmpty())
+                        .toList();
+                if (lines.isEmpty()) {
+                    return "unknown";
+                }
+                return String.join(" - ", lines);
             }
         } catch (IOException | InterruptedException e) {
             return "unknown";
