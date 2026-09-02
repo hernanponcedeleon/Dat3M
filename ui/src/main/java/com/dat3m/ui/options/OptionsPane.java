@@ -14,7 +14,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -28,12 +27,10 @@ import java.awt.event.WindowFocusListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +81,7 @@ public class OptionsPane extends JPanel {
     private final JTextPane consolePane;
 
     public OptionsPane() {
-        super(new GridLayout(1, 0));
+        super(new GridBagLayout());
 
         methodPane = new Selector<>(Method.class, Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
@@ -120,7 +117,6 @@ public class OptionsPane extends JPanel {
         cflagsField.setColumns(20);
 
         extraOptionsButton = new JButton("...");
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         extraOptionsButton.setToolTipText("Manage extra options.");
         extraOptionsDialog = newDialog();
         configurationFileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.properties", "properties"));
@@ -171,7 +167,7 @@ public class OptionsPane extends JPanel {
     private void mkGrid() {
 
         JScrollPane scrollConsole = new JScrollPane(consolePane);
-        scrollConsole.setMaximumSize(new Dimension(OPTWIDTH, 120));
+        scrollConsole.setPreferredSize(new Dimension(OPTWIDTH, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         JPanel boundPane = new JPanel(new FlowLayout(LEFT));
@@ -194,26 +190,25 @@ public class OptionsPane extends JPanel {
         showViolationPane.add(new JLabel("Show witness graph"));
         showViolationPane.add(showViolationField);
 
-        // Inner borders
-        Border emptyBorder = BorderFactory.createEmptyBorder();
-
-        JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertiesPane, progressPane, boundPane, timeoutPane,
-                showViolationPane, configPane, cflagsPane, testButton, clearButton, graphPane, scrollConsole };
-        Iterator<JComponent> it = Arrays.asList(panes).iterator();
-        JComponent current = iconPane;
-        current.setBorder(emptyBorder);
-        while (it.hasNext()) {
-            JComponent next = it.next();
-            current = new JSplitPane(JSplitPane.VERTICAL_SPLIT, current, next);
-            ((JSplitPane) current).setDividerSize(2);
-            current.setBorder(emptyBorder);
-            if (!(next instanceof JButton)) {
-                next.setBorder(emptyBorder);
-            }
+        final List<JComponent> optionRows = List.of(
+                iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
+                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, clearButton
+        );
+        final GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.anchor = GridBagConstraints.LINE_START;
+        for (int row = 0; row < optionRows.size(); row++) {
+            constraints.gridy = row;
+            constraints.weighty = 0;
+            add(optionRows.get(row), constraints);
         }
-        add(current);
+
+        constraints.gridy = optionRows.size();
+        constraints.weighty = 1;
+        constraints.fill = GridBagConstraints.BOTH;
+        add(scrollConsole, constraints);
 
         // Outer border
         TitledBorder titledBorder = createTitledBorder("Options");
