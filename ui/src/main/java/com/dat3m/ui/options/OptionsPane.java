@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
@@ -54,7 +56,8 @@ public class OptionsPane extends JPanel {
 
     private final Selector<Method> methodPane;
     private final Selector<Solvers> solverPane;
-    private final Selector<Property> propertyPane;
+    private final JPanel propertiesPane = new JPanel();
+    private final Map<Property, JCheckBox> propertyFields = new EnumMap<>(Property.class);
     private final Selector<ProgressModel> progressPane;
 
     private final Selector<Arch> targetPane;
@@ -64,7 +67,6 @@ public class OptionsPane extends JPanel {
 
     private final JTextField cflagsField;
 
-    private final JTextField extraOptionsField;
     private final JDialog extraOptionsDialog;
     private final Map<String, JComponent> extraOptionsComponents = new HashMap<>();
     private final Map<String, String> extraOptionsMap = new LinkedHashMap<>();
@@ -74,7 +76,7 @@ public class OptionsPane extends JPanel {
     private final JButton testButton;
     private final JButton clearButton;
 
-    private final JRadioButton showViolationField;
+    private final JCheckBox showViolationField;
 
     private final JTextPane consolePane;
 
@@ -87,8 +89,17 @@ public class OptionsPane extends JPanel {
         solverPane = new Selector<>(Solvers.class, solversOrderedValues(), ControlCode.SOLVER);
         solverPane.setSelectedItem(Solvers.Z3);
 
-        propertyPane = new Selector<>(Property.class, Property.orderedValues(), ControlCode.PROPERTY);
-        propertyPane.setSelectedItem(Property.PROGRAM_SPEC);
+        propertiesPane.setLayout(new BoxLayout(propertiesPane, BoxLayout.Y_AXIS));
+        final JLabel propertiesLabel = new JLabel("Properties: ");
+        propertiesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        propertiesPane.add(propertiesLabel);
+        for (Property property : Property.orderedValues()) {
+            final JCheckBox propertyField = new JCheckBox(property.toString());
+            propertyField.setSelected(Property.getDefault().contains(property));
+            propertyField.setAlignmentX(Component.LEFT_ALIGNMENT);
+            propertyFields.put(property, propertyField);
+            propertiesPane.add(propertyField);
+        }
 
         targetPane = new Selector<>(Arch.class, Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
@@ -98,13 +109,11 @@ public class OptionsPane extends JPanel {
 
         boundField = new BoundField();
         timeoutField = new TimeoutField();
-        showViolationField = new JRadioButton();
+        showViolationField = new JCheckBox();
 
         cflagsField = new JTextField();
         cflagsField.setColumns(20);
 
-        extraOptionsField = new JTextField();
-        extraOptionsField.setColumns(20);
         extraOptionsButton = new JButton("...");
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         extraOptionsButton.setToolTipText("Manage extra options.");
@@ -128,19 +137,9 @@ public class OptionsPane extends JPanel {
         boundField.addActionListener(this::clearConsole);
         timeoutField.addActionListener(this::clearConsole);
         clearButton.addActionListener(this::clearConsole);
-        propertyPane.addActionListener(this::clearConsole);
+        propertyFields.values().forEach(propertyField -> propertyField.addActionListener(this::clearConsole));
         progressPane.addActionListener(this::clearConsole);
         extraOptionsButton.addActionListener(this::handleExtraOptionsButton);
-        extraOptionsField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                toText();
-            }
-            @Override
-            public void focusLost(FocusEvent e) {
-                fromText();
-            }
-        });
     }
 
     public JButton getTestButton() {
@@ -159,7 +158,7 @@ public class OptionsPane extends JPanel {
         Arch target = targetPane.getSelectedItem();
         Method method = methodPane.getSelectedItem();
         Solvers solver = solverPane.getSelectedItem();
-        EnumSet<Property> properties = EnumSet.of(propertyPane.getSelectedItem());
+        EnumSet<Property> properties = getSelectedProperties();
         ProgressModel progress = progressPane.getSelectedItem();
         return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, extraOptionsMap, properties, progress);
     }
@@ -186,7 +185,6 @@ public class OptionsPane extends JPanel {
 
         JPanel configPane = new JPanel(new FlowLayout(LEFT));
         configPane.add(new JLabel("Extra options: "));
-        configPane.add(extraOptionsField);
         configPane.add(extraOptionsButton);
 
         JPanel showViolationPane = new JPanel(new FlowLayout(LEFT));
@@ -198,7 +196,7 @@ public class OptionsPane extends JPanel {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, progressPane, boundsPane, showViolationPane, configPane,
+        JComponent[] panes = { targetPane, methodPane, solverPane, propertiesPane, progressPane, boundsPane, showViolationPane, configPane,
                 cflagsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
@@ -225,26 +223,6 @@ public class OptionsPane extends JPanel {
         getConsolePane().setText("");
     }
 
-    private void fromText() {
-        extraOptionsMap.clear();
-        for (String c : extraOptionsField.getText().split(" ")) {
-            int separator = c.indexOf('=');
-            if (separator != -1 && c.startsWith("--")) {
-                extraOptionsMap.put(c.substring(2, separator), c.substring(separator + 1));
-            }
-        }
-    }
-
-    private void toText() {
-        final var text = new StringBuilder();
-        boolean init = false;
-        for (Map.Entry<String, String> entry : extraOptionsMap.entrySet()) {
-            text.append(init ? " --" : "--").append(entry.getKey()).append('=').append(entry.getValue());
-            init = true;
-        }
-        extraOptionsField.setText(text.toString());
-    }
-
     private void handleExtraOptionsButton(ActionEvent e) {
         updateExtraOptionsFields();
         extraOptionsDialog.setVisible(true);
@@ -254,7 +232,6 @@ public class OptionsPane extends JPanel {
 
     private void doExport() {
         if (extraOptionsDialog.isVisible()) {
-            toText();
             extraOptionsDialog.setVisible(false);
         }
         configurationFileChooser.showSaveDialog(this);
@@ -268,7 +245,9 @@ public class OptionsPane extends JPanel {
                     .setOptions(extraOptionsMap)
                     .setOption(METHOD, methodPane.getSelectedItem().name())
                     .setOption(SOLVER, solverPane.getSelectedItem().name())
-                    .setOption(PROPERTY, propertyPane.getSelectedItem().name())
+                    .setOption(PROPERTY, getSelectedProperties().stream()
+                            .map(Property::asStringOption)
+                            .collect(Collectors.joining(",")))
                     .setOption(TARGET, targetPane.getSelectedItem().name())
                     .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
                     .setOption(BOUND, boundField.getText())
@@ -309,14 +288,13 @@ public class OptionsPane extends JPanel {
         }
         setMethod(properties.remove(METHOD));
         setSolver(properties.remove(SOLVER));
-        setProperty(properties.remove(PROPERTY));
+        setProperties(properties.remove(PROPERTY));
         setTargetArch(properties.remove(TARGET));
         setProgressModel(properties.remove(PROGRESSMODEL));
         setBound(properties.remove(BOUND));
         setTimeout(properties.remove(TIMEOUT));
         extraOptionsMap.clear();
         extraOptionsMap.putAll(properties);
-        toText();
     }
 
     private void setMethod(String value) {
@@ -339,13 +317,29 @@ public class OptionsPane extends JPanel {
         }
     }
 
-    private void setProperty(String value) {
+    private EnumSet<Property> getSelectedProperties() {
+        final EnumSet<Property> properties = EnumSet.noneOf(Property.class);
+        for (Map.Entry<Property, JCheckBox> entry : propertyFields.entrySet()) {
+            if (entry.getValue().isSelected()) {
+                properties.add(entry.getKey());
+            }
+        }
+        return properties;
+    }
+
+    private void setProperties(String value) {
         if (value == null) {
             return;
         }
-        try {
-            propertyPane.setSelectedItem(Property.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        final EnumSet<Property> properties = EnumSet.noneOf(Property.class);
+        for (String property : value.split(",")) {
+            try {
+                properties.add(Property.valueOf(property.strip().toUpperCase()));
+            } catch (IllegalArgumentException ignore) {
+            }
+        }
+        for (Map.Entry<Property, JCheckBox> entry : propertyFields.entrySet()) {
+            entry.getValue().setSelected(properties.contains(entry.getKey()));
         }
     }
 
@@ -393,15 +387,6 @@ public class OptionsPane extends JPanel {
         dialogPane.add(optionPanel, BorderLayout.CENTER);
         dialogPane.add(newDialogButtons(), BorderLayout.SOUTH);
         dialog.pack();
-        dialog.addWindowFocusListener(new WindowFocusListener() {
-            @Override
-            public void windowGainedFocus(WindowEvent e) {
-            }
-            @Override
-            public void windowLostFocus(WindowEvent e) {
-                toText();
-            }
-        });
         return dialog;
     }
 
