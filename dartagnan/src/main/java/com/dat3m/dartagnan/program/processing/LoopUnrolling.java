@@ -101,7 +101,7 @@ public class LoopUnrolling implements ProgramProcessor {
             return;
         }
 
-        globalLoopBoundsMap = loadLoopBoundsMapFromFile(program, boundsLoadPath);
+        globalLoopBoundsMap = loadLoopBoundsMapFromFile(program, toPathOrNull(boundsLoadPath));
 
         final int defaultBound = this.bound;
         program.getFunctions().forEach(this::run);
@@ -109,7 +109,7 @@ public class LoopUnrolling implements ProgramProcessor {
         program.markAsUnrolled(defaultBound);
         IdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 
-        dumpLoopBoundsMapToFile(program, globalLoopBoundsMap, boundsSavePath);
+        dumpLoopBoundsMapToFile(program, globalLoopBoundsMap, toPathOrNull(boundsSavePath));
         globalLoopBoundsMap = null; // Save up some memory
 
         logger.info("Program unrolled {} times", defaultBound);
@@ -221,8 +221,8 @@ public class LoopUnrolling implements ProgramProcessor {
     // ------------------------------------------------------------------------
     // Functions related to loading and storing bound maps
 
-    private boolean pathIsSpecified(String path) {
-        return !path.isEmpty();
+    private static Path toPathOrNull(String path) {
+        return path.isEmpty() ? null : Path.of(path);
     }
 
     public static int getPersistentLoopId(CondJump loopBackjump) {
@@ -235,11 +235,11 @@ public class LoopUnrolling implements ProgramProcessor {
         return boundEvent.getMetadata(UnrollingBound.class).value();
     }
 
-    private Map<Function, Map<CondJump, Integer>> loadLoopBoundsMapFromFile(Program program, String filePath) {
-        if (!pathIsSpecified(filePath)) {
+    private Map<Function, Map<CondJump, Integer>> loadLoopBoundsMapFromFile(Program program, Path filePath) {
+        if (filePath == null) {
             return new HashMap<>();
         }
-        if (!Files.exists(Path.of(filePath))) {
+        if (!Files.exists(filePath)) {
             logger.warn("There is no bounds file at path {} . Using default bounds.", filePath);
             return new HashMap<>();
         }
@@ -252,7 +252,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         // Read CSV file to find bounds for loop events
         final Map<Function, Map<CondJump, Integer>> loopBoundsMapPerFunction = new HashMap<>();
-        try (Reader reader = Files.newBufferedReader(Path.of(filePath))) {
+        try (Reader reader = Files.newBufferedReader(filePath)) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
                 final int loopId = Integer.parseInt(record.get(0));
@@ -274,13 +274,13 @@ public class LoopUnrolling implements ProgramProcessor {
         return loopBoundsMapPerFunction;
     }
 
-    private void dumpLoopBoundsMapToFile(Program program, Map<Function, Map<CondJump, Integer>> loopBounds, String filePath) {
-        if (!pathIsSpecified(filePath)) {
+    private void dumpLoopBoundsMapToFile(Program program, Map<Function, Map<CondJump, Integer>> loopBounds, Path filePath) {
+        if (filePath == null) {
             return;
         }
 
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
-        try (CSVPrinter csvPrinter = new CSVPrinter(Files.newBufferedWriter(Path.of(filePath)), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(Files.newBufferedWriter(filePath), CSVFormat.DEFAULT)) {
             for (Map<CondJump, Integer> loopBoundsMap : loopBounds.values()) {
                 for (Map.Entry<CondJump, Integer> entry : loopBoundsMap.entrySet()) {
                     final CondJump loopJump = entry.getKey();
