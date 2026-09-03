@@ -24,7 +24,7 @@ public class ProgramBuilderTest {
                     .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .forEach(f -> {
                                 try {
-                                    new ProgramParser().parse(Path.of(f.toString()));
+                                    new ProgramParser().parse(f);
                                 } catch (ParsingException e) {
                                     // Test succeeded
                                 } catch (Exception e) {
