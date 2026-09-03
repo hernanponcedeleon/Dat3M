@@ -16,6 +16,8 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import java.io.IOException;
 import java.util.Arrays;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -33,7 +35,7 @@ public class C11LFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("lfds/" + name + ".ll");
     }
 

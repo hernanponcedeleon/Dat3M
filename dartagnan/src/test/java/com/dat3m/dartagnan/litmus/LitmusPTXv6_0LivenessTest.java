@@ -9,13 +9,14 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusPTXv6_0LivenessTest extends AbstractLitmusTest {
 
-    public LitmusPTXv6_0LivenessTest(String path, Result expected) {
+    public LitmusPTXv6_0LivenessTest(Path path, Result expected) {
         super(path, expected);
     }
 

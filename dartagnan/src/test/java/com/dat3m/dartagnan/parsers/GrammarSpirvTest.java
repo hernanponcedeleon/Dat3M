@@ -29,7 +29,7 @@ public class GrammarSpirvTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        return listFiles(Paths.get(getTestResourcePath("spirv")));
+        return listFiles(getTestResourcePath("spirv"));
     }
 
     private static List<Object[]> listFiles(Path path) throws IOException {

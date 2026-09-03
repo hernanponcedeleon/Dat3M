@@ -7,13 +7,14 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessFairTest extends AbstractLitmusTest {
 
-    public LitmusVulkanLivenessFairTest(String path, Result expected) {
+    public LitmusVulkanLivenessFairTest(Path path, Result expected) {
         super(path, expected);
     }
 

@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -28,8 +28,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvAssertionsTest {
 
-    private final String modelPath = getRootPath("cat/opencl.cat");
-    private final String programPath;
+    private final Path modelPath = getRootPath("cat/opencl.cat");
+    private final Path programPath;
     private final Result expected;
 
     public SpirvAssertionsTest(String file, Result expected) {
@@ -58,8 +58,8 @@ public class SpirvAssertionsTest {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(TestHelper.getBasicConfig())
                 .withTarget(Arch.OPENCL);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Program program = new ProgramParser().parse(programPath);
+        Wmm mcm = new ParserCat().parse(modelPath);
         return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
     }
 }

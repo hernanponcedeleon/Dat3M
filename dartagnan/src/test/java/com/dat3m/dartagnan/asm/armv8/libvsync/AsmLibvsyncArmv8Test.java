@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -29,8 +29,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class AsmLibvsyncArmv8Test {
 
-    private final String modelPath = getRootPath("cat/aarch64.cat");
-    private final String programPath;
+    private final Path modelPath = getRootPath("cat/aarch64.cat");
+    private final Path programPath;
     private final int bound;
     private final Result expected;
 
@@ -85,8 +85,8 @@ public class AsmLibvsyncArmv8Test {
                 .withSolver(SolverContextFactory.Solvers.YICES2)
                 .withBound(bound)
                 .withTarget(Arch.ARM8);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Program program = new ProgramParser().parse(programPath);
+        Wmm mcm = new ParserCat().parse(modelPath);
         return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));
     }
 }

@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -23,7 +24,7 @@ public class LitmusPTXv6_0Test extends AbstractLitmusTest {
         return () -> Arch.PTX;
     }
 
-    public LitmusPTXv6_0Test(String path, Result expected) {
+    public LitmusPTXv6_0Test(Path path, Result expected) {
         super(path, expected);
     }
 

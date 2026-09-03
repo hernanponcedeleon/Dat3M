@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -28,7 +29,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "linux-kernel");
     }
 
-    public LitmusLinuxTest(String path, Result expected) {
+    public LitmusLinuxTest(Path path, Result expected) {
         super(path, expected);
     }
 }

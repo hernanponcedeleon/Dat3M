@@ -6,14 +6,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
@@ -21,23 +21,23 @@ public class ArrayIllegalTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("arrays/error/")))) {
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/error/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString()})
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
+                    .map(f -> new Object[]{f})
                     .collect(Collectors.toList());
         }
     }
 
-    private final String path;
+    private final Path path;
 
-    public ArrayIllegalTest(String path) {
+    public ArrayIllegalTest(Path path) {
         this.path = path;
     }
 
     @Test(expected = ParsingException.class)
     public void test() throws Exception {
-        new ProgramParser().parse(new File(path));
+        new ProgramParser().parse(path);
     }
 }

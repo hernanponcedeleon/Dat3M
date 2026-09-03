@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -26,14 +25,14 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
     private static final Map<Arch, UncheckedSupplier<Wmm>> ARCH_WMM_MAP = new HashMap<>();
 
     static {
-        ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(Path.of(getRootPath("cat/tso.cat"))));
-        ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(Path.of(getRootPath("cat/aarch64.cat"))));
-        ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(Path.of(getRootPath("cat/power.cat"))));
-        ARCH_WMM_MAP.put(Arch.RISCV, () -> new ParserCat().parse(Path.of(getRootPath("cat/riscv.cat"))));
-        ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(Path.of(getRootPath("cat/linux-kernel.cat"))));
-        ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(Path.of(getRootPath("cat/imm.cat"))));
-        ARCH_WMM_MAP.put(Arch.VULKAN, () -> new ParserCat().parse(Path.of(getRootPath("cat/vulkan.cat"))));
-        ARCH_WMM_MAP.put(Arch.OPENCL, () -> new ParserCat().parse(Path.of(getRootPath("cat/opencl.cat"))));
+        ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(getRootPath("cat/tso.cat")));
+        ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(getRootPath("cat/aarch64.cat")));
+        ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(getRootPath("cat/power.cat")));
+        ARCH_WMM_MAP.put(Arch.RISCV, () -> new ParserCat().parse(getRootPath("cat/riscv.cat")));
+        ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(getRootPath("cat/linux-kernel.cat")));
+        ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(getRootPath("cat/imm.cat")));
+        ARCH_WMM_MAP.put(Arch.VULKAN, () -> new ParserCat().parse(getRootPath("cat/vulkan.cat")));
+        ARCH_WMM_MAP.put(Arch.OPENCL, () -> new ParserCat().parse(getRootPath("cat/opencl.cat")));
     }
 
     private final Supplier<Arch> archSupplier;

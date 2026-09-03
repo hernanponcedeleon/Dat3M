@@ -8,13 +8,14 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessLobeTest extends AbstractLitmusTest {
 
-    public LitmusVulkanLivenessLobeTest(String path, Result expected) {
+    public LitmusVulkanLivenessLobeTest(Path path, Result expected) {
         super(path, expected);
     }
 

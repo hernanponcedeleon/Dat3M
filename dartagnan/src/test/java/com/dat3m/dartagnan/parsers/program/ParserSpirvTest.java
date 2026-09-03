@@ -7,9 +7,9 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.*;
@@ -46,8 +46,8 @@ public class ParserSpirvTest {
     }
 
     private void doTestParsingValidProgram(String file) throws IOException {
-        String path = Paths.get(getTestResourcePath("parsers/program/spirv/valid/" + file)).toString();
-        try (FileInputStream stream = new FileInputStream(path)) {
+        Path path = getTestResourcePath("parsers/program/spirv/valid/" + file);
+        try (var stream = Files.newInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();
             Program program = parser.parse(charStream);
@@ -56,8 +56,8 @@ public class ParserSpirvTest {
     }
 
     private void doTestParsingInvalidProgram(String file, String error) throws IOException {
-        String path = Paths.get(getTestResourcePath("parsers/program/spirv/invalid/" + file)).toString();
-        try (FileInputStream stream = new FileInputStream(path)) {
+        Path path = getTestResourcePath("parsers/program/spirv/invalid/" + file);
+        try (var stream = Files.newInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();
             try {

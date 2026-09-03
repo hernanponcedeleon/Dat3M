@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.nio.file.*;
 import java.util.List;
 
@@ -41,11 +40,6 @@ public class ProgramParser {
 
     public static boolean isSupportedFile(Path filePath) {
         return SUPPORTED_EXTENSIONS.contains(getFileExtension(filePath));
-    }
-
-    // TODO: Change call-sites to use Path instead of File
-    public Program parse(File file) throws Exception {
-        return parse(file.toPath());
     }
 
     public Program parse(Path path) throws Exception {

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.litmus;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -36,7 +37,7 @@ public class LitmusOpenClRacesTest extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "opencl");
     }
 
-    public LitmusOpenClRacesTest(String path, Result expected) {
+    public LitmusOpenClRacesTest(Path path, Result expected) {
         super(path, expected);
     }
 }

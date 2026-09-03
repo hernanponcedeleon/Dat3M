@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -20,7 +21,7 @@ public class LitmusVulkanAssertionsChainsTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Assertions-Chains");
     }
 
-    public LitmusVulkanAssertionsChainsTest(String path, Result expected) {
+    public LitmusVulkanAssertionsChainsTest(Path path, Result expected) {
         super(path, expected);
     }
 

@@ -13,6 +13,8 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -26,7 +28,7 @@ public class IMMTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("imm/" + name + ".ll");
     }
 

@@ -16,7 +16,6 @@ import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -36,13 +35,13 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class RelationAnalysisTest {
 
-    private final String testPath;
-    private final String modelPath;
+    private final Path testPath;
+    private final Path modelPath;
     private final Arch target;
 
     public RelationAnalysisTest(String testPath, String modelPath, Arch target) {
-        this.testPath = testPath;
-        this.modelPath = modelPath;
+        this.testPath = getRootPath(testPath);
+        this.modelPath = getRootPath(modelPath);
         this.target = target;
     }
 
@@ -102,19 +101,19 @@ public class RelationAnalysisTest {
 
     @Test
     public void compareBaseSets() throws Exception {
-        for (String program : listFiles(Path.of(getRootPath(testPath)))) {
+        for (Path program : listFiles(testPath)) {
             doCompareSets(program);
         }
     }
 
-    private List<String> listFiles(Path path) throws IOException {
-        List<String> result = new LinkedList<>();
+    private List<Path> listFiles(Path path) throws IOException {
+        List<Path> result = new LinkedList<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(path)) {
             for (Path file : files) {
                 if (Files.isDirectory(file)) {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
-                    String filePath = file.toAbsolutePath().toString();
+                    Path filePath = file.toAbsolutePath();
                     if (filePath.endsWith(ProgramParser.EXTENSION_LITMUS) || filePath.endsWith(ProgramParser.EXTENSION_LL) || filePath.endsWith(ProgramParser.EXTENSION_SPV_DIS) || filePath.endsWith(ProgramParser.EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
@@ -124,10 +123,10 @@ public class RelationAnalysisTest {
         return result;
     }
 
-    private void doCompareSets(String path) throws Exception {
+    private void doCompareSets(Path path) throws Exception {
         // Base program and consistency model
-        Program program = new ProgramParser().parse(new File(path));
-        Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        Program program = new ProgramParser().parse(path);
+        Wmm wmm = new ParserCat().parse(modelPath);
         Configuration baseConfig = Configuration.builder().build();
         VerificationTask baseTask = createTask(program, wmm, baseConfig);
         preprocessProgram(baseTask, baseTask.getConfig());

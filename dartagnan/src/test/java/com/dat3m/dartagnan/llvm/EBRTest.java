@@ -14,6 +14,8 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import java.io.IOException;
 import java.util.Arrays;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -27,7 +29,7 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("smr/" + name + ".ll");
     }
 

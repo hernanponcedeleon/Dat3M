@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -28,7 +29,7 @@ public class LitmusC11Test extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "c11");
     }
 
-    public LitmusC11Test(String path, Result expected) {
+    public LitmusC11Test(Path path, Result expected) {
         super(path, expected);
     }
 }
