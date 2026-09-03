@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
