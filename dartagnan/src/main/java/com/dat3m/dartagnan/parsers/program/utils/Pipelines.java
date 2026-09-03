@@ -132,23 +132,56 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         private static final Logger logger = LoggerFactory.getLogger(Pipeline.class);
 
         public void execute() throws Exception {
-            for (Command cmd : commands) {
-                runCmd(Stream.concat(Stream.of(cmd.tool()), cmd.args().stream()).toList());
+            final Path outputDirectory = Path.of(output).getParent();
+            if (outputDirectory != null) {
+                // Make sure parent directory exists.
+                Files.createDirectories(outputDirectory);
+            }
+            try {
+                for (Command cmd : commands) {
+                    runCmd(Stream.concat(Stream.of(cmd.tool()), cmd.args().stream()).toList());
+                }
+            } finally {
+                removeIntermediateFiles();
+            }
+        }
+
+        public void removeIntermediateFiles() {
+            final Set<Path> generatedFiles = commands.stream()
+                    .map(Command::output)
+                    .map(Path::of)
+                    .filter(file -> !file.equals(Path.of(output)))
+                    .collect(Collectors.toSet());
+
+            for (Path file : generatedFiles) {
+                try {
+                    Files.deleteIfExists(file);
+                } catch (IOException exception) {
+                    logger.warn("Could not remove generated pipeline file {}", file, exception);
+                }
             }
         }
 
         private void runCmd(List<String> cmd) throws Exception {
             logger.debug(String.join(" ", cmd));
             final Path log = Files.createTempFile("log", null);
-            final ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-            processBuilder.redirectErrorStream(true);
-            processBuilder.redirectOutput(log.toFile());
+            try {
+                final ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+                processBuilder.redirectErrorStream(true);
+                processBuilder.redirectOutput(log.toFile());
 
-            final Process proc = processBuilder.start();
-            if (proc.waitFor() != 0) {
-                final String logString = Files.readString(log, StandardCharsets.UTF_8);
-                final String errorMsg = "'%s': %s".formatted(String.join(" ", cmd), logString);
-                throw new IOException(errorMsg);
+                final Process proc = processBuilder.start();
+                if (proc.waitFor() != 0) {
+                    final String logString = Files.readString(log, StandardCharsets.UTF_8);
+                    final String errorMsg = "'%s': %s".formatted(String.join(" ", cmd), logString);
+                    throw new IOException(errorMsg);
+                }
+            } finally {
+                try {
+                    Files.deleteIfExists(log);
+                } catch (IOException exception) {
+                    logger.warn("Could not remove pipeline log {}", log, exception);
+                }
             }
         }
 

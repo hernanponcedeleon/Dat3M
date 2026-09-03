@@ -85,6 +85,26 @@ public class PipelinesTest {
         assertTrue(exception.getMessage().contains("Duplicate pipeline"));
     }
 
+        @Test
+    public void cleansUpIntermediatesButPreservesOutput() throws IOException {
+        final Path source = Files.createTempFile("source", ".cl");
+        final Path intermediate = Files.createTempFile("intermediate", ".spv");
+        final Path output = Files.createTempFile("output", ".spvasm");
+        final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
+                ".cl", source.toString(), output.toString(), List.of(
+                        new Pipelines.Pipeline.Command("compile", "tool", source.toString(), intermediate.toString(), false, List.of()),
+                        new Pipelines.Pipeline.Command("disassemble", "tool", intermediate.toString(), output.toString(), true, List.of())
+                ));
+
+        pipeline.removeIntermediateFiles();
+
+        assertTrue(Files.exists(source));
+        assertFalse(Files.exists(intermediate));
+        assertTrue(Files.exists(output));
+        Files.deleteIfExists(source);
+        Files.deleteIfExists(output);
+    }
+
     @Test
     public void rejectsMissingRequiredEntries() {
         final List<InvalidConfiguration> configurations = List.of(
