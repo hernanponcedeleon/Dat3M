@@ -37,7 +37,7 @@ public class Providers {
     }
 
     public static Provider<Wmm> createWmmFromName(Supplier<String> nameSupplier) {
-        return createWmmFromPath(() -> Path.of(getRootPath("cat/" + nameSupplier.get() + ".cat")));
+        return createWmmFromPath(() -> getRootPath("cat/" + nameSupplier.get() + ".cat"));
     }
 
     // =========================== Program providers ==============================

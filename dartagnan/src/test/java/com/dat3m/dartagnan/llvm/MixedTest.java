@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.ARM8;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -28,7 +30,7 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("mixed/" + name + ".ll");
     }
 

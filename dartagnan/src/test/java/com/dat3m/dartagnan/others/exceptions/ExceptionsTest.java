@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.processing.NormalizeLoops;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.io.File;
 import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -75,22 +74,22 @@ public class ExceptionsTest {
 
     @Test(expected = ParsingException.class)
     public void IllegalJump() throws Exception {
-        new ProgramParser().parse(new File(getTestResourcePath("exceptions/IllegalJump.litmus")));
+        new ProgramParser().parse(getTestResourcePath("exceptions/IllegalJump.litmus"));
     }
 
     @Test(expected = ParsingException.class)
     public void LocationNotInitialized() throws Exception {
-        new ProgramParser().parse(new File(getTestResourcePath("exceptions/LocationNotInitialized.litmus")));
+        new ProgramParser().parse(getTestResourcePath("exceptions/LocationNotInitialized.litmus"));
     }
 
     @Test(expected = ParsingException.class)
     public void RegisterNotInitialized() throws Exception {
-        new ProgramParser().parse(new File(getTestResourcePath("exceptions/RegisterNotInitialized.litmus")));
+        new ProgramParser().parse(getTestResourcePath("exceptions/RegisterNotInitialized.litmus"));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void UnsupportedLoopNormalization() throws Exception {
-        Program p = new ProgramParser().parse(new File(getTestResourcePath("exceptions/unsupported-loop-normalization.ll")));
+        Program p = new ProgramParser().parse(getTestResourcePath("exceptions/unsupported-loop-normalization.ll"));
         Function main = p.getFunctionByName("main").get();
         NormalizeLoops.newInstance().run(main);
     }

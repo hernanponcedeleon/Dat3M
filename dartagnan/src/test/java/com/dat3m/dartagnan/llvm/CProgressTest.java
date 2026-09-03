@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.ProgressModel.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -32,7 +34,7 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("progress/" + name + ".ll");
     }
 

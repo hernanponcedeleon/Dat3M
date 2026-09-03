@@ -3,49 +3,40 @@ package com.dat3m.dartagnan.utils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 
 public class ResourceHelper {
 
-    public static String toPlatformPath(String path) {
-        String[] parts = path.split("/");
-        if (parts.length == 1) {
-            return path;
-        }
-        return Path.of(parts[0], Arrays.copyOfRange(parts, 1, parts.length)).toString();
+    public static Path getRootPath(String path) {
+        return Path.of("..").resolve(path);
     }
 
-    public static String getRootPath(String path) {
-        return toPlatformPath("../" + path);
-    }
-
-    public static String getTestResourcePath(String path) {
-        return toPlatformPath("src/test/resources/" + path);
+    public static Path getTestResourcePath(String path) {
+        return Path.of("src", "test", "resources").resolve(path);
     }
 
     public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
-        String path = getTestResourcePath(arch + postfix + "-expected.csv");
+        Path path = getTestResourcePath(arch + postfix + "-expected.csv");
         var data = ImmutableMap.<String, Result>builder();
-        Files.readAllLines(Path.of(path)).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
+        Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
             String[] line = str.split(",");
             if (line.length == 2) {
-                data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
+                data.put(getRootPath(line[0]).toString(), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
             }
         });
         return data.build();
     }
 
     public static ImmutableSet<String> getSkipSet() throws IOException {
-        return Files.readAllLines(Path.of(getTestResourcePath("dartagnan-skip.csv"))).stream()
+        return Files.readAllLines(getTestResourcePath("dartagnan-skip.csv")).stream()
                 .filter(ResourceHelper::isValidEntry)
                 .map(ResourceHelper::getRootPath)
+                .map(Path::toString)
                 .collect(ImmutableSet.toImmutableSet());
     }
 

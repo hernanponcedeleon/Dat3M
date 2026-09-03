@@ -24,9 +24,9 @@ import java.awt.event.FocusEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
@@ -258,10 +258,11 @@ public class OptionsPane extends JPanel {
             extraOptionsDialog.setVisible(false);
         }
         configurationFileChooser.showSaveDialog(this);
-        final File file = configurationFileChooser.getSelectedFile();
-        if (file == null) {
+        final var selectedFile = configurationFileChooser.getSelectedFile();
+        if (selectedFile == null) {
             return;
         }
+        final Path file = selectedFile.toPath();
         try {
             final Configuration properties = Configuration.builder()
                     .setOptions(extraOptionsMap)
@@ -275,7 +276,7 @@ public class OptionsPane extends JPanel {
                     .build();
             //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
             //But comments missing a whitespace after '#' are treated as directives.
-            try (FileWriter writer = new FileWriter(file)) {
+            try (var writer = Files.newBufferedWriter(file)) {
                 writer.append("# Created with Dartagnan\n# ")
                         .append(new Date().toString())
                         .append('\n')
@@ -291,13 +292,14 @@ public class OptionsPane extends JPanel {
             extraOptionsDialog.setVisible(false);
         }
         configurationFileChooser.showOpenDialog(this);
-        final File file = configurationFileChooser.getSelectedFile();
-        if (file == null) {
+        final var selectedFile = configurationFileChooser.getSelectedFile();
+        if (selectedFile == null) {
             return;
         }
+        final Path file = selectedFile.toPath();
         final var properties = new HashMap<String, String>();
         try {
-            final Configuration config = Configuration.builder().loadFromFile(file.toPath()).build();
+            final Configuration config = Configuration.builder().loadFromFile(file).build();
             for (String key : List.copyOf(config.getUnusedProperties())) {
                 properties.put(key, config.getProperty(key));
             }

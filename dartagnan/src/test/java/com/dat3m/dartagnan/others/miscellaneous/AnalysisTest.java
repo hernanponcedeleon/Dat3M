@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -671,11 +671,11 @@ public class AnalysisTest {
      */
     @Test
     public void aliasAnalysisDeterminism() throws Exception {
-        final String programPath = getTestResourcePath("libvsync/bounded_mpmc_check_empty-opt.ll");
+        final Path programPath = getTestResourcePath("libvsync/bounded_mpmc_check_empty-opt.ll");
         final String modelPath = "cat/c11.cat";
         final int ITERATIONS = 10;
-        final Program program = new ProgramParser().parse(new File(programPath));
-        final Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        final Program program = new ProgramParser().parse(programPath);
+        final Wmm wmm = new ParserCat().parse(getRootPath(modelPath));
         final Configuration config = Configuration.builder()
                 .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();

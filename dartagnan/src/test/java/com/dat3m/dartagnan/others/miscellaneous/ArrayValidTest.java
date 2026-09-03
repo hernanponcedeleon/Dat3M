@@ -15,11 +15,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,8 +33,8 @@ public class ArrayValidTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat")));
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("arrays/ok/")))) {
+        Wmm wmm = new ParserCat().parse(getRootPath("cat/linux-kernel.cat"));
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/ok/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -55,7 +53,7 @@ public class ArrayValidTest {
 
     @Test
     public void test() throws Exception {
-        Program program = new ProgramParser().parse(new File(path));
+        Program program = new ProgramParser().parse(Path.of(path));
         VerificationTask task = VerificationTask.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)

@@ -24,7 +24,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
@@ -45,7 +44,7 @@ public abstract class AbstractComparisonTest {
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath) throws IOException {
         Set<String> skip = ResourceHelper.getSkipSet();
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getRootPath(litmusPath)))) {
+        try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .map(Path::toString)

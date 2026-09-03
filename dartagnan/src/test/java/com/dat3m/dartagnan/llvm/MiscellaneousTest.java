@@ -13,6 +13,8 @@ import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import java.io.IOException;
 import java.util.Arrays;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -28,7 +30,7 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("miscellaneous/" + name + ".ll");
     }
 

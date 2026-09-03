@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -31,8 +31,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvLivenessTest {
 
-    private final String modelPath = getRootPath("cat/vulkan.cat");
-    private final String programPath;
+    private final Path modelPath = getRootPath("cat/vulkan.cat");
+    private final Path programPath;
     private final int bound;
     private final ProgressModel.Hierarchy progressModel;
     private final Result expected;
@@ -109,8 +109,8 @@ public class SpirvLivenessTest {
                 .withBound(bound)
                 .withProgressModel(progressModel)
                 .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Program program = new ProgramParser().parse(programPath);
+        Wmm mcm = new ParserCat().parse(modelPath);
         return builder.build(program, mcm, EnumSet.of(TERMINATION));
     }
 }

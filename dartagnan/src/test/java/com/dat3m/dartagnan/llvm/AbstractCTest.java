@@ -50,7 +50,7 @@ public abstract class AbstractCTest {
         return additionalConfig(configBase).build();
     }
 
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath(name + ".ll");
     }
 
@@ -83,7 +83,7 @@ public abstract class AbstractCTest {
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> target;
-    protected final Provider<Path> filePathProvider = () -> Path.of(getProgramPathProvider().get());
+    protected final Provider<Path> filePathProvider = getProgramPathProvider();
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();

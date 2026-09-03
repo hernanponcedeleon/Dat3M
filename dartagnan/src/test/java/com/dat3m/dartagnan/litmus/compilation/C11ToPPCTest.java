@@ -47,7 +47,7 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     @Override
     protected List<String> getCompilationBreakers() {
         return Stream.of("manual/IRIW-sc-sc-acq-sc-acq-sc", "manual/RWC-sc-acq-sc-sc-sc")
-                .map(p -> getRootPath("litmus/C11/" + p + ".litmus"))
+                .map(p -> getRootPath("litmus/C11/" + p + ".litmus").toString())
                 .collect(Collectors.toList());
     }
 

@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.antlr.v4.runtime.*;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -22,11 +20,6 @@ public class ParserCat {
 
     public ParserCat(Path includePath) {
         this.includePath = includePath;
-    }
-
-    // TODO: Update call-sites to use Path instead of File
-    public Wmm parse(File file) throws IOException {
-        return parse(file.toPath());
     }
 
     public Wmm parse(Path path) throws IOException {

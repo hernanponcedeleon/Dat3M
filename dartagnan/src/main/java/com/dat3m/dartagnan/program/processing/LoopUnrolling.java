@@ -22,8 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.*;
 
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -254,7 +252,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         // Read CSV file to find bounds for loop events
         final Map<Function, Map<CondJump, Integer>> loopBoundsMapPerFunction = new HashMap<>();
-        try (Reader reader = new FileReader(filePath)) {
+        try (Reader reader = Files.newBufferedReader(Path.of(filePath))) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
                 final int loopId = Integer.parseInt(record.get(0));
@@ -282,7 +280,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
-        try (CSVPrinter csvPrinter = new CSVPrinter( new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(Files.newBufferedWriter(Path.of(filePath)), CSVFormat.DEFAULT)) {
             for (Map<CondJump, Integer> loopBoundsMap : loopBounds.values()) {
                 for (Map.Entry<CondJump, Integer> entry : loopBoundsMap.entrySet()) {
                     final CondJump loopJump = entry.getKey();

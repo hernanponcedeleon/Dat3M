@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -31,7 +33,7 @@ public class VMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<String> getProgramPathProvider() {
+    protected Provider<Path> getProgramPathProvider() {
         return () -> getTestResourcePath("lfds/" + name + ".ll");
     }
 

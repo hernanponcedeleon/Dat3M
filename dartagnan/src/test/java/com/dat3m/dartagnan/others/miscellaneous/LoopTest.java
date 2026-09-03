@@ -8,11 +8,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,7 +21,7 @@ public class LoopTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("loops/")))) {
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("loops/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -40,7 +38,7 @@ public class LoopTest {
 
     @Test
     public void test() throws Exception {
-        Program p = new ProgramParser().parse(new File(path));
+        Program p = new ProgramParser().parse(Path.of(path));
         Compilation.newInstance().run(p);
         LoopUnrolling.newInstance().run(p);
     }

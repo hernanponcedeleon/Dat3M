@@ -16,13 +16,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,11 +38,11 @@ public class BranchTest {
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Result> expected = readExpectedResults();
 
-        Wmm linuxWmm = new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat")));
-        Wmm aarch64Wmm = new ParserCat().parse(new File(getRootPath("cat/aarch64.cat")));
+        Wmm linuxWmm = new ParserCat().parse(getRootPath("cat/linux-kernel.cat"));
+        Wmm aarch64Wmm = new ParserCat().parse(getRootPath("cat/aarch64.cat"));
 
         List<Object[]> data;
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("branch/C/")))) {
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/C/"))) {
             data = fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -54,7 +50,7 @@ public class BranchTest {
                     .collect(Collectors.toList());
         }
 
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("branch/AARCH64/")))) {
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/AARCH64/"))) {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -67,7 +63,7 @@ public class BranchTest {
 
     private static ImmutableMap<String, Result> readExpectedResults() throws IOException {
         ImmutableMap.Builder<String, Result> builder;
-        try (BufferedReader reader = new BufferedReader(new FileReader(getTestResourcePath("branch/expected.csv")))) {
+        try (var reader = Files.newBufferedReader(getTestResourcePath("branch/expected.csv"))) {
             builder = new ImmutableMap.Builder<>();
             String str;
             while ((str = reader.readLine()) != null) {
@@ -92,7 +88,7 @@ public class BranchTest {
 
     @Test
     public void test() throws Exception {
-        Program program = new ProgramParser().parse(new File(path));
+        Program program = new ProgramParser().parse(Path.of(path));
         VerificationTask task = VerificationTask.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)

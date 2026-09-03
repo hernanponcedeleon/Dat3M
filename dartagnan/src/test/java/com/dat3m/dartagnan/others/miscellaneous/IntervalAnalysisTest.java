@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.EnumSet;
@@ -43,7 +42,7 @@ public class IntervalAnalysisTest {
                 .setOption(INTERVAL_ANALYSIS_METHOD, method.asStringOption())
                 .build();
         ProcessingManager.fromConfig(config).run(p);
-        final Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        final Wmm wmm = new ParserCat().parse(getRootPath(modelPath));
         final VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withBound(1)
