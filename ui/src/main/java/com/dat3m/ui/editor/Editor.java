@@ -15,7 +15,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -39,7 +38,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
 
     private final Set<ActionListener> actionListeners = new HashSet<>();
 
-    Editor(EditorCode code, RSyntaxTextArea editorPane, List<String> allowedFormats) {
+    Editor(EditorCode code, RSyntaxTextArea editorPane, Set<String> allowedFormats) {
         super(editorPane);
         this.code = code;
         this.editorPane = editorPane;
