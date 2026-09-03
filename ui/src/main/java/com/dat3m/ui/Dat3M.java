@@ -167,7 +167,7 @@ public class Dat3M extends JFrame implements ActionListener {
             protected VerificationOutcome doInBackground() {
                 final Program program;
                 try {
-                    program = parseSource(sourceCode, format);
+                    program = parseSource(sourceCode, format, programEditor.getLoadedDir());
                     program.setName("dat3mUI");
                 } catch (Exception e) {
                     return VerificationOutcome.programError(e);
@@ -247,14 +247,25 @@ public class Dat3M extends JFrame implements ActionListener {
         }
     }
 
-    private Program parseSource(String sourceCode, String format) throws Exception {
-        final Path sourceFile = Files.createTempFile("dat3m-ui-", format);
+    private Program parseSource(String sourceCode, String format, String sourceDirectory) throws Exception {
+        final Path sourceFile = createTemporarySourceFile(sourceDirectory, format);
         try {
             Files.writeString(sourceFile, sourceCode);
             return programParser.parseTemporary(sourceFile);
         } finally {
             Files.deleteIfExists(sourceFile);
         }
+    }
+
+    private static Path createTemporarySourceFile(String sourceDirectory, String format) throws IOException {
+        if (!sourceDirectory.isEmpty()) {
+            try {
+                return Files.createTempFile(Path.of(sourceDirectory), "dat3m-ui-", format);
+            } catch (IOException ignored) {
+                // Fall back to the system temporary directory.
+            }
+        }
+        return Files.createTempFile("dat3m-ui-", format);
     }
 
     private record VerificationOutcome(ReachabilityResult result, String errorTitle, String errorMessage) {
