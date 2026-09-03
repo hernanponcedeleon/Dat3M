@@ -262,8 +262,12 @@ public class Dat3M extends JFrame implements ActionListener {
         if (!sourceDirectory.isEmpty()) {
             try {
                 return Files.createTempFile(Path.of(sourceDirectory), "dat3m-ui-", format);
-            } catch (IOException ignored) {
-                // Fall back to the system temporary directory.
+            } catch (IOException exception) {
+                throw new IOException(
+                        "Cannot create a temporary source file in %s. Save the source to a writable directory first."
+                                .formatted(sourceDirectory),
+                        exception
+                );
             }
         }
         return Files.createTempFile("dat3m-ui-", format);

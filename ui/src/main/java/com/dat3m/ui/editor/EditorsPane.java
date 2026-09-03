@@ -6,7 +6,7 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.List;
+import java.util.Set;
 
 public class EditorsPane {
 
@@ -17,10 +17,10 @@ public class EditorsPane {
     private final JMenu menuImporter;
     private final JMenu menuExporter;
 
-    public EditorsPane(List<String> programExtensions) {
+    public EditorsPane(Set<String> programExtensions) {
         editors = ImmutableMap.of(
                 EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), programExtensions),
-                EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), List.of(".cat"))
+                EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), Set.of(".cat"))
         );
         menuImporter = new JMenu("Import");
         menuImporter.add(editors.get(EditorCode.PROGRAM).getImporterItem());

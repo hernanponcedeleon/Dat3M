@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getCompilationPipelinePath;
@@ -22,6 +24,7 @@ public class ProgramParser {
 
     private static final Logger logger = LoggerFactory.getLogger(ProgramParser.class);
     private final Pipelines pipelines;
+    private final Set<String> supportedExtensions;
 
     private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
     private static final String TYPE_LITMUS_PPC = "PPC";
@@ -46,16 +49,16 @@ public class ProgramParser {
 
     public ProgramParser(Pipelines pipelines) {
         this.pipelines = pipelines;
+        supportedExtensions = Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    public List<String> getSupportedExtensions() {
-        return Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
-                .distinct()
-                .toList();
+    public Set<String> getSupportedExtensions() {
+        return supportedExtensions;
     }
 
     public boolean isSupportedFile(Path filePath) {
-        return getSupportedExtensions().contains(getFileExtension(filePath));
+        return supportedExtensions.contains(getFileExtension(filePath));
     }
 
     public Program parse(Path path) throws Exception {
