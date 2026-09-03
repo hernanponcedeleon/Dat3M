@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getCompilationPipelinePath;
 
@@ -31,25 +32,13 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C = "C";
     private static final String TYPE_LITMUS_OPENCL = "OPENCL";
 
-    public static final String EXTENSION_C = ".c";
-    public static final String EXTENSION_I = ".i";
     public static final String EXTENSION_LL = ".ll";
     public static final String EXTENSION_LITMUS = ".litmus";
     public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
     public static final String EXTENSION_SPVASM = ".spvasm";
-    public static final String EXTENSION_OPENCL = ".cl";
-    public static final String EXTENSION_SLANG = ".slang";
-    public static final String EXTENSION_GSL = ".comp";
-    public static final String EXTENSION_HLSL = ".hlsl";
-    public static final List<String> SUPPORTED_EXTENSIONS = List.of(
-            EXTENSION_C, EXTENSION_I, EXTENSION_LL,
-            EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM,
-            EXTENSION_OPENCL, EXTENSION_SLANG, EXTENSION_GSL, EXTENSION_HLSL
+    public static final List<String> NATIVE_EXTENSIONS = List.of(
+            EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM
     );
-
-    public static boolean isSupportedFile(Path filePath) {
-        return SUPPORTED_EXTENSIONS.contains(getFileExtension(filePath));
-    }
 
     public ProgramParser() throws IOException {
         this(Pipelines.load(getCompilationPipelinePath()));
@@ -57,6 +46,16 @@ public class ProgramParser {
 
     public ProgramParser(Pipelines pipelines) {
         this.pipelines = pipelines;
+    }
+
+    public List<String> getSupportedExtensions() {
+        return Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
+                .distinct()
+                .toList();
+    }
+
+    public boolean isSupportedFile(Path filePath) {
+        return getSupportedExtensions().contains(getFileExtension(filePath));
     }
 
     public Program parse(Path path) throws Exception {

@@ -15,6 +15,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,7 +39,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
 
     private final Set<ActionListener> actionListeners = new HashSet<>();
 
-    Editor(EditorCode code, RSyntaxTextArea editorPane) {
+    Editor(EditorCode code, RSyntaxTextArea editorPane, List<String> allowedFormats) {
         super(editorPane);
         this.code = code;
         this.editorPane = editorPane;
@@ -51,7 +52,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
         this.exporterItem.setActionCommand(code.editorMenuExportActionCommand());
         this.exporterItem.addActionListener(this);
 
-        this.allowedFormats = ImmutableSet.copyOf(code.supportedExtensions());
+        this.allowedFormats = ImmutableSet.copyOf(allowedFormats);
         this.chooser = new JFileChooser();
         for (String format : allowedFormats) {
             final String extension = format.startsWith(".") ? format.substring(1) : format;

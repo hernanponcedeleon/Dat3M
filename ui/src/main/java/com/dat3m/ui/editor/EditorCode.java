@@ -1,9 +1,5 @@
 package com.dat3m.ui.editor;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-
-import java.util.List;
-
 public enum EditorCode {
 
     PROGRAM, TARGET_MM;
@@ -37,10 +33,4 @@ public enum EditorCode {
         };
     }
 
-    public List<String> supportedExtensions() {
-        return switch (this) {
-            case PROGRAM -> ProgramParser.SUPPORTED_EXTENSIONS;
-            case TARGET_MM -> List.of(".cat");
-        };
-    }
 }

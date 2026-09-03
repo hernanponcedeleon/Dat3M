@@ -40,8 +40,13 @@ public class Dartagnan extends BaseOptions {
 
     private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
 
-    private Dartagnan(Configuration config) throws InvalidConfigurationException {
+    private final Pipelines pipelines;
+    private final ProgramParser programParser;
+
+    private Dartagnan(Configuration config) throws InvalidConfigurationException, IOException {
         config.recursiveInject(this);
+        pipelines = Pipelines.load(getCompilationPipelinePath());
+        programParser = new ProgramParser(pipelines);
     }
 
     public static void main(String[] args) throws Exception {
@@ -66,13 +71,11 @@ public class Dartagnan extends BaseOptions {
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
         final Path catFile  = getCatFileFromArgs(args);
-        final List<Path> progFiles = getProgramFilesFromArgs(args);
+        final List<Path> progFiles = o.getProgramFilesFromArgs(args);
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
-        final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
-        final ProgramParser programParser = new ProgramParser(pipelines);
 
-        logEnvironmentInfo(pipelines.getTools());
+        logEnvironmentInfo(o.pipelines.getTools());
 
         logger.info("CAT file path: {}", catFile);
 
@@ -82,7 +85,7 @@ public class Dartagnan extends BaseOptions {
             Output output;
             try {
                 // ----------- Generate verification task -----------
-                final Program p = programParser.parse(progFile);
+                final Program p = o.programParser.parse(progFile);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
@@ -188,7 +191,7 @@ public class Dartagnan extends BaseOptions {
         return catFile;
     }
 
-    private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
+    private List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
         final List<Path> files = Stream.of(args)
                 .map(Path::of)
                 .filter(Files::exists)
@@ -200,10 +203,10 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    private static List<Path> getProgramFiles(Path path) {
+    private List<Path> getProgramFiles(Path path) {
         try (Stream<Path> stream = Files.walk(path)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(ProgramParser::isSupportedFile)
+                    .filter(programParser::isSupportedFile)
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
         } catch (IOException e) {
