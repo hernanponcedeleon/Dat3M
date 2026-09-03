@@ -35,6 +35,7 @@ public class PipelinesTest {
                     args: ["{cmd_input}", "-o", "{cmd_output}"]
                 pipelines:
                   - pipeline: ".cl"
+                    aliases: [".i"]
                     input: "{pipeline_input}"
                     output: "{basename}.spvasm"
                     commands:
@@ -50,14 +51,17 @@ public class PipelinesTest {
 
         final Pipelines pipelines = Pipelines.load(yaml);
         final Pipelines.Pipeline pipeline = pipelines.getPipeline(".cl", Path.of("sources", "example.cl"), "example");
+        final Pipelines.Pipeline aliasPipeline = pipelines.getPipeline(".i", Path.of("sources", "example.i"), "example");
         final Pipelines.Pipeline.Command compile = pipeline.commands().get(0); // clspv
         final Pipelines.Pipeline.Command upgradeMemoryModel = pipeline.commands().get(1); // spirv-opt
         final Pipelines.Pipeline.Command disassemble = pipeline.commands().get(2); // spirv-dis
 
         assertTrue(pipelines.needsCompilation(".cl"));
+        assertTrue(pipelines.needsCompilation(".i"));
         assertFalse(pipelines.needsCompilation(".litmus"));
         assertEquals(3, pipelines.getTools().size());
         assertEquals(Path.of("build", "example.spvasm").toString(), pipeline.output());
+        assertEquals(pipeline.output(), aliasPipeline.output());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.args().get(0)); // {cmd_input}
         assertEquals(Path.of("build", "example.spv").toString(), compile.args().get(3)); // {cmd_output}
         assertEquals(Path.of("build", "example.spv").toString(), upgradeMemoryModel.args().get(1)); // {cmd_input}
@@ -86,12 +90,33 @@ public class PipelinesTest {
     }
 
     @Test
+    public void rejectsDuplicateAliases() throws Exception {
+        final Path yaml = writeConfiguration("""
+                workdir: build
+                pipelines:
+                  - pipeline: ".foo"
+                    aliases: [".bar"]
+                    input: input
+                    output: output
+                    commands: []
+                  - pipeline: ".baz"
+                    aliases: [".bar"]
+                    input: input
+                    output: output
+                    commands: []
+                """);
+
+        final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertTrue(exception.getMessage().contains("Duplicate pipeline"));
+    }
+
+    @Test
     public void cleansUpIntermediatesButPreservesOutput() throws IOException {
         final Path source = Files.createTempFile("source", ".cl");
         final Path intermediate = Files.createTempFile("intermediate", ".spv");
         final Path output = Files.createTempFile("output", ".spvasm");
         final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
-                ".cl", source.toString(), output.toString(), List.of(
+                ".cl", List.of(), source.toString(), output.toString(), List.of(
                         new Pipelines.Pipeline.Command("compile", "tool", source.toString(), intermediate.toString(), false, List.of()),
                         new Pipelines.Pipeline.Command("disassemble", "tool", intermediate.toString(), output.toString(), true, List.of())
                 ));
