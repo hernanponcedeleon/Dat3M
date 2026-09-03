@@ -197,11 +197,17 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 processBuilder.redirectErrorStream(true);
                 processBuilder.redirectOutput(log.toFile());
 
-                final Process proc = processBuilder.start();
-                if (proc.waitFor() != 0) {
-                    final String logString = Files.readString(log, StandardCharsets.UTF_8);
-                    final String errorMsg = "'%s': %s".formatted(String.join(" ", cmd), logString);
-                    throw new IOException(errorMsg);
+                final Process process = processBuilder.start();
+                try {
+                    if (process.waitFor() != 0) {
+                        final String logString = Files.readString(log, StandardCharsets.UTF_8);
+                        final String errorMsg = "'%s': %s".formatted(String.join(" ", cmd), logString);
+                        throw new IOException(errorMsg);
+                    }
+                } catch (InterruptedException exception) {
+                    process.destroyForcibly();
+                    Thread.currentThread().interrupt();
+                    throw exception;
                 }
             } finally {
                 try {

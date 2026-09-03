@@ -94,7 +94,10 @@ public class EnvironmentInfo {
                 }
                 return String.join(" - ", lines);
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "unknown";
+        } catch (IOException e) {
             return "unknown";
         }
     }
