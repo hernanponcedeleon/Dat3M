@@ -251,7 +251,7 @@ public class Dat3M extends JFrame implements ActionListener {
         final Path sourceFile = Files.createTempFile("dat3m-ui-", format);
         try {
             Files.writeString(sourceFile, sourceCode);
-            return programParser.parse(sourceFile);
+            return programParser.parseTemporary(sourceFile);
         } finally {
             Files.deleteIfExists(sourceFile);
         }
