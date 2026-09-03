@@ -35,8 +35,8 @@ import static javax.swing.UIManager.getDefaults;
 public class Dat3M extends JFrame implements ActionListener {
 
     private final OptionsPane optionsPane = new OptionsPane();
-    private final EditorsPane editorsPane = new EditorsPane();
     private final ProgramParser programParser;
+    private final EditorsPane editorsPane;
 
     private ReachabilityResult testResult;
     private SwingWorker<VerificationOutcome, Void> verificationWorker;
@@ -47,6 +47,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
     private Dat3M() throws IOException {
         programParser = new ProgramParser();
+        editorsPane = new EditorsPane(programParser.getSupportedExtensions());
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
@@ -147,7 +148,7 @@ public class Dat3M extends JFrame implements ActionListener {
         final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
         final String sourceCode = programEditor.getEditorPane().getText();
         final String format = programEditor.getLoadedFormat().isEmpty()
-                ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
+                ? ProgramParser.EXTENSION_LITMUS       // We default to litmus code, if we do not know
                 : programEditor.getLoadedFormat();
         final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
 

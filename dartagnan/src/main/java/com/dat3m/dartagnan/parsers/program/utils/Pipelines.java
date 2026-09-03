@@ -66,6 +66,12 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    public List<String> getSupportedExtensions() {
+        return pipelines.stream()
+                .flatMap(pipeline -> pipeline.extensions().stream())
+                .toList();
+    }
+
     public Pipeline getPipeline(String extension, Path inputPath, String basename) {
         final Pipeline abstractPipeline = pipelines.stream()
                 .filter(p -> p.matches(extension))

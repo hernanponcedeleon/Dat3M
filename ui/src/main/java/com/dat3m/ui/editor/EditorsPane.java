@@ -6,20 +6,22 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.List;
 
 public class EditorsPane {
 
-    private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea()),
-            EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea())
-    );
+    private final ImmutableMap<EditorCode, Editor> editors;
 
     private final JSplitPane mmPane;
     private final JSplitPane mainPane;
     private final JMenu menuImporter;
     private final JMenu menuExporter;
 
-    public EditorsPane() {
+    public EditorsPane(List<String> programExtensions) {
+        editors = ImmutableMap.of(
+                EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), programExtensions),
+                EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), List.of(".cat"))
+        );
         menuImporter = new JMenu("Import");
         menuImporter.add(editors.get(EditorCode.PROGRAM).getImporterItem());
         menuImporter.add(editors.get(EditorCode.TARGET_MM).getImporterItem());
