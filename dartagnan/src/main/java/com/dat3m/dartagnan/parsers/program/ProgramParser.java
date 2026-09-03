@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,7 +38,7 @@ public class ProgramParser {
     public static final String EXTENSION_LITMUS = ".litmus";
     public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
     public static final String EXTENSION_SPVASM = ".spvasm";
-    public static final List<String> NATIVE_EXTENSIONS = List.of(
+    public static final Set<String> NATIVE_EXTENSIONS = Set.of(
             EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM
     );
 
@@ -47,8 +46,9 @@ public class ProgramParser {
         this(Pipelines.load(getCompilationPipelinePath()));
     }
 
-    public ProgramParser(Pipelines pipelines) {
+    public ProgramParser(Pipelines pipelines) throws IOException {
         this.pipelines = pipelines;
+        pipelines.validateOutputExtensions(NATIVE_EXTENSIONS);
         supportedExtensions = Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
                 .collect(Collectors.toUnmodifiableSet());
     }
