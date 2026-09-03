@@ -51,7 +51,7 @@ pipelines:
         tool: "slangc"
         input: "{pipeline_input}"
         output: "{basename}.spv"
-        args: ["-target", "spirv", "{cmd_input}", "-o", "{cmd_output}"]
+        args: ["-target", "spirv", "{cmd_input}", "-o", "{cmd_output}", "-g"]
       - *upgrade_cmd
       - *disassemble_cmd
       - *annotation_cmd

@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ControlFlowBuilder;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 
 import java.util.Set;
 
@@ -30,8 +29,7 @@ public class VisitorOpsDebug extends SpirvBaseVisitor<Void> {
     public Void visitOpLine(SpirvParser.OpLineContext ctx) {
         String file = builder.getDebugInfo(ctx.file().getText());
         int line = Integer.parseInt(ctx.line().getText());
-        SourceLocation loc = new SourceLocation.Generic(file, line);
-        cfBuilder.setCurrentLocation(loc);
+        cfBuilder.setCurrentLocation(file, line);
         return null;
     }
 

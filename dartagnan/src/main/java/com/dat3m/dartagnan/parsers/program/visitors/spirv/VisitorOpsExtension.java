@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExt
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionGlslStd;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionOpenClStd;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionDebugInfo;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -29,11 +30,13 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Expression> {
         VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
         VisitorExtensionGlslStd glsl = new VisitorExtensionGlslStd(builder);
         VisitorExtensionOpenClStd opencl = new VisitorExtensionOpenClStd(builder);
+        VisitorExtensionDebugInfo debugInfo = new VisitorExtensionDebugInfo(builder);
         this.builder = builder;
         this.availableVisitors.put("NonSemantic.ClspvReflection.5", clspv);
         this.availableVisitors.put("NonSemantic.ClspvReflection.6", clspv);
         this.availableVisitors.put("GLSL.std.450", glsl);
         this.availableVisitors.put("OpenCL.std", opencl);
+        this.availableVisitors.put("NonSemantic.Shader.DebugInfo.100", debugInfo);
     }
 
     @Override
