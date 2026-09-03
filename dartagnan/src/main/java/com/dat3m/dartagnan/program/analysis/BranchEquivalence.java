@@ -16,9 +16,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.SIMPLE_BRANCH_EQUIVALENCE;
 
 /* Procedure:
     (1) Decompose the program into simple branches (~ basic blocks).
@@ -36,6 +41,7 @@ import java.util.stream.Collectors;
           when an event is in the control-flow then so is one of its successors.
 */
 
+@Options
 public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
@@ -46,6 +52,13 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
              - empty and have NULL as representative
              - the impliedClasses will only contain themselves, the exclusiveClasses will be empty
     */
+
+    // ============================= Configurables ==============================
+
+    @Option(secure = true, name = SIMPLE_BRANCH_EQUIVALENCE,
+            description = "If true, put every control-flow branch into its own class. " +
+                    "If false, merge branches that are implied by each other into a single class.")
+    private boolean simpleBranchEquivalence = true;
 
     // ============================= State ==============================
 
@@ -82,13 +95,14 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return (Set<Class>)super.getNonTrivialClasses();
     }
 
-    private BranchEquivalence(Program program) {
+    private BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
         Preconditions.checkArgument(program.isUnrolled(), "The program must be unrolled first.");
+        config.inject(this);
         run(program);
     }
 
     public static BranchEquivalence fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new BranchEquivalence(program);
+        return new BranchEquivalence(program, config);
     }
 
     private void run(Program program) {
@@ -299,7 +313,10 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void createBranchClasses(BranchDecomposition decomposition) {
         // -------------------------- Create branch classes --------------------------
-        final DependencyGraph<Branch> depGraph = DependencyGraph.from(decomposition.branches, Branch::getImpliedBranches);
+        final Function<Branch, Collection<Branch>> impliedBranches = simpleBranchEquivalence
+                ? List::of
+                : Branch::getImpliedBranches;
+        final DependencyGraph<Branch> depGraph = DependencyGraph.from(decomposition.branches, impliedBranches);
         final Map<Branch, BranchClass> branch2ClassMap = Maps.newIdentityHashMap();
         final Map<BranchClass, Set<Branch>> class2BranchesMap = Maps.newIdentityHashMap();
         for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
