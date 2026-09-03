@@ -10,6 +10,8 @@ import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 
+import java.nio.file.Path;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.USE_RC11_TO_ARCH_SCHEME;
 
 @RunWith(Parameterized.class)
@@ -20,7 +22,7 @@ public class RC11ToRISCVTest extends AbstractCompilationTest {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public RC11ToRISCVTest(String path) {
+    public RC11ToRISCVTest(Path path) {
         super(path);
     }
 

@@ -20,23 +20,22 @@ public class ResourceHelper {
         return Path.of("src", "test", "resources").resolve(path);
     }
 
-    public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
+    public static ImmutableMap<Path, Result> getExpectedResults(String arch, String postfix) throws IOException {
         Path path = getTestResourcePath(arch + postfix + "-expected.csv");
-        var data = ImmutableMap.<String, Result>builder();
+        var data = ImmutableMap.<Path, Result>builder();
         Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
             String[] line = str.split(",");
             if (line.length == 2) {
-                data.put(getRootPath(line[0]).toString(), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
+                data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
             }
         });
         return data.build();
     }
 
-    public static ImmutableSet<String> getSkipSet() throws IOException {
+    public static ImmutableSet<Path> getSkipSet() throws IOException {
         return Files.readAllLines(getTestResourcePath("dartagnan-skip.csv")).stream()
                 .filter(ResourceHelper::isValidEntry)
                 .map(ResourceHelper::getRootPath)
-                .map(Path::toString)
                 .collect(ImmutableSet.toImmutableSet());
     }
 

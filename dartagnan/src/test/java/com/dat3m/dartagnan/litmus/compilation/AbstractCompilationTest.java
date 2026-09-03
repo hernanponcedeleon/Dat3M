@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
@@ -40,19 +41,18 @@ import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractCompilationTest {
 
-    private String path;
+    private Path path;
 
-    AbstractCompilationTest(String path) {
+    AbstractCompilationTest(Path path) {
         this.path = path;
     }
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath) throws IOException {
-        Set<String> skip = ResourceHelper.getSkipSet();
+        Set<Path> skip = ResourceHelper.getSkipSet();
         try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .map(Path::toString)
-                    .filter(f -> f.endsWith("litmus"))
+                    .filter(f -> getFileExtension(f).equals("litmus"))
                     .filter(f -> !skip.contains(f))
                     .collect(ArrayList::new,
                             (l, f) -> l.add(new Object[]{f}), ArrayList::addAll);
@@ -75,7 +75,7 @@ public abstract class AbstractCompilationTest {
     }
     protected long getTimeout() { return 10000; }
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
-    protected List<String> getCompilationBreakers() { return emptyList(); }
+    protected List<Path> getCompilationBreakers() { return emptyList(); }
 
     protected final Configuration getConfiguration() throws InvalidConfigurationException {
         var configBase = Configuration.builder()
@@ -97,7 +97,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> sourceProvider = getSourceProvider();
     protected final Provider<Arch> targetProvider = getTargetProvider();
-    protected final Provider<Path> filePathProvider = () -> Path.of(path);
+    protected final Provider<Path> filePathProvider = () -> path;
     protected final Provider<Program> program1Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();

@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -37,23 +38,23 @@ public class ArrayValidTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/ok/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString(), wmm})
+                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .map(f -> new Object[]{f, wmm})
                     .collect(Collectors.toList());
         }
     }
 
-    private final String path;
+    private final Path path;
     private final Wmm wmm;
 
-    public ArrayValidTest(String path, Wmm wmm) {
+    public ArrayValidTest(Path path, Wmm wmm) {
         this.path = path;
         this.wmm = wmm;
     }
 
     @Test
     public void test() throws Exception {
-        Program program = new ProgramParser().parse(Path.of(path));
+        Program program = new ProgramParser().parse(path);
         VerificationTask task = VerificationTask.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)

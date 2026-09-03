@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -15,7 +16,7 @@ public class LKMMToRISCVTest extends AbstractCompilationTest {
         return buildLitmusTests("litmus/LKMM/");
     }
 
-    public LKMMToRISCVTest(String path) {
+    public LKMMToRISCVTest(Path path) {
         super(path);
     }
 

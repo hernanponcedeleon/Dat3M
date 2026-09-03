@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -17,7 +18,7 @@ public class C11AndOpenCLTest extends AbstractComparisonTest {
         return buildLitmusTests("litmus/OPENCL/portedFromC11/");
     }
 
-    public C11AndOpenCLTest(String path) {
+    public C11AndOpenCLTest(Path path) {
         super(path);
     }
 

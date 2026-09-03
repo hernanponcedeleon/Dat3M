@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -21,7 +22,7 @@ public class LitmusRISCVTest extends AbstractLitmusTest {
         return () -> Arch.RISCV;
     }
 
-    public LitmusRISCVTest(String path, Result expected) {
+    public LitmusRISCVTest(Path path, Result expected) {
         super(path, expected);
     }
 }

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -35,7 +36,7 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
     }
     
-    public LitmusLinuxRacesTest(String path, Result expected) {
+    public LitmusLinuxRacesTest(Path path, Result expected) {
         super(path, expected);
     }
 }

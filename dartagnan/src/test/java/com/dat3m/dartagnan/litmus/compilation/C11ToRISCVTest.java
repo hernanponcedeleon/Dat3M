@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -17,7 +18,7 @@ public class C11ToRISCVTest extends AbstractCompilationTest {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C11ToRISCVTest(String path) {
+    public C11ToRISCVTest(Path path) {
         super(path);
     }
 

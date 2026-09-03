@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -15,7 +16,7 @@ public class LKMMToAarch64Test extends AbstractCompilationTest {
         return buildLitmusTests("litmus/LKMM/");
     }
 
-    public LKMMToAarch64Test(String path) {
+    public LKMMToAarch64Test(Path path) {
         super(path);
     }
 

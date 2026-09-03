@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -21,7 +22,7 @@ public class LitmusPPCTest extends AbstractLitmusTest {
         return () -> Arch.POWER;
     }
 
-    public LitmusPPCTest(String path, Result expected) {
+    public LitmusPPCTest(Path path, Result expected) {
         super(path, expected);
     }
 

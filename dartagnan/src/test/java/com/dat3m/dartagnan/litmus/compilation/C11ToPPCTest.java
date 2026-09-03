@@ -9,6 +9,7 @@ import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +26,7 @@ public class C11ToPPCTest extends AbstractCompilationTest {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C11ToPPCTest(String path) {
+    public C11ToPPCTest(Path path) {
         super(path);
     }
 
@@ -45,9 +46,9 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     }
 
     @Override
-    protected List<String> getCompilationBreakers() {
+    protected List<Path> getCompilationBreakers() {
         return Stream.of("manual/IRIW-sc-sc-acq-sc-acq-sc", "manual/RWC-sc-acq-sc-sc-sc")
-                .map(p -> getRootPath("litmus/C11/" + p + ".litmus").toString())
+                .map(p -> getRootPath("litmus/C11/" + p + ".litmus"))
                 .collect(Collectors.toList());
     }
 

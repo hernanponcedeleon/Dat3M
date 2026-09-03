@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -45,16 +46,16 @@ public class BranchTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/C/"))) {
             data = fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), linuxWmm})
+                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .map(f -> new Object[]{f, expected.get(f.getFileName().toString()), linuxWmm})
                     .collect(Collectors.toList());
         }
 
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/AARCH64/"))) {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), aarch64Wmm})
+                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .map(f -> new Object[]{f, expected.get(f.getFileName().toString()), aarch64Wmm})
                     .toList());
         }
 
@@ -76,11 +77,11 @@ public class BranchTest {
         return builder.build();
     }
 
-    private final String path;
+    private final Path path;
     private final Wmm wmm;
     private final Result expected;
 
-    public BranchTest(String path, Result expected, Wmm wmm) {
+    public BranchTest(Path path, Result expected, Wmm wmm) {
         this.path = path;
         this.expected = expected;
         this.wmm = wmm;
@@ -88,7 +89,7 @@ public class BranchTest {
 
     @Test
     public void test() throws Exception {
-        Program program = new ProgramParser().parse(Path.of(path));
+        Program program = new ProgramParser().parse(path);
         VerificationTask task = VerificationTask.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)

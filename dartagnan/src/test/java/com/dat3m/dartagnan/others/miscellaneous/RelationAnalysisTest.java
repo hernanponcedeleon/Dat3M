@@ -101,19 +101,19 @@ public class RelationAnalysisTest {
 
     @Test
     public void compareBaseSets() throws Exception {
-        for (String program : listFiles(testPath)) {
+        for (Path program : listFiles(testPath)) {
             doCompareSets(program);
         }
     }
 
-    private List<String> listFiles(Path path) throws IOException {
-        List<String> result = new LinkedList<>();
+    private List<Path> listFiles(Path path) throws IOException {
+        List<Path> result = new LinkedList<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(path)) {
             for (Path file : files) {
                 if (Files.isDirectory(file)) {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
-                    String filePath = file.toAbsolutePath().toString();
+                    Path filePath = file.toAbsolutePath();
                     if (filePath.endsWith(ProgramParser.EXTENSION_LITMUS) || filePath.endsWith(ProgramParser.EXTENSION_LL) || filePath.endsWith(ProgramParser.EXTENSION_SPV_DIS) || filePath.endsWith(ProgramParser.EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
@@ -123,9 +123,9 @@ public class RelationAnalysisTest {
         return result;
     }
 
-    private void doCompareSets(String path) throws Exception {
+    private void doCompareSets(Path path) throws Exception {
         // Base program and consistency model
-        Program program = new ProgramParser().parse(Path.of(path));
+        Program program = new ProgramParser().parse(path);
         Wmm wmm = new ParserCat().parse(modelPath);
         Configuration baseConfig = Configuration.builder().build();
         VerificationTask baseTask = createTask(program, wmm, baseConfig);

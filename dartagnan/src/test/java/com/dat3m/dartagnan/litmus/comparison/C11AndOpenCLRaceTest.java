@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -16,7 +17,7 @@ public class C11AndOpenCLRaceTest extends C11AndOpenCLTest {
         return buildLitmusTests("litmus/OPENCL/portedFromC11/");
     }
 
-    public C11AndOpenCLRaceTest(String path) {
+    public C11AndOpenCLRaceTest(Path path) {
         super(path);
     }
 

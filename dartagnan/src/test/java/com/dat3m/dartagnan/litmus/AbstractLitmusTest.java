@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
@@ -40,11 +40,11 @@ import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractLitmusTest {
 
-    private String path;
+    private Path path;
     private final Result expected;
-    private static Map<String, Result> expectedResults;
+    private static Map<Path, Result> expectedResults;
 
-    AbstractLitmusTest(String path, Result expected) {
+    AbstractLitmusTest(Path path, Result expected) {
         this.path = path;
         this.expected = expected;
     }
@@ -55,15 +55,14 @@ public abstract class AbstractLitmusTest {
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
         expectedResults = ResourceHelper.getExpectedResults(arch, postfix);
-        Set<String> skip = ResourceHelper.getSkipSet();
+        Set<Path> skip = ResourceHelper.getSkipSet();
 
         try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .map(Path::toString)
-                    .filter(f -> f.endsWith("litmus"))
+                    .filter(f -> getFileExtension(f).equals("litmus"))
                     .filter(f -> !skip.contains(f))
-                    .filter(f -> expectedResults.containsKey(f))
+                    .filter(expectedResults::containsKey)
                     .map(f -> new Object[]{f, expectedResults.get(f)})
                     .collect(ArrayList::new,
                             (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
@@ -114,14 +113,14 @@ public abstract class AbstractLitmusTest {
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = getTargetProvider();
-    protected final Provider<Path> filePathProvider = () -> Path.of(path);
-    protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(Path.of(path).getFileName().toString()));
+    protected final Provider<Path> filePathProvider = () -> path;
+    protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(path.getFileName().toString()));
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(Utils.subpath(filePathProvider.get(), 1).toString()));
+    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get()));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
 

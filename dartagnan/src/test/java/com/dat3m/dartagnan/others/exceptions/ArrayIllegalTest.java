@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
@@ -22,20 +23,20 @@ public class ArrayIllegalTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/error/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString()})
+                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .map(f -> new Object[]{f})
                     .collect(Collectors.toList());
         }
     }
 
-    private final String path;
+    private final Path path;
 
-    public ArrayIllegalTest(String path) {
+    public ArrayIllegalTest(Path path) {
         this.path = path;
     }
 
     @Test(expected = ParsingException.class)
     public void test() throws Exception {
-        new ProgramParser().parse(Path.of(path));
+        new ProgramParser().parse(path);
     }
 }

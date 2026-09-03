@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.file.Path;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
@@ -17,7 +18,7 @@ public class C11ToTSOTest extends AbstractCompilationTest {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C11ToTSOTest(String path) {
+    public C11ToTSOTest(Path path) {
         super(path);
     }
 
