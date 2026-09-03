@@ -60,12 +60,31 @@ public class ProgramParser {
     }
 
     public Program parse(Path path) throws Exception {
+        return parse(path, false);
+    }
+
+    public Program parseTemporary(Path path) throws Exception {
+        return parse(path, true);
+    }
+
+    private Program parse(Path path, boolean removePipelineOutput) throws Exception {
         final String extension = getFileExtension(path);
-        if (pipelines.needsCompilation(extension)) {
-            final Pipeline pipeline = pipelines.getPipeline(extension, path, Utils.getNameWithoutExtension(path));
-            pipeline.execute();
-            path = Path.of(pipeline.output());
+        if (!pipelines.needsCompilation(extension)) {
+            return parseFile(path);
         }
+
+        final Pipeline pipeline = pipelines.getPipeline(extension, path, Utils.getNameWithoutExtension(path));
+        try {
+            pipeline.execute();
+            return parseFile(Path.of(pipeline.output()));
+        } finally {
+            if (removePipelineOutput) {
+                pipeline.removeOutputFile();
+            }
+        }
+    }
+
+    private Program parseFile(Path path) throws IOException {
         final Program program = parse(CharStreams.fromPath(path), getFileExtension(path));
         program.setName(path.getFileName().toString());
         return program;

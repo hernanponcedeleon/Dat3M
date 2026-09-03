@@ -85,7 +85,7 @@ public class PipelinesTest {
         assertTrue(exception.getMessage().contains("Duplicate pipeline"));
     }
 
-        @Test
+    @Test
     public void cleansUpIntermediatesButPreservesOutput() throws IOException {
         final Path source = Files.createTempFile("source", ".cl");
         final Path intermediate = Files.createTempFile("intermediate", ".spv");
@@ -101,8 +101,9 @@ public class PipelinesTest {
         assertTrue(Files.exists(source));
         assertFalse(Files.exists(intermediate));
         assertTrue(Files.exists(output));
+        pipeline.removeOutputFile();
+        assertFalse(Files.exists(output));
         Files.deleteIfExists(source);
-        Files.deleteIfExists(output);
     }
 
     @Test

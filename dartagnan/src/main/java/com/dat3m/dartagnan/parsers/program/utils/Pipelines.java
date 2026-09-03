@@ -162,6 +162,15 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             }
         }
 
+        public void removeOutputFile() {
+            final Path outputFile = Path.of(output);
+            try {
+                Files.deleteIfExists(outputFile);
+            } catch (IOException exception) {
+                logger.warn("Could not remove generated pipeline output {}", outputFile, exception);
+            }
+        }
+
         private void runCmd(List<String> cmd) throws Exception {
             logger.debug(String.join(" ", cmd));
             final Path log = Files.createTempFile("log", null);
