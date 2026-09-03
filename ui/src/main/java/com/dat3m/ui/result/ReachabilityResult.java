@@ -65,7 +65,6 @@ public class ReachabilityResult {
             final VerificationTask task = VerificationTask.builder()
                     .withConfig(config)
                     .withBound(options.bound())
-                    .withSolverTimeout(options.timeout())
                     .withSolver(options.solver())
                     .withTarget(arch)
                     .withProgressModel(ProgressModel.uniform(options.progress()))

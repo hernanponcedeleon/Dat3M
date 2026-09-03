@@ -62,9 +62,7 @@ public class OptionsPane extends JPanel {
     private final Selector<Arch> targetPane;
 
     private final SpinnerNumberModel boundModel;
-    private final SpinnerNumberModel timeoutModel;
     private final JSpinner boundSpinner;
-    private final JSpinner timeoutSpinner;
 
     private final JTextField cflagsField;
 
@@ -110,9 +108,7 @@ public class OptionsPane extends JPanel {
         progressPane.setSelectedItem(ProgressModel.getDefault());
 
         boundModel = new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1);
-        timeoutModel = new SpinnerNumberModel(60, 1, Integer.MAX_VALUE, 1);
         boundSpinner = new JSpinner(boundModel);
-        timeoutSpinner = new JSpinner(timeoutModel);
         showViolationField = new JCheckBox();
 
         cflagsField = new JTextField();
@@ -139,7 +135,6 @@ public class OptionsPane extends JPanel {
         // Alias and Mode do not change the result, and thus we don't listen to them
         targetPane.addActionListener(this::clearConsole);
         boundSpinner.addChangeListener(this::clearConsole);
-        timeoutSpinner.addChangeListener(this::clearConsole);
         clearButton.addActionListener(this::clearConsole);
         propertyFields.values().forEach(propertyField -> propertyField.addActionListener(this::clearConsole));
         progressPane.addActionListener(this::clearConsole);
@@ -164,7 +159,6 @@ public class OptionsPane extends JPanel {
 
     public UiOptions getOptions() {
         int bound = boundModel.getNumber().intValue();
-        int timeout = timeoutModel.getNumber().intValue();
         boolean showViolationGraph = showViolationField.isSelected();
         String cflags = cflagsField.getText().strip();
         Arch target = targetPane.getSelectedItem();
@@ -172,7 +166,7 @@ public class OptionsPane extends JPanel {
         Solvers solver = solverPane.getSelectedItem();
         EnumSet<Property> properties = getSelectedProperties();
         ProgressModel progress = progressPane.getSelectedItem();
-        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, extraOptionsMap, properties, progress);
+        return new UiOptions(target, method, bound, solver, showViolationGraph, cflags, extraOptionsMap, properties, progress);
     }
 
     private void mkGrid() {
@@ -184,10 +178,6 @@ public class OptionsPane extends JPanel {
         JPanel boundPane = new JPanel(new FlowLayout(LEFT));
         boundPane.add(new JLabel("Unrolling: "));
         boundPane.add(boundSpinner);
-
-        JPanel timeoutPane = new JPanel(new FlowLayout(LEFT));
-        timeoutPane.add(new JLabel("Solver timeout: "));
-        timeoutPane.add(timeoutSpinner);
 
         JPanel cflagsPane = new JPanel(new FlowLayout(LEFT));
         cflagsPane.add(new JLabel("CFLAGS: "));
@@ -203,7 +193,7 @@ public class OptionsPane extends JPanel {
 
         final List<JComponent> optionRows = List.of(
                 iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
-                boundPane, timeoutPane, showViolationPane, configPane, cflagsPane, testButton, clearButton, cancelButton
+                boundPane, showViolationPane, configPane, cflagsPane, testButton, clearButton, cancelButton
         );
         final GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
@@ -268,7 +258,6 @@ public class OptionsPane extends JPanel {
                     .setOption(TARGET, targetPane.getSelectedItem().name())
                     .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
                     .setOption(BOUND, boundSpinner.getValue().toString())
-                    .setOption(TIMEOUT, timeoutSpinner.getValue().toString())
                     .build();
             //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
             //But comments missing a whitespace after '#' are treated as directives.
@@ -309,7 +298,7 @@ public class OptionsPane extends JPanel {
         setTargetArch(properties.remove(TARGET));
         setProgressModel(properties.remove(PROGRESSMODEL));
         setBound(properties.remove(BOUND));
-        setTimeout(properties.remove(TIMEOUT));
+        properties.remove(TIMEOUT);
         extraOptionsMap.clear();
         extraOptionsMap.putAll(properties);
     }
@@ -382,10 +371,6 @@ public class OptionsPane extends JPanel {
 
     private void setBound(String value) {
         setSpinnerValue(boundSpinner, value);
-    }
-
-    private void setTimeout(String value) {
-        setSpinnerValue(timeoutSpinner, value);
     }
 
     private static void setSpinnerValue(JSpinner spinner, String value) {
