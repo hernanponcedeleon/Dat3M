@@ -22,7 +22,8 @@ import java.util.EnumSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -38,7 +39,7 @@ public class ArrayValidTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/ok/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .map(f -> new Object[]{f, wmm})
                     .collect(Collectors.toList());
         }

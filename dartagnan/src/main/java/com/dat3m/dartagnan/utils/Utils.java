@@ -30,6 +30,10 @@ public class Utils {
         return Files.getFileExtension(path.getFileName().toString());
     }
 
+    public static boolean hasExtension(Path path, String extension) {
+        return extension.equals("." + getFileExtension(path));
+    }
+
     public static String getNameWithoutExtension(Path path) {
         return getNameWithoutExtension(path.getFileName().toString());
     }

@@ -12,7 +12,8 @@ import java.nio.file.Path;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
@@ -23,7 +24,7 @@ public class ArrayIllegalTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/error/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .map(f -> new Object[]{f})
                     .collect(Collectors.toList());
         }

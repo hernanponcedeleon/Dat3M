@@ -9,7 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.fail;
 
@@ -20,7 +21,7 @@ public class ProgramBuilderTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("parsers/program/utils/programBuilder/labels/aarch64"))) {
             fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .forEach(f -> {
                                 try {
                                     new ProgramParser().parse(Path.of(f.toString()));

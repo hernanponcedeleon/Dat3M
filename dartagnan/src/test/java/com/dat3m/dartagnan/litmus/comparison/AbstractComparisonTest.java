@@ -29,7 +29,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static org.junit.Assert.assertEquals;
@@ -48,7 +49,7 @@ public abstract class AbstractComparisonTest {
         try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .filter(f -> !skip.contains(f))
                     .collect(ArrayList::new,
                             (l, f) -> l.add(new Object[]{f}), ArrayList::addAll);

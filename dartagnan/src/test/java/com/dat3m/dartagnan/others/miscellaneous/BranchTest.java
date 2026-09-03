@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -46,7 +47,7 @@ public class BranchTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/C/"))) {
             data = fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .map(f -> new Object[]{f, expected.get(f.getFileName().toString()), linuxWmm})
                     .collect(Collectors.toList());
         }
@@ -54,7 +55,7 @@ public class BranchTest {
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("branch/AARCH64/"))) {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .map(f -> new Object[]{f, expected.get(f.getFileName().toString()), aarch64Wmm})
                     .toList());
         }

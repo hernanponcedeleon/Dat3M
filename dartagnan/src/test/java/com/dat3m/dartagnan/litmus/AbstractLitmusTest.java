@@ -31,7 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
+import static com.dat3m.dartagnan.utils.Utils.hasExtension;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
@@ -60,7 +61,7 @@ public abstract class AbstractLitmusTest {
         try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> getFileExtension(f).equals("litmus"))
+                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
                     .filter(f -> !skip.contains(f))
                     .filter(expectedResults::containsKey)
                     .map(f -> new Object[]{f, expectedResults.get(f)})
