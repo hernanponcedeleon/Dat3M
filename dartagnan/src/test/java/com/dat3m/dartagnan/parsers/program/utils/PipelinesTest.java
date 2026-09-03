@@ -84,10 +84,10 @@ public class PipelinesTest {
                     input: input
                     output: output
                     commands: []
-                """);
+        """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertTrue(exception.getMessage().contains("Duplicate pipeline"));
+        assertEquals("Duplicate pipeline for file extension: .foo", exception.getMessage());
     }
 
     @Test
@@ -105,10 +105,10 @@ public class PipelinesTest {
                     input: input
                     output: output
                     commands: []
-                """);
+        """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertTrue(exception.getMessage().contains("Duplicate pipeline"));
+        assertEquals("Duplicate pipeline for file extension: .bar", exception.getMessage());
     }
 
     @Test
@@ -119,12 +119,60 @@ public class PipelinesTest {
                   - pipeline: ".foo"
                     input: "{pipeline_input}"
                     output: "{basename}.foo"
-                    commands: []
+                    commands:
+                      - name: "Compile"
+                        tool: "compiler"
+                        input: "{pipeline_input}"
+                        output: "{basename}.foo"
+                        read_from_workdir: false
+                        args: []
                 """);
 
         final Pipelines pipelines = Pipelines.load(yaml);
         final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(pipelines));
-        assertTrue(exception.getMessage().contains("not a natively supported format"));
+        assertEquals("Pipeline for '.foo' generates '{basename}.foo', which is not a natively supported format", exception.getMessage());
+    }
+
+    @Test
+    public void rejectsPipelineWithoutCommands() throws Exception {
+        final Path yaml = writeConfiguration("""
+                workdir: build
+                pipelines:
+                  - pipeline: ".foo"
+                    input: "{pipeline_input}"
+                    output: "{basename}.ll"
+                    commands: []
+        """);
+
+        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
+        assertEquals("Pipeline for '.foo' has no commands", exception.getMessage());
+    }
+
+    @Test
+    public void rejectsPipelineWhoseFinalCommandDoesNotGenerateItsDeclaredOutput() throws Exception {
+        final Path yaml = writeConfiguration("""
+                workdir: build
+                pipelines:
+                  - pipeline: ".foo"
+                    input: "{pipeline_input}"
+                    output: "{basename}.ll"
+                    commands:
+                      - name: "Compile"
+                        tool: "compiler"
+                        input: "{pipeline_input}"
+                        output: "{basename}.ll"
+                        read_from_workdir: false
+                        args: []
+                      - name: "Postprocess"
+                        tool: "postprocessor"
+                        input: "{basename}.ll"
+                        output: "{basename}.spvasm"
+                        read_from_workdir: true
+                        args: []
+        """);
+
+        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
+        assertEquals("Final command of pipeline for '.foo' does not generate its declared output '{basename}.ll'", exception.getMessage());
     }
 
     @Test
@@ -153,20 +201,20 @@ public class PipelinesTest {
         final List<InvalidConfiguration> configurations = List.of(
                 new InvalidConfiguration("""
                         pipelines: []
-                        """, "Missing workdir"),
+                        """, "Missing workdir in the pipeline configuration file"),
                 new InvalidConfiguration("""
                         workdir: build
-                        """, "Missing pipelines"),
-                new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing pipeline extension"),
-                new InvalidConfiguration(pipelineConfigurationWithout("input"), "Missing pipeline input"),
-                new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing pipeline output"),
-                new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing pipeline commands"),
-                new InvalidConfiguration(commandConfigurationWithout("name"), "Missing name"),
-                new InvalidConfiguration(commandConfigurationWithout("tool"), "Entry tool"),
-                new InvalidConfiguration(commandConfigurationWithout("input"), "Entry input"),
-                new InvalidConfiguration(commandConfigurationWithout("output"), "Entry output"),
-                new InvalidConfiguration(commandConfigurationWithout("read_from_workdir"), "Entry read_from_workdir"),
-                new InvalidConfiguration(commandConfigurationWithout("args"), "Entry args")
+                        """, "Missing pipelines in the pipeline configuration file"),
+                new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing pipeline extension in the pipeline configuration file"),
+                new InvalidConfiguration(pipelineConfigurationWithout("input"), "Missing pipeline input for extension '.cl'"),
+                new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing pipeline output for extension '.cl'"),
+                new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing pipeline commands for extension '.cl'"),
+                new InvalidConfiguration(commandConfigurationWithout("name"), "Missing name for step in the pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("tool"), "Entry tool for step 'compile' is mandatory in the pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("input"), "Entry input for step 'compile' is mandatory in the pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("output"), "Entry output for step 'compile' is mandatory in the pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("read_from_workdir"), "Entry read_from_workdir for step 'compile' is mandatory in the pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("args"), "Entry args for step 'compile' is mandatory in the pipeline configuration file")
         );
 
         for (InvalidConfiguration configuration : configurations) {
@@ -174,7 +222,7 @@ public class PipelinesTest {
                     IOException.class,
                     () -> Pipelines.load(writeConfiguration(configuration.yaml()))
             );
-            assertTrue(exception.getMessage().contains(configuration.expectedMessage()));
+            assertEquals(configuration.expectedMessage(), exception.getMessage());
         }
     }
 

@@ -48,7 +48,7 @@ public class ProgramParser {
 
     public ProgramParser(Pipelines pipelines) throws IOException {
         this.pipelines = pipelines;
-        pipelines.validateOutputExtensions(NATIVE_EXTENSIONS);
+        pipelines.validate(NATIVE_EXTENSIONS);
         supportedExtensions = Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
                 .collect(Collectors.toUnmodifiableSet());
     }
