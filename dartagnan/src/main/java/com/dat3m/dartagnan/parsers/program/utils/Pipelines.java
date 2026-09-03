@@ -31,8 +31,10 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         pipelines = List.copyOf(pipelines);
         final Set<String> extensions = new HashSet<>();
         for (Pipeline pipeline : pipelines) {
-            if (!extensions.add(pipeline.pipeline())) {
-                throw new IllegalArgumentException("Duplicate pipeline for file extension: " + pipeline.pipeline());
+            for (String extension : pipeline.extensions()) {
+                if (!extensions.add(extension)) {
+                    throw new IllegalArgumentException("Duplicate pipeline for file extension: " + extension);
+                }
             }
         }
     }
@@ -54,7 +56,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
     }
 
     public boolean needsCompilation(String extension) {
-        return pipelines.stream().anyMatch(pipeline -> extension.equals(pipeline.pipeline()));
+        return pipelines.stream().anyMatch(pipeline -> pipeline.matches(extension));
     }
 
     public Set<String> getTools() {
@@ -66,7 +68,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
     public Pipeline getPipeline(String extension, Path inputPath, String basename) {
         final Pipeline abstractPipeline = pipelines.stream()
-                .filter(p -> extension.equals(p.pipeline()))
+                .filter(p -> p.matches(extension))
                 .findFirst()
                 .orElseThrow(() -> new UnsupportedOperationException("Compilation pipeline not found for file extension: " + extension));
 
@@ -95,6 +97,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
         return new Pipeline(
                 abstractPipeline.pipeline(),
+                abstractPipeline.aliases(),
                 Path.of(workdir, substitutePipelineTokens(abstractPipeline.input(), inputPath, basename)).toString(),
                 Path.of(workdir, substitutePipelineTokens(abstractPipeline.output(), inputPath, basename)).toString(),
                 concreteSteps
@@ -119,14 +122,23 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .replace("{cmd_output}", output);
     }
 
-    public record Pipeline(String pipeline, String input, String output, List<Command> commands) {
+    public record Pipeline(String pipeline, List<String> aliases, String input, String output, List<Command> commands) {
 
         public Pipeline {
             Preconditions.checkNotNull(pipeline, "Missing pipeline extension in the pipeline configuration file");
             Preconditions.checkNotNull(input, "Missing pipeline input for extension '%s'", pipeline);
             Preconditions.checkNotNull(output, "Missing pipeline output for extension '%s'", pipeline);
             Preconditions.checkNotNull(commands, "Missing pipeline commands for extension '%s'", pipeline);
+            aliases = aliases == null ? List.of() : List.copyOf(aliases);
             commands = List.copyOf(commands);
+        }
+
+        public List<String> extensions() {
+            return Stream.concat(Stream.of(pipeline), aliases.stream()).toList();
+        }
+
+        public boolean matches(String extension) {
+            return extensions().contains(extension);
         }
 
         private static final Logger logger = LoggerFactory.getLogger(Pipeline.class);
