@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.ShutdownManager;
 
 import java.nio.file.Path;
 
@@ -23,15 +24,17 @@ public class ReachabilityResult {
     private final Program program;
     private final Wmm wmm;
     private final UiOptions options;
+    private final ShutdownManager shutdownManager;
 
     private String verdict;
     private Path witnessFile;
 
 
-    public ReachabilityResult(Program program, Wmm wmm, UiOptions options) {
+    public ReachabilityResult(Program program, Wmm wmm, UiOptions options, ShutdownManager shutdownManager) {
         this.program = program;
         this.wmm = wmm;
         this.options = options;
+        this.shutdownManager = shutdownManager;
         run();
     }
 
@@ -62,14 +65,13 @@ public class ReachabilityResult {
             final VerificationTask task = VerificationTask.builder()
                     .withConfig(config)
                     .withBound(options.bound())
-                    .withSolverTimeout(options.timeout())
                     .withSolver(options.solver())
                     .withTarget(arch)
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
             final OutputGenerator outputGenerator = OutputGenerator.create(false, config);
-            try (TaskSolver solver = TaskSolver.create(task)) {
+            try (TaskSolver solver = TaskSolver.create(task).withShutdownManager(shutdownManager)) {
                 solver.run();
 
                 verdict = outputGenerator.getOutputFromSolver(solver, "dat3mUI").summary();

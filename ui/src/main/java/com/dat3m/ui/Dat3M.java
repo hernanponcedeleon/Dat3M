@@ -15,6 +15,7 @@ import com.dat3m.ui.utils.ImageLabel;
 import com.dat3m.ui.utils.UiOptions;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.Token;
+import org.sosy_lab.common.ShutdownManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,6 +23,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.concurrent.ExecutionException;
 
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
@@ -33,8 +35,14 @@ public class Dat3M extends JFrame implements ActionListener {
     private final EditorsPane editorsPane = new EditorsPane();
 
     private ReachabilityResult testResult;
+    private SwingWorker<VerificationOutcome, Void> verificationWorker;
+    private volatile ShutdownManager shutdownManager;
+    private boolean cancellationRequested;
+    private final Timer verificationTimer;
+    private long verificationStartTime;
 
     private Dat3M() {
+        verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
         setTitle("Dat3M");
@@ -56,6 +64,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
         // Start listening to button events
         optionsPane.getTestButton().addActionListener(this);
+        optionsPane.getCancelButton().addActionListener(this);
 
         // optionsPane needs to listen to editor to clean the console
         editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane::clearConsole);
@@ -81,12 +90,8 @@ public class Dat3M extends JFrame implements ActionListener {
         String command = event.getActionCommand();
         if (ControlCode.TEST.actionCommand().equals(command)) {
             runTest();
-            if (testResult != null) {
-                optionsPane.getConsolePane().setText(testResult.getVerdict());
-                if (optionsPane.getOptions().showWitness() && testResult.hasWitness()) {
-                    showViolation(testResult);
-                }
-            }
+        } else if (ControlCode.CANCEL.actionCommand().equals(command)) {
+            cancelVerification();
         }
     }
 
@@ -129,39 +134,141 @@ public class Dat3M extends JFrame implements ActionListener {
     }
 
     private void runTest() {
-        UiOptions options = optionsPane.getOptions();
+        final UiOptions options = optionsPane.getOptions();
+        final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
+        final String sourceCode = programEditor.getEditorPane().getText();
+        final String format = programEditor.getLoadedFormat().isEmpty()
+                ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
+                : programEditor.getLoadedFormat();
+        final String cflags = getCflags(options, format, programEditor);
+        final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
+
         testResult = null;
-        try {
-            final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-            final String sourceCode = programEditor.getEditorPane().getText();
-            final String format = programEditor.getLoadedFormat().isEmpty()
-                    ? ProgramParser.EXTENSION_C            // We default to "c" code, if we do not know
-                    : programEditor.getLoadedFormat();
-            String cflags = options.cflags().isEmpty()
-                    ? System.getenv().getOrDefault("CFLAGS", "")
-                    : options.cflags();
-            if (format.equals(ProgramParser.EXTENSION_C) && !programEditor.getLoadedDir().isEmpty()) {
-                // Include directory of loaded C file
-                cflags += " -I" + programEditor.getLoadedDir();
+        cancellationRequested = false;
+        final ShutdownManager manager = ShutdownManager.create();
+        shutdownManager = manager;
+
+        optionsPane.getTestButton().setEnabled(false);
+        optionsPane.getClearButton().setEnabled(false);
+        optionsPane.getCancelButton().setEnabled(true);
+        verificationStartTime = System.nanoTime();
+        verificationTimer.start();
+        updateVerificationTime();
+        verificationWorker = new SwingWorker<>() {
+            @Override
+            protected VerificationOutcome doInBackground() {
+                final Program program;
+                try {
+                    program = new ProgramParser().parse(sourceCode, format, cflags);
+                    program.setName("dat3mUI");
+                } catch (Exception e) {
+                    return VerificationOutcome.programError(e);
+                }
+
+                final Wmm targetModel;
+                try {
+                    targetModel = new ParserCat().parse(wmmCode);
+                } catch (Exception e) {
+                    return VerificationOutcome.memoryModelError(e);
+                }
+
+                return VerificationOutcome.success(new ReachabilityResult(program, targetModel, options, manager));
             }
-            final Program program = new ProgramParser().parse(sourceCode, format, cflags);
-            program.setName("dat3mUI");
-            try {
-                final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
-                final Wmm targetModel = new ParserCat().parse(wmmCode);
-                testResult = new ReachabilityResult(program, targetModel, options);
-            } catch (Exception e) {
-                final String msg = e.getMessage() == null ? "Memory model cannot be parsed" : e.getMessage();
-                showError(msg, "Target memory model error");
+
+            @Override
+            protected void done() {
+                verificationTimer.stop();
+                optionsPane.getTestButton().setEnabled(true);
+                optionsPane.getClearButton().setEnabled(true);
+                optionsPane.getCancelButton().setEnabled(false);
+                shutdownManager = null;
+                try {
+                    if (cancellationRequested) {
+                        optionsPane.getConsolePane().setText("CANCELLED");
+                        return;
+                    }
+                    final VerificationOutcome outcome = get();
+                    if (outcome.errorMessage() != null) {
+                        optionsPane.getConsolePane().setText("");
+                        showError(outcome.errorMessage(), outcome.errorTitle());
+                        return;
+                    }
+
+                    testResult = outcome.result();
+                    optionsPane.getConsolePane().setText(testResult.getVerdict());
+                    if (options.showWitness() && testResult.hasWitness()) {
+                        showViolation(testResult);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    optionsPane.getConsolePane().setText("");
+                    showError("Verification was interrupted", "Verification error");
+                } catch (ExecutionException e) {
+                    optionsPane.getConsolePane().setText("");
+                    showError(e.getCause().getMessage(), "Verification error");
+                }
             }
-        } catch (Exception e) {
-            final Throwable cause = e.getCause();
-            String msg = e.getMessage() == null ? "Program cannot be parsed" : e.getMessage();
-            if (cause instanceof InputMismatchException exception) {
-                Token token = exception.getOffendingToken();
-                msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
+        };
+        verificationWorker.execute();
+    }
+
+    private void updateVerificationTime() {
+        if (cancellationRequested) {
+            return;
+        }
+        final long elapsedSeconds = (System.nanoTime() - verificationStartTime) / 1_000_000_000;
+        final long hours = elapsedSeconds / 3600;
+        final long minutes = (elapsedSeconds % 3600) / 60;
+        final long seconds = elapsedSeconds % 60;
+        final String elapsedTime = hours > 0
+                ? "%d:%02d:%02d".formatted(hours, minutes, seconds)
+                : "%d:%02d".formatted(minutes, seconds);
+        optionsPane.getConsolePane().setText("Running... " + elapsedTime);
+    }
+
+    private void cancelVerification() {
+        if (verificationWorker == null || verificationWorker.isDone()) {
+            return;
+        }
+        cancellationRequested = true;
+        optionsPane.getCancelButton().setEnabled(false);
+        optionsPane.getConsolePane().setText("Cancelling...");
+        final ShutdownManager manager = shutdownManager;
+        if (manager != null) {
+            manager.requestShutdown("Cancelled by user");
+        }
+    }
+
+    private static String getCflags(UiOptions options, String format, Editor programEditor) {
+        String cflags = options.cflags().isEmpty()
+                ? System.getenv().getOrDefault("CFLAGS", "")
+                : options.cflags();
+        if (format.equals(ProgramParser.EXTENSION_C) && !programEditor.getLoadedDir().isEmpty()) {
+            // Include directory of loaded C file
+            cflags += " -I" + programEditor.getLoadedDir();
+        }
+        return cflags;
+    }
+
+    private record VerificationOutcome(ReachabilityResult result, String errorTitle, String errorMessage) {
+
+        private static VerificationOutcome success(ReachabilityResult result) {
+            return new VerificationOutcome(result, null, null);
+        }
+
+        private static VerificationOutcome programError(Exception exception) {
+            final Throwable cause = exception.getCause();
+            String message = exception.getMessage() == null ? "Program cannot be parsed" : exception.getMessage();
+            if (cause instanceof InputMismatchException inputMismatchException) {
+                final Token token = inputMismatchException.getOffendingToken();
+                message = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
             }
-            showError(msg, "Program error");
+            return new VerificationOutcome(null, "Program error", message);
+        }
+
+        private static VerificationOutcome memoryModelError(Exception exception) {
+            final String message = exception.getMessage() == null ? "Memory model cannot be parsed" : exception.getMessage();
+            return new VerificationOutcome(null, "Target memory model error", message);
         }
     }
 }

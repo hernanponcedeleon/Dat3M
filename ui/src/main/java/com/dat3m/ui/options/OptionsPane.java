@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.ui.button.ClearButton;
+import com.dat3m.ui.button.CancelButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
@@ -14,8 +15,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -27,15 +28,15 @@ import java.awt.event.WindowFocusListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
@@ -54,17 +55,17 @@ public class OptionsPane extends JPanel {
 
     private final Selector<Method> methodPane;
     private final Selector<Solvers> solverPane;
-    private final Selector<Property> propertyPane;
+    private final JPanel propertiesPane = new JPanel();
+    private final Map<Property, JCheckBox> propertyFields = new EnumMap<>(Property.class);
     private final Selector<ProgressModel> progressPane;
 
     private final Selector<Arch> targetPane;
 
-    private final BoundField boundField;
-    private final TimeoutField timeoutField;
+    private final SpinnerNumberModel boundModel;
+    private final JSpinner boundSpinner;
 
     private final JTextField cflagsField;
 
-    private final JTextField extraOptionsField;
     private final JDialog extraOptionsDialog;
     private final Map<String, JComponent> extraOptionsComponents = new HashMap<>();
     private final Map<String, String> extraOptionsMap = new LinkedHashMap<>();
@@ -72,14 +73,15 @@ public class OptionsPane extends JPanel {
 
     private final JButton extraOptionsButton;
     private final JButton testButton;
+    private final JButton cancelButton;
     private final JButton clearButton;
 
-    private final JRadioButton showViolationField;
+    private final JCheckBox showViolationField;
 
     private final JTextPane consolePane;
 
     public OptionsPane() {
-        super(new GridLayout(1, 0));
+        super(new GridBagLayout());
 
         methodPane = new Selector<>(Method.class, Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
@@ -87,8 +89,18 @@ public class OptionsPane extends JPanel {
         solverPane = new Selector<>(Solvers.class, solversOrderedValues(), ControlCode.SOLVER);
         solverPane.setSelectedItem(Solvers.Z3);
 
-        propertyPane = new Selector<>(Property.class, Property.orderedValues(), ControlCode.PROPERTY);
-        propertyPane.setSelectedItem(Property.PROGRAM_SPEC);
+        propertiesPane.setLayout(new BoxLayout(propertiesPane, BoxLayout.Y_AXIS));
+        propertiesPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
+        final JLabel propertiesLabel = new JLabel("Properties: ");
+        propertiesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        propertiesPane.add(propertiesLabel);
+        for (Property property : Property.orderedValues()) {
+            final JCheckBox propertyField = new JCheckBox(property.toString());
+            propertyField.setSelected(Property.getDefault().contains(property));
+            propertyField.setAlignmentX(Component.LEFT_ALIGNMENT);
+            propertyFields.put(property, propertyField);
+            propertiesPane.add(propertyField);
+        }
 
         targetPane = new Selector<>(Arch.class, Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
@@ -96,22 +108,20 @@ public class OptionsPane extends JPanel {
         progressPane = new Selector<>(ProgressModel.class, ProgressModel.orderedValues(), ControlCode.PROGRESS);
         progressPane.setSelectedItem(ProgressModel.getDefault());
 
-        boundField = new BoundField();
-        timeoutField = new TimeoutField();
-        showViolationField = new JRadioButton();
+        boundModel = new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1);
+        boundSpinner = new JSpinner(boundModel);
+        showViolationField = new JCheckBox();
 
         cflagsField = new JTextField();
         cflagsField.setColumns(20);
 
-        extraOptionsField = new JTextField();
-        extraOptionsField.setColumns(20);
         extraOptionsButton = new JButton("...");
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         extraOptionsButton.setToolTipText("Manage extra options.");
         extraOptionsDialog = newDialog();
         configurationFileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.properties", "properties"));
 
         testButton = new TestButton();
+        cancelButton = new CancelButton();
         clearButton = new ClearButton();
 
         consolePane = new JTextPane();
@@ -125,26 +135,23 @@ public class OptionsPane extends JPanel {
         // optionsPane needs to listen to options to clean the console
         // Alias and Mode do not change the result, and thus we don't listen to them
         targetPane.addActionListener(this::clearConsole);
-        boundField.addActionListener(this::clearConsole);
-        timeoutField.addActionListener(this::clearConsole);
+        boundSpinner.addChangeListener(this::clearConsole);
         clearButton.addActionListener(this::clearConsole);
-        propertyPane.addActionListener(this::clearConsole);
+        propertyFields.values().forEach(propertyField -> propertyField.addActionListener(this::clearConsole));
         progressPane.addActionListener(this::clearConsole);
         extraOptionsButton.addActionListener(this::handleExtraOptionsButton);
-        extraOptionsField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                toText();
-            }
-            @Override
-            public void focusLost(FocusEvent e) {
-                fromText();
-            }
-        });
     }
 
     public JButton getTestButton() {
         return testButton;
+    }
+
+    public JButton getCancelButton() {
+        return cancelButton;
+    }
+
+    public JButton getClearButton() {
+        return clearButton;
     }
 
     public JTextPane getConsolePane() {
@@ -152,33 +159,26 @@ public class OptionsPane extends JPanel {
     }
 
     public UiOptions getOptions() {
-        int bound = Integer.parseInt(boundField.getText());
-        int timeout = Integer.parseInt(timeoutField.getText());
+        int bound = boundModel.getNumber().intValue();
         boolean showViolationGraph = showViolationField.isSelected();
         String cflags = cflagsField.getText().strip();
         Arch target = targetPane.getSelectedItem();
         Method method = methodPane.getSelectedItem();
         Solvers solver = solverPane.getSelectedItem();
-        EnumSet<Property> properties = EnumSet.of(propertyPane.getSelectedItem());
+        EnumSet<Property> properties = getSelectedProperties();
         ProgressModel progress = progressPane.getSelectedItem();
-        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, extraOptionsMap, properties, progress);
+        return new UiOptions(target, method, bound, solver, showViolationGraph, cflags, extraOptionsMap, properties, progress);
     }
 
     private void mkGrid() {
 
         JScrollPane scrollConsole = new JScrollPane(consolePane);
-        scrollConsole.setMaximumSize(new Dimension(OPTWIDTH, 120));
+        scrollConsole.setPreferredSize(new Dimension(OPTWIDTH, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JSplitPane boundsPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        JPanel boundPane = new BoundPane();
-        boundPane.add(boundField);
-        JPanel timeoutPane = new TimeoutPane();
-        timeoutPane.add(timeoutField);
-        boundsPane.setLeftComponent(boundPane);
-        boundsPane.setRightComponent(timeoutPane);
-        boundsPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
-        boundsPane.setDividerSize(0);
+        JPanel boundPane = new JPanel(new FlowLayout(LEFT));
+        boundPane.add(new JLabel("Unrolling: "));
+        boundPane.add(boundSpinner);
 
         JPanel cflagsPane = new JPanel(new FlowLayout(LEFT));
         cflagsPane.add(new JLabel("CFLAGS: "));
@@ -186,33 +186,31 @@ public class OptionsPane extends JPanel {
 
         JPanel configPane = new JPanel(new FlowLayout(LEFT));
         configPane.add(new JLabel("Extra options: "));
-        configPane.add(extraOptionsField);
         configPane.add(extraOptionsButton);
 
         JPanel showViolationPane = new JPanel(new FlowLayout(LEFT));
         showViolationPane.add(new JLabel("Show witness graph"));
         showViolationPane.add(showViolationField);
 
-        // Inner borders
-        Border emptyBorder = BorderFactory.createEmptyBorder();
-
-        JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, progressPane, boundsPane, showViolationPane, configPane,
-                cflagsPane, testButton, clearButton, graphPane, scrollConsole };
-        Iterator<JComponent> it = Arrays.asList(panes).iterator();
-        JComponent current = iconPane;
-        current.setBorder(emptyBorder);
-        while (it.hasNext()) {
-            JComponent next = it.next();
-            current = new JSplitPane(JSplitPane.VERTICAL_SPLIT, current, next);
-            ((JSplitPane) current).setDividerSize(2);
-            current.setBorder(emptyBorder);
-            if (!(next instanceof JButton)) {
-                next.setBorder(emptyBorder);
-            }
+        final List<JComponent> optionRows = List.of(
+                iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
+                boundPane, showViolationPane, configPane, cflagsPane, testButton, clearButton, cancelButton
+        );
+        final GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.anchor = GridBagConstraints.LINE_START;
+        for (int row = 0; row < optionRows.size(); row++) {
+            constraints.gridy = row;
+            constraints.weighty = 0;
+            add(optionRows.get(row), constraints);
         }
-        add(current);
+
+        constraints.gridy = optionRows.size();
+        constraints.weighty = 1;
+        constraints.fill = GridBagConstraints.BOTH;
+        add(scrollConsole, constraints);
 
         // Outer border
         TitledBorder titledBorder = createTitledBorder("Options");
@@ -220,29 +218,17 @@ public class OptionsPane extends JPanel {
         setBorder(titledBorder);
     }
 
-    public void clearConsole(ActionEvent ignoreEvent) {
-        // Any change in the (relevant) options clears the console
-        getConsolePane().setText("");
+    public void clearConsole(ActionEvent ignored) {
+        clearConsole();
     }
 
-    private void fromText() {
-        extraOptionsMap.clear();
-        for (String c : extraOptionsField.getText().split(" ")) {
-            int separator = c.indexOf('=');
-            if (separator != -1 && c.startsWith("--")) {
-                extraOptionsMap.put(c.substring(2, separator), c.substring(separator + 1));
-            }
-        }
+    private void clearConsole(ChangeEvent ignored) {
+        clearConsole();
     }
 
-    private void toText() {
-        final var text = new StringBuilder();
-        boolean init = false;
-        for (Map.Entry<String, String> entry : extraOptionsMap.entrySet()) {
-            text.append(init ? " --" : "--").append(entry.getKey()).append('=').append(entry.getValue());
-            init = true;
-        }
-        extraOptionsField.setText(text.toString());
+    private void clearConsole() {
+        // Any change in the relevant options clears the console.
+        consolePane.setText("");
     }
 
     private void handleExtraOptionsButton(ActionEvent e) {
@@ -254,7 +240,6 @@ public class OptionsPane extends JPanel {
 
     private void doExport() {
         if (extraOptionsDialog.isVisible()) {
-            toText();
             extraOptionsDialog.setVisible(false);
         }
         configurationFileChooser.showSaveDialog(this);
@@ -268,11 +253,12 @@ public class OptionsPane extends JPanel {
                     .setOptions(extraOptionsMap)
                     .setOption(METHOD, methodPane.getSelectedItem().name())
                     .setOption(SOLVER, solverPane.getSelectedItem().name())
-                    .setOption(PROPERTY, propertyPane.getSelectedItem().name())
+                    .setOption(PROPERTY, getSelectedProperties().stream()
+                            .map(Property::asStringOption)
+                            .collect(Collectors.joining(",")))
                     .setOption(TARGET, targetPane.getSelectedItem().name())
                     .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
-                    .setOption(BOUND, boundField.getText())
-                    .setOption(TIMEOUT, timeoutField.getText())
+                    .setOption(BOUND, boundSpinner.getValue().toString())
                     .build();
             //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
             //But comments missing a whitespace after '#' are treated as directives.
@@ -309,14 +295,13 @@ public class OptionsPane extends JPanel {
         }
         setMethod(properties.remove(METHOD));
         setSolver(properties.remove(SOLVER));
-        setProperty(properties.remove(PROPERTY));
+        setProperties(properties.remove(PROPERTY));
         setTargetArch(properties.remove(TARGET));
         setProgressModel(properties.remove(PROGRESSMODEL));
         setBound(properties.remove(BOUND));
-        setTimeout(properties.remove(TIMEOUT));
+        properties.remove(TIMEOUT);
         extraOptionsMap.clear();
         extraOptionsMap.putAll(properties);
-        toText();
     }
 
     private void setMethod(String value) {
@@ -339,13 +324,29 @@ public class OptionsPane extends JPanel {
         }
     }
 
-    private void setProperty(String value) {
+    private EnumSet<Property> getSelectedProperties() {
+        final EnumSet<Property> properties = EnumSet.noneOf(Property.class);
+        for (Map.Entry<Property, JCheckBox> entry : propertyFields.entrySet()) {
+            if (entry.getValue().isSelected()) {
+                properties.add(entry.getKey());
+            }
+        }
+        return properties;
+    }
+
+    private void setProperties(String value) {
         if (value == null) {
             return;
         }
-        try {
-            propertyPane.setSelectedItem(Property.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        final EnumSet<Property> properties = EnumSet.noneOf(Property.class);
+        for (String property : value.split(",")) {
+            try {
+                properties.add(Property.valueOf(property.strip().toUpperCase()));
+            } catch (IllegalArgumentException ignore) {
+            }
+        }
+        for (Map.Entry<Property, JCheckBox> entry : propertyFields.entrySet()) {
+            entry.getValue().setSelected(properties.contains(entry.getKey()));
         }
     }
 
@@ -370,17 +371,17 @@ public class OptionsPane extends JPanel {
     }
 
     private void setBound(String value) {
-        if (value == null) {
-            return;
-        }
-        boundField.setText(value);
+        setSpinnerValue(boundSpinner, value);
     }
 
-    private void setTimeout(String value) {
+    private static void setSpinnerValue(JSpinner spinner, String value) {
         if (value == null) {
             return;
         }
-        timeoutField.setText(value);
+        try {
+            spinner.setValue(Integer.parseInt(value));
+        } catch (IllegalArgumentException ignore) {
+        }
     }
 
     private JDialog newDialog() {
@@ -393,15 +394,6 @@ public class OptionsPane extends JPanel {
         dialogPane.add(optionPanel, BorderLayout.CENTER);
         dialogPane.add(newDialogButtons(), BorderLayout.SOUTH);
         dialog.pack();
-        dialog.addWindowFocusListener(new WindowFocusListener() {
-            @Override
-            public void windowGainedFocus(WindowEvent e) {
-            }
-            @Override
-            public void windowLostFocus(WindowEvent e) {
-                toText();
-            }
-        });
         return dialog;
     }
 
