@@ -90,6 +90,7 @@ public class OptionsPane extends JPanel {
         solverPane.setSelectedItem(Solvers.Z3);
 
         propertiesPane.setLayout(new BoxLayout(propertiesPane, BoxLayout.Y_AXIS));
+        propertiesPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
         final JLabel propertiesLabel = new JLabel("Properties: ");
         propertiesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         propertiesPane.add(propertiesLabel);
