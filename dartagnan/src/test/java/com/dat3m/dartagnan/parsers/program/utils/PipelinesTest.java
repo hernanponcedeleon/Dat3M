@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -108,6 +109,22 @@ public class PipelinesTest {
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
         assertTrue(exception.getMessage().contains("Duplicate pipeline"));
+    }
+
+    @Test
+    public void rejectsPipelineOutputWithoutNativeParser() throws Exception {
+        final Path yaml = writeConfiguration("""
+                workdir: build
+                pipelines:
+                  - pipeline: ".foo"
+                    input: "{pipeline_input}"
+                    output: "{basename}.foo"
+                    commands: []
+                """);
+
+        final Pipelines pipelines = Pipelines.load(yaml);
+        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(pipelines));
+        assertTrue(exception.getMessage().contains("not a natively supported format"));
     }
 
     @Test

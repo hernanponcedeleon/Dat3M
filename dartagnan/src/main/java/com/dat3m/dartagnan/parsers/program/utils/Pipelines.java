@@ -72,6 +72,15 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .toList();
     }
 
+    public void validateOutputExtensions(Set<String> supportedExtensions) throws IOException {
+        for (Pipeline pipeline : pipelines) {
+            if (supportedExtensions.stream().noneMatch(pipeline.output()::endsWith)) {
+                throw new IOException("Pipeline for '%s' generates '%s', which is not a natively supported format"
+                        .formatted(pipeline.pipeline(), pipeline.output()));
+            }
+        }
+    }
+
     public Pipeline getPipeline(String extension, Path inputPath, String basename) {
         final Pipeline abstractPipeline = pipelines.stream()
                 .filter(p -> p.matches(extension))
