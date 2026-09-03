@@ -229,6 +229,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 final Branch creatorBranch = decomposition.event2BranchMap.get(start.getCreator());
                 threadInitialBranch.mustPred.add(creatorBranch);
                 threadInitialBranch.exclusiveBranches.addAll(creatorBranch.exclusiveBranches);
+                creatorBranch.exclusiveBranches.forEach(b -> b.exclusiveBranches.add(threadInitialBranch));
                 creatorBranch.mustSucc.add(threadInitialBranch);
             } else {
                 unconditionalThreadInitialBranches.add(threadInitialBranch);
@@ -339,6 +340,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     .get();
 
             unreachableClass.impliedClasses.addAll(this.getAllTypedEqClasses());
+            unreachableClass.exclusiveClasses.addAll(this.getAllTypedEqClasses());
+            unreachableClass.exclusiveClasses.remove(unreachableClass);
             this.<BranchClass>getAllTypedEqClasses().forEach(c -> c.exclusiveClasses.add(unreachableClass));
         }
 

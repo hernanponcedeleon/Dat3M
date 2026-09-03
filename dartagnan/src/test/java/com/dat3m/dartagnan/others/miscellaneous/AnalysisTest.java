@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -38,6 +39,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -68,6 +70,38 @@ public class AnalysisTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+    @Test
+    public void branchEquivalenceIsSymmetricOnUnreachableCode() throws InvalidConfigurationException {
+        final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        b.newThread(0);
+        final Label skip = b.getOrCreateLabel(0, "skip");
+        b.addChildWithoutSourceLoc(0, newGoto(skip));
+        b.addChildWithoutSourceLoc(0, newGoto(skip)); // unreachable
+        b.addChildWithoutSourceLoc(0, skip);
+
+        final Configuration config = Configuration.defaultConfiguration();
+        final Program program = b.build();
+        Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
+        ThreadCreation.fromConfig(config).run(program);
+        final BranchEquivalence branchEquivalence = BranchEquivalence.fromConfig(program, config);
+        checkExclusiveSymmetry(branchEquivalence, program.getThreadEvents());
+    }
+
+    private void checkExclusiveSymmetry(BranchEquivalence be, List<Event> events) {
+        final var mismatch = new ArrayList<Tuple>();
+        for (int i0 = 0; i0 < events.size(); i0++) {
+            final Event e0 = events.get(i0);
+            for (int i1 = i0; i1 < events.size(); i1++) {
+                final Event e1 = events.get(i1);
+                if (be.areMutuallyExclusive(e0, e1) != be.areMutuallyExclusive(e1, e0)) {
+                    mismatch.add(new Tuple(e0, e1));
+                }
+            }
+        }
+        assertTrue(mismatch.isEmpty());
+    }
 
     @Test
     public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
