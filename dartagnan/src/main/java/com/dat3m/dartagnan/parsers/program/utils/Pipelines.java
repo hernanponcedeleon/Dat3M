@@ -72,10 +72,17 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .toList();
     }
 
-    public void validateOutputExtensions(Set<String> supportedExtensions) throws IOException {
+    public void validate(Set<String> supportedExtensions) throws IOException {
         for (Pipeline pipeline : pipelines) {
+            if (pipeline.commands().isEmpty()) {
+                throw new IOException("Pipeline for '%s' has no commands".formatted(pipeline.pipeline()));
+            }
             if (supportedExtensions.stream().noneMatch(pipeline.output()::endsWith)) {
                 throw new IOException("Pipeline for '%s' generates '%s', which is not a natively supported format"
+                        .formatted(pipeline.pipeline(), pipeline.output()));
+            }
+            if (!pipeline.commands().get(pipeline.commands().size() - 1).output().equals(pipeline.output())) {
+                throw new IOException("Final command of pipeline for '%s' does not generate its declared output '%s'"
                         .formatted(pipeline.pipeline(), pipeline.output()));
             }
         }
