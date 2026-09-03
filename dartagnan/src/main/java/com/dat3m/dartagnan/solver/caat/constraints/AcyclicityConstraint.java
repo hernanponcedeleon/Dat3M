@@ -25,6 +25,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
 
     private final List<DenseIntegerSet> violatingSccs = new ArrayList<>();
     private final DenseIntegerSet markedNodes = new DenseIntegerSet();
+    private final Set<List<Edge>> reportedCycles = new HashSet<>();
     private Node[] nodeMap;
 
     public AcyclicityConstraint(RelationGraph constrainedGraph) {
@@ -62,6 +63,9 @@ public class AcyclicityConstraint extends AbstractConstraint {
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         // (3) remove chords and normalize cycle order (starting from element with smallest id)
+        // Returned cycles are recorded. If none of these node-disjoint cycles yields a usable core
+        // reason, getNextUnreportedViolation() can subsequently search for cycles that share nodes
+        // with the already returned ones.
         for (Set<Integer> scc : violatingSccs) {
             MaterializedSubgraphView subgraph = new MaterializedSubgraphView(constrainedGraph, scc);
             Set<Integer> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
@@ -75,6 +79,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
                 //TODO: Most cycles have chords, so a specialized algorithm that avoids
                 // chords altogether would be great
                 reduceChordsAndNormalize(cycle);
+                reportedCycles.add(cycle);
                 if (!cycles.contains(cycle)) {
                     cycles.add(cycle);
                 }
@@ -82,6 +87,26 @@ public class AcyclicityConstraint extends AbstractConstraint {
         }
 
         return cycles;
+    }
+
+    /**
+     * Returns one further violating cycle, including cycles that overlap with cycles
+     * previously returned by {@link #getViolations()}. This is intentionally a
+     * demand-driven fallback: the regular node-disjoint extraction remains the
+     * default because it avoids computing redundant reasons in the common case.
+     */
+    public Optional<List<Edge>> getNextUnreportedViolation() {
+        for (Set<Integer> scc : violatingSccs) {
+            MaterializedSubgraphView subgraph = new MaterializedSubgraphView(constrainedGraph, scc);
+            for (int node : Sets.intersection(scc, markedNodes)) {
+                List<Edge> cycle = new ArrayList<>(PathAlgorithm.findShortestPath(subgraph, node, node));
+                reduceChordsAndNormalize(cycle);
+                if (reportedCycles.add(cycle)) {
+                    return Optional.of(cycle);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private void reduceChordsAndNormalize(List<Edge> cycle) {
@@ -154,6 +179,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
         violatingSccs.forEach(SET_COLLECTION_POOL::returnToPool);
         violatingSccs.clear();
         markedNodes.clear();
+        reportedCycles.clear();
     }
 
 

@@ -64,6 +64,14 @@ public class Reasoner {
         return new DNF<>(reasonList);
     }
 
+    public Conjunction<CAATLiteral> computeViolationReason(Constraint constraint,
+                                                            Collection<? extends Derivable> violation) {
+        CAATPredicate predicate = constraint.getConstrainedPredicate();
+        return violation.stream()
+                .map(derivable -> computeReason(predicate, derivable))
+                .reduce(Conjunction.TRUE(), Conjunction::and);
+    }
+
     public Conjunction<CAATLiteral> computeReason(CAATPredicate pred, Derivable prop) {
         if (pred instanceof RelationGraph rg && prop instanceof Edge edge) {
             return computeReason(rg, edge);

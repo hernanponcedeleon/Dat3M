@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.solver.caat;
 
 
+import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.misc.PathAlgorithm;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -10,6 +12,7 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.CONSISTENT;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
@@ -71,6 +74,7 @@ public class CAATSolver {
         stats.consistencyCheckTime = System.currentTimeMillis() - curTime;
 
         if (status == INCONSISTENT) {
+            result.setViolatedConstraints(violatedConstraints);
             // ============== Compute reasons ===============
             curTime = System.currentTimeMillis();
             result.setBaseReasons(computeInconsistencyReasons(violatedConstraints));
@@ -94,26 +98,50 @@ public class CAATSolver {
         return result;
     }
 
+    public DNF<CAATLiteral> computeNextInconsistencyReason(Result result) {
+        for (Constraint constraint : result.getViolatedConstraints()) {
+            if (constraint instanceof AcyclicityConstraint acyclicity) {
+                Optional<List<Edge>> cycle =
+                        acyclicity.getNextUnreportedViolation();
+                if (cycle.isPresent()) {
+                    Conjunction<CAATLiteral> reason = reasoner.computeViolationReason(constraint, cycle.get());
+                    stats.numComputedReasons++;
+                    if (!reason.isFalse()) {
+                        stats.numComputedReducedReasons++;
+                    }
+                    return new DNF<>(List.of(reason));
+                }
+            }
+        }
+        return DNF.FALSE();
+    }
+
     // ======================================== Inner Classes ==============================================
 
     public static class Result {
         private Status status;
         private DNF<CAATLiteral> baseReasons;
+        private List<Constraint> violatedConstraints;
         private final Statistics stats;
 
         public Status getStatus() { return status; }
         public DNF<CAATLiteral> getBaseReasons() { return baseReasons; }
+        public List<Constraint> getViolatedConstraints() { return violatedConstraints; }
         public Statistics getStatistics() { return stats; }
 
         void setStatus(Status status) { this.status = status; }
         void setBaseReasons(DNF<CAATLiteral> reasons) {
             this.baseReasons = reasons;
         }
+        void setViolatedConstraints(List<Constraint> constraints) {
+            this.violatedConstraints = new ArrayList<>(constraints);
+        }
 
         public Result() {
             stats = new Statistics();
             status = Status.INCONCLUSIVE;
             baseReasons = DNF.FALSE();
+            violatedConstraints = List.of();
         }
 
         @Override

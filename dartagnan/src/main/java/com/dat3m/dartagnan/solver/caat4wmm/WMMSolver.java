@@ -4,6 +4,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -60,6 +61,13 @@ public class WMMSolver {
             // ============== Compute Core reasons ==============
             curTime = System.currentTimeMillis();
             Set<Conjunction<CoreLiteral>> coreReasons = reasoner.toCoreReasons(caatResult.getBaseReasons());
+            while (coreReasons.isEmpty()) {
+                DNF<CAATLiteral> nextBaseReason = solver.computeNextInconsistencyReason(caatResult);
+                if (nextBaseReason.isFalse()) {
+                    break;
+                }
+                coreReasons = reasoner.toCoreReasons(nextBaseReason);
+            }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
