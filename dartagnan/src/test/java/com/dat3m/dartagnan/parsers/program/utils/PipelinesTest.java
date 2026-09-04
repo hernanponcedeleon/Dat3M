@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -122,9 +121,9 @@ public class PipelinesTest {
                         args: []
                 """);
 
-        final Pipelines pipelines = Pipelines.load(yaml);
-        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(pipelines));
-        assertEquals("Compilation pipeline for '.foo' generates '{basename}.foo', which is not a natively supported format", exception.getMessage());
+        final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertConfigurationError(yaml, exception,
+                "Compilation pipeline for '.foo' generates '{basename}.foo', which is not a natively supported format");
     }
 
     @Test
@@ -137,8 +136,8 @@ public class PipelinesTest {
                     commands: []
         """);
 
-        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
-        assertEquals("Compilation pipeline for '.foo' has no commands", exception.getMessage());
+        final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertConfigurationError(yaml, exception, "Compilation pipeline for '.foo' has no commands");
     }
 
     @Test
@@ -161,8 +160,9 @@ public class PipelinesTest {
                         args: []
         """);
 
-        final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
-        assertEquals("Final command of compilation pipeline for '.foo' does not generate its declared output '{basename}.ll'", exception.getMessage());
+        final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertConfigurationError(yaml, exception,
+                "Final command of compilation pipeline for '.foo' does not generate its declared output '{basename}.ll'");
     }
 
     @Test
