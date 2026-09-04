@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 public class PipelinesTest {
 
-    private static final Path TEST_WORKDIR = Path.of("build").toAbsolutePath();
+    private static final Path TEST_WORKDIR = Path.of("build").toAbsolutePath().normalize();
 
     @Test
     public void loadAndPreparePipeline() throws Exception {
@@ -240,9 +240,9 @@ public class PipelinesTest {
                         workdir: build
                         """, "Missing compilation pipelines in the configuration file"),
                 new InvalidConfiguration("""
-                        workdir: relative
+                        workdir: ""
                         pipelines: []
-                        """, "Compilation pipeline workdir must be an absolute path: relative"),
+                        """, "Compilation pipeline workdir must not be blank"),
                 new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing compilation pipeline extension in the configuration file"),
                 new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing compilation pipeline output for extension '.cl'"),
                 new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing compilation pipeline commands for extension '.cl'"),
@@ -327,7 +327,7 @@ public class PipelinesTest {
 
     private static Path writeConfiguration(String configuration) throws IOException {
         final Path yaml = Files.createTempFile("compilation", ".yml");
-        Files.writeString(yaml, configuration.replace("workdir: build", "workdir: " + TEST_WORKDIR));
+        Files.writeString(yaml, configuration);
         return yaml;
     }
 

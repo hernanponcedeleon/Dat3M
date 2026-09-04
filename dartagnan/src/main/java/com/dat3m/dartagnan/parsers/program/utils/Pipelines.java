@@ -30,8 +30,8 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
     public Pipelines {
         Preconditions.checkNotNull(workdir, "Missing workdir in the compilation pipeline configuration file");
-        Preconditions.checkArgument(Path.of(workdir).isAbsolute(),
-                "Compilation pipeline workdir must be an absolute path: %s", workdir);
+        Preconditions.checkArgument(!workdir.isBlank(), "Compilation pipeline workdir must not be blank");
+        workdir = Path.of(workdir).toAbsolutePath().normalize().toString();
         Preconditions.checkNotNull(pipelines, "Missing compilation pipelines in the configuration file");
         pipelines = List.copyOf(pipelines);
         final Set<String> extensions = new HashSet<>();
