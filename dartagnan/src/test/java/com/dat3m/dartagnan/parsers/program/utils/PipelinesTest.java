@@ -15,6 +15,8 @@ import static org.junit.Assert.assertTrue;
 
 public class PipelinesTest {
 
+    private static final Path TEST_WORKDIR = Path.of("build").toAbsolutePath();
+
     @Test
     public void loadAndPreparePipeline() throws Exception {
         final Path yaml = writeConfiguration("""
@@ -57,16 +59,16 @@ public class PipelinesTest {
         assertTrue(pipelines.needsCompilation(".i"));
         assertFalse(pipelines.needsCompilation(".litmus"));
         assertEquals(3, pipelines.getTools().size());
-        assertEquals(Path.of("build", "example.spvasm").toString(), pipeline.output());
+        assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), pipeline.output());
         assertEquals(pipeline.output(), aliasPipeline.output());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.input());
-        assertEquals(Path.of("build", "example.spv").toString(), upgradeMemoryModel.input());
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.input());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.args().get(0)); // {cmd_input}
-        assertEquals(Path.of("build", "example.spv").toString(), compile.args().get(3)); // {cmd_output}
-        assertEquals(Path.of("build", "example.spv").toString(), upgradeMemoryModel.args().get(1)); // {cmd_input}
-        assertEquals(Path.of("build", "example-vulkan.spv").toString(), upgradeMemoryModel.args().get(3)); // {cmd_output}
-        assertEquals(Path.of("build", "example-vulkan.spv").toString(), disassemble.args().get(0)); // {cmd_input}
-        assertEquals(Path.of("build", "example.spvasm").toString(), disassemble.args().get(2)); // {cmd_output}
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), compile.args().get(3)); // {cmd_output}
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.args().get(1)); // {cmd_input}
+        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), upgradeMemoryModel.args().get(3)); // {cmd_output}
+        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), disassemble.args().get(0)); // {cmd_input}
+        assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), disassemble.args().get(2)); // {cmd_output}
     }
 
     @Test
@@ -83,7 +85,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertEquals("Duplicate compilation pipeline for file extension: .foo", exception.getMessage());
+        assertConfigurationError(yaml, exception, "Duplicate compilation pipeline for file extension: .foo");
     }
 
     @Test
@@ -102,7 +104,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertEquals("Duplicate compilation pipeline for file extension: .bar", exception.getMessage());
+        assertConfigurationError(yaml, exception, "Duplicate compilation pipeline for file extension: .bar");
     }
 
     @Test
@@ -197,7 +199,7 @@ public class PipelinesTest {
                 ));
 
         try {
-            pipeline.execute();
+            assertThrows(IOException.class, pipeline::execute);
 
             assertTrue(Files.isDirectory(intermediate.getParent()));
             assertTrue(Files.isDirectory(output.getParent()));
@@ -211,7 +213,25 @@ public class PipelinesTest {
     }
 
     @Test
-    public void rejectsMissingRequiredEntries() {
+    public void rejectsMissingFinalOutput() throws Exception {
+        final Path directory = Files.createTempDirectory("pipeline");
+        final Path output = directory.resolve("missing.spvasm");
+        final String java = ProcessHandle.current().info().command().orElseThrow();
+        final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
+                ".cl", List.of(), output.toString(), List.of(
+                        new Pipelines.Pipeline.Command("compile", java, "input.cl", output.toString(), List.of("--version"))
+                ));
+
+        try {
+            final IOException exception = assertThrows(IOException.class, pipeline::execute);
+            assertEquals("Compilation pipeline for '.cl' did not generate declared output '%s'".formatted(output), exception.getMessage());
+        } finally {
+            Files.deleteIfExists(directory);
+        }
+    }
+
+    @Test
+    public void rejectsMissingRequiredEntries() throws IOException {
         final List<InvalidConfiguration> configurations = List.of(
                 new InvalidConfiguration("""
                         pipelines: []
@@ -219,6 +239,10 @@ public class PipelinesTest {
                 new InvalidConfiguration("""
                         workdir: build
                         """, "Missing compilation pipelines in the configuration file"),
+                new InvalidConfiguration("""
+                        workdir: relative
+                        pipelines: []
+                        """, "Compilation pipeline workdir must be an absolute path: relative"),
                 new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing compilation pipeline extension in the configuration file"),
                 new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing compilation pipeline output for extension '.cl'"),
                 new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing compilation pipeline commands for extension '.cl'"),
@@ -230,11 +254,12 @@ public class PipelinesTest {
         );
 
         for (InvalidConfiguration configuration : configurations) {
+            final Path yaml = writeConfiguration(configuration.yaml());
             final IOException exception = assertThrows(
                     IOException.class,
-                    () -> Pipelines.load(writeConfiguration(configuration.yaml()))
+                    () -> Pipelines.load(yaml)
             );
-            assertEquals(configuration.expectedMessage(), exception.getMessage());
+            assertConfigurationError(yaml, exception, configuration.expectedMessage());
         }
     }
 
@@ -255,6 +280,7 @@ public class PipelinesTest {
                 """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertTrue(exception.getMessage().startsWith("Invalid compilation pipeline configuration '%s': ".formatted(yaml)));
         assertTrue(exception.getMessage().contains("Unrecognized field \"read_from_workdir\""));
     }
 
@@ -301,8 +327,12 @@ public class PipelinesTest {
 
     private static Path writeConfiguration(String configuration) throws IOException {
         final Path yaml = Files.createTempFile("compilation", ".yml");
-        Files.writeString(yaml, configuration);
+        Files.writeString(yaml, configuration.replace("workdir: build", "workdir: " + TEST_WORKDIR));
         return yaml;
+    }
+
+    private static void assertConfigurationError(Path yaml, IOException exception, String message) {
+        assertEquals("Invalid compilation pipeline configuration '%s': %s".formatted(yaml, message), exception.getMessage());
     }
 
     private record InvalidConfiguration(String yaml, String expectedMessage) {

@@ -29,6 +29,8 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
     public Pipelines {
         Preconditions.checkNotNull(workdir, "Missing workdir in the compilation pipeline configuration file");
+        Preconditions.checkArgument(Path.of(workdir).isAbsolute(),
+                "Compilation pipeline workdir must be an absolute path: %s", workdir);
         Preconditions.checkNotNull(pipelines, "Missing compilation pipelines in the configuration file");
         pipelines = List.copyOf(pipelines);
         final Set<String> extensions = new HashSet<>();
@@ -42,6 +44,16 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
     }
 
     public static Pipelines load(Path yamlPath) throws IOException {
+        try {
+            return loadConfiguration(yamlPath);
+        } catch (IOException exception) {
+            throw withConfigurationPath(yamlPath, exception);
+        } catch (RuntimeException exception) {
+            throw withConfigurationPath(yamlPath, invalidConfiguration(exception));
+        }
+    }
+
+    private static Pipelines loadConfiguration(Path yamlPath) throws IOException {
         try (InputStream inputStream = Files.newInputStream(yamlPath)) {
             final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
                     .replace("$DAT3M_HOME", getHomeDirectory().toString())
@@ -59,11 +71,6 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             final ObjectMapper mapper = new ObjectMapper();
             mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, true);
             return mapper.convertValue(configuration, Pipelines.class);
-        } catch (IllegalArgumentException e) {
-            if (e.getCause() instanceof ValueInstantiationException valueInstantiationException) {
-                throw invalidConfiguration(valueInstantiationException);
-            }
-            throw new IOException(e.getMessage(), e);
         }
     }
 
@@ -151,6 +158,18 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         return new IOException(message, exception);
     }
 
+    private static IOException invalidConfiguration(RuntimeException exception) {
+        if (exception.getCause() instanceof ValueInstantiationException valueInstantiationException) {
+            return invalidConfiguration(valueInstantiationException);
+        }
+        return new IOException(exception.getMessage(), exception);
+    }
+
+    private static IOException withConfigurationPath(Path yamlPath, IOException exception) {
+        return new IOException("Invalid compilation pipeline configuration '%s': %s"
+                .formatted(yamlPath, exception.getMessage()), exception);
+    }
+
     private static String substitutePipelineTokens(String value, Path input, String basename) {
         return value.replace("{pipeline_input}", input.toString())
                 .replace("{basename}", basename);
@@ -186,6 +205,11 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 for (Command cmd : commands) {
                     createOutputDirectory(Path.of(cmd.output()));
                     runCmd(Stream.concat(Stream.of(cmd.tool()), cmd.args().stream()).toList());
+                }
+                final Path outputFile = Path.of(output);
+                if (!Files.isRegularFile(outputFile)) {
+                    throw new IOException("Compilation pipeline for '%s' did not generate declared output '%s'"
+                            .formatted(pipeline, outputFile));
                 }
             } finally {
                 removeIntermediateFiles();
