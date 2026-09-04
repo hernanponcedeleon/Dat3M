@@ -15,10 +15,9 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.TaskSolver;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -47,7 +46,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -122,19 +121,28 @@ public class OutputGenerator {
     }
 
     public Output getOutputFromSolver(TaskSolver solver, String programPath) {
+        if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
+            return getOutputFromSolver(verificationTaskSolver, programPath);
+        }
+
+        throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
+    }
+
+    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
         final VerificationTask task = solver.getTask();
-        final Result result = solver.getResult();
+        final VerificationResult result = solver.getResult();
+        final ResultStatus status = solver.getResultStatus();
         final Program p = task.getProgram();
-        final EnumSet<Property> props = task.getProperty();
-        final IREvaluator model = solver.hasModel() ? solver.getModel() : null;
-        final boolean hasViolationsWithModel = result == FAIL && model != null;
-        final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
+        final EnumSet<Property> props = task.getProperties();
+        final IREvaluator model = result.hasModel() ? result.getModel() : null;
+        final boolean hasViolationsWithModel = status == FAIL && model != null;
+        final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
         final long time = solver.getRuntime();
 
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         try {
-            witnessFile = generateWitnessIfAble(solver, getWitnessFilename(programPath));
+            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programPath));
         } catch (IOException ex) {
             logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
@@ -198,9 +206,9 @@ public class OutputGenerator {
             throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+            return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
-        } else if (result == UNKNOWN && model != null) {
+        } else if (status == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
@@ -216,28 +224,28 @@ public class OutputGenerator {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, result,
+            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, status,
                     "", BOUND_REASON, details.toString(), time, witnessFile));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, result,
+        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
-    private Path generateWitnessIfAble(TaskSolver solver, String filename) throws IOException {
-        if (!solver.hasModel()
-                || (solver.getResult() == UNKNOWN && !generateWitnessForUnknown)
+    private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
+        if (!result.hasModel()
+                || (result.getStatus() == UNKNOWN && !generateWitnessForUnknown)
                 || witnessType == WitnessType.NONE) {
             return null;
         }
 
-        final VerificationTask task = solver.getTask();
+        final Task task = result.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                final ExecutionModelNext model = solver.getExecutionGraph();
+                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(result.getModel());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
@@ -308,7 +316,7 @@ public class OutputGenerator {
     }
 
     private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model, SyntacticContextAnalysis synContext) {
-        if (!task.getProperty().contains(CAT_SPEC)) {
+        if (!task.getProperties().contains(CAT_SPEC)) {
             return "";
         }
 
@@ -357,7 +365,7 @@ public class OutputGenerator {
         return sb.toString();
     }
 
-    private static String getFilterString(VerificationTask task) {
+    private static String getFilterString(Task task) {
         if ("true".equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION)))
             return "";
 
@@ -366,19 +374,19 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String test, String filter, Result result, String condition,
+    private static String toSummary(String test, String filter, ResultStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", test);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
-        final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
+        final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
         final String shownDetails = formatOptional("Details:%n%s", details);
         final String shownWitness = formatOptional("Witness: %s%n", witness);
         final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
 
         return String.format("%s%sResult: %s%n%s%s%s%s%s",
-                shownTest, shownFilter, result, shownReason, shownCondition, shownDetails, shownWitness, shownTime);
+                shownTest, shownFilter, status, shownReason, shownCondition, shownDetails, shownWitness, shownTime);
     }
 
     private static String formatOptional(String format, Object arg) {

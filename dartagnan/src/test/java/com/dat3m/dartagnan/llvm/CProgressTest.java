@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -20,15 +20,15 @@ import java.nio.file.Path;
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.ProgressModel.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class CProgressTest extends AbstractCTest {
 
     protected ProgressModel progressModel;
 
-    public CProgressTest(String name, ProgressModel progressModel, Result expected) {
+    public CProgressTest(String name, ProgressModel progressModel, ResultStatus expected) {
         super(name, C11, expected);
         this.progressModel = progressModel;
     }

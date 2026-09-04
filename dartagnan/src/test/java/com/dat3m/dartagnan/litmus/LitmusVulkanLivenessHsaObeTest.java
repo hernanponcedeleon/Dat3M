@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,7 +15,7 @@ import java.util.EnumSet;
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessHsaObeTest extends AbstractLitmusTest {
 
-    public LitmusVulkanLivenessHsaObeTest(Path path, Result expected) {
+    public LitmusVulkanLivenessHsaObeTest(Path path, ResultStatus expected) {
         super(path, expected);
     }
 

@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -27,7 +27,7 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
 
     final IndexedDomain<Event> eventDomain;
 
-    private CoarseRelationAnalysis(VerificationTask t, Context context, Configuration config) {
+    private CoarseRelationAnalysis(Task t, Context context, Configuration config) {
         super(t, context, config);
         final EventDomainRepository domains = analysisContext.requires(EventDomainRepository.class);
         eventDomain = domains.getDomain(EventDomainRepository.DomainBound.ALL);
@@ -47,7 +47,7 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
      *                </ul>
      * @param config  User-defined options to further specify the behavior.
      */
-    public static CoarseRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+    public static CoarseRelationAnalysis fromConfig(Task task, Context context, Configuration config) throws InvalidConfigurationException {
         return new CoarseRelationAnalysis(task, context, config);
     }
 

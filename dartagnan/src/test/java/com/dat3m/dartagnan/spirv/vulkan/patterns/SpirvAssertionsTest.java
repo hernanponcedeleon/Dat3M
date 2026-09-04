@@ -5,9 +5,9 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,8 +23,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIF
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -32,9 +32,9 @@ public class SpirvAssertionsTest {
 
     private final Path modelPath = getRootPath("cat/vulkan.cat");
     private final Path programPath;
-    private final Result expected;
+    private final ResultStatus expected;
 
-    public SpirvAssertionsTest(String file, Result expected) {
+    public SpirvAssertionsTest(String file, ResultStatus expected) {
         this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
         this.expected = expected;
     }
@@ -56,8 +56,8 @@ public class SpirvAssertionsTest {
         assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
     }
 
-    private VerificationTask mkTask() throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+    private Task mkTask() throws Exception {
+        Task.TaskBuilder builder = Task.builder()
                 .withConfig(Configuration.builder()
                         .copyFrom(TestHelper.getBasicConfig())
                         .setOption(IGNORE_FILTER_SPECIFICATION, "true")

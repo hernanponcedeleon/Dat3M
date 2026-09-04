@@ -6,10 +6,10 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.TaskSolver;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
@@ -29,8 +29,8 @@ import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -38,7 +38,7 @@ public class BranchTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        ImmutableMap<String, Result> expected = readExpectedResults();
+        ImmutableMap<String, ResultStatus> expected = readExpectedResults();
 
         Wmm linuxWmm = new ParserCat().parse(getRootPath("cat/linux-kernel.cat"));
         Wmm aarch64Wmm = new ParserCat().parse(getRootPath("cat/aarch64.cat"));
@@ -63,8 +63,8 @@ public class BranchTest {
         return data;
     }
 
-    private static ImmutableMap<String, Result> readExpectedResults() throws IOException {
-        ImmutableMap.Builder<String, Result> builder;
+    private static ImmutableMap<String, ResultStatus> readExpectedResults() throws IOException {
+        ImmutableMap.Builder<String, ResultStatus> builder;
         try (var reader = Files.newBufferedReader(getTestResourcePath("branch/expected.csv"))) {
             builder = new ImmutableMap.Builder<>();
             String str;
@@ -80,9 +80,9 @@ public class BranchTest {
 
     private final Path path;
     private final Wmm wmm;
-    private final Result expected;
+    private final ResultStatus expected;
 
-    public BranchTest(Path path, Result expected, Wmm wmm) {
+    public BranchTest(Path path, ResultStatus expected, Wmm wmm) {
         this.path = path;
         this.expected = expected;
         this.wmm = wmm;
@@ -91,15 +91,15 @@ public class BranchTest {
     @Test
     public void test() throws Exception {
         Program program = new ProgramParser().parse(path);
-        VerificationTask task = VerificationTask.builder()
+        VerificationTask task = Task.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)
                 .withOption(METHOD, Method.EAGER.asStringOption())
                 .build(program, wmm, EnumSet.of(Property.PROGRAM_SPEC));
 
-        try (TaskSolver solver = TaskSolver.create(task)) {
+        try (VerificationTaskSolver solver = VerificationTaskSolver.create(task)) {
             solver.run();
-            assertEquals(expected, solver.getResult());
+            assertEquals(expected, solver.getResult().getStatus());
         }
     }
 }

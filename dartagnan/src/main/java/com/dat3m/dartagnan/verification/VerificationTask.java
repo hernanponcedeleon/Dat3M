@@ -1,104 +1,28 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/*
-    Represents a verification task.
- */
-public class VerificationTask {
+// A property verification task
+public final class VerificationTask extends Task {
 
-    // Data objects
-    private final Program program;
-    private final Wmm memoryModel;
-    private final ProgressModel.Hierarchy progressModel;
-    private final EnumSet<Property> property;
-    private final Configuration config;
+    private final EnumSet<Property> properties;
 
-    protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                               EnumSet<Property> property, Configuration config)
-    throws InvalidConfigurationException {
-        this.program = checkNotNull(program);
-        this.memoryModel = checkNotNull(memoryModel);
-        this.progressModel = checkNotNull(progressModel);
-        this.property = checkNotNull(property);
-        this.config = checkNotNull(config);
-
-        // TODO: Is it a good idea to inject configs into the program here?
-        program.injectConfig(config);
+    VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
+                     Configuration config, EnumSet<Property> properties) throws InvalidConfigurationException {
+        super(program, memoryModel, progressModel, config);
+        this.properties = checkNotNull(properties);
     }
 
-    public static VerificationTaskBuilder builder() {
-        return new VerificationTaskBuilder();
-    }
-
-    public Program getProgram() { return program; }
-    public Wmm getMemoryModel() { return memoryModel; }
-    public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
-    public Configuration getConfig() { return this.config; }
-    public EnumSet<Property> getProperty() { return property; }
-
-
-    // ==================== Builder =====================
-
-    public static class VerificationTaskBuilder {
-        protected ConfigurationBuilder config = Configuration.builder();
-        protected ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
-
-        protected VerificationTaskBuilder() { }
-
-        public VerificationTaskBuilder withTarget(Arch target) {
-            checkNotNull(target, "Target may not be null.");
-            this.config.setOption(TARGET, target.toString());
-            return this;
-        }
-
-        public VerificationTaskBuilder withBound(int k) {
-            checkArgument(k > 0 , "Unrolling bound must be positive.");
-            this.config.setOption(BOUND, Integer.toString(k));
-            return this;
-        }
-
-        public VerificationTaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
-            this.progressModel = progressModel;
-            return this;
-        }
-
-        public VerificationTaskBuilder withSolverTimeout(int t) {
-            this.config.setOption(TIMEOUT, Integer.toString(t));
-            return this;
-        }
-
-        public VerificationTaskBuilder withSolver(SolverContextFactory.Solvers solver) {
-            this.config.setOption(SOLVER, solver.toString());
-            return this;
-        }
-
-        public VerificationTaskBuilder withConfig(Configuration config) {
-            this.config.copyFrom(config);
-            return this;
-        }
-
-        public VerificationTaskBuilder withOption(String option, String value) {
-            this.config.setOption(option, value);
-            return this;
-        }
-
-        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, progressModel, property, config.build());
-        }
+    public EnumSet<Property> getProperties() {
+        return properties;
     }
 }

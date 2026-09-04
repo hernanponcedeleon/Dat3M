@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -106,7 +106,7 @@ public class ActiveSetAnalysis {
         return new ActiveSetAnalysis(memoryModel, analysisContext, config);
     }
 
-    public static ActiveSetAnalysis newInstance(VerificationTask task, Context analysisContext) throws InvalidConfigurationException {
+    public static ActiveSetAnalysis newInstance(Task task, Context analysisContext) throws InvalidConfigurationException {
         return newInstance(task.getMemoryModel(), analysisContext, task.getConfig());
     }
 

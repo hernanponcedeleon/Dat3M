@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -43,7 +43,7 @@ public class IntervalAnalysisTest {
                 .build();
         ProcessingManager.fromConfig(config).run(p);
         final Wmm wmm = new ParserCat().parse(getRootPath(modelPath));
-        final VerificationTask task = VerificationTask.builder()
+        final Task task = Task.builder()
                 .withConfig(config)
                 .withBound(1)
                 .withTarget(Arch.C11)

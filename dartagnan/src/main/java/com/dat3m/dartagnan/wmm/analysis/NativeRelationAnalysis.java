@@ -22,7 +22,7 @@ import com.dat3m.dartagnan.utils.collections.IndexedSet;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -56,7 +56,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private static final Logger logger = LoggerFactory.getLogger(NativeRelationAnalysis.class);
 
-    protected final VerificationTask task;
+    protected final Task task;
     protected final Context analysisContext;
     protected final ExecutionAnalysis exec;
     protected final ReachingDefinitionsAnalysis definitions;
@@ -70,7 +70,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final Delta EMPTY;
     protected final IndexedEventGraph mutex;
 
-    protected NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
+    protected NativeRelationAnalysis(Task t, Context context, Configuration config) {
         task = checkNotNull(t);
         analysisContext = context;
         final EventDomainRepository domainRepository = context.requires(EventDomainRepository.class);
@@ -99,7 +99,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
      *                </ul>
      * @param config  User-defined options to further specify the behavior.
      */
-    public static NativeRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+    public static NativeRelationAnalysis fromConfig(Task task, Context context, Configuration config) throws InvalidConfigurationException {
         return new NativeRelationAnalysis(task, context, config);
     }
 
