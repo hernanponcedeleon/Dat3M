@@ -185,6 +185,32 @@ public class PipelinesTest {
     }
 
     @Test
+    public void createsDirectoriesForIntermediateOutputs() throws Exception {
+        final Path temporaryDirectory = Files.createTempDirectory("pipeline");
+        final Path intermediate = temporaryDirectory.resolve("intermediate").resolve("generated").resolve("input.spv");
+        final Path output = temporaryDirectory.resolve("output").resolve("generated").resolve("input.spvasm");
+        final String java = ProcessHandle.current().info().command().orElseThrow();
+        final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
+                ".cl", List.of(), output.toString(), List.of(
+                        new Pipelines.Pipeline.Command("compile", java, "input.cl", intermediate.toString(), List.of("--version")),
+                        new Pipelines.Pipeline.Command("disassemble", java, intermediate.toString(), output.toString(), List.of("--version"))
+                ));
+
+        try {
+            pipeline.execute();
+
+            assertTrue(Files.isDirectory(intermediate.getParent()));
+            assertTrue(Files.isDirectory(output.getParent()));
+        } finally {
+            Files.deleteIfExists(intermediate.getParent());
+            Files.deleteIfExists(intermediate.getParent().getParent());
+            Files.deleteIfExists(output.getParent());
+            Files.deleteIfExists(output.getParent().getParent());
+            Files.deleteIfExists(temporaryDirectory);
+        }
+    }
+
+    @Test
     public void rejectsMissingRequiredEntries() {
         final List<InvalidConfiguration> configurations = List.of(
                 new InvalidConfiguration("""
