@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.NATIVE_EXTENSIONS;
 
 public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
@@ -41,6 +42,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 }
             }
         }
+        validate(pipelines);
     }
 
     public static Pipelines load(Path yamlPath) throws IOException {
@@ -91,17 +93,17 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .toList();
     }
 
-    public void validate(Set<String> supportedExtensions) throws IOException {
+    private static void validate(List<Pipeline> pipelines) {
         for (Pipeline pipeline : pipelines) {
             if (pipeline.commands().isEmpty()) {
-                throw new IOException("Compilation pipeline for '%s' has no commands".formatted(pipeline.pipeline()));
+                throw new IllegalArgumentException("Compilation pipeline for '%s' has no commands".formatted(pipeline.pipeline()));
             }
-            if (supportedExtensions.stream().noneMatch(pipeline.output()::endsWith)) {
-                throw new IOException("Compilation pipeline for '%s' generates '%s', which is not a natively supported format"
+            if (NATIVE_EXTENSIONS.stream().noneMatch(pipeline.output()::endsWith)) {
+                throw new IllegalArgumentException("Compilation pipeline for '%s' generates '%s', which is not a natively supported format"
                         .formatted(pipeline.pipeline(), pipeline.output()));
             }
             if (!pipeline.commands().get(pipeline.commands().size() - 1).output().equals(pipeline.output())) {
-                throw new IOException("Final command of compilation pipeline for '%s' does not generate its declared output '%s'"
+                throw new IllegalArgumentException("Final command of compilation pipeline for '%s' does not generate its declared output '%s'"
                         .formatted(pipeline.pipeline(), pipeline.output()));
             }
         }
