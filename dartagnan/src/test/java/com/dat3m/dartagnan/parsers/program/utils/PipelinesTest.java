@@ -238,6 +238,26 @@ public class PipelinesTest {
         }
     }
 
+    @Test
+    public void rejectsRemovedOrUnknownEntries() throws Exception {
+        final Path yaml = writeConfiguration("""
+                workdir: build
+                pipelines:
+                  - pipeline: ".cl"
+                    output: "{basename}.ll"
+                    commands:
+                      - name: Compile
+                        tool: compiler
+                        input: "{pipeline_input}"
+                        output: "{basename}.ll"
+                        read_from_workdir: false
+                        args: []
+                """);
+
+        final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
+        assertTrue(exception.getMessage().contains("Unrecognized field \"read_from_workdir\""));
+    }
+
     private static String pipelineConfigurationWithout(String entryName) {
         final String yaml = """
                 workdir: build

@@ -14,7 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,14 +46,24 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
                     .replace("$DAT3M_HOME", getHomeDirectory().toString())
                     .replace("$DAT3M_OUTPUT", getOutputDirectory().toString());
+            final Object yamlData = new Yaml().load(rawData);
+            if (!(yamlData instanceof Map<?, ?> yamlMapping)) {
+                throw new IOException("Compilation pipeline configuration must be a YAML mapping");
+            }
+            final Map<String, Object> configuration = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : yamlMapping.entrySet()) {
+                if (entry.getKey() instanceof String key && !key.startsWith("x-")) {
+                    configuration.put(key, entry.getValue());
+                }
+            }
             final ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-            return mapper.convertValue(new Yaml().load(rawData), Pipelines.class);
+            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, true);
+            return mapper.convertValue(configuration, Pipelines.class);
         } catch (IllegalArgumentException e) {
             if (e.getCause() instanceof ValueInstantiationException valueInstantiationException) {
                 throw invalidConfiguration(valueInstantiationException);
             }
-            throw e;
+            throw new IOException(e.getMessage(), e);
         }
     }
 
