@@ -87,7 +87,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertEquals("Duplicate pipeline for file extension: .foo", exception.getMessage());
+        assertEquals("Duplicate compilation pipeline for file extension: .foo", exception.getMessage());
     }
 
     @Test
@@ -108,7 +108,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> Pipelines.load(yaml));
-        assertEquals("Duplicate pipeline for file extension: .bar", exception.getMessage());
+        assertEquals("Duplicate compilation pipeline for file extension: .bar", exception.getMessage());
     }
 
     @Test
@@ -130,7 +130,7 @@ public class PipelinesTest {
 
         final Pipelines pipelines = Pipelines.load(yaml);
         final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(pipelines));
-        assertEquals("Pipeline for '.foo' generates '{basename}.foo', which is not a natively supported format", exception.getMessage());
+        assertEquals("Compilation pipeline for '.foo' generates '{basename}.foo', which is not a natively supported format", exception.getMessage());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
-        assertEquals("Pipeline for '.foo' has no commands", exception.getMessage());
+        assertEquals("Compilation pipeline for '.foo' has no commands", exception.getMessage());
     }
 
     @Test
@@ -172,7 +172,7 @@ public class PipelinesTest {
         """);
 
         final IOException exception = assertThrows(IOException.class, () -> new ProgramParser(Pipelines.load(yaml)));
-        assertEquals("Final command of pipeline for '.foo' does not generate its declared output '{basename}.ll'", exception.getMessage());
+        assertEquals("Final command of compilation pipeline for '.foo' does not generate its declared output '{basename}.ll'", exception.getMessage());
     }
 
     @Test
@@ -201,20 +201,20 @@ public class PipelinesTest {
         final List<InvalidConfiguration> configurations = List.of(
                 new InvalidConfiguration("""
                         pipelines: []
-                        """, "Missing workdir in the pipeline configuration file"),
+                        """, "Missing workdir in the compilation pipeline configuration file"),
                 new InvalidConfiguration("""
                         workdir: build
-                        """, "Missing pipelines in the pipeline configuration file"),
-                new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing pipeline extension in the pipeline configuration file"),
-                new InvalidConfiguration(pipelineConfigurationWithout("input"), "Missing pipeline input for extension '.cl'"),
-                new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing pipeline output for extension '.cl'"),
-                new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing pipeline commands for extension '.cl'"),
-                new InvalidConfiguration(commandConfigurationWithout("name"), "Missing name for step in the pipeline configuration file"),
-                new InvalidConfiguration(commandConfigurationWithout("tool"), "Entry tool for step 'compile' is mandatory in the pipeline configuration file"),
-                new InvalidConfiguration(commandConfigurationWithout("input"), "Entry input for step 'compile' is mandatory in the pipeline configuration file"),
-                new InvalidConfiguration(commandConfigurationWithout("output"), "Entry output for step 'compile' is mandatory in the pipeline configuration file"),
-                new InvalidConfiguration(commandConfigurationWithout("read_from_workdir"), "Entry read_from_workdir for step 'compile' is mandatory in the pipeline configuration file"),
-                new InvalidConfiguration(commandConfigurationWithout("args"), "Entry args for step 'compile' is mandatory in the pipeline configuration file")
+                        """, "Missing compilation pipelines in the configuration file"),
+                new InvalidConfiguration(pipelineConfigurationWithout("pipeline"), "Missing compilation pipeline extension in the configuration file"),
+                new InvalidConfiguration(pipelineConfigurationWithout("input"), "Missing compilation pipeline input for extension '.cl'"),
+                new InvalidConfiguration(pipelineConfigurationWithout("output"), "Missing compilation pipeline output for extension '.cl'"),
+                new InvalidConfiguration(pipelineConfigurationWithout("commands"), "Missing compilation pipeline commands for extension '.cl'"),
+                new InvalidConfiguration(commandConfigurationWithout("name"), "Missing name for step in the compilation pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("tool"), "Entry tool for step 'compile' is mandatory in the compilation pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("input"), "Entry input for step 'compile' is mandatory in the compilation pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("output"), "Entry output for step 'compile' is mandatory in the compilation pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("read_from_workdir"), "Entry read_from_workdir for step 'compile' is mandatory in the compilation pipeline configuration file"),
+                new InvalidConfiguration(commandConfigurationWithout("args"), "Entry args for step 'compile' is mandatory in the compilation pipeline configuration file")
         );
 
         for (InvalidConfiguration configuration : configurations) {
