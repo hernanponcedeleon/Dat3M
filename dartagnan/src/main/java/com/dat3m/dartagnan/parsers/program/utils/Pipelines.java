@@ -96,12 +96,8 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
         final List<Pipeline.Command> concreteSteps = new ArrayList<>();
         for (Pipeline.Command cmd : abstractPipeline.commands()) {
-            final String commandInput = substitutePipelineTokens(cmd.input(), inputPath, basename);
-            final String commandOutput = substitutePipelineTokens(cmd.output(), inputPath, basename);
-            final String concreteInput = cmd.read_from_workdir()
-                    ? Path.of(workdir, commandInput).toString()
-                    : inputPath.toString();
-            final String concreteOutput = Path.of(workdir, commandOutput).toString();
+            final String concreteInput = resolveInput(cmd.input(), inputPath, basename).toString();
+            final String concreteOutput = resolveWorkdirPath(cmd.output(), inputPath, basename).toString();
             final List<String> concreteArgs = cmd.args().stream()
                     .map(arg -> substitutePipelineTokens(arg, inputPath, basename))
                     .map(arg -> substituteCommandTokens(arg, concreteInput, concreteOutput))
@@ -112,7 +108,6 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                     cmd.tool(),
                     concreteInput,
                     concreteOutput,
-                    cmd.read_from_workdir(),
                     concreteArgs
             ));
         }
@@ -120,10 +115,20 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         return new Pipeline(
                 abstractPipeline.pipeline(),
                 abstractPipeline.aliases(),
-                Path.of(workdir, substitutePipelineTokens(abstractPipeline.input(), inputPath, basename)).toString(),
-                Path.of(workdir, substitutePipelineTokens(abstractPipeline.output(), inputPath, basename)).toString(),
+                resolveWorkdirPath(abstractPipeline.output(), inputPath, basename).toString(),
                 concreteSteps
         );
+    }
+
+    private Path resolveInput(String input, Path pipelineInput, String basename) {
+        return input.equals("{pipeline_input}")
+                ? pipelineInput
+                : resolveWorkdirPath(input, pipelineInput, basename);
+    }
+
+    private Path resolveWorkdirPath(String path, Path pipelineInput, String basename) {
+        final Path resolvedPath = Path.of(substitutePipelineTokens(path, pipelineInput, basename));
+        return resolvedPath.isAbsolute() ? resolvedPath : Path.of(workdir).resolve(resolvedPath);
     }
 
     private static IOException invalidConfiguration(ValueInstantiationException exception) {
@@ -144,11 +149,10 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 .replace("{cmd_output}", output);
     }
 
-    public record Pipeline(String pipeline, List<String> aliases, String input, String output, List<Command> commands) {
+    public record Pipeline(String pipeline, List<String> aliases, String output, List<Command> commands) {
 
         public Pipeline {
                 Preconditions.checkNotNull(pipeline, "Missing compilation pipeline extension in the configuration file");
-                Preconditions.checkNotNull(input, "Missing compilation pipeline input for extension '%s'", pipeline);
                 Preconditions.checkNotNull(output, "Missing compilation pipeline output for extension '%s'", pipeline);
                 Preconditions.checkNotNull(commands, "Missing compilation pipeline commands for extension '%s'", pipeline);
             aliases = aliases == null ? List.of() : List.copyOf(aliases);
@@ -234,13 +238,12 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             }
         }
 
-        public record Command(String name, String tool, String input, String output, Boolean read_from_workdir, List<String> args) {
+        public record Command(String name, String tool, String input, String output, List<String> args) {
             public Command {
                 Preconditions.checkNotNull(name, "Missing name for step in the compilation pipeline configuration file");
                 Preconditions.checkNotNull(tool, "Entry tool for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(input, "Entry input for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(output, "Entry output for step '%s' is mandatory in the compilation pipeline configuration file", name);
-                Preconditions.checkNotNull(read_from_workdir, "Entry read_from_workdir for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(args, "Entry args for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 args = List.copyOf(args);
             }
