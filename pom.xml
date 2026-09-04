@@ -50,7 +50,7 @@
         <commons-csv.version>1.12.0</commons-csv.version>
         <mockito.version>5.21.0</mockito.version>
         <rsyntaxtextarea.version>3.3.4</rsyntaxtextarea.version>
-        <jackson-dataformat-yaml.version>2.15.2</jackson-dataformat-yaml.version>
+        <jackson.version>2.15.2</jackson.version>
         <snakeyaml.version>2.6</snakeyaml.version>
 
         <!-- 3rd party plugin versions -->
