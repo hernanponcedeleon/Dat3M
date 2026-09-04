@@ -170,17 +170,21 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         private static final Logger logger = LoggerFactory.getLogger(Pipeline.class);
 
         public void execute() throws Exception {
-            final Path outputDirectory = Path.of(output).getParent();
-            if (outputDirectory != null) {
-                // Make sure parent directory exists.
-                Files.createDirectories(outputDirectory);
-            }
             try {
                 for (Command cmd : commands) {
+                    createOutputDirectory(Path.of(cmd.output()));
                     runCmd(Stream.concat(Stream.of(cmd.tool()), cmd.args().stream()).toList());
                 }
             } finally {
                 removeIntermediateFiles();
+            }
+        }
+
+        private static void createOutputDirectory(Path output) throws IOException {
+            final Path parent = output.getParent();
+            if (parent != null) {
+                // Make sure parent directory exists.
+                Files.createDirectories(parent);
             }
         }
 
