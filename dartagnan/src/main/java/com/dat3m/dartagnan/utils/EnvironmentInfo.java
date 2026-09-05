@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
@@ -35,10 +36,7 @@ public class EnvironmentInfo {
         logger.info("Git commit ID: {}", properties.getProperty("git.commit.id", "unknown"));
         logger.info("OS info: {}", getOSInfo());
         for (String tool : tools) {
-            final String version = getToolVersion(tool);
-            if (!version.equals("unknown")) {
-                logger.info("{} version: {}", tool, version);
-            }
+            getToolVersion(tool).ifPresent(version -> logger.info("{} version: {}", tool, version));
         }
     }
 
@@ -57,12 +55,12 @@ public class EnvironmentInfo {
                 System.getProperty("os.version"));
     }
 
-    private static String getToolVersion(String tool) {
+    private static Optional<String> getToolVersion(String tool) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tool, "--version");
             Process process = pb.start();
             if (process.waitFor() != 0) {
-                return "unknown";
+                return Optional.empty();
             }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream()))) {
@@ -70,16 +68,13 @@ public class EnvironmentInfo {
                         .map(String::trim)
                         .filter(line -> !line.isEmpty())
                         .toList();
-                if (lines.isEmpty()) {
-                    return "unknown";
-                }
-                return String.join(" - ", lines);
+                return lines.isEmpty() ? Optional.empty() : Optional.of(String.join(" - ", lines));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return "unknown";
+            return Optional.empty();
         } catch (IOException e) {
-            return "unknown";
+            return Optional.empty();
         }
     }
 }
