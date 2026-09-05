@@ -3,7 +3,6 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-import fnmatch
 import json
 import math
 import os
@@ -52,58 +51,41 @@ def load_benchmarks(benchmark_path):
     for entry in benchmark_selection["benchmarks"]:
         if not isinstance(entry, dict):
             raise ValueError("Each performance benchmark entry must be a mapping")
-        required_keys = {"directory", "include", "runs", "configurations"}
+        required_keys = {"program", "runs", "configurations"}
         missing_keys = required_keys - entry.keys()
         if missing_keys:
             raise ValueError("Benchmark entry is missing: " + ", ".join(sorted(missing_keys)))
-        if not isinstance(entry["directory"], str):
-            raise ValueError("Benchmark directory must be a string")
+        if entry.keys() - {"program", "runs", "configurations"}:
+            raise ValueError("Benchmark entry contains unsupported keys")
+        if not isinstance(entry["program"], str):
+            raise ValueError("Benchmark program must be a string")
         if not isinstance(entry["runs"], int) or isinstance(entry["runs"], bool) or entry["runs"] < 1:
             raise ValueError("Benchmark runs must be a positive integer")
-        if not isinstance(entry["include"], list) or not entry["include"] or not all(isinstance(pattern, str) for pattern in entry["include"]):
-            raise ValueError("Benchmark include must be a non-empty list of strings")
-        folder_excludes = entry.get("exclude", [])
-        if not isinstance(folder_excludes, list) or not all(isinstance(pattern, str) for pattern in folder_excludes):
-            raise ValueError("Benchmark exclude must be a list of strings")
-
-        directory = Path(entry["directory"])
-        if directory.is_absolute() or ".." in directory.parts:
-            raise ValueError(f"Benchmark directory must be a repository-relative path: {directory}")
-        includes = entry["include"]
+        program = Path(entry["program"])
+        if program.is_absolute() or ".." in program.parts:
+            raise ValueError(f"Benchmark program must be a repository-relative path: {program}")
+        if not (benchmark_path.parent.parent / program).is_file():
+            raise ValueError(f"Benchmark program does not exist: {program}")
         configurations = entry["configurations"]
         if not isinstance(configurations, list) or not configurations:
             raise ValueError("Benchmark configurations must be a non-empty list")
         for configuration in configurations:
             if not isinstance(configuration, dict) or not {"cat", "target"} <= configuration.keys() \
-                    or configuration.keys() - {"cat", "target", "exclude"}:
+                    or configuration.keys() - {"cat", "target", "options"}:
                 raise ValueError("Each benchmark configuration must contain a cat file and target")
             if not isinstance(configuration["cat"], str) or not isinstance(configuration["target"], str):
                 raise ValueError("Benchmark configuration cat and target must be strings")
-            configuration_excludes = configuration.get("exclude", [])
-            if not isinstance(configuration_excludes, list) or not all(isinstance(pattern, str) for pattern in configuration_excludes):
-                raise ValueError("Benchmark configuration exclude must be a list of strings")
-
-        root = benchmark_path.parent.parent / directory
-        if not root.is_dir():
-            raise ValueError(f"Benchmark directory does not exist: {directory}")
-        for source in sorted(path for path in root.rglob("*") if path.is_file()):
-            relative_path = source.relative_to(benchmark_path.parent.parent)
-            relative_to_directory = source.relative_to(root)
-            if not any(fnmatch.fnmatch(relative_to_directory.as_posix(), pattern) for pattern in includes):
-                continue
-            if any(fnmatch.fnmatch(relative_to_directory.as_posix(), pattern) for pattern in folder_excludes):
-                continue
-            for configuration in configurations:
-                if any(fnmatch.fnmatch(relative_to_directory.as_posix(), pattern)
-                       for pattern in configuration.get("exclude", [])):
-                    continue
-                benchmarks.append({
-                    "name": relative_path.as_posix(),
-                    "program": relative_path.as_posix(),
-                    "runs": entry["runs"],
-                    "cat": configuration["cat"],
-                    "target": configuration["target"],
-                })
+            options = configuration.get("options", [])
+            if not isinstance(options, list) or not all(isinstance(option, str) for option in options):
+                raise ValueError("Benchmark configuration options must be a list of strings")
+            benchmarks.append({
+                "name": program.as_posix(),
+                "program": program.as_posix(),
+                "runs": entry["runs"],
+                "cat": configuration["cat"],
+                "target": configuration["target"],
+                "options": options,
+            })
     if not benchmarks:
         raise ValueError("Benchmark file selects no benchmarks")
     validate_benchmarks(benchmarks)
@@ -113,7 +95,7 @@ def load_benchmarks(benchmark_path):
 def validate_benchmarks(benchmarks):
     seen_benchmarks = set()
     for benchmark in benchmarks:
-        benchmark_key = (benchmark["program"], benchmark["cat"], benchmark["target"])
+        benchmark_key = (benchmark["program"], benchmark["cat"], benchmark["target"], tuple(benchmark["options"]))
         if benchmark_key in seen_benchmarks:
             raise ValueError(
                 f"Benchmark is selected more than once: {benchmark['program']} ({benchmark['target']})"
@@ -134,6 +116,7 @@ def run_benchmark(revision_dir, benchmark, run, timeout):
         str(executable),
         benchmark["cat"],
         f"--target={benchmark['target']}",
+        *benchmark["options"],
         benchmark["program"],
     ]
     environment = os.environ | {
