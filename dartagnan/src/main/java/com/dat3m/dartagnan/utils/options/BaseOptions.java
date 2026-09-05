@@ -64,4 +64,14 @@ public abstract class BaseOptions {
         return !entry_function.isEmpty();
     }
 
+    @Option(
+            name = COMPILATION_PIPELINE,
+            description = "Path to the yaml file defining the compilation pipeline."
+    )
+    private String compilationPipelinePath = GlobalSettings.getCompilationPipelinePath().toString();
+
+    public Path getCompilationPipelinePath() {
+        return Path.of(compilationPipelinePath);
+    }
+
 }

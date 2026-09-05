@@ -66,6 +66,10 @@ public class GlobalSettings {
         return getHomeDirectory(skipUnitTestCheck).resolve("output");
     }
 
+    public static Path getCompilationPipelinePath() {
+        return getHomeDirectory(true).resolve("compilation.yml");
+    }
+
     public static Path getLibraryDirectory() {
         return getHomeDirectory()
                 .resolve("dartagnan")

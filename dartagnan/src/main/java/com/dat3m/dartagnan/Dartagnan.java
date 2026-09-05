@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -62,14 +64,16 @@ public class Dartagnan extends BaseOptions {
             return;
         }
 
-        logEnvironmentInfo();
-
         final Configuration config = loadConfigurationFromArgs(args);
         final Dartagnan o = new Dartagnan(config);
+        final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
+        final ProgramParser programParser = new ProgramParser(pipelines);
         final Path catFile  = getCatFileFromArgs(args);
-        final List<Path> progFiles = getProgramFilesFromArgs(args);
+        final List<Path> progFiles = getProgramFilesFromArgs(args, programParser::isSupportedFile);
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
+
+        logEnvironmentInfo(pipelines.getTools());
 
         logger.info("CAT file path: {}", catFile);
 
@@ -79,7 +83,7 @@ public class Dartagnan extends BaseOptions {
             Output output;
             try {
                 // ----------- Generate verification task -----------
-                final Program p = new ProgramParser().parse(progFile);
+                final Program p = programParser.parse(progFile);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
@@ -185,11 +189,11 @@ public class Dartagnan extends BaseOptions {
         return catFile;
     }
 
-    private static List<Path> getProgramFilesFromArgs(String[] args) throws IOException {
+    private static List<Path> getProgramFilesFromArgs(String[] args, Predicate<Path> isSupportedFile) throws IOException {
         final List<Path> files = Stream.of(args)
                 .map(Path::of)
                 .filter(Files::exists)
-                .flatMap(path -> getProgramFiles(path).stream())
+                .flatMap(path -> getProgramFiles(path, isSupportedFile).stream())
                 .toList();
         if (files.isEmpty()) {
             throw new IOException("Path to input program(s) not given or format not recognized");
@@ -197,10 +201,10 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    private static List<Path> getProgramFiles(Path path) {
+    private static List<Path> getProgramFiles(Path path, Predicate<Path> isSupportedFile) {
         try (Stream<Path> stream = Files.walk(path)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(ProgramParser::isSupportedFile)
+                    .filter(isSupportedFile)
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
         } catch (IOException e) {

@@ -6,20 +6,25 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.Set;
+
+import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 
 public class EditorsPane {
 
-    private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea()),
-            EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea())
-    );
+    private final ImmutableMap<EditorCode, Editor> editors;
 
     private final JSplitPane mmPane;
     private final JSplitPane mainPane;
     private final JMenu menuImporter;
     private final JMenu menuExporter;
 
-    public EditorsPane() {
+    public EditorsPane(Set<String> programExtensions) {
+        editors = ImmutableMap.of(
+                EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), programExtensions, true),
+                EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), Set.of(".cat"), false)
+        );
+        editors.get(EditorCode.PROGRAM).getFormatSelector().setSelectedItem(EXTENSION_LITMUS);
         menuImporter = new JMenu("Import");
         menuImporter.add(editors.get(EditorCode.PROGRAM).getImporterItem());
         menuImporter.add(editors.get(EditorCode.TARGET_MM).getImporterItem());
@@ -39,7 +44,14 @@ public class EditorsPane {
         mmPane.setDividerSize(0);
         mmPane.setBorder(new TitledBorder(""));
 
-        mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editors.get(EditorCode.PROGRAM), mmPane);
+        final JPanel programPane = new JPanel(new BorderLayout());
+        final JPanel formatPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        formatPane.add(new JLabel("Program format:"));
+        formatPane.add(editors.get(EditorCode.PROGRAM).getFormatSelector());
+        programPane.add(formatPane, BorderLayout.NORTH);
+        programPane.add(editors.get(EditorCode.PROGRAM), BorderLayout.CENTER);
+
+        mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programPane, mmPane);
         mainPane.setOneTouchExpandable(true);
         mainPane.setDividerSize(2);
         mainPane.setDividerLocation(0.5);

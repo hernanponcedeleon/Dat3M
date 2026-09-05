@@ -64,8 +64,6 @@ public class OptionsPane extends JPanel {
     private final SpinnerNumberModel boundModel;
     private final JSpinner boundSpinner;
 
-    private final JTextField cflagsField;
-
     private final JDialog extraOptionsDialog;
     private final Map<String, JComponent> extraOptionsComponents = new HashMap<>();
     private final Map<String, String> extraOptionsMap = new LinkedHashMap<>();
@@ -111,9 +109,6 @@ public class OptionsPane extends JPanel {
         boundModel = new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1);
         boundSpinner = new JSpinner(boundModel);
         showViolationField = new JCheckBox();
-
-        cflagsField = new JTextField();
-        cflagsField.setColumns(20);
 
         extraOptionsButton = new JButton("...");
         extraOptionsButton.setToolTipText("Manage extra options.");
@@ -161,13 +156,12 @@ public class OptionsPane extends JPanel {
     public UiOptions getOptions() {
         int bound = boundModel.getNumber().intValue();
         boolean showViolationGraph = showViolationField.isSelected();
-        String cflags = cflagsField.getText().strip();
         Arch target = targetPane.getSelectedItem();
         Method method = methodPane.getSelectedItem();
         Solvers solver = solverPane.getSelectedItem();
         EnumSet<Property> properties = getSelectedProperties();
         ProgressModel progress = progressPane.getSelectedItem();
-        return new UiOptions(target, method, bound, solver, showViolationGraph, cflags, extraOptionsMap, properties, progress);
+        return new UiOptions(target, method, bound, solver, showViolationGraph, extraOptionsMap, properties, progress);
     }
 
     private void mkGrid() {
@@ -180,10 +174,6 @@ public class OptionsPane extends JPanel {
         boundPane.add(new JLabel("Unrolling: "));
         boundPane.add(boundSpinner);
 
-        JPanel cflagsPane = new JPanel(new FlowLayout(LEFT));
-        cflagsPane.add(new JLabel("CFLAGS: "));
-        cflagsPane.add(cflagsField);
-
         JPanel configPane = new JPanel(new FlowLayout(LEFT));
         configPane.add(new JLabel("Extra options: "));
         configPane.add(extraOptionsButton);
@@ -194,7 +184,7 @@ public class OptionsPane extends JPanel {
 
         final List<JComponent> optionRows = List.of(
                 iconPane, targetPane, methodPane, solverPane, propertiesPane, progressPane,
-                boundPane, showViolationPane, configPane, cflagsPane, testButton, clearButton, cancelButton
+                boundPane, showViolationPane, configPane, testButton, clearButton, cancelButton
         );
         final GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
