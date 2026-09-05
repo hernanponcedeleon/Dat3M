@@ -69,13 +69,13 @@ There are three possible results for the verification:
 
 To run Dartagnan from the console in native mode:
 ```
-dartagnan <CAT file> [--target=<arch>] <program file> [options]
+dartagnan <CAT file> [--target=<target>] <program file> [options]
 ```
 To run in JVM mode:
 ```
-java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
+java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<target>] <program file> [options]
 ```
-For source programs processed by a compilation pipeline, value `<arch>` specifies the programming language or architecture used for verification. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following:
+The `--target=<target>` option tells Dartagnan which programming-language or hardware-architecture semantics to use when verifying the program. It is independent of the programming language of the `<program file>`. A compilation pipeline performs the frontend step by translating a source file into a natively supported input format, while the target performs the backend step by selecting the semantics used during verification. For non-Litmus programs, the target must be given explicitly. For `.litmus` programs, Dartagnan extracts the target from the test header when `--target` is omitted. `<target>` must be one of the following:
 - c11
 - lkmm
 - imm
