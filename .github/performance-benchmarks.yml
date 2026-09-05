@@ -1,0 +1,37 @@
+# Each entry selects matching source files below its directory. Paths are relative to the repository root.
+# A folder exclude skips files for every configuration; a configuration exclude skips files only for itself.
+benchmarks:
+  - directory: benchmarks/locks
+    include: ["*.c"]
+    runs: 3
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/power.cat
+        target: power
+      - cat: cat/vmm.cat
+        target: c11
+
+  - directory: benchmarks/lfds
+    include: ["*.c"]
+    runs: 3
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/power.cat
+        target: power
+        exclude: ["safe_stack.c"]
+      - cat: cat/vmm.cat
+        target: c11
+
+  - directory: benchmarks/challenging
+    include: ["*.c"]
+    runs: 3
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/power.cat
+        target: power
+        exclude: ["cna.c", "wsq.c"]
+      - cat: cat/vmm.cat
+        target: c11
