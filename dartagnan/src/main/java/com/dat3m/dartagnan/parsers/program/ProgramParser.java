@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
 import com.dat3m.dartagnan.parsers.program.utils.Pipelines.Pipeline;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Utils;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.IntStream;
@@ -14,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getCompilationPipelinePath;
 
@@ -23,7 +22,7 @@ public class ProgramParser {
 
     private static final Logger logger = LoggerFactory.getLogger(ProgramParser.class);
     private final Pipelines pipelines;
-    private final Set<String> supportedExtensions;
+    private final ImmutableSet<String> supportedExtensions;
 
     private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
     private static final String TYPE_LITMUS_PPC = "PPC";
@@ -48,11 +47,13 @@ public class ProgramParser {
 
     public ProgramParser(Pipelines pipelines) throws IOException {
         this.pipelines = pipelines;
-        supportedExtensions = Stream.concat(NATIVE_EXTENSIONS.stream(), pipelines.getSupportedExtensions().stream())
-                .collect(Collectors.toUnmodifiableSet());
+        supportedExtensions = ImmutableSet.<String>builder()
+                .addAll(NATIVE_EXTENSIONS)
+                .addAll(pipelines.getSupportedExtensions())
+                .build();
     }
 
-    public Set<String> getSupportedExtensions() {
+    public ImmutableSet<String> getSupportedExtensions() {
         return supportedExtensions;
     }
 
