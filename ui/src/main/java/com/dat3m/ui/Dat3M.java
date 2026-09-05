@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.initEnvironmentInfo;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.logEnvironmentInfo;
@@ -50,7 +51,9 @@ public class Dat3M extends JFrame implements ActionListener {
     private Dat3M() throws IOException {
         initEnvironmentInfo();
         programParser = new ProgramParser();
-        editorsPane = new EditorsPane(programParser.getSupportedExtensions());
+        editorsPane = new EditorsPane(programParser.getSupportedExtensions().stream()
+                .filter(extension -> !extension.equals(ProgramParser.EXTENSION_SPV_DIS))
+                .collect(Collectors.toUnmodifiableSet()));
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
@@ -155,9 +158,7 @@ public class Dat3M extends JFrame implements ActionListener {
         final UiOptions options = optionsPane.getOptions();
         final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
         final String sourceCode = programEditor.getEditorPane().getText();
-        final String format = programEditor.getLoadedFormat().isEmpty()
-                ? ProgramParser.EXTENSION_LITMUS       // We default to litmus code, if we do not know
-                : programEditor.getLoadedFormat();
+        final String format = programEditor.getSelectedFormat();
         final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
 
         testResult = null;

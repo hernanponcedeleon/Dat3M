@@ -33,12 +33,12 @@ public class Editor extends RTextScrollPane implements ActionListener {
     private final JFileChooser chooser;
 
     private final ImmutableSet<String> allowedFormats;
-    private String loadedFormat = "";
+    private final JComboBox<String> formatSelector;
     private String loadedDir = "";
 
     private final Set<ActionListener> actionListeners = new HashSet<>();
 
-    Editor(EditorCode code, RSyntaxTextArea editorPane, Set<String> allowedFormats) {
+    Editor(EditorCode code, RSyntaxTextArea editorPane, Set<String> allowedFormats, boolean selectFormat) {
         super(editorPane);
         this.code = code;
         this.editorPane = editorPane;
@@ -52,6 +52,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
         this.exporterItem.addActionListener(this);
 
         this.allowedFormats = ImmutableSet.copyOf(allowedFormats);
+        this.formatSelector = selectFormat ? new JComboBox<>(allowedFormats.stream().sorted().toArray(String[]::new)) : null;
         this.chooser = new JFileChooser();
         for (String format : allowedFormats) {
             final String extension = format.startsWith(".") ? format.substring(1) : format;
@@ -86,8 +87,12 @@ public class Editor extends RTextScrollPane implements ActionListener {
         actionListeners.add(actionListener);
     }
 
-    public String getLoadedFormat() {
-        return loadedFormat;
+    public String getSelectedFormat() {
+        return (String) formatSelector.getSelectedItem();
+    }
+
+    public JComboBox<String> getFormatSelector() {
+        return formatSelector;
     }
 
     public String getLoadedDir() {
@@ -113,10 +118,15 @@ public class Editor extends RTextScrollPane implements ActionListener {
         }
         final File selectedFile = chooser.getSelectedFile();
         loadedDir = Objects.requireNonNullElse(selectedFile.getParent(), "");
-        loadedFormat = allowedFormats.stream().filter(selectedFile.getName()::endsWith).findAny().orElse("");
-        if (loadedFormat.isEmpty()) {
+        final var format = allowedFormats.stream()
+                .filter(selectedFile.getName()::endsWith)
+                .findFirst();
+        if (format.isEmpty()) {
             showError("Please select a *" + String.join(", *", allowedFormats) + " file", "Invalid file format");
             return;
+        }
+        if (formatSelector != null) {
+            formatSelector.setSelectedItem(format.orElseThrow());
         }
         notifyListeners();
         try(final var r = new FileReader(selectedFile)) {
