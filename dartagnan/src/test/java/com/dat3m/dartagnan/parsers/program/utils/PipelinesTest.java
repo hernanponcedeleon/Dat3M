@@ -232,6 +232,8 @@ public class PipelinesTest {
 
     @Test
     public void rejectsMissingRequiredEntries() throws IOException {
+        record InvalidConfiguration(String yaml, String expectedMessage) { }
+
         final List<InvalidConfiguration> configurations = List.of(
                 new InvalidConfiguration("""
                         pipelines: []
@@ -333,8 +335,5 @@ public class PipelinesTest {
 
     private static void assertConfigurationError(Path yaml, IOException exception, String message) {
         assertEquals("Invalid compilation pipeline configuration '%s': %s".formatted(yaml, message), exception.getMessage());
-    }
-
-    private record InvalidConfiguration(String yaml, String expectedMessage) {
     }
 }
