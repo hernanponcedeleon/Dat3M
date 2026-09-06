@@ -295,13 +295,9 @@ def summarize_total(rows):
     """Summarize the total verification time of all rows for every paired run."""
     base_times = [sum(times) for times in zip(*(row["base_times"] for row in rows))]
     head_times = [sum(times) for times in zip(*(row["head_times"] for row in rows))]
-    result_counts = Counter()
-    for row in rows:
-        result_counts[common_result(row["results"]) or "MIXED"] += 1
     return {
         "base": summarize(base_times),
         "head": summarize(head_times),
-        "result_counts": dict(sorted(result_counts.items())),
         "improvement": paired_improvement(base_times, head_times),
     }
 
@@ -320,15 +316,14 @@ def render_markdown(rows, minimum):
             "",
             f"### Memory model: {memory_model}",
             "",
-            "| Benchmark | Base branch | PR branch | Result | Improvement (95% CI) |",
-            "|---|---:|---:|---|---:|",
+            "| Benchmark | Base branch | PR branch | Improvement (95% CI) | Result |",
+            "|---|---:|---:|---:|---|",
         ])
         for row in memory_model_rows:
             lines.append(
                 f"| `{row['benchmark']}` | {row['base']['average']:.3f} ± {row['base']['standard_deviation']:.3f} s "
                 f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s "
-                f"| {format_results(row['results'])} "
-                f"| {format_improvement(row['improvement'])} |"
+                f"| {format_improvement(row['improvement'])} | {format_results(row['results'])} |"
             )
     if visible_rows:
         total = summarize_total(visible_rows)
@@ -336,11 +331,10 @@ def render_markdown(rows, minimum):
             "",
             "### Total",
             "",
-            "| Benchmarks | Base branch | PR branch | Result | Improvement (95% CI) |",
-            "|---|---:|---:|---|---:|",
+            "| Benchmarks | Base branch | PR branch | Improvement (95% CI) |",
+            "|---|---:|---:|---:|",
             f"| All reported benchmarks | {total['base']['average']:.3f} ± {total['base']['standard_deviation']:.3f} s "
             f"| {total['head']['average']:.3f} ± {total['head']['standard_deviation']:.3f} s "
-            f"| {format_result_counts(total['result_counts'])} "
             f"| {format_improvement(total['improvement'])} |",
         ])
     if not visible_rows:
