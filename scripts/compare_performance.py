@@ -232,8 +232,34 @@ def measure_benchmark(benchmark, base_checkout, head_checkout, timeout):
         "runs": benchmark["runs"],
         "base": base,
         "head": head,
+        "base_times": base_times,
+        "head_times": head_times,
         "improvement": paired_improvement(base_times, head_times),
     }, measurements
+
+
+def format_improvement(improvement):
+    if improvement["lower"] is None:
+        return "➖ insufficient data"
+    formatted_interval = (
+        f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
+    )
+    if improvement["lower"] > 0:
+        return f"✅ {formatted_interval}"
+    if improvement["upper"] < 0:
+        return f"❌ {formatted_interval}"
+    return f"➖ {formatted_interval}"
+
+
+def summarize_total(rows):
+    """Summarize the total verification time of all rows for every paired run."""
+    base_times = [sum(times) for times in zip(*(row["base_times"] for row in rows))]
+    head_times = [sum(times) for times in zip(*(row["head_times"] for row in rows))]
+    return {
+        "base": summarize(base_times),
+        "head": summarize(head_times),
+        "improvement": paired_improvement(base_times, head_times),
+    }
 
 
 def render_markdown(rows, minimum):
@@ -254,29 +280,23 @@ def render_markdown(rows, minimum):
             "|---|---:|---:|---:|",
         ])
         for row in memory_model_rows:
-            improvement = row["improvement"]
-            if improvement["lower"] is None:
-                marker = "➖"
-                confidence_interval = "insufficient data"
-            elif improvement["lower"] > 0:
-                marker = "✅"
-                confidence_interval = (
-                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
-                )
-            elif improvement["upper"] < 0:
-                marker = "❌"
-                confidence_interval = (
-                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
-                )
-            else:
-                marker = "➖"
-                confidence_interval = (
-                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
-                )
             lines.append(
                 f"| `{row['benchmark']}` | {row['base']['average']:.3f} ± {row['base']['standard_deviation']:.3f} s "
-                f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s | {marker} {confidence_interval} |"
+                f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s "
+                f"| {format_improvement(row['improvement'])} |"
             )
+    if visible_rows:
+        total = summarize_total(visible_rows)
+        lines.extend([
+            "",
+            "### Total",
+            "",
+            "| Benchmarks | Base branch | PR branch | Improvement (95% CI) |",
+            "|---|---:|---:|---:|",
+            f"| All reported benchmarks | {total['base']['average']:.3f} ± {total['base']['standard_deviation']:.3f} s "
+            f"| {total['head']['average']:.3f} ± {total['head']['standard_deviation']:.3f} s "
+            f"| {format_improvement(total['improvement'])} |",
+        ])
     if not visible_rows:
         lines.append("| _No benchmark met the reporting threshold_ | — | — | — |")
     filtered = len(rows) - len(visible_rows)
