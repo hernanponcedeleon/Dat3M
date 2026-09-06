@@ -63,7 +63,7 @@ jobs:
             --benchmarks head/.github/performance-benchmarks.yml \
             --base-checkout "$GITHUB_WORKSPACE/base" \
             --head-checkout "$GITHUB_WORKSPACE/head" \
-            --timeout 300 \
+            --timeout 180 \
             --jobs 1 \
             --min-average-seconds 5 \
             --markdown performance/report.md \

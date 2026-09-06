@@ -157,8 +157,60 @@ def summarize(values):
     }
 
 
-def percent_change(base, head):
-    return (head - base) / base * 100 if base else math.inf
+# Two-sided 95% Student-t critical values, indexed by degrees of freedom. Performance
+# measurements normally have only a few runs, so the normal-distribution value (1.96)
+# would underestimate the confidence interval. For more than 31 runs, 1.96 is a close
+# enough approximation.
+T_CRITICAL_95 = {
+    1: 12.706,
+    2: 4.303,
+    3: 3.182,
+    4: 2.776,
+    5: 2.571,
+    6: 2.447,
+    7: 2.365,
+    8: 2.306,
+    9: 2.262,
+    10: 2.228,
+    11: 2.201,
+    12: 2.179,
+    13: 2.160,
+    14: 2.145,
+    15: 2.131,
+    16: 2.120,
+    17: 2.110,
+    18: 2.101,
+    19: 2.093,
+    20: 2.086,
+    21: 2.080,
+    22: 2.074,
+    23: 2.069,
+    24: 2.064,
+    25: 2.060,
+    26: 2.056,
+    27: 2.052,
+    28: 2.048,
+    29: 2.045,
+    30: 2.042,
+}
+
+
+def paired_improvement(base_times, head_times):
+    """Return the paired relative improvement and its two-sided 95% confidence interval.
+
+    Each base/head pair belongs to the same run and therefore shares much of the
+    machine noise. A positive value means that the head revision is faster. The
+    interval is used by the report to label a result as an improvement or regression
+    only when it does not contain zero.
+    """
+    improvements = [(base - head) / base * 100 for base, head in zip(base_times, head_times)]
+    average = statistics.mean(improvements)
+    if len(improvements) < 2:
+        return {"average": average, "lower": None, "upper": None}
+    standard_error = statistics.stdev(improvements) / math.sqrt(len(improvements))
+    critical_value = T_CRITICAL_95.get(len(improvements) - 1, 1.96)
+    margin = critical_value * standard_error
+    return {"average": average, "lower": average - margin, "upper": average + margin}
 
 
 def measure_benchmark(benchmark, base_checkout, head_checkout, timeout):
@@ -180,7 +232,7 @@ def measure_benchmark(benchmark, base_checkout, head_checkout, timeout):
         "runs": benchmark["runs"],
         "base": base,
         "head": head,
-        "change": percent_change(base["average"], head["average"]),
+        "improvement": paired_improvement(base_times, head_times),
     }, measurements
 
 
@@ -198,15 +250,32 @@ def render_markdown(rows, minimum):
             "",
             f"### Memory model: {memory_model}",
             "",
-            "| Benchmark | Base branch | PR branch | Change |",
+            "| Benchmark | Base branch | PR branch | Improvement (95% CI) |",
             "|---|---:|---:|---:|",
         ])
         for row in memory_model_rows:
-            change = row["change"]
-            marker = "❌" if change > 0 else "✅" if change < 0 else "➖"
+            improvement = row["improvement"]
+            if improvement["lower"] is None:
+                marker = "➖"
+                confidence_interval = "insufficient data"
+            elif improvement["lower"] > 0:
+                marker = "✅"
+                confidence_interval = (
+                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
+                )
+            elif improvement["upper"] < 0:
+                marker = "❌"
+                confidence_interval = (
+                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
+                )
+            else:
+                marker = "➖"
+                confidence_interval = (
+                    f"{improvement['average']:+.1f}% [{improvement['lower']:+.1f}%, {improvement['upper']:+.1f}%]"
+                )
             lines.append(
                 f"| `{row['benchmark']}` | {row['base']['average']:.3f} ± {row['base']['standard_deviation']:.3f} s "
-                f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s | {marker} {abs(change):.1f}% |"
+                f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s | {marker} {confidence_interval} |"
             )
     if not visible_rows:
         lines.append("| _No benchmark met the reporting threshold_ | — | — | — |")
