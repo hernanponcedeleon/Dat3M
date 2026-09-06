@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -69,11 +70,12 @@ public abstract sealed class Task permits VerificationTask {
         }
 
         public TaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
-            this.progressModel = progressModel;
+            this.progressModel = Preconditions.checkNotNull(progressModel);
             return this;
         }
 
         public TaskBuilder withSolverTimeout(int t) {
+            Preconditions.checkArgument(t >= 0, "Solver timeout must be non-negative.");
             this.config.setOption(TIMEOUT, Integer.toString(t));
             return this;
         }

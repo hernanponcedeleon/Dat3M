@@ -86,8 +86,10 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
         if (modelChecker != null) {
             modelChecker.close();
-            modelChecker = null;
         }
+
+        result = null;
+        modelChecker = null;
     }
 
 }
