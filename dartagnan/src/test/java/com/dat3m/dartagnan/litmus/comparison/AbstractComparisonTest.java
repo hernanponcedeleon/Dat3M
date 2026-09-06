@@ -9,8 +9,9 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -120,11 +121,11 @@ public abstract class AbstractComparisonTest {
 
     @Test
     public void testAssume() throws Exception {
-        try (TaskSolver s1 = TaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
-             TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
+        try (VerificationTaskSolver s1 = VerificationTaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
+             VerificationTaskSolver s2 = VerificationTaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
             s1.run();
             s2.run();
-            assertEquals(s1.hasModel(), s2.hasModel());
+            assertEquals(s1.getResult().hasModel(), s2.getResult().hasModel());
         }
     }
 }

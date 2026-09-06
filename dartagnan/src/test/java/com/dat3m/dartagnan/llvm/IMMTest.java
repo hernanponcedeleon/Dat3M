@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -17,13 +17,13 @@ import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class IMMTest extends AbstractCTest {
 
-    public IMMTest(String name, Arch target, Result expected) {
+    public IMMTest(String name, Arch target, ResultStatus expected) {
         super(name, target, expected);
     }
 

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
@@ -50,21 +51,21 @@ public class Providers {
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
                                                         Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Configuration> config) {
-        return Provider.fromSupplier(() -> VerificationTask.builder().
-                withConfig(config.get()).
-                withProgressModel(progressModelSupplier.get()).
-                build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get())
+        return Provider.fromSupplier(() -> Task.builder()
+                .withConfig(config.get())
+                .withProgressModel(progressModelSupplier.get())
+                .build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get())
         );
     }
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
                                                         Supplier<Arch> targetSupplier, Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
-        return Provider.fromSupplier(() -> VerificationTask.builder().
-                withConfig(config.get()).
-                withTarget(targetSupplier.get()).
-                withBound(boundSupplier.get()).
-                withProgressModel(progressModelSupplier.get()).
-                build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
+        return Provider.fromSupplier(() -> Task.builder()
+                .withConfig(config.get())
+                .withTarget(targetSupplier.get())
+                .withBound(boundSupplier.get())
+                .withProgressModel(progressModelSupplier.get())
+                .build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
     }
 
 }

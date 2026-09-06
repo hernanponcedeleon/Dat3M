@@ -2,13 +2,11 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
@@ -18,13 +16,13 @@ import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
+import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class EBRTest extends AbstractCTest {
 
-    public EBRTest(String name, Arch target, Result expected) {
+    public EBRTest(String name, Arch target, ResultStatus expected) {
         super(name, target, expected);
     }
 

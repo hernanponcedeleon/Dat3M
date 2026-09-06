@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -115,7 +115,7 @@ public class NonTerminationEncoder {
     private static final Logger logger = LoggerFactory.getLogger(NonTerminationEncoder.class);
 
     private final EncodingContext context;
-    private final VerificationTask task;
+    private final Task task;
 
     private final List<Loop> allLoops = new ArrayList<>();
     private final Map<Event, NonterminationCase> nonterm2Case = new LinkedHashMap<>();
@@ -123,7 +123,7 @@ public class NonTerminationEncoder {
     // Maps an event to all the loop iterations it is contained in (sorted from innermost to outermost loop)
     private final Map<Event, List<Iteration>> event2Iterations = new LinkedHashMap<>();
 
-    public NonTerminationEncoder(VerificationTask task, EncodingContext context) {
+    public NonTerminationEncoder(Task task, EncodingContext context) {
         this.task = task;
         this.context = context;
 

@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -159,7 +160,7 @@ public class RefinementSolver extends ModelChecker {
         return new RefinementSolver(task);
     }
 
-    protected void preprocess(VerificationTask task) throws InvalidConfigurationException {
+    protected void preprocess(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         final Wmm memoryModel = task.getMemoryModel();
 
@@ -173,7 +174,7 @@ public class RefinementSolver extends ModelChecker {
     @Override
     protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = this.task;
+        final VerificationTask task = (VerificationTask) this.task;
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
         final Configuration config = task.getConfig();
@@ -206,7 +207,7 @@ public class RefinementSolver extends ModelChecker {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
         final Refiner refiner = Refiner.newInstance();
-        final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
+        final Property.Type propertyType = Property.getCombinedType(task.getProperties(), task);
 
         logger.info("Starting encoding using {}", ctx.getVersion());
         prover.writeComment("Program encoding");
@@ -225,7 +226,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Checking target property.");
         prover.push();
         prover.writeComment("Property encoding");
-        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperties()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
@@ -315,7 +316,7 @@ public class RefinementSolver extends ModelChecker {
         // TODO: Check if there is OOB or any aliasing violation
     }
 
-    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
+    private void analyzeInconclusiveness(Task task, Context analysisContext, ExecutionModel model) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         if (alias == null) {
             return;
@@ -360,7 +361,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(Task task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();

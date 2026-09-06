@@ -11,8 +11,9 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -131,17 +132,17 @@ public abstract class AbstractCompilationTest {
             return;
         }
 
-        try (TaskSolver s1 = TaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
-             TaskSolver s2 = TaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
+        try (VerificationTaskSolver s1 = VerificationTaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
+             VerificationTaskSolver s2 = VerificationTaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
 
             s1.run();
-            if (!s1.hasModel()) {
+            if (!s1.getResult().hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
                 // so the compiled code should also not exhibit that behaviour, unless we
                 // know the compilation is broken
                 boolean compilationIsBroken = getCompilationBreakers().contains(path);
                 s2.run();
-                assertEquals(compilationIsBroken, s2.hasModel());
+                assertEquals(compilationIsBroken, s2.getResult().hasModel());
             }
         }
     }

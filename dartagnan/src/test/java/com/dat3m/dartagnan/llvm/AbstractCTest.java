@@ -2,12 +2,12 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.*;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -28,9 +28,9 @@ public abstract class AbstractCTest {
 
     protected String name;
     protected Arch target;
-    protected Result expected;
+    protected ResultStatus expected;
 
-    public AbstractCTest(String name, Arch target, Result expected) {
+    public AbstractCTest(String name, Arch target, ResultStatus expected) {
         this.name = name;
         this.target = target;
         this.expected = expected;
@@ -114,10 +114,10 @@ public abstract class AbstractCTest {
 
 
     protected void testSolver(Method method) throws Exception {
-        try (TaskSolver solver = TaskSolver.createWithMethod(taskProvider.get(), method)
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
                 .withShutdownManager(shutdownManagerProvider.get())) {
             solver.run();
-            assertEquals(expected, solver.getResult());
+            assertEquals(expected, solver.getResult().getStatus());
         }
     }
 
