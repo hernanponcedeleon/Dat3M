@@ -1,6 +1,7 @@
 package com.dat3m.ui.editor;
 
 import com.google.common.collect.ImmutableMap;
+import com.dat3m.ui.log.LogPane;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
@@ -9,13 +10,17 @@ import java.awt.*;
 
 public class EditorsPane {
 
+    private static final int EDITOR_DIVIDER_SIZE = 12;
+    private static final int LOG_HEIGHT = 240;
+
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
             EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea()),
             EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea())
     );
 
-    private final JSplitPane mmPane;
+    private final JSplitPane editorsPane;
     private final JSplitPane mainPane;
+    private final LogPane logPane = new LogPane();
     private final JMenu menuImporter;
     private final JMenu menuExporter;
 
@@ -33,17 +38,19 @@ public class EditorsPane {
         editors.get(EditorCode.PROGRAM).setPreferredSize(editorsDimension);
         editors.get(EditorCode.TARGET_MM).setPreferredSize(editorsDimension);
 
-        mmPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        mmPane.setBottomComponent(editors.get(EditorCode.TARGET_MM));
-        mmPane.setOneTouchExpandable(true);
-        mmPane.setDividerSize(0);
-        mmPane.setBorder(new TitledBorder(""));
+        editorsPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                editors.get(EditorCode.PROGRAM), editors.get(EditorCode.TARGET_MM));
+        editorsPane.setOneTouchExpandable(true);
+        editorsPane.setDividerSize(EDITOR_DIVIDER_SIZE);
+        editorsPane.setDividerLocation(0.5);
+        editorsPane.setBorder(new TitledBorder(""));
+        editorsPane.setMinimumSize(new Dimension(0, 120));
 
-        mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editors.get(EditorCode.PROGRAM), mmPane);
-        mainPane.setOneTouchExpandable(true);
-        mainPane.setDividerSize(2);
-        mainPane.setDividerLocation(0.5);
+        mainPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorsPane, logPane);
+        mainPane.setResizeWeight(0.75);
+        mainPane.setDividerSize(0);
         mainPane.setBorder(new TitledBorder(""));
+        setLogVisible(false);
     }
 
     public JMenu getMenuImporter() {
@@ -60,5 +67,22 @@ public class EditorsPane {
 
     public Editor getEditor(EditorCode code) {
         return editors.get(code);
+    }
+
+    public LogPane getLogPane() {
+        return logPane;
+    }
+
+    public void setLogVisible(boolean visible) {
+        logPane.setVisible(visible);
+        mainPane.setDividerSize(visible ? 2 : 0);
+        if (visible) {
+            SwingUtilities.invokeLater(() -> mainPane.setDividerLocation(Math.max(
+                    mainPane.getMinimumDividerLocation(),
+                    Math.min(mainPane.getHeight() - LOG_HEIGHT, mainPane.getMaximumDividerLocation())
+            )));
+        }
+        mainPane.revalidate();
+        mainPane.repaint();
     }
 }
