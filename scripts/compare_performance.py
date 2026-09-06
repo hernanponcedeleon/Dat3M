@@ -2,6 +2,7 @@
 """Compare Dartagnan execution times for two repository revisions."""
 
 import argparse
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 import json
 import math
@@ -19,6 +20,7 @@ MAX_TIMEOUT_ATTEMPTS = 3
 
 
 TIME_PATTERN = re.compile(r"^Time:\s+(?:(?P<minutes>\d+):)?(?P<seconds>\d+(?:\.\d+)?)\s+(?:secs|mins)\s*$", re.MULTILINE)
+RESULT_PATTERN = re.compile(r"^Result:\s+(?P<result>\S+)\s*$", re.MULTILINE)
 
 
 def parse_arguments():
@@ -114,6 +116,13 @@ def parse_time(output):
     return int(match.group("minutes") or 0) * 60 + float(match.group("seconds"))
 
 
+def parse_result(output):
+    match = RESULT_PATTERN.search(output)
+    if not match:
+        raise ValueError("Dartagnan did not report a verification result")
+    return match.group("result")
+
+
 def run_benchmark(revision_dir, benchmark, run, timeout):
     executable = revision_dir / "dartagnan" / "target" / "dartagnan"
     command = [
@@ -146,8 +155,9 @@ def run_benchmark(revision_dir, benchmark, run, timeout):
                     + " ".join(command),
                     file=sys.stderr,
                 )
-                return timeout
-    return parse_time(completed.stdout + completed.stderr)
+                return timeout, "TIMEOUT"
+    output = completed.stdout + completed.stderr
+    return parse_time(output), parse_result(output)
 
 
 def summarize(values):
@@ -155,6 +165,10 @@ def summarize(values):
         "average": statistics.mean(values),
         "standard_deviation": statistics.stdev(values) if len(values) > 1 else 0.0,
     }
+
+
+def summarize_results(results):
+    return dict(sorted(Counter(results).items()))
 
 
 # Two-sided 95% Student-t critical values, indexed by degrees of freedom. Performance
@@ -217,13 +231,22 @@ def measure_benchmark(benchmark, base_checkout, head_checkout, timeout):
     measurements = []
     base_times = []
     head_times = []
+    base_results = []
+    head_results = []
     for run in range(benchmark["runs"]):
-        revisions = (("base", base_checkout, base_times), ("head", head_checkout, head_times))
+        revisions = (
+            ("base", base_checkout, base_times, base_results),
+            ("head", head_checkout, head_times, head_results),
+        )
         # Alternate the measurement order to avoid consistently favoring the revision that runs first.
-        for revision, directory, times in (revisions if run % 2 == 0 else reversed(revisions)):
-            time = run_benchmark(directory, benchmark, run + 1, timeout)
+        for revision, directory, times, results in (revisions if run % 2 == 0 else reversed(revisions)):
+            time, result = run_benchmark(directory, benchmark, run + 1, timeout)
             times.append(time)
-            measurements.append({"benchmark": benchmark["name"], "revision": revision, "run": run + 1, "seconds": time})
+            results.append(result)
+            measurements.append({
+                "benchmark": benchmark["name"], "revision": revision, "run": run + 1,
+                "seconds": time, "result": result,
+            })
     base = summarize(base_times)
     head = summarize(head_times)
     return {
@@ -234,6 +257,7 @@ def measure_benchmark(benchmark, base_checkout, head_checkout, timeout):
         "head": head,
         "base_times": base_times,
         "head_times": head_times,
+        "results": {"base": summarize_results(base_results), "head": summarize_results(head_results)},
         "improvement": paired_improvement(base_times, head_times),
     }, measurements
 
@@ -251,13 +275,33 @@ def format_improvement(improvement):
     return f"➖ {formatted_interval}"
 
 
+def common_result(results):
+    all_results = set(results["base"]) | set(results["head"])
+    return all_results.pop() if len(all_results) == 1 else None
+
+
+def format_result_counts(result_counts):
+    return ", ".join(f"{result} × {count}" for result, count in result_counts.items())
+
+
+def format_results(results):
+    result = common_result(results)
+    if result is not None:
+        return result
+    return f"Base: {format_result_counts(results['base'])}<br>PR: {format_result_counts(results['head'])}"
+
+
 def summarize_total(rows):
     """Summarize the total verification time of all rows for every paired run."""
     base_times = [sum(times) for times in zip(*(row["base_times"] for row in rows))]
     head_times = [sum(times) for times in zip(*(row["head_times"] for row in rows))]
+    result_counts = Counter()
+    for row in rows:
+        result_counts[common_result(row["results"]) or "MIXED"] += 1
     return {
         "base": summarize(base_times),
         "head": summarize(head_times),
+        "result_counts": dict(sorted(result_counts.items())),
         "improvement": paired_improvement(base_times, head_times),
     }
 
@@ -276,13 +320,14 @@ def render_markdown(rows, minimum):
             "",
             f"### Memory model: {memory_model}",
             "",
-            "| Benchmark | Base branch | PR branch | Improvement (95% CI) |",
-            "|---|---:|---:|---:|",
+            "| Benchmark | Base branch | PR branch | Result | Improvement (95% CI) |",
+            "|---|---:|---:|---|---:|",
         ])
         for row in memory_model_rows:
             lines.append(
                 f"| `{row['benchmark']}` | {row['base']['average']:.3f} ± {row['base']['standard_deviation']:.3f} s "
                 f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s "
+                f"| {format_results(row['results'])} "
                 f"| {format_improvement(row['improvement'])} |"
             )
     if visible_rows:
@@ -291,14 +336,15 @@ def render_markdown(rows, minimum):
             "",
             "### Total",
             "",
-            "| Benchmarks | Base branch | PR branch | Improvement (95% CI) |",
-            "|---|---:|---:|---:|",
+            "| Benchmarks | Base branch | PR branch | Result | Improvement (95% CI) |",
+            "|---|---:|---:|---|---:|",
             f"| All reported benchmarks | {total['base']['average']:.3f} ± {total['base']['standard_deviation']:.3f} s "
             f"| {total['head']['average']:.3f} ± {total['head']['standard_deviation']:.3f} s "
+            f"| {format_result_counts(total['result_counts'])} "
             f"| {format_improvement(total['improvement'])} |",
         ])
     if not visible_rows:
-        lines.append("| _No benchmark met the reporting threshold_ | — | — | — |")
+        lines.append("| _No benchmark met the reporting threshold_ | — | — | — | — |")
     filtered = len(rows) - len(visible_rows)
     if filtered:
         lines.extend(["", f"_{filtered} benchmark(s) omitted because both averages were below {minimum:g} seconds._"])
