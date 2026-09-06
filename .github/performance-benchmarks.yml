@@ -1,5 +1,5 @@
 # Each entry is one deliberately selected performance measurement. Paths are relative to the repository root.
-# Configurations may add command-line options, for example: options: ["--bound=2"].
+# Options on an entry apply to every configuration; configurations can add their own options.
 benchmarks:
   - program: benchmarks/locks/cna.c
     runs: 3
@@ -9,11 +9,60 @@ benchmarks:
       - cat: cat/vmm.cat
         target: c11
 
+  - program: benchmarks/locks/linuxrwlock.c
+    runs: 3
+    options: ["--bound=2"]
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/power.cat
+        target: power
+
+  - program: benchmarks/locks/mutex_musl.c
+    runs: 3
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+        options: ["--bound=5"]
+      - cat: cat/power.cat
+        target: power
+        options: ["--bound=4"]
+      - cat: cat/vmm.cat
+        target: c11
+        options: ["--bound=3"]
+
   - program: benchmarks/lfds/dglm.c
+    runs: 3
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+        options: ["--bound=3"]
+      - cat: cat/power.cat
+        target: power
+      - cat: cat/vmm.cat
+        target: c11
+        options: ["--bound=2"]
+
+  - program: benchmarks/lfds/ms.c
+    runs: 3
+    options: ["--bound=2"]
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/power.cat
+        target: power
+      - cat: cat/vmm.cat
+        target: c11
+
+  - program: benchmarks/lfds/treiber.c
     runs: 3
     configurations:
       - cat: cat/power.cat
         target: power
+        options: ["--bound=4"]
+      - cat: cat/vmm.cat
+        target: c11
+        options: ["--bound=3"]
 
   - program: benchmarks/lfds/safe_stack.c
     runs: 3
@@ -24,6 +73,9 @@ benchmarks:
   - program: benchmarks/challenging/cna.c
     runs: 3
     configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+        options: ["--bound=2"]
       - cat: cat/vmm.cat
         target: c11
 
@@ -32,5 +84,3 @@ benchmarks:
     configurations:
       - cat: cat/aarch64.cat
         target: arm8
-      - cat: cat/vmm.cat
-        target: c11

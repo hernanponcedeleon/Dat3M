@@ -55,12 +55,15 @@ def load_benchmarks(benchmark_path):
         missing_keys = required_keys - entry.keys()
         if missing_keys:
             raise ValueError("Benchmark entry is missing: " + ", ".join(sorted(missing_keys)))
-        if entry.keys() - {"program", "runs", "configurations"}:
+        if entry.keys() - {"program", "runs", "options", "configurations"}:
             raise ValueError("Benchmark entry contains unsupported keys")
         if not isinstance(entry["program"], str):
             raise ValueError("Benchmark program must be a string")
         if not isinstance(entry["runs"], int) or isinstance(entry["runs"], bool) or entry["runs"] < 1:
             raise ValueError("Benchmark runs must be a positive integer")
+        shared_options = entry.get("options", [])
+        if not isinstance(shared_options, list) or not all(isinstance(option, str) for option in shared_options):
+            raise ValueError("Benchmark options must be a list of strings")
         program = Path(entry["program"])
         if program.is_absolute() or ".." in program.parts:
             raise ValueError(f"Benchmark program must be a repository-relative path: {program}")
@@ -75,8 +78,9 @@ def load_benchmarks(benchmark_path):
                 raise ValueError("Each benchmark configuration must contain a cat file and target")
             if not isinstance(configuration["cat"], str) or not isinstance(configuration["target"], str):
                 raise ValueError("Benchmark configuration cat and target must be strings")
-            options = configuration.get("options", [])
-            if not isinstance(options, list) or not all(isinstance(option, str) for option in options):
+            configuration_options = configuration.get("options", [])
+            if not isinstance(configuration_options, list) \
+                    or not all(isinstance(option, str) for option in configuration_options):
                 raise ValueError("Benchmark configuration options must be a list of strings")
             benchmarks.append({
                 "name": program.as_posix(),
@@ -84,7 +88,7 @@ def load_benchmarks(benchmark_path):
                 "runs": entry["runs"],
                 "cat": configuration["cat"],
                 "target": configuration["target"],
-                "options": options,
+                "options": [*shared_options, *configuration_options],
             })
     if not benchmarks:
         raise ValueError("Benchmark file selects no benchmarks")
