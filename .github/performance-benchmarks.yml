@@ -4,8 +4,6 @@ benchmarks:
   - program: benchmarks/locks/cna.c
     runs: 3
     configurations:
-      - cat: cat/power.cat
-        target: power
       - cat: cat/vmm.cat
         target: c11
 
