@@ -171,46 +171,46 @@ def summarize_results(results):
     return dict(sorted(Counter(results).items()))
 
 
-# Two-sided 95% Student-t critical values, indexed by degrees of freedom. Performance
-# measurements normally have only a few runs, so the normal-distribution value (1.96)
-# would underestimate the confidence interval. For more than 31 runs, 1.96 is a close
-# enough approximation.
-T_CRITICAL_95 = {
-    1: 12.706,
-    2: 4.303,
-    3: 3.182,
-    4: 2.776,
-    5: 2.571,
-    6: 2.447,
-    7: 2.365,
-    8: 2.306,
-    9: 2.262,
-    10: 2.228,
-    11: 2.201,
-    12: 2.179,
-    13: 2.160,
-    14: 2.145,
-    15: 2.131,
-    16: 2.120,
-    17: 2.110,
-    18: 2.101,
-    19: 2.093,
-    20: 2.086,
-    21: 2.080,
-    22: 2.074,
-    23: 2.069,
-    24: 2.064,
-    25: 2.060,
-    26: 2.056,
-    27: 2.052,
-    28: 2.048,
-    29: 2.045,
-    30: 2.042,
+# Values used to calculate a two-sided 99% confidence interval. The key is one less
+# than the number of repetitions: for example, five repetitions use the value for key
+# four. With more than 31 repetitions, the value 2.576 is close enough, so no larger
+# table is needed.
+T_CRITICAL_99 = {
+    1: 63.657,
+    2: 9.925,
+    3: 5.841,
+    4: 4.604,
+    5: 4.032,
+    6: 3.707,
+    7: 3.499,
+    8: 3.355,
+    9: 3.250,
+    10: 3.169,
+    11: 3.106,
+    12: 3.055,
+    13: 3.012,
+    14: 2.977,
+    15: 2.947,
+    16: 2.921,
+    17: 2.898,
+    18: 2.878,
+    19: 2.861,
+    20: 2.845,
+    21: 2.831,
+    22: 2.819,
+    23: 2.807,
+    24: 2.797,
+    25: 2.787,
+    26: 2.779,
+    27: 2.771,
+    28: 2.763,
+    29: 2.756,
+    30: 2.750,
 }
 
 
 def paired_improvement(base_times, head_times):
-    """Return the paired relative improvement and its two-sided 95% confidence interval.
+    """Return the paired relative improvement and its two-sided 99% confidence interval.
 
     Each base/head pair belongs to the same run and therefore shares much of the
     machine noise. A positive value means that the head revision is faster. The
@@ -222,7 +222,7 @@ def paired_improvement(base_times, head_times):
     if len(improvements) < 2:
         return {"average": average, "lower": None, "upper": None}
     standard_error = statistics.stdev(improvements) / math.sqrt(len(improvements))
-    critical_value = T_CRITICAL_95.get(len(improvements) - 1, 1.96)
+    critical_value = T_CRITICAL_99.get(len(improvements) - 1, 2.576)
     margin = critical_value * standard_error
     return {"average": average, "lower": average - margin, "upper": average + margin}
 
@@ -316,7 +316,7 @@ def render_markdown(rows, minimum):
             "",
             f"### Memory model: {memory_model}",
             "",
-            "| Benchmark | Base branch | PR branch | Improvement (95% CI) | Result |",
+            "| Benchmark | Base branch | PR branch | Improvement (99% CI) | Result |",
             "|---|---:|---:|---:|---|",
         ])
         for row in memory_model_rows:
@@ -331,7 +331,7 @@ def render_markdown(rows, minimum):
             "",
             "### Total",
             "",
-            "| Benchmarks | Base branch | PR branch | Improvement (95% CI) |",
+            "| Benchmarks | Base branch | PR branch | Improvement (99% CI) |",
             "|---|---:|---:|---:|",
             f"| All reported benchmarks | {total['base']['average']:.3f} ± {total['base']['standard_deviation']:.3f} s "
             f"| {total['head']['average']:.3f} ± {total['head']['standard_deviation']:.3f} s "
