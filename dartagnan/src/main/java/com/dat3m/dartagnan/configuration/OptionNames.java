@@ -43,7 +43,6 @@ public class OptionNames {
     public static final String ROUNDING_MODE_FLOATS = "encoding.roundingModeFloat";
 
     // Program Processing Options
-    public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
     public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
     public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
     public static final String DEAD_ASSIGNMENT_ELIMINATION = "program.processing.dce";
@@ -55,7 +54,6 @@ public class OptionNames {
 
     // Program Property Options
     public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";
-    public static final String SIMPLE_BRANCH_EQUIVALENCE = "program.analysis.simpleBranchEquivalence";
     public static final String ALIAS_METHOD = "program.analysis.alias";
     public static final String ALIAS_GRAPHVIZ = "program.analysis.generateAliasGraph";
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
