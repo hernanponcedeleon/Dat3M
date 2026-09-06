@@ -64,7 +64,7 @@ jobs:
             --base-checkout "$GITHUB_WORKSPACE/base" \
             --head-checkout "$GITHUB_WORKSPACE/head" \
             --timeout 180 \
-            --jobs 1 \
+            --jobs 3 \
             --min-average-seconds 5 \
             --markdown performance/report.md \
             --json performance/results.json
