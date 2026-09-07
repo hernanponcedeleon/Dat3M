@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
@@ -29,9 +28,7 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 3;
-    }
+    protected int getBound() { return 3; }
 
     @Override
     protected long getTimeout() {
@@ -39,8 +36,8 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(name.startsWith("memtrack") ? Property.TRACKABILITY : Property.PROGRAM_SPEC);
+    protected EnumSet<Property> getProperty() {
+        return EnumSet.of(name.startsWith("memtrack") ? Property.TRACKABILITY : Property.PROGRAM_SPEC);
     }
 
     @Override

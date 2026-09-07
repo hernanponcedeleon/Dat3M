@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -35,24 +32,16 @@ public class VMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC);
-    }
+    protected EnumSet<Property> getProperty() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
 
     @Override
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 2;
-    }
+    protected int getBound() { return 2; }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vmm");
-    }
+    protected String getWmmName() { return "vmm"; }
 
     @Override
-    protected Provider<Solvers> getSolverProvider() {
-        return () -> Solvers.YICES2;
-    }
+    protected Solvers getSolver() { return Solvers.YICES2; }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }
