@@ -2,9 +2,6 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,17 +16,10 @@ public class LitmusPTXv6_0Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/PTX/", "PTXv6_0");
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.PTX;
-    }
-
     public LitmusPTXv6_0Test(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.PTX, path, expected);
     }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "ptx-v6.0");
-    }
+    protected String getWmmName() { return "ptx-v6.0"; }
 }

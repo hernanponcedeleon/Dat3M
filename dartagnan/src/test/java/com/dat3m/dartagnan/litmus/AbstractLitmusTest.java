@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.AbstractSolverTest;
+import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -39,14 +39,16 @@ import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
-public abstract class AbstractLitmusTest extends AbstractSolverTest {
+public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverTest {
 
-    private Path path;
-    private final ResultStatus expected;
+    protected final Arch target;
+    protected final Path programPath;
+    protected final ResultStatus expected;
     private static Map<Path, ResultStatus> expectedResults;
 
-    AbstractLitmusTest(Path path, ResultStatus expected) {
-        this.path = path;
+    AbstractLitmusTest(Arch target, Path programPath, ResultStatus expected) {
+        this.target = target;
+        this.programPath = programPath;
         this.expected = expected;
     }
 
@@ -76,8 +78,8 @@ public abstract class AbstractLitmusTest extends AbstractSolverTest {
     protected final Configuration getConfiguration() throws InvalidConfigurationException {
         var configBase = Configuration.builder()
                 .setOption(SOLVER, Z3.name())
-                .setOption(BOUND, boundProvider.get().toString())
-                .setOption(TARGET, targetProvider.get().name())
+                .setOption(BOUND, Integer.toString(getBound()))
+                .setOption(TARGET, target.name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true");
 
@@ -88,42 +90,26 @@ public abstract class AbstractLitmusTest extends AbstractSolverTest {
         return builder;
     }
 
-    protected abstract Provider<Arch> getTargetProvider();
+    protected String getWmmName() { return null; }
 
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(getTargetProvider());
-    }
+    protected Property getTestedProperty() { return Property.PROGRAM_SPEC; }
 
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
-    }
+    protected ProgressModel.Hierarchy getProgressModel() { return ProgressModel.defaultHierarchy(); }
 
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return ProgressModel::defaultHierarchy;
-    }
+    protected int getBound() { return 1; }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 1;
-    }
-
-    protected long getTimeout() {
-        return 10000;
-    }
+    protected long getTimeout() { return 10000; }
 
     // ============================================================
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> targetProvider = getTargetProvider();
-    protected final Provider<Path> filePathProvider = () -> path;
-    protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(path.getFileName().toString()));
-    protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<ResultStatus> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get()));
+    protected final Provider<String> nameProvider
+            = () -> getNameWithoutExtension(getProgramPath().getFileName().toString());
+    protected final Provider<Program> programProvider = Providers.createProgramFromPath(this::getProgramPath);
+    protected final Provider<Wmm> wmmProvider = Providers.createWmmFromPath(this::getWmmPath);
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(
+            programProvider, wmmProvider, this::getTestedProperties, this::getProgressModel, configProvider);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
@@ -131,16 +117,11 @@ public abstract class AbstractLitmusTest extends AbstractSolverTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
-            .around(filePathProvider)
             .around(nameProvider)
-            .around(boundProvider)
             .around(programProvider)
             .around(wmmProvider)
-            .around(progressModelProvider)
-            .around(propertyProvider)
             .around(configProvider)
             .around(taskProvider)
-            .around(expectedResultProvider)
             .around(timeout);
 
     @Override
@@ -156,4 +137,8 @@ public abstract class AbstractLitmusTest extends AbstractSolverTest {
             assertEquals(expected, solver.getResult().getStatus());
         }
     }
+
+    private Path getProgramPath() { return programPath; }
+    private Path getWmmPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
+    private EnumSet<Property> getTestedProperties() { return EnumSet.of(getTestedProperty()); }
 }

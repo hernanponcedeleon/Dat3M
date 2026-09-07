@@ -1,17 +1,12 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.nio.file.Path;
 import java.io.IOException;
-import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanAssertionsTest extends AbstractLitmusTest {
@@ -22,21 +17,9 @@ public class LitmusVulkanAssertionsTest extends AbstractLitmusTest {
     }
 
     public LitmusVulkanAssertionsTest(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.VULKAN, path, expected);
     }
 
     @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.VULKAN;
-    }
-
-    @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vulkan");
-    }
+    protected String getWmmName() { return "vulkan"; }
 }
