@@ -2,9 +2,6 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -29,11 +26,6 @@ public class IMMTest extends AbstractCTest {
     @Override
     protected long getTimeout() {
         return 60000;
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(() -> IMM);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

@@ -1,14 +1,11 @@
 package com.dat3m.dartagnan.utils.rules;
 
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Path;
 import java.util.function.Supplier;
-
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 
 /*
     DESC: This Provider provides the canonical Wmm (.cat) associated with a target architecture.
@@ -22,19 +19,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
  */
 public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
 
-    private static final Map<Arch, UncheckedSupplier<Wmm>> ARCH_WMM_MAP = new HashMap<>();
-
-    static {
-        ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(getRootPath("cat/tso.cat")));
-        ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(getRootPath("cat/aarch64.cat")));
-        ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(getRootPath("cat/power.cat")));
-        ARCH_WMM_MAP.put(Arch.RISCV, () -> new ParserCat().parse(getRootPath("cat/riscv.cat")));
-        ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(getRootPath("cat/linux-kernel.cat")));
-        ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(getRootPath("cat/imm.cat")));
-        ARCH_WMM_MAP.put(Arch.VULKAN, () -> new ParserCat().parse(getRootPath("cat/vulkan.cat")));
-        ARCH_WMM_MAP.put(Arch.OPENCL, () -> new ParserCat().parse(getRootPath("cat/opencl.cat")));
-    }
-
     private final Supplier<Arch> archSupplier;
     private WmmFromArchitectureProvider(Supplier<Arch> archSupplier) {
         this.archSupplier = archSupplier;
@@ -46,10 +30,7 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
 
     @Override
     protected Wmm provide() {
-        Supplier<Wmm> wmmSupplier = ARCH_WMM_MAP.get(archSupplier.get());
-        if (wmmSupplier == null) {
-            throw new IllegalArgumentException(String.format("The provided architecture %s has no associated memory model", archSupplier.get()));
-        }
-        return wmmSupplier.get();
+        final Path path = ResourceHelper.getCatPath(archSupplier.get(), null);
+        return Providers.createWmmFromPath(() -> path).get();
     }
 }

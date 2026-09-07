@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -31,9 +30,7 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Solvers> getSolverProvider() {
-        return () -> Solvers.YICES2;
-    }
+    protected Solvers getSolver() { return Solvers.YICES2; }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }

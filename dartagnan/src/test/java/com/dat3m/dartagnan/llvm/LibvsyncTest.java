@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -34,8 +31,9 @@ public class LibvsyncTest extends AbstractCTest {
         return "-opt.ll";
     }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> switch (name) {
+    @Override
+    protected int getBound() {
+        return switch (name) {
             case "cachedq" -> 2;
             default -> 1;
         };
@@ -47,14 +45,10 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC);
-    }
+    protected EnumSet<Property> getProperty() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vmm");
-    }
+    protected String getWmmName() { return "vmm"; }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }

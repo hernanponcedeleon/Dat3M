@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -33,19 +30,13 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return () -> uniform(progressModel);
-    }
+    protected ProgressModel.Hierarchy getProgressModel() { return uniform(progressModel); }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "imm");
-    }
+    protected String getWmmName() { return "imm"; }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(Property.TERMINATION);
-    }
+    protected EnumSet<Property> getProperty() { return EnumSet.of(Property.TERMINATION); }
 
     @Override
     protected long getTimeout() {

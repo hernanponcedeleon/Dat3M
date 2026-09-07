@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -28,9 +27,8 @@ public class LFDSTest extends AbstractCTest {
         return 1500000;
     }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 2;
-    }
+    @Override
+    protected int getBound() { return 2; }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -31,7 +32,7 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
     protected Arch target;
     protected ResultStatus expected;
 
-    public AbstractCTest(String name, Arch target, ResultStatus expected) {
+    protected AbstractCTest(String name, Arch target, ResultStatus expected) {
         this.name = name;
         this.target = target;
         this.expected = expected;
@@ -43,9 +44,9 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
 
     protected final Configuration getBaseConfiguration() throws InvalidConfigurationException {
         var configBase = Configuration.builder()
-                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
-                .setOption(OptionNames.BOUND, getBoundProvider().get().toString())
-                .setOption(OptionNames.TARGET, targetProvider.get().name())
+                .setOption(OptionNames.SOLVER, getSolver().name())
+                .setOption(OptionNames.BOUND, Integer.toString(getBound()))
+                .setOption(OptionNames.TARGET, target.name())
                 .setOption(OptionNames.PHANTOM_REFERENCES, "true");
 
         return additionalConfig(configBase).build();
@@ -59,53 +60,48 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
         return ".ll";
     }
 
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath(getProgramPathPrefix() + name + getProgramPathSuffix());
-    }
-
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 1;
+    protected int getBound() {
+        return 1;
     }
 
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
         return builder;
     }
 
-    protected Provider<Solvers> getSolverProvider() {
-        return () -> Solvers.Z3;
+    protected Solvers getSolver() {
+        return Solvers.Z3;
     }
 
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(targetProvider);
+    protected String getWmmName() {
+        return null;
     }
 
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
+    protected EnumSet<Property> getProperty() {
+        return EnumSet.of(Property.PROGRAM_SPEC);
     }
 
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return ProgressModel::defaultHierarchy;
+    protected ProgressModel.Hierarchy getProgressModel() {
+        return ProgressModel.defaultHierarchy();
     }
 
     // =============================================================
 
     // Provider rules
-    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> targetProvider = () -> target;
-    protected final Provider<Path> filePathProvider = getProgramPathProvider();
-    protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
-    protected final Provider<Solvers> solverProvider = getSolverProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getBaseConfiguration);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configurationProvider);
+    private final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
+    private final Provider<Path> filePathProvider = this::getProgramPath;
+    private final Provider<Integer> boundProvider = this::getBound;
+    private final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
+    private final Provider<Wmm> wmmProvider = Providers.createWmmFromPath(this::getWmmPath);
+    private final Provider<ProgressModel.Hierarchy> progressModelProvider = this::getProgressModel;
+    private final Provider<Solvers> solverProvider = this::getSolver;
+    private final Provider<EnumSet<Property>> propertyProvider = this::getProperty;
+    private final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getBaseConfiguration);
+    private final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configurationProvider);
 
     // Special rules
-    protected final Timeout timeout = Timeout.millis(getTimeout());
+    private final Timeout timeout = Timeout.millis(getTimeout());
 
-    protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
+    private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
@@ -129,4 +125,10 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
             assertEquals(expected, solver.getResult().getStatus());
         }
     }
+
+    private Path getProgramPath() {
+        return getTestResourcePath(getProgramPathPrefix() + name + getProgramPathSuffix());
+    }
+
+    private Path getWmmPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
 }
