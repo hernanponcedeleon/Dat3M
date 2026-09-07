@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusC;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
 
-class ParserLitmusC implements ParserInterface {
+class ParserLitmusC extends ParserLitmus {
 
     @Override
     public Program parse(CharStream charStream) {

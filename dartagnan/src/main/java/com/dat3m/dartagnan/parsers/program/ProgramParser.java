@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,15 +22,6 @@ public class ProgramParser {
     private static final Logger logger = LoggerFactory.getLogger(ProgramParser.class);
     private final Pipelines pipelines;
     private final ImmutableSet<String> supportedExtensions;
-
-    private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
-    private static final String TYPE_LITMUS_PPC = "PPC";
-    private static final String TYPE_LITMUS_RISCV = "RISCV";
-    private static final String TYPE_LITMUS_X86 = "X86";
-    private static final String TYPE_LITMUS_PTX = "PTX";
-    private static final String TYPE_LITMUS_VULKAN = "VULKAN";
-    private static final String TYPE_LITMUS_C = "C";
-    private static final String TYPE_LITMUS_OPENCL = "OPENCL";
 
     public static final String EXTENSION_LL = ".ll";
     public static final String EXTENSION_LITMUS = ".litmus";
@@ -94,8 +84,7 @@ public class ProgramParser {
 
     private Program parse(CharStream sourceCode, String extension) {
         try {
-            final ParserInterface parser = getParser(sourceCode, extension);
-            return parser.parse(sourceCode);
+            return getParser(extension).parse(sourceCode);
         } catch (RuntimeException exception) {
             // Wrap into ParsingException.
             throw exception instanceof ParsingException
@@ -106,7 +95,7 @@ public class ProgramParser {
 
     // =========================== Private Utility =====================================
 
-    private ParserInterface getParser(CharStream sourceCode, String extension) {
+    private ParserInterface getParser(String extension) {
         return switch (extension) {
             case EXTENSION_LL -> new ParserLlvm();
             case EXTENSION_SPV_DIS -> {
@@ -114,22 +103,8 @@ public class ProgramParser {
                 yield new ParserSpirv();
             }
             case EXTENSION_SPVASM -> new ParserSpirv();
-            case EXTENSION_LITMUS -> getParserForLitmus(sourceCode);
+            case EXTENSION_LITMUS -> new ParserLitmus();
             default -> throw new ParsingException("Unknown input file type");
-        };
-    }
-
-    private ParserInterface getParserForLitmus(CharStream sourceCode) {
-        final String litmusType = getFirstWord(peekFirstLine(sourceCode));
-        return switch (litmusType.toUpperCase()) {
-            case TYPE_LITMUS_AARCH64 -> new ParserLitmusAArch64();
-            case TYPE_LITMUS_PPC -> new ParserLitmusPPC();
-            case TYPE_LITMUS_X86 -> new ParserLitmusX86();
-            case TYPE_LITMUS_RISCV -> new ParserLitmusRISCV();
-            case TYPE_LITMUS_PTX -> new ParserLitmusPTX();
-            case TYPE_LITMUS_VULKAN -> new ParserLitmusVulkan();
-            case TYPE_LITMUS_C, TYPE_LITMUS_OPENCL -> new ParserLitmusC();
-            default -> throw new ParsingException("Unknown litmus format" + litmusType);
         };
     }
 
@@ -137,26 +112,4 @@ public class ProgramParser {
         return "." + Utils.getFileExtension(path);
     }
 
-    private static String getFirstWord(String string) {
-        string = string.stripLeading();
-        int endOfFirstWord = string.indexOf(" ");
-        return endOfFirstWord == -1 ? string : string.substring(0, endOfFirstWord);
-    }
-
-    private static String peekFirstLine(CharStream input) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 1;; i++) {
-            int c = input.LA(i);
-
-            if (c == IntStream.EOF || c == '\n') {
-                break;
-            }
-
-            if (c != '\r') {
-                sb.append((char) c);
-            }
-        }
-        return sb.toString();
-
-    }
 }
