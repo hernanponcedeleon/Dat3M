@@ -26,6 +26,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -176,7 +177,7 @@ public class Dat3M extends JFrame implements ActionListener {
         verificationWorker = new SwingWorker<>() {
             @Override
             protected VerificationOutcome doInBackground() {
-                logEnvironmentInfo();
+                logEnvironmentInfo(Set.of());
                 final Program program;
                 try {
                     program = parseSource(sourceCode, format, programEditor.getLoadedDir());
