@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
@@ -21,13 +20,8 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/AARCH64/", "ARM8");
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.ARM8;
-    }
-
     public LitmusAARCH64Test(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.ARM8, path, expected);
     }
 
     @Override
@@ -37,10 +31,7 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
 
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        final boolean isMixedSize = Utils.containsSubpath(
-                filePathProvider.get(),
-                Path.of("litmus", "AARCH64", "mixed")
-        );
+        final boolean isMixedSize = Utils.containsSubpath(programPath, Path.of("litmus", "AARCH64", "mixed"));
         return builder.setOption(MIXED_SIZE, String.valueOf(isMixedSize));
     }
 }
