@@ -25,6 +25,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.ExecutionException;
 
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.initEnvironmentInfo;
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.logEnvironmentInfo;
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
@@ -42,6 +44,7 @@ public class Dat3M extends JFrame implements ActionListener {
     private long verificationStartTime;
 
     private Dat3M() {
+        initEnvironmentInfo();
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
         getDefaults().put("SplitPane.border", createEmptyBorder());
 
@@ -56,6 +59,11 @@ public class Dat3M extends JFrame implements ActionListener {
         fileMenu.add(editorsPane.getMenuImporter());
         fileMenu.add(editorsPane.getMenuExporter());
         menuBar.add(fileMenu);
+        JMenu viewMenu = new JMenu("View");
+        JCheckBoxMenuItem showLogItem = new JCheckBoxMenuItem("Show log");
+        showLogItem.addItemListener(event -> editorsPane.setLogVisible(showLogItem.isSelected()));
+        viewMenu.add(showLogItem);
+        menuBar.add(viewMenu);
         setJMenuBar(menuBar);
 
         JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());
@@ -145,6 +153,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
         testResult = null;
         cancellationRequested = false;
+        editorsPane.getLogPane().clear();
         final ShutdownManager manager = ShutdownManager.create();
         shutdownManager = manager;
 
@@ -157,6 +166,7 @@ public class Dat3M extends JFrame implements ActionListener {
         verificationWorker = new SwingWorker<>() {
             @Override
             protected VerificationOutcome doInBackground() {
+                logEnvironmentInfo();
                 final Program program;
                 try {
                     program = new ProgramParser().parse(sourceCode, format, cflags);
