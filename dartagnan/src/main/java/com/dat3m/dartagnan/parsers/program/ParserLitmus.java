@@ -21,7 +21,7 @@ class ParserLitmus implements ParserInterface {
         return getParser(getFirstWord(peekFirstLine(charStream))).parse(charStream);
     }
 
-    private static ParserLitmus getParser(String type) {
+    private static ParserInterface getParser(String type) {
         return switch (type.toUpperCase()) {
             case TYPE_AARCH64 -> new ParserLitmusAArch64();
             case TYPE_PPC -> new ParserLitmusPPC();

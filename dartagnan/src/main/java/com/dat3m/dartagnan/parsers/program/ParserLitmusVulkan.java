@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusVulkan;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
 
-class ParserLitmusVulkan extends ParserLitmus {
+class ParserLitmusVulkan implements ParserInterface {
 
     @Override
     public Program parse(CharStream charStream) {
