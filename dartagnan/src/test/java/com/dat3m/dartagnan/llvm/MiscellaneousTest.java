@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
@@ -29,9 +28,7 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Integer> getBoundProvider() {
-        return () -> bound;
-    }
+    protected int getBound() { return bound; }
 
     @Override
     protected long getTimeout() {
