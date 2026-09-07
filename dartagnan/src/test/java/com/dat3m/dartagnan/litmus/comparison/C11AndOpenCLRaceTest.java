@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.litmus.comparison;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -22,7 +21,5 @@ public class C11AndOpenCLRaceTest extends C11AndOpenCLTest {
     }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
-    }
+    protected EnumSet<Property> getProperty() { return EnumSet.of(Property.CAT_SPEC); }
 }

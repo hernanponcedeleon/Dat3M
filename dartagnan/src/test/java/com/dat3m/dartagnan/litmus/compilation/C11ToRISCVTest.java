@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,21 +16,9 @@ public class C11ToRISCVTest extends AbstractCompilationTest {
     }
 
     public C11ToRISCVTest(Path path) {
-        super(path);
+        super(Arch.C11, Arch.RISCV, path);
     }
 
     @Override
-    protected Provider<Arch> getSourceProvider() {
-        return () -> Arch.C11;
-    }
-
-    @Override
-    protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
-    }
-
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.RISCV;
-    }
+    protected String getSourceWmmName() { return "c11"; }
 }

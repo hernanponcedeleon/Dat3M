@@ -2,27 +2,23 @@ package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,18 +30,21 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.utils.TestHelper.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractCompilationTest {
 
-    private Path path;
+    private final Arch source;
+    private final Arch target;
+    private final Path path;
 
-    AbstractCompilationTest(Path path) {
+    AbstractCompilationTest(Arch source, Arch target, Path path) {
+        this.source = source;
+        this.target = target;
         this.path = path;
     }
 
@@ -61,90 +60,69 @@ public abstract class AbstractCompilationTest {
         }
     }
 
+    @Test
+    public void testAssume() throws Exception { testMethod(Method.EAGER); }
 
     // =================== Modifiable behavior ====================
 
-    protected abstract Provider<Arch> getSourceProvider();
-    protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromArch(getSourceProvider());
-    }
-    protected abstract Provider<Arch> getTargetProvider();
-    protected Provider<Wmm> getTargetWmmProvider() {
-        return Providers.createWmmFromArch(getTargetProvider());
-    }
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
-    }
+    protected String getSourceWmmName() { return null; }
+
+    protected String getTargetWmmName() { return null; }
+
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.PROGRAM_SPEC); }
+
     protected long getTimeout() { return 10000; }
+
+    protected Task.TaskBuilder getTaskBuilder() {
+        return Task.builder()
+                .withSolver(SolverContextFactory.Solvers.Z3)
+                .withOption(PHANTOM_REFERENCES, "true")
+                .withOption(INITIALIZE_REGISTERS, "true");
+    }
+
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<Path> getCompilationBreakers() { return emptyList(); }
-
-    protected final Configuration getConfiguration() throws InvalidConfigurationException {
-        var configBase = Configuration.builder()
-                .setOption(SOLVER, Z3.name())
-                .setOption(TARGET, targetProvider.get().name())
-                .setOption(PHANTOM_REFERENCES, "true")
-                .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(METHOD, Method.EAGER.asStringOption());
-
-        return additionalConfig(configBase).build();
-    }
-
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder;
-    }
 
     // ============================================================
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> sourceProvider = getSourceProvider();
-    protected final Provider<Arch> targetProvider = getTargetProvider();
-    protected final Provider<Path> filePathProvider = () -> path;
-    protected final Provider<Program> program1Provider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
-    protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
-    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
-    
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
-            .around(filePathProvider)
-            .around(program1Provider)
-            .around(program2Provider)
-            .around(wmm1Provider)
-            .around(wmm2Provider)
-            .around(propertyProvider)
-            .around(configProvider)
-            .around(task1Provider)
-            .around(task2Provider)
             .around(timeout);
 
-    @Test
-    public void testAssume() throws Exception {
-        if(!isCompilableToHardware(program1Provider.get())) {
-            return;
-        }
-
-        try (VerificationTaskSolver s1 = VerificationTaskSolver.create(task1Provider.get()).withShutdownManager(shutdownManagerProvider.get());
-             VerificationTaskSolver s2 = VerificationTaskSolver.create(task2Provider.get()).withShutdownManager(shutdownManagerProvider.get())) {
-
-            s1.run();
-            if (!s1.getResult().hasModel()) {
-                // We found no model showing a specific behaviour (either positively or negatively),
-                // so the compiled code should also not exhibit that behaviour, unless we
-                // know the compilation is broken
-                boolean compilationIsBroken = getCompilationBreakers().contains(path);
-                s2.run();
-                assertEquals(compilationIsBroken, s2.getResult().hasModel());
+    private void testMethod(Method method) throws Exception {
+        try (VerificationTaskSolver sourceSolver = VerificationTaskSolver.createWithMethod(getTask(false), method)
+                .withShutdownManager(shutdownManagerProvider.get())) {
+            if (!isCompilableToHardware(sourceSolver.getTask().getProgram())) {
+                return;
+            }
+            sourceSolver.run();
+            if (sourceSolver.getResult().hasModel()) {
+                return;
+            }
+            // We found no model showing a specific behaviour (either positively or negatively),
+            // so the compiled code should also not exhibit that behaviour, unless we
+            // know the compilation is broken
+            boolean compilationIsBroken = getCompilationBreakers().contains(path);
+            try (VerificationTaskSolver targetSolver = VerificationTaskSolver.createWithMethod(getTask(true), method)
+                    .withShutdownManager(shutdownManagerProvider.get())) {
+                targetSolver.run();
+                assertEquals(compilationIsBroken, targetSolver.getResult().hasModel());
             }
         }
+    }
+
+    private VerificationTask getTask(boolean isTarget) throws Exception {
+        final Arch architecture = isTarget ? target : source;
+        final Task.TaskBuilder task = getTaskBuilder().withTarget(architecture);
+        final Program program = parseProgram(path);
+        final String wmmName = isTarget ? getTargetWmmName() : getSourceWmmName();
+        final Wmm wmm = parseWmm(ResourceHelper.getCatPath(architecture, wmmName));
+        return task.build(program, wmm, getTestedProperties());
     }
 
     private static boolean isCompilableToHardware(Program program) {
