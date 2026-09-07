@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
@@ -52,7 +53,13 @@ public abstract class ModelChecker implements AutoCloseable {
                 name = SOLVER,
                 description = "Uses the specified SMT solver as a backend.",
                 toUppercase = true)
-        private SolverContextFactory.Solvers solver = SolverContextFactory.Solvers.Z3;
+        private SolverContextFactory.Solvers solver = getDefaultSolver();
+
+        private static SolverContextFactory.Solvers getDefaultSolver() {
+            return EnvironmentInfo.getOperatingSystem() == EnvironmentInfo.OperatingSystem.LINUX
+                    ? SolverContextFactory.Solvers.YICES2
+                    : SolverContextFactory.Solvers.Z3;
+        }
 
         public SolverContextFactory.Solvers getSolver() {
             return solver;

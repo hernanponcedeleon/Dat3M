@@ -8,9 +8,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Locale;
 import java.util.Properties;
 
 public class EnvironmentInfo  {
+
+    public enum OperatingSystem {
+        LINUX, MACOS, WINDOWS, OTHER
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(EnvironmentInfo.class);
 
@@ -41,6 +46,20 @@ public class EnvironmentInfo  {
 
     public static String getGitTags() {
         return properties.getProperty("git.tags", "unknown");
+    }
+
+    public static OperatingSystem getOperatingSystem() {
+        final String name = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (name.contains("linux")) {
+            return OperatingSystem.LINUX;
+        }
+        if (name.contains("mac") || name.contains("darwin")) {
+            return OperatingSystem.MACOS;
+        }
+        if (name.contains("windows")) {
+            return OperatingSystem.WINDOWS;
+        }
+        return OperatingSystem.OTHER;
     }
 
     private static String getOSInfo() {
