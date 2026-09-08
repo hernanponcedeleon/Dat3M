@@ -18,14 +18,12 @@ public class CLocksTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "locks/";
+    protected String getProgramPathString() {
+        return "locks/%s.ll";
     }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }

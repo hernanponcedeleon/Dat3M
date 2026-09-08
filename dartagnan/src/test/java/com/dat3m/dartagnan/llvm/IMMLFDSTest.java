@@ -18,21 +18,16 @@ public class IMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected boolean isEagerMethodEnabled() {
-        return false;
-    }
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "lfds/";
-    }
+    protected long getTimeoutSeconds() { return 600; }
 
     @Override
-    protected long getTimeout() {
-        return 600000;
-    }
-
     protected int getBound() { return 2; }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

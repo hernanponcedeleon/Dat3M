@@ -25,8 +25,8 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "progress/";
+    protected String getProgramPathString() {
+        return "progress/%s.ll";
     }
 
     @Override
@@ -36,12 +36,10 @@ public class CProgressTest extends AbstractCTest {
     protected String getWmmName() { return "imm"; }
 
     @Override
-    protected EnumSet<Property> getProperty() { return EnumSet.of(Property.TERMINATION); }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.TERMINATION); }
 
     @Override
-    protected long getTimeout() {
-        return 10000;
-    }
+    protected long getTimeoutSeconds() { return 10; }
 
     @Parameterized.Parameters(name = "{index}: {0}, progress={1}")
     public static Iterable<Object[]> data() {

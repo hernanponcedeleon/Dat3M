@@ -19,14 +19,10 @@ public class IMMTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "imm/";
-    }
+    protected String getProgramPathString() { return "imm/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

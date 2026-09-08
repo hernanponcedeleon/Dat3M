@@ -18,14 +18,10 @@ public class RC11LFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "lfds/";
-    }
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 600000;
-    }
+    protected long getTimeoutSeconds() { return 600; }
 
     protected int getBound() { return 2; }
 

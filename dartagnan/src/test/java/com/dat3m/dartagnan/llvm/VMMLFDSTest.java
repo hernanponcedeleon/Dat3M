@@ -22,17 +22,10 @@ public class VMMLFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "lfds/";
-    }
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 600000;
-    }
-
-    @Override
-    protected EnumSet<Property> getProperty() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
 
     @Override
     protected int getBound() { return 2; }

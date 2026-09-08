@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.Arrays;
@@ -19,30 +19,6 @@ public class C11LFDSTest extends AbstractCTest {
     public C11LFDSTest(String name, Arch target, ResultStatus expected) {
         super(name, target, expected);
     }
-
-    @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true");
-    }
-
-    @Override
-    protected String getProgramPathPrefix() {
-        return "lfds/";
-    }
-
-    @Override
-    protected long getTimeout() {
-        return 600000;
-    }
-
-    @Override
-    protected int getBound() { return 2; }
-
-    @Override
-    protected String getWmmName() { return "c11"; }
-
-    @Override
-    protected Solvers getSolver() { return Solvers.YICES2; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {
@@ -59,5 +35,22 @@ public class C11LFDSTest extends AbstractCTest {
                 {"hash_table", C11, PASS},
                 {"hash_table-fail", C11, FAIL},
         });
+    }
+
+    @Override
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
+
+    @Override
+    protected Solvers getSolver() { return Solvers.YICES2; }
+
+    @Override
+    protected int getBound() { return 2; }
+
+    @Override
+    protected String getWmmName() { return "c11"; }
+
+    @Override
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true");
     }
 }

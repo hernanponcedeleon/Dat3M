@@ -11,9 +11,12 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class AsmCkArmv8Test extends AbstractAsmTest {
 
-    public AsmCkArmv8Test(String file, int bound, ResultStatus expected) {
-        super(Arch.ARM8, "asm/armv8/ck/" + file, bound, expected);
+    public AsmCkArmv8Test(String name, int bound, ResultStatus expected) {
+        super(Arch.ARM8, name, bound, expected);
     }
+
+    @Override
+    protected String getProgramPathString() { return "asm/armv8/ck/%s.ll"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {

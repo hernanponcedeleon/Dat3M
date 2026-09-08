@@ -19,14 +19,12 @@ public class CLKMMTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "lkmm/";
+    protected String getProgramPathString() {
+        return "lkmm/%s.ll";
     }
 
     @Override
-    protected long getTimeout() {
-        return 300000;
-    }
+    protected long getTimeoutSeconds() { return 300; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

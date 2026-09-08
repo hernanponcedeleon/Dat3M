@@ -11,9 +11,12 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class AsmCkArmv7Test extends AbstractAsmTest {
 
-    public AsmCkArmv7Test(String file, int bound, ResultStatus expected) {
-        super(Arch.ARM7, "asm/armv7/ck/" + file, bound, expected);
+    public AsmCkArmv7Test(String name, int bound, ResultStatus expected) {
+        super(Arch.ARM7, name, bound, expected);
     }
+
+    @Override
+    protected String getProgramPathString() { return "asm/armv7/ck/%s.ll"; }
 
     @Override
     protected String getTargetWmmName() { return "arm"; }

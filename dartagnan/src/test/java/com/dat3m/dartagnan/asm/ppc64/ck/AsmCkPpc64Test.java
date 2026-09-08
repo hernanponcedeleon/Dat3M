@@ -11,9 +11,12 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class AsmCkPpc64Test extends AbstractAsmTest {
 
-    public AsmCkPpc64Test (String file, int bound, ResultStatus expected) {
-        super(Arch.POWER, "asm/ppc64/ck/" + file, bound, expected);
+    public AsmCkPpc64Test(String name, int bound, ResultStatus expected) {
+        super(Arch.POWER, name, bound, expected);
     }
+
+    @Override
+    protected String getProgramPathString() { return "asm/ppc64/ck/%s.ll"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {

@@ -18,19 +18,13 @@ public class IMMLocksTest extends AbstractCTest {
     }
 
     @Override
-    protected boolean isEagerMethodEnabled() {
-        return false;
-    }
+    protected String getProgramPathString() { return "locks/%s.ll"; }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "locks/";
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

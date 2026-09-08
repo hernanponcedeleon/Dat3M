@@ -22,13 +22,8 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "libvsync/";
-    }
-
-    @Override
-    protected String getProgramPathSuffix() {
-        return "-opt.ll";
+    protected String getProgramPathString() {
+        return "libvsync/%s-opt.ll";
     }
 
     @Override
@@ -40,12 +35,10 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected long getTimeout() {
-        return 300000;
-    }
+    protected long getTimeoutSeconds() { return 300; }
 
     @Override
-    protected EnumSet<Property> getProperty() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC); }
 
     @Override
     protected String getWmmName() { return "vmm"; }

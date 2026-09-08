@@ -11,8 +11,8 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class AsmCkRISCVTest extends AbstractAsmTest {
 
-    public AsmCkRISCVTest(String file, int bound, ResultStatus expected) {
-        super(Arch.RISCV, "asm/riscv/ck/" + file, bound, expected);
+    public AsmCkRISCVTest(String name, int bound, ResultStatus expected) {
+        super(Arch.RISCV, name, bound, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
@@ -21,4 +21,7 @@ public class AsmCkRISCVTest extends AbstractAsmTest {
             {"spsc_queue", 1, ResultStatus.PASS},
         });
     }
+
+    @Override
+    protected String getProgramPathString() { return "asm/riscv/ck/%s.ll"; }
 }

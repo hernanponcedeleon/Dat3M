@@ -1,26 +1,13 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import com.dat3m.dartagnan.verification.Task;
+import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,9 +22,6 @@ import static com.dat3m.dartagnan.utils.Utils.hasExtension;
 import static com.dat3m.dartagnan.utils.TestHelper.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.google.common.io.Files.getNameWithoutExtension;
-import static org.junit.Assert.assertEquals;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverTest {
 
@@ -75,21 +59,6 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     // =================== Modifiable behavior ====================
 
-    protected final Configuration getConfiguration() throws InvalidConfigurationException {
-        var configBase = Configuration.builder()
-                .setOption(SOLVER, Z3.name())
-                .setOption(BOUND, Integer.toString(getBound()))
-                .setOption(TARGET, target.name())
-                .setOption(PHANTOM_REFERENCES, "true")
-                .setOption(INITIALIZE_REGISTERS, "true");
-
-        return additionalConfig(configBase).build();
-    }
-
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder;
-    }
-
     protected String getWmmName() { return null; }
 
     protected Property getTestedProperty() { return Property.PROGRAM_SPEC; }
@@ -98,47 +67,32 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     protected int getBound() { return 1; }
 
-    protected long getTimeout() { return 10000; }
-
-    // ============================================================
-
-    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<String> nameProvider
-            = () -> getNameWithoutExtension(getProgramPath().getFileName().toString());
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(this::getProgramPath);
-    protected final Provider<Wmm> wmmProvider = Providers.createWmmFromPath(this::getWmmPath);
-    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(
-            programProvider, wmmProvider, this::getTestedProperties, this::getProgressModel, configProvider);
-
-    private final Timeout timeout = Timeout.millis(getTimeout());
-    private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
-            .around(shutdownOnError)
-            .around(nameProvider)
-            .around(programProvider)
-            .around(wmmProvider)
-            .around(configProvider)
-            .around(taskProvider)
-            .around(timeout);
+    @Override
+    protected long getTimeoutSeconds() { return 10; }
 
     @Override
-    protected boolean isLazyMethodEnabled() {
-        return false;
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder()
+                .withSolver(SolverContextFactory.Solvers.Z3)
+                .withBound(getBound())
+                .withTarget(target)
+                .withProgressModel(getProgressModel())
+                .withOption(PHANTOM_REFERENCES, "true")
+                .withOption(INITIALIZE_REGISTERS, "true");
     }
 
     @Override
-    protected void testSolver(Method method) throws Exception {
-        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
-                .withShutdownManager(shutdownManagerProvider.get())) {
-            solver.run();
-            assertEquals(expected, solver.getResult().getStatus());
-        }
-    }
+    protected Path getTargetModelPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
 
-    private Path getProgramPath() { return programPath; }
-    private Path getWmmPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
-    private EnumSet<Property> getTestedProperties() { return EnumSet.of(getTestedProperty()); }
+    @Override
+    protected Path getProgramPath() { return programPath; }
+
+    @Override
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(getTestedProperty()); }
+
+    @Override
+    protected ResultStatus getExpected() { return expected; }
+
+    @Override
+    protected boolean isLazyMethodEnabled() { return false; }
 }

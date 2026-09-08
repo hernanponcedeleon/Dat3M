@@ -19,14 +19,10 @@ public class RC11Test extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "rc11/";
-    }
+    protected String getProgramPathString() { return "rc11/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
     protected String getWmmName() { return "rc11"; }
