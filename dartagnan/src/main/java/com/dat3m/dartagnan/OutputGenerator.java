@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
@@ -65,16 +67,16 @@ public class OutputGenerator {
 
     @Option(
             name = WITNESS,
-            description = "Type of the violation graph to generate in the output directory.")
+            description = "Type of violation witness to generate in the output directory.")
     private WitnessType witnessType = WitnessType.getDefault();
 
     @Option(name=WITNESS_FILENAME,
-            description="Name for the witness graph file.",
+            description="Name for the witness file.",
             secure=true)
     private String witnessFilename = "";
 
     @Option(name=WITNESS_UNKNOWN,
-            description="Generate witness graph even if result is UNKNOWN.",
+            description="Generate a witness even if result is UNKNOWN.",
             secure=true)
     private boolean generateWitnessForUnknown = false;
 
@@ -245,7 +247,7 @@ public class OutputGenerator {
             return null;
         }
 
-        final Task task = result.getTask();
+        final VerificationTask task = result.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -258,6 +260,18 @@ public class OutputGenerator {
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 );
+            }
+            case SV -> {
+                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(result.getModel());
+                final var witness = SvcompWitnessExtractor.forViolation(model, task, result.getModel());
+                if (witness.isEmpty()) {
+                    logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
+                            String.join(", ", SvcompWitnessExtractor.supportedPropertyNames()));
+                    return null;
+                }
+                final Path witnessFile = getOrCreateOutputDirectory().resolve(filename + ".yml");
+                SvcompWitnessYamlWriter.write(witness.orElseThrow(), witnessFile);
+                return witnessFile;
             }
         }
 
