@@ -13,9 +13,12 @@ import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 @RunWith(Parameterized.class)
 public class AsmLibvsyncArmv8Test extends AbstractAsmTest {
 
-    public AsmLibvsyncArmv8Test (String file, int bound, ResultStatus expected) {
-        super(Arch.ARM8, "asm/armv8/libvsync/" + file, bound, expected);
+    public AsmLibvsyncArmv8Test(String name, int bound, ResultStatus expected) {
+        super(Arch.ARM8, name, bound, expected);
     }
+
+    @Override
+    protected String getProgramPathString() { return "asm/armv8/libvsync/%s.ll"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {

@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.util.Arrays;
 
@@ -23,27 +23,24 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "miscellaneous/";
-    }
+    protected String getProgramPathString() { return "miscellaneous/%s.ll"; }
 
     @Override
     protected int getBound() { return bound; }
 
     @Override
-    protected long getTimeout() {
-        return 20000;
-    }
+    protected long getTimeoutSeconds() { return 20; }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+    protected Task.TaskBuilder getTaskBuilder() {
+        Task.TaskBuilder task = super.getTaskBuilder();
         if (name.equals("recursion")) {
-            builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
+            task = task.withOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
         }
         if (name.equals("memcpy_s")) {
-            builder.setOption(OptionNames.MIXED_SIZE, "true");
+            task = task.withOption(OptionNames.MIXED_SIZE, "true");
         }
-        return builder;
+        return task;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.spirv.opencl.patterns;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.spirv.opencl.AbstractSpirvOpenclTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.util.Arrays;
 
@@ -43,7 +43,7 @@ public class SpirvRacesTest extends AbstractSpirvOpenclTest {
     protected Property getTestedProperty() { return Property.CAT_SPEC; }
 
     @Override
-    protected ConfigurationBuilder additionalOptions(ConfigurationBuilder builder) {
-        return builder.setOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter));
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter));
     }
 }

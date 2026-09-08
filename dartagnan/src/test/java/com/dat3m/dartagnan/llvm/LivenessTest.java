@@ -20,15 +20,13 @@ public class LivenessTest extends AbstractCTest {
     }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
     protected int getBound() { return 2; }
 
     @Override
-    protected EnumSet<Property> getProperty() { return EnumSet.of(Property.TERMINATION); }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.TERMINATION); }
 
     @Override
     protected boolean isEagerMethodEnabled() { return false; }

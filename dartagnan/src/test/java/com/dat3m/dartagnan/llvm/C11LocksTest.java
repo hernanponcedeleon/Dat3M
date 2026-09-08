@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.util.Arrays;
 
@@ -20,19 +20,17 @@ public class C11LocksTest extends AbstractCTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true");
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true");
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "locks/";
+    protected String getProgramPathString() {
+        return "locks/%s.ll";
     }
 
     @Override
-    protected long getTimeout() {
-        return 180000;
-    }
+    protected long getTimeoutSeconds() { return 180; }
 
     @Override
     protected String getWmmName() { return "c11"; }

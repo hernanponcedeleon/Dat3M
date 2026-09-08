@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.spirv.vulkan.patterns;
 
 import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.util.Arrays;
 
@@ -32,7 +32,7 @@ public class SpirvAssertionsTest extends AbstractSpirvVulkanTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalOptions(ConfigurationBuilder config) {
-        return config.setOption(IGNORE_FILTER_SPECIFICATION, "true");
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(IGNORE_FILTER_SPECIFICATION, "true");
     }
 }
