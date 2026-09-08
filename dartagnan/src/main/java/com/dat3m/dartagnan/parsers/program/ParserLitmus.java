@@ -15,6 +15,8 @@ class ParserLitmus implements ParserInterface {
     private static final String TYPE_VULKAN = "VULKAN";
     private static final String TYPE_C = "C";
     private static final String TYPE_OPENCL = "OPENCL";
+    private static final String SUPPORTED_TYPES = String.join(", ", TYPE_AARCH64, TYPE_C, TYPE_OPENCL, TYPE_PPC,
+            TYPE_PTX, TYPE_RISCV, TYPE_VULKAN, TYPE_X86);
 
     @Override
     public Program parse(CharStream charStream) {
@@ -30,7 +32,8 @@ class ParserLitmus implements ParserInterface {
             case TYPE_PTX -> new ParserLitmusPTX();
             case TYPE_VULKAN -> new ParserLitmusVulkan();
             case TYPE_C, TYPE_OPENCL -> new ParserLitmusC();
-            default -> throw new ParsingException("No litmus parser recognizes the input.");
+            default -> throw new ParsingException(("Could not recognize litmus format from header '%s'.\n" +
+                    "Expected one of: %s").formatted(type, SUPPORTED_TYPES));
         };
     }
 
