@@ -20,14 +20,12 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected String getProgramPathPrefix() {
-        return "smr/";
+    protected String getProgramPathString() {
+        return "smr/%s.ll";
     }
 
     @Override
-    protected long getTimeout() {
-        return 180000;
-    }
+    protected long getTimeoutSeconds() { return 180; }
 
     @Override
     protected Solvers getSolver() { return Solvers.YICES2; }
