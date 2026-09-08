@@ -14,8 +14,18 @@ concurrency:
 
 jobs:
   compare:
-    name: Check for performance regressions
-    runs-on: ubuntu-latest
+    name: Check for performance regressions (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Linux x64
+            runner: ubuntu-latest
+            artifact: linux-x64
+          - platform: macOS ARM64
+            runner: macos-14
+            artifact: macos-arm64
     steps:
       - name: Check out base revision
         uses: actions/checkout@v4
@@ -72,17 +82,43 @@ jobs:
       - name: Publish performance artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: performance-comparison
+          name: performance-comparison-${{ matrix.artifact }}
           path: performance/
 
+  publish-report:
+    name: Publish performance report
+    needs: compare
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-comparison-linux-x64
+          path: performance/linux-x64
+
+      - name: Download macOS report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-comparison-macos-arm64
+          path: performance/macos-arm64
+
       - name: Update pull request comment
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const marker = '<!-- dat3m-performance-report -->';
-            const body = fs.readFileSync('performance/report.md', 'utf8');
+            const reports = [
+              ['Linux x64', 'performance/linux-x64/report.md'],
+              ['macOS ARM64', 'performance/macos-arm64/report.md'],
+            ];
+            const body = marker + '\n# Performance comparison\n' + reports.map(([platform, path]) => {
+              const report = fs.readFileSync(path, 'utf8').replace(
+                /^<!-- dat3m-performance-report -->\n## Performance comparison\n?/, '',
+              );
+              return `\n## ${platform}\n${report}`;
+            }).join('');
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, {
