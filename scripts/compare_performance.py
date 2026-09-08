@@ -302,7 +302,7 @@ def summarize_total(rows):
     }
 
 
-def render_markdown(rows, minimum):
+def render_markdown(rows, minimum, timeout):
     visible_rows = [row for row in rows if max(row["base"]["average"], row["head"]["average"]) >= minimum]
     lines = [
         "<!-- dat3m-performance-report -->",
@@ -342,6 +342,19 @@ def render_markdown(rows, minimum):
     filtered = len(rows) - len(visible_rows)
     if filtered:
         lines.extend(["", f"_{filtered} benchmark(s) omitted because both averages were below {minimum:g} seconds._"])
+    base_timeouts = sum(row["results"]["base"].get("TIMEOUT", 0) for row in rows)
+    head_timeouts = sum(row["results"]["head"].get("TIMEOUT", 0) for row in rows)
+    if base_timeouts or head_timeouts:
+        timed_out_revisions = []
+        if base_timeouts:
+            timed_out_revisions.append(f"{base_timeouts} base-branch run(s)")
+        if head_timeouts:
+            timed_out_revisions.append(f"{head_timeouts} PR-branch run(s)")
+        lines.extend([
+            "",
+            f"_{' and '.join(timed_out_revisions)} timed out after {timeout:g} seconds "
+            f"({MAX_TIMEOUT_ATTEMPTS} attempts each) and were recorded as {timeout:g} seconds._",
+        ])
     return "\n".join(lines) + "\n"
 
 
@@ -363,7 +376,9 @@ def main():
             row, benchmark_measurements = future.result()
             rows.append(row)
             measurements.extend(benchmark_measurements)
-    arguments.markdown.write_text(render_markdown(rows, arguments.min_average_seconds), encoding="utf-8")
+    arguments.markdown.write_text(
+        render_markdown(rows, arguments.min_average_seconds, arguments.timeout), encoding="utf-8"
+    )
     arguments.json.write_text(json.dumps({"measurements": measurements, "summary": rows}, indent=2) + "\n", encoding="utf-8")
 
 
