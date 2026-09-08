@@ -75,7 +75,7 @@ To run in JVM mode:
 ```
 java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<target>] <program file> [options]
 ```
-The `--target=<target>` option tells Dartagnan which programming-language or hardware-architecture semantics to use when verifying the program. It is independent of the programming language of the `<program file>`. A compilation pipeline performs the frontend step by translating a source file into a natively supported input format, while the target performs the backend step by selecting the semantics used during verification. For non-Litmus programs, the target must be given explicitly. For `.litmus` programs, Dartagnan extracts the target from the test header when `--target` is omitted. `<target>` must be one of the following:
+Dartagnan can verify programs relative to any given CAT memory model. However, different CAT memory models are defined over different instruction sets. Dartagnan can internally translate the program to the correct instruction set by specifying `--target=<target>`. For example, for LLVM programs (`.ll`) generated from C code, specifying `--target=C11` will keep the code as is (as expected by, e.g., `rc11.cat`) whereas specifying `--target=arm8` will cause Dartagnan to lower the C/LLVM code to ARM8 assembly (as expected by `aarch64.cat`) using standard compiler mappings. For non-Litmus programs, the target must be given explicitly. For `.litmus` programs, Dartagnan extracts the target from the test header when `--target` is omitted. `<target>` must be one of the following:
 - c11
 - lkmm
 - imm
