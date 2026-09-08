@@ -9,25 +9,24 @@ export DAT3M_HOME=$(pwd)
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    cmd="dartagnan --version"
+    cmd=(dartagnan --version)
 else
     propertypath=$1
     programpath=$2
 
-    skip_assertions_of_type="--program.processing.skipAssertionsOfType=USER"
+    cmd=(svcomp/target/svcomp)
+    compilation_pipeline=svcomp/compilation.yml
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
-        export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow,shift"
+        compilation_pipeline=svcomp/compilation-no-overflow.yml
     elif [[ $propertypath == *"valid-memsafety.prp"* ]]; then
-        export CFLAGS="-fgnu89-inline -fsanitize=null"
-    elif [[ $propertypath == *"termination.prp"* ]]; then
-        export CFLAGS="-fgnu89-inline"
-    elif [[ $propertypath == *"no-data-race.prp"* ]]; then
-        export CFLAGS="-fgnu89-inline"
-    else
-        export CFLAGS="-fgnu89-inline"
-        skip_assertions_of_type=""
+        compilation_pipeline=svcomp/compilation-valid-memsafety.yml
     fi
-    
-    cmd="svcomp/target/svcomp $skip_assertions_of_type cat/svcomp.cat --svcomp.property="$propertypath" "$programpath
+    cmd+=("--compilation.pipeline=$DAT3M_HOME/$compilation_pipeline")
+
+    if [[ $propertypath == *"no-overflow.prp"* || $propertypath == *"valid-memsafety.prp"* \
+            || $propertypath == *"termination.prp"* || $propertypath == *"no-data-race.prp"* ]]; then
+        cmd+=(--program.processing.skipAssertionsOfType=USER)
+    fi
+    cmd+=(cat/svcomp.cat "--svcomp.property=$propertypath" "$programpath")
 fi
-$cmd
+"${cmd[@]}"

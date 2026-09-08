@@ -12,7 +12,8 @@ Requirements
 * [Maven](https://maven.apache.org/) version 3.8 or above
 * [Java](https://openjdk.java.net/projects/jdk/17/) version 17 or above
 * [GraalVM](https://www.graalvm.org/) version 22 or above for optimal performance (only if you run in native mode; recommended!)
-* [Clang](https://clang.llvm.org) version 10 or above (only to verify C programs)
+* A compiler capable of generating a natively supported Dartagnan input format for each source language you want to verify
+* [SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools) when verifying a SPIR-V target
 * [Graphviz](https://graphviz.org)
 
 Installation
@@ -56,8 +57,10 @@ mvn clean install -DskipTests
 
 Usage
 ======
-Dartagnan supports programs written in the `.c`, `.ll`, `.litmus` and `spvasm` formats.
-If you are verifying C code, be sure `clang` is in your `PATH`.
+Dartagnan natively parses programs written in the `.ll`, `.litmus`, and `.spvasm` formats.
+Source programs are translated to one of these formats through configurable compilation pipelines in
+[`compilation.yml`](compilation.yml). Install the compiler and other tools required by the compilation
+pipelines you use; their final output must use a natively supported Dartagnan input format.
 
 There are three possible results for the verification:
 - `FAIL`: the property was violated.
@@ -66,13 +69,13 @@ There are three possible results for the verification:
 
 To run Dartagnan from the console in native mode:
 ```
-dartagnan <CAT file> [--target=<arch>] <program file> [options]
+dartagnan <CAT file> [--target=<target>] <program file> [options]
 ```
 To run in JVM mode:
 ```
-java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
+java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<target>] <program file> [options]
 ```
-For programs written in `.c`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
+Dartagnan can verify programs relative to any given CAT memory model. However, different CAT memory models are defined over different instruction sets. Dartagnan can internally translate the program to the correct instruction set by specifying `--target=<target>`. For example, for LLVM programs (`.ll`) generated from C code, specifying `--target=C11` will keep the code as is (as expected by, e.g., `rc11.cat`) whereas specifying `--target=arm8` will cause Dartagnan to lower the C/LLVM code to ARM8 assembly (as expected by `aarch64.cat`) using standard compiler mappings. For non-Litmus programs, the target must be given explicitly. For `.litmus` programs, Dartagnan extracts the target from the test header when `--target` is omitted. `<target>` must be one of the following:
 - c11
 - lkmm
 - imm

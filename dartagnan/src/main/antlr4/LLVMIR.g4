@@ -726,6 +726,7 @@ funcAttr:
 	| 'nobuiltin'
 	| 'nocallback'
 	| 'nocf_check'
+	| 'nocreateundeforpoison'
 	| 'noduplicate'
 	| 'nofree'
 	| 'noimplicitfloat'

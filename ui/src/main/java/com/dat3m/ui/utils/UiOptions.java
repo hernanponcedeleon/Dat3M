@@ -10,7 +10,7 @@ import java.util.EnumSet;
 import java.util.Map;
 
 public record UiOptions(Arch target, Method method, int bound, Solvers solver, boolean showWitness,
-                        String cflags, Map<String, String> config, EnumSet<Property> properties, ProgressModel progress) {
+                        Map<String, String> config, EnumSet<Property> properties, ProgressModel progress) {
 
     public UiOptions {
         config = Map.copyOf(config);
