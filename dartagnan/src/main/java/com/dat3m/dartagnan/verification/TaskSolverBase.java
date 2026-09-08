@@ -12,8 +12,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.TIMEOUT;
 
 @NoInterface
 @Options
-public abstract sealed class TaskSolverBase<TSolver, TTask extends Task, TResult extends TaskResult<TTask>>
-        implements TaskSolver permits VerificationTaskSolver {
+abstract sealed class TaskSolverBase<TSolver, TTask extends Task, TResult extends TaskResult<TTask>> implements TaskSolver
+        permits EnumerationTaskSolver, VerificationTaskSolver {
 
     // ================================== Configurables ==================================
     @Option(
