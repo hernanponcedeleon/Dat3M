@@ -1,16 +1,5 @@
 package com.dat3m.dartagnan.utils;
 
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.verification.Task;
-import com.google.common.base.Preconditions;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.SolverException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -44,21 +33,6 @@ public class TestHelper {
 
     public static Wmm parseWmm(Path path) throws IOException {
         return new ParserCat().parse(path);
-    }
-
-    public static Configuration getBasicConfig() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(OptionNames.SOLVER, SolverContextFactory.Solvers.Z3.name())
-                .setOption(OptionNames.PHANTOM_REFERENCES, "true")
-                .build();
-    }
-
-    public static ResultStatus createAndRunSolver(Task task, Method method) throws InvalidConfigurationException, SolverException, InterruptedException {
-        Preconditions.checkArgument(task instanceof VerificationTask);
-        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod((VerificationTask) task, method)) {
-            solver.run();
-            return solver.getResult().getStatus();
-        }
     }
 
     public static void runDartagnanApplication(Path programPath, Path catPath, String... options) throws Exception {
