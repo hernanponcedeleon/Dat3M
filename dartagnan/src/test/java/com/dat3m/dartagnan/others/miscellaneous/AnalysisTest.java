@@ -781,7 +781,9 @@ public class AnalysisTest {
         }
 
         Program program = b.build();
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder()
+                .setOption(ALIAS_METHOD, LINEAR_MD_FIELDS.asStringOption())
+                .build();
         ProcessingManager.fromConfig(config).run(program);
 
         // For this test, initializations are ignored.
@@ -835,7 +837,10 @@ public class AnalysisTest {
         Relation rfRmw = wmm.addDefinition(new Composition(wmm.newRelation(), rf, rmw));
         Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
         wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
-        Configuration config = Configuration.builder().setOption(MIXED_SIZE, "true").build();
+        Configuration config = Configuration.builder()
+                .setOption(MIXED_SIZE, "true")
+                .setOption(ALIAS_METHOD, LINEAR_MD_FIELDS.asStringOption())
+                .build();
         Task task = Task.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
         Context analysisContext = Context.create();
         ModelChecker.preprocessProgram(task, config);
