@@ -59,7 +59,7 @@ abstract sealed class TaskSolverBase<TSolver, TTask extends Task, TResult extend
     protected TaskSolverBase(TTask task, Configuration config) throws InvalidConfigurationException {
         this.task = task;
 
-        config.recursiveInject(this);
+        config.inject(this, TaskSolverBase.class);
     }
 
     protected TaskSolverBase(TTask task) throws InvalidConfigurationException {

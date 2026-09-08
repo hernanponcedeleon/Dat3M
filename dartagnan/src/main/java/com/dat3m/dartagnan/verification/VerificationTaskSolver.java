@@ -31,6 +31,8 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     private VerificationTaskSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
+
+        task.getConfig().inject(this);
     }
 
     public static VerificationTaskSolver create(VerificationTask task) throws InvalidConfigurationException {
