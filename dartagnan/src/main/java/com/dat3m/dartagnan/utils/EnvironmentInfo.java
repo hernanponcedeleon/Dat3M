@@ -67,6 +67,11 @@ public class EnvironmentInfo {
         return OperatingSystem.OTHER;
     }
 
+    public static String getVersion() {
+        final String version = properties.getProperty("git.build.version", "unknown");
+        return version.equals(getGitTags()) ? version : String.format("%s (commit %s)", version, getGitId());
+    }
+
     private static String getOSInfo() {
         return String.format("%s-%s-%s",
                 System.getProperty("os.name"),

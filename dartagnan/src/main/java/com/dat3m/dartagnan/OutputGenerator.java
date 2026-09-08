@@ -20,6 +20,8 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
@@ -64,16 +66,16 @@ public class OutputGenerator {
 
     @Option(
             name = WITNESS,
-            description = "Type of the violation graph to generate in the output directory.")
+            description = "Type of violation witness to generate in the output directory.")
     private WitnessType witnessType = WitnessType.getDefault();
 
     @Option(name=WITNESS_FILENAME,
-            description="Name for the witness graph file.",
+            description="Name for the witness file.",
             secure=true)
     private String witnessFilename = "";
 
     @Option(name=WITNESS_UNKNOWN,
-            description="Generate witness graph even if result is UNKNOWN.",
+            description="Generate a witness even if result is UNKNOWN.",
             secure=true)
     private boolean generateWitnessForUnknown = false;
 
@@ -102,7 +104,7 @@ public class OutputGenerator {
         return getOutputFromException(exception, null);
     }
 
-    public static Output getOutputFromException(Throwable exception, String program) {
+    public static Output getOutputFromException(Throwable exception, Path programPath) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
         final String details = "\t" + message;
 
@@ -111,16 +113,16 @@ public class OutputGenerator {
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(program, "", INTERRUPTED,
+            return new Output(exitCode, toSummary(programPath, "", INTERRUPTED,
                     "", "", details, 0, null));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(program, "", ERROR,
+            return new Output(UNKNOWN_ERROR, toSummary(programPath, "", ERROR,
                     "", reason, details, 0, null));
         }
     }
 
-    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(TaskSolver solver, Path programPath) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
             return getOutputFromSolver(verificationTaskSolver, programPath);
         }
@@ -128,7 +130,7 @@ public class OutputGenerator {
         throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
     }
 
-    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(VerificationTaskSolver solver, Path programPath) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final ResultStatus status = solver.getResultStatus();
@@ -142,7 +144,7 @@ public class OutputGenerator {
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         try {
-            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programPath));
+            witnessFile = generateWitnessIfAble(result);
         } catch (IOException ex) {
             logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
@@ -234,14 +236,14 @@ public class OutputGenerator {
                 "", "", details.toString(), time, witnessFile));
     }
 
-    private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
+    private Path generateWitnessIfAble(VerificationResult result) throws IOException {
         if (!result.hasModel()
-                || (result.getStatus() == UNKNOWN && !generateWitnessForUnknown)
-                || witnessType == WitnessType.NONE) {
+                || (result.getStatus() == UNKNOWN && !generateWitnessForUnknown)) {
             return null;
         }
 
-        final Task task = result.getTask();
+        final VerificationTask task = result.getTask();
+        final String witnessName = getWitnessName(task.getProgram());
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -251,9 +253,24 @@ public class OutputGenerator {
                 // CO edges only give ordering information which is known if the pair is also in PO
                 return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                        getOrCreateOutputDirectory(), filename,
+                        getOrCreateOutputDirectory(), witnessName,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 );
+            }
+            case SV -> {
+                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(result.getModel());
+                final var witness = SvcompWitnessExtractor.forViolation(model, task, result.getModel());
+                if (witness.isEmpty()) {
+                    logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
+                            String.join(", ", SvcompWitnessExtractor.supportedPropertyNames()));
+                    return null;
+                }
+                final Path witnessFile = getOrCreateOutputDirectory().resolve(witnessName + ".yml");
+                SvcompWitnessYamlWriter.write(witness.orElseThrow(), witnessFile);
+                return witnessFile;
+            }
+            case NONE -> {
+                return null;
             }
         }
 
@@ -262,11 +279,11 @@ public class OutputGenerator {
 
     // =========================================== Utility =================================================
 
-    private String getWitnessFilename(String progFile) {
+    private String getWitnessName(Program program) {
         final String batchSuffix = isBatchMode ? "-batch#" + batchIndex : "";
         return !witnessFilename.isBlank()
                 ? witnessFilename + batchSuffix
-                : Utils.getNameWithoutExtension(progFile);
+                : Utils.getNameWithoutExtension(program.getInputPath());
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -374,10 +391,10 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String test, String filter, ResultStatus status, String condition,
+    private static String toSummary(Path programPath, String filter, ResultStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
-        final String shownTest = formatOptional("Test: %s%n", test);
+        final String shownTest = formatOptional("Test: %s%n", programPath);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
