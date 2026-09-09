@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.utils.TestHelper.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;

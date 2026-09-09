@@ -11,10 +11,16 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.wmm.Wmm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +30,20 @@ public class TestHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(TestHelper.class);
 
+    public static final String EXTENSION_LITMUS = ProgramParser.EXTENSION_LITMUS;
+    public static final String EXTENSION_LL = ProgramParser.EXTENSION_LL;
+    public static final String EXTENSION_SPVASM = ProgramParser.EXTENSION_SPVASM;
+    public static final String EXTENSION_SPV_DIS = ProgramParser.EXTENSION_SPV_DIS;
+
     private TestHelper() {
+    }
+
+    public static Program parseProgram(Path path) throws Exception {
+        return new ProgramParser().parse(path);
+    }
+
+    public static Wmm parseWmm(Path path) throws IOException {
+        return new ParserCat().parse(path);
     }
 
     public static Configuration getBasicConfig() throws InvalidConfigurationException {

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.others.miscellaneous;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -15,7 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.utils.TestHelper.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
@@ -40,7 +40,7 @@ public class LoopTest {
 
     @Test
     public void test() throws Exception {
-        Program p = new ProgramParser().parse(path);
+        Program p = parseProgram(path);
         Compilation.newInstance().run(p);
         LoopUnrolling.newInstance().run(p);
     }
