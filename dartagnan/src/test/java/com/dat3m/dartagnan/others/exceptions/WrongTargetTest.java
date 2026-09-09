@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.others.exceptions;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -9,12 +8,13 @@ import org.junit.Test;
 
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
 
 public class WrongTargetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void X86CompiledToNone() throws Exception {
-        Program p = new ProgramParser().parse(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
+        Program p = parseProgram(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
         LoopUnrolling.newInstance().run(p);
         Compilation comp = Compilation.newInstance();
         comp.setTarget(Arch.C11);
@@ -23,7 +23,7 @@ public class WrongTargetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void X86CompiledToPower() throws Exception {
-        Program p = new ProgramParser().parse(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
+        Program p = parseProgram(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
         LoopUnrolling.newInstance().run(p);
         Compilation comp = Compilation.newInstance();
         comp.setTarget(Arch.POWER);
@@ -32,7 +32,7 @@ public class WrongTargetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void X86CompiledToARM8() throws Exception {
-        Program p = new ProgramParser().parse(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
+        Program p = parseProgram(getRootPath("litmus/X86/2+2W+mfence-rmws.litmus"));
         LoopUnrolling.newInstance().run(p);
         Compilation comp = Compilation.newInstance();
         comp.setTarget(Arch.ARM8);
@@ -41,7 +41,7 @@ public class WrongTargetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void ARMCompiledToNone() throws Exception {
-        Program p = new ProgramParser().parse(getRootPath("litmus/AARCH64/ATOM/2+2W+poxxs.litmus"));
+        Program p = parseProgram(getRootPath("litmus/AARCH64/ATOM/2+2W+poxxs.litmus"));
         LoopUnrolling.newInstance().run(p);
         Compilation comp = Compilation.newInstance();
         comp.setTarget(Arch.C11);
@@ -50,7 +50,7 @@ public class WrongTargetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void ARMCompiledToTSO() throws Exception {
-        Program p = new ProgramParser().parse(getRootPath("litmus/AARCH64/ATOM/2+2W+poxxs.litmus"));
+        Program p = parseProgram(getRootPath("litmus/AARCH64/ATOM/2+2W+poxxs.litmus"));
         LoopUnrolling.newInstance().run(p);
         Compilation comp = Compilation.newInstance();
         comp.setTarget(Arch.TSO);

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -15,13 +14,13 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.NormalizeLoops;
-
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
 
 public class ExceptionsTest {
 
@@ -74,22 +73,22 @@ public class ExceptionsTest {
 
     @Test(expected = ParsingException.class)
     public void IllegalJump() throws Exception {
-        new ProgramParser().parse(getTestResourcePath("exceptions/IllegalJump.litmus"));
+        parseProgram(getTestResourcePath("exceptions/IllegalJump.litmus"));
     }
 
     @Test(expected = ParsingException.class)
     public void LocationNotInitialized() throws Exception {
-        new ProgramParser().parse(getTestResourcePath("exceptions/LocationNotInitialized.litmus"));
+        parseProgram(getTestResourcePath("exceptions/LocationNotInitialized.litmus"));
     }
 
     @Test(expected = ParsingException.class)
     public void RegisterNotInitialized() throws Exception {
-        new ProgramParser().parse(getTestResourcePath("exceptions/RegisterNotInitialized.litmus"));
+        parseProgram(getTestResourcePath("exceptions/RegisterNotInitialized.litmus"));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void UnsupportedLoopNormalization() throws Exception {
-        Program p = new ProgramParser().parse(getTestResourcePath("exceptions/unsupported-loop-normalization.ll"));
+        Program p = parseProgram(getTestResourcePath("exceptions/unsupported-loop-normalization.ll"));
         Function main = p.getFunctionByName("main").get();
         NormalizeLoops.newInstance().run(main);
     }
