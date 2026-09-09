@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.collections.IndexedSet;
@@ -92,20 +93,25 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
                 eventsByImpliedEvent.put(e1, implying);
             }
         }
-        // (=> & ext) = (=> & int) ; (((=> & ext); [ThreadCreate|ThreadStart]) \ id); (=> & int)
-        for (Thread t1 : program.getThreads()) {
-            final List<Event> e1List = t1.getEvents();
-            for (Thread t2 : program.getThreads()) {
-                if (t1 == t2) {
-                    continue;
+        // (=> & ext) = ((=> & int) ; [Create|Start]; (=> & ext); [Create|Start]; (=> & int)) \ id
+        final List<Event> intermediates = program.getThreadEvents().stream()
+                .filter(e -> e instanceof ThreadCreate || e instanceof ThreadStart)
+                .toList();
+        for (Event e2 : intermediates) {
+            final Set<Event> implying2 = eventsByImpliedEvent.get(e2);
+            boolean modified = false;
+            for (Event e1 : intermediates) {
+                if (e1 != e2 && implied(e1, e2)) {
+                    // e0 => e1 => e2  ->  e0 => e2
+                    modified |= implying2.addAll(eventsByImpliedEvent.get(e1));
                 }
-                final ThreadStart s = t2.getEntry();
-                final List<Event> e2List = s.isSpawned() ? List.of(s, s.getCreator()) : List.of(s);
-                for (Event e1 : e1List) {
-                    for (Event e2 : e2List) {
-                        if (implied(e1, e2)) {
-                            eventsByImpliedEvent.get(e2).addAll(eventsByImpliedEvent.get(e1));
-                        }
+            }
+            if (modified) {
+                for (Event e3 : e2.getThread().getEvents()) {
+                    final Set<Event> implying3 = eventsByImpliedEvent.get(e3);
+                    if (implying3.contains(e2)) {
+                        // e0 => e2 => e3  ->  e0 => e3
+                        implying3.addAll(implying2);
                     }
                 }
             }
