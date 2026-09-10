@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.EnumerationTask;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -55,6 +56,16 @@ public class Providers {
                 .withConfig(config.get())
                 .withProgressModel(progressModelSupplier.get())
                 .build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get())
+        );
+    }
+
+    public static Provider<EnumerationTask> createEnumerationTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier,
+                                                                  Supplier<ProgressModel.Hierarchy> progressModelSupplier,
+                                                                  Supplier<Configuration> config) {
+        return Provider.fromSupplier(() -> Task.builder()
+                .withConfig(config.get())
+                .withProgressModel(progressModelSupplier.get())
+                .buildEnumerationTask(programSupplier.get(), wmmSupplier.get())
         );
     }
 
