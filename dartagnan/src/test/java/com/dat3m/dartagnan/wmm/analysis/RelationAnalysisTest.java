@@ -1,0 +1,172 @@
+package com.dat3m.dartagnan.wmm.analysis;
+
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.*;
+import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
+import static org.junit.Assert.assertEquals;
+
+@RunWith(Parameterized.class)
+public class RelationAnalysisTest {
+
+    private final Path testPath;
+    private final Path modelPath;
+    private final Arch target;
+
+    public RelationAnalysisTest(String testPath, String modelPath, Arch target) {
+        this.testPath = getRootPath(testPath);
+        this.modelPath = getRootPath(modelPath);
+        this.target = target;
+    }
+
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    public static Iterable<Object[]> data() throws IOException {
+        return Arrays.asList(new Object[][]{
+                { "litmus/AARCH64", "cat/aarch64.cat", Arch.ARM8 },
+                { "litmus/C11", "cat/c11.cat", Arch.C11 },
+                { "litmus/PTX/Manual", "cat/ptx-v7.5.cat", Arch.PTX },
+                { "litmus/PTX/Memalloy", "cat/ptx-v7.5.cat", Arch.PTX },
+                { "litmus/PTX/Nvidia", "cat/ptx-v7.5.cat", Arch.PTX },
+                { "litmus/VULKAN/KhronosGroup", "cat/vulkan.cat", Arch.VULKAN },
+                { "litmus/VULKAN/KhronosGroup", "cat/vulkan-chains.cat", Arch.VULKAN },
+                { "litmus/VULKAN/Manual", "cat/vulkan.cat", Arch.VULKAN },
+                { "litmus/VULKAN/Manual", "cat/vulkan-chains.cat", Arch.VULKAN },
+                { "litmus/X86", "cat/tso.cat", Arch.TSO },
+
+                { "dartagnan/src/test/resources/lfds", "cat/c11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/locks", "cat/c11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/libvsync", "cat/c11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/c11.cat", Arch.C11 },
+
+                { "dartagnan/src/test/resources/lfds", "cat/imm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/locks", "cat/imm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/libvsync", "cat/imm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/imm.cat", Arch.C11 },
+
+                { "dartagnan/src/test/resources/lfds", "cat/vmm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/locks", "cat/vmm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/libvsync", "cat/vmm.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/vmm.cat", Arch.C11 },
+
+                { "dartagnan/src/test/resources/lfds", "cat/rc11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/locks", "cat/rc11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/libvsync", "cat/rc11.cat", Arch.C11 },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/rc11.cat", Arch.C11 },
+
+                { "dartagnan/src/test/resources/lfds", "cat/aarch64.cat", Arch.ARM8 },
+                { "dartagnan/src/test/resources/locks", "cat/aarch64.cat", Arch.ARM8 },
+                { "dartagnan/src/test/resources/libvsync", "cat/aarch64.cat", Arch.ARM8 },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/aarch64.cat", Arch.ARM8 },
+
+                { "dartagnan/src/test/resources/lfds", "cat/tso.cat", Arch.TSO },
+                { "dartagnan/src/test/resources/locks", "cat/tso.cat", Arch.TSO },
+                { "dartagnan/src/test/resources/libvsync", "cat/tso.cat", Arch.TSO },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/tso.cat", Arch.TSO },
+
+                { "dartagnan/src/test/resources/lfds", "cat/riscv.cat", Arch.RISCV },
+                { "dartagnan/src/test/resources/locks", "cat/riscv.cat", Arch.RISCV },
+                { "dartagnan/src/test/resources/libvsync", "cat/riscv.cat", Arch.RISCV },
+                { "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
+
+                { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/vulkan.cat", Arch.VULKAN },
+                { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/vulkan-chains.cat", Arch.VULKAN },
+        });
+    }
+
+    @Test
+    public void compareBaseSets() throws Exception {
+        for (Path program : listFiles(testPath)) {
+            doCompareSets(program);
+        }
+    }
+
+    private List<Path> listFiles(Path path) throws IOException {
+        List<Path> result = new LinkedList<>();
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(path)) {
+            for (Path file : files) {
+                if (Files.isDirectory(file)) {
+                    result.addAll(listFiles(file.toAbsolutePath()));
+                } else {
+                    Path filePath = file.toAbsolutePath();
+                    if (filePath.endsWith(EXTENSION_LITMUS) || filePath.endsWith(EXTENSION_LL)
+                            || filePath.endsWith(EXTENSION_SPV_DIS) || filePath.endsWith(EXTENSION_SPVASM)) {
+                        result.add(filePath);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private void doCompareSets(Path path) throws Exception {
+        // Base program and consistency model
+        Program program = parseProgram(path);
+        Wmm wmm = parseWmm(modelPath);
+        Configuration baseConfig = Configuration.builder().build();
+        Task baseTask = createTask(program, wmm, baseConfig);
+        preprocessProgram(baseTask, baseTask.getConfig());
+        preprocessMemoryModel(baseTask, baseTask.getConfig());
+
+        // Native analysis
+        Context nativeContext = Context.create();
+        Configuration nativeConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.NATIVE.toString())
+                .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
+                .build();
+        Task nativeTask = createTask(program, wmm, nativeConfig);
+        performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+        RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
+
+        // Lazy analysis
+        Context lazyContext = Context.create();
+        Configuration lazyConfig = Configuration.builder()
+                .setOption(RELATION_ANALYSIS, RelationAnalysisMethod.LAZY.toString())
+                .build();
+        Task lazyTask = createTask(program, wmm, lazyConfig);
+        performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+        RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
+
+        // Assert may and must sets are equal
+        for (Relation relation : wmm.getRelations()) {
+            assertEquals(nativeRa.getKnowledge(relation).getMaySet(),
+                    lazyRa.getKnowledge(relation).getMaySet());
+            assertEquals(nativeRa.getKnowledge(relation).getMustSet(),
+                    lazyRa.getKnowledge(relation).getMustSet());
+        }
+    }
+
+    private Task createTask(Program program, Wmm wmm, Configuration config)
+            throws InvalidConfigurationException {
+        return Task.builder()
+                .withConfig(config)
+                .withBound(2)
+                .withTarget(target)
+                .build(program, wmm, EnumSet.of(PROGRAM_SPEC));
+    }
+}
