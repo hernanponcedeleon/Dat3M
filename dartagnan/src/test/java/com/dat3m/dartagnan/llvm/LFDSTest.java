@@ -1,20 +1,13 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
@@ -25,21 +18,19 @@ public class LFDSTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("lfds/" + name + ".ll");
-    }
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 1500000;
-    }
+    protected long getTimeoutSeconds() { return 1500; }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 2;
-    }
+    @Override
+    protected int getBound() { return 2; }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"dglm", TSO, UNKNOWN},
                 {"dglm", ARM8, UNKNOWN},
@@ -89,15 +80,5 @@ public class LFDSTest extends AbstractCTest {
                 {"hash_table-fail", POWER, FAIL},
                 {"hash_table-fail", RISCV, FAIL},
         });
-    }
-
-    // @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

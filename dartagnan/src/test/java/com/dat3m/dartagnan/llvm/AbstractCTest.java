@@ -1,36 +1,22 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.*;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
+import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import com.dat3m.dartagnan.verification.Task;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static org.junit.Assert.assertEquals;
-
-public abstract class AbstractCTest {
+public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
 
     protected String name;
     protected Arch target;
     protected ResultStatus expected;
 
-    public AbstractCTest(String name, Arch target, ResultStatus expected) {
+    protected AbstractCTest(String name, Arch target, ResultStatus expected) {
         this.name = name;
         this.target = target;
         this.expected = expected;
@@ -38,87 +24,43 @@ public abstract class AbstractCTest {
 
     // =================== Modifiable behavior ====================
 
-    protected abstract long getTimeout();
+    protected String getProgramPathString() { return "%s.ll"; }
 
-    protected final Configuration getBaseConfiguration() throws InvalidConfigurationException {
-        var configBase = Configuration.builder()
-                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
-                .setOption(OptionNames.BOUND, getBoundProvider().get().toString())
-                .setOption(OptionNames.TARGET, targetProvider.get().name())
-                .setOption(OptionNames.PHANTOM_REFERENCES, "true");
-
-        return additionalConfig(configBase).build();
+    protected int getBound() {
+        return 1;
     }
 
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath(name + ".ll");
+    protected Solvers getSolver() {
+        return Solvers.Z3;
     }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 1;
+    protected String getWmmName() {
+        return null;
     }
 
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder;
+    protected ProgressModel.Hierarchy getProgressModel() {
+        return ProgressModel.defaultHierarchy();
     }
 
-    protected Provider<Solvers> getSolverProvider() {
-        return () -> Solvers.Z3;
+    @Override
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder()
+                .withSolver(getSolver())
+                .withBound(getBound())
+                .withTarget(target)
+                .withProgressModel(getProgressModel())
+                .withOption(OptionNames.PHANTOM_REFERENCES, "true");
     }
 
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(targetProvider);
-    }
+    @Override
+    protected Path getTargetModelPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
 
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
-    }
+    @Override
+    protected Path getProgramPath() { return ResourceHelper.getTestResourcePath(getProgramPathString().formatted(name)); }
 
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return ProgressModel::defaultHierarchy;
-    }
+    @Override
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.PROGRAM_SPEC); }
 
-    // =============================================================
-
-    // Provider rules
-    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> targetProvider = () -> target;
-    protected final Provider<Path> filePathProvider = getProgramPathProvider();
-    protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
-    protected final Provider<Solvers> solverProvider = getSolverProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getBaseConfiguration);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configurationProvider);
-
-    // Special rules
-    protected final Timeout timeout = Timeout.millis(getTimeout());
-
-    protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
-            .around(shutdownOnError)
-            .around(filePathProvider)
-            .around(boundProvider)
-            .around(programProvider)
-            .around(wmmProvider)
-            .around(progressModelProvider)
-            .around(solverProvider)
-            .around(propertyProvider)
-            .around(configurationProvider)
-            .around(taskProvider)
-            .around(timeout);
-
-
-    protected void testSolver(Method method) throws Exception {
-        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
-                .withShutdownManager(shutdownManagerProvider.get())) {
-            solver.run();
-            assertEquals(expected, solver.getResult().getStatus());
-        }
-    }
-
+    @Override
+    protected ResultStatus getExpected() { return expected; }
 }

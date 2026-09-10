@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.IntervalAnalysisMethod;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -28,7 +27,8 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,7 @@ public class IntervalAnalysisTest {
                 .setOption(INTERVAL_ANALYSIS_METHOD, method.asStringOption())
                 .build();
         ProcessingManager.fromConfig(config).run(p);
-        final Wmm wmm = new ParserCat().parse(getRootPath(modelPath));
+        final Wmm wmm = parseWmm(getRootPath(modelPath));
         final Task task = Task.builder()
                 .withConfig(config)
                 .withBound(1)

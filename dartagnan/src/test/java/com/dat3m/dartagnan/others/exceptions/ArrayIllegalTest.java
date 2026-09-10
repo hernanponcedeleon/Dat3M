@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.others.exceptions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,8 +12,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 
 @RunWith(Parameterized.class)
 public class ArrayIllegalTest {
@@ -38,6 +38,6 @@ public class ArrayIllegalTest {
 
     @Test(expected = ParsingException.class)
     public void test() throws Exception {
-        new ProgramParser().parse(path);
+        parseProgram(path);
     }
 }

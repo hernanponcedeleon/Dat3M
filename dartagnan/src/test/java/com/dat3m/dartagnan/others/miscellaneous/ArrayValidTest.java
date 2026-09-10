@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -23,10 +20,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.test.TestHelper.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static org.junit.Assert.assertEquals;
 
@@ -35,7 +32,7 @@ public class ArrayValidTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(getRootPath("cat/linux-kernel.cat"));
+        Wmm wmm = parseWmm(getRootPath("cat/linux-kernel.cat"));
         try (Stream<Path> fileStream = Files.walk(getTestResourcePath("arrays/ok/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
@@ -55,7 +52,7 @@ public class ArrayValidTest {
 
     @Test
     public void test() throws Exception {
-        Program program = new ProgramParser().parse(path);
+        Program program = parseProgram(path);
         VerificationTask task = Task.builder()
                 .withSolverTimeout(60)
                 .withTarget(Arch.LKMM)

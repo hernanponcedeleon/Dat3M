@@ -8,8 +8,8 @@ import static org.junit.Assert.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.GlobalSettings.*;
-import static com.dat3m.dartagnan.utils.TestHelper.runDartagnanApplication;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.runDartagnanApplication;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
 
 public class WitnessGenerationTest {
 

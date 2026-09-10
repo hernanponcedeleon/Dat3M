@@ -3,21 +3,17 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.nio.file.Path;
 import java.io.IOException;
-import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusPTXv6_0LivenessTest extends AbstractLitmusTest {
 
     public LitmusPTXv6_0LivenessTest(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.PTX, path, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
@@ -26,17 +22,8 @@ public class LitmusPTXv6_0LivenessTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.PTX;
-    }
+    protected Property getTestedProperty() { return Property.TERMINATION; }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.TERMINATION));
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "ptx-v6.0");
-    }
+    protected String getWmmName() { return "ptx-v6.0"; }
 }

@@ -4,19 +4,17 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.nio.file.Path;
 import java.io.IOException;
-import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessObeTest extends AbstractLitmusTest {
 
     public LitmusVulkanLivenessObeTest(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.VULKAN, path, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
@@ -25,22 +23,11 @@ public class LitmusVulkanLivenessObeTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return () -> ProgressModel.uniform(ProgressModel.OBE);
-    }
+    protected ProgressModel.Hierarchy getProgressModel() { return ProgressModel.uniform(ProgressModel.OBE); }
 
     @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.VULKAN;
-    }
+    protected int getBound() { return 4; }
 
     @Override
-    protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 4);
-    }
-
-    @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.TERMINATION));
-    }
+    protected Property getTestedProperty() { return Property.TERMINATION; }
 }

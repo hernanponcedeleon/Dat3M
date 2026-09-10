@@ -1,22 +1,13 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
@@ -28,22 +19,13 @@ public class IMMTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("imm/" + name + ".ll");
-    }
+    protected String getProgramPathString() { return "imm/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(() -> IMM);
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"paper-E3.1", IMM, PASS},
                 {"paper-E3.2", IMM, PASS},
@@ -62,15 +44,5 @@ public class IMMTest extends AbstractCTest {
                 // expected result is FAIL (confirmed by genMC) 
                 {"paper-R2-alt", IMM, FAIL},
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

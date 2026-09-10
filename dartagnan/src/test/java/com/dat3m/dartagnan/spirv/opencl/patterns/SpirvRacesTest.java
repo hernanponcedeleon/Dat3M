@@ -1,48 +1,30 @@
 package com.dat3m.dartagnan.spirv.opencl.patterns;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.spirv.opencl.AbstractSpirvOpenclTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 
-import java.nio.file.Path;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvRacesTest {
+public class SpirvRacesTest extends AbstractSpirvOpenclTest {
 
-    private final Path modelPath = getRootPath("cat/opencl.cat");
-    private final Path programPath;
     private final boolean filter;
-    private final ResultStatus expected;
 
     public SpirvRacesTest(String file, boolean filter, ResultStatus expected) {
-        this.programPath = getTestResourcePath("spirv/opencl/patterns/" + file);
+        super("spirv/opencl/patterns/" + file, 1, expected);
         this.filter = filter;
-        this.expected = expected;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"corr.spvasm", false, PASS},
                 {"iriw.spvasm", false, PASS},
@@ -57,21 +39,11 @@ public class SpirvRacesTest {
         });
     }
 
-    @Test
-    public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(), Method.EAGER));
-    }
+    @Override
+    protected Property getTestedProperty() { return Property.CAT_SPEC; }
 
-    private Task mkTask() throws Exception {
-        Configuration config = Configuration.builder()
-                .copyFrom(TestHelper.getBasicConfig())
-                .setOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter))
-                .build();
-        Task.TaskBuilder builder = Task.builder()
-                .withConfig(config)
-                .withTarget(Arch.OPENCL);
-        Program program = new ProgramParser().parse(programPath);
-        Wmm mcm = new ParserCat().parse(modelPath);
-        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
+    @Override
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter));
     }
 }

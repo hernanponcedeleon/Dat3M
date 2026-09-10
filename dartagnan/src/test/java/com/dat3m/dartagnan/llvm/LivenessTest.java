@@ -1,15 +1,11 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -24,22 +20,19 @@ public class LivenessTest extends AbstractCTest {
     }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 2;
-    }
+    protected int getBound() { return 2; }
 
     @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(Property.TERMINATION);
-    }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.TERMINATION); }
+
+    @Override
+    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"locks/ttas", TSO, UNKNOWN},
                 {"locks/ttas", ARM8, UNKNOWN},
@@ -162,15 +155,5 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_pthread_join_4", IMM, FAIL},
                 {"nontermination/nontermination_pthread_join_5", IMM, FAIL}
         });
-    }
-
-    // @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

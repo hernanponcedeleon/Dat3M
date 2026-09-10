@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
@@ -28,7 +26,8 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.*;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
@@ -114,7 +113,8 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     Path filePath = file.toAbsolutePath();
-                    if (filePath.endsWith(ProgramParser.EXTENSION_LITMUS) || filePath.endsWith(ProgramParser.EXTENSION_LL) || filePath.endsWith(ProgramParser.EXTENSION_SPV_DIS) || filePath.endsWith(ProgramParser.EXTENSION_SPVASM)) {
+                    if (filePath.endsWith(EXTENSION_LITMUS) || filePath.endsWith(EXTENSION_LL)
+                            || filePath.endsWith(EXTENSION_SPV_DIS) || filePath.endsWith(EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
                 }
@@ -125,8 +125,8 @@ public class RelationAnalysisTest {
 
     private void doCompareSets(Path path) throws Exception {
         // Base program and consistency model
-        Program program = new ProgramParser().parse(path);
-        Wmm wmm = new ParserCat().parse(modelPath);
+        Program program = parseProgram(path);
+        Wmm wmm = parseWmm(modelPath);
         Configuration baseConfig = Configuration.builder().build();
         Task baseTask = createTask(program, wmm, baseConfig);
         preprocessProgram(baseTask, baseTask.getConfig());

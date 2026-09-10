@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
@@ -54,8 +52,10 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
+import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
@@ -708,8 +708,8 @@ public class AnalysisTest {
         final Path programPath = getTestResourcePath("libvsync/bounded_mpmc_check_empty-opt.ll");
         final String modelPath = "cat/c11.cat";
         final int ITERATIONS = 10;
-        final Program program = new ProgramParser().parse(programPath);
-        final Wmm wmm = new ParserCat().parse(getRootPath(modelPath));
+        final Program program = parseProgram(programPath);
+        final Wmm wmm = parseWmm(getRootPath(modelPath));
         final Configuration config = Configuration.builder()
                 .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();

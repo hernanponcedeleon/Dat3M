@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.litmus.comparison;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,26 +16,12 @@ public class C11AndOpenCLTest extends AbstractComparisonTest {
     }
 
     public C11AndOpenCLTest(Path path) {
-        super(path);
+        super(Arch.C11, Arch.OPENCL, path);
     }
 
     @Override
-    protected Provider<Arch> getSourceProvider() {
-        return () -> Arch.C11;
-    }
+    protected String getSourceWmmName() { return "c11"; }
 
     @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.OPENCL;
-    }
-
-    @Override
-    protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
-    }
-
-    @Override
-    protected Provider<Wmm> getTargetWmmProvider() {
-        return Providers.createWmmFromName(() -> "opencl");
-    }
+    protected String getTargetWmmName() { return "opencl"; }
 }
