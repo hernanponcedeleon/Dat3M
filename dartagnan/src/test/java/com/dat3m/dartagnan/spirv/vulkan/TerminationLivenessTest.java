@@ -1,9 +1,8 @@
-package com.dat3m.dartagnan.spirv.vulkan.termination;
+package com.dat3m.dartagnan.spirv.vulkan;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,11 +14,11 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvLivenessTest extends AbstractSpirvVulkanTest {
+public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
 
     private final ProgressModel.Hierarchy progressModel;
 
-    public SpirvLivenessTest(String file, int bound, ProgressModel.Hierarchy progressModel, ResultStatus expected) {
+    public TerminationLivenessTest(String file, int bound, ProgressModel.Hierarchy progressModel, ResultStatus expected) {
         super("spirv/vulkan/termination/" + file, bound, expected);
         this.progressModel = progressModel;
     }
