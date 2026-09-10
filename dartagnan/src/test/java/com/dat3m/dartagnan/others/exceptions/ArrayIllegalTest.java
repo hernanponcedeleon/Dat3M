@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.TestHelper.EXTENSION_LITMUS;
-import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 
 @RunWith(Parameterized.class)
 public class ArrayIllegalTest {

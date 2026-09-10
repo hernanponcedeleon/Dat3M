@@ -7,10 +7,10 @@ import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
-import static com.dat3m.dartagnan.utils.TestHelper.parseWmm;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
+import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
 import static org.junit.Assert.assertNotNull;
 
 public class PrinterTest {

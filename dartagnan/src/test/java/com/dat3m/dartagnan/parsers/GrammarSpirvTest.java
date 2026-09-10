@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)

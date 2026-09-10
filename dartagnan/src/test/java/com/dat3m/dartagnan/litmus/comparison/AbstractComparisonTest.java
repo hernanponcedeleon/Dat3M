@@ -4,9 +4,9 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.test.ResourceHelper;
+import com.dat3m.dartagnan.test.Provider;
+import com.dat3m.dartagnan.test.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -27,9 +27,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.utils.TestHelper.*;
+import static com.dat3m.dartagnan.test.TestHelper.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractComparisonTest {

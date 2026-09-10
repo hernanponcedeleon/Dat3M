@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils;
+package com.dat3m.dartagnan.test;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
