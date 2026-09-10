@@ -311,6 +311,12 @@ def render_markdown(rows, minimum, timeout):
     memory_models = {}
     for row in visible_rows:
         memory_models.setdefault(row["memory_model"], []).append(row)
+    if memory_models:
+        lines.extend([
+            "",
+            "<details>",
+            "<summary>Benchmark details</summary>",
+        ])
     for memory_model, memory_model_rows in memory_models.items():
         lines.extend([
             "",
@@ -325,6 +331,8 @@ def render_markdown(rows, minimum, timeout):
                 f"| {row['head']['average']:.3f} ± {row['head']['standard_deviation']:.3f} s "
                 f"| {format_improvement(row['improvement'])} | {format_results(row['results'])} |"
             )
+    if memory_models:
+        lines.extend(["", "</details>"])
     if visible_rows:
         total = summarize_total(visible_rows)
         lines.extend([
