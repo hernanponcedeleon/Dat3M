@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.utils.IntegerHelper;
+import com.dat3m.dartagnan.expression.type.MemoryType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
@@ -132,8 +132,7 @@ public class EnumerationSolver extends ModelChecker {
 
                 final List<BooleanFormula> stateCube = new ArrayList<>(finalStateExprs.size());
                 for (Expression finalExpr : finalStateExprs) {
-                    final BigInteger smtVal = (BigInteger) evaluator.evaluateFinal(finalExpr).value();
-                    final Expression val = exprs.makeValue(smtVal, (IntegerType) finalExpr.getType());
+                    final Expression val = toExpression(evaluator.evaluateFinal(finalExpr), exprs);
                     state.put(finalExpr, val);
                     stateCube.add(expressionEncoder.equal(finalExpr, val));
                 }
@@ -149,6 +148,17 @@ public class EnumerationSolver extends ModelChecker {
         enumeratedStates = ImmutableList.copyOf(visitedStates);
         vars = finalStateExprs;
 
+    }
+
+    private Expression toExpression(TypedValue<?, ?> value, ExpressionFactory exprs) {
+        if (value.type() instanceof IntegerType intType) {
+            return exprs.makeValue((BigInteger) value.value(), intType);
+        } else if (value.type() instanceof MemoryType memType) {
+            final IntegerType intType = TypeFactory.getInstance().getIntegerType(memType.getBitWidth());
+            final Expression intValue =  exprs.makeValue((BigInteger) value.value(), intType);
+            return exprs.makeToMemoryCast(intValue);
+        }
+        throw new UnsupportedOperationException("Unsupported type " + value.type());
     }
 
     // For sorting expressions in a canonical manner:
