@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.asm.riscv.ck;
+package com.dat3m.dartagnan.asm;
 
-import com.dat3m.dartagnan.asm.AbstractAsmTest;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;

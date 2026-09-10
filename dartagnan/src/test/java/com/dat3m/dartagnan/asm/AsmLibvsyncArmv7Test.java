@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.asm.armv8.libvsync;
+package com.dat3m.dartagnan.asm;
 
-import com.dat3m.dartagnan.asm.AbstractAsmTest;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
@@ -11,14 +10,17 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class AsmLibvsyncArmv8Test extends AbstractAsmTest {
+public class AsmLibvsyncArmv7Test extends AbstractAsmTest {
 
-    public AsmLibvsyncArmv8Test(String name, int bound, ResultStatus expected) {
-        super(Arch.ARM8, name, bound, expected);
+    public AsmLibvsyncArmv7Test(String name, int bound, ResultStatus expected) {
+        super(Arch.ARM7, name, bound, expected);
     }
 
     @Override
-    protected String getProgramPathString() { return "asm/armv8/libvsync/%s.ll"; }
+    protected String getProgramPathString() { return "asm/armv7/libvsync/%s.ll"; }
+
+    @Override
+    protected String getTargetWmmName() { return "arm"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {
@@ -29,7 +31,7 @@ public class AsmLibvsyncArmv8Test extends AbstractAsmTest {
             {"bounded_mpmc_check_empty", 4, PASS},
 
             //spinlocks
-            // {"caslock", 4, PASS}, // passes Refinement but takes ~10 minutes
+            // {"caslock", 4, PASS}, // passes Refinement but takes ~10 minutes 
             {"clhlock", 3, PASS},
             // {"cnalock", 5, PASS}, // takes 35 minutes
             {"hemlock", 3, PASS},
@@ -44,10 +46,10 @@ public class AsmLibvsyncArmv8Test extends AbstractAsmTest {
             {"ttaslock", 3, PASS},
             {"twalock", 2, PASS},
 
-            //threads
+            //threads 
             {"mutex_musl", 3, PASS},
             {"mutex_slim", 2, PASS},
-            {"mutex_waiters", 3, PASS},
+            {"mutex_waiters", 2, PASS},
             {"once", 2, PASS}
         });
     }

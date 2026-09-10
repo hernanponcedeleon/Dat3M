@@ -14,7 +14,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 
-public abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
+abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
 
     private final Arch target;
     private final String name;
