@@ -8,13 +8,11 @@
         <version>4.5.0-alpha</version>
     </parent>
     <artifactId>svcomp</artifactId>
-    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>com.dat3m</groupId>
             <artifactId>dartagnan</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.dat3m</groupId>
@@ -49,30 +47,13 @@
     <profiles>
         <profile>
             <id>native</id>
-            <properties>
-                <cyclonedx.skip>true</cyclonedx.skip>
-            </properties>
             <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.graalvm.buildtools</groupId>
-                    <artifactId>native-maven-plugin</artifactId>
-                    <version>${native-maven-plugin.version}</version>
-                    <executions>
-                        <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <buildArgs>
-                            <buildArg>-Dlogback.statusListenerClass=</buildArg>
-                            <buildArg>--no-fallback</buildArg>
-                        </buildArgs>
-                    </configuration>
-                </plugin>
-            </plugins>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>
