@@ -1,7 +1,5 @@
-package com.dat3m.dartagnan.spirv.vulkan.barrier.scope;
+package com.dat3m.dartagnan.spirv.vulkan;
 
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -12,9 +10,9 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvRacesTest extends AbstractSpirvVulkanTest {
+public class BarrierScopeAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public SpirvRacesTest(String file, int bound, ResultStatus expected) {
+    public BarrierScopeAssertionsTest(String file, int bound, ResultStatus expected) {
         super("spirv/vulkan/barrier/scope/" + file, bound, expected);
     }
 
@@ -27,7 +25,4 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"barrier-not-inscope-wg.spvasm", 1, FAIL},
         });
     }
-
-    @Override
-    protected Property getTestedProperty() { return Property.CAT_SPEC; }
 }

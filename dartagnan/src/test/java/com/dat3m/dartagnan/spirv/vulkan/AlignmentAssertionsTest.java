@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.spirv.vulkan.alignment;
+package com.dat3m.dartagnan.spirv.vulkan;
 
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,9 +9,9 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest extends AbstractSpirvVulkanTest {
+public class AlignmentAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
+    public AlignmentAssertionsTest(String file, int bound, ResultStatus expected) {
         super("spirv/vulkan/alignment/" + file, bound, expected);
     }
 

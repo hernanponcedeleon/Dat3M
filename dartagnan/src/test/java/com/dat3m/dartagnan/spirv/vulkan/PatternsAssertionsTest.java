@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.spirv.vulkan.patterns;
+package com.dat3m.dartagnan.spirv.vulkan;
 
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
@@ -13,9 +12,9 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest extends AbstractSpirvVulkanTest {
+public class PatternsAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public SpirvAssertionsTest(String file, ResultStatus expected) {
+    public PatternsAssertionsTest(String file, ResultStatus expected) {
         super("spirv/vulkan/patterns/" + file, 1, expected);
     }
 

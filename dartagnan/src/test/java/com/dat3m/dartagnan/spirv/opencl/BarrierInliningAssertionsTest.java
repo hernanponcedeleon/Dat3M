@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.spirv.opencl.barrier.inlining;
+package com.dat3m.dartagnan.spirv.opencl;
 
-import com.dat3m.dartagnan.spirv.opencl.AbstractSpirvOpenclTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,9 +10,9 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest extends AbstractSpirvOpenclTest {
+public class BarrierInliningAssertionsTest extends AbstractSpirvOpenclTest {
 
-    public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
+    public BarrierInliningAssertionsTest(String file, int bound, ResultStatus expected) {
         super("spirv/opencl/barrier/inlining/" + file, bound, expected);
     }
 

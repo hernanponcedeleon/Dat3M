@@ -1,7 +1,6 @@
-package com.dat3m.dartagnan.spirv.vulkan.gpuverify;
+package com.dat3m.dartagnan.spirv.opencl;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,10 +10,10 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
-public class SpirvRacesTest extends AbstractSpirvVulkanTest {
+public class GpuverifyRacesTest extends AbstractSpirvOpenclTest {
 
-    public SpirvRacesTest(String file, int bound, ResultStatus expected) {
-        super("spirv/vulkan/gpuverify/" + file, bound, expected);
+    public GpuverifyRacesTest(String file, int bound, ResultStatus expected) {
+        super("spirv/opencl/gpuverify/" + file, bound, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
@@ -26,15 +25,13 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"atomics/forloop.spvasm", 1, FAIL},
                 {"atomics/histo.spvasm", 1, PASS},
                 {"barrier_intervals/test1.spvasm", 1, PASS},
-                {"barrier_intervals/test3.spvasm", 2, UNKNOWN},
-                {"barrier_intervals/test4.spvasm", 2, UNKNOWN},
                 {"basicbarrier.spvasm", 1, PASS},
                 {"basicglobalarray.spvasm", 1, PASS},
                 {"benign_race_tests/fail/writeafterread_addition.spvasm", 1, FAIL},
                 {"benign_race_tests/fail/writeafterread_otherval.spvasm", 1, FAIL},
                 {"benign_race_tests/fail/writezero_nobenign.spvasm", 1, FAIL},
                 {"benign_race_tests/pass/writezero.spvasm", 1, FAIL},
-                {"checkarrays/pass/specifyall.spvasm", 1, PASS},
+                // {"checkarrays/pass/specifyall.spvasm", 1, PASS},
                 {"divergence/race_and_divergence.spvasm", 1, FAIL},
                 {"divergence/race_no_divergence.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spvasm", 1, FAIL},
@@ -42,14 +39,13 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"inter_group_and_barrier_flag_tests/fail/sync.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spvasm", 1, FAIL},
-                {"localarrayaccess.spvasm", 1, PASS},
+                // {"localarrayaccess.spvasm", 1, PASS},
                 {"mem_fence.spvasm", 1, PASS},
                 {"misc/fail/miscfail1.spvasm", 1, FAIL},
-                {"misc/fail/miscfail3.spvasm", 1, FAIL},
+                {"misc/fail/miscfail3.spvasm", 2, FAIL},
                 {"misc/fail/struct_member_race.spvasm", 1, FAIL},
-                {"misc/pass/misc2.spvasm", 1, PASS},
-                {"misc/pass/misc12.spvasm", 3, PASS},
-                {"misc/pass/misc13.spvasm", 1, PASS},
+                // {"misc/pass/misc13.spvasm", 1, PASS},
+                {"misc/pass/misc2.spvasm", 2, PASS},
                 {"multidimarrays/test5.spvasm", 1, FAIL},
                 {"no_log/pass.spvasm", 1, FAIL},
                 {"null_pointers/null_pointer_assignment_equal.spvasm", 1, FAIL},
@@ -58,10 +54,9 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"pointertests/test_return_pointer.spvasm", 1, PASS},
                 {"report_global_id/test1.spvasm", 1, PASS},
                 {"report_global_id/test2.spvasm", 1, FAIL},
-                {"skeletonbinomialoptions.spvasm", 2, UNKNOWN},
                 {"sourcelocation_tests/barrier_divergence/pass.spvasm", 1, PASS},
-                {"sourcelocation_tests/needs_source_location_ensures.spvasm", 1, PASS},
-                {"sourcelocation_tests/needs_source_location_requires.spvasm", 1, PASS},
+                {"sourcelocation_tests/needs_source_location_ensures.spvasm", 9, PASS},
+                {"sourcelocation_tests/needs_source_location_requires.spvasm", 9, PASS},
                 {"sourcelocation_tests/race_with_loop.spvasm", 2, UNKNOWN},
                 {"sourcelocation_tests/races/fail/read_write.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/fail/write_read.spvasm", 1, FAIL},
@@ -69,16 +64,17 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"sourcelocation_tests/races/fail/write_write/normal.spvasm", 1, FAIL},
                 {"sourcelocation_tests/races/pass/no_race.spvasm", 1, PASS},
                 {"sourcelocation_tests/races/pass/read_read.spvasm", 1, PASS},
-                {"test_2d_global_index_inference.spvasm", 2, UNKNOWN},
-                {"test_2d_local_index_inference_2.spvasm", 1, PASS},
+                // {"test_2d_global_index_inference.spvasm", 2, UNKNOWN},
+                // {"test_2d_local_index_inference_2.spvasm", 1, PASS},
                 {"test_for_benign_read_write_bug.spvasm", 1, FAIL},
-                {"test_local_id_inference.spvasm", 1, PASS},
+                // {"test_local_id_inference.spvasm", 1, PASS},
                 {"test_mod_invariants/global_reduce_strength.spvasm", 1, UNKNOWN},
                 {"test_part_load_store/store_int_and_short.spvasm", 1, PASS},
-                {"test_for_ssa_bug.spvasm", 8, PASS},
+                {"test_for_ssa_bug.spvasm", 9, PASS},
                 {"test_structs/use_array_element.spvasm", 1, PASS},
                 {"test_structs/use_element.spvasm", 1, PASS},
                 {"test_structs/use_struct_element.spvasm", 1, PASS},
+                {"vectortests/addressofvector.spvasm", 1, PASS},
 
                 // Fails in gpu-verify, but should pass (even according to the annotation in the test)
                 {"saturate/sadd.spvasm", 1, PASS},
@@ -92,6 +88,7 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 {"atomics/counter.spvasm", 1, FAIL},
 
                 // In gpu-verify fails barrier divergence but not leading to a data race
+                // TODO: check opencl barrier divergence
                 {"barrier_intervals/test2.spvasm", 1, PASS},
                 {"sourcelocation_tests/barrier_divergence/fail.spvasm", 1, PASS},
 
@@ -102,11 +99,7 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
 
                 // barrier avvis variations
                 {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spvasm", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_2.spvasm", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_3.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spvasm", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_2.spvasm", 1, PASS},
-                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_3.spvasm", 1, PASS},
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spvasm", 1, FAIL},
@@ -121,6 +114,12 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 // Unsupported cuda warps
                 // {"warpsync/intragroup_scan.spvasm", 1, FAIL},
                 // {"warpsync/scan_warp.spvasm", 1, FAIL},
+
+                // Unsupported barriers in a loop
+                // {"barrier_intervals/test3.spvasm", 1, PASS},
+                // {"barrier_intervals/test4.spvasm", 1, PASS},
+                // {"misc/pass/misc12.spvasm", 1, PASS},
+                // {"skeletonbinomialoptions.spvasm", 1, PASS},
 
                 // Unsupported non-constant tags
                 // {"inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spvasm", 1, FAIL},
@@ -310,7 +309,6 @@ public class SpirvRacesTest extends AbstractSpirvVulkanTest {
                 // {"test_structs/store_element.spvasm", 1, PASS},
                 // {"test_structs/store_struct_element.spvasm", 1, PASS},
                 // {"unusedreturn.spvasm", 1, PASS},
-                // {"vectortests/addressofvector.spvasm", 1, PASS},
                 // {"vectortests/double2simpleaccess.spvasm", 1, PASS},
                 // {"vectortests/double4simpleaccess.spvasm", 1, PASS},
                 // {"vectortests/float2simpleaccess.spvasm", 1, PASS},

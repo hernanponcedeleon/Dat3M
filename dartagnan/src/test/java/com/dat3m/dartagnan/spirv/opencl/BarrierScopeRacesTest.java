@@ -1,6 +1,6 @@
-package com.dat3m.dartagnan.spirv.opencl.barrier.scope;
+package com.dat3m.dartagnan.spirv.opencl;
 
-import com.dat3m.dartagnan.spirv.opencl.AbstractSpirvOpenclTest;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,9 +11,9 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest extends AbstractSpirvOpenclTest {
+public class BarrierScopeRacesTest extends AbstractSpirvOpenclTest {
 
-    public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
+    public BarrierScopeRacesTest(String file, int bound, ResultStatus expected) {
         super("spirv/opencl/barrier/scope/" + file, bound, expected);
     }
 
@@ -24,4 +24,7 @@ public class SpirvAssertionsTest extends AbstractSpirvOpenclTest {
                 {"barrier-not-inscope-wg.spvasm", 1, FAIL},
         });
     }
+
+    @Override
+    protected Property getTestedProperty() { return Property.CAT_SPEC; }
 }

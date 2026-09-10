@@ -1,7 +1,6 @@
-package com.dat3m.dartagnan.spirv.vulkan.patterns;
+package com.dat3m.dartagnan.spirv.vulkan;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.spirv.vulkan.AbstractSpirvVulkanTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
@@ -14,11 +13,11 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class SpirvRacesTest extends AbstractSpirvVulkanTest {
+public class PatternsRacesTest extends AbstractSpirvVulkanTest {
 
     private final boolean filter;
 
-    public SpirvRacesTest(String file, boolean filter, ResultStatus expected) {
+    public PatternsRacesTest(String file, boolean filter, ResultStatus expected) {
         super("spirv/vulkan/patterns/" + file, 1, expected);
         this.filter = filter;
     }

@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.spirv.opencl.benchmarks;
+package com.dat3m.dartagnan.spirv.opencl;
 
-import com.dat3m.dartagnan.spirv.opencl.AbstractSpirvOpenclTest;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,9 +9,9 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest extends AbstractSpirvOpenclTest {
+public class BenchmarksAssertionsTest extends AbstractSpirvOpenclTest {
 
-    public SpirvAssertionsTest(String file, int bound, ResultStatus expected) {
+    public BenchmarksAssertionsTest(String file, int bound, ResultStatus expected) {
         super("spirv/opencl/benchmarks/" + file, bound, expected);
     }
 
