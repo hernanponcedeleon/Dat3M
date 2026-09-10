@@ -1,27 +1,23 @@
 package com.dat3m.dartagnan.configuration;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.Printer;
+import com.dat3m.dartagnan.verification.TaskSolverBase;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
-import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
-import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
@@ -39,16 +35,11 @@ public final class OptionInfo implements Comparable<OptionInfo> {
         return classes().flatMap(OptionInfo::collectOptions);
     }
 
-    private static Stream<Class<?>> classes() {
+    static Stream<Class<?>> classes() {
         return Stream.of(
                 VerificationTaskSolver.class,
-                RelationNameRepository.class,
-                OptionNames.class,
+                TaskSolverBase.class,
                 OutputGenerator.class,
-                Acyclicity.class,
-                Emptiness.class,
-                Irreflexivity.class,
-                Dartagnan.class,
                 ActiveSetAnalysis.class,
                 EncodingContext.class,
                 ProgramEncoder.class,
@@ -56,7 +47,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 WmmEncoder.class,
                 ReachingDefinitionsAnalysis.Config.class,
                 AliasAnalysis.Config.class,
-                BranchReordering.class,
+                IntervalAnalysis.Config.class,
                 Inlining.class,
                 Intrinsics.class,
                 LoopUnrolling.class,
@@ -64,7 +55,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 NonterminationDetection.class,
                 ProcessingManager.class,
                 SparseConditionalConstantPropagation.class,
-                ThreadCreation.class,
                 Compilation.class,
                 CoreReasoner.class,
                 BaseOptions.class,
@@ -73,7 +63,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 RefinementSolver.class,
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
-                WmmProcessingManager.class,
                 ExecutionGraphVisualizer.class,
                 Program.SemanticConfig.class
         );
