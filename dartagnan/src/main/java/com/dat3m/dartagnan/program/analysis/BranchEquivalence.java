@@ -16,9 +16,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 /* Procedure:
     (1) Decompose the program into simple branches (~ basic blocks).
