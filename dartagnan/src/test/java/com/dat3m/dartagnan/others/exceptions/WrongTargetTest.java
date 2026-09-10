@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import org.junit.Test;
 
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 
 public class WrongTargetTest {
 

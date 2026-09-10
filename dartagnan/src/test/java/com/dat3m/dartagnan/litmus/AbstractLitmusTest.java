@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
-import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
+import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.sosy_lab.java_smt.SolverContextFactory;
@@ -19,9 +19,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.dat3m.dartagnan.utils.TestHelper.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.test.TestHelper.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 
 public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverTest {
 

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils;
+package com.dat3m.dartagnan.test;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,21 +37,20 @@ public class TestHelper {
 
     public static void runDartagnanApplication(Path programPath, Path catPath, String... options) throws Exception {
         final Path dat3mJar = getExecutablePath(true);
-        List<String> command = new ArrayList<>();
+        final List<String> command = new ArrayList<>();
         command.add("java");
         command.add("-jar");
         command.add(dat3mJar.toAbsolutePath().toString());
         command.add(catPath.toAbsolutePath().toString());
         command.add(programPath.toAbsolutePath().toString());
         command.addAll(Arrays.asList(options));
-
-        ProcessBuilder pb = new ProcessBuilder(command);
-        Process process = pb.start();
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            String error = new String(process.getErrorStream().readAllBytes());
-            logger.warn("Dartagnan finished with exit code {}. Error:", exitCode, error);
+        final ProcessBuilder pb = new ProcessBuilder(command);
+        try (Process process = pb.start()) {
+            final int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                final String error = new String(process.getErrorStream().readAllBytes());
+                logger.warn("Dartagnan finished with exit code {}. Error: {}", exitCode, error);
+            }
         }
     }
 

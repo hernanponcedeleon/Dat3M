@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.*;
-import com.dat3m.dartagnan.utils.AbstractVerificationTaskSolverTest;
-import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
+import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;

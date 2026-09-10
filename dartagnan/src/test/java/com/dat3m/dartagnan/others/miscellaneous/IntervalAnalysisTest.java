@@ -27,8 +27,8 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.TestHelper.parseWmm;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
