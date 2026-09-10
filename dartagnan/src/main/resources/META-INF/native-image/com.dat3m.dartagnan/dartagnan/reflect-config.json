@@ -9,7 +9,12 @@
         "queryAllDeclaredMethods": true
     },
     {
-        "name":"com.dat3m.dartagnan.verification.TaskSolver",
+        "name":"com.dat3m.dartagnan.verification.TaskSolverBase",
+        "allDeclaredFields": true,
+        "queryAllDeclaredMethods": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.verification.VerificationTaskSolver",
         "allDeclaredFields": true,
         "queryAllDeclaredMethods": true
     },
@@ -473,4 +478,3 @@
         ]
       }
 ]
-  
