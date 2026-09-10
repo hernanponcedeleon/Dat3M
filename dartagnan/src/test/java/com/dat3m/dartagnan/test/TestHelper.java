@@ -45,12 +45,11 @@ public class TestHelper {
         command.add(programPath.toAbsolutePath().toString());
         command.addAll(Arrays.asList(options));
         final ProcessBuilder pb = new ProcessBuilder(command);
-        try (Process process = pb.start()) {
-            final int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                final String error = new String(process.getErrorStream().readAllBytes());
-                logger.warn("Dartagnan finished with exit code {}. Error: {}", exitCode, error);
-            }
+        final Process process = pb.start();
+        final int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            final String error = new String(process.getErrorStream().readAllBytes());
+            logger.warn("Dartagnan finished with exit code {}. Error: {}", exitCode, error);
         }
     }
 
