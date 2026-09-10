@@ -1,4 +1,4 @@
-name: Performance regression
+name: Generate performance report
 
 on:
   pull_request:
@@ -6,15 +6,33 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # This artifact identifies which pull request should receive the generated report.
+  context:
+    name: Save pull request context
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save pull request number
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/performance-context"
+          printf '%s\n' "$PR_NUMBER" > "$RUNNER_TEMP/performance-context/pr-number.txt"
+
+      - name: Publish pull request context
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-pr-context
+          path: ${{ runner.temp }}/performance-context/
+
   compare:
-    name: Check for performance regressions (${{ matrix.platform }})
+    name: Generate performance report (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -84,49 +102,3 @@ jobs:
         with:
           name: performance-comparison-${{ matrix.artifact }}
           path: performance/
-
-  publish-report:
-    name: Publish performance report
-    needs: compare
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Linux report
-        uses: actions/download-artifact@v4
-        with:
-          name: performance-comparison-linux-x64
-          path: performance/linux-x64
-
-      - name: Download macOS report
-        uses: actions/download-artifact@v4
-        with:
-          name: performance-comparison-macos-arm64
-          path: performance/macos-arm64
-
-      - name: Update pull request comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- dat3m-performance-report -->';
-            const reports = [
-              ['Linux x64', 'performance/linux-x64/report.md'],
-              ['macOS ARM64', 'performance/macos-arm64/report.md'],
-            ];
-            const body = marker + '\n# Performance comparison\n' + reports.map(([platform, path]) => {
-              const report = fs.readFileSync(path, 'utf8').replace(
-                /^<!-- dat3m-performance-report -->\n## Performance comparison\n?/, '',
-              );
-              return `\n## ${platform}\n${report}`;
-            }).join('');
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner, repo, issue_number,
-            });
-            const previous = comments.find(comment => comment.user.type === 'Bot' && comment.body.includes(marker));
-            if (previous) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
-            }
