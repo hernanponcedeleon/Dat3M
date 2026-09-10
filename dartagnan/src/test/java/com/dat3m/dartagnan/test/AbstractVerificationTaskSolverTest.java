@@ -1,10 +1,8 @@
-package com.dat3m.dartagnan.utils;
+package com.dat3m.dartagnan.test;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;

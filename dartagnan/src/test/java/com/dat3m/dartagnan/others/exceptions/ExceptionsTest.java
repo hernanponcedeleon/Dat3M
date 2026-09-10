@@ -19,8 +19,8 @@ import org.sosy_lab.common.configuration.Configuration;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.TestHelper.parseProgram;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 
 public class ExceptionsTest {
 

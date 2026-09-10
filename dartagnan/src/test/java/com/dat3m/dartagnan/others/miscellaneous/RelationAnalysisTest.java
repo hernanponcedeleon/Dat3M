@@ -26,8 +26,8 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.TestHelper.*;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.TestHelper.*;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
