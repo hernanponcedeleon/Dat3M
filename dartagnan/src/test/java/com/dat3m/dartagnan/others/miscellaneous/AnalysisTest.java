@@ -104,6 +104,33 @@ public class AnalysisTest {
     }
 
     @Test
+    public void impliedInits() throws InvalidConfigurationException {
+        final ProgressModel.Hierarchy progressModel = ProgressModel.uniform(ProgressModel.FAIR);
+        final ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        final MemoryObject x = b.newMemoryObject("x", 1);
+        x.setInitialValue(0, expressions.makeZero(types.getByteType()));
+
+        b.newThread(0);
+        final Event store = newStore(x, expressions.makeOne(types.getByteType()));
+        b.addChildWithoutSourceLoc(0, store);
+
+        final Configuration config = Configuration.defaultConfiguration();
+        final Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
+        final Event init = program.getThreadEvents(Init.class).get(0);
+        // Required by BranchEquivalence.
+        LoopUnrolling.fromConfig(config).run(program);
+
+        final Context analyses = Context.create();
+        final EventDomainRepository edr = EventDomainRepository.forProgram(program);
+        analyses.register(EventDomainRepository.class, edr);
+        final BranchEquivalence be = BranchEquivalence.fromConfig(program, config);
+        analyses.register(BranchEquivalence.class, be);
+        final ExecutionAnalysis exec = ExecutionAnalysis.fromConfig(program, progressModel, analyses, config);
+        assertTrue(exec.isImplied(store, init));
+    }
+
+    @Test
     public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
         reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.BACKWARD);
         reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.FORWARD);
