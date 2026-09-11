@@ -23,19 +23,22 @@ public class VisitorExtensionDebugInfo extends VisitorExtension<Expression> {
     public Expression visitOpExtInst(SpirvParser.OpExtInstContext ctx) {
         SpirvParser.DebugInfoContext debugInfo = ctx.instruction().literalExtInstInteger().debugInfo();
         String instruction = debugInfo.getStart().getText();
-        if (instruction.equals("DebugSource")) {
-            String file = builder.getDebugInfo(debugInfo.idRef(0).getText());
-            sourceFiles.put(ctx.idResult().getText(), removeSurroundingQuotes(file));
-        } else if (instruction.equals("DebugLine")) {
-            String file = sourceFiles.get(debugInfo.idRef(0).getText());
-            String lineId = debugInfo.idRef(1).getText();
-            if (!(builder.getExpression(lineId) instanceof IntLiteral lineLiteral)) {
-                throw new ParsingException("DebugLine operand '%s' is not an integer constant", lineId);
+        switch (instruction) {
+            case "DebugSource" -> {
+                String file = builder.getDebugInfo(debugInfo.idRef(0).getText());
+                sourceFiles.put(ctx.idResult().getText(), removeSurroundingQuotes(file));
             }
-            int line = lineLiteral.getValueAsInt();
-            builder.getControlFlowBuilder().setCurrentLocation(file, line);
-        } else if (instruction.equals("DebugNoLine")) {
-            builder.getControlFlowBuilder().removeCurrentLocation();
+            case "DebugLine" -> {
+                String file = sourceFiles.get(debugInfo.idRef(0).getText());
+                String lineId = debugInfo.idRef(1).getText();
+                if (!(builder.getExpression(lineId) instanceof IntLiteral lineLiteral)) {
+                    throw new ParsingException("DebugLine operand '%s' is not an integer constant", lineId);
+                }
+                int line = lineLiteral.getValueAsInt();
+                builder.getControlFlowBuilder().setCurrentLocation(file, line);
+            }
+            case "DebugNoLine" -> builder.getControlFlowBuilder().removeCurrentLocation();
+            default -> { }
         }
         return null;
     }
@@ -47,11 +50,27 @@ public class VisitorExtensionDebugInfo extends VisitorExtension<Expression> {
     @Override
     public Set<String> getSupportedInstructions() {
         return Set.of(
-                "DebugCompilationUnit", "DebugEntryPoint", "DebugExpression", "DebugFunction",
-                "DebugFunctionDefinition", "DebugGlobalVariable", "DebugInfoNone", "DebugLine",
-                "DebugLocalVariable", "DebugNoLine", "DebugNoScope", "DebugScope", "DebugSource",
-                "DebugTypeArray", "DebugTypeBasic", "DebugTypeComposite", "DebugTypeFunction",
-                "DebugTypeMember", "DebugTypeQualifier", "DebugTypeVector", "DebugValue"
+                "DebugCompilationUnit",
+                "DebugEntryPoint",
+                "DebugExpression",
+                "DebugFunction",
+                "DebugFunctionDefinition",
+                "DebugGlobalVariable",
+                "DebugInfoNone",
+                "DebugLine",
+                "DebugLocalVariable",
+                "DebugNoLine",
+                "DebugNoScope",
+                "DebugScope",
+                "DebugSource",
+                "DebugTypeArray",
+                "DebugTypeBasic",
+                "DebugTypeComposite",
+                "DebugTypeFunction",
+                "DebugTypeMember",
+                "DebugTypeQualifier",
+                "DebugTypeVector",
+                "DebugValue"
         );
     }
 }

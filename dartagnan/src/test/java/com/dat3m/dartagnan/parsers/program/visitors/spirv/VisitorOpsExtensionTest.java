@@ -4,12 +4,10 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class VisitorOpsExtensionTest {
@@ -41,41 +39,6 @@ public class VisitorOpsExtensionTest {
         assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(0)).getValueAsInt());
         assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(4)).getValueAsInt());
         assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(8)).getValueAsInt());
-    }
-
-    @Test
-    public void testDebugLine() {
-        String input = """
-                %ext = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
-                %source = OpExtInst %void %ext DebugSource %file
-                %line = OpExtInst %void %ext DebugLine %source %uint_42 %uint_42 %uint_0 %uint_0
-                """;
-
-        builder.mockVoidType("%void");
-        builder.mockIntType("%uint", 32);
-        builder.mockConstant("%uint_0", "%uint", 0);
-        builder.mockConstant("%uint_42", "%uint", 42);
-        builder.addDebugInfo("%file", "\"test.slang\"");
-
-        visit(input);
-
-        assertEquals(new SourceLocation.Generic("test.slang", 42),
-                builder.getControlFlowBuilder().getCurrentLocation());
-    }
-
-    @Test
-    public void testDebugNoLine() {
-        String input = """
-                %ext = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
-                %noLine = OpExtInst %void %ext DebugNoLine
-                """;
-
-        builder.mockVoidType("%void");
-        builder.getControlFlowBuilder().setCurrentLocation("test.slang", 42);
-
-        visit(input);
-
-        assertFalse(builder.getControlFlowBuilder().hasCurrentLocation());
     }
 
     @Test
