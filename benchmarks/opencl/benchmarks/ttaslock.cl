@@ -1,14 +1,8 @@
-// Currently, clspv inserts Coherent decorations only if accesses are separated
-// by a global control barrier, ignoring release-acquire synchronization.
-// To work around this, we manually insert Coherent decoration for variable 'x'
-// before upgrading the memory model.
-
-// clspv ttaslock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv > ttaslock.spvasm
-// Add 'OpDecorate %18 Coherent' (id might be different depending on clspv version)
-// spirv-as ttaslock.spvasm -o a.spv
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > ttaslock.spvasm
+//; @Input: %l = {{0}}
+//; @Input: %x = {{0}}
+//; @Input: %A = {{-1, -1}}
+//; @Output: forall (%A[0][0] == -1 or %A[0][1] == -1 or %A[0][0] != %A[0][1])
+//; @Config: 2, 1, 1
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed

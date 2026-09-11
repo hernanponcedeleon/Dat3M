@@ -32,6 +32,7 @@ public class ProgramBuilder {
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
     protected final Map<String, String> debugInfos = new HashMap<>();
+    private final Map<String, String> idToVariableName = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
@@ -124,7 +125,7 @@ public class ProgramBuilder {
     }
 
     public boolean hasInput(String id) {
-        return inputs.containsKey(id);
+        return inputs.containsKey(resolveInputKey(id));
     }
 
     public boolean hasDefinition(String id) {
@@ -132,8 +133,9 @@ public class ProgramBuilder {
     }
 
     public Expression getInput(String id) {
-        if (inputs.containsKey(id)) {
-            return inputs.get(id);
+        String inputKey = resolveInputKey(id);
+        if (inputs.containsKey(inputKey)) {
+            return inputs.get(inputKey);
         }
         throw new ParsingException("Reference to undefined input variable '%s'", id);
     }
@@ -169,6 +171,41 @@ public class ProgramBuilder {
         return expression;
     }
 
+    public Expression getExpressionFromHeader(String id) {
+        Expression expression = expressions.get(id);
+        if (expression == null) {
+            for (Map.Entry<String, String> entry : idToVariableName.entrySet()) {
+                if (toHeaderId(entry.getValue()).equals(id)) {
+                    expression = expressions.get(entry.getKey());
+                    break;
+                }
+            }
+        }
+        if (expression == null) {
+            throw new ParsingException("Reference to undefined expression '%s'", id);
+        }
+        return expression;
+    }
+
+    public void addVariableSourceName(String id, String name) {
+        idToVariableName.put(id, name);
+    }
+
+    private String resolveInputKey(String spirvId) {
+        if (inputs.containsKey(spirvId)) {
+            return spirvId;
+        }
+        String sourceName = idToVariableName.get(spirvId);
+        if (sourceName == null) {
+            return spirvId;
+        }
+        return toHeaderId(sourceName);
+    }
+
+    private String toHeaderId(String name) {
+        return name.startsWith("%") ? name : "%" + name;
+    }
+
     public Expression addExpression(String id, Expression value) {
         if (types.containsKey(id) || expressions.containsKey(id)) {
             throw new ParsingException("Duplicated definition '%s'", id);
@@ -188,7 +225,7 @@ public class ProgramBuilder {
         int size = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
         MemoryObject memObj = program.getMemory().allocateVirtual(size, true, null);
         memObj.setInitialValue(0, value);
-        memObj.setName(id);
+        memObj.setName(idToVariableName.getOrDefault(id, id));
         memObj.setIsThreadLocal(false);
         if (arch == Arch.OPENCL) {
             String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
