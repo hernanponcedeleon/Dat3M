@@ -33,8 +33,11 @@ let sbf = sb ; [F]
 
 (* release_acquire_fenced_synchronizes_with, hypothetical_release_sequence_set, release_sequence_set *)
 
-(* OLD: let rs = [Rel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
-(* OLD: let rs_prime = int | (_ * (R & W)) *)
+
+(* OLD:
+let rs_prime = int | (_ * (R & W))
+let rs = [Rel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))?
+*)
 let rs_prime = int | (_ * RMW)
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
 
