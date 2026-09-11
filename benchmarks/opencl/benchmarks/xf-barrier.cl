@@ -1,20 +1,8 @@
-// Currently, clspv inserts Coherent decorations only if accesses are separated
-// by a global control barrier, ignoring release-acquire synchronization.
-// To work around this, we manually insert Coherent decoration for variable 'in'
-// for tests with a local barrier (with LOCAL flag) before upgrading the memory model.
-
-// Default, without LOCAL barrier flag:
-// clspv xf-barrier.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > xf-barrier.spvasm
-
-// With LOCAL barrier flag:
-// clspv xf-barrier.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv > xf-barrier.spvasm
-// Add 'OpDecorate %20 Coherent' (id might be different depending on clspv version)
-// spirv-as xf-barrier.spvasm -o a.spv
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > xf-barrier.spvasm
+//; @Input: %flag = {{0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Input: %in = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Input: %out = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Output: forall (%out[0][0] == 4 and %out[0][1] == 4 and %out[0][2] == 4 and %out[0][3] == 4)
+//; @Config: 2, 1, 2
 
 #ifdef FAIL1
 #define mo1 memory_order_relaxed
