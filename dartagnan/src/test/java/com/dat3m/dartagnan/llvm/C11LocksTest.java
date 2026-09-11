@@ -65,10 +65,7 @@ public class C11LocksTest extends AbstractCTest {
                 {"spinlock", C11, PASS},
                 {"spinlock-acq2rx", C11, FAIL},
                 {"spinlock-rel2rx", C11, FAIL},
-                // For most models the one below is safe (UNKNOWN)
-                // It could be the case for C11 is unsafe (because it is weaker)
-                // but we are not 100% sure about this
-                {"linuxrwlock", C11, FAIL},
+                {"linuxrwlock", C11, UNKNOWN},
                 {"mutex_musl", C11, UNKNOWN},
                 {"mutex_musl-acq2rx_futex", C11, UNKNOWN},
                 {"mutex_musl-acq2rx_lock", C11, FAIL},

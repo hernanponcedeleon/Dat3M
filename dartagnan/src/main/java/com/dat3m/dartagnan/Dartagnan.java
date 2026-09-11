@@ -98,7 +98,10 @@ public class Dartagnan extends BaseOptions {
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
                     builder.withTarget(p.getArch());
                 }
-                final Task task = builder.build(p, mcm, o.getProperty());
+                final Task task = switch (o.getMode()) {
+                    case VERIFICATION -> builder.build(p, mcm, o.getProperty());
+                    case ENUMERATION ->  builder.buildEnumerationTask(p, mcm);
+                };
 
                 // ----------- Solve task ----------
                 final TaskSolver taskSolver = TaskSolver.create(task);

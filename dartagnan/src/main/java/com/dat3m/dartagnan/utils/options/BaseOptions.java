@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Mode;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -15,6 +16,16 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public abstract class BaseOptions {
+
+    @Option(
+            name = MODE,
+            description = "The mode of operation: verification (default) or enumeration.",
+            toUppercase = true)
+    private Mode mode = Mode.getDefault();
+
+    public Mode getMode() {
+        return mode;
+    }
 
     @Option(
             name = PROPERTY,

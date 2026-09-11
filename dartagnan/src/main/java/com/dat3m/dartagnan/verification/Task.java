@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
     Represents a verification task.
  */
-public abstract sealed class Task permits VerificationTask {
+public abstract sealed class Task permits VerificationTask, EnumerationTask {
 
     // Data objects
     private final Program program;
@@ -97,6 +97,10 @@ public abstract sealed class Task permits VerificationTask {
 
         public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
             return new VerificationTask(program, memoryModel, progressModel, config.build(), property);
+        }
+
+        public EnumerationTask buildEnumerationTask(Program program, Wmm memoryModel) throws InvalidConfigurationException {
+            return new EnumerationTask(program, memoryModel, progressModel, config.build());
         }
     }
 }

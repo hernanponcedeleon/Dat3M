@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.configuration;
 public class OptionNames {
 
     // Base Options
+    public static final String MODE = "mode";
     public static final String PROPERTY = "property";
     public static final String BOUND = "bound";
     public static final String BOUNDS_LOAD_PATH = "bound.load";
