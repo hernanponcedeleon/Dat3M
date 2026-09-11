@@ -45,7 +45,7 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     protected abstract Path getProgramPath();
 
-    protected abstract Path getTargetModelPath();
+    protected abstract Path getTargetWmmPath();
 
     protected abstract EnumSet<Property> getTestedProperties();
 
@@ -67,7 +67,7 @@ public abstract class AbstractVerificationTaskSolverTest {
     private VerificationTask getTask() throws Exception {
         final Task.TaskBuilder task = getTaskBuilder();
         final Program program = TestHelper.parseProgram(getProgramPath());
-        final Wmm targetModel = TestHelper.parseWmm(getTargetModelPath());
+        final Wmm targetModel = TestHelper.parseWmm(getTargetWmmPath());
         final EnumSet<Property> properties = getTestedProperties();
         return task.build(program, targetModel, properties);
     }

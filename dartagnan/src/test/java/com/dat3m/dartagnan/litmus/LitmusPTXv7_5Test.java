@@ -21,5 +21,5 @@ public class LitmusPTXv7_5Test extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "ptx-v7.5"; }
+    protected String getTargetWmmName() { return "ptx-v7.5"; }
 }

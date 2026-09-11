@@ -59,7 +59,7 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     // =================== Modifiable behavior ====================
 
-    protected String getWmmName() { return null; }
+    protected String getTargetWmmName() { return null; }
 
     protected Property getTestedProperty() { return Property.PROGRAM_SPEC; }
 
@@ -82,7 +82,7 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     }
 
     @Override
-    protected Path getTargetModelPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
+    protected Path getTargetWmmPath() { return ResourceHelper.getCatPath(target, getTargetWmmName()); }
 
     @Override
     protected Path getProgramPath() { return programPath; }

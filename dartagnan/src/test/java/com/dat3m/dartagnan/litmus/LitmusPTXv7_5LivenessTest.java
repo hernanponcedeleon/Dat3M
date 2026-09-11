@@ -25,5 +25,5 @@ public class LitmusPTXv7_5LivenessTest extends AbstractLitmusTest {
     protected Property getTestedProperty() { return Property.TERMINATION; }
 
     @Override
-    protected String getWmmName() { return "ptx-v7.5"; }
+    protected String getTargetWmmName() { return "ptx-v7.5"; }
 }

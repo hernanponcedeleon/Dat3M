@@ -41,7 +41,7 @@ abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
     }
 
     @Override
-    protected Path getTargetModelPath() { return ResourceHelper.getCatPath(target, getTargetWmmName()); }
+    protected Path getTargetWmmPath() { return ResourceHelper.getCatPath(target, getTargetWmmName()); }
 
     @Override
     protected Path getProgramPath() {

@@ -21,5 +21,5 @@ public class LitmusOpenClTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "opencl"; }
+    protected String getTargetWmmName() { return "opencl"; }
 }

@@ -22,7 +22,7 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "linux-kernel"; }
+    protected String getTargetWmmName() { return "linux-kernel"; }
 
     @Override
     protected Property getTestedProperty() { return Property.CAT_SPEC; }
