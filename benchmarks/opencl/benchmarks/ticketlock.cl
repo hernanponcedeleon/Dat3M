@@ -1,14 +1,9 @@
-// Currently, clspv inserts Coherent decorations only if accesses are separated
-// by a global control barrier, ignoring release-acquire synchronization.
-// To work around this, we manually insert Coherent decoration for variable 'x'
-// before upgrading the memory model.
-
-// clspv ticketlock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv > ticketlock.spvasm
-// Add 'OpDecorate %19 Coherent' (id might be different depending on clspv version)
-// spirv-as ticketlock.spvasm -o a.spv
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > ticketlock.spvasm
+//; @Input: %owner = {{0}}
+//; @Input: %next = {{0}}
+//; @Input: %x = {{0}}
+//; @Input: %A = {{-1, -1}}
+//; @Output: forall (%A[0][0] == -1 or %A[0][1] == -1 or %A[0][0] != %A[0][1])
+//; @Config: 2, 1, 1
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed

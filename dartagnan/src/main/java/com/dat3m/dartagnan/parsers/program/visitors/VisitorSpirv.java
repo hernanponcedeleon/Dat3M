@@ -33,6 +33,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
         this.builder = createBuilder(ctx);
         this.initializeVisitors();
         this.specConstantVisitor = getSpecConstantVisitor();
+        ctx.spvInstructions().accept(new VisitorClspvVariableNames(builder));
         ctx.spvHeaders().accept(new VisitorSpirvInput(builder));
         ctx.spvInstructions().accept(this);
         ctx.spvHeaders().accept(new VisitorSpirvOutput(builder));
