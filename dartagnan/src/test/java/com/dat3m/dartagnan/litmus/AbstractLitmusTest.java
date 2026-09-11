@@ -12,10 +12,10 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
@@ -28,7 +28,6 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     protected final Arch target;
     protected final Path programPath;
     protected final ResultStatus expected;
-    private static Map<Path, ResultStatus> expectedResults;
 
     AbstractLitmusTest(Arch target, Path programPath, ResultStatus expected) {
         this.target = target;
@@ -41,21 +40,22 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     }
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
-        expectedResults = ResourceHelper.getExpectedResults(arch, postfix);
-        Set<Path> skip = ResourceHelper.getSkipSet();
+        final Path expectedPath = ResourceHelper.getTestResourcePath(arch + postfix + "-expected.csv");
+        final Map<Path, ResultStatus> expectedResults = ResourceHelper.parseExpectedResults(expectedPath,
+                ResourceHelper::getRootPath);
+        final Set<Path> skip = ResourceHelper.getSkipSet();
+        final Function<Path, ResultStatus> expected = path -> !skip.contains(path) ? expectedResults.get(path) : null;
+        return buildLitmusTests(getRootPath(litmusPath), expected);
+    }
 
-        try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
+    static Iterable<Object[]> buildLitmusTests(Path litmusPath, Function<Path, ResultStatus> expected) throws IOException {
+        try (Stream<Path> fileStream = Files.walk(litmusPath)) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> hasExtension(f, EXTENSION_LITMUS))
-                    .filter(f -> !skip.contains(f))
-                    .filter(expectedResults::containsKey)
-                    .map(f -> new Object[]{f, expectedResults.get(f)})
-                    .collect(ArrayList::new,
-                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
+                    .map(f -> new Object[]{f, expected.apply(f)}).filter(f -> f[1] != null).toList();
         }
     }
-
 
     // =================== Modifiable behavior ====================
 
