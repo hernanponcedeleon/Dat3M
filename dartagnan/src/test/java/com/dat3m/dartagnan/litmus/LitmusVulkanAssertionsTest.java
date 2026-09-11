@@ -21,5 +21,5 @@ public class LitmusVulkanAssertionsTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "vulkan"; }
+    protected String getTargetWmmName() { return "vulkan"; }
 }

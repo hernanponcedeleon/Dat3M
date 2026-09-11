@@ -25,5 +25,5 @@ public class LitmusVulkanRacesTest extends AbstractLitmusTest {
     protected Property getTestedProperty() { return Property.CAT_SPEC; }
 
     @Override
-    protected String getWmmName() { return "vulkan"; }
+    protected String getTargetWmmName() { return "vulkan"; }
 }

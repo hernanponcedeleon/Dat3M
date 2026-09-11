@@ -21,5 +21,5 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "linux-kernel"; }
+    protected String getTargetWmmName() { return "linux-kernel"; }
 }

@@ -53,7 +53,7 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
     }
 
     @Override
-    protected Path getTargetModelPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
+    protected Path getTargetWmmPath() { return ResourceHelper.getCatPath(target, getWmmName()); }
 
     @Override
     protected Path getProgramPath() { return ResourceHelper.getTestResourcePath(getProgramPathString().formatted(name)); }
