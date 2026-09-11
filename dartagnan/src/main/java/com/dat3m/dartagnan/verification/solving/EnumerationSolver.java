@@ -95,25 +95,14 @@ public class EnumerationSolver extends ModelChecker {
         final ExpressionEncoder expressionEncoder = context.getExpressionEncoder();
         final ExpressionFactory exprs = context.getExpressionFactory();
 
-        // ======= Collect relevant expressions from litmus test spec ========
-        final Set<Expression> __finalStateExprs = new HashSet<>();
-        task.getProgram().getSpecification().accept(new ExpressionInspector() {
-            @Override
-            public Expression visitFinalMemoryValue(FinalMemoryValue val) {
-                __finalStateExprs.add(val);
-                return val;
-            }
-
-            @Override
-            public Expression visitRegister(Register reg) {
-                __finalStateExprs.add(reg);
-                return reg;
-            }
-        });
-        final ImmutableList<Expression> finalStateExprs = __finalStateExprs.stream()
-                .sorted(this::compareExpr)
-                .collect(ImmutableList.toImmutableList());
-        // =============================================================
+        final ImmutableList<Expression> finalStateExprs = getFinalStateExprsToEnumerate();
+        if (finalStateExprs.isEmpty()) {
+            res = ResultStatus.PASS;
+            enumeratedStates = ImmutableList.of();
+            vars = ImmutableList.of();
+            logger.warn("No final states to enumerate");
+            return;
+        }
 
         // ===================== Enumerate states =====================
         logger.info("Starting state space enumeration");
@@ -159,6 +148,30 @@ public class EnumerationSolver extends ModelChecker {
             return exprs.makeToMemoryCast(intValue);
         }
         throw new UnsupportedOperationException("Unsupported type " + value.type());
+    }
+
+    // We collect the expression values to enumerate from the spec
+    private ImmutableList<Expression> getFinalStateExprsToEnumerate() {
+        if (task.getProgram().getSpecification() == null) {
+            return ImmutableList.of();
+        }
+        final Set<Expression> finalStateExprs = new HashSet<>();
+        task.getProgram().getSpecification().accept(new ExpressionInspector() {
+            @Override
+            public Expression visitFinalMemoryValue(FinalMemoryValue val) {
+                finalStateExprs.add(val);
+                return val;
+            }
+
+            @Override
+            public Expression visitRegister(Register reg) {
+                finalStateExprs.add(reg);
+                return reg;
+            }
+        });
+        return finalStateExprs.stream()
+                .sorted(this::compareExpr)
+                .collect(ImmutableList.toImmutableList());
     }
 
     // For sorting expressions in a canonical manner:
