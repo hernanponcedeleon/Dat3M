@@ -44,7 +44,7 @@ public abstract class AbstractSpirvTest extends AbstractVerificationTaskSolverTe
     }
 
     @Override
-    protected Path getTargetModelPath() { return targetModelPath; }
+    protected Path getTargetWmmPath() { return targetModelPath; }
 
     @Override
     protected Path getProgramPath() { return programPath; }

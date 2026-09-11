@@ -21,5 +21,5 @@ public class LitmusC11Test extends AbstractLitmusTest {
     }
 
     @Override
-    protected String getWmmName() { return "c11"; }
+    protected String getTargetWmmName() { return "c11"; }
 }

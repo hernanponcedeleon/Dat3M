@@ -26,5 +26,5 @@ public class LitmusOpenClRacesTest extends AbstractLitmusTest {
     protected Property getTestedProperty() { return Property.CAT_SPEC; }
 
     @Override
-    protected String getWmmName() { return "opencl"; }
+    protected String getTargetWmmName() { return "opencl"; }
 }
