@@ -4,16 +4,14 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
-import com.dat3m.dartagnan.utils.metadata.Metadata;
-import com.dat3m.dartagnan.utils.metadata.MetadataMap;
+import com.dat3m.dartagnan.utils.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
 
-public abstract class AbstractEvent implements Event {
+public abstract class AbstractEvent extends MetadataCarrierBase<Event> implements Event {
 
-    private final MetadataMap metadataMap = new MetadataMap();
     private final TagSet tags;
     private final Set<EventUser> currentUsers = new LinkedHashSet<>();
     // These ids are dynamically changing during processing.
@@ -70,35 +68,6 @@ public abstract class AbstractEvent implements Event {
     public void replaceAllUsages(Event replacement) {
         final Map<Event, Event> replacementMap = Map.of(this, replacement);
         List.copyOf(getUsers()).forEach(e -> e.updateReferences(replacementMap));
-    }
-
-    // ============================================ Metadata ============================================
-
-    @Override
-    public boolean hasMetadata(Class<? extends Metadata> metadataClass) { return metadataMap.contains(metadataClass); }
-    @Override
-    public <T extends Metadata> T getMetadata(Class<T> metadataClass) { return metadataMap.get(metadataClass); }
-    @Override
-    public <T extends Metadata> T setMetadata(T metadata) { return metadataMap.put(metadata); }
-
-    @Override
-    public void copyAllMetadataFrom(Event other) {
-        ((AbstractEvent) other).metadataMap.getAllMetadata().forEach(this.metadataMap::put);
-    }
-
-    @Override
-    public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
-        Metadata metadata = other.getMetadata(metadataClass);
-        if (metadata == null) {
-            this.metadataMap.remove(metadataClass);
-        } else {
-            this.setMetadata(metadata);
-        }
-    }
-
-    @Override
-    public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
-        return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
     }
 
     // ===============================================================================================
