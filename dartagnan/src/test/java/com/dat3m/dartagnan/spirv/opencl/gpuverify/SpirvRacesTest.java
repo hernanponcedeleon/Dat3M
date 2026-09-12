@@ -53,7 +53,7 @@ public class SpirvRacesTest {
                 {"benign_race_tests/fail/writeafterread_otherval.spvasm", 1, FAIL},
                 {"benign_race_tests/fail/writezero_nobenign.spvasm", 1, FAIL},
                 {"benign_race_tests/pass/writezero.spvasm", 1, FAIL},
-                // {"checkarrays/pass/specifyall.spvasm", 1, PASS},
+                {"checkarrays/pass/specifyall.spvasm", 1, PASS},
                 {"divergence/race_and_divergence.spvasm", 1, FAIL},
                 {"divergence/race_no_divergence.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spvasm", 1, FAIL},
@@ -61,7 +61,7 @@ public class SpirvRacesTest {
                 {"inter_group_and_barrier_flag_tests/fail/sync.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spvasm", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spvasm", 1, FAIL},
-                // {"localarrayaccess.spvasm", 1, PASS},
+                {"localarrayaccess.spvasm", 1, PASS},
                 {"mem_fence.spvasm", 1, PASS},
                 {"misc/fail/miscfail1.spvasm", 1, FAIL},
                 {"misc/fail/miscfail3.spvasm", 2, FAIL},
@@ -97,6 +97,7 @@ public class SpirvRacesTest {
                 {"test_structs/use_element.spvasm", 1, PASS},
                 {"test_structs/use_struct_element.spvasm", 1, PASS},
                 {"vectortests/addressofvector.spvasm", 1, PASS},
+                {"atomics/counter.spvasm", 1, PASS},
 
                 // Fails in gpu-verify, but should pass (even according to the annotation in the test)
                 {"saturate/sadd.spvasm", 1, PASS},
@@ -105,9 +106,6 @@ public class SpirvRacesTest {
                 // Passes in gpu-verify, but has race (even according to the annotation in the test)
                 {"atomics/refined_atomic_abstraction/bad_local_counters.spvasm", 1, FAIL},
                 {"atomics/refined_atomic_abstraction/intra_local_counters.spvasm", 1, PASS},
-
-                // Should pass according to gpu-verify, suspecting a bug in the memory model
-                {"atomics/counter.spvasm", 1, FAIL},
 
                 // In gpu-verify fails barrier divergence but not leading to a data race
                 // TODO: check opencl barrier divergence
@@ -119,9 +117,9 @@ public class SpirvRacesTest {
                 {"global_size/mismatch_dims.spvasm", 1, PASS},
                 {"global_size/num_groups_and_global_size.spvasm", 1, PASS},
 
-                // barrier avvis variations
+                // barrier variations
                 {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spvasm", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spvasm", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spvasm", 1, PASS},
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spvasm", 1, FAIL},
