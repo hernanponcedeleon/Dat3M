@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
-import com.dat3m.dartagnan.program.event.metadata.Metadata;
-import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
+import com.dat3m.dartagnan.utils.metadata.Metadata;
+import com.dat3m.dartagnan.utils.metadata.MetadataMap;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 

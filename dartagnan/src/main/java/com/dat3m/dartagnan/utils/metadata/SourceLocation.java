@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.metadata;
+package com.dat3m.dartagnan.utils.metadata;
 
 public sealed interface SourceLocation extends Metadata {
 

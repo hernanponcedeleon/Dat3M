@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.extensions;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionDebugInfo;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.utils.metadata.SourceLocation;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
