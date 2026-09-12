@@ -3,14 +3,14 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.metadata.Metadata;
+import com.dat3m.dartagnan.utils.metadata.MetadataCarrier;
 import com.dat3m.dartagnan.verification.Context;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface Event extends Comparable<Event> {
+public interface Event extends Comparable<Event>, MetadataCarrier<Event> {
     int PRINT_PAD_EXTRA = 50;
 
     int getGlobalId();
@@ -18,15 +18,6 @@ public interface Event extends Comparable<Event> {
 
     int getLocalId();
     void setLocalId(int id);
-
-    // ============================== Metadata ==============================
-
-    void copyAllMetadataFrom(Event other);
-    void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass);
-    boolean hasMetadata(Class<? extends Metadata> metadataClass);
-    <T extends Metadata> T getMetadata(Class<T> metadataClass);
-    <T extends Metadata> T setMetadata(T metadata);
-    boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass);
 
     // ============================== Tags ==============================
 
