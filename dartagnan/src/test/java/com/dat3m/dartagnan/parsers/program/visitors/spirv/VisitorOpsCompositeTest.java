@@ -440,6 +440,25 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testVectorShuffleWithDifferentResultSize() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v2uint %v1 %v2 0 4";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v2uint", "%uint", 2);
+        builder.mockVectorType("%v3uint", "%uint", 3);
+        builder.mockConstant("%v1", "%v3uint", List.of(1, 2, 3));
+        builder.mockConstant("%v2", "%v3uint", List.of(4, 5, 6));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
+        assertEquals(builder.getType("%v2uint"), shuffle.getType());
+        assertEquals(2, shuffle.getOperands().size());
+    }
+
+    @Test
     public void testVectorShuffleReturnType() {
         // given
         String input = "%shuffle = OpVectorShuffle %uint %v1 %v2 0 0 0 0";
