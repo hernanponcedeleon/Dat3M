@@ -5,7 +5,7 @@ import java.util.Stack;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public abstract class Definition implements Constraint {
+public abstract class Definition extends ConstraintBase {
 
     protected final Relation definedRelation;
     private final String termPattern;
