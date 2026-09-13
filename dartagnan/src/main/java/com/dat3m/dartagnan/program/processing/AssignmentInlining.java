@@ -83,7 +83,7 @@ public class AssignmentInlining implements FunctionProcessor {
                         && preDominatorTree.isDominatedBy(curEvent, lastAssignment)
                         && !curEvent.hasTag(Tag.NOOPT)
                         // Inline if the expression is only used once or if it leads to simplifications.
-                        && (usageCounter.get(lastAssignment) == 1 || allowsSimplification(curEvent, reg, lastAssignment.getExpr()))
+                        && (usageCounter.get(lastAssignment) == 1 || allowsSimplification(lastAssignment.getExpr()))
                 ) {
                     assert mode == Mode.REPLACE;
                     return lastAssignment.getExpr();
@@ -93,7 +93,7 @@ public class AssignmentInlining implements FunctionProcessor {
             }
         };
 
-        private boolean allowsSimplification(Event curEvent, Register replacedReg, Expression inlineValue) {
+        private boolean allowsSimplification(Expression inlineValue) {
             return inlineValue instanceof ConstructExpr || inlineValue instanceof ITEExpr;
         }
 

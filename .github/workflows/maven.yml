@@ -28,6 +28,23 @@ jobs:
         run: |
           echo "❌ PRs must not target 'master', please use 'development' or some other branch"
           exit 1
+
+  code-style:
+    name: Check code style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Check code style
+        run: mvn --batch-mode -Pstyle-check clean test-compile
   
   asm-tests:
     name: Asm tests

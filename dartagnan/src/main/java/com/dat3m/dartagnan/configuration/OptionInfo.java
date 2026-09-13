@@ -109,14 +109,12 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     private final ClassInfo parent;
     private final Option option;
     private final Member member;
-    private final Type type;
     private final Class<?> domain;
 
     private OptionInfo(ClassInfo i, Option o, Member m, Type t) {
         parent = i;
         option = o;
         member = m;
-        type = t;
         Type raw = t instanceof ParameterizedType ? ((ParameterizedType) t).getRawType() : t;
         verify(raw instanceof Class);
         domain = (Class<?>) raw;

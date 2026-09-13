@@ -55,6 +55,7 @@
 
         <!-- 3rd party plugin versions -->
         <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
+        <error-prone.version>2.42.0</error-prone.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
     </properties>
@@ -145,6 +146,68 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>style-check</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <showWarnings>true</showWarnings>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>--should-stop=ifError=FLOW</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:MissingOverride:ERROR
+                                    -Xep:RemoveUnusedImports:ERROR
+                                    -Xep:UnusedVariable:ERROR
+                                    -XepExcludedPaths:.*[/\\]target[/\\]generated-sources[/\\].*</arg>
+                                <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${error-prone.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>style-fix</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <showWarnings>true</showWarnings>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>--should-stop=ifError=FLOW</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:MissingOverride:ERROR
+                                    -Xep:RemoveUnusedImports:ERROR
+                                    -Xep:UnusedVariable:ERROR
+                                    -XepExcludedPaths:.*[/\\]target[/\\]generated-sources[/\\].*
+                                    -XepPatchChecks:MissingOverride,RemoveUnusedImports,UnusedVariable
+                                    -XepPatchLocation:IN_PLACE</arg>
+                                <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${error-prone.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>linux-x86_64</id>
             <activation>

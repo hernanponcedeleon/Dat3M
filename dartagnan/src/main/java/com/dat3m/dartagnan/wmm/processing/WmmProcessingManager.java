@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.wmm.processing;
 
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +11,7 @@ public class WmmProcessingManager implements WmmProcessor {
 
     private final List<WmmProcessor> processors = new ArrayList<>();
 
-    private WmmProcessingManager(Configuration config) throws InvalidConfigurationException {
+    private WmmProcessingManager() {
         processors.addAll(Arrays.asList(
                 RemoveDeadRelations.newInstance(),
                 MergeEquivalentRelations.newInstance(),
@@ -24,12 +21,13 @@ public class WmmProcessingManager implements WmmProcessor {
         processors.removeIf(Objects::isNull);
     }
 
-    public static WmmProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new WmmProcessingManager(config);
+    public static WmmProcessingManager newInstance() {
+        return new WmmProcessingManager();
     }
 
     // ==================================================
 
+    @Override
     public void run(Wmm wmm) {
         processors.forEach(p -> p.run(wmm));
     }
