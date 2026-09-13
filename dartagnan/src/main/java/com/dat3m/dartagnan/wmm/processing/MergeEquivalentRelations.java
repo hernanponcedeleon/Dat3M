@@ -121,13 +121,13 @@ public class MergeEquivalentRelations implements WmmProcessor {
             if (c instanceof Definition def && eqMap.get(def.getDefinedRelation()) != def.getDefinedRelation()) {
                 final Relation repr = eqMap.get(def.getDefinedRelation());
                 logger.trace("Merging relation {} into relation {}", def.getDefinedRelation(), repr);
-                repr.getDefinition().copyAllMetadataFrom(def);
                 wmm.removeConstraint(def);
+                repr.getDefinition().copyAllMetadataFrom(def);
             } else if (!(c instanceof Definition.Undefined)) {
+                wmm.removeConstraint(c);
                 final Constraint updatedConstraint = c.accept(copier);
                 updatedConstraint.copyAllMetadataFrom(c);
                 wmm.addConstraint(updatedConstraint);
-                wmm.removeConstraint(c);
             }
         }
 
