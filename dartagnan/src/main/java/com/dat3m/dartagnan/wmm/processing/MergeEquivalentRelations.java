@@ -108,6 +108,7 @@ public class MergeEquivalentRelations implements WmmProcessor {
         return true;
     }
 
+    // When merging relations (and constraints), we also merge all metadata for now.
     private void mergeEquivalentRelations(Wmm wmm, Map<Relation, Relation> eqMap) {
         final ConstraintCopier copier = new ConstraintCopier(eqMap);
 
@@ -118,20 +119,24 @@ public class MergeEquivalentRelations implements WmmProcessor {
             }
 
             if (c instanceof Definition def && eqMap.get(def.getDefinedRelation()) != def.getDefinedRelation()) {
-                logger.trace("Merging relation {} into relation {}",
-                        def.getDefinedRelation(), eqMap.get(def.getDefinedRelation()));
-                wmm.removeConstraint(c);
+                final Relation repr = eqMap.get(def.getDefinedRelation());
+                logger.trace("Merging relation {} into relation {}", def.getDefinedRelation(), repr);
+                repr.getDefinition().copyAllMetadataFrom(def);
+                wmm.removeConstraint(def);
             } else if (!(c instanceof Definition.Undefined)) {
+                final Constraint updatedConstraint = c.accept(copier);
+                updatedConstraint.copyAllMetadataFrom(c);
+                wmm.addConstraint(updatedConstraint);
                 wmm.removeConstraint(c);
-                wmm.addConstraint(c.accept(copier));
             }
         }
 
         eqMap.forEach((r, repr) -> {
             if (r != repr) {
                 wmm.deleteRelation(r);
-                // Transfer names to representative relation.
+                // Transfer names and metadata to representative relation.
                 r.getNames().forEach(name -> wmm.addAlias(name, repr));
+                repr.copyAllMetadataFrom(r);
             }
         });
     }
