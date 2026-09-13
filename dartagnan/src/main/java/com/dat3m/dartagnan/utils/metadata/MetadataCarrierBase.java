@@ -18,7 +18,12 @@ public abstract class MetadataCarrierBase<T extends MetadataCarrier<T>> implemen
 
     @Override
     public void copyAllMetadataFrom(T other) {
-        ((MetadataCarrierBase<?>) other).metadataMap.getAllMetadata().forEach(this.metadataMap::put);
+        if (!(other instanceof MetadataCarrierBase<?> carrier)) {
+            final String msg = "Cannot copy Metadata from %s to %s"
+                    .formatted(other.getClass().getSimpleName(), this.getClass().getSimpleName());
+            throw new UnsupportedOperationException(msg);
+        }
+        carrier.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
     }
 
     @Override
