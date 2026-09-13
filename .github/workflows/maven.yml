@@ -49,6 +49,7 @@ jobs:
   asm-tests:
     name: Asm tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -71,6 +72,7 @@ jobs:
   litmus-tests:
     name: Litmus tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -92,6 +94,7 @@ jobs:
   llvm-tests:
     name: LLVM tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -113,6 +116,7 @@ jobs:
   other-tests:
     name: Other tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -149,6 +153,7 @@ jobs:
   spirv-tests:
     name: SPIRV tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -170,6 +175,7 @@ jobs:
   weekly:
     name: All tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: github.event_name == 'schedule'
     steps:
       - name: Checkout development branch
