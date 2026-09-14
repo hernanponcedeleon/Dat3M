@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.metadata.VariableName;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
@@ -174,10 +175,14 @@ public class ProgramBuilder {
     public Expression getExpressionFromHeader(String id) {
         Expression expression = expressions.get(id);
         if (expression == null) {
-            for (Map.Entry<String, String> entry : idToVariableName.entrySet()) {
-                if (toHeaderId(entry.getValue()).equals(id)) {
-                    expression = expressions.get(entry.getKey());
-                    break;
+            for (Expression candidate : expressions.values()) {
+                if (candidate instanceof ScopedPointerVariable pointer
+                        && pointer.getAddress().hasMetadata(VariableName.class)) {
+                    VariableName variableName = pointer.getAddress().getMetadata(VariableName.class);
+                    if (toHeaderId(variableName.value()).equals(id)) {
+                        expression = candidate;
+                        break;
+                    }
                 }
             }
         }
@@ -225,7 +230,10 @@ public class ProgramBuilder {
         int size = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
         MemoryObject memObj = program.getMemory().allocateVirtual(size, true, null);
         memObj.setInitialValue(0, value);
-        memObj.setName(idToVariableName.getOrDefault(id, id));
+        memObj.setName(id);
+        if (idToVariableName.containsKey(id)) {
+            memObj.setMetadata(new VariableName(idToVariableName.get(id)));
+        }
         memObj.setIsThreadLocal(false);
         if (arch == Arch.OPENCL) {
             String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
