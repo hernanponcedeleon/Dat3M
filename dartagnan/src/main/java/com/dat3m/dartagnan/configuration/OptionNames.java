@@ -68,7 +68,6 @@ public class OptionNames {
     public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
 
     // Refinement Options
-    public static final String BASELINE = "refinement.baseline";
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
     // SMT solver Options
