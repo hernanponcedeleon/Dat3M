@@ -70,7 +70,28 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: Litmus tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*" -f dartagnan/pom.xml
+        run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*,!com/dat3m/dartagnan/litmus/**/*ExplorationTest" -f dartagnan/pom.xml
+
+  litmus-exploration-tests:
+    name: Litmus exploration tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Set DAT3M_HOME
+        run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Exploration tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*ExplorationTest" -f dartagnan/pom.xml
 
   llvm-tests:
     name: LLVM tests

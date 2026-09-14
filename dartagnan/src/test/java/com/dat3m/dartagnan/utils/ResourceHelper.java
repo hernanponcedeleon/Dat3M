@@ -33,6 +33,18 @@ public class ResourceHelper {
         return data.build();
     }
 
+    public static ImmutableMap<Path, Integer> getExpectedExplorationResults(String arch) throws IOException {
+        Path path = getTestResourcePath(arch + "-expected-exploration.csv");
+        var data = ImmutableMap.<Path, Integer>builder();
+        Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
+            String[] line = str.split(",");
+            if (line.length == 2) {
+                data.put(getRootPath(line[0]), Integer.parseInt(line[1]));
+            }
+        });
+        return data.build();
+    }
+
     public static ImmutableSet<Path> getSkipSet() throws IOException {
         return Files.readAllLines(getTestResourcePath("dartagnan-skip.csv")).stream()
                 .filter(ResourceHelper::isValidEntry)
