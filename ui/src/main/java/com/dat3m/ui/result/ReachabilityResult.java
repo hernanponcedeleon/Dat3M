@@ -75,7 +75,7 @@ public class ReachabilityResult {
                     .withShutdownManager(shutdownManager)) {
                 solver.run();
 
-                verdict = outputGenerator.getOutputFromSolver(solver, "dat3mUI").summary();
+                verdict = outputGenerator.getOutputFromSolver(solver).summary();
                 witnessFile = outputGenerator.getWitnessFile().orElse(null);
             }
         } catch (InterruptedException e) {

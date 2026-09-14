@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
+import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -18,6 +20,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +28,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS
 import static com.dat3m.dartagnan.configuration.OptionNames.ROUNDING_MODE_FLOATS;
 import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
-public class Program {
+public class Program extends MetadataCarrierBase<Program> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
@@ -108,6 +111,11 @@ public class Program {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Path getInputPath() {
+        Preconditions.checkState(hasMetadata(SourcePath.class), "Program has no source metadata");
+        return getMetadata(SourcePath.class).sourcePath();
     }
 
     public void setArch(Arch arch) {
