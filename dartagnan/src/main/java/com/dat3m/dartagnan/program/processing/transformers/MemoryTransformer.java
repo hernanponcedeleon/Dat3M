@@ -124,6 +124,7 @@ public class MemoryTransformer extends ExprTransformer {
             MemoryObject copy = memObj instanceof VirtualMemoryObject
                     ? program.getMemory().allocateVirtual(memObj.getKnownSize(), true, null)
                     : program.getMemory().allocate(memObj.getKnownSize());
+            copy.copyAllMetadataFrom(memObj);
             copy.setName(makeVariableName(scopeDepth, memObj.getName()));
             for (String tag : memObj.getFeatureTags()) {
                 copy.addFeatureTag(tag);
