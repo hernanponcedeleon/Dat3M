@@ -109,6 +109,9 @@ public class MergeEquivalentRelations implements WmmProcessor {
     }
 
     // When merging relations (and constraints), we also merge all metadata for now.
+    // TODO: Merging metadata is not always trivial and the desired behavior may depend on the type
+    //  of metadata we merge. For example, when merging two relations with different source location metadata,
+    //  which source location should survive (probably both)?
     private void mergeEquivalentRelations(Wmm wmm, Map<Relation, Relation> eqMap) {
         final ConstraintCopier copier = new ConstraintCopier(eqMap);
 
