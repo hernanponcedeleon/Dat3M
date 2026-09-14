@@ -108,6 +108,10 @@ public class MergeEquivalentRelations implements WmmProcessor {
         return true;
     }
 
+    // When merging relations (and constraints), we also merge all metadata for now.
+    // TODO: Merging metadata is not always trivial and the desired behavior may depend on the type
+    //  of metadata we merge. For example, when merging two relations with different source location metadata,
+    //  which source location should survive (probably both)?
     private void mergeEquivalentRelations(Wmm wmm, Map<Relation, Relation> eqMap) {
         final ConstraintCopier copier = new ConstraintCopier(eqMap);
 
@@ -118,20 +122,24 @@ public class MergeEquivalentRelations implements WmmProcessor {
             }
 
             if (c instanceof Definition def && eqMap.get(def.getDefinedRelation()) != def.getDefinedRelation()) {
-                logger.trace("Merging relation {} into relation {}",
-                        def.getDefinedRelation(), eqMap.get(def.getDefinedRelation()));
-                wmm.removeConstraint(c);
+                final Relation repr = eqMap.get(def.getDefinedRelation());
+                logger.trace("Merging relation {} into relation {}", def.getDefinedRelation(), repr);
+                wmm.removeConstraint(def);
+                repr.getDefinition().copyAllMetadataFrom(def);
             } else if (!(c instanceof Definition.Undefined)) {
                 wmm.removeConstraint(c);
-                wmm.addConstraint(c.accept(copier));
+                final Constraint updatedConstraint = c.accept(copier);
+                updatedConstraint.copyAllMetadataFrom(c);
+                wmm.addConstraint(updatedConstraint);
             }
         }
 
         eqMap.forEach((r, repr) -> {
             if (r != repr) {
                 wmm.deleteRelation(r);
-                // Transfer names to representative relation.
+                // Transfer names and metadata to representative relation.
                 r.getNames().forEach(name -> wmm.addAlias(name, repr));
+                repr.copyAllMetadataFrom(r);
             }
         });
     }

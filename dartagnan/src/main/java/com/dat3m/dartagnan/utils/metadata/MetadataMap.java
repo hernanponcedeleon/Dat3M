@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.metadata;
+package com.dat3m.dartagnan.utils.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
