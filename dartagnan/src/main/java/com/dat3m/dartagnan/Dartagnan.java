@@ -15,14 +15,12 @@ import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.Task.TaskBuilder;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -34,7 +32,6 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
-import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
 
 @Options
 public class Dartagnan extends BaseOptions {
@@ -105,14 +102,14 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                output = outputGenerator.getOutputFromSolver(taskSolver, progFile.toString());
+                output = outputGenerator.getOutputFromSolver(taskSolver);
             } catch (Exception e) {
-                output = OutputGenerator.getOutputFromException(e, progFile.toString());
+                output = OutputGenerator.getOutputFromException(e, progFile);
             }
             outputs.add(output);
         }
 
-        printOutputs(outputs, catFile.toString(), config);
+        printOutputs(outputs, catFile, config);
         // Running batch mode results in normal termination independent of the individual results
         final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode();
         exit(exitCode);
@@ -129,19 +126,10 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printVersion() {
-        final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-        final Path pomPath = getHomeDirectory().resolve("pom.xml");
-
-        try (BufferedReader reader = Files.newBufferedReader(pomPath)) {
-            final String base = mvnReader.read(reader).getVersion();
-            final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
-            System.out.println(version);
-        } catch (Exception e) {
-            logger.warn("Failed to load {}", pomPath);
-        }
+        System.out.println(getVersion());
     }
 
-    private static void printOutputs(List<Output> outputs, String catFile, Configuration config) {
+    private static void printOutputs(List<Output> outputs, Path catFile, Configuration config) {
         if (outputs.isEmpty()) {
             return;
         }

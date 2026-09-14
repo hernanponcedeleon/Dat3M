@@ -102,7 +102,7 @@ public class OutputGenerator {
         return getOutputFromException(exception, null);
     }
 
-    public static Output getOutputFromException(Throwable exception, String program) {
+    public static Output getOutputFromException(Throwable exception, Path programPath) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
         final String details = "\t" + message;
 
@@ -111,28 +111,29 @@ public class OutputGenerator {
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(program, "", INTERRUPTED,
+            return new Output(exitCode, toSummary(programPath, "", INTERRUPTED,
                     "", "", details, 0, null));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(program, "", ERROR,
+            return new Output(UNKNOWN_ERROR, toSummary(programPath, "", ERROR,
                     "", reason, details, 0, null));
         }
     }
 
-    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
-            return getOutputFromSolver(verificationTaskSolver, programPath);
+            return getOutputFromSolver(verificationTaskSolver);
         }
 
         throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
     }
 
-    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final ResultStatus status = solver.getResultStatus();
         final Program p = task.getProgram();
+        final Path programPath = p.getInputPath();
         final EnumSet<Property> props = task.getProperties();
         final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
@@ -142,7 +143,7 @@ public class OutputGenerator {
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         try {
-            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programPath));
+            witnessFile = generateWitnessIfAble(result, getWitnessFilename(p));
         } catch (IOException ex) {
             logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
@@ -262,11 +263,11 @@ public class OutputGenerator {
 
     // =========================================== Utility =================================================
 
-    private String getWitnessFilename(String progFile) {
+    private String getWitnessFilename(Program program) {
         final String batchSuffix = isBatchMode ? "-batch#" + batchIndex : "";
         return !witnessFilename.isBlank()
                 ? witnessFilename + batchSuffix
-                : Utils.getNameWithoutExtension(progFile);
+                : Utils.getNameWithoutExtension(program.getInputPath());
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -374,10 +375,10 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String test, String filter, ResultStatus status, String condition,
+    private static String toSummary(Path programPath, String filter, ResultStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
-        final String shownTest = formatOptional("Test: %s%n", test);
+        final String shownTest = formatOptional("Test: %s%n", programPath);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
