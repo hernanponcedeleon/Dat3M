@@ -155,7 +155,7 @@ public class RefinementSolver extends ModelChecker {
         final Wmm memoryModel = task.getMemoryModel();
 
         preprocessProgram(task, config);
-        preprocessMemoryModel(task, config);
+        preprocessMemoryModel(task);
         instrumentPolaritySeparation(memoryModel);
     }
 
@@ -211,7 +211,7 @@ public class RefinementSolver extends ModelChecker {
         prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperties()));
 
-        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
+        final RefinementTrace propertyTrace = runRefinement(prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
         if (smtStatus == SMTStatus.UNKNOWN) {
@@ -246,7 +246,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
-            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
+            final RefinementTrace boundTrace = runRefinement(prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
             smtStatus = boundTrace.getFinalResult();
@@ -344,7 +344,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(Task task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();

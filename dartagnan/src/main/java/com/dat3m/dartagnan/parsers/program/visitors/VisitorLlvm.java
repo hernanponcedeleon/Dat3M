@@ -1619,6 +1619,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private record MdTuple(List<MdNode> mdFields) implements MdNode {
+        @Override
         public String toString() { return mdFields.stream().map(Object::toString)
                 .collect(Collectors.joining(", ", "!{", "}")); }
     }

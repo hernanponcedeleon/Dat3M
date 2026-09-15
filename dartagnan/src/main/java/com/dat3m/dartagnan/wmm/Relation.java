@@ -17,7 +17,6 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public final class Relation extends MetadataCarrierBase<Relation> implements Dependent<Relation> {
 
-    private final Wmm wmm;
     private final Arity arity;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
@@ -26,7 +25,6 @@ public final class Relation extends MetadataCarrierBase<Relation> implements Dep
     public enum Arity { UNARY, BINARY }
 
     Relation(Wmm wmm, Arity arity) {
-        this.wmm = wmm;
         this.arity = arity;
     }
 

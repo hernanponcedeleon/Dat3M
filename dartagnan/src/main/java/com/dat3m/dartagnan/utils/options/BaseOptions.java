@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.witness.WitnessType;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import java.nio.file.Path;

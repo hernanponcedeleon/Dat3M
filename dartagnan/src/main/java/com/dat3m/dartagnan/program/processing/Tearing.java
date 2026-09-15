@@ -53,6 +53,7 @@ public final class Tearing implements ProgramProcessor {
         return new Tearing(config);
     }
 
+    @Override
     public void run(Program program) {
         logger.trace("Perform analyses");
         AliasAnalysis alias;

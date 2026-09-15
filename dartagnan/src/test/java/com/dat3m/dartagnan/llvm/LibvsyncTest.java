@@ -35,6 +35,7 @@ public class LibvsyncTest extends AbstractCTest {
         return () -> getTestResourcePath("libvsync/" + name + "-opt.ll");
     }
 
+    @Override
     protected Provider<Integer> getBoundProvider() {
         return () -> switch (name) {
             case "cachedq" -> 2;

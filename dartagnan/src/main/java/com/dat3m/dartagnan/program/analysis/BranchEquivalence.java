@@ -16,7 +16,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -366,8 +365,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         final Set<Class> impliedClassesView;
         final Set<Class> exclusiveClassesView;
 
-        public Set<Class> getImpliedClasses() { return impliedClassesView; }
-        public Set<Class> getExclusiveClasses() { return exclusiveClassesView; }
+        @Override public Set<Class> getImpliedClasses() { return impliedClassesView; }
+        @Override public Set<Class> getExclusiveClasses() { return exclusiveClassesView; }
 
         @Override
         public BranchEquivalence getEquivalence() {

@@ -22,7 +22,7 @@ public abstract class UnaryExpressionBase<TType extends Type, TKind extends Expr
         this.kind = kind;
     }
 
-    public Expression getOperand() { return operand; }
+    @Override public Expression getOperand() { return operand; }
 
     @Override
     public ImmutableList<Expression> getOperands() { return ImmutableList.of(operand); }

@@ -35,7 +35,7 @@ public class AssumeSolver extends ModelChecker {
     protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         preprocessProgram(task, config);
-        preprocessMemoryModel(task, config);
+        preprocessMemoryModel(task);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);

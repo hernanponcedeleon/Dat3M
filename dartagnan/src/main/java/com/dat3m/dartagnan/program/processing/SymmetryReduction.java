@@ -39,6 +39,7 @@ public class SymmetryReduction implements ProgramProcessor {
         return newInstance();
     }
 
+    @Override
     public void run(Program program) {
         ThreadSymmetry symm = ThreadSymmetry.withoutSymmetryMappings(program);
         Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();

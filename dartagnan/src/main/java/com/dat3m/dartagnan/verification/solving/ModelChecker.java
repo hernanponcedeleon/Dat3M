@@ -181,7 +181,7 @@ public abstract class ModelChecker implements AutoCloseable {
         ProcessingManager.fromConfig(config).run(program);
     }
 
-    public static void preprocessMemoryModel(Task task, Configuration config) throws InvalidConfigurationException{
+    public static void preprocessMemoryModel(Task task) {
         final Wmm memoryModel = task.getMemoryModel();
 
         // We remove flagged axioms if we do not check for them.
@@ -190,7 +190,7 @@ public abstract class ModelChecker implements AutoCloseable {
                     .filter(Axiom::isFlagged)
                     .forEach(task.getMemoryModel()::removeConstraint);
         }
-        WmmProcessingManager.fromConfig(config).run(memoryModel);
+        WmmProcessingManager.newInstance().run(memoryModel);
     }
 
     public static void performStaticProgramAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {

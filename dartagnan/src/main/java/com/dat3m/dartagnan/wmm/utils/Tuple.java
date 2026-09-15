@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public record Tuple(Event first, Event second) implements Comparable<Tuple> {
 
+    @Override
     public String toString() {
         return "(" + first + ", " + second + ")";
     }

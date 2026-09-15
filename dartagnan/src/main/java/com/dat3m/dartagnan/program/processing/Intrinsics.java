@@ -559,7 +559,6 @@ public class Intrinsics {
             default -> 2;
         };
         final Register errorRegister = getResultRegisterAndCheckArguments(expectedArguments, call);
-        final IntegerType errorType = (IntegerType) errorRegister.getType();
         final Expression attrAddress = call.getArguments().get(0);
         final Expression value = expectedArguments < 2 ? null : call.getArguments().get(1);
         final boolean initial = suffix.equals("init");
@@ -699,7 +698,6 @@ public class Intrinsics {
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_timedwait
         final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
-        final IntegerType errorType = (IntegerType) errorRegister.getType();
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
@@ -1111,7 +1109,7 @@ public class Intrinsics {
         return List.of(newDealloc(address));
     }
 
-    private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+    private List<Event> inlineAssert(AssertionType skip, String errorMsg) {
         final Expression condition = expressions.makeFalse();
         final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -1133,16 +1131,16 @@ public class Intrinsics {
         if (call.getCalledFunction().getIntrinsicInfo() == Info.VERIFIER_ASSERT) {
             return inlineVerifierAssert(call, AssertionType.USER, "user assertion");
         } else {
-            return inlineAssert(call, AssertionType.USER, "user assertion");
+            return inlineAssert(AssertionType.USER, "user assertion");
         }
     }
 
     private List<Event> inlineIntegerOverflow(FunctionCall call) {
-        return inlineAssert(call, AssertionType.OVERFLOW, "integer overflow");
+        return inlineAssert(AssertionType.OVERFLOW, "integer overflow");
     }
 
     private List<Event> inlineInvalidDereference(FunctionCall call) {
-        return inlineAssert(call, AssertionType.INVALIDDEREF, "invalid dereference");
+        return inlineAssert(AssertionType.INVALIDDEREF, "invalid dereference");
     }
 
     private List<Event> inlineUnknownFunction(FunctionCall call) {
@@ -1150,7 +1148,7 @@ public class Intrinsics {
         if (call instanceof ValueFunctionCall) {
             replacement.addAll(inlineCallAsNonDet(call));
         }
-        replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
+        replacement.addAll(inlineAssert(AssertionType.UNKNOWN_FUNCTION,
             "Calling unknown function " + call.getCalledFunction().getName()));
         return replacement;
     }
@@ -1288,7 +1286,7 @@ public class Intrinsics {
         //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
         final List<Expression> arguments = call.getArguments();
         final Expression operand = arguments.get(0);
-        final String name = call.getCalledFunction().getName();
+
         return List.of(EventFactory.newLocal(call.getResultRegister(), expressions.makeFAbs(operand)));
     }
 

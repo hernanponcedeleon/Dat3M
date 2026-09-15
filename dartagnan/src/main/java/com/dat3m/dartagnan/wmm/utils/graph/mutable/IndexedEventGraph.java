@@ -29,11 +29,11 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     }
 
     public IndexedEventGraph(IndexedDomain<Event> domain, IndexedDomain<Event> range) {
-        this(domain.newSet(), range.emptySet(), 0);
+        this(domain.newSet(), range.emptySet());
     }
 
     public IndexedEventGraph(IndexedEventGraph original) {
-        this(new IndexedSet<>(original.domain), original.emptyRange, 0);
+        this(new IndexedSet<>(original.domain), original.emptyRange);
         for (int index = 0; index < map.length; index++) {
             map[index] = original.map[index] == null ? null : new IndexedSet<>(original.map[index]);
         }
@@ -41,12 +41,12 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
     }
 
     public IndexedEventGraph(IndexedDomain<Event> domain, IndexedDomain<Event> range, EventGraph original) {
-        this(domain.newSet(), range.emptySet(), 0);
+        this(domain.newSet(), range.emptySet());
         addAll(original);
     }
 
     @SuppressWarnings("unchecked")
-    private IndexedEventGraph(IndexedSet<Event> d, IndexedSet<Event> r, int ignore) {
+    private IndexedEventGraph(IndexedSet<Event> d, IndexedSet<Event> r) {
         domain = d;
         emptyRange = r;
         map = (IndexedSet<Event>[]) new IndexedSet[d.domain().size()];
@@ -77,7 +77,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public IndexedEventGraph inverse() {
-        final var inverse = new IndexedEventGraph(rangeEvents().newSet(), domainEvents().emptySet(), 0);
+        final var inverse = new IndexedEventGraph(rangeEvents().newSet(), domainEvents().emptySet());
         for (int i = 0; i < map.length; i++) {
             final IndexedSet<Event> outSet = outSetAt(i);
             if (outSet != null) {
@@ -94,7 +94,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
 
     @Override
     public IndexedEventGraph filter(BiPredicate<Event, Event> f) {
-        final var out = new IndexedEventGraph(domainEvents().newSet(), emptyRange, 0);
+        final var out = new IndexedEventGraph(domainEvents().newSet(), emptyRange);
         for (int i = 0; i < map.length; i++) {
             final Event e1 = domainEvents().element(i);
             final IndexedSet<Event> outSet = outSetAt(i);
@@ -331,7 +331,7 @@ public final class IndexedEventGraph extends AbstractEventGraph implements Mutab
                 .filter(IndexedEventGraph.class::isInstance)
                 .map(operand -> ((IndexedEventGraph) operand).eventDomain(Dimension.RANGE))
                 .max(Comparator.comparingInt(IndexedDomain::size)).orElseThrow();
-        final var union = new IndexedEventGraph(domain.newSet(), range.emptySet(), 0);
+        final var union = new IndexedEventGraph(domain.newSet(), range.emptySet());
         Arrays.stream(operands).forEach(union::addAll);
         return union;
     }

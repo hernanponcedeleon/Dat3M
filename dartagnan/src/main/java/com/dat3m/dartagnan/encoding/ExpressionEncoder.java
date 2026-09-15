@@ -27,11 +27,8 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Arrays.asList;
 
 /*
     This class is responsible for doing all encoding related to IR types, in particular, all kinds of expressions.
@@ -293,7 +290,6 @@ public class ExpressionEncoder {
             final TypedFormula<IntegerType, ?> lhs = encodeIntegerExpr(iBin.getLeft());
             final TypedFormula<IntegerType, ?> rhs = encodeIntegerExpr(iBin.getRight());
             final IntegerType type = iBin.getType();
-            final int bitWidth = type.getBitWidth();
 
             final BitvectorFormula bv1 = (BitvectorFormula) lhs.formula();
             final BitvectorFormula bv2 = (BitvectorFormula) rhs.formula();
@@ -441,6 +437,7 @@ public class ExpressionEncoder {
             return new TypedFormula<>(expr.getType(), enc);
         }
 
+        @Override
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = expr.getTargetType();

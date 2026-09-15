@@ -130,7 +130,7 @@ public class RelationAnalysisTest {
         Configuration baseConfig = Configuration.builder().build();
         Task baseTask = createTask(program, wmm, baseConfig);
         preprocessProgram(baseTask, baseTask.getConfig());
-        preprocessMemoryModel(baseTask, baseTask.getConfig());
+        preprocessMemoryModel(baseTask);
 
         // Native analysis
         Context nativeContext = Context.create();

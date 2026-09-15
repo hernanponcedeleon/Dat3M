@@ -44,6 +44,7 @@ public class C11LFDSTest extends AbstractCTest {
         return 600000;
     }
 
+    @Override
     protected Provider<Integer> getBoundProvider() {
         return () -> 2;
     }

@@ -24,8 +24,8 @@ public abstract class BinaryExpressionBase<TType extends Type, TKind extends Exp
         this.kind = kind;
     }
 
-    public Expression getLeft() { return left; }
-    public Expression getRight() { return right; }
+    @Override public Expression getLeft() { return left; }
+    @Override public Expression getRight() { return right; }
 
     @Override
     public ImmutableList<Expression> getOperands() { return ImmutableList.of(left, right); }
