@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.List;
 
@@ -23,7 +22,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLoad(Load e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
-        final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+        final Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
         final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())
@@ -33,7 +32,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitStore(Store e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
-        final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+        final Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
         final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
                 newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())

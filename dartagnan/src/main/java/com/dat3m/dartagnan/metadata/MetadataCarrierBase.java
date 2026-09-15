@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.metadata;
+package com.dat3m.dartagnan.metadata;
 
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 

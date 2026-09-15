@@ -3,8 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
-import com.dat3m.dartagnan.utils.metadata.MetadataCarrierBase;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 

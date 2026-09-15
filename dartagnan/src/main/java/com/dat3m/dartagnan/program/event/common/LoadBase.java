@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 @NoInterface
 public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWriter {
