@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.utils.metadata.MetadataCarrier;
+import com.dat3m.dartagnan.metadata.MetadataCarrier;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;

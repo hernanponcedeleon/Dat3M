@@ -11,8 +11,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.metadata.OriginalId;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -712,12 +711,12 @@ public class RefinementSolver extends ModelChecker {
 
         final Set<Event> programEvents = program.getThreadEvents(MemoryEvent.class).stream()
                 // TODO: Can we have events with source information but without oid?
-                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
+                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(Event.OriginalId.class))
                 .collect(Collectors.toSet());
         
         // Track (covered) events and branches via oId
-        final Set<OriginalId> branches = new HashSet<>();
-        final Set<OriginalId> coveredBranches = new HashSet<>();
+        final Set<Event.OriginalId> branches = new HashSet<>();
+        final Set<Event.OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -727,7 +726,7 @@ public class RefinementSolver extends ModelChecker {
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
             Event symmRep = symm.map(e, clazz.getRepresentative());
-            OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
+            Event.OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(Event.OriginalId.class);
             assert branchRepId != null;
 
             if(coveredEvents.contains(e)) {

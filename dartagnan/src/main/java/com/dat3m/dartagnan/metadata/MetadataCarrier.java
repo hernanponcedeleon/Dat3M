@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.metadata;
+package com.dat3m.dartagnan.metadata;
 
 public interface MetadataCarrier<T> {
 

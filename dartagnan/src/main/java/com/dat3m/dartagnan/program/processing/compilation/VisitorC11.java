@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.List;
 
@@ -257,7 +256,7 @@ public class VisitorC11 extends VisitorBase {
             }
         }
         if (e instanceof MemoryEvent) {
-            MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+            Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
             boolean canRace = mo == null || mo.value().equals(NONATOMIC);
             e.addTags(canRace ? NONATOMIC : ATOMIC);
         }

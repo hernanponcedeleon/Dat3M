@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.LinkedHashSet;
 import java.util.Objects;
