@@ -18,6 +18,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,7 @@ public class Program {
     // Metadata
     private final SourceLanguage format;
     private String name;
+    private Path inputPath; // TODO: Make this field final.
     private int unrollingBound = 0;
     private Arch arch;
     private boolean isCompiled;
@@ -108,6 +110,14 @@ public class Program {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Path getInputPath() {
+        return Objects.requireNonNull(inputPath, "Program has no input path");
+    }
+
+    public void setInputPath(Path inputPath) {
+        this.inputPath = Objects.requireNonNull(inputPath, "Input path cannot be null");
     }
 
     public void setArch(Arch arch) {
