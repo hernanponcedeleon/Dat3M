@@ -7,9 +7,12 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -141,12 +144,29 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitOpCopyObject(SpirvParser.OpCopyObjectContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        Expression operand = builder.getExpression(ctx.operand().getText());
+        if (type instanceof VoidType) {
+            throw new ParsingException("Illegal definition '%s': OpCopyObject cannot have void type", id);
+        }
+        if (!type.equals(operand.getType())) {
+            throw new ParsingException("Type mismatch in OpCopyObject for '%s'", id);
+        }
+        Register register = builder.addRegister(id, type);
+        builder.addEvent(EventFactory.newLocal(register, operand));
+        return null;
+    }
+
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpCompositeExtract",
                 "OpCompositeInsert",
                 "OpVectorShuffle",
-                "OpCompositeConstruct"
+                "OpCompositeConstruct",
+                "OpCopyObject"
         );
     }
 
