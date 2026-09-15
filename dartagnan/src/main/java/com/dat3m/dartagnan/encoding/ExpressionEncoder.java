@@ -523,12 +523,12 @@ public class ExpressionEncoder {
                 case OGT -> fromUnordToOrd(l, r, fpmgr.greaterThan(l, r));
                 case OGTE -> fromUnordToOrd(l, r, fpmgr.greaterOrEquals(l, r));
                 case ORD -> bmgr.not(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)));
-                case UEQ -> fpmgr.equalWithFPSemantics(l, r);
+                case UEQ -> fromOrdToUnord(l, r, fpmgr.equalWithFPSemantics(l, r));
                 case UNEQ -> bmgr.not(fpmgr.equalWithFPSemantics(l, r));
-                case ULT -> fpmgr.lessThan(l, r);
-                case ULTE -> fpmgr.lessOrEquals(l, r);
-                case UGT -> fpmgr.greaterThan(l, r);
-                case UGTE -> fpmgr.greaterOrEquals(l, r);
+                case ULT -> fromOrdToUnord(l, r, fpmgr.lessThan(l, r));
+                case ULTE -> fromOrdToUnord(l, r, fpmgr.lessOrEquals(l, r));
+                case UGT -> fromOrdToUnord(l, r, fpmgr.greaterThan(l, r));
+                case UGTE -> fromOrdToUnord(l, r, fpmgr.greaterOrEquals(l, r));
                 case UNO -> bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r));
             };
             return new TypedFormula<>(types.getBooleanType(), result);
@@ -538,6 +538,12 @@ public class ExpressionEncoder {
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
             final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             return fmgr.ifThenElse(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)), bmgr.makeFalse(), cmp);
+        }
+
+        private BooleanFormula fromOrdToUnord(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+            return bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r), cmp);
         }
 
         @Override
