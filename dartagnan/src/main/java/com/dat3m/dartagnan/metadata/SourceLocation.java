@@ -1,31 +1,30 @@
 package com.dat3m.dartagnan.metadata;
 
+import java.nio.file.Path;
+
 public sealed interface SourceLocation extends Metadata {
 
-    int getLineNumber();
+    record SourcePath(Path sourcePath) implements Metadata {
+        @Override
+        public String toString() {
+            return sourcePath.toString();
+        }
+    }
 
     record Litmus(String threadName, int lineNumber) implements SourceLocation {
-        @Override
-        public int getLineNumber() { return lineNumber; }
-
         @Override
         public String toString() {
             return threadName + "#" + lineNumber;
         }
     }
 
-    record Generic(String sourceCodeFilePath, int lineNumber) implements SourceLocation {
-        @Override
-        public int getLineNumber() { return lineNumber; }
-
-        public String getSourceCodeFileName() {
-            final String path = sourceCodeFilePath;
-            return path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
-        }
-
+    record Generic(String source, int lineNumber) implements SourceLocation {
         @Override
         public String toString() {
-            return getSourceCodeFileName() + "#" + lineNumber;
+            // If source is a path, we take the last path element
+            // if source is not a path, the function will return it as is
+            final String name = Path.of(source).getFileName().toString();
+            return name + "#" + lineNumber;
         }
     }
 }
