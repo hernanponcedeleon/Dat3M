@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.metadata.VariableName;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
@@ -32,6 +33,7 @@ public class ProgramBuilder {
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
     protected final Map<String, String> debugInfos = new HashMap<>();
+    private final Map<String, String> idToVariableName = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
@@ -124,7 +126,7 @@ public class ProgramBuilder {
     }
 
     public boolean hasInput(String id) {
-        return inputs.containsKey(id);
+        return inputs.containsKey(resolveInputKey(id));
     }
 
     public boolean hasDefinition(String id) {
@@ -132,8 +134,9 @@ public class ProgramBuilder {
     }
 
     public Expression getInput(String id) {
-        if (inputs.containsKey(id)) {
-            return inputs.get(id);
+        String inputKey = resolveInputKey(id);
+        if (inputs.containsKey(inputKey)) {
+            return inputs.get(inputKey);
         }
         throw new ParsingException("Reference to undefined input variable '%s'", id);
     }
@@ -169,6 +172,45 @@ public class ProgramBuilder {
         return expression;
     }
 
+    public Expression getExpressionFromHeader(String id) {
+        Expression expression = expressions.get(id);
+        if (expression == null) {
+            for (Expression candidate : expressions.values()) {
+                if (candidate instanceof ScopedPointerVariable pointer
+                        && pointer.getAddress().hasMetadata(VariableName.class)) {
+                    VariableName variableName = pointer.getAddress().getMetadata(VariableName.class);
+                    if (toHeaderId(variableName.value()).equals(id)) {
+                        expression = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+        if (expression == null) {
+            throw new ParsingException("Reference to undefined expression '%s'", id);
+        }
+        return expression;
+    }
+
+    public void addVariableSourceName(String id, String name) {
+        idToVariableName.put(id, name);
+    }
+
+    private String resolveInputKey(String spirvId) {
+        if (inputs.containsKey(spirvId)) {
+            return spirvId;
+        }
+        String sourceName = idToVariableName.get(spirvId);
+        if (sourceName == null) {
+            return spirvId;
+        }
+        return toHeaderId(sourceName);
+    }
+
+    private String toHeaderId(String name) {
+        return name.startsWith("%") ? name : "%" + name;
+    }
+
     public Expression addExpression(String id, Expression value) {
         if (types.containsKey(id) || expressions.containsKey(id)) {
             throw new ParsingException("Duplicated definition '%s'", id);
@@ -189,6 +231,9 @@ public class ProgramBuilder {
         MemoryObject memObj = program.getMemory().allocateVirtual(size, true, null);
         memObj.setInitialValue(0, value);
         memObj.setName(id);
+        if (idToVariableName.containsKey(id)) {
+            memObj.setMetadata(new VariableName(idToVariableName.get(id)));
+        }
         memObj.setIsThreadLocal(false);
         if (arch == Arch.OPENCL) {
             String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
