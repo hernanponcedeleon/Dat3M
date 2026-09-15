@@ -7,12 +7,15 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 public class VisitorOpsCompositeTest {
@@ -914,7 +917,103 @@ public class VisitorOpsCompositeTest {
         }
     }
 
+    @Test
+    public void testCopyObjectScalar() {
+        // given
+        String input = "%copy = OpCopyObject %uint %value";
+        builder.mockIntType("%uint", 32);
+        builder.mockConstant("%value", "%uint", 42);
+        builder.mockFunctionStart(true);
+
+        // when
+        visit(input);
+
+        // then
+        Local copy = getLastLocal();
+        assertSame(builder.getExpression("%value"), copy.getExpr());
+        assertSame(builder.getExpression("%copy"), copy.getResultRegister());
+    }
+
+    @Test
+    public void testCopyObjectComposite() {
+        // given
+        String input = "%copy = OpCopyObject %struct %value";
+        builder.mockIntType("%uint", 32);
+        builder.mockAggregateType("%struct", "%uint", "%uint");
+        builder.mockConstant("%first", "%uint", 1);
+        builder.mockConstant("%second", "%uint", 2);
+        builder.mockConstant("%value", "%struct", List.of("%first", "%second"));
+        builder.mockFunctionStart(true);
+
+        // when
+        visit(input);
+
+        // then
+        Local copy = getLastLocal();
+        assertSame(builder.getExpression("%value"), copy.getExpr());
+        assertSame(builder.getExpression("%copy"), copy.getResultRegister());
+    }
+
+    @Test
+    public void testCopyObjectPointer() {
+        // given
+        String input = "%copy = OpCopyObject %uint_ptr %value";
+        builder.mockIntType("%uint", 32);
+        builder.mockPtrType("%uint_ptr", "%uint", "Workgroup");
+        builder.mockVariable("%value", "%uint_ptr");
+        builder.mockFunctionStart(true);
+
+        // when
+        visit(input);
+
+        // then
+        Local copy = getLastLocal();
+        assertSame(builder.getExpression("%value"), copy.getExpr());
+        assertSame(builder.getExpression("%copy"), copy.getResultRegister());
+    }
+
+    @Test
+    public void testCopyObjectTypeMismatch() {
+        // given
+        String input = "%copy = OpCopyObject %uint64 %value";
+        builder.mockIntType("%uint32", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockConstant("%value", "%uint32", 42);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpCopyObject for '%copy'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCopyObjectVoidType() {
+        // given
+        String input = "%copy = OpCopyObject %void %value";
+        builder.mockVoidType("%void");
+        builder.mockIntType("%uint", 32);
+        builder.mockConstant("%value", "%uint", 42);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition '%copy': OpCopyObject cannot have void type", e.getMessage());
+        }
+    }
+
     private void visit(String input) {
         new MockSpirvParser(input).spv().accept(new VisitorOpsComposite(builder));
+    }
+
+    private Local getLastLocal() {
+        List<Event> events = builder.getCurrentFunction().getEvents();
+        return (Local) events.get(events.size() - 1);
     }
 }
