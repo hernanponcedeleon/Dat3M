@@ -41,7 +41,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private final Wmm wmm;
     // Maps names used on the lhs of definitions ("let name = relexpr" or "let name(params) = relexpr") to the
-    // predicate (either a Relation or a Filter) or the function (FuncDefinition) they identify
+    // predicate (Relation) or the function (FuncDefinition) they identify
     private Map<String, Object> namespace = new HashMap<>();
     // Counts the number of occurrences of a name on the lhs of a definition
     // This is used to give proper names to re-definitions
@@ -379,6 +379,31 @@ class VisitorCat extends CatBaseVisitor<Object> {
         return addDefinition(new CartesianProduct(r0, r1, r2));
     }
 
+    // ============================ Custom extensions ============================
+
+    @Override
+    public Object visitCut(CutContext ctx) {
+        final String name = ctx.n.getText();
+        // Try to annotate relation (if it exists)
+        try {
+            final Relation toCut = getRelation(name, ctx);
+            if (toCut != null) {
+                toCut.setMetadata(Wmm.CutAnnotation.get());
+                return null;
+            }
+        } catch (Exception ignored) {}
+
+        // Failed to annotate relation, try to annotate axiom.
+        final Axiom axiom = wmm.getAxioms().stream()
+                .filter(a -> name.equals(a.getName()))
+                .findFirst()
+                .orElseThrow(() -> new ParsingException("Unable to cut '%': name is not recognized.", name));
+        axiom.setMetadata(Wmm.CutAnnotation.get());
+
+        return null;
+    }
+
+
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {
@@ -497,9 +522,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     private Relation getRelation(String name, ParserRuleContext ctx) {
         final Object fromNamespace = namespace.get(name);
-        final Relation relationFromNamespace = fromNamespace instanceof Relation r ? r : null;
-        if (relationFromNamespace != null) {
-            return relationFromNamespace;
+        if (fromNamespace instanceof Relation r) {
+            return r;
         }
         if (fromNamespace != null) {
             throw parsingException(ctx, "Expected relation, got %s", fromNamespace);

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
@@ -11,7 +10,6 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -32,11 +30,9 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -78,12 +74,6 @@ public class RefinementSolver extends ModelChecker {
 
     // ================================================================================================================
     // Configuration
-
-    @Option(name=BASELINE,
-            description="Refinement starts from this baseline WMM.",
-            secure=true,
-            toUppercase=true)
-    private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
 
     @Option(name=COVERAGE,
             description="Prints the coverage report (this option requires --method=caat).",
@@ -169,8 +159,6 @@ public class RefinementSolver extends ModelChecker {
         instrumentPolaritySeparation(memoryModel);
     }
 
-    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
-    // constraints on hb, which is not encoded in Refinement.
     @Override
     protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
@@ -180,7 +168,6 @@ public class RefinementSolver extends ModelChecker {
         final Configuration config = task.getConfig();
 
         // ------------------------ Preprocessing / Analysis ------------------------
-        final Collection<Constraint> biases = addBiases(memoryModel, baselines);
         preprocess(task);
 
         final Context analysisContext = Context.create();
@@ -188,17 +175,13 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
         performIntervalAnalysis(task, analysisContext, config);
 
-        //  ------- Generate refinement model -------
-        final Collection<Constraint> wmmConstraintsToEncode = new LinkedHashSet<>(biases);
-        // The cut has to be encoded.
-        wmmConstraintsToEncode.addAll(generateCut(memoryModel));
-
         // ------------------------ Encoding ------------------------
         initSMTSolver(config);
         final SolverContext ctx = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
+        //  ------- Generate refinement model -------
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(memoryModel));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
@@ -485,8 +468,16 @@ public class RefinementSolver extends ModelChecker {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
+        // We also cut annotated constraints.
         final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
         for (Constraint c : model.getConstraints()) {
+            // Cut annotated constraints
+            if (c.hasMetadata(Wmm.CutAnnotation.class) ||
+                    c instanceof Definition def && def.getDefinedRelation().hasMetadata(Wmm.CutAnnotation.class)) {
+                constraintsToCut.add(c);
+                continue;
+            }
+
             if (c instanceof Axiom ax && ax.isNegated()) {
                 // (i) Negated axioms
                 constraintsToCut.add(ax);
@@ -508,68 +499,6 @@ public class RefinementSolver extends ModelChecker {
         return constraintsToCut;
     }
 
-    private static Collection<Constraint> addBiases(Wmm wmm, EnumSet<Baseline> biases) {
-        if (biases.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Base relations
-        final Relation rf = wmm.getRelation(RF);
-        final Relation co = wmm.getOrCreatePredefinedRelation(CO);
-        final Relation loc = wmm.getOrCreatePredefinedRelation(LOC);
-        final Relation po = wmm.getOrCreatePredefinedRelation(PO);
-        final Relation ext = wmm.getOrCreatePredefinedRelation(EXT);
-
-        // rf^-1;co
-        final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
-        final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
-
-        // [R \ range(rf)];loc;[W]
-        final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Dimension.RANGE));
-        final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
-        final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
-        final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
-        final Relation urSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), ur));
-        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), urSet, loc));
-        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writesSet));
-
-        // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
-        final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
-
-        final List<Constraint> constraints = new ArrayList<>();
-        if (biases.contains(Baseline.UNIPROC)) {
-            // ---- acyclic(po-loc | com) ----
-            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
-                rf,
-                co,
-                fr
-            ))));
-        }
-        if (biases.contains(Baseline.NO_OOTA)) {
-            // ---- acyclic (dep | rf) ----
-            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.getOrCreatePredefinedRelation(CTRL),
-                wmm.getOrCreatePredefinedRelation(DATA),
-                wmm.getOrCreatePredefinedRelation(ADDR),
-                rf)
-            )));
-        }
-        if (biases.contains(Baseline.ATOMIC_RMW)) {
-            // ---- empty (rmw & fre;coe) ----
-            final Relation amo = wmm.getOrCreatePredefinedRelation(AMO);
-            final Relation lxsx = wmm.getOrCreatePredefinedRelation(LXSX);
-            final Relation rmw = wmm.addDefinition(new Union(wmm.newRelation(), amo, lxsx));
-            final Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
-            final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
-            final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
-            final Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
-            constraints.add(new Emptiness(rmwANDfrecoe));
-        }
-        constraints.forEach(wmm::addConstraint);
-        return constraints;
-    }
 
     /*
         The constraints/relations of the Wmm can be categorised into positive and negative,

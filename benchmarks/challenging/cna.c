@@ -8,7 +8,7 @@
 /*
     This code exposed a bug fixed by https://github.com/hernanponcedeleon/Dat3M/pull/1014:
     The following Dartagnan configuration would sometimes fail to be conclusive
-        <dat3m> cat/sc.cat client.c --method=lazy --bound=3 --encoding.integers=true --property=termination
+        <dat3m> cat/sc.cat client.c --method=lazy --bound=3 --property=termination
  */
 
  /*
@@ -18,16 +18,15 @@
 
     (1) --method=eager seems to be a lot better than lazy (depending on config, but can be >5x faster)
         This suggests that data-flow reasoning is hard for some reason.
-        with "--refinement.baseline=NO_OOTA", the solving times become similar again.
+        Eagerly encoding NO_OOTA (acyclic rf | dep) constraints makes the solving times become similar again.
     (2) For eager, "--encoding.wmm.idl2sat=true" is a lot faster than IDL (at least 5x faster?)
-    (3) Effect of "--encoding.integers=true" is unclear
-    (4) with #define FAIL, the code still satisfies program_spec (only termination fails) under SC.
+    (3) with #define FAIL, the code still satisfies program_spec (only termination fails) under SC.
         However, verifying this is substantially(!) slower than the correct version.
         Code-wise, the FAIL variant is only slightly larger.
 
      Fastest configs:
          --method=eager --encoding.wmm.idl2sat=true
-     AND --method=lazy  --encoding.wmm.idl2sat=true --refinement.baseline=NO_OOTA
+     AND --method=lazy  --encoding.wmm.idl2sat=true + eager NO_OOTA
  */
 
 //#define FAIL          // Enable buggy version: termination violation under SC,
