@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 public sealed interface SourceLocation extends Metadata {
 
-    record SourcePath(Path sourcePath) implements Metadata {
+    record SourcePath(Path sourcePath) implements SourceLocation {
         @Override
         public String toString() {
             return sourcePath.toString();
