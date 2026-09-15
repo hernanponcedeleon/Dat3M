@@ -38,23 +38,31 @@ public class HelperTags {
         return tags;
     }
 
-    public static Set<String> parseMemoryOperandsTags(List<String> operands, Integer alignment,
-                                                      List<String> paramIds, List<Expression> paramsValues) {
+    public static MemoryOperandTags parseMemoryOperandsTags(List<String> operands, Integer alignment,
+                                                            List<String> paramIds, List<Expression> paramsValues) {
         List<String> tagList = parseTagList(operands, alignment);
         Set<String> tagSet = new HashSet<>(tagList);
         if (tagList.size() != tagSet.size()) {
             throwDuplicatesException(operands);
         }
+        Set<String> readTags = new HashSet<>(tagSet);
+        Set<String> writeTags = new HashSet<>(tagSet);
         int i = 0;
-        for (String tag : List.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_VISIBLE)) {
-            if (tagSet.contains(tag)) {
-                if (paramIds.size() <= i) {
-                    throwIllegalParametersException(operands);
-                }
-                String scopeTag = HelperTags.parseScope(paramIds.get(i), paramsValues.get(i));
-                tagSet.add(scopeTag);
-                i++;
+        if (tagSet.contains(MEM_AVAILABLE)) {
+            if (paramIds.size() <= i) {
+                throwIllegalParametersException(operands);
             }
+            readTags.remove(MEM_AVAILABLE);
+            writeTags.add(HelperTags.parseScope(paramIds.get(i), paramsValues.get(i)));
+            i++;
+        }
+        if (tagSet.contains(MEM_VISIBLE)) {
+            if (paramIds.size() <= i) {
+                throwIllegalParametersException(operands);
+            }
+            writeTags.remove(MEM_VISIBLE);
+            readTags.add(HelperTags.parseScope(paramIds.get(i), paramsValues.get(i)));
+            i++;
         }
         if (i != paramsValues.size()) {
             throwIllegalParametersException(operands);
@@ -63,12 +71,22 @@ public class HelperTags {
             throw new ParsingException("Missing NonPrivatePointer bit in memory operands '%s'",
                     String.join("|", operands));
         }
-        // TODO: Implementation: this is a legal combination for OpCopyMemory and OpCopyMemorySized
-        if (tagSet.contains(MEM_AVAILABLE) && tagSet.contains(MEM_VISIBLE)) {
-            throw new ParsingException("Unsupported combination of memory operands '%s'",
-                    String.join("|", operands));
+        return new MemoryOperandTags(readTags, writeTags);
+    }
+
+    public record MemoryOperandTags(Set<String> readTags, Set<String> writeTags) {
+        public MemoryOperandTags {
+            readTags = Set.copyOf(readTags);
+            writeTags = Set.copyOf(writeTags);
         }
-        return tagSet;
+
+        public static MemoryOperandTags empty() {
+            return new MemoryOperandTags(Set.of(), Set.of());
+        }
+
+        public boolean contains(String tag) {
+            return readTags.contains(tag) || writeTags.contains(tag);
+        }
     }
 
     private static List<String> parseTagList(List<String> operands, Integer alignment) {
