@@ -2,15 +2,20 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
+import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
+import com.dat3m.dartagnan.expression.integers.FloatToIntCast;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.event.core.Local;
 import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class VisitorOpsConversionTest {
     private final MockProgramBuilder builder = new MockProgramBuilder();
@@ -155,7 +160,7 @@ public class VisitorOpsConversionTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Unsupported conversion to type '%uint2' for id '%value2'", e.getMessage());
+            assertEquals("Illegal conversion for '%value2' from 'bv32' to '[2 x bv32]'", e.getMessage());
         }
     }
 
@@ -173,7 +178,7 @@ public class VisitorOpsConversionTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Unsupported conversion to type '%uint' for id '%value2'", e.getMessage());
+            assertEquals("Illegal conversion for '%value2' from '[2 x bv32]' to 'bv32'", e.getMessage());
         }
     }
 
@@ -429,6 +434,128 @@ public class VisitorOpsConversionTest {
             assertEquals("Illegal OpPointerCastToGeneric for '%newPointer', " +
                     "attempt to cast into a non-generic pointer", e.getMessage());
         }
+    }
+
+    @Test
+    public void testFloatToIntegerConversions() {
+        builder.mockFloatType("%float", 32);
+        builder.mockIntType("%int", 32);
+        builder.mockConstant("%value", "%float", 1.5);
+        builder.mockFunctionStart(true);
+
+        visit("""
+                %signed = OpConvertFToS %int %value
+                %unsigned = OpConvertFToU %int %value
+                """);
+
+        FloatToIntCast signed = (FloatToIntCast) getLocal(0).getExpr();
+        FloatToIntCast unsigned = (FloatToIntCast) getLocal(1).getExpr();
+        assertTrue(signed.isSigned());
+        assertFalse(unsigned.isSigned());
+    }
+
+    @Test
+    public void testIntegerToFloatConversionsPreserveSignedness() {
+        builder.mockIntType("%int", 32);
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%value", "%int", -1);
+        builder.mockFunctionStart(true);
+
+        visit("""
+                %signed = OpConvertSToF %float %value
+                %unsigned = OpConvertUToF %float %value
+                """);
+
+        IntToFloatCast signed = (IntToFloatCast) getLocal(0).getExpr();
+        IntToFloatCast unsigned = (IntToFloatCast) getLocal(1).getExpr();
+        assertTrue(signed.isSigned());
+        assertFalse(unsigned.isSigned());
+    }
+
+    @Test
+    public void testFloatSizeConversion() {
+        builder.mockFloatType("%float", 32);
+        builder.mockFloatType("%double", 64);
+        builder.mockConstant("%value", "%float", 1.5);
+        builder.mockFunctionStart(true);
+
+        visit("%converted = OpFConvert %double %value");
+
+        FloatSizeCast cast = (FloatSizeCast) getLocal(0).getExpr();
+        assertEquals(builder.getType("%float"), cast.getSourceType());
+        assertEquals(builder.getType("%double"), cast.getTargetType());
+    }
+
+    @Test
+    public void testVectorIntegerToFloatConversion() {
+        builder.mockIntType("%int", 32);
+        builder.mockFloatType("%float", 32);
+        builder.mockVectorType("%intVector", "%int", 2);
+        builder.mockVectorType("%floatVector", "%float", 2);
+        builder.mockConstant("%value", "%intVector", List.of(1, 2));
+        builder.mockFunctionStart(true);
+
+        visit("%converted = OpConvertSToF %floatVector %value");
+
+        ConstructExpr result = (ConstructExpr) getLocal(0).getExpr();
+        assertEquals(2, result.getOperands().size());
+        for (Expression element : result.getOperands()) {
+            assertEquals(IntToFloatCast.class, element.getClass());
+        }
+    }
+
+    @Test
+    public void testFloatConversionRequiresCompatibleShapes() {
+        builder.mockIntType("%int", 32);
+        builder.mockFloatType("%float", 32);
+        builder.mockVectorType("%vector", "%float", 2);
+        builder.mockConstant("%value", "%int", 1);
+
+        try {
+            visit("%converted = OpConvertSToF %vector %value");
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            assertEquals("Illegal conversion for '%converted' from 'bv32' to '[2 x float32]'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorIntegerConversions() {
+        builder.mockIntType("%int", 32);
+        builder.mockIntType("%long", 64);
+        builder.mockVectorType("%intVector", "%int", 2);
+        builder.mockVectorType("%longVector", "%long", 2);
+        builder.mockConstant("%value", "%intVector", List.of(1, 2));
+        builder.mockFunctionStart(true);
+
+        visit("""
+                %signed = OpSConvert %longVector %value
+                %unsigned = OpUConvert %longVector %value
+                """);
+
+        ConstructExpr signed = (ConstructExpr) getLocal(0).getExpr();
+        ConstructExpr unsigned = (ConstructExpr) getLocal(1).getExpr();
+        assertEquals(2, signed.getOperands().size());
+        assertEquals(2, unsigned.getOperands().size());
+        signed.getOperands().forEach(element -> {
+            IntSizeCast cast = (IntSizeCast) element;
+            assertEquals(builder.getType("%long"), cast.getType());
+            assertTrue(cast.preservesSign());
+        });
+        unsigned.getOperands().forEach(element -> {
+            IntSizeCast cast = (IntSizeCast) element;
+            assertEquals(builder.getType("%long"), cast.getType());
+            assertFalse(cast.preservesSign());
+        });
+    }
+
+    private Local getLocal(int index) {
+        return builder.getCurrentFunction().getEvents().stream()
+                .filter(Local.class::isInstance)
+                .map(Local.class::cast)
+                .skip(index)
+                .findFirst()
+                .orElseThrow();
     }
 
     private void visit(String input) {
