@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 
-import com.dat3m.dartagnan.wmm.metadata.CutAnnotation;
 import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
@@ -389,17 +388,17 @@ class VisitorCat extends CatBaseVisitor<Object> {
         try {
             final Relation toCut = getRelation(name, ctx);
             if (toCut != null) {
-                toCut.setMetadata(CutAnnotation.get());
+                toCut.setMetadata(Wmm.CutAnnotation.get());
                 return null;
             }
         } catch (Exception ignored) {}
 
         // Failed to annotate relation, try to annotate axiom.
-        wmm.getAxioms().stream()
+        final Axiom axiom = wmm.getAxioms().stream()
                 .filter(a -> name.equals(a.getName()))
                 .findFirst()
-                .ifPresentOrElse(a -> a.setMetadata(CutAnnotation.get()),
-                        () -> logger.warn("Unable to cut '{}': name is not recognized.", name));
+                .orElseThrow(() -> new ParsingException("Unable to cut '%': name is not recognized.", name));
+        axiom.setMetadata(Wmm.CutAnnotation.get());
 
         return null;
     }

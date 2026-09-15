@@ -33,7 +33,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.metadata.CutAnnotation;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -473,8 +472,8 @@ public class RefinementSolver extends ModelChecker {
         final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
         for (Constraint c : model.getConstraints()) {
             // Cut annotated constraints
-            if (c.hasMetadata(CutAnnotation.class) ||
-                    c instanceof Definition def && def.getDefinedRelation().hasMetadata(CutAnnotation.class)) {
+            if (c.hasMetadata(Wmm.CutAnnotation.class) ||
+                    c instanceof Definition def && def.getDefinedRelation().hasMetadata(Wmm.CutAnnotation.class)) {
                 constraintsToCut.add(c);
                 continue;
             }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.utils.metadata.Metadata;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
@@ -239,5 +240,13 @@ public class Wmm {
 
     private Relation product(Relation domain, Relation range) {
         return addDefinition(new CartesianProduct(newRelation(), domain, range));
+    }
+
+    // ================================ Metadata ================================
+
+    public record CutAnnotation() implements Metadata {
+
+        private static final CutAnnotation SINGLETON = new CutAnnotation();
+        public static CutAnnotation get() { return SINGLETON; }
     }
 }
