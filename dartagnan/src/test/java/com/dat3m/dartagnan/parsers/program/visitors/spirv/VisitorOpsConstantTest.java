@@ -3,15 +3,18 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.floats.FloatLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class VisitorOpsConstantTest {
@@ -602,6 +605,88 @@ public class VisitorOpsConstantTest {
         assertEquals(i, data.get("%i"));
 
         assertEquals(expressions.makeConstruct(aType, List.of(f, t, i)), data.get("%s"));
+    }
+
+    @Test
+    public void testFloatConstants() {
+        // given
+        String input = """
+                %zero = OpConstant %float 0
+                %negative = OpConstant %float -1.5
+                %hex = OpConstant %float 0x1.8p+1
+                """;
+        FloatType type = builder.mockFloatType("%float", 32);
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        assertEquals(expressions.makeValue(BigDecimal.ZERO, false, type), data.get("%zero"));
+        assertEquals(expressions.makeValue(new BigDecimal("1.5"), true, type), data.get("%negative"));
+        assertEquals(expressions.makeValue(new BigDecimal("3"), false, type), data.get("%hex"));
+    }
+
+    @Test
+    public void testFloatInfinityConstants() {
+        // given
+        String input = """
+                %half_pos = OpConstant %half 0x1p+16
+                %half_neg = OpConstant %half -0x1p+16
+                %float_pos = OpConstant %float 0x1p+128
+                %float_neg = OpConstant %float -0x1p+128
+                %double_pos = OpConstant %double 0x1p+1024
+                %double_neg = OpConstant %double -0x1p+1024
+                """;
+        builder.mockFloatType("%half", 16);
+        builder.mockFloatType("%float", 32);
+        builder.mockFloatType("%double", 64);
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        assertTrue(((FloatLiteral) data.get("%half_pos")).isPlusInf());
+        assertTrue(((FloatLiteral) data.get("%half_neg")).isMinusInf());
+        assertTrue(((FloatLiteral) data.get("%float_pos")).isPlusInf());
+        assertTrue(((FloatLiteral) data.get("%float_neg")).isMinusInf());
+        assertTrue(((FloatLiteral) data.get("%double_pos")).isPlusInf());
+        assertTrue(((FloatLiteral) data.get("%double_neg")).isMinusInf());
+    }
+
+    @Test
+    public void testFloatNaNConstants() {
+        // given
+        String input = """
+                %half_nan = OpConstant %half 0x1.8p+16
+                %float_nan = OpConstant %float 0x1.8p+128
+                %float_negative_nan = OpConstant %float -0x1.ff5f7cp+128
+                %double_nan = OpConstant %double 0x1.8p+1024
+                """;
+        builder.mockFloatType("%half", 16);
+        builder.mockFloatType("%float", 32);
+        builder.mockFloatType("%double", 64);
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        assertTrue(((FloatLiteral) data.get("%half_nan")).isNaN());
+        assertTrue(((FloatLiteral) data.get("%float_nan")).isNaN());
+        assertTrue(((FloatLiteral) data.get("%float_negative_nan")).isNaN());
+        assertTrue(((FloatLiteral) data.get("%double_nan")).isNaN());
+    }
+
+    @Test
+    public void testFloatConstantNull() {
+        // given
+        String input = "%zero = OpConstantNull %float";
+        FloatType type = builder.mockFloatType("%float", 32);
+
+        // when
+        Expression zero = parseConstants(input).get("%zero");
+
+        // then
+        assertEquals(expressions.makePlusZero(type), zero);
     }
 
     private Map<String, Expression> parseConstants(String input) {

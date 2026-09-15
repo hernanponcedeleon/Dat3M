@@ -31,6 +31,7 @@ public class VisitorOpsTypeTest {
                 %void = OpTypeVoid
                 %bool = OpTypeBool
                 %int = OpTypeInt 16 1
+                %float = OpTypeFloat 32
                 %vector = OpTypeVector %int 10
                 %array = OpTypeArray %int %uint_20
                 %ptr = OpTypePointer Input %int
@@ -52,6 +53,7 @@ public class VisitorOpsTypeTest {
         Type typeVoid = types.getVoidType();
         Type typeBoolean = types.getBooleanType();
         Type typeInteger = types.getIntegerType(16);
+        Type typeFloat = types.getIEEESingleType();
         Type typeVector = types.getArrayType(typeInteger, 10);
         Type typeArray = types.getArrayType(typeInteger, 20);
         Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger, null);
@@ -61,6 +63,7 @@ public class VisitorOpsTypeTest {
         assertEquals(typeVoid, data.get("%void"));
         assertEquals(typeBoolean, data.get("%bool"));
         assertEquals(typeInteger, data.get("%int"));
+        assertEquals(typeFloat, data.get("%float"));
         assertEquals(typeVector, data.get("%vector"));
         assertEquals(typeArray, data.get("%array"));
         assertEquals(typePointer, data.get("%ptr"));
@@ -69,9 +72,9 @@ public class VisitorOpsTypeTest {
     }
 
     @Test(expected = ParsingException.class)
-    public void testUnsupportedType() {
+    public void testUnsupportedFloatType() {
         // given
-        String input = "%float = OpTypeFloat 32";
+        String input = "%float = OpTypeFloat 8";
 
         // when
         parseTypes(input);
@@ -491,6 +494,24 @@ public class VisitorOpsTypeTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testFloatTypes() {
+        // given
+        String input = """
+                %half = OpTypeFloat 16
+                %float = OpTypeFloat 32
+                %double = OpTypeFloat 64
+                """;
+
+        // when
+        Map<String, Type> data = parseTypes(input);
+
+        // then
+        assertEquals(types.getIEEEHalfType(), data.get("%half"));
+        assertEquals(types.getIEEESingleType(), data.get("%float"));
+        assertEquals(types.getIEEEDoubleType(), data.get("%double"));
     }
 
     private Map<String, Type> parseTypes(String input) {
