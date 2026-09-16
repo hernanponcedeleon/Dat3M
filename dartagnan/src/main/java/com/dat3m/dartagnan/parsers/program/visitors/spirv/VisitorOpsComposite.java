@@ -101,7 +101,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
             }
         }
-        builder.addExpression(id, expressions.makeArray(aType1, concat));
+        builder.addExpression(id, expressions.makeArray(aType, concat));
         return null;
     }
 
