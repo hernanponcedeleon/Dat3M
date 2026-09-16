@@ -18,13 +18,15 @@ public sealed interface SourceLocation extends Metadata {
         }
     }
 
-    record Generic(String source, int lineNumber) implements SourceLocation {
+    record Generic(Path sourcePath, int lineNumber) implements SourceLocation {
+
+        public Generic(String sourcePath, int lineNumber) {
+            this(Path.of(sourcePath), lineNumber);
+        }
+
         @Override
         public String toString() {
-            // If source is a path, we take the last path element
-            // if source is not a path, the function will return it as is
-            final String name = Path.of(source).getFileName().toString();
-            return name + "#" + lineNumber;
+            return sourcePath.getFileName() + "#" + lineNumber;
         }
     }
 }
