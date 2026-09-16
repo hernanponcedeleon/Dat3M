@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
@@ -15,7 +17,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 
+import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.IntStream;
 
 public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
 
@@ -48,6 +53,80 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
         Expression convertedExpr = expressions.makeCast(operandExpr, resultType);
         Register reg = builder.addRegister(id, typeId);
         return builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
+    }
+
+    @Override
+    public Event visitOpConvertFToU(SpirvParser.OpConvertFToUContext ctx) {
+        return convertFloatToInt(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.floatValue().getText(), false);
+    }
+
+    @Override
+    public Event visitOpConvertFToS(SpirvParser.OpConvertFToSContext ctx) {
+        return convertFloatToInt(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.floatValue().getText(), true);
+    }
+
+    @Override
+    public Event visitOpConvertSToF(SpirvParser.OpConvertSToFContext ctx) {
+        return convertIntToFloat(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.signedValue().getText(), true);
+    }
+
+    @Override
+    public Event visitOpConvertUToF(SpirvParser.OpConvertUToFContext ctx) {
+        return convertIntToFloat(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.unsignedValue().getText(), false);
+    }
+
+    @Override
+    public Event visitOpFConvert(SpirvParser.OpFConvertContext ctx) {
+        return convertAndAddLocal(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.floatValue().getText(), FloatType.class, FloatType.class,
+                (target, source) -> expressions.makeFloatCast(source, target, true));
+    }
+
+    private Event convertFloatToInt(String id, String typeId, String operandId, boolean isSigned) {
+        return convertAndAddLocal(id, typeId, operandId, IntegerType.class, FloatType.class,
+                (target, source) -> expressions.makeIntegerCast(source, target, isSigned));
+    }
+
+    private Event convertIntToFloat(String id, String typeId, String operandId, boolean isSigned) {
+        return convertAndAddLocal(id, typeId, operandId, FloatType.class, IntegerType.class,
+                (target, source) -> expressions.makeFloatCast(source, target, isSigned));
+    }
+
+    private <T extends Type> Expression convertComponents(
+            String id,
+            Type targetType,
+            Expression operand,
+            Class<T> targetElementClass,
+            Class<? extends Type> sourceElementClass,
+            BiFunction<T, Expression, Expression> conversion
+    ) {
+        if (targetElementClass.isInstance(targetType) && sourceElementClass.isInstance(operand.getType())) {
+            return conversion.apply(targetElementClass.cast(targetType), operand);
+        }
+        if (targetType instanceof ArrayType targetArray
+                && operand.getType() instanceof ArrayType sourceArray
+                && targetArray.hasKnownNumElements()
+                && sourceArray.hasKnownNumElements()
+                && targetArray.getNumElements() == sourceArray.getNumElements()
+                && targetElementClass.isInstance(targetArray.getElementType())
+                && sourceElementClass.isInstance(sourceArray.getElementType())) {
+            List<Expression> elements = IntStream.range(0, targetArray.getNumElements())
+                    .mapToObj(index -> conversion.apply(targetElementClass.cast(targetArray.getElementType()),
+                            getElement(operand, index)))
+                    .toList();
+            return expressions.makeArray(targetArray, elements);
+        }
+        throw new ParsingException("Illegal conversion for '%s' from '%s' to '%s'", id, operand.getType(), targetType);
+    }
+
+    private Expression getElement(Expression expression, int index) {
+        return expression instanceof ConstructExpr
+                ? expression.getOperands().get(index)
+                : expressions.makeExtract(expression, index);
     }
 
     @Override
@@ -112,35 +191,42 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpUConvert(SpirvParser.OpUConvertContext ctx) {
-        String id = ctx.idResult().getText();
-        String typeId = ctx.idResultType().getText();
-        Expression operandExpr = builder.getExpression(ctx.unsignedValue().getText());
-        return convertAndAddLocal(typeId, id, operandExpr, false);
+        return convertAndAddLocal(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.unsignedValue().getText(), IntegerType.class, IntegerType.class,
+                (target, source) -> expressions.makeIntegerCast(source, target, false));
     }
 
     @Override
     public Event visitOpSConvert(SpirvParser.OpSConvertContext ctx) {
-        String id = ctx.idResult().getText();
-        String typeId = ctx.idResultType().getText();
-        Expression operandExpr = builder.getExpression(ctx.signedValue().getText());
-        return convertAndAddLocal(typeId, id, operandExpr, true);
+        return convertAndAddLocal(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.signedValue().getText(), IntegerType.class, IntegerType.class,
+                (target, source) -> expressions.makeIntegerCast(source, target, true));
     }
 
-    private Event convertAndAddLocal(String typeId, String id, Expression operandExpr, boolean isSigned) {
+    private <T extends Type> Event convertAndAddLocal(
+            String id,
+            String typeId,
+            String operandId,
+            Class<T> targetElementClass,
+            Class<? extends Type> sourceElementClass,
+            BiFunction<T, Expression, Expression> conversion
+    ) {
         Type targetType = builder.getType(typeId);
-        Type operandType = operandExpr.getType();
-        if (!(targetType instanceof IntegerType) || !(operandType instanceof IntegerType)) {
-            // TODO: Support conversion between arrays
-            throw new ParsingException("Unsupported conversion to type '%s' for id '%s'", typeId, id);
-        }
-        Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
-        Register reg = builder.addRegister(id, typeId);
-        return builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
+        Expression operand = builder.getExpression(operandId);
+        Expression converted = convertComponents(id, targetType, operand, targetElementClass,
+                sourceElementClass, conversion);
+        Register register = builder.addRegister(id, targetType);
+        return builder.addEvent(EventFactory.newLocal(register, converted));
     }
 
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpBitcast",
+                "OpConvertFToU",
+                "OpConvertFToS",
+                "OpConvertSToF",
+                "OpConvertUToF",
+                "OpFConvert",
                 "OpConvertPtrToU",
                 "OpConvertUToPtr",
                 "OpPtrCastToGeneric",

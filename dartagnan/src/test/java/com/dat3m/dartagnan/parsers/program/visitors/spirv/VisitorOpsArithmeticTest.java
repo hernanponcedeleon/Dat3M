@@ -7,6 +7,10 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryOp;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -14,6 +18,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static com.dat3m.dartagnan.expression.floats.FloatBinaryOp.*;
+import static com.dat3m.dartagnan.expression.floats.FloatUnaryOp.NEG;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static org.junit.Assert.assertEquals;
@@ -74,15 +80,15 @@ public class VisitorOpsArithmeticTest {
     }
 
     @Test
-    public void testOpsVectorBin() {
-        doTestOpsVectorBin("OpIAdd", ADD);
-        doTestOpsVectorBin("OpISub", SUB);
-        doTestOpsVectorBin("OpIMul", MUL);
-        doTestOpsVectorBin("OpUDiv", UDIV);
-        doTestOpsVectorBin("OpSDiv", DIV);
+    public void testOpsIntegerVectorBin() {
+        doTestOpsIntegerVectorBin("OpIAdd", ADD);
+        doTestOpsIntegerVectorBin("OpISub", SUB);
+        doTestOpsIntegerVectorBin("OpIMul", MUL);
+        doTestOpsIntegerVectorBin("OpUDiv", UDIV);
+        doTestOpsIntegerVectorBin("OpSDiv", DIV);
     }
 
-    private void doTestOpsVectorBin(String name, IntBinaryOp op) {
+    private void doTestOpsIntegerVectorBin(String name, IntBinaryOp op) {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
@@ -97,13 +103,13 @@ public class VisitorOpsArithmeticTest {
         // then
         assertEquals(builder.getExpression("%reg"), local.getResultRegister());
         ConstructExpr expr = (ConstructExpr) local.getExpr();
-        for(Expression operand : expr.getOperands()) {
+        for (Expression operand : expr.getOperands()) {
             assertEquals(op, operand.getKind());
         }
     }
 
     @Test
-    public void testOnUnMismatchingResultType() {
+    public void testOnIntegerUnMismatchingResultType() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int32", 32);
@@ -124,7 +130,7 @@ public class VisitorOpsArithmeticTest {
     }
 
     @Test
-    public void testOnBinMismatchingResultType() {
+    public void testOnIntegerBinMismatchingResultType() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int32", 32);
@@ -146,7 +152,7 @@ public class VisitorOpsArithmeticTest {
     }
 
     @Test
-    public void testMismatchingOperandTypes() {
+    public void testIntegerMismatchingOperandTypes() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int32", 32);
@@ -168,7 +174,7 @@ public class VisitorOpsArithmeticTest {
     }
 
     @Test
-    public void testIllegalResultType() {
+    public void testIntegerIllegalResultType() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
@@ -186,6 +192,190 @@ public class VisitorOpsArithmeticTest {
             assertEquals("Illegal definition for '%reg', " +
                     "types do not match: '%v1' is 'bv64', '%v2' is 'bv64' " +
                     "and '%bool' is 'bool'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testOpsFloatUn() {
+        doTestOpsFloatUn("OpFNegate", NEG, 0.0);
+        doTestOpsFloatUn("OpFNegate", NEG, 1.5);
+        doTestOpsFloatUn("OpFNegate", NEG, -2.0);
+    }
+
+    private void doTestOpsFloatUn(String name, FloatUnaryOp op, double value) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%value", "%float", value);
+        String input = String.format("%%reg = %s %%float %%value", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        FloatUnaryExpr expr = (FloatUnaryExpr) local.getExpr();
+        assertEquals(builder.getExpression("%value"), expr.getOperand());
+        assertEquals(op, expr.getKind());
+    }
+
+    @Test
+    public void testOpsFloatBin() {
+        doTestOpsFloatBin("OpFAdd", FADD, 1.5, 2.0);
+        doTestOpsFloatBin("OpFSub", FSUB, 2.0, 1.5);
+        doTestOpsFloatBin("OpFMul", FMUL, 2.0, 3.0);
+        doTestOpsFloatBin("OpFDiv", FDIV, 4.0, 2.0);
+    }
+
+    private void doTestOpsFloatBin(String name, FloatBinaryOp op, double v1, double v2) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%v1", "%float", v1);
+        builder.mockConstant("%v2", "%float", v2);
+        String input = String.format("%%reg = %s %%float %%v1 %%v2", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        FloatBinaryExpr expr = (FloatBinaryExpr) local.getExpr();
+        assertEquals(op, expr.getKind());
+        assertEquals(builder.getExpression("%v1"), expr.getLeft());
+        assertEquals(builder.getExpression("%v2"), expr.getRight());
+    }
+
+    @Test
+    public void testOpsFloatVectorUn() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float", 32);
+        builder.mockVectorType("%vector", "%float", 2);
+        builder.mockConstant("%value", "%vector", List.of(1.0, 2.0));
+        String input = "%reg = OpFNegate %vector %value";
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        ConstructExpr expr = (ConstructExpr) local.getExpr();
+        assertEquals(2, expr.getOperands().size());
+        for (Expression operand : expr.getOperands()) {
+            assertEquals(NEG, operand.getKind());
+        }
+    }
+
+    @Test
+    public void testOpsFloatVectorBin() {
+        doTestOpsFloatVectorBin("OpFAdd", FADD);
+        doTestOpsFloatVectorBin("OpFSub", FSUB);
+        doTestOpsFloatVectorBin("OpFMul", FMUL);
+        doTestOpsFloatVectorBin("OpFDiv", FDIV);
+    }
+
+    private void doTestOpsFloatVectorBin(String name, FloatBinaryOp op) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float", 32);
+        builder.mockVectorType("%vector", "%float", 2);
+        builder.mockConstant("%v1", "%vector", List.of(1.0, 2.0));
+        builder.mockConstant("%v2", "%vector", List.of(3.0, 4.0));
+        String input = String.format("%%reg = %s %%vector %%v1 %%v2", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        ConstructExpr expr = (ConstructExpr) local.getExpr();
+        assertEquals(2, expr.getOperands().size());
+        for (Expression operand : expr.getOperands()) {
+            assertEquals(op, operand.getKind());
+        }
+    }
+
+    @Test
+    public void testOnFloatUnMismatchingResultType() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float32", 32);
+        builder.mockFloatType("%float64", 64);
+        builder.mockConstant("%value", "%float32", -1.0);
+        String input = "%reg = OpFNegate %float64 %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal floating-point definition for '%reg': result and operand types must match",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testOnFloatBinMismatchingResultType() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float32", 32);
+        builder.mockFloatType("%float64", 64);
+        builder.mockConstant("%v1", "%float32", 1.0);
+        builder.mockConstant("%v2", "%float32", 2.0);
+        String input = "%reg = OpFAdd %float64 %v1 %v2";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal floating-point definition for '%reg': result and operand types must match",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testFloatMismatchingOperandTypes() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockFloatType("%float32", 32);
+        builder.mockFloatType("%float64", 64);
+        builder.mockConstant("%left", "%float32", 1.0);
+        builder.mockConstant("%right", "%float64", 2.0);
+        String input = "%reg = OpFAdd %float32 %left %right";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal floating-point definition for '%reg': result and operand types must match",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testFloatIllegalResultType() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockBoolType("%bool");
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%v1", "%float", 1.0);
+        builder.mockConstant("%v2", "%float", 2.0);
+        String input = "%reg = OpFAdd %bool %v1 %v2";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal floating-point definition for '%reg': result and operand types must match",
+                    e.getMessage());
         }
     }
 

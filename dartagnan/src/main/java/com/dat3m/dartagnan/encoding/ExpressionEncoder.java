@@ -442,7 +442,7 @@ public class ExpressionEncoder {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = expr.getTargetType();
             final FloatingPointType targetType = getFloatFormulaType(fType);
-            final Formula enc = floatingPointFormulaManager().castFrom(operand, true, targetType, roundingMode);
+            final Formula enc = floatingPointFormulaManager().castFrom(operand, expr.isSigned(), targetType, roundingMode);
             return new TypedFormula<>(fType, enc);
         }
 
