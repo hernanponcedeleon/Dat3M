@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.List;
@@ -154,9 +155,8 @@ public class HelperTagsTest {
                 "NonPrivatePointer|Aligned|MakePointerVisible", 4, List.of(1));
         doTestValidMemoryOperands(Set.of(MEM_VOLATILE, MEM_NONTEMPORAL, MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
                 "Volatile|Aligned|Nontemporal|NonPrivatePointer|MakePointerVisible", 4, List.of(1));
-        // TODO: Uncomment after implementing combined av-vis operands
-        //doTestValidMemoryOperands(Set.of(MEM_AVAILABLE, MEM_VISIBLE, DEVICE),
-        //        "MakePointerAvailable|MakePointerVisible", null, List.of(1, 2));
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_AVAILABLE, MEM_VISIBLE, DEVICE, WORKGROUP),
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1, 2));
     }
 
     @Test
@@ -269,7 +269,9 @@ public class HelperTagsTest {
         List<Expression> paramValues = params.stream().map(p -> (Expression) expressions.makeValue(p, archType)).toList();
 
         // when
-        Set<String> actual = HelperTags.parseMemoryOperandsTags(operandsList, alignment, paramIds, paramValues);
+        HelperTags.MemoryOperandTags tags = HelperTags.parseMemoryOperandsTags(
+                operandsList, alignment, paramIds, paramValues);
+        Set<String> actual = Sets.union(tags.readTags(), tags.writeTags());
 
         // then
         assertEquals(expected, actual);
