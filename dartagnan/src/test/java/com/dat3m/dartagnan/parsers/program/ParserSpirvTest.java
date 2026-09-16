@@ -45,6 +45,23 @@ public class ParserSpirvTest {
         doTestParsingInvalidProgram("memory-operands/unnecessary-scope-2.spvasm", null);
     }
 
+    @Test
+    public void testSameConditionalLabelsSpirv15() {
+        Program program = new ParserSpirv().parse(CharStreams.fromString(sameConditionalLabelsProgram("1.5")));
+        assertNotNull(program);
+    }
+
+    @Test
+    public void testSameConditionalLabelsSpirv16() {
+        try {
+            new ParserSpirv().parse(CharStreams.fromString(sameConditionalLabelsProgram("1.6")));
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            assertEquals("Labels of conditional branch must be different in SPIR-V 1.6 and later",
+                    e.getMessage());
+        }
+    }
+
     private void doTestParsingValidProgram(String file) throws IOException {
         Path path = getTestResourcePath("parsers/program/spirv/valid/" + file);
         try (var stream = Files.newInputStream(path)) {
@@ -69,5 +86,26 @@ public class ParserSpirvTest {
                 }
             }
         }
+    }
+
+    private String sameConditionalLabelsProgram(String version) {
+        return """
+                ; SPIR-V
+                ; Version: %s
+                OpCapability Shader
+                OpCapability VulkanMemoryModel
+                OpMemoryModel Logical Vulkan
+                OpEntryPoint GLCompute %%main "main"
+                %%void = OpTypeVoid
+                %%bool = OpTypeBool
+                %%true = OpConstantTrue %%bool
+                %%function = OpTypeFunction %%void
+                %%main = OpFunction %%void None %%function
+                %%entry = OpLabel
+                OpBranchConditional %%true %%exit %%exit
+                %%exit = OpLabel
+                OpReturn
+                OpFunctionEnd
+                """.formatted(version);
     }
 }
