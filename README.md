@@ -61,6 +61,8 @@ Dartagnan natively parses programs written in the `.ll`, `.litmus`, and `.spvasm
 Source programs are translated to one of these formats through configurable compilation pipelines in
 [`compilation.yml`](compilation.yml). Install the compiler and other tools required by the compilation
 pipelines you use; their final output must use a natively supported Dartagnan input format.
+The default compilation pipelines append `DAT3M_COMPILER_OPTIONS` to their compiler options, for example
+`DAT3M_COMPILER_OPTIONS="-O1 -DTEST=1" dartagnan cat/imm.cat --target=imm test.c`.
 
 There are three possible results for the verification:
 - `FAIL`: the property was violated.

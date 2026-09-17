@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,6 +111,10 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
     }
 
     public Pipeline getPipeline(String extension, Path inputPath, String basename) {
+        return getPipeline(extension, inputPath, basename, System.getenv());
+    }
+
+    private Pipeline getPipeline(String extension, Path inputPath, String basename, Map<String, String> environment) {
         final Pipeline abstractPipeline = pipelines.stream()
                 .filter(p -> p.matches(extension))
                 .findFirst()
@@ -119,6 +124,10 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         for (Pipeline.Command cmd : abstractPipeline.commands()) {
             final String concreteInput = resolveInput(cmd.input(), inputPath, basename).toString();
             final String concreteOutput = resolveWorkdirPath(cmd.output(), inputPath, basename).toString();
+            final List<String> concreteOptions = expandEnvironmentOptions(cmd.options(), environment).stream()
+                    .map(option -> substitutePipelineTokens(option, inputPath, basename))
+                    .map(option -> substituteCommandTokens(option, concreteInput, concreteOutput))
+                    .toList();
             final List<String> concreteArgs = cmd.args().stream()
                     .map(arg -> substitutePipelineTokens(arg, inputPath, basename))
                     .map(arg -> substituteCommandTokens(arg, concreteInput, concreteOutput))
@@ -129,6 +138,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                     cmd.tool(),
                     concreteInput,
                     concreteOutput,
+                    concreteOptions,
                     concreteArgs
             ));
         }
@@ -139,6 +149,16 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 resolveWorkdirPath(abstractPipeline.output(), inputPath, basename).toString(),
                 concreteSteps
         );
+    }
+
+    static List<String> expandEnvironmentOptions(List<String> options, Map<String, String> environment) {
+        return options.stream().flatMap(option -> {
+            if (!option.equals("$DAT3M_COMPILER_OPTIONS")) {
+                return Stream.of(option);
+            }
+            final String environmentOptions = environment.getOrDefault("DAT3M_COMPILER_OPTIONS", "").trim();
+            return environmentOptions.isEmpty() ? Stream.empty() : Stream.of(environmentOptions.split("\\s+"));
+        }).toList();
     }
 
     private Path resolveInput(String input, Path pipelineInput, String basename) {
@@ -185,9 +205,9 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
     public record Pipeline(String pipeline, List<String> aliases, String output, List<Command> commands) {
 
         public Pipeline {
-                Preconditions.checkNotNull(pipeline, "Missing compilation pipeline extension in the configuration file");
-                Preconditions.checkNotNull(output, "Missing compilation pipeline output for extension '%s'", pipeline);
-                Preconditions.checkNotNull(commands, "Missing compilation pipeline commands for extension '%s'", pipeline);
+            Preconditions.checkNotNull(pipeline, "Missing compilation pipeline extension in the configuration file");
+            Preconditions.checkNotNull(output, "Missing compilation pipeline output for extension '%s'", pipeline);
+            Preconditions.checkNotNull(commands, "Missing compilation pipeline commands for extension '%s'", pipeline);
             aliases = aliases == null ? List.of() : List.copyOf(aliases);
             commands = List.copyOf(commands);
         }
@@ -206,7 +226,8 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             try {
                 for (Command cmd : commands) {
                     createOutputDirectory(Path.of(cmd.output()));
-                    runCmd(Stream.concat(Stream.of(cmd.tool()), cmd.args().stream()).toList());
+                    runCmd(Stream.concat(Stream.of(cmd.tool()),
+                            Stream.concat(cmd.options().stream(), cmd.args().stream())).toList());
                 }
                 final Path outputFile = Path.of(output);
                 if (!Files.isRegularFile(outputFile)) {
@@ -280,13 +301,15 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             }
         }
 
-        public record Command(String name, String tool, String input, String output, List<String> args) {
+        public record Command(String name, String tool, String input, String output, List<String> options,
+                              List<String> args) {
             public Command {
                 Preconditions.checkNotNull(name, "Missing name for step in the compilation pipeline configuration file");
                 Preconditions.checkNotNull(tool, "Entry tool for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(input, "Entry input for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(output, "Entry output for step '%s' is mandatory in the compilation pipeline configuration file", name);
                 Preconditions.checkNotNull(args, "Entry args for step '%s' is mandatory in the compilation pipeline configuration file", name);
+                options = Optional.ofNullable(options).map(List::copyOf).orElseGet(List::of);
                 args = List.copyOf(args);
             }
         }
