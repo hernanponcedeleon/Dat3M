@@ -23,8 +23,5 @@ public class ArrayValidTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected long getTimeoutSeconds() { return 1; }
-
-    @Override
     protected Task.TaskBuilder getTaskBuilder() { return super.getTaskBuilder().withSolverTimeout(60); }
 }
