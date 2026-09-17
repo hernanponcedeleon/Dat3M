@@ -1,4 +1,6 @@
-# Only $DAT3M_HOME and $DAT3M_OUTPUT are allowed as an environment variable.
+# $DAT3M_HOME and $DAT3M_OUTPUT can be used in paths. A standalone $DAT3M_COMPILER_OPTIONS entry
+# in a command's options is replaced with the flags from the corresponding environment variable,
+# or omitted when it is unset.
 # Custom paths must be absolute and have the correct write permissions.
 # Each command declares an input path and an output path. Their resolved values replace
 # {cmd_input} and {cmd_output}, respectively, in that command's args.
@@ -17,13 +19,15 @@ x-common_commands:
     tool: "spirv-opt"
     input: "{basename}.spv"
     output: "{basename}-vulkan.spv"
-    args: ["--upgrade-memory-model", "{cmd_input}", "-o", "{cmd_output}"]
+    options: ["--upgrade-memory-model"]
+    args: ["{cmd_input}", "-o", "{cmd_output}"]
 
   disassemble_cmd: &disassemble_cmd
     name: "Disassemble"
     tool: "spirv-dis"
     input: "{basename}-vulkan.spv"
     output: "{basename}.spvasm"
+    options: []
     args: ["{cmd_input}", "-o", "{cmd_output}"]
 
   annotation_cmd: &annotation_cmd
@@ -31,6 +35,7 @@ x-common_commands:
     tool: "$DAT3M_HOME/scripts/copy_spv_header_annotations.bash"
     input: "{pipeline_input}"
     output: "{basename}.spvasm"
+    options: []
     args: ["{cmd_input}", "{cmd_output}"]
 
 pipelines:
@@ -42,7 +47,8 @@ pipelines:
         tool: "clang"
         input: "{pipeline_input}"
         output: "{basename}.ll"
-        args: ["-I", "$DAT3M_HOME/include", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "{cmd_input}", "-o", "{cmd_output}"]
+        options: ["-I", "$DAT3M_HOME/include", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "$DAT3M_COMPILER_OPTIONS"]
+        args: ["{cmd_input}", "-o", "{cmd_output}"]
 
   - pipeline: ".slang"
     output: "{basename}.spvasm"
@@ -51,7 +57,8 @@ pipelines:
         tool: "slangc"
         input: "{pipeline_input}"
         output: "{basename}.spv"
-        args: ["-target", "spirv", "{cmd_input}", "-o", "{cmd_output}", "-g"]
+        options: ["-target", "spirv", "-g", "$DAT3M_COMPILER_OPTIONS"]
+        args: ["{cmd_input}", "-o", "{cmd_output}"]
       - *upgrade_cmd
       - *disassemble_cmd
       - *annotation_cmd
@@ -63,7 +70,8 @@ pipelines:
         tool: "clspv"
         input: "{pipeline_input}"
         output: "{basename}.spv"
-        args: ["{cmd_input}", "--cl-std=CL2.0", "--inline-entry-points", "--spv-version=1.6", "-o", "{cmd_output}", "-g"]
+        options: ["--cl-std=CL2.0", "--inline-entry-points", "--spv-version=1.6", "-g", "$DAT3M_COMPILER_OPTIONS"]
+        args: ["{cmd_input}", "-o", "{cmd_output}"]
       - *upgrade_cmd
       - *disassemble_cmd
       - *annotation_cmd
@@ -75,7 +83,8 @@ pipelines:
         tool: "glslangValidator"
         input: "{pipeline_input}"
         output: "{basename}.spv"
-        args: ["-V", "{cmd_input}", "--target-env", "vulkan1.3", "-o", "{cmd_output}", "-g"]
+        options: ["-V", "--target-env", "vulkan1.3", "-g", "$DAT3M_COMPILER_OPTIONS"]
+        args: ["{cmd_input}", "-o", "{cmd_output}"]
       - *upgrade_cmd
       - *disassemble_cmd
       - *annotation_cmd
@@ -87,7 +96,8 @@ pipelines:
         tool: "dxc"
         input: "{pipeline_input}"
         output: "{basename}.spv"
-        args: ["-T", "cs_6_0", "-E", "main", "-spirv", "{cmd_input}", "-Fo", "{cmd_output}", "-fspv-target-env=vulkan1.1spirv1.4"]
+        options: ["-T", "cs_6_0", "-E", "main", "-spirv", "-fspv-target-env=vulkan1.1spirv1.4", "$DAT3M_COMPILER_OPTIONS"]
+        args: ["{cmd_input}", "-Fo", "{cmd_output}"]
       - *upgrade_cmd
       - *disassemble_cmd
       - *annotation_cmd
