@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -316,7 +317,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 // Field "line" is optional. When missing we assume value 0
                 final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
                         .orElse(new MdGenericValue<>(BigInteger.ZERO)).value().intValue();
-                metadata.add(new SourceLocation.Generic((directory + "/" + filename).intern(), lineNumber));
+                metadata.add(new SourceLocation.Generic(Path.of(directory, filename), lineNumber));
             }
         }
 
