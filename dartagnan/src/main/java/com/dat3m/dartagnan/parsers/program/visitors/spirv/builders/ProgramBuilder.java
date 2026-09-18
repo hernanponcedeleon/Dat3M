@@ -40,9 +40,9 @@ public class ProgramBuilder {
     protected Function currentFunction;
     protected String entryPointId;
     protected Arch arch;
-    protected ProgramExtension.Litmus.SpecificationType specType;
     protected Expression filterSpec;
     protected Expression spec;
+    protected ProgramExtension.Litmus extension = ProgramExtension.Litmus.trivial();
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -50,6 +50,8 @@ public class ProgramBuilder {
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
+
+        program.setExtension(extension);
     }
 
     public Program build() {
@@ -59,7 +61,6 @@ public class ProgramBuilder {
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
         MemoryTransformer transformer = new MemoryTransformer(grid, entryFunction, builtIn, getVariables());
         program.setEntrypoint(new Entrypoint.Grid(entryFunction, grid, transformer));
-        program.setExtension(new ProgramExtension.Litmus(specType, spec, filterSpec));
         return program;
     }
 
@@ -116,9 +117,9 @@ public class ProgramBuilder {
         if (this.spec != null) {
             throw new ParsingException("Attempt to override program specification");
         }
+
         this.spec = condition;
-        this.specType = type;
-        //program.setSpecification(type, condition);
+        this.extension.setSpec(type, condition);
     }
 
     public void setFilterSpecification(Expression condition) {
@@ -126,7 +127,7 @@ public class ProgramBuilder {
             throw new ParsingException("Attempt to override program filter specification");
         }
         this.filterSpec = condition;
-        //program.setFilterSpecification(this.filterSpec);
+        this.extension.setFilter(condition);
     }
 
     public boolean hasInput(String id) {
