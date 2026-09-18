@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.*;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
@@ -494,8 +495,11 @@ public class ProgramEncoder {
     }
 
     public BooleanFormula encodeFilter() {
-        final Expression filterSpec = context.getTask().getProgram().getFilterSpecification();
-        return ignoreFilterSpec ? bmgr.makeTrue() : exprEnc.encodeBooleanFinal(filterSpec).formula();
+        final Program program = context.getTask().getProgram();
+        if (!ignoreFilterSpec && program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            return exprEnc.encodeBooleanFinal(litmusExtension.filter()).formula();
+        }
+        return bmgr.makeTrue();
     }
 
     public BooleanFormula encodeFinalRegisterValues() {

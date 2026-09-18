@@ -12,22 +12,22 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
-import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
+import static com.dat3m.dartagnan.program.extensions.ProgramExtension.Litmus.SpecificationType.*;
 
 public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ProgramBuilder builder;
-    private Program.SpecificationType type;
+    private ProgramExtension.Litmus.SpecificationType type;
     private Expression condition;
     private Expression filter;
 
@@ -66,7 +66,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitAssertionList(SpirvParser.AssertionListContext ctx) {
-        Program.SpecificationType parsedType = parseType(ctx);
+        ProgramExtension.Litmus.SpecificationType parsedType = parseType(ctx);
         Expression parsedAssertion = ctx.assertion().accept(this);
         if (condition == null) {
             type = parsedType;
@@ -155,7 +155,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
                 target.getClass().getSimpleName(), other.getClass().getSimpleName());
     }
 
-    private Program.SpecificationType parseType(SpirvParser.AssertionListContext ctx) {
+    private ProgramExtension.Litmus.SpecificationType parseType(SpirvParser.AssertionListContext ctx) {
         if (ctx.ModeHeader_AssertionNot() != null) {
             return NOT_EXISTS;
         }

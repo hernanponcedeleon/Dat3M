@@ -3,11 +3,13 @@ package com.dat3m.dartagnan.utils.printer;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
@@ -244,18 +246,14 @@ public class Printer {
     // Specification
 
     private static void appendSpecification(Program program, StringBuilder result) {
-        final ExpressionPrinter expressionPrinter = new ExpressionPrinter(true);
-
-        if (program.getSpecification() != null) {
+        if (program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            final ExpressionPrinter expressionPrinter = new ExpressionPrinter(true);
             result.append("\nSpecification:\n")
-                    .append(program.getSpecificationType()).append(" ")
-                    .append(program.getSpecification().accept(expressionPrinter))
+                    .append(litmusExtension.specType()).append(" ")
+                    .append(litmusExtension.spec().accept(expressionPrinter))
                     .append("\n");
-        }
-
-        if (!(program.getFilterSpecification() instanceof BoolLiteral c && c.getValue())) {
             result.append("\nFilter specification:\n")
-                    .append(program.getFilterSpecification().accept(expressionPrinter));
+                    .append(litmusExtension.filter().accept(expressionPrinter));
         }
     }
 

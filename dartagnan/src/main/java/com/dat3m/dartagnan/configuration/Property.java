@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.configuration;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
@@ -40,7 +41,9 @@ public enum Property implements OptionInterface {
     }
 
     public Type getType(Task context) {
-        if (this == PROGRAM_SPEC && context.getProgram().hasReachabilitySpecification()) {
+        if (this == PROGRAM_SPEC
+                && context.getProgram().getExtension() instanceof ProgramExtension.Litmus litmusExtension
+                && ProgramExtension.Litmus.SpecificationType.EXISTS == litmusExtension.specType()) {
             return Type.REACHABILITY;
         } else {
             return Type.SAFETY;
