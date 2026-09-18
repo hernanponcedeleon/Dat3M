@@ -1,6 +1,9 @@
-// clspv sb.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > sb.spvasm
+//; @Input: %x = {{0}}
+//; @Input: %y = {{0}}
+//; @Input: %r0 = {{0}}
+//; @Input: %r1 = {{0}}
+//; @Output: exists (%r0[0][0] == 0 and %r1[0][0] == 0)
+//; @Config: 2, 1, 1
 
 #ifdef ACQ2RX
 #define mo_acq memory_order_relaxed
