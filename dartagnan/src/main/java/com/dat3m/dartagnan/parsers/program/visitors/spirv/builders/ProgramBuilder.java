@@ -16,8 +16,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.MemoryObject.VariableName;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
-import com.dat3m.dartagnan.program.memory.metadata.VariableName;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
