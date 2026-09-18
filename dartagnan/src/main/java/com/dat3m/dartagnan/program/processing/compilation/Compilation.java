@@ -157,6 +157,8 @@ public class Compilation implements ProgramProcessor {
                     toBeCompiled.getGlobalId(), toBeCompiled);
             throw new IllegalStateException(error);
         }
+
+        toBeCompiled.removeMetadata(Event.CustomPrinting.class);
         IRHelper.replaceWithMetadata(toBeCompiled, compiledEvents);
     }
 }

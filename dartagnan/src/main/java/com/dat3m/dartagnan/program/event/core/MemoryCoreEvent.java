@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 
@@ -36,4 +37,11 @@ public interface MemoryCoreEvent extends MemoryEvent {
             }
         }
     }
+
+    // Marks a specific tag as "memory order" which is used for printing the IR.
+    // This should only be attached to MemoryCoreEvents.
+    //TODO: Add a factory with caching, because we can share the same MemoryOrder instance between different events.
+    // FIXME: VisitorC11 and VisitorIMM use MemoryOrder metadata to determine atomicity tagging.
+    //  This violates the metadata rules as it directly impacts the memory order semantics of the events.
+    record MemoryOrder(String value) implements Metadata { }
 }

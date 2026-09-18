@@ -17,6 +17,11 @@ public abstract class MetadataCarrierBase<T extends MetadataCarrier<T>> implemen
     public <TMeta extends Metadata> TMeta setMetadata(TMeta metadata) { return metadataMap.put(metadata); }
 
     @Override
+    public <TMeta extends Metadata> boolean removeMetadata(Class<TMeta> metadataClass) {
+        return metadataMap.remove(metadataClass);
+    }
+
+    @Override
     public void copyAllMetadataFrom(T other) {
         if (!(other instanceof MetadataCarrierBase<?> carrier)) {
             final String msg = "Cannot copy Metadata from %s to %s"

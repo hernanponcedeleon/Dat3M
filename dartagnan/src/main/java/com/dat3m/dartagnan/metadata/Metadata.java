@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.metadata;
 
 /*
+    The following guidelines are work-in-progress and will be modified when necessary.
+
     ================== Guidelines on metadata usage ==================
 
     (1) Metadata classes should be immutable and consist of simple types (int, string, bool, etc.)
@@ -25,6 +27,19 @@ package com.dat3m.dartagnan.metadata;
     For metadata that Dartagnan can guarantee to generate internally, e.g. as part of its processing pipeline,
     the rules can be relaxed:
     - Rule (4) does not strictly apply: we can have mandatory metadata, but optional metadata is still preferred.
+
+
+    ================== Guidelines for preserving metadata ==================
+
+    (1) When objects are copied, their metadata should be copied too.
+        Examples are loop unrolling, function inlining, and thread creation, all of which duplicate events.
+
+    (2) When objects are modified and/or translated, provenance-like metadata such as SourceLocation should be preserved.
+        Other types of metadata may have to be updated or invalidated on a case-by-case basis.
+        An example is event compilation which preserves source information but invalidates custom printing metadata.
+
+    (3) When merging multiple objects into one, metadata should be merged if possible or dropped otherwise.
+        TODO: We cannot have multiple instances of SourceLocation right now, so merging that is not possible.
 
  */
 public interface Metadata {

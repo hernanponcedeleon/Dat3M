@@ -22,7 +22,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLoad(Load e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
-        final Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
+        final MemoryCoreEvent.MemoryOrder mo = e.getMetadata(MemoryCoreEvent.MemoryOrder.class);
         final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())
@@ -32,7 +32,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitStore(Store e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
-        final Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
+        final MemoryCoreEvent.MemoryOrder mo = e.getMetadata(MemoryCoreEvent.MemoryOrder.class);
         final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
                 newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())

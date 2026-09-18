@@ -256,7 +256,7 @@ public class VisitorC11 extends VisitorBase {
             }
         }
         if (e instanceof MemoryEvent) {
-            Event.MemoryOrder mo = e.getMetadata(Event.MemoryOrder.class);
+            MemoryCoreEvent.MemoryOrder mo = e.getMetadata(MemoryCoreEvent.MemoryOrder.class);
             boolean canRace = mo == null || mo.value().equals(NONATOMIC);
             e.addTags(canRace ? NONATOMIC : ATOMIC);
         }
