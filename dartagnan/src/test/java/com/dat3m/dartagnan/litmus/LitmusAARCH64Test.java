@@ -3,10 +3,9 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,26 +20,16 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/AARCH64/", "ARM8");
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.ARM8;
-    }
-
     public LitmusAARCH64Test(Path path, ResultStatus expected) {
-        super(path, expected);
+        super(Arch.ARM8, path, expected);
     }
 
     @Override
-    protected long getTimeout() {
-        return 60_000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        final boolean isMixedSize = Utils.containsSubpath(
-                filePathProvider.get(),
-                Path.of("litmus", "AARCH64", "mixed")
-        );
-        return builder.setOption(MIXED_SIZE, String.valueOf(isMixedSize));
+    protected Task.TaskBuilder getTaskBuilder() {
+        final boolean isMixedSize = Utils.containsSubpath(programPath, Path.of("litmus", "AARCH64", "mixed"));
+        return super.getTaskBuilder().withOption(MIXED_SIZE, String.valueOf(isMixedSize));
     }
 }

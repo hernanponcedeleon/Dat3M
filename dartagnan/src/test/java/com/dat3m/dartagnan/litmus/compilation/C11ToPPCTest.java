@@ -1,12 +1,9 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -16,7 +13,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.C_TO_POWER_SCHEME;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.TRAILING_SYNC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 
 @RunWith(Parameterized.class)
 public class C11ToPPCTest extends AbstractCompilationTest {
@@ -27,23 +24,11 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     }
 
     public C11ToPPCTest(Path path) {
-        super(path);
+        super(Arch.C11, Arch.POWER, path);
     }
 
     @Override
-    protected Provider<Arch> getSourceProvider() {
-        return () -> Arch.C11;
-    }
-
-    @Override
-    protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
-    }
-
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.POWER;
-    }
+    protected String getSourceWmmName() { return "c11"; }
 
     @Override
     protected List<Path> getCompilationBreakers() {
@@ -53,8 +38,7 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     }
 
     @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC));
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC));
     }
-
 }
