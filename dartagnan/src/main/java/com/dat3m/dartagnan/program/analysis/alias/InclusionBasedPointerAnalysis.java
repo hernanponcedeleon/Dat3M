@@ -961,7 +961,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             for (IncludeEdge<Modifier> operand : extract.getOperand().accept(this)) {
                 DerivedVariable<Modifier> field = new DerivedVariable<>(operand.source, operand.modifier);
                 for (int index : extract.getIndices()) {
-                    final DerivedVariable<Modifier>[] aggregate = operand.source.aggregate;
+                    final DerivedVariable<Modifier>[] aggregate = field.base.aggregate;
                     final DerivedVariable<Modifier> f = aggregate == null || aggregate.length <= index ? null : aggregate[index];
                     if (f == null) {
                         field = compose(field, RELAXED);
