@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;

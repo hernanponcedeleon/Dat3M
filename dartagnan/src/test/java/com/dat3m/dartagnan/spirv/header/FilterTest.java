@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.spirv.header;
 
-import com.dat3m.dartagnan.expression.Expression;
+
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import org.junit.Test;
