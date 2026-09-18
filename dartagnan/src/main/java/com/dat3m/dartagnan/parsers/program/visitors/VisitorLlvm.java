@@ -16,8 +16,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.utils.metadata.Metadata;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.Metadata;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -316,7 +317,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 // Field "line" is optional. When missing we assume value 0
                 final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
                         .orElse(new MdGenericValue<>(BigInteger.ZERO)).value().intValue();
-                metadata.add(new SourceLocation.Generic((directory + "/" + filename).intern(), lineNumber));
+                metadata.add(new SourceLocation.Generic(Path.of(directory, filename), lineNumber));
             }
         }
 

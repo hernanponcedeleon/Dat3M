@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.metadata;
+package com.dat3m.dartagnan.metadata;
 
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 
@@ -15,6 +15,11 @@ public abstract class MetadataCarrierBase<T extends MetadataCarrier<T>> implemen
     public <TMeta extends Metadata> TMeta getMetadata(Class<TMeta> metadataClass) { return metadataMap.get(metadataClass); }
     @Override
     public <TMeta extends Metadata> TMeta setMetadata(TMeta metadata) { return metadataMap.put(metadata); }
+
+    @Override
+    public <TMeta extends Metadata> boolean removeMetadata(Class<TMeta> metadataClass) {
+        return metadataMap.remove(metadataClass);
+    }
 
     @Override
     public void copyAllMetadataFrom(T other) {

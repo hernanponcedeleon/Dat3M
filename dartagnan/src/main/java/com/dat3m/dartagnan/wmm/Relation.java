@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.utils.metadata.MetadataCarrierBase;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;

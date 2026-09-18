@@ -1,13 +1,15 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.utils.metadata.MetadataCarrier;
+import com.dat3m.dartagnan.metadata.MetadataCarrier;
 import com.dat3m.dartagnan.verification.Context;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface Event extends Comparable<Event>, MetadataCarrier<Event> {
@@ -85,4 +87,27 @@ public interface Event extends Comparable<Event>, MetadataCarrier<Event> {
 
     // This method needs to get overwritten for conditional events.
     boolean cfImpliesExec();
+
+    // ======================================== Metadata ========================================
+
+    // Used as a snapshot of the global ID after the program has been constructed (either programmatically or via a parser).
+    record OriginalId(int value) implements Metadata { }
+
+    // Used as a snapshot of the global ID right before unrolling.
+    record UnrollingId(int value) implements Metadata { }
+
+    // Used as a snapshot of the global ID right before compilation.
+    record CompilationId(int value) implements Metadata { }
+
+    // Can be attached to events to modify how they are printed.
+    // This is commonly used to print IR events in the syntax of the source language.
+    @FunctionalInterface
+    interface CustomPrinting extends Metadata {
+        // The parameter is the event this metadata is attached to.
+        // Can return an empty optional to fall back to the default string representation.
+        Optional<String> stringify(Event e);
+    }
+
+    // Can be attached to loop-related events to remember the unrolling bound.
+    record UnrollingBound(int value) implements Metadata { }
 }
