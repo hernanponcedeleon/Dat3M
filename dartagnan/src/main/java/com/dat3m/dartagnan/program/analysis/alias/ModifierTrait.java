@@ -170,7 +170,10 @@ public interface ModifierTrait <Modifier> {
             int leftAlignment = singleAlignment(left.alignment);
             int rightAlignment = singleAlignment(right.alignment);
             if (leftAlignment < 0 || rightAlignment < 0) {
-                int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
+                if (leftAlignment >= 0) {
+                    return false;
+                }
+                int l = -leftAlignment;
                 int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
                 return offset % l == 0 && r % l == 0;
             }
@@ -184,7 +187,11 @@ public interface ModifierTrait <Modifier> {
                 return offset % leftAlignment == 0 && offset >= 0;
             }
             // Case of multiple dynamic indexes with pairwise indivisible alignments.
-            final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
+            if (offset < 0) {
+                return false;
+            }
+            final int gcd = IntMath.gcd(reduceGCD(left.alignment),
+                    IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset)));
             if (gcd == 0) {
                 return true;
             }
