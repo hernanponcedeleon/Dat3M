@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.memory.metadata.VariableName;
+import com.dat3m.dartagnan.program.memory.MemoryObject.VariableName;
 import org.junit.Test;
 
 import java.nio.file.Path;

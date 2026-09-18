@@ -8,8 +8,9 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.core.Alloc;
-import com.dat3m.dartagnan.utils.metadata.MetadataCarrierBase;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -22,6 +23,9 @@ import static com.google.common.base.Preconditions.checkState;
  * Associated with an array of memory locations.
  */
 public class MemoryObject extends MetadataCarrierBase<MemoryObject> implements LeafExpression {
+
+    // Source-level variable name associated with this memory object.
+    public record VariableName(String value) implements Metadata { }
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
