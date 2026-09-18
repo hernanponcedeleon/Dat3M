@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.spirv.header;
 
+
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,6 +38,6 @@ public class FilterTest extends AbstractTest {
         Program program = parse(input);
 
         // then
-        assertEquals(expValue, program.getFilterSpecification().toString());
+        assertEquals(expValue, ((ProgramExtension.Litmus)program.getExtension()).filter().toString());
     }
 }

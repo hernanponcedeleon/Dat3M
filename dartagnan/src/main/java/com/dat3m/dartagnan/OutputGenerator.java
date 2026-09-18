@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -355,12 +356,13 @@ public class OutputGenerator {
             return "";
         }
 
-        final StringBuilder sb = new StringBuilder();
-        sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
-        // TODO: Can the spec really be null here?
-        if (program.getSpecification() != null) {
-            sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
+        if (!(program.getExtension() instanceof ProgramExtension.Litmus litmusExtension)) {
+            return "";
         }
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(litmusExtension.specType().toString().toLowerCase()).append(" ");
+        sb.append(new ExpressionPrinter(true).visit(litmusExtension.spec()));
         sb.append("\n");
         return sb.toString();
     }
@@ -369,9 +371,13 @@ public class OutputGenerator {
         if ("true".equals(task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION)))
             return "";
 
-        final Expression filter = task.getProgram().getFilterSpecification();
-        final boolean isTrivialFilter = filter instanceof BoolLiteral bLit && bLit.getValue();
-        return isTrivialFilter ? "" : filter.toString();
+        if (task.getProgram().getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            final Expression filter = litmusExtension.filter();
+            final boolean isTrivialFilter = filter instanceof BoolLiteral bLit && bLit.getValue();
+            return isTrivialFilter ? "" : filter.toString();
+        }
+
+        return "";
     }
 
     private static String toSummary(String test, String filter, ResultStatus status, String condition,

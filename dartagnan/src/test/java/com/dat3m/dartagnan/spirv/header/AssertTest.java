@@ -1,13 +1,14 @@
 package com.dat3m.dartagnan.spirv.header;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
+import static com.dat3m.dartagnan.program.extensions.ProgramExtension.Litmus.SpecificationType.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -15,9 +16,9 @@ public class AssertTest extends AbstractTest {
 
     private final String input;
     private final String expValue;
-    private final Program.SpecificationType expType;
+    private final ProgramExtension.Litmus.SpecificationType expType;
 
-    public AssertTest(String input, String expValue, Program.SpecificationType expType) {
+    public AssertTest(String input, String expValue, ProgramExtension.Litmus.SpecificationType expType) {
         this.input = input;
         this.expValue = expValue;
         this.expType = expType;
@@ -96,7 +97,8 @@ public class AssertTest extends AbstractTest {
         Program program = parse(input);
 
         // then
-        assertEquals(expValue, program.getSpecification().toString());
-        assertEquals(expType, program.getSpecificationType());
+        final ProgramExtension.Litmus litmusExtension = (ProgramExtension.Litmus) program.getExtension();
+        assertEquals(expValue, litmusExtension.spec().toString());
+        assertEquals(expType, litmusExtension.specType());
     }
 }

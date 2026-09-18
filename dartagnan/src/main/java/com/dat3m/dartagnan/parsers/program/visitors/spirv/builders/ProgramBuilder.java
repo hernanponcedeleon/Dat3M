@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -40,6 +41,8 @@ public class ProgramBuilder {
     protected String entryPointId;
     protected Arch arch;
     protected Expression filterSpec;
+    protected Expression spec;
+    protected ProgramExtension.Litmus extension = ProgramExtension.Litmus.trivial();
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -47,6 +50,8 @@ public class ProgramBuilder {
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
+
+        program.setExtension(extension);
     }
 
     public Program build() {
@@ -108,11 +113,13 @@ public class ProgramBuilder {
         this.arch = arch;
     }
 
-    public void setSpecification(Program.SpecificationType type, Expression condition) {
-        if (program.getSpecification() != null) {
+    public void setSpecification(ProgramExtension.Litmus.SpecificationType type, Expression condition) {
+        if (this.spec != null) {
             throw new ParsingException("Attempt to override program specification");
         }
-        program.setSpecification(type, condition);
+
+        this.spec = condition;
+        this.extension.setSpec(type, condition);
     }
 
     public void setFilterSpecification(Expression condition) {
@@ -120,7 +127,7 @@ public class ProgramBuilder {
             throw new ParsingException("Attempt to override program filter specification");
         }
         this.filterSpec = condition;
-        program.setFilterSpecification(this.filterSpec);
+        this.extension.setFilter(condition);
     }
 
     public boolean hasInput(String id) {

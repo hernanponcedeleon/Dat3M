@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -31,7 +32,6 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
-import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 public class PropertyEncoder {
@@ -156,7 +156,7 @@ public class PropertyEncoder {
         // Litmus (program spec). We cannot check this together with safety specs, so we make sure
         // that we do not mix them up.
         Preconditions.checkArgument(properties.contains(PROGRAM_SPEC));
-        Preconditions.checkArgument(program.hasReachabilitySpecification());
+        //Preconditions.checkArgument(program.hasReachabilitySpecification());
 
         final TrackableFormula progSpec = encodeProgramSpecification();
         // NOTE: We have a single property to check, so the tracking becomes trivial.
@@ -174,28 +174,28 @@ public class PropertyEncoder {
         final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
-        BooleanFormula encoding = switch (program.getSpecificationType()) {
-            case EXISTS, NOT_EXISTS -> exprEnc.encodeBooleanFinal(program.getSpecification()).formula();
-            case FORALL -> bmgr.not(exprEnc.encodeBooleanFinal(program.getSpecification()).formula());
-            case ASSERT -> {
-                // User-placed assertions inside C code.
-                List<BooleanFormula> assertionsHold = new ArrayList<>();
-                for (Assert assertion : program.getThreadEvents(Assert.class)) {
-                    assertionsHold.add(bmgr.implication(context.execution(assertion),
-                            exprEnc.encodeBooleanAt(assertion.getExpression(), assertion).formula()
-                    ));
-                }
-                yield bmgr.not(bmgr.and(assertionsHold));
-            }
-        };
-        BooleanFormula trackingLiteral = switch (program.getSpecificationType()) {
-            case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
-            case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
-        };
-        if (!ASSERT.equals(program.getSpecificationType())) {
+        if (program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            BooleanFormula encoding = switch (litmusExtension.specType()) {
+                case EXISTS, NOT_EXISTS -> exprEnc.encodeBooleanFinal(litmusExtension.spec()).formula();
+                case FORALL -> bmgr.not(exprEnc.encodeBooleanFinal(litmusExtension.spec()).formula());
+            };
+            BooleanFormula trackingLiteral = switch (litmusExtension.specType()) {
+                case FORALL, NOT_EXISTS -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
+                case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
+            };
             encoding = bmgr.and(encoding, encodeProgramTermination());
+            return new TrackableFormula(trackingLiteral, encoding);
+        } else {
+            List<BooleanFormula> assertionsHold = new ArrayList<>();
+            for (Assert assertion : program.getThreadEvents(Assert.class)) {
+                assertionsHold.add(bmgr.implication(context.execution(assertion),
+                        exprEnc.encodeBooleanAt(assertion.getExpression(), assertion).formula()
+                ));
+            }
+            BooleanFormula encoding =  bmgr.not(bmgr.and(assertionsHold));
+            BooleanFormula trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
+            return new TrackableFormula(trackingLiteral, encoding);
         }
-        return new TrackableFormula(trackingLiteral, encoding);
     }
 
     private BooleanFormula encodeProgramTermination() {

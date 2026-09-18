@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -49,12 +50,15 @@ public class ProgramBuilder {
     private final Map<String, MemoryObject> locations = new HashMap<>();
 
     private final Program program;
+    private final ProgramExtension.Litmus litmusExtension;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
         Preconditions.checkArgument(format == SourceLanguage.LITMUS);
         this.program = new Program(new Memory(), format);
+        this.litmusExtension = ProgramExtension.Litmus.trivial();
+        this.program.setExtension(litmusExtension);
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -128,12 +132,12 @@ public class ProgramBuilder {
         return expressions;
     }
 
-    public void setAssert(Program.SpecificationType type, Expression ass) {
-        program.setSpecification(type, ass);
+    public void setAssert(ProgramExtension.Litmus.SpecificationType type, Expression ass) {
+        litmusExtension.setSpec(type, ass);
     }
 
     public void setAssertFilter(Expression ass) {
-        program.setFilterSpecification(ass);
+        litmusExtension.setFilter(ass);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

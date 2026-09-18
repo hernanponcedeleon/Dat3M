@@ -20,7 +20,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
+import static com.dat3m.dartagnan.program.extensions.ProgramExtension.Litmus.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
 
 class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {

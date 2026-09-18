@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
@@ -165,17 +166,16 @@ public final class Tearing implements ProgramProcessor {
 
     private void tearExpressions(Program program) {
         //TODO currently, FinalMemoryValue only occurs in the program's final state expressions.
-        final Expression specification = program.getSpecification();
-        final Expression filter = program.getFilterSpecification();
         final var substitution = new FinalValueTearSubstitution();
         for (Init init : program.getThreadEvents(Init.class)) {
             substitution.typesByObject.computeIfAbsent(init.getBase(), k -> new HashMap<>())
                     .put(init.getOffset(), init.getAccessType());
         }
-        final Expression updatedSpecification = specification == null ? null : specification.accept(substitution);
-        final Expression updatedFilter = filter.accept(substitution);
-        program.setSpecification(program.getSpecificationType(), updatedSpecification);
-        program.setFilterSpecification(updatedFilter);
+
+        if (program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            litmusExtension.setSpec(litmusExtension.specType(), litmusExtension.spec().accept(substitution));
+            litmusExtension.setFilter(litmusExtension.filter().accept(substitution));
+        }
     }
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {

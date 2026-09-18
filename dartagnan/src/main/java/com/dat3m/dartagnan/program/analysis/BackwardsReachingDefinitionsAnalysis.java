@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -111,13 +112,13 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
     }
 
     private static Set<Register> finalRegisters(Program program) {
+        if (!(program.getExtension() instanceof ProgramExtension.Litmus litmusExtension)) {
+            return ImmutableSet.of();
+        }
+
         final Set<Register> finalRegisters = new LinkedHashSet<>();
-        if (program.getSpecification() != null) {
-            finalRegisters.addAll(program.getSpecification().getRegs());
-        }
-        if (program.getFilterSpecification() != null) {
-            finalRegisters.addAll(program.getFilterSpecification().getRegs());
-        }
+        finalRegisters.addAll(litmusExtension.spec().getRegs());
+        finalRegisters.addAll(litmusExtension.filter().getRegs());
         return finalRegisters;
     }
 

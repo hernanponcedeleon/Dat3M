@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
@@ -32,8 +33,6 @@ public class Program {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
-    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
-
     @Options
     public static class SemanticConfig {
         @Option(name = ROUNDING_MODE_FLOATS,
@@ -54,10 +53,8 @@ public class Program {
     private final Memory memory;
     private Entrypoint entrypoint = new Entrypoint.None();
 
-    // Spec
-    private SpecificationType specificationType = SpecificationType.ASSERT;
-    private Expression spec;
-    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
+    // Extension
+    private ProgramExtension extension = new ProgramExtension.None();
 
     // Semantic options
     private final SemanticConfig semanticConfig = new SemanticConfig();
@@ -82,8 +79,6 @@ public class Program {
         this.name = name;
         this.memory = memory;
         this.format = format;
-
-        this.filterSpec = ExpressionFactory.getInstance().makeTrue();
     }
 
     public SourceLanguage getFormat() {
@@ -130,32 +125,6 @@ public class Program {
         return entrypoint;
     }
 
-    public SpecificationType getSpecificationType() {
-        return specificationType;
-    }
-
-    public boolean hasReachabilitySpecification() {
-        return SpecificationType.EXISTS.equals(specificationType);
-    }
-
-    public Expression getSpecification() {
-        return spec;
-    }
-
-    public void setSpecification(SpecificationType type, Expression spec) {
-        this.specificationType = type;
-        this.spec = spec;
-    }
-
-    public Expression getFilterSpecification() {
-        return filterSpec;
-    }
-
-    public void setFilterSpecification(Expression spec) {
-        Preconditions.checkArgument(spec.getType() instanceof BooleanType);
-        this.filterSpec = spec;
-    }
-
     public FloatingPointRoundingMode getFloatRoundingMode() {
         return semanticConfig.floatRoundingMode;
     }
@@ -167,6 +136,10 @@ public class Program {
     public void setFloatRoundingMode(FloatingPointRoundingMode roundingMode) {
          this.semanticConfig.floatRoundingMode = roundingMode;
     }
+
+    public void setExtension(ProgramExtension extension) { this.extension = extension; }
+
+    public ProgramExtension getExtension() { return extension; }
 
     public void injectConfig(Configuration configuration) throws InvalidConfigurationException {
         configuration.inject(semanticConfig);

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -33,8 +34,8 @@ public class RemoveUnusedMemory implements ProgramProcessor {
                         .forEach(f -> collector.memoryObjects.addAll(o.getInitialValue(f).getMemoryObjects())));
 
         // Assertions
-        if (program.getSpecification() != null) {
-            collector.memoryObjects.addAll(program.getSpecification().getMemoryObjects());
+        if (program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            collector.memoryObjects.addAll(litmusExtension.spec().getMemoryObjects());
         }
 
         // Remove unused objects

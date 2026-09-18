@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.extensions.ProgramExtension;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -40,12 +41,10 @@ public class DeadAssignmentElimination implements FunctionProcessor {
     private void eliminateDeadAssignments(Function function) {
         final Program program = function.getProgram();
         Set<Register> usedRegs = new HashSet<>();
-        if(program.getSpecification() != null) {
-            usedRegs.addAll(program.getSpecification().getRegs());
-            // for litmus tests
-            if (program.getFilterSpecification() != null) {
-                usedRegs.addAll(program.getFilterSpecification().getRegs());
-            }
+
+        if (program.getExtension() instanceof ProgramExtension.Litmus litmusExtension) {
+            usedRegs.addAll(litmusExtension.spec().getRegs());
+            usedRegs.addAll(litmusExtension.filter().getRegs());
         }
 
         // Compute events to be removed (removal is delayed)
