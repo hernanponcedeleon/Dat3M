@@ -1,7 +1,6 @@
 package com.dat3m.svcomp;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.BaseOptions;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.ExitCode;
 
@@ -29,7 +28,7 @@ import static com.dat3m.dartagnan.GlobalSettings.*;
 public class SVCOMPRunner {
 
     @Options
-    public static class SVCOMPOptions extends BaseOptions {
+    public static class SVCOMPOptions {
 
         private EnumSet<Property> property;
 
@@ -60,8 +59,6 @@ public class SVCOMPRunner {
         private boolean nativeExecution = true;
 
         public SVCOMPOptions(Configuration config) throws InvalidConfigurationException {
-            super(config);
-
             config.inject(this);
         }
     }

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,11 +29,11 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 
-public class Dartagnan{
+public class Dartagnan {
 
     private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
 
@@ -55,7 +57,7 @@ public class Dartagnan{
         }
 
         final Configuration config = loadConfigurationFromArgs(args);
-        final BaseOptions o = new BaseOptions(config);
+        final Options o = new Options(config);
         final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
         final ProgramParser programParser = new ProgramParser(pipelines);
         final Path catFile  = getCatFileFromArgs(args);
@@ -193,4 +195,73 @@ public class Dartagnan{
             return List.of();
         }
     }
+
+    // ========================================== Options ==========================================
+
+    @org.sosy_lab.common.configuration.Options
+    public static class Options {
+
+        public Options(Configuration config) throws InvalidConfigurationException {
+            config.inject(this, Options.class);
+        }
+
+        @Option(
+                name = PROPERTY,
+                description = "A combination of properties to check for: program_spec, termination, cat_spec (defaults to all).",
+                toUppercase = true)
+        private EnumSet<Property> property = Property.getDefault();
+
+        public EnumSet<Property> getProperty() {
+            return property;
+        }
+
+        @Option(
+                name = PROGRESSMODEL,
+                description = """
+                            The progress model to assume: fair (default), hsa, obe, unfair.
+                            To specify progress models per scope, use [<scope>=<progressModel>,...].
+                            Defaults to "fair" for unspecified scopes unless "default=<progressModel>" is specified.
+                            """,
+                toUppercase = true)
+        private ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
+
+        public ProgressModel.Hierarchy getProgressModel() {
+            return this.progressModel;
+        }
+
+        @Option(
+                name = CAT_INCLUDE,
+                description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
+        )
+        private String catIncludePath = GlobalSettings.getCatDirectory().toString();
+
+        public Path getCatIncludePath() {
+            return Path.of(catIncludePath);
+        }
+
+        @Option(
+                name = ENTRY,
+                description = "Name of the entry point function."
+        )
+        private String entryFunction = "";
+
+        public String getEntryFunction() {
+            return entryFunction;
+        }
+
+        public boolean overrideEntryFunction() {
+            return !entryFunction.isEmpty();
+        }
+
+        @Option(
+                name = COMPILATION_PIPELINE,
+                description = "Path to the yaml file defining the compilation pipeline."
+        )
+        private String compilationPipelinePath = GlobalSettings.getCompilationPipelinePath().toString();
+
+        public Path getCompilationPipelinePath() {
+            return Path.of(compilationPipelinePath);
+        }
+    }
+
 }
