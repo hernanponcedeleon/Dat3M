@@ -1,8 +1,9 @@
-package com.dat3m.dartagnan.utils.options;
+package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import java.nio.file.Path;
@@ -12,7 +13,11 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
-public abstract class BaseOptions {
+public class BaseOptions {
+
+    public BaseOptions(Configuration config) throws InvalidConfigurationException {
+        config.inject(this, BaseOptions.class);
+    }
 
     @Option(
             name = PROPERTY,
