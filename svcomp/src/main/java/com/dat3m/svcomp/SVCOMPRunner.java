@@ -1,12 +1,14 @@
 package com.dat3m.svcomp;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.dat3m.dartagnan.BaseOptions;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.ExitCode;
 
+import com.dat3m.dartagnan.utils.Utils;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
@@ -22,39 +24,47 @@ import java.util.EnumSet;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.GlobalSettings.*;
 
-@Options
-public class SVCOMPRunner extends BaseOptions {
+public class SVCOMPRunner {
 
-    private EnumSet<Property> property;
-    
-    @Option(
-        name= PROPERTYPATH,
-        required=true,
-        description="The path to the property to be checked.")
-    private void property(String p) {
-        // TODO process the property file instead of assuming its contents based of its name
-        // We always enable PROGRAM_SPEC to detect calls to unknown functions.
-        // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
-        if(p.contains("no-data-race")) {
-            property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
-        } else if(p.contains("termination")) {
-            property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
-        } else if(p.contains("valid-memsafety")) {
-            property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
-        } else if(p.contains("unreach-call") || p.contains("no-overflow")) {
-            property = EnumSet.of(Property.PROGRAM_SPEC);
-        } else {
-            throw new IllegalArgumentException("Unrecognized property " + p);
+    @Options
+    public static class SVCOMPOptions extends BaseOptions {
+
+        private EnumSet<Property> property;
+
+        @Option(
+                name= PROPERTYPATH,
+                required=true,
+                description="The path to the property to be checked.")
+        private void property(String p) {
+            // TODO process the property file instead of assuming its contents based of its name
+            // We always enable PROGRAM_SPEC to detect calls to unknown functions.
+            // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
+            if(p.contains("no-data-race")) {
+                property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
+            } else if(p.contains("termination")) {
+                property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
+            } else if(p.contains("valid-memsafety")) {
+                property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
+            } else if(p.contains("unreach-call") || p.contains("no-overflow")) {
+                property = EnumSet.of(Property.PROGRAM_SPEC);
+            } else {
+                throw new IllegalArgumentException("Unrecognized property " + p);
+            }
+        }
+
+        @Option(
+                name=NATIVE,
+                description="Run Dartagnan in native mode rather than using the JVM.")
+        private boolean nativeExecution = true;
+
+        public SVCOMPOptions(Configuration config) throws InvalidConfigurationException {
+            super(config);
+
+            config.inject(this);
         }
     }
-
-    @Option(
-        name=NATIVE,
-        description="Run Dartagnan in native mode rather than using the JVM.")
-    private boolean nativeExecution = true;
 
     private static final Set<String> supportedFormats = 
         ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
@@ -66,6 +76,7 @@ public class SVCOMPRunner extends BaseOptions {
             return;
         }
 
+        // TODO: Can we reuse functionality of the Dartagnan class to parse the args?
         if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
             throw new IllegalArgumentException("Input program not given or format not recognized");
         }
@@ -82,10 +93,9 @@ public class SVCOMPRunner extends BaseOptions {
             .filter(s->s.startsWith("-"))
             .toArray(String[]::new);
         Configuration config = Configuration.fromCmdLineArguments(argKeyword);
-        SVCOMPRunner r = new SVCOMPRunner();
-        config.recursiveInject(r);
+        SVCOMPOptions o = new SVCOMPOptions(config);
 
-        if(r.property == null) {
+        if(o.property == null) {
             System.out.println("UNKNOWN");
             return;
         }
@@ -93,15 +103,15 @@ public class SVCOMPRunner extends BaseOptions {
         int exitCode = ExitCode.BOUNDED_RESULT.asInt();
         while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
-            if (r.nativeExecution) {
+            if (o.nativeExecution) {
                 cmd.add(getExecutablePath(false).toString());
                 cmd.add("-DlogLevel=INFO");
-                cmd.add("-DLOGNAME=" + getNameWithoutExtension(programPath));
+                cmd.add("-DLOGNAME=" + Utils.getNameWithoutExtension(programPath));
                 cmd.add("-Djava.library.path=" + getLibraryDirectory());
             } else {
                 cmd.add("java");
                 cmd.add("-DlogLevel=info");
-                cmd.add("-DLOGNAME=" + getNameWithoutExtension(programPath));
+                cmd.add("-DLOGNAME=" + Utils.getNameWithoutExtension(programPath));
                 cmd.add("-jar");
                 cmd.add(getExecutablePath(true).toString());
             }
@@ -110,7 +120,7 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
-            cmd.add(String.format("--%s=%s", PROPERTY, r.property.stream().map(Enum::name).collect(Collectors.joining(","))));
+            cmd.add(String.format("--%s=%s", PROPERTY, o.property.stream().map(Enum::name).collect(Collectors.joining(","))));
             cmd.addAll(filterOptions(config));
 
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -150,8 +160,5 @@ public class SVCOMPRunner extends BaseOptions {
             map(p -> "--" + p.split(" = ")[0] + "=" + p.split(" = ")[1]).
             collect(Collectors.toList());
     }
-    
-    public static String getNameWithoutExtension(Path path) {
-        return com.google.common.io.Files.getNameWithoutExtension(path.toString());
-    }
+
 }

@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.Task.TaskBuilder;
@@ -19,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,14 +31,9 @@ import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
 
-@Options
-public class Dartagnan extends BaseOptions {
+public class Dartagnan{
 
     private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
-
-    private Dartagnan(Configuration config) throws InvalidConfigurationException {
-        config.recursiveInject(this);
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -62,7 +55,7 @@ public class Dartagnan extends BaseOptions {
         }
 
         final Configuration config = loadConfigurationFromArgs(args);
-        final Dartagnan o = new Dartagnan(config);
+        final BaseOptions o = new BaseOptions(config);
         final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
         final ProgramParser programParser = new ProgramParser(pipelines);
         final Path catFile  = getCatFileFromArgs(args);
