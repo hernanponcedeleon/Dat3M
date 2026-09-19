@@ -127,6 +127,7 @@ public class Intrinsics {
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), true, true, false, true, Intrinsics::inlinePthreadJoin),
         P_THREAD_DETACH("pthread_detach", true, true, true, true, Intrinsics::inlinePthreadDetach),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_ONCE("pthread_once", true, true, false, true, Intrinsics::inlinePthreadOnce),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, Intrinsics::inlinePthreadSelf),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
         P_THREAD_ATTR_INIT("pthread_attr_init", true, true, true, true, Intrinsics::inlinePthreadAttr),
@@ -536,6 +537,40 @@ public class Intrinsics {
         final Expression equation = expressions.makeEQ(leftId, rightId);
         return List.of(
                 EventFactory.newLocal(resultRegister, expressions.makeCast(equation, resultRegister.getType()))
+        );
+    }
+
+    private List<Event> inlinePthreadOnce(FunctionCall call) {
+        final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression controlAddress = call.getArguments().get(0);
+        final Expression initRoutine = call.getArguments().get(1);
+
+        final IntegerType stateType = getNativeIntType();
+        final Expression uninitialized = expressions.makeZero(stateType);
+        final Expression running = expressions.makeOne(stateType);
+        final Expression complete = expressions.makeValue(2, stateType);
+        final Type stateAndSuccessType = types.getAggregateType(List.of(stateType, types.getBooleanType()));
+        final Register stateAndSuccess = call.getFunction().newUniqueRegister("__pthread_once", stateAndSuccessType);
+        final Register state = call.getFunction().newUniqueRegister("__pthread_once_state", stateType);
+
+        final Label wait = newLabel("__pthread_once_wait");
+        final Label runRoutine = newLabel("__pthread_once_run_routine");
+        final Label end = newLabel("__pthread_once_end");
+        final FunctionType initRoutineType = types.getFunctionType(types.getVoidType(), List.of());
+
+        return eventSequence(
+                Llvm.newCompareExchange(stateAndSuccess, controlAddress, uninitialized, running,
+                        Tag.C11.MO_ACQUIRE, true),
+                newJump(expressions.makeExtract(stateAndSuccess, 1), runRoutine),
+                wait,
+                Llvm.newLoad(state, controlAddress, Tag.C11.MO_ACQUIRE),
+                newJump(expressions.makeEQ(state, complete), end),
+                newGoto(wait),
+                runRoutine,
+                newVoidFunctionCall(initRoutineType, initRoutine, List.of()),
+                Llvm.newStore(controlAddress, complete, Tag.C11.MO_RELEASE),
+                end,
+                assignSuccess(resultRegister)
         );
     }
 
