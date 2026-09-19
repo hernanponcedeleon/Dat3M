@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.metadata.Metadata;
-import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -16,7 +15,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class Wmm extends MetadataCarrierBase<Wmm> {
+public class Wmm {
 
     private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
 

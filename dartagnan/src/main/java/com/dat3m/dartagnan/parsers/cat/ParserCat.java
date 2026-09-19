@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.cat;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
-import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.parsers.CatLexer;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -24,9 +23,7 @@ public class ParserCat {
     }
 
     public Wmm parse(Path path) throws IOException {
-        final Wmm memoryModel = parse(CharStreams.fromPath(path), path.toString());
-        memoryModel.setMetadata(new SourcePath(path));
-        return memoryModel;
+        return parse(CharStreams.fromPath(path), path.toString());
     }
 
     public Wmm parse(String raw) {

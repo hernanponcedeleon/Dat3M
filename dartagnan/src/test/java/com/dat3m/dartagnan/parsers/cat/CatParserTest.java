@@ -1,27 +1,12 @@
 package com.dat3m.dartagnan.parsers.cat;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class CatParserTest {
-
-    @Test
-    public void parsedMemoryModelHasSourceMetadata() throws IOException {
-        final Path sourcePath = getRootPath("cat/tso.cat");
-        final Wmm memoryModel = new ParserCat().parse(sourcePath);
-
-        assertTrue(memoryModel.hasMetadata(SourcePath.class));
-        assertEquals(sourcePath, memoryModel.getMetadata(SourcePath.class).sourcePath());
-    }
 
     @Test
     public void undefinedName() {
