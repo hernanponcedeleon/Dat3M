@@ -10,11 +10,6 @@
     <artifactId>svcomp</artifactId>
     <packaging>jar</packaging>
 
-    <properties>
-        <!-- Surefire's shared configuration uses late replacement for JaCoCo's argument line. -->
-        <argLine></argLine>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.dat3m</groupId>
