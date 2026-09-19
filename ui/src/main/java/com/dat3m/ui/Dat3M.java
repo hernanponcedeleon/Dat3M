@@ -38,6 +38,8 @@ import static javax.swing.UIManager.getDefaults;
 
 public class Dat3M extends JFrame implements ActionListener {
 
+    private static final String UI_SOURCE_NAME = "dat3mUI";
+
     private final OptionsPane optionsPane = new OptionsPane();
     private final ProgramParser programParser;
     private final EditorsPane editorsPane;
@@ -181,7 +183,6 @@ public class Dat3M extends JFrame implements ActionListener {
                 final Program program;
                 try {
                     program = parseSource(sourceCode, format, programEditor.getLoadedDir());
-                    program.setName("dat3mUI");
                 } catch (Exception e) {
                     return VerificationOutcome.programError(e);
                 }
@@ -264,7 +265,9 @@ public class Dat3M extends JFrame implements ActionListener {
         final Path sourceFile = createTemporarySourceFile(sourceDirectory, format);
         try {
             Files.writeString(sourceFile, sourceCode);
-            return programParser.parseTemporary(sourceFile);
+            final Program program = programParser.parseTemporary(sourceFile);
+            program.setName(UI_SOURCE_NAME);
+            return program;
         } finally {
             Files.deleteIfExists(sourceFile);
         }

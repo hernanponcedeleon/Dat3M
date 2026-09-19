@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
@@ -99,10 +100,10 @@ public class OutputGenerator {
     // ====================================================================================
 
     public static Output getOutputFromException(Throwable exception) {
-        return getOutputFromException(exception, null);
+        return getOutputFromException(exception, "unknown");
     }
 
-    public static Output getOutputFromException(Throwable exception, String program) {
+    public static Output getOutputFromException(Throwable exception, String programSource) {
         final String message = exception.getMessage() != null ? exception.getMessage() : "Unknown error occurred";
         final String details = "\t" + message;
 
@@ -111,28 +112,31 @@ public class OutputGenerator {
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(program, "", INTERRUPTED,
+            return new Output(exitCode, toSummary(programSource, "", INTERRUPTED,
                     "", "", details, 0, null));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(program, "", ERROR,
+            return new Output(UNKNOWN_ERROR, toSummary(programSource, "", ERROR,
                     "", reason, details, 0, null));
         }
     }
 
-    public Output getOutputFromSolver(TaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
-            return getOutputFromSolver(verificationTaskSolver, programPath);
+            return getOutputFromSolver(verificationTaskSolver);
         }
 
         throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
     }
 
-    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final ResultStatus status = solver.getResultStatus();
         final Program p = task.getProgram();
+        final String programSource = p.hasMetadata(SourcePath.class)
+                ? p.getMetadata(SourcePath.class).toString()
+                : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final EnumSet<Property> props = task.getProperties();
         final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
@@ -142,7 +146,7 @@ public class OutputGenerator {
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         try {
-            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programPath));
+            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
         } catch (IOException ex) {
             logger.warn("Failed to generate witness file.", ex);
             witnessFile = null;
@@ -162,7 +166,7 @@ public class OutputGenerator {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programSource, filter, FAIL,
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
@@ -178,7 +182,7 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new Output(TERMINATION_VIOLATION, toSummary(programPath, filter, FAIL,
+                return new Output(TERMINATION_VIOLATION, toSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
@@ -188,7 +192,7 @@ public class OutputGenerator {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programPath, filter, FAIL,
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programSource, filter, FAIL,
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
@@ -198,7 +202,7 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    return new Output(CAT_SPEC_VIOLATION, toSummary(programPath, filter, FAIL,
+                    return new Output(CAT_SPEC_VIOLATION, toSummary(programSource, filter, FAIL,
                             "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
@@ -206,7 +210,7 @@ public class OutputGenerator {
             throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, status,
+            return new Output(NORMAL_TERMINATION, toSummary(programSource, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
         } else if (status == UNKNOWN && model != null) {
             // We reached unrolling bounds.
@@ -224,13 +228,13 @@ public class OutputGenerator {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            return new Output(BOUNDED_RESULT, toSummary(programPath, filter, status,
+            return new Output(BOUNDED_RESULT, toSummary(programSource, filter, status,
                     "", BOUND_REASON, details.toString(), time, witnessFile));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toSummary(programPath, filter, status,
+        return new Output(NORMAL_TERMINATION, toSummary(programSource, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
@@ -262,11 +266,11 @@ public class OutputGenerator {
 
     // =========================================== Utility =================================================
 
-    private String getWitnessFilename(String progFile) {
+    private String getWitnessFilename(String programSource) {
         final String batchSuffix = isBatchMode ? "-batch#" + batchIndex : "";
         return !witnessFilename.isBlank()
                 ? witnessFilename + batchSuffix
-                : Utils.getNameWithoutExtension(progFile);
+                : Utils.getNameWithoutExtension(programSource);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -374,10 +378,10 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String test, String filter, ResultStatus status, String condition,
+    private static String toSummary(String programSource, String filter, ResultStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
-        final String shownTest = formatOptional("Test: %s%n", test);
+        final String shownTest = formatOptional("Test: %s%n", programSource);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
