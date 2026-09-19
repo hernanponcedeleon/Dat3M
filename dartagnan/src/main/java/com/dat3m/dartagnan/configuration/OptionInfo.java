@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.configuration;
 
+import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
@@ -9,7 +10,6 @@ import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.TaskSolverBase;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -57,7 +57,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 SparseConditionalConstantPropagation.class,
                 Compilation.class,
                 CoreReasoner.class,
-                BaseOptions.class,
+                Dartagnan.DartagnanOptions.class,
                 Printer.class,
                 ModelChecker.SMTConfig.class,
                 RefinementSolver.class,

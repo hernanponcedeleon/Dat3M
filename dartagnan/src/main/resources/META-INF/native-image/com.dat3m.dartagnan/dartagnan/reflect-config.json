@@ -40,7 +40,7 @@
         "allDeclaredConstructors": true
     },
     {
-        "name":"com.dat3m.dartagnan.Dartagnan",
+        "name":"com.dat3m.dartagnan.Dartagnan.DartagnanOptions",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
