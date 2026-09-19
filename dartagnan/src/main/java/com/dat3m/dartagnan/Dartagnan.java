@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,7 +58,7 @@ public class Dartagnan {
         }
 
         final Configuration config = loadConfigurationFromArgs(args);
-        final Options o = new Options(config);
+        final DartagnanOptions o = new DartagnanOptions(config);
         final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
         final ProgramParser programParser = new ProgramParser(pipelines);
         final Path catFile  = getCatFileFromArgs(args);
@@ -198,11 +199,11 @@ public class Dartagnan {
 
     // ========================================== Options ==========================================
 
-    @org.sosy_lab.common.configuration.Options
-    public static class Options {
+    @Options
+    public static class DartagnanOptions {
 
-        public Options(Configuration config) throws InvalidConfigurationException {
-            config.inject(this, Options.class);
+        public DartagnanOptions(Configuration config) throws InvalidConfigurationException {
+            config.inject(this, DartagnanOptions.class);
         }
 
         @Option(

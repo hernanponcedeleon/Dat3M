@@ -57,7 +57,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 SparseConditionalConstantPropagation.class,
                 Compilation.class,
                 CoreReasoner.class,
-                Dartagnan.Options.class,
+                Dartagnan.DartagnanOptions.class,
                 Printer.class,
                 ModelChecker.SMTConfig.class,
                 RefinementSolver.class,
