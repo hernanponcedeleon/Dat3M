@@ -104,7 +104,7 @@ public class Dartagnan extends BaseOptions {
                 // ----------- Generate output-----------
                 output = outputGenerator.getOutputFromSolver(taskSolver);
             } catch (Exception e) {
-                output = OutputGenerator.getOutputFromException(e, progFile);
+                output = OutputGenerator.getOutputFromException(e, progFile.toString());
             }
             outputs.add(output);
         }

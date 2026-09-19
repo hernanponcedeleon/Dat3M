@@ -60,7 +60,7 @@ public class ProgramParser {
         return parse(path, true);
     }
 
-    private Program parse(Path path, boolean removePipelineOutput) throws Exception {
+    private Program parse(Path path, boolean isTemporary) throws Exception {
         final String extension = getFileExtension(path);
         final Program program;
         if (!pipelines.needsCompilation(extension)) {
@@ -71,12 +71,14 @@ public class ProgramParser {
                 pipeline.execute();
                 program = parseFile(Path.of(pipeline.output()));
             } finally {
-                if (removePipelineOutput) {
+                if (isTemporary) {
                     pipeline.removeOutputFile();
                 }
             }
         }
-        program.setMetadata(new SourcePath(path));
+        if (!isTemporary) {
+            program.setMetadata(new SourcePath(path));
+        }
         return program;
     }
 

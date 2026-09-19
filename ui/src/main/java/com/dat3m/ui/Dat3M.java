@@ -1,6 +1,5 @@
 package com.dat3m.ui;
 
-import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -161,10 +160,9 @@ public class Dat3M extends JFrame implements ActionListener {
     private void runTest() {
         final UiOptions options = optionsPane.getOptions();
         final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-        final Editor targetModelEditor = editorsPane.getEditor(EditorCode.TARGET_MM);
         final String sourceCode = programEditor.getEditorPane().getText();
         final String format = programEditor.getSelectedFormat();
-        final String wmmCode = targetModelEditor.getEditorPane().getText();
+        final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
 
         testResult = null;
         cancellationRequested = false;
@@ -191,7 +189,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
                 final Wmm targetModel;
                 try {
-                    targetModel = parseMemoryModel(wmmCode, targetModelEditor.getLoadedDir());
+                    targetModel = new ParserCat().parse(wmmCode);
                 } catch (Exception e) {
                     return VerificationOutcome.memoryModelError(e);
                 }
@@ -269,20 +267,7 @@ public class Dat3M extends JFrame implements ActionListener {
             Files.writeString(sourceFile, sourceCode);
             final Program program = programParser.parseTemporary(sourceFile);
             program.setName(UI_SOURCE_NAME);
-            program.setMetadata(new SourcePath(Path.of(UI_SOURCE_NAME)));
             return program;
-        } finally {
-            Files.deleteIfExists(sourceFile);
-        }
-    }
-
-    private Wmm parseMemoryModel(String sourceCode, String sourceDirectory) throws IOException {
-        final Path sourceFile = createTemporarySourceFile(sourceDirectory, ".cat");
-        try {
-            Files.writeString(sourceFile, sourceCode);
-            final Wmm memoryModel = new ParserCat().parse(sourceFile);
-            memoryModel.setMetadata(new SourcePath(Path.of(UI_SOURCE_NAME + ".cat")));
-            return memoryModel;
         } finally {
             Files.deleteIfExists(sourceFile);
         }

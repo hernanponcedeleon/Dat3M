@@ -8,6 +8,7 @@ import java.nio.file.Path;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ProgramParserTest {
@@ -18,6 +19,14 @@ public class ProgramParserTest {
         final Program program = new ProgramParser().parse(sourcePath);
 
         assertTrue(program.hasMetadata(SourcePath.class));
-        assertEquals(sourcePath, program.getInputPath());
+        assertEquals(sourcePath, program.getMetadata(SourcePath.class).sourcePath());
+    }
+
+    @Test
+    public void temporarilyParsedProgramHasNoSourceMetadata() throws Exception {
+        final Path sourcePath = getTestResourcePath("branch/AARCH64/Aarch64-branch-01.litmus");
+        final Program program = new ProgramParser().parseTemporary(sourcePath);
+
+        assertFalse(program.hasMetadata(SourcePath.class));
     }
 }
