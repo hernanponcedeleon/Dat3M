@@ -60,16 +60,16 @@ public final class SvcompWitnessYamlWriter {
     private static String formatWaypoint(Waypoint waypoint) {
         if (waypoint instanceof Assumption assumption) {
             return """
-                    - waypoint:
-                        type: assumption
-                        action: follow
-                        thread_id: %d
-                        constraint:
-                          value: %s
-                          format: %s
-                        location:
-                          file_name: %s
-                          line: %d
+                            - waypoint:
+                                type: assumption
+                                action: follow
+                                thread_id: %d
+                                constraint:
+                                  value: %s
+                                  format: %s
+                                location:
+                                  file_name: %s
+                                  line: %d
                     """.formatted(assumption.threadId(), yaml(assumption.value()), assumption.format(),
                     yaml(assumption.location().fileName()), assumption.location().line());
         }
@@ -83,13 +83,13 @@ public final class SvcompWitnessYamlWriter {
             throw new AssertionError("Unsupported waypoint: " + waypoint);
         }
         return """
-                - waypoint:
-                    type: %s
-                    action: follow
-                    thread_id: %d
-                    location:
-                      file_name: %s
-                      line: %d
+                        - waypoint:
+                            type: %s
+                            action: follow
+                            thread_id: %d
+                            location:
+                              file_name: %s
+                              line: %d
                 """.formatted(type, waypoint.threadId(), yaml(waypoint.location().fileName()),
                 waypoint.location().line());
     }
