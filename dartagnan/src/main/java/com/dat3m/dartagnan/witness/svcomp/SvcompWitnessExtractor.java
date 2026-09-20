@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Assert;
@@ -13,20 +14,23 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
+import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.verification.model.event.AssertModel;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.LoadModel;
 import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.google.common.base.Verify;
+import com.google.common.base.VerifyException;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,91 +38,103 @@ import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
+import static java.nio.file.Files.readAllBytes;
 
 /** Projects an {@link ExecutionModelNext} into an SV-COMP witness. */
 public final class SvcompWitnessExtractor {
 
+    private static final String DATA_RACE_AXIOM = "data-race";
+    private static final String HB = "hb-consistency";
     private static final Pattern C_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
     private SvcompWitnessExtractor() { }
 
-    public static List<String> supportedPropertyNames() {
-        return Stream.of(SvcompProperty.values()).map(SvcompProperty::propertyName).toList();
-    }
-
     public static Optional<SvcompWitness> forViolation(
             ExecutionModelNext model, VerificationTask task, IREvaluator evaluator)
             throws IOException {
-        if (isProgramSpecViolation(task, evaluator)) {
-            return Optional.of(forAssertionViolation(model, task));
-        }
-        if (task.getProperties().contains(Property.CAT_SPEC)) {
-            final Optional<RelationModel.EdgeModel> dataRace = findDataRace(model, task, evaluator);
-            if (dataRace.isPresent()) {
-                return Optional.of(forDataRaceViolation(model, task, dataRace.orElseThrow()));
-            }
-        }
-        return Optional.empty();
+        final Optional<SvcompWitness> assertionViolation = findAssertionViolation(model, task, evaluator);
+        return assertionViolation.isPresent()
+                ? assertionViolation
+                : findDataRaceViolation(model, task, evaluator);
     }
 
-    private static boolean isProgramSpecViolation(VerificationTask task, IREvaluator evaluator) {
-        return task.getProperties().contains(Property.PROGRAM_SPEC)
-                && evaluator.propertyViolated(Property.PROGRAM_SPEC);
-    }
-
-    private static SvcompWitness forAssertionViolation(ExecutionModelNext model, VerificationTask task)
-            throws IOException {
+    private static Optional<SvcompWitness> findAssertionViolation(
+            ExecutionModelNext model, VerificationTask task, IREvaluator evaluator) throws IOException {
+        if (!task.getProperties().contains(PROGRAM_SPEC) || !evaluator.propertyViolated(PROGRAM_SPEC)) {
+            return Optional.empty();
+        }
         final AssertModel assertionViolation = model.getEventModels().stream()
                 .filter(AssertModel.class::isInstance).map(AssertModel.class::cast)
                 .filter(assertion -> !assertion.getResult()).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Execution model contains no violated assertion"));
         final Assert assertion = (Assert) assertionViolation.getEvent();
         final SvcompViolation violation = new SvcompViolation(
-                SvcompProperty.fromAssertionError(assertion.getErrorMessage()), List.of(assertionViolation));
-        return extract(model, task, violation);
+                fromAssertionError(assertion.getErrorMessage()), List.of(assertionViolation));
+        return Optional.of(extract(model, task.getProgram(), violation));
     }
 
-    private static SvcompWitness forDataRaceViolation(ExecutionModelNext model, VerificationTask task,
-            RelationModel.EdgeModel dataRace) throws IOException {
-        final EventModel first = dataRace.from();
-        final EventModel second = dataRace.to();
+    private static Optional<SvcompWitness> findDataRaceViolation(
+            ExecutionModelNext model, VerificationTask task, IREvaluator evaluator) throws IOException {
+        if (!task.getProperties().contains(CAT_SPEC)) {
+            return Optional.empty();
+        }
+        final Optional<EdgeModel> dataRace = task.getMemoryModel().getAxioms().stream()
+                .filter(Axiom::isFlagged)
+                .filter(axiom -> DATA_RACE_AXIOM.equals(axiom.getName()))
+                .filter(evaluator::isFlaggedAxiomViolated)
+                .map(Axiom::getRelation)
+                .flatMap(relation -> model.getRelationModels().stream()
+                        .filter(relationModel -> relationModel.getRelation().equals(relation))
+                        .flatMap(relationModel -> relationModel.getEdgeModels().stream()))
+                .findFirst();
+        if (dataRace.isEmpty()) {
+            return Optional.empty();
+        }
+        final EdgeModel edge = dataRace.get();
+        final EventModel first = edge.from();
+        final EventModel second = edge.to();
         if (!(first instanceof MemoryEventModel) || !(second instanceof MemoryEventModel)) {
             throw new IllegalArgumentException("Data-race targets are not memory accesses");
         }
         if (first.getThreadModel().equals(second.getThreadModel())) {
             throw new IllegalArgumentException("Data-race targets belong to the same thread");
         }
-        final SvcompViolation violation = new SvcompViolation(SvcompProperty.DATA_RACE, List.of(first, second));
-        return extract(model, task, violation);
+        final SvcompViolation violation = new SvcompViolation(DATA_RACE, List.of(first, second));
+        return Optional.of(extract(model, task.getProgram(), violation));
     }
 
-    private static SvcompWitness extract(ExecutionModelNext model, VerificationTask task, SvcompViolation violation)
+    private static SvcompWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
             throws IOException {
-        if (!task.getProgram().hasMetadata(SourceLocation.SourcePath.class)) {
+        if (!program.hasMetadata(SourcePath.class)) {
             throw new IOException("Cannot generate an SV-COMP witness without program source metadata");
         }
-        final Path programFile = task.getProgram().getMetadata(SourceLocation.SourcePath.class).sourcePath();
-        final SyntacticContextAnalysis context = SyntacticContextAnalysis.newInstance(task.getProgram());
+        final Path programFile = program.getMetadata(SourcePath.class).sourcePath();
+        final SyntacticContextAnalysis context = SyntacticContextAnalysis.newInstance(program);
 
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
-        final List<EventModel> linearized = SvcompExecutionLinearizer.linearize(model);
+        final List<EventModel> linearized = linearize(model);
         final Map<EventModel, String> assumptions = assumptionWaypoints(linearized, model, programFile);
         final Set<EventModel> prefix = eventsBefore(violation.targets());
         for (EventModel event : linearized) {
             if (!prefix.contains(event)) {
                 continue;
             }
-            registerThread(segments, event.getThreadModel(), threadIds, model, programFile);
-            final Location location = inputLocation(event, programFile);
+            final ThreadModel thread = event.getThreadModel();
+            registerThread(segments, thread, threadIds, model, programFile);
             final String assumption = assumptions.get(event);
-            if (location != null && assumption != null) {
+            if (assumption != null) {
+                final Location location = inputLocation(event, programFile);
                 segments.add(new Segment(List.of(new Assumption(
-                        threadIds.get(event.getThreadModel()), assumption, "c_expression", location))));
+                        threadIds.get(thread), assumption, "c_expression", location))));
             }
         }
         for (EventModel target : violation.targets()) {
@@ -147,7 +163,7 @@ public final class SvcompWitnessExtractor {
                 .filter(edge -> edge.to() instanceof LoadModel)
                 .filter(edge -> !(edge.from().getEvent() instanceof Init))
                 .filter(edge -> !edge.from().getThreadModel().equals(edge.to().getThreadModel()))
-                .map(RelationModel.EdgeModel::to)
+                .map(EdgeModel::to)
                 .collect(Collectors.toSet());
 
         final Map<SourcePoint, EventModel> representatives = new HashMap<>();
@@ -218,7 +234,7 @@ public final class SvcompWitnessExtractor {
         return Optional.of(String.format("(%s == %s)", object.get().object().getName(), literal));
     }
 
-    private static Set<RelationModel.EdgeModel> relationEdges(ExecutionModelNext model, String name) {
+    private static Set<EdgeModel> relationEdges(ExecutionModelNext model, String name) {
         return model.getRelationModels().stream()
                 .filter(relation -> relation.getRelation().hasName(name))
                 .findFirst()
@@ -226,9 +242,29 @@ public final class SvcompWitnessExtractor {
                 .orElse(Set.of());
     }
 
+    private static List<EventModel> linearize(ExecutionModelNext model) {
+        final RelationModel hb = model.getRelationModels().stream()
+                .filter(relation -> relation.getRelation().hasName(HB))
+                .findFirst()
+                .orElseThrow(() -> new VerifyException(
+                        "Execution model does not contain relation '%s'".formatted(HB)));
+
+        final List<EventModel> events = model.getEventModels();
+        final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
+        for (EdgeModel edge : hb.getEdgeModels()) {
+            Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
+            predecessors.computeIfAbsent(edge.to(), ignored -> new HashSet<>()).add(edge.from());
+        }
+
+        final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);
+        Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
+                "svcomp.cat produced a non-SC execution");
+        return dependencyGraph.getNodeContents();
+    }
+
     private static Location targetLocation(EventModel target, SvcompProperty property, Path programFile,
             SyntacticContextAnalysis context) {
-        if (property == SvcompProperty.UNREACH_CALL) {
+        if (property == UNREACH_CALL) {
             final List<SyntacticContextAnalysis.CallContext> calls = context.getContextInfo(target.getEvent())
                     .getContextOfType(SyntacticContextAnalysis.CallContext.class);
             for (int i = calls.size() - 1; i >= 0; i--) {
@@ -285,19 +321,6 @@ public final class SvcompWitnessExtractor {
         return result;
     }
 
-    private static Optional<RelationModel.EdgeModel> findDataRace(ExecutionModelNext model, VerificationTask task,
-            IREvaluator evaluator) {
-        return task.getMemoryModel().getAxioms().stream()
-                .filter(Axiom::isFlagged)
-                .filter(axiom -> "data-race".equals(axiom.getName()))
-                .filter(evaluator::isFlaggedAxiomViolated)
-                .map(Axiom::getRelation)
-                .flatMap(relation -> model.getRelationModels().stream()
-                        .filter(relationModel -> relationModel.getRelation().equals(relation))
-                        .flatMap(relationModel -> relationModel.getEdgeModels().stream()))
-                .findFirst();
-    }
-
     private static Location requireInputLocation(EventModel event, Path programFile) {
         final Location location = inputLocation(event, programFile);
         if (location == null) {
@@ -329,7 +352,7 @@ public final class SvcompWitnessExtractor {
 
     private static String sha256(Path file) throws IOException {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(readAllBytes(file)));
         } catch (NoSuchAlgorithmException exception) {
             throw new AssertionError("SHA-256 is unavailable", exception);
         }

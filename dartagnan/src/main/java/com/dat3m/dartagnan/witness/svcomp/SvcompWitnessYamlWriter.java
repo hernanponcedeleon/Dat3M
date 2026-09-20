@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.writeString;
 
 /** Serializes {@link SvcompWitness} instances to SV-COMP's YAML representation. */
 public final class SvcompWitnessYamlWriter {
@@ -16,9 +17,9 @@ public final class SvcompWitnessYamlWriter {
     public static void write(SvcompWitness witness, Path file) throws IOException {
         final Path parent = file.getParent();
         if (parent != null) {
-            Files.createDirectories(parent);
+            createDirectories(parent);
         }
-        Files.writeString(file, render(witness), StandardCharsets.UTF_8);
+        writeString(file, render(witness), UTF_8);
     }
 
     static String render(SvcompWitness witness) {
