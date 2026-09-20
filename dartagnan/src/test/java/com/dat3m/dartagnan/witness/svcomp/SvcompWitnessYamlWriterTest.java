@@ -32,5 +32,10 @@ public class SvcompWitnessYamlWriterTest {
         assertTrue(yaml.contains("type: assumption"));
         assertTrue(yaml.contains("type: target"));
         assertTrue(yaml.contains("file_name: \"example.c\""));
+        assertTrue(yaml.contains("""
+                    - segment:
+                        - waypoint:
+                            type: function_enter
+                """));
     }
 }
