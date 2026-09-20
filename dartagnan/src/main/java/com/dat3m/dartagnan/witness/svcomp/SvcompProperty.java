@@ -1,7 +1,11 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
+import java.util.List;
+
+import static java.util.Arrays.stream;
+
 /** Properties for which version 2.2 of the SV witness format defines a violation sequence. */
-enum SvcompProperty {
+public enum SvcompProperty {
     UNREACH_CALL("unreach-call", "CHECK( init(main()), LTL(G ! call(reach_error())) )"),
     NO_OVERFLOW("no-overflow", "CHECK( init(main()), LTL(G ! overflow) )"),
     VALID_DEREF("valid-deref", "CHECK( init(main()), LTL(G valid-deref) )"),
@@ -22,6 +26,10 @@ enum SvcompProperty {
 
     String specification() {
         return specification;
+    }
+
+    public static List<String> supportedPropertyNames() {
+        return stream(values()).map(SvcompProperty::propertyName).toList();
     }
 
     static SvcompProperty fromAssertionError(String errorMessage) {

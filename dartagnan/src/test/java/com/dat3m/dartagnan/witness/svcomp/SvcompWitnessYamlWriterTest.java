@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter.render;
 import static org.junit.Assert.assertTrue;
 
 public class SvcompWitnessYamlWriterTest {
@@ -24,7 +25,7 @@ public class SvcompWitnessYamlWriterTest {
                         new Segment(List.of(new Assumption(1, "1", "c_expression", location))),
                         new Segment(List.of(new Target(1, location)))));
 
-        final String yaml = SvcompWitnessYamlWriter.render(witness);
+        final String yaml = render(witness);
 
         assertTrue(yaml.contains("entry_type: violation_sequence"));
         assertTrue(yaml.contains("version: \"test-version\""));

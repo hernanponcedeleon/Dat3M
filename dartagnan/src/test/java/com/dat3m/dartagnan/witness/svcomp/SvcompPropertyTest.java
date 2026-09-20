@@ -4,37 +4,44 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.NO_OVERFLOW;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.VALID_DEREF;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.VALID_FREE;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
 import static org.junit.Assert.assertEquals;
 
 public class SvcompPropertyTest {
 
     @Test
     public void classifiesSupportedAssertionViolations() {
-        assertEquals(SvcompProperty.UNREACH_CALL,
-                SvcompProperty.fromAssertionError("user assertion"));
-        assertEquals(SvcompProperty.NO_OVERFLOW,
-                SvcompProperty.fromAssertionError("integer overflow"));
-        assertEquals(SvcompProperty.VALID_DEREF,
-                SvcompProperty.fromAssertionError("invalid dereference"));
-        assertEquals(SvcompProperty.VALID_FREE,
-                SvcompProperty.fromAssertionError("invalid free"));
+        assertEquals(UNREACH_CALL,
+                fromAssertionError("user assertion"));
+        assertEquals(NO_OVERFLOW,
+                fromAssertionError("integer overflow"));
+        assertEquals(VALID_DEREF,
+                fromAssertionError("invalid dereference"));
+        assertEquals(VALID_FREE,
+                fromAssertionError("invalid free"));
     }
 
     @Test
     public void usesTheMatchingSvcompSpecification() {
         assertEquals("CHECK( init(main()), LTL(G ! overflow) )",
-                SvcompProperty.NO_OVERFLOW.specification());
+                NO_OVERFLOW.specification());
         assertEquals("CHECK( init(main()), LTL(G valid-deref) )",
-                SvcompProperty.VALID_DEREF.specification());
+                VALID_DEREF.specification());
         assertEquals("CHECK( init(main()), LTL(G valid-free) )",
-                SvcompProperty.VALID_FREE.specification());
+                VALID_FREE.specification());
         assertEquals("CHECK( init(main()), LTL(G ! data-race) )",
-                SvcompProperty.DATA_RACE.specification());
+                DATA_RACE.specification());
     }
 
     @Test
     public void listsSupportedPropertyNames() {
         assertEquals(List.of("unreach-call", "no-overflow", "valid-deref", "valid-free", "no-data-race"),
-                SvcompWitnessExtractor.supportedPropertyNames());
+                supportedPropertyNames());
     }
 }
