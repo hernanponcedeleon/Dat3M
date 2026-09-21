@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.processing.compilation.compilation;
+package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.compilation.VisitorSpirvOpenCL;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
