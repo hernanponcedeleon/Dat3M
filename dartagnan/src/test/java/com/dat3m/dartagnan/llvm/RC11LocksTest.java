@@ -24,12 +24,7 @@ public class RC11LocksTest extends AbstractCTest {
     protected long getTimeoutSeconds() { return 60; }
 
     @Override
-    protected String getWmmName() {
-        return "rc11";
-    }
-
-    @Override
-    protected boolean isEagerMethodEnabled() { return false; }
+    protected String getWmmName() { return "rc11"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

@@ -25,11 +25,12 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
     }
 
     @Override
-    protected long getTimeoutSeconds() { return 60; }
+    protected long getTimeoutSeconds() { return isMixedSize() ? 60 : 10; }
 
     @Override
     protected Task.TaskBuilder getTaskBuilder() {
-        final boolean isMixedSize = Utils.containsSubpath(programPath, Path.of("litmus", "AARCH64", "mixed"));
-        return super.getTaskBuilder().withOption(MIXED_SIZE, String.valueOf(isMixedSize));
+        return super.getTaskBuilder().withOption(MIXED_SIZE, String.valueOf(isMixedSize()));
     }
+
+    private boolean isMixedSize() { return Utils.containsSubpath(programPath, Path.of("litmus", "AARCH64", "mixed")); }
 }

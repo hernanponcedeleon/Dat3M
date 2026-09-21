@@ -17,7 +17,7 @@ public abstract class AbstractSpirvTest extends AbstractVerificationTaskSolverTe
 
     private final Arch target;
     private final Path targetModelPath;
-    private final Path programPath;
+    protected final Path programPath;
     private final int bound;
     private final ResultStatus expected;
 

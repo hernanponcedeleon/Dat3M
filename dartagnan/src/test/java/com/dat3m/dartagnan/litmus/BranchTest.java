@@ -31,4 +31,10 @@ public class BranchTest extends AbstractLitmusTest {
     protected String getTargetWmmName() {
         return programPath.getParent().getFileName().toString().equals("AARCH64") ? "aarch64" : null;
     }
+
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // FIXME: ArrayIndexOutOfBoundsException in indexedDomain.full().iterator()
+        return !programPath.endsWith("C/C-branch-18.litmus");
+    }
 }

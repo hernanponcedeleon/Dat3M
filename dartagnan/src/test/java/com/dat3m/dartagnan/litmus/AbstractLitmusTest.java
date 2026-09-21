@@ -94,5 +94,8 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     protected ResultStatus getExpected() throws Exception { return expected; }
 
     @Override
-    protected boolean isLazyMethodEnabled() { return false; }
+    protected boolean isLazyMethodEnabled() {
+        // FIXME: Inconclusiveness in several suites and tests.
+        return target != Arch.VULKAN;
+    }
 }

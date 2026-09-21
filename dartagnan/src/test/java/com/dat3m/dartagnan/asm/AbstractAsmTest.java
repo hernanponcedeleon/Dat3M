@@ -54,11 +54,9 @@ abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
     @Override
     protected ResultStatus getExpected() { return expected; }
 
-    // NOTE: Recursion heavily impacts eager method's performance.
     @Override
-    protected boolean isEagerMethodEnabled() { return !Arch.ARM7.equals(target) && !Arch.POWER.equals(target); }
-
-    // TODO: Lazy method takes too long to run on ARM8, we have to investigate this.
-    @Override
-    protected boolean isLazyMethodEnabled() { return !Arch.ARM8.equals(target); }
+    protected boolean isEagerMethodEnabled() {
+        // TODO: These run out of memory, maybe due to recursion?
+        return !Arch.ARM7.equals(target) && !Arch.POWER.equals(target);
+    }
 }

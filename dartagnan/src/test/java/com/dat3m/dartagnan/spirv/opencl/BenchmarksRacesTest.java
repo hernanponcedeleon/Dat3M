@@ -16,6 +16,12 @@ public class BenchmarksRacesTest extends AbstractSpirvOpenclTest {
         super("spirv/opencl/benchmarks/" + file, bound, expected);
     }
 
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // TODO: This takes too long.
+        return !programPath.endsWith("xf-barrier-3.1.3.spvasm");
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{

@@ -16,6 +16,13 @@ public class GpuverifyRacesTest extends AbstractSpirvOpenclTest {
         super("spirv/opencl/gpuverify/" + file, bound, expected);
     }
 
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // TODO: These take too long.
+        return !programPath.endsWith("test_for_ssa_bug.spvasm")
+                && !programPath.endsWith("checkarrays/pass/specifyall.spvasm");
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{

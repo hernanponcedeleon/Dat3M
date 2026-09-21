@@ -22,4 +22,10 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
 
     @Override
     protected String getTargetWmmName() { return "linux-kernel"; }
+
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // TODO: no support for synchronize_srcu.
+        return false;
+    }
 }

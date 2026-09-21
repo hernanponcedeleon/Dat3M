@@ -26,9 +26,6 @@ public class IMMLFDSTest extends AbstractCTest {
     @Override
     protected int getBound() { return 2; }
 
-    @Override
-    protected boolean isEagerMethodEnabled() { return false; }
-
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{

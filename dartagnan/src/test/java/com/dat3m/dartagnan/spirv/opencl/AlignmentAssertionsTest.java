@@ -38,4 +38,10 @@ public class AlignmentAssertionsTest extends AbstractSpirvOpenclTest {
                 {"alignment5-struct-pointer.spvasm", 17, PASS},
         });
     }
+
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // TODO: These take too long.
+        return false;
+    }
 }

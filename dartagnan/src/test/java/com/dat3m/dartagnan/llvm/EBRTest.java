@@ -25,13 +25,10 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected long getTimeoutSeconds() { return 180; }
+    protected long getTimeoutSeconds() { return /*method == EAGER &&*/ target == POWER ? 300 : 180; }
 
     @Override
     protected Solvers getSolver() { return Solvers.YICES2; }
-
-    @Override
-    protected boolean isEagerMethodEnabled() { return false; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {

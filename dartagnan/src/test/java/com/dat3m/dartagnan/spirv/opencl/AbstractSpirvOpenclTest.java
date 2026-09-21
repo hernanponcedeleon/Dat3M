@@ -9,7 +9,4 @@ abstract class AbstractSpirvOpenclTest extends AbstractSpirvTest {
     protected AbstractSpirvOpenclTest(String programPath, int bound, ResultStatus expected) {
         super(Arch.OPENCL, programPath, bound, expected);
     }
-
-    @Override
-    protected boolean isLazyMethodEnabled() { return false; }
 }

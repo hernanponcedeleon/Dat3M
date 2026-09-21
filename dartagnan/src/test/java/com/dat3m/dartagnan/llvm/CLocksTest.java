@@ -25,9 +25,6 @@ public class CLocksTest extends AbstractCTest {
     @Override
     protected long getTimeoutSeconds() { return 60; }
 
-    @Override
-    protected boolean isEagerMethodEnabled() { return false; }
-
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
