@@ -19,7 +19,6 @@ import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractVerificationTaskSolverTest {
 
@@ -27,13 +26,11 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     @Test
     public void testAssume() throws Exception {
-        assumeTrue(isEagerMethodEnabled());
         testSolver(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        assumeTrue(isLazyMethodEnabled());
         testSolver(Method.LAZY);
     }
 
