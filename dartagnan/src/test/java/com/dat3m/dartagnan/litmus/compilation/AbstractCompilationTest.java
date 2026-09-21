@@ -6,18 +6,13 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.test.Provider;
-import com.dat3m.dartagnan.test.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;
@@ -34,9 +29,8 @@ import static com.dat3m.dartagnan.test.TestHelper.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
 
-public abstract class AbstractCompilationTest {
+public abstract class AbstractCompilationTest extends AbstractVerificationTaskSolverTest {
 
     private final Arch source;
     private final Arch target;
@@ -60,68 +54,65 @@ public abstract class AbstractCompilationTest {
         }
     }
 
-    @Test
-    public void testAssume() throws Exception { testMethod(Method.EAGER); }
-
     // =================== Modifiable behavior ====================
 
     protected String getSourceWmmName() { return null; }
 
     protected String getTargetWmmName() { return null; }
 
-    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.PROGRAM_SPEC); }
+    // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
+    protected List<Path> getCompilationBreakers() { return emptyList(); }
 
-    protected long getTimeout() { return 10000; }
-
+    @Override
     protected Task.TaskBuilder getTaskBuilder() {
-        return Task.builder()
+        return super.getTaskBuilder()
                 .withSolver(SolverContextFactory.Solvers.Z3)
+                .withTarget(target)
                 .withOption(PHANTOM_REFERENCES, "true")
                 .withOption(INITIALIZE_REGISTERS, "true");
     }
 
-    // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
-    protected List<Path> getCompilationBreakers() { return emptyList(); }
+    @Override
+    protected Path getProgramPath() { return path; }
+
+    @Override
+    protected Path getTargetWmmPath() { return ResourceHelper.getCatPath(target, getTargetWmmName()); }
+
+    @Override
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.PROGRAM_SPEC); }
+
+    @Override
+    protected boolean isLazyMethodEnabled() { return false; }
 
     // ============================================================
 
-    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    private final Timeout timeout = Timeout.millis(getTimeout());
-    private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
-            .around(shutdownOnError)
-            .around(timeout);
-
-    private void testMethod(Method method) throws Exception {
-        try (VerificationTaskSolver sourceSolver = VerificationTaskSolver.createWithMethod(getTask(false), method)
-                .withShutdownManager(shutdownManagerProvider.get())) {
-            if (!isCompilableToHardware(sourceSolver.getTask().getProgram())) {
-                return;
-            }
+    @Override
+    protected ResultStatus getExpected() throws Exception {
+        final VerificationTask task = getSourceTask();
+        if (!isCompilableToHardware(task.getProgram())) {
+            return null;
+        }
+        try (VerificationTaskSolver sourceSolver = VerificationTaskSolver.createWithMethod(task, Method.EAGER)
+                .withShutdownManager(shutdownManager.get())) {
             sourceSolver.run();
             if (sourceSolver.getResult().hasModel()) {
-                return;
+                return null;
             }
             // We found no model showing a specific behaviour (either positively or negatively),
             // so the compiled code should also not exhibit that behaviour, unless we
             // know the compilation is broken
-            boolean compilationIsBroken = getCompilationBreakers().contains(path);
-            try (VerificationTaskSolver targetSolver = VerificationTaskSolver.createWithMethod(getTask(true), method)
-                    .withShutdownManager(shutdownManagerProvider.get())) {
-                targetSolver.run();
-                assertEquals(compilationIsBroken, targetSolver.getResult().hasModel());
-            }
+            return switch (sourceSolver.getResultStatus()) {
+                case PASS -> getCompilationBreakers().contains(path) ? ResultStatus.FAIL : ResultStatus.PASS;
+                case FAIL -> getCompilationBreakers().contains(path) ? ResultStatus.PASS : ResultStatus.FAIL;
+                default -> sourceSolver.getResultStatus();
+            };
         }
     }
 
-    private VerificationTask getTask(boolean isTarget) throws Exception {
-        final Arch architecture = isTarget ? target : source;
-        final Task.TaskBuilder task = getTaskBuilder().withTarget(architecture);
+    private VerificationTask getSourceTask() throws Exception {
+        final Task.TaskBuilder task = getTaskBuilder().withTarget(source);
         final Program program = parseProgram(path);
-        final String wmmName = isTarget ? getTargetWmmName() : getSourceWmmName();
-        final Wmm wmm = parseWmm(ResourceHelper.getCatPath(architecture, wmmName));
+        final Wmm wmm = parseWmm(ResourceHelper.getCatPath(source, getSourceWmmName()));
         return task.build(program, wmm, getTestedProperties());
     }
 

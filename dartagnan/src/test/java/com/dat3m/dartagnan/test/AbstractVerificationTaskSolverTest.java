@@ -56,9 +56,10 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     private void testSolver(Method method) throws Exception {
         final VerificationTask task = getTask();
+        final ResultStatus expected = getExpected();
+        assumeNotNull(expected);
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, method)
                 .withShutdownManager(shutdownManager.get())) {
-            final ResultStatus expected = getExpected();
             solver.run();
             assertEquals(expected, solver.getResult().getStatus());
         }
