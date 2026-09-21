@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.libraries.LibraryLinker;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -99,6 +100,7 @@ public class ProcessingManager implements ProgramProcessor {
         );
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
+                LibraryLinker.fromConfig(config),
                 intrinsics.markIntrinsicsPass(),
                 ProgramProcessor.fromFunctionProcessor(intrinsics.earlyInliningPass(), Target.ALL, true),
                 GEPToAddition.newInstance(),
