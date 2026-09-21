@@ -7,8 +7,6 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.C_TO_POWER_SCHEME;
@@ -31,10 +29,10 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     protected String getSourceWmmName() { return "c11"; }
 
     @Override
-    protected List<Path> getCompilationBreakers() {
+    protected boolean isCompilationBroken() {
         return Stream.of("manual/IRIW-sc-sc-acq-sc-acq-sc", "manual/RWC-sc-acq-sc-sc-sc")
                 .map(p -> getRootPath("litmus/C11/" + p + ".litmus"))
-                .collect(Collectors.toList());
+                .anyMatch(programPath::equals);
     }
 
     @Override

@@ -27,9 +27,9 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     protected final Arch target;
     protected final Path programPath;
-    protected final ResultStatus expected;
+    private final ResultStatus expected;
 
-    AbstractLitmusTest(Arch target, Path programPath, ResultStatus expected) {
+    protected AbstractLitmusTest(Arch target, Path programPath, ResultStatus expected) {
         this.target = target;
         this.programPath = programPath;
         this.expected = expected;
@@ -91,7 +91,7 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     protected EnumSet<Property> getTestedProperties() { return EnumSet.of(getTestedProperty()); }
 
     @Override
-    protected ResultStatus getExpected() { return expected; }
+    protected ResultStatus getExpected() throws Exception { return expected; }
 
     @Override
     protected boolean isLazyMethodEnabled() { return false; }

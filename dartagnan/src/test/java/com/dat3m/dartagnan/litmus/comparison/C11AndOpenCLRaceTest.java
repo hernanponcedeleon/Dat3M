@@ -6,7 +6,6 @@ import org.junit.runners.Parameterized;
 
 import java.nio.file.Path;
 import java.io.IOException;
-import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class C11AndOpenCLRaceTest extends C11AndOpenCLTest {
@@ -21,5 +20,5 @@ public class C11AndOpenCLRaceTest extends C11AndOpenCLTest {
     }
 
     @Override
-    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.CAT_SPEC); }
+    protected Property getTestedProperty() { return Property.CAT_SPEC; }
 }
