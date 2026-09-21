@@ -7,12 +7,9 @@ import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.google.common.collect.ImmutableList;
 
 import java.util.List;
-import java.util.Map;
 
 public abstract class AbstractLibrary<T extends LibraryImplementation> implements LibraryImplementation {
 
@@ -52,19 +49,15 @@ public abstract class AbstractLibrary<T extends LibraryImplementation> implement
 
                     if (replacement.isEmpty()) {
                         call.tryDelete();
-                    } else if (replacement.get(0) != call) {
-                        if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
-                            final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
-                            ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
-                        }
+                    } else {
                         // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
                         // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
                         // We may want to change this behaviour though.
                         call.insertBefore(EventFactory.newStringAnnotation(
-                                String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
+                                String.format("=== Calling library function %s ===", call.getCalledFunction().getName())
                         ));
                         call.insertAfter(EventFactory.newStringAnnotation(
-                                String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
+                                String.format("=== Returning from library function %s ===", call.getCalledFunction().getName())
                         ));
                         IRHelper.replaceWithMetadata(call, replacement);
                     }
@@ -73,17 +66,19 @@ public abstract class AbstractLibrary<T extends LibraryImplementation> implement
         }
     }
 
+    // ====================================================================================================
+
+
+    protected sealed interface Handler<T> {}
 
     @FunctionalInterface
-    protected interface ImplementationProvider<T> extends Handler<T> {
+    protected non-sealed interface ImplementationProvider<T> extends Handler<T> {
         void implement(T self, Function function);
     }
 
     @FunctionalInterface
-    protected interface CallResolver<T> extends Handler<T> {
+    protected non-sealed interface CallResolver<T> extends Handler<T> {
         List<Event> resolve(T self, FunctionCall call);
     }
-
-    protected interface Handler<T> {}
 
 }
