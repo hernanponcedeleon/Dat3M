@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import java.nio.file.Path;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
