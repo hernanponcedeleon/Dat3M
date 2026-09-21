@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 /**
  * Integer-valued error code as used in the GNU/Linux operating system and the C standard library.
  */
-enum PosixErrorCode {
+public enum PosixErrorCode {
     SUCCESS, // 0
     EPERM, // 1 Operation not permitted
     ENOENT, // 2 No such file or directory
@@ -140,7 +140,8 @@ enum PosixErrorCode {
     EHWPOISON, // 133 Memory page has hardware error
     ENOTSUP, // 134 Not supported parameter or option
     ;
-    int getValue() {
+
+    public int getValue() {
         return ordinal();
     }
 }
