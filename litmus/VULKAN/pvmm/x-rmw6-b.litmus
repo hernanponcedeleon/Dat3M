@@ -1,0 +1,11 @@
+Vulkan
+{}
+{
+ssw 0 1;
+ssw 1 2;
+}
+ P0@sg 0, wg 0, qf 0 | P1@sg 0, wg 1, qf 0 | P2@sg 0, wg 2, qf 0      ;
+ st.nonpriv.sc0 a, 1 | avdevice            | rmw.atom.wg.sc0 r0, a, 2 ;
+                     | visdevice           |                          ;
+exists
+(P2:r0 != 1)
