@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.Task;
 import com.google.common.collect.ImmutableMap;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,9 +26,6 @@ public class BranchTest extends AbstractLitmusTest {
     public BranchTest(Path path, ResultStatus expected) {
         super(Arch.LKMM, path, expected);
     }
-
-    @Override
-    protected Task.TaskBuilder getTaskBuilder() { return super.getTaskBuilder().withSolverTimeout(60); }
 
     @Override
     protected String getTargetWmmName() {
