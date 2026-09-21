@@ -1,0 +1,9 @@
+Vulkan
+{}
+{
+ssw 0 1;
+}
+ P0@sg 0, wg 0, qf 0      | P1@sg 0, wg 1, qf 0 ;
+ rmw.atom.wg.sc0 r0, a, 1 | ld.vis.qf.sc0 r0, a ;
+exists
+(P0:r0 != 0 \/ P1:r0 != 1)
