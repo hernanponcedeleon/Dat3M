@@ -1,7 +1,8 @@
-package com.dat3m.dartagnan.program.processing.libraries;
+package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.ProgramProcessor;
+import com.dat3m.dartagnan.program.processing.libraries.LibraryImplementation;
+import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.google.common.collect.ImmutableList;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.dat3m.dartagnan.program.processing.libraries.LibraryLinker;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;

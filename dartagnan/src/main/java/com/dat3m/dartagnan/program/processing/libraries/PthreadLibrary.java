@@ -25,7 +25,6 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -34,17 +33,12 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
 import static com.google.common.base.Preconditions.checkArgument;
 
+//TODO: Deal with "late intrinsics".
+// Fix skipChecks defaulting to true (the option "notToInline" does not exist yet)
 @Options
 public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
-    @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
-            description = "Calling pthread_create is guaranteed to succeed (default true).",
-            secure = true,
-            toUppercase = true)
-    private boolean pthreadCreateAlwaysSucceeds = true;
-
-
-    public enum Info {
+    public enum FunctionHandler {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_CREATE("pthread_create", PthreadLibrary::inlinePthreadCreate),
         P_THREAD_EXIT("pthread_exit", PthreadLibrary::inlinePthreadExit),
@@ -112,22 +106,27 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         ;
 
         private final List<String> variants;
-        private final Handler<PthreadLibrary> replacer;
+        private final Handler<PthreadLibrary> handler;
 
-        Info(List<String> variants, CallResolver<PthreadLibrary> replacer) {
+        FunctionHandler(List<String> variants, CallResolver<PthreadLibrary> handler) {
             this.variants = variants;
-            this.replacer = replacer;
+            this.handler = handler;
         }
 
-        Info(String name, CallResolver<PthreadLibrary> replacer) {
-            this(List.of(name), replacer);
+        FunctionHandler(String name, CallResolver<PthreadLibrary> handler) {
+            this(List.of(name), handler);
         }
 
         private boolean matches(String funcName) {
-            BiPredicate<String, String> matchingFunction = String::equals;
-            return variants.stream().anyMatch(v -> matchingFunction.test(funcName, v));
+            return variants.stream().anyMatch(funcName::equals);
         }
     }
+
+    @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
+            description = "Calling pthread_create is guaranteed to succeed (default true).",
+            secure = true,
+            toUppercase = true)
+    private boolean pthreadCreateAlwaysSucceeds = true;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -141,10 +140,10 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     @Override
     protected Handler<PthreadLibrary> getHandler(Function func) {
         final String funcName = func.getName();
-        return Arrays.stream(Info.values())
-                .filter(info -> info.matches(funcName))
+        return Arrays.stream(FunctionHandler.values())
+                .filter(handler -> handler.matches(funcName))
                 .findFirst()
-                .map(info -> info.replacer)
+                .map(h -> h.handler)
                 .orElse(null);
     }
 
