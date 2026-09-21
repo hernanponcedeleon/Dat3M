@@ -21,5 +21,5 @@ public class C11AndOpenCLRaceTest extends C11AndOpenCLTest {
     }
 
     @Override
-    protected EnumSet<Property> getProperty() { return EnumSet.of(Property.CAT_SPEC); }
+    protected EnumSet<Property> getTestedProperties() { return EnumSet.of(Property.CAT_SPEC); }
 }
