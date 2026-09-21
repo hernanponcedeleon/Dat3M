@@ -112,7 +112,10 @@ public class PvmmTest {
                     Wmm mcm = new ParserCat().parse(new File(model));
                     VerificationTask taskEager = mkTask(program, mcm, CAT_SPEC);
                     try (ModelChecker mc = AssumeSolver.create(taskEager)) {
-                        mc.run();
+                        mc.run();/*
+                        if (!result.equals(mc.getResult())) {
+                            System.out.println("Expected: " + result + " Actual: " + mc.getResult());
+                        }*/
                         assertEquals(result, mc.getResult());
                     }/*
                     program = new ProgramParser().parse(new File(programPath));
@@ -143,7 +146,10 @@ public class PvmmTest {
                     Wmm mcm = new ParserCat().parse(new File(model));
                     VerificationTask taskEager = mkTask(program, mcm, PROGRAM_SPEC);
                     try (ModelChecker mc = AssumeSolver.create(taskEager)) {
-                        mc.run();
+                        mc.run();/*
+                        if (!result.equals(mc.getResult())) {
+                            System.out.println("Expected: " + result + " Actual: " + mc.getResult());
+                        }*/
                         assertEquals(result, mc.getResult());
                     }/*
                     program = new ProgramParser().parse(new File(programPath));
@@ -182,6 +188,9 @@ public class PvmmTest {
         if (result == FAIL) {
             removeAxiom(mcm, "racy");
             Axiom axiomCycle = removeAxiom(mcm, "consistency-cycle");
+            if (axiomCycle == null) {
+                axiomCycle = removeAxiom(mcm, "consistent-locord");
+            }
             if (axiomCycle != null) {
                 Relation transitive = mcm.addDefinition(new TransitiveClosure(mcm.newRelation(), axiomCycle.getRelation()));
                 Relation cycle = mcm.addDefinition(new Intersection(mcm.newRelation("cycle"), mcm.getRelation(ID), transitive));
@@ -192,14 +201,17 @@ public class PvmmTest {
                 mcm.addConstraint(new Emptiness(axiomRf.getRelation(), true, true));
             }
             Axiom axiomAtomic = removeAxiom(mcm, "atomic");
+            if (axiomAtomic == null) {
+                axiomAtomic = removeAxiom(mcm, "atomicity");
+            }
             if (axiomAtomic != null) {
                 mcm.addConstraint(new Emptiness(axiomAtomic.getRelation(), true, true));
             }
-            Axiom axiomCo = removeAxiom(mcm, "consistent-co");
+            Axiom axiomCo = removeAxiom(mcm, "consistent-co-locord");
             if (axiomCo != null) {
                 mcm.addConstraint(new Emptiness(axiomCo.getRelation(), true, true));
             }
-            Axiom irreflexiveLocord = removeAxiom(mcm, "irreflexive-locord");
+            Axiom irreflexiveLocord = removeAxiom(mcm, "consistent-communication");
             if (irreflexiveLocord != null) {
                 mcm.addConstraint(new Emptiness(irreflexiveLocord.getRelation(), true, true));
             }
@@ -214,7 +226,7 @@ public class PvmmTest {
         try (ModelChecker mc = AssumeSolver.create(task)) {
             mc.run();
             if (!locallyConsistent) {
-                assertTrue(mc.hasModel());
+            assertTrue(mc.hasModel());
             }
             if (mc.hasModel()) {
                 RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
@@ -364,5 +376,25 @@ public class PvmmTest {
                 .withBound(1)
                 .withTarget(Arch.VULKAN);
         return builder.build(program, mcm, EnumSet.of(property));
+    }
+
+    //@Test
+    public void myTest() throws Exception {
+        String programPath = getRootPath("litmus/VULKAN/pvmm/tmp2.litmus");
+        String model = getRootPath("cat/vulkan-fixed.cat");
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat().parse(new File(model));
+        VerificationTask taskEager = mkTask(program, mcm, PROGRAM_SPEC);
+        try (ModelChecker mc = AssumeSolver.create(taskEager)) {
+            mc.run();
+            System.out.println(printer.print(taskEager.getProgram()));
+            System.out.println(mc.getResult());
+            RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+            Set<Relation> relations = taskEager.getMemoryModel().getRelations();
+            Map<String, MutableEventGraph> data = extractRelationsData(taskEager.getProgram(), relations, ra, mc.getProver().getModel());
+            for (Map.Entry<String, MutableEventGraph> e : data.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey())).toList()){
+                System.out.println(e.getKey() + ": " + e.getValue());
+            }
+        }
     }
 }

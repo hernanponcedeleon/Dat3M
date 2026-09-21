@@ -1,0 +1,226 @@
+VULKAN
+
+(*
+   Tags:
+   - Event Types
+     IW        = initial write
+     R         = read access
+     W         = write access
+     ATOM      = atomic access
+     RMW       = atomic read-modify-write
+     NONPRIV   = non-private access, including atomic accesses
+     F         = fence, including barriers with fence semantics
+
+   - Storage Classes
+     SCx       = access to SCx storage class
+
+   - Scopes
+     SG        = subgroup scope
+     WG        = workgroup scope
+     QF        = queue family scope
+     DV        = device scope
+
+   - Memory Semantics
+     ACQ       = acquire memory order
+     REL       = release memory order
+     SEMSCx    = storage class SCx semantics flag
+     SEMAV     = availability semantics flag
+     SEMVIS    = visibility semantics flag
+
+   - Host Operations
+     AVDEVICE  = availability operation (e.g., cache flush)
+     VISDEVICE = visibility operation (e.g., cache sync)
+
+   Relations:
+   - Execution Hierarchy
+     id        = identity relation
+     po        = program order
+     int       = internal (same thread)
+     ext       = external (different threads)
+     ssg       = same subgroup
+     swg       = same workgroup
+     sqf       = same queue family
+
+   - Memory Locations
+     loc       = same memory location
+     vloc      = same reference (variable)
+
+   - Data Flow
+     rf        = reads-from
+     co        = partial coherence order
+     rmw       = read-modify-write pairs (links R and W of an RMW)
+
+   - Synchronization
+     syncbar   = same control barrier instance
+     ssw       = system synchronizes with (by host)
+*)
+
+let QF = QF | DV
+let WG = WG | QF
+let SG = SG | WG
+
+let vloc = vloc & loc
+
+let SC01 = SC0 | SC1
+let SC02 = SC0 | SC2
+let SC03 = SC0 | SC3
+let SC12 = SC1 | SC2
+let SC13 = SC1 | SC3
+let SC23 = SC2 | SC3
+
+let SEMSC01 = SEMSC0 & SEMSC1
+let SEMSC02 = SEMSC0 & SEMSC2
+let SEMSC03 = SEMSC0 & SEMSC3
+let SEMSC12 = SEMSC1 & SEMSC2
+let SEMSC13 = SEMSC1 & SEMSC3
+let SEMSC23 = SEMSC2 & SEMSC3
+
+let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
+let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
+
+let inscope = (ssg & (SG * SG)) | (swg & (WG * WG)) | (sqf & (QF * QF)) | (DV * DV)
+let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
+let asmo = co & mutordatom
+let asrf = rf & mutordatom
+
+let rs = [REL]; ([F]; (po & sem2sc))?; [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let swra = rs; asrf; ((po & sc2sem); [F])?; [ACQ]
+let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
+let sw = inscope & (swra | swbar)
+
+// TODO: NONPRIV
+let ithb(SC, SEMSC) = (ssw |
+    ([SEMSC]; sw; [SEMSC]) |
+    ([(NONPRIV & SC) | SEMSC]; po; [REL & SEMSC]) |
+    ([ACQ & SEMSC]; po; [(NONPRIV & SC) | SEMSC]))+
+
+let ithb0 = ithb(SC0, SEMSC0)
+let ithb1 = ithb(SC1, SEMSC1)
+let ithb2 = ithb(SC2, SEMSC2)
+let ithb3 = ithb(SC3, SEMSC3)
+let ithb01 = ithb(SC01, SEMSC01)
+let ithb02 = ithb(SC02, SEMSC02)
+let ithb03 = ithb(SC03, SEMSC03)
+let ithb12 = ithb(SC12, SEMSC12)
+let ithb13 = ithb(SC13, SEMSC13)
+let ithb23 = ithb(SC23, SEMSC23)
+
+let schb = ([SC0]; ithb0) | ([SC1]; ithb1) | ([SC2]; ithb2) | ([SC3]; ithb3)
+let schbsc = (ithb0 & (SC0 * SC0)) | (ithb1 & (SC1 * SC1)) | (ithb2 & (SC2 * SC2)) | (ithb3 & (SC3 * SC3))
+let schbsca = (ithb01 & ((SC0 * SC1) | (SC1 * SC0))) |
+              (ithb02 & ((SC0 * SC2) | (SC2 * SC0))) |
+              (ithb03 & ((SC0 * SC3) | (SC3 * SC0))) |
+              (ithb12 & ((SC1 * SC2) | (SC2 * SC1))) |
+              (ithb13 & ((SC1 * SC3) | (SC3 * SC1))) |
+              (ithb23 & ((SC2 * SC3) | (SC3 * SC2)))
+
+let avinc0 = (chain & ithb0); [SEMAV & SEMSC0]
+let avinc1 = (chain & ithb1); [SEMAV & SEMSC1]
+let avinc2 = (chain & ithb2); [SEMAV & SEMSC2]
+let avinc3 = (chain & ithb3); [SEMAV & SEMSC3]
+
+let visinc0 = [SEMVIS & SEMSC0]; (chain & ithb0)
+let visinc1 = [SEMVIS & SEMSC1]; (chain & ithb1)
+let visinc2 = [SEMVIS & SEMSC2]; (chain & ithb2)
+let visinc3 = [SEMVIS & SEMSC3]; (chain & ithb3)
+
+let avsg0 = [W & NONPRIV & SC0]; (po; [SEMSC0 & SEMAV])?; [SG]
+let avwg0 = avsg0; (ssg & avinc0)?; [WG]
+let avqf0 = avwg0; (swg & avinc0)?; [QF]
+let avdv0 = avqf0; (sqf & avinc0)?; [DV]
+
+let avsg1 = [W & NONPRIV & SC1]; (po; [SEMSC1 & SEMAV])?; [SG]
+let avwg1 = avsg1; (ssg & avinc1)?; [WG]
+let avqf1 = avwg1; (swg & avinc1)?; [QF]
+let avdv1 = avqf1; (sqf & avinc1)?; [DV]
+
+let avsg2 = [W & NONPRIV & SC2]; (po; [SEMSC2 & SEMAV])?; [SG]
+let avwg2 = avsg2; (ssg & avinc2)?; [WG]
+let avqf2 = avwg2; (swg & avinc2)?; [QF]
+let avdv2 = avqf2; (sqf & avinc2)?; [DV]
+
+let avsg3 = [W & NONPRIV & SC3]; (po; [SEMSC3 & SEMAV])?; [SG]
+let avwg3 = avsg3; (ssg & avinc3)?; [WG]
+let avqf3 = avwg3; (swg & avinc3)?; [QF]
+let avdv3 = avqf3; (sqf & avinc3)?; [DV]
+
+let vissg0 = [SG]; ([SEMVIS & SEMSC0]; po)?; [R & NONPRIV & SC0]
+let viswg0 = [WG]; (ssg & visinc0)?; vissg0
+let visqf0 = [QF]; (swg & visinc0)?; viswg0
+let visdv0 = [DV]; (sqf & visinc0)?; visqf0
+
+let vissg1 = [SG]; ([SEMVIS & SEMSC1]; po)?; [R & NONPRIV & SC1]
+let viswg1 = [WG]; (ssg & visinc1)?; vissg1
+let visqf1 = [QF]; (swg & visinc1)?; viswg1
+let visdv1 = [DV]; (sqf & visinc1)?; visqf1
+
+let vissg2 = [SG]; ([SEMVIS & SEMSC2]; po)?; [R & NONPRIV & SC2]
+let viswg2 = [WG]; (ssg & visinc2)?; vissg2
+let visqf2 = [QF]; (swg & visinc2)?; viswg2
+let visdv2 = [DV]; (sqf & visinc2)?; visqf2
+
+let vissg3 = [SG]; ([SEMVIS & SEMSC3]; po)?; [R & NONPRIV & SC3]
+let viswg3 = [WG]; (ssg & visinc3)?; vissg3
+let visqf3 = [QF]; (swg & visinc3)?; viswg3
+let visdv3 = [DV]; (sqf & visinc3)?; visqf3
+
+let vissg = vissg0 | vissg1 | vissg2 | vissg3
+let viswg = viswg0 | viswg1 | viswg2 | viswg3
+let visqf = visqf0 | visqf1 | visqf2 | visqf3
+let visdv = visdv0 | visdv1 | visdv2 | visdv3
+
+let sgvis = (vloc & po)?; [R & NONPRIV]
+let wgvis = vloc & ssg & ((schb; vissg)?; sgvis)
+let qfvis = vloc & swg & ((schb; viswg)?; wgvis)
+let dvvis = vloc & sqf & ((schb; visqf)?; qfvis)
+
+let obsghb = ssg & ([SG]; asrf; (po | schb)?)
+let obwghb = swg & ([WG]; asrf; (po | schb)?)
+let obqfhb = sqf & ([QF]; asrf; (po | schb)?)
+let obdvhb = [DV]; asrf; (po | schb)?
+
+let avsghb = ssg & (obsghb | (avsg0; ithb0) | (avsg1; ithb1) | (avsg2; ithb2) | (avsg3; ithb3))
+let avwghb = swg & (obwghb | (avwg0; ithb0) | (avwg1; ithb1) | (avwg2; ithb2) | (avwg3; ithb3))
+let avqfhb = sqf & (obqfhb | (avqf0; ithb0) | (avqf1; ithb1) | (avqf2; ithb2) | (avqf3; ithb3))
+let avdvhb = obdvhb | (avdv0; ithb0) | (avdv1; ithb1) | (avdv2; ithb2) | (avdv3; ithb3)
+
+let ascom = mutordatom & (co | rf | fr)
+
+let hb = (ssw | schbsc | schbsca | ascom)+
+// TODO: Restrict to host events for cleaner edges
+let hhb = po | hb
+
+let locordh = loc & (
+    (IW * (M \ IW)) |
+    ([R]; hb?; ssw; hb?; [R | W]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hhb; [VISDEVICE]; hb; [R]))
+
+let locordp = vloc & po
+
+let locordi = loc & (NONPRIV * NONPRIV) & (
+    ([R]; (schbsc | schbsca); [R | W]) |
+    vloc & (po | ascom |
+        ([W]; (avsghb | avwghb | avqfhb | avdvhb); [W]) |
+        ([W]; avsghb; vissg; sgvis; [R]) |
+        ([W]; avwghb; viswg; wgvis; [R]) |
+        ([W]; avqfhb; visqf; qfvis; [R]) |
+        ([W]; avdvhb; visdv; dvvis; [R])
+    ))
+
+let locordd = ext & (([R]; locordi+; [W]) | (([W]; locordi)*; [W]; locordi))
+let locord = locordh | (locordh?; (locordp | locordd))
+
+(* Constraints *)
+
+empty ((W * W) & locord) \ co as consistent-co
+empty ((W * W) & mutordatom) \ co \ co^-1
+empty rmw & ((fr & ext); (co & ext)) as atomic
+irreflexive locord; (co | rf | fr) as irreflexive-locord
+acyclic locord as consistency-cycle
+
+(* Data race *)
+
+// (IW * IW) is used as a workaround for the Dartagnan virtual memory bug
+let dr = loc \ id \ (R * R) \ (IW * IW) \ locord \ locord^-1
+flag ~empty dr as racy

@@ -18,6 +18,9 @@ public interface Event extends Comparable<Event>, MetadataCarrier<Event> {
     int getGlobalId();
     void setGlobalId(int id);
 
+    int getPrintId();
+    void setPrintId(int id);
+
     int getLocalId();
     void setLocalId(int id);
 

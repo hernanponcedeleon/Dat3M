@@ -1,0 +1,180 @@
+VULKAN
+
+(*
+   Tags:
+   - Event Types
+     IW        = initial write
+     R         = read access
+     W         = write access
+     ATOM      = atomic access
+     RMW       = atomic read-modify-write
+     NONPRIV   = non-private access, including atomic accesses
+     F         = fence, including barriers with fence semantics
+
+   - Storage Classes
+     SCx       = access to SCx storage class
+
+   - Scopes
+     SG        = subgroup scope
+     WG        = workgroup scope
+     QF        = queue family scope
+     DV        = device scope
+
+   - Memory Semantics
+     ACQ       = acquire memory order
+     REL       = release memory order
+     SEMSCx    = storage class SCx semantics flag
+     SEMAV     = availability semantics flag
+     SEMVIS    = visibility semantics flag
+
+   - Host Operations
+     AVDEVICE  = availability operation (e.g., cache flush)
+     VISDEVICE = visibility operation (e.g., cache sync)
+
+   Relations:
+   - Execution Hierarchy
+     id        = identity relation
+     po        = program order
+     int       = internal (same thread)
+     ext       = external (different threads)
+     ssg       = same subgroup
+     swg       = same workgroup
+     sqf       = same queue family
+
+   - Memory Locations
+     loc       = same memory location
+     vloc      = same reference (variable)
+
+   - Data Flow
+     rf        = reads-from
+     co        = partial coherence order
+     rmw       = read-modify-write pairs (links R and W of an RMW)
+
+   - Synchronization
+     syncbar   = same control barrier instance
+     ssw       = system synchronizes with (by host)
+*)
+
+let QF = QF | DV
+let WG = WG | QF
+let SG = SG | WG
+
+let vloc = vloc & loc
+
+let SC01 = SC0 | SC1
+let SC02 = SC0 | SC2
+let SC03 = SC0 | SC3
+let SC12 = SC1 | SC2
+let SC13 = SC1 | SC3
+let SC23 = SC2 | SC3
+let SC012 = SC01 | SC2
+let SC013 = SC01 | SC3
+let SC023 = SC02 | SC3
+let SC123 = SC12 | SC3
+let SC0123 = SC012 | SC3
+
+let SEMSC01 = SEMSC0 & SEMSC1
+let SEMSC02 = SEMSC0 & SEMSC2
+let SEMSC03 = SEMSC0 & SEMSC3
+let SEMSC12 = SEMSC1 & SEMSC2
+let SEMSC13 = SEMSC1 & SEMSC3
+let SEMSC23 = SEMSC2 & SEMSC3
+let SEMSC012 = SEMSC01 & SEMSC2
+let SEMSC013 = SEMSC01 & SEMSC3
+let SEMSC023 = SEMSC02 & SEMSC3
+let SEMSC123 = SEMSC12 & SEMSC3
+let SEMSC0123 = SEMSC012 & SEMSC3
+
+let sc2sem = (SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)
+let sem2sc = (SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)
+
+let inscope = (ssg & (SG * SG)) | (swg & (WG * WG)) | (sqf & (QF * QF)) | (DV * DV)
+let mutordatom = (vloc & inscope & (ATOM * ATOM)) \ id
+let asmo = co & mutordatom
+
+let rs = [REL]; ([F]; (po & sem2sc))?; [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let swra = rs; (rf & mutordatom); ((po & sc2sem); [F])?; [ACQ]
+let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
+let sw = inscope & (swra | swbar)
+
+let ithb(SC, SEMSC) = (ssw |
+    ([SEMSC]; sw; [SEMSC]) |
+    ([SC | SEMSC]; po; [REL & SEMSC]) |
+    ([ACQ & SEMSC]; po; [SC | SEMSC]))+
+
+let ithb0 = ithb(SC0, SEMSC0)
+let ithb1 = ithb(SC1, SEMSC1)
+let ithb2 = ithb(SC2, SEMSC2)
+let ithb3 = ithb(SC3, SEMSC3)
+let ithb01 = ithb(SC01, SEMSC01)
+let ithb02 = ithb(SC02, SEMSC02)
+let ithb03 = ithb(SC03, SEMSC03)
+let ithb12 = ithb(SC12, SEMSC12)
+let ithb13 = ithb(SC13, SEMSC13)
+let ithb23 = ithb(SC23, SEMSC23)
+let ithb012 = ithb(SC012, SEMSC012)
+let ithb013 = ithb(SC013, SEMSC013)
+let ithb023 = ithb(SC023, SEMSC023)
+let ithb123 = ithb(SC123, SEMSC123)
+let ithb0123 = ithb(SC0123, SEMSC0123)
+
+let hb = po |
+    ithb0 | ithb1 | ithb2 | ithb3 |
+    ithb01 | ithb02 | ithb03 | ithb12 | ithb13 | ithb23 |
+    ithb012 | ithb013 | ithb023 | ithb123 | ithb0123
+
+let avvisinc = ([SG]; vloc) | (vloc; [SG]) | (sc2sem; [SEMAV]) | ([SEMVIS]; sem2sc)
+let apo = po? & avvisinc
+let ahb = hb & avvisinc
+
+let avsg = [SG & (W | SEMAV)]
+let avwg = (chain & (avsg; (ssg & ahb))?); [WG & (W | SEMAV)]
+let avqf = (chain & ((avsg; (ssg & ahb))?; (avwg; (swg & ahb))?)); [QF & (W | SEMAV)]
+let avdv = (chain & ((avsg; (ssg & ahb))?; (avwg; (swg & ahb))?; (avqf; (sqf & ahb))?)); [DV & (W | SEMAV)]
+
+let vissg = [SG & (R | SEMVIS)]
+let viswg = [WG & (R | SEMVIS)]; (chain & (((ssg & ahb); vissg)?))
+let visqf = [QF & (R | SEMVIS)]; (chain & (((swg & ahb); viswg)?; ((ssg & ahb); vissg)?))
+let visdv = [DV & (R | SEMVIS)]; (chain & (((sqf & ahb); visqf)?; ((swg & ahb); viswg)?; ((ssg & ahb); vissg)?))
+
+let locord = loc & (
+    ([R]; ssw+; [R | W]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hb; [VISDEVICE]; hb; [R]) |
+    ([R & NONPRIV]; hb; [(R | W) & NONPRIV]) |
+    vloc & ((hb & int) |
+        ([W & NONPRIV]; apo; avsg; (hb & ssg); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avwg; (hb & swg); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avqf; (hb & sqf); [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avdv; hb; [W & NONPRIV]) |
+        ([W & NONPRIV]; apo; avsg; (hb & ssg); vissg; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avwg; (hb & swg); viswg; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avqf; (hb & sqf); visqf; apo; [R & NONPRIV]) |
+        ([W & NONPRIV]; apo; avdv; hb; visdv; apo; [R & NONPRIV])))
+
+(* Constraints *)
+let fr = rf^-1; (asmo | ((W * W) & locord) | ((IW * (W \ IW)) & loc))
+
+// Mutually ordered atomic writes must be ordered by asmo in either direction,
+// translation from Alloy rai[asmo] = (W -> W) & mutordatom.
+// The opposite direction, empty asmo \ ((W * W) & mutordatom),
+// follows from the asmo definition let asmo = co & mutordatom.
+empty ((W * W) & mutordatom) \ asmo \ asmo^-1 as consistent-asmo
+
+// Enforcing strict partial order for asmo (transitive and irreflexive).
+// Here we enforce transitivity, while irreflexivity follows from the consistency-cycle constraint.
+empty (asmo; asmo) \ asmo
+
+// Enforcing co from initial writes to other stores,
+// required for assertions on final states.
+empty (loc & (IW * (W \ IW))) \ co
+
+empty rmw & ((fr & ext); (asmo & ext)) as atomic
+acyclic (locord | rf | fr | asmo) as consistency-cycle
+empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
+
+(* Data race *)
+
+let ord = mutordatom | locord | locord^-1
+let dr = loc \ id \ ord \ (R * R) \ (IW * _) \ (_ * IW)
+flag ~empty dr as racy

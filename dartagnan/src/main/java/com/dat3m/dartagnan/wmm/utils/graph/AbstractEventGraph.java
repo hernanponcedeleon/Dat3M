@@ -19,7 +19,7 @@ public abstract class AbstractEventGraph implements EventGraph {
         StringBuilder sb = new StringBuilder("[");
         for (Event e1 : getDomain().stream().sorted().toList()) {
             for (Event e2 : getRange(e1).stream().sorted().toList()) {
-                sb.append("(").append(e1.getGlobalId()).append(",").append(e2.getGlobalId()).append(")");
+                sb.append("(").append(e1.getPrintId()).append(",").append(e2.getPrintId()).append(")");
             }
         }
         return sb.append("]").toString();

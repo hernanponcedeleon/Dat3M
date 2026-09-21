@@ -1,0 +1,23 @@
+C test
+
+{}
+
+P0(atomic_int *x, int *y, spinlock_t *s1)
+{
+	int r0;
+    atomic_inc(x);
+	spin_lock(s1);
+	r0 = *y;
+	spin_unlock(s1);
+}
+
+P1(atomic_int *x, int *y, spinlock_t *s1)
+{
+	int r0;
+	spin_lock(s1);
+    *y = 1;
+    r0 = atomic_read(x);
+    spin_unlock(s1);
+}
+
+forall (0:r0=1 \/ 1:r0=1)

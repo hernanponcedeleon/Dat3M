@@ -221,7 +221,7 @@ public class ProgramPrinter {
 
     private void appendEvent(Event event, StringBuilder result){
         final StringBuilder idSb = new StringBuilder()
-                .append(event.getGlobalId()).append(":");
+                .append(event.getPrintId()).append(":");
         result.append(idSb);
         if(!(event instanceof Label)) {
             result.append("   ");
