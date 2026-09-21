@@ -18,13 +18,12 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractVerificationTaskSolverTest {
 
-    private final Provider<ShutdownManager> shutdownManager = Provider.fromSupplier(ShutdownManager::create);
-    private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManager);
-    private final Timeout timeout = Timeout.seconds(getTimeoutSeconds());
+    protected final Provider<ShutdownManager> shutdownManager = Provider.fromSupplier(ShutdownManager::create);
 
     @Test
     public void testAssume() throws Exception {
@@ -38,7 +37,13 @@ public abstract class AbstractVerificationTaskSolverTest {
         testSolver(Method.LAZY);
     }
 
-    // NOTE: This method is called early in the constructor and must be constant for all implementing classes.
+    @Rule
+    public RuleChain ruleChain() {
+        return RuleChain.outerRule(shutdownManager)
+                .around(RequestShutdownOnError.create(shutdownManager))
+                .around(Timeout.seconds(getTimeoutSeconds()));
+    }
+
     protected long getTimeoutSeconds() { return 600; }
 
     protected Task.TaskBuilder getTaskBuilder() { return Task.builder(); }
@@ -72,9 +77,4 @@ public abstract class AbstractVerificationTaskSolverTest {
         final EnumSet<Property> properties = getTestedProperties();
         return task.build(program, targetModel, properties);
     }
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(shutdownManager)
-            .around(shutdownOnError)
-            .around(timeout);
 }
