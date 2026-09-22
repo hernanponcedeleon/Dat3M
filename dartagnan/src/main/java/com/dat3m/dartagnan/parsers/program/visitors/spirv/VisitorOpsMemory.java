@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.extractType;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -56,10 +57,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             i == -1 ?
             EventFactory.newStore(exp, value) :
             EventFactory.newStore(exp, expressions.makeExtract(value, i)));
-        MemoryOperandTags tags = ctx.memoryAccess() == null
-                ? MemoryOperandTags.empty()
-                : parseMemoryAccessTags(ctx.memoryAccess());
-        validateMemoryAccessTags(tags, Tag.Spirv.MEM_VISIBLE, "OpStore");
+        MemoryOperandTags tags = parseAndValidateMemoryAccessTags(
+                ctx.memoryAccess(), Tag.Spirv.MEM_VISIBLE, "OpStore");
         addMemoryEvents(events, tags.writeTags(), ctx.pointer().getText());
         return null;
     }
@@ -69,14 +68,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         String resultId = ctx.idResult().getText();
         Expression pointer = builder.getExpression(ctx.pointer().getText());
         Type type = builder.getType(ctx.idResultType().getText());
-        List<Event> events = visitMemoryAccess(resultId, type, pointer, (i, exp) -> {
-            String regId = resultId;
-            if (i != -1) {
-                regId += "_" + i;
-            }
-            Register register = builder.addRegister(regId, getMemoryAccessType(type, i));
-            return EventFactory.newLoad(register, exp);
-            });
+        List<Event> events = createLoadEvents(resultId, type, pointer);
         List<Expression> registers = events.stream().map(Load.class::cast).map(Load::getResultRegister).collect(Collectors.toList());
         if (type instanceof AggregateType) {
             builder.addExpression(resultId, expressions.makeConstruct(type, registers));
@@ -84,10 +76,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (type instanceof ArrayType arrayType) {
             builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
         }
-        MemoryOperandTags tags = ctx.memoryAccess() == null
-                ? MemoryOperandTags.empty()
-                : parseMemoryAccessTags(ctx.memoryAccess());
-        validateMemoryAccessTags(tags, Tag.Spirv.MEM_AVAILABLE, "OpLoad");
+        MemoryOperandTags tags = parseAndValidateMemoryAccessTags(
+                ctx.memoryAccess(), Tag.Spirv.MEM_AVAILABLE, "OpLoad");
         addMemoryEvents(events, tags.readTags(), ctx.pointer().getText());
         return null;
     }
@@ -106,11 +96,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
         final Type type = targetType.getPointedType();
         final String registerId = "copy_memory_" + copyMemoryCount++;
-        final List<Event> loads = visitMemoryAccess(registerId, type, source, (i, address) -> {
-            final String id = i == -1 ? registerId : registerId + "_" + i;
-            final Register register = builder.addRegister(id, getMemoryAccessType(type, i));
-            return EventFactory.newLoad(register, address);
-        });
+        final List<Event> loads = createLoadEvents(registerId, type, source);
         final List<Register> values = loads.stream()
                 .map(Load.class::cast)
                 .map(Load::getResultRegister)
@@ -119,15 +105,25 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 (i, address) -> EventFactory.newStore(address, values.get(i == -1 ? 0 : i)));
 
         final List<SpirvParser.MemoryAccessContext> memoryAccesses = ctx.memoryAccess();
-        final MemoryOperandTags targetTags = memoryAccesses.isEmpty()
-                ? MemoryOperandTags.empty()
-                : parseMemoryAccessTags(memoryAccesses.get(0));
-        final MemoryOperandTags sourceTags = memoryAccesses.size() < 2
-                ? targetTags
-                : parseMemoryAccessTags(memoryAccesses.get(1));
-        if (memoryAccesses.size() == 2) {
-            validateMemoryAccessTags(targetTags, Tag.Spirv.MEM_VISIBLE, "OpCopyMemory");
-            validateMemoryAccessTags(sourceTags, Tag.Spirv.MEM_AVAILABLE, "OpCopyMemory");
+        final MemoryOperandTags targetTags;
+        final MemoryOperandTags sourceTags;
+        switch (memoryAccesses.size()) {
+            case 0 -> {
+                targetTags = MemoryOperandTags.empty();
+                sourceTags = MemoryOperandTags.empty();
+            }
+            case 1 -> {
+                targetTags = parseMemoryAccessTags(memoryAccesses.get(0));
+                sourceTags = targetTags;
+            }
+            case 2 -> {
+                targetTags = parseAndValidateMemoryAccessTags(
+                        memoryAccesses.get(0), Tag.Spirv.MEM_VISIBLE, "OpCopyMemory");
+                sourceTags = parseAndValidateMemoryAccessTags(
+                        memoryAccesses.get(1), Tag.Spirv.MEM_AVAILABLE, "OpCopyMemory");
+            }
+            default -> throw new ParsingException(
+                    "OpCopyMemory expects at most two memory operand definitions");
         }
         addMemoryEvents(loads, sourceTags.readTags(), sourceId);
         addMemoryEvents(stores, targetTags.writeTags(), targetId);
@@ -164,20 +160,18 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return events;
     }
 
-    private Type getMemoryAccessType(Type type, int index) {
-        if (index == -1) {
-            return type;
-        }
-        if (type instanceof AggregateType aggregateType) {
-            return aggregateType.getFields().get(index).type();
-        }
-        if (type instanceof ArrayType arrayType) {
-            return arrayType.getElementType();
-        }
-        throw new IllegalArgumentException("Cannot index memory access type %s".formatted(type));
+    private List<Event> createLoadEvents(String id, Type type, Expression pointer) {
+        return visitMemoryAccess(id, type, pointer, (index, address) -> {
+            final String registerId = index == -1 ? id : id + "_" + index;
+            final Type registerType = index == -1 ? type : extractType(type, List.of(index));
+            return EventFactory.newLoad(builder.addRegister(registerId, registerType), address);
+        });
     }
 
     private MemoryOperandTags parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
+        if (ctx == null) {
+            return MemoryOperandTags.empty();
+        }
         List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
         Integer alignmentTag = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
         List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
@@ -185,10 +179,13 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return HelperTags.parseMemoryOperandsTags(operands, alignmentTag, paramIds, paramsValues);
     }
 
-    private void validateMemoryAccessTags(MemoryOperandTags tags, String invalidTag, String op) {
+    private MemoryOperandTags parseAndValidateMemoryAccessTags(SpirvParser.MemoryAccessContext ctx,
+                                                               String invalidTag, String op) {
+        final MemoryOperandTags tags = parseMemoryAccessTags(ctx);
         if (tags.contains(invalidTag)) {
             throw new ParsingException("%s cannot contain tag '%s'", op, invalidTag);
         }
+        return tags;
     }
 
     private void addMemoryEvents(List<Event> events, Set<String> tags, String pointerId) {

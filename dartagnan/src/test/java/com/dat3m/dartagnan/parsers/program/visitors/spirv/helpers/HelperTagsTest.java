@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
@@ -196,8 +195,10 @@ public class HelperTagsTest {
 
         doTestInvalidMemoryOperandsParameters("NonPrivatePointer|MakePointerAvailable", null, List.of());
         doTestInvalidMemoryOperandsParameters("Aligned|NonPrivatePointer|MakePointerAvailable", 4, List.of(1, 2));
-        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1));
-        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1, 1, 1));
+        doTestInvalidMemoryOperandsParameters(
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters(
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1, 1, 1));
     }
 
     @Test
