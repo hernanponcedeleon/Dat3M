@@ -257,12 +257,11 @@ public class VisitorOpsMemoryTest {
     public void testCopyMemoryWithSharedAvailabilityAndVisibility() {
         // given
         String input = "OpCopyMemory %target %source "
-                + "NonPrivatePointer|MakePointerAvailable|MakePointerVisible %device %workgroup";
+                + "NonPrivatePointer|MakePointerAvailable|MakePointerVisible %workgroup %workgroup";
         builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Workgroup");
         builder.mockVariable("%target", "%int_ptr");
         builder.mockVariable("%source", "%int_ptr");
-        builder.mockConstant("%device", "%int", 1);
         builder.mockConstant("%workgroup", "%int", 2);
 
         // when
@@ -275,7 +274,7 @@ public class VisitorOpsMemoryTest {
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.MEM_NON_PRIVATE,
                 Tag.Spirv.MEM_VISIBLE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP), load.getTags());
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.MEM_NON_PRIVATE,
-                Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP), store.getTags());
+                Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP), store.getTags());
     }
 
     @Test

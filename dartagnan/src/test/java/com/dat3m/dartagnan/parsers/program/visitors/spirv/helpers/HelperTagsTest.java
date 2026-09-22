@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.List;
@@ -270,9 +269,7 @@ public class HelperTagsTest {
         List<Expression> paramValues = params.stream().map(p -> (Expression) expressions.makeValue(p, archType)).toList();
 
         // when
-        HelperTags.MemoryOperandTags tags = HelperTags.parseMemoryOperandsTags(
-                operandsList, alignment, paramIds, paramValues);
-        Set<String> actual = Sets.union(tags.readTags(), tags.writeTags());
+        Set<String> actual = HelperTags.parseMemoryOperandsTags(operandsList, alignment, paramIds, paramValues);
 
         // then
         assertEquals(expected, actual);

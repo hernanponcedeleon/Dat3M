@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilde
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags.MemoryOperandTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -24,6 +23,7 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -57,9 +57,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             i == -1 ?
             EventFactory.newStore(exp, value) :
             EventFactory.newStore(exp, expressions.makeExtract(value, i)));
-        MemoryOperandTags tags = parseAndValidateMemoryAccessTags(
+        Set<String> tags = parseAndValidateMemoryAccessTags(
                 ctx.memoryAccess(), Tag.Spirv.MEM_VISIBLE, "OpStore");
-        addMemoryEvents(events, tags.writeTags(), ctx.pointer().getText());
+        addMemoryEvents(events, tags, ctx.pointer().getText());
         return null;
     }
 
@@ -76,9 +76,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (type instanceof ArrayType arrayType) {
             builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
         }
-        MemoryOperandTags tags = parseAndValidateMemoryAccessTags(
+        Set<String> tags = parseAndValidateMemoryAccessTags(
                 ctx.memoryAccess(), Tag.Spirv.MEM_AVAILABLE, "OpLoad");
-        addMemoryEvents(events, tags.readTags(), ctx.pointer().getText());
+        addMemoryEvents(events, tags, ctx.pointer().getText());
         return null;
     }
 
@@ -105,16 +105,17 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 (i, address) -> EventFactory.newStore(address, values.get(i == -1 ? 0 : i)));
 
         final List<SpirvParser.MemoryAccessContext> memoryAccesses = ctx.memoryAccess();
-        final MemoryOperandTags targetTags;
-        final MemoryOperandTags sourceTags;
+        final Set<String> targetTags;
+        final Set<String> sourceTags;
         switch (memoryAccesses.size()) {
             case 0 -> {
-                targetTags = MemoryOperandTags.empty();
-                sourceTags = MemoryOperandTags.empty();
+                targetTags = Set.of();
+                sourceTags = Set.of();
             }
             case 1 -> {
-                targetTags = parseMemoryAccessTags(memoryAccesses.get(0));
-                sourceTags = targetTags;
+                final SpirvParser.MemoryAccessContext memoryAccess = memoryAccesses.get(0);
+                targetTags = selectCopyMemoryTags(memoryAccess, Tag.Spirv.MEM_AVAILABLE);
+                sourceTags = selectCopyMemoryTags(memoryAccess, Tag.Spirv.MEM_VISIBLE);
             }
             case 2 -> {
                 targetTags = parseAndValidateMemoryAccessTags(
@@ -125,8 +126,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             default -> throw new ParsingException(
                     "OpCopyMemory expects at most two memory operand definitions");
         }
-        addMemoryEvents(loads, sourceTags.readTags(), sourceId);
-        addMemoryEvents(stores, targetTags.writeTags(), targetId);
+        addMemoryEvents(loads, sourceTags, sourceId);
+        addMemoryEvents(stores, targetTags, targetId);
         return null;
     }
 
@@ -168,9 +169,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         });
     }
 
-    private MemoryOperandTags parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
+    private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
         if (ctx == null) {
-            return MemoryOperandTags.empty();
+            return Set.of();
         }
         List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
         Integer alignmentTag = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
@@ -179,13 +180,35 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return HelperTags.parseMemoryOperandsTags(operands, alignmentTag, paramIds, paramsValues);
     }
 
-    private MemoryOperandTags parseAndValidateMemoryAccessTags(SpirvParser.MemoryAccessContext ctx,
-                                                               String invalidTag, String op) {
-        final MemoryOperandTags tags = parseMemoryAccessTags(ctx);
+    private Set<String> parseAndValidateMemoryAccessTags(SpirvParser.MemoryAccessContext ctx,
+                                                         String invalidTag, String op) {
+        final Set<String> tags = parseMemoryAccessTags(ctx);
         if (tags.contains(invalidTag)) {
             throw new ParsingException("%s cannot contain tag '%s'", op, invalidTag);
         }
         return tags;
+    }
+
+    private Set<String> selectCopyMemoryTags(SpirvParser.MemoryAccessContext ctx, String retainedTag) {
+        final Set<String> tags = parseMemoryAccessTags(ctx);
+        final List<String> scopes = ctx.idRef().stream()
+                .map(id -> HelperTags.parseScope(id.getText(), builder.getExpression(id.getText())))
+                .toList();
+        final Set<String> result = new HashSet<>(tags);
+        result.removeAll(scopes);
+        result.remove(Tag.Spirv.MEM_AVAILABLE);
+        result.remove(Tag.Spirv.MEM_VISIBLE);
+        int scopeIndex = 0;
+        for (String tag : List.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_VISIBLE)) {
+            if (tags.contains(tag)) {
+                if (tag.equals(retainedTag)) {
+                    result.add(tag);
+                    result.add(scopes.get(scopeIndex));
+                }
+                scopeIndex++;
+            }
+        }
+        return result;
     }
 
     private void addMemoryEvents(List<Event> events, Set<String> tags, String pointerId) {
