@@ -22,6 +22,12 @@ public class AsmLibvsyncArmv7Test extends AbstractAsmTest {
     @Override
     protected String getTargetWmmName() { return "arm"; }
 
+    @Override
+    protected boolean isEagerMethodEnabled() {
+        // TODO: These take too long.
+        return false;
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{

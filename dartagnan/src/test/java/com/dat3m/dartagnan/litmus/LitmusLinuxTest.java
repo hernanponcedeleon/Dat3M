@@ -25,7 +25,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
 
     @Override
     protected boolean isLazyMethodEnabled() {
-        // TODO: no support for synchronize_srcu.
+        // TODO: No support for synchronize_srcu.
         return false;
     }
 }

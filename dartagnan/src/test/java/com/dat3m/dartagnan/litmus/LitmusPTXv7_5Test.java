@@ -23,7 +23,9 @@ public class LitmusPTXv7_5Test extends AbstractLitmusTest {
     @Override
     protected String getTargetWmmName() { return "ptx-v7.5"; }
 
-    // FIXME: Some of these give wrong results.
     @Override
-    protected boolean isLazyMethodEnabled() { return false; }
+    protected boolean isLazyMethodEnabled() {
+        // FIXME: Some of these give wrong results. See #1039.
+        return false;
+    }
 }

@@ -53,10 +53,4 @@ abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
 
     @Override
     protected ResultStatus getExpected() { return expected; }
-
-    @Override
-    protected boolean isEagerMethodEnabled() {
-        // TODO: These run out of memory, maybe due to recursion?
-        return !Arch.ARM7.equals(target) && !Arch.POWER.equals(target);
-    }
 }

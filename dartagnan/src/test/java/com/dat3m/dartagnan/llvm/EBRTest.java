@@ -25,7 +25,7 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected long getTimeoutSeconds() { return /*method == EAGER &&*/ target == POWER ? 300 : 180; }
+    protected long getTimeoutSeconds() { return target == POWER ? 300 : 180; }
 
     @Override
     protected Solvers getSolver() { return Solvers.YICES2; }

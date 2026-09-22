@@ -21,7 +21,7 @@ public class LFDSTest extends AbstractCTest {
     protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected long getTimeoutSeconds() { return /*method == EAGER &&*/ target == POWER ? 3000 : 1500; }
+    protected long getTimeoutSeconds() { return target == POWER ? 3000 : 1500; }
 
     @Override
     protected int getBound() { return 2; }
