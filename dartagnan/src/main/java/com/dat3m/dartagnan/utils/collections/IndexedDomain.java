@@ -89,7 +89,7 @@ public final class IndexedDomain<E> {
     }
 
     private static <E> int[] newIndex(E[] domain) {
-        final int[] index = new int[(int) (domain.length * HASH_TABLE_FILL_FACTOR) << 1];
+        final int[] index = new int[(int) (1 + domain.length * HASH_TABLE_FILL_FACTOR) << 1];
         Arrays.fill(index, -1);
         // Try to insert all elements at their bucket's front.
         for (int i = 0; i < domain.length; i++) {
