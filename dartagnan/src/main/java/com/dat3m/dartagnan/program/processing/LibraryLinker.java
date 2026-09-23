@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.processing.libraries.LKMMLibrary;
 import com.dat3m.dartagnan.program.processing.libraries.Library;
 import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.google.common.collect.ImmutableList;
@@ -15,7 +16,8 @@ public class LibraryLinker implements ProgramProcessor {
 
     private LibraryLinker(Configuration config) throws InvalidConfigurationException {
         libraries = ImmutableList.of(
-                new PthreadLibrary(config)
+                new PthreadLibrary(config),
+                new LKMMLibrary()
         );
     }
 
