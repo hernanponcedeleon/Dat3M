@@ -8,17 +8,15 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.google.common.base.Verify;
 
 import java.util.List;
+import java.util.Optional;
 
-public abstract class AbstractLibrary<T extends LibraryImplementation> implements LibraryImplementation {
+public abstract class AbstractLibrary<T extends Library> implements Library {
 
     protected static final TypeFactory types = TypeFactory.getInstance();
     protected static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-
-    protected abstract T getThis();
-
-    protected abstract Handler<T> getHandler(Function function);
 
     @Override
     public void link(Program program) {
@@ -29,21 +27,22 @@ public abstract class AbstractLibrary<T extends LibraryImplementation> implement
                 continue;
             }
 
-            final Handler<T> handler = getHandler(function);
+            final Handler<T> handler = getHandler(function).orElse(null);
             if (handler instanceof ImplementationProvider<T> implementor) {
                 implementor.implement(getThis(), function);
-                assert function.hasBody();
+                Verify.verify(function.hasBody());
+                // TODO: Shall we put any metadata in the implemented body?
             }
         }
 
-        // 2. Resolve calls to function that are still undefined after point 1.
+        // 2. Resolve calls to functions that are still undefined after point 1.
         for (Function function : program.getFunctions()) {
             for (FunctionCall call : function.getEvents(FunctionCall.class)) {
                 if (!call.isDirectCall() || call.getCalledFunction().hasBody()) {
                     continue;
                 }
 
-                final Handler<T> handler = getHandler(call.getCalledFunction());
+                final Handler<T> handler = getHandler(call.getCalledFunction()).orElse(null);
                 if (handler instanceof CallResolver<T> resolver) {
                     final List<Event> replacement = resolver.resolve(getThis(), call);
 
@@ -68,6 +67,9 @@ public abstract class AbstractLibrary<T extends LibraryImplementation> implement
 
     // ====================================================================================================
 
+    protected abstract T getThis();
+
+    protected abstract Optional<Handler<T>> getHandler(Function function);
 
     protected sealed interface Handler<T> {}
 

@@ -38,7 +38,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Options
 public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
-    public enum FunctionHandler {
+    public enum SupportedFunctions {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_CREATE("pthread_create", PthreadLibrary::inlinePthreadCreate),
         P_THREAD_EXIT("pthread_exit", PthreadLibrary::inlinePthreadExit),
@@ -108,17 +108,17 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         private final List<String> variants;
         private final Handler<PthreadLibrary> handler;
 
-        FunctionHandler(List<String> variants, CallResolver<PthreadLibrary> handler) {
+        SupportedFunctions(List<String> variants, CallResolver<PthreadLibrary> handler) {
             this.variants = variants;
             this.handler = handler;
         }
 
-        FunctionHandler(String name, CallResolver<PthreadLibrary> handler) {
+        SupportedFunctions(String name, CallResolver<PthreadLibrary> handler) {
             this(List.of(name), handler);
         }
 
         private boolean matches(String funcName) {
-            return variants.stream().anyMatch(funcName::equals);
+            return variants.contains(funcName);
         }
     }
 
@@ -138,13 +138,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     @Override
-    protected Handler<PthreadLibrary> getHandler(Function func) {
+    protected Optional<Handler<PthreadLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
-        return Arrays.stream(FunctionHandler.values())
-                .filter(handler -> handler.matches(funcName))
-                .findFirst()
-                .map(h -> h.handler)
-                .orElse(null);
+        return Arrays.stream(SupportedFunctions.values())
+                .filter(f -> f.matches(funcName))
+                .map(f -> f.handler)
+                .findFirst();
     }
 
 

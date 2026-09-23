@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.libraries.LibraryImplementation;
+import com.dat3m.dartagnan.program.processing.libraries.Library;
 import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.google.common.collect.ImmutableList;
 import org.sosy_lab.common.configuration.Configuration;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public class LibraryLinker implements ProgramProcessor {
 
-    private final List<LibraryImplementation> libraries;
+    private final List<Library> libraries;
 
     private LibraryLinker(Configuration config) throws InvalidConfigurationException {
         libraries = ImmutableList.of(
