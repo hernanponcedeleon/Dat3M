@@ -19,10 +19,14 @@ public final class IndexedDomain<E> {
         this.elements = (E[]) elements.toArray();
         index = newIndex(this.elements);
         emptySet = new IndexedSet<>(this, null, -1, false);
-        final long[] member = newBits(this.elements.length);
-        Arrays.fill(member, ~0L);
-        member[member.length - 1] &= ~0L >>> (64 - (this.elements.length % 64));
-        fullSet = new IndexedSet<>(this, member, -1, false);
+        if (this.elements.length <= 1) {
+            fullSet = new IndexedSet<>(this, null, this.elements.length == 1 ? 0 : -1, false);
+        } else {
+            final long[] member = newBits(this.elements.length);
+            Arrays.fill(member, ~0L);
+            member[member.length - 1] &= ~0L >>> (64 - (this.elements.length % 64));
+            fullSet = new IndexedSet<>(this, member, -1, false);
+        }
     }
 
     public int size() {
