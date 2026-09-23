@@ -104,6 +104,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", PthreadLibrary::inlinePthreadRwlockAttr),
         P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", PthreadLibrary::inlinePthreadRwlockAttr),
         P_THREAD_RWLOCKATTR_GET("pthread_rwlockattr_getpshared", PthreadLibrary::inlinePthreadRwlockAttr),
+        // --------------------------- pthread barrier ---------------------------
+        P_THREAD_BARRIER_INIT("pthread_barrier_init", PthreadLibrary::inlinePthreadBarrierInit),
+        P_THREAD_BARRIER_DESTROY("pthread_barrier_destroy", PthreadLibrary::inlinePthreadBarrierDestroy),
+        P_THREAD_BARRIER_WAIT("pthread_barrier_wait", PthreadLibrary::inlinePthreadBarrierWait),
+        P_THREAD_BARRIERATTR(List.of("pthread_barrierattr_init", "pthread_barrierattr_destroy",
+                "pthread_barrierattr_setpshared"), PthreadLibrary::inlinePthreadBarrierAttr),
         ;
 
         private final List<String> variants;
@@ -136,6 +142,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private CLibImplementation clib = null;
 
     private IntegerType archType;
+    private Type pointerType;
     private FunctionType threadType;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
@@ -165,6 +172,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         }
         clib = deriveClibFromProgram(program);
         archType = program.getArchType();
+        pointerType = program.getPointerType();
         threadType = types.getFunctionType(program.getPointerType(), List.of(program.getPointerType()));
         logger.info("Linking pthread library matching {}", clib);
         super.link(program);
@@ -963,6 +971,131 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
+    // ====================================================================
+    // Barriers
+    // ====================================================================
+
+    // The barrier state consists of three 32-bit counters: the number of arrivals (tickets), the number of
+    // completed phases, and the number of threads required per phase. Ticket t belongs to phase t / required.
+    // The thread taking the last ticket of a phase completes it; the others spin until the phase is completed.
+    // Since nothing is reset, callers of the next phase cannot pass with the current one.
+    // glibc keeps the state in pthread_barrier_t, MinGW only has a pointer to it (allocated by init).
+    private static final int BARRIER_TICKETS_OFFSET = 0;
+    private static final int BARRIER_COMPLETED_OFFSET = 4;
+    private static final int BARRIER_REQUIRED_OFFSET = 8;
+    private static final int BARRIER_STATE_SIZE = 12;
+
+    private boolean isBarrierStateInPlace() {
+        return clib == GLIBC;
+    }
+
+    private int getPthreadBarrierSerialThread() {
+        return switch (clib) {
+            case GLIBC, DARWIN_LIBC -> -1;
+            case MINGW -> 1;
+        };
+    }
+
+    private Expression getBarrierField(Expression state, int offset) {
+        final Expression byteOffset = expressions.makeValue(offset, archType);
+        return expressions.makeGetElementPointer(types.getByteType(), state, List.of(byteOffset));
+    }
+
+    // Returns the address of the barrier state, which may require loading it into the given register.
+    private Expression getBarrierState(Expression barrierAddress, Register stateRegister, List<Event> events) {
+        if (isBarrierStateInPlace()) {
+            return barrierAddress;
+        }
+        events.add(newLoad(stateRegister, barrierAddress));
+        return stateRegister;
+    }
+
+    private List<Event> inlinePthreadBarrierInit(FunctionCall call) {
+        //see https://man7.org/linux/man-pages/man3/pthread_barrier_init.3p.html
+        final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
+        final Expression barrierAddress = call.getArguments().get(0);
+        // The attributes (argument 1) only control process-sharing, which we do not model.
+        final IntegerType counterType = getNativeIntType();
+        final Expression required = expressions.makeIntegerCast(call.getArguments().get(2), counterType, false);
+        final Expression zero = expressions.makeZero(counterType);
+        final List<Event> events = new ArrayList<>();
+        Expression state = barrierAddress;
+        if (!isBarrierStateInPlace()) {
+            final Register stateRegister = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
+            events.add(newAlloc(stateRegister, types.getByteType(),
+                    expressions.makeValue(BARRIER_STATE_SIZE, archType), true, false));
+            events.add(newStore(barrierAddress, stateRegister));
+            state = stateRegister;
+        }
+        events.add(newStore(getBarrierField(state, BARRIER_TICKETS_OFFSET), zero));
+        events.add(newStore(getBarrierField(state, BARRIER_COMPLETED_OFFSET), zero));
+        events.add(newStore(getBarrierField(state, BARRIER_REQUIRED_OFFSET), required));
+        events.add(assignSuccessOrPosixError(errorRegister, expressions.makeNEQ(required, zero), PosixErrorCode.EINVAL));
+        return events;
+    }
+
+    private List<Event> inlinePthreadBarrierDestroy(FunctionCall call) {
+        //see https://man7.org/linux/man-pages/man3/pthread_barrier_destroy.3p.html
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final List<Event> events = new ArrayList<>();
+        if (!isBarrierStateInPlace()) {
+            final Register stateRegister = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
+            events.add(newDealloc(getBarrierState(call.getArguments().get(0), stateRegister, events)));
+        }
+        events.add(assignSuccess(errorRegister));
+        return events;
+    }
+
+    private List<Event> inlinePthreadBarrierWait(FunctionCall call) {
+        //see https://man7.org/linux/man-pages/man3/pthread_barrier_wait.3p.html
+        final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
+        checkArgument(resultRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
+        final IntegerType resultType = (IntegerType) resultRegister.getType();
+        final IntegerType counterType = getNativeIntType();
+        final Function caller = call.getFunction();
+        final Register stateRegister = caller.newUniqueRegister("__pthread_barrier_state", pointerType);
+        final Register required = caller.newUniqueRegister("__pthread_barrier_required", counterType);
+        final Register ticket = caller.newUniqueRegister("__pthread_barrier_ticket", counterType);
+        final Register completed = caller.newUniqueRegister("__pthread_barrier_completed", counterType);
+        final Register ignored = caller.newUniqueRegister("__pthread_barrier_ignored", counterType);
+
+        final List<Event> events = new ArrayList<>();
+        final Expression state = getBarrierState(call.getArguments().get(0), stateRegister, events);
+        final Expression completedAddress = getBarrierField(state, BARRIER_COMPLETED_OFFSET);
+        final Expression one = expressions.makeOne(counterType);
+        final Expression phase = expressions.makeDiv(ticket, required, false);
+        final Expression isLast = expressions.makeEQ(expressions.makeRem(ticket, required, false),
+                expressions.makeSub(required, one));
+        final Expression isPhaseCompleted = expressions.makeGT(completed, phase, false);
+
+        final Label wait = newLabel("__pthread_barrier_wait");
+        final Label last = newLabel("__pthread_barrier_last");
+        final Label end = newLabel("__pthread_barrier_end");
+        events.addAll(eventSequence(
+                newLoad(required, getBarrierField(state, BARRIER_REQUIRED_OFFSET)),
+                Llvm.newRMW(ticket, getBarrierField(state, BARRIER_TICKETS_OFFSET), one, IntBinaryOp.ADD,
+                        Tag.C11.MO_ACQUIRE_RELEASE),
+                newJump(isLast, last),
+                wait,
+                Llvm.newLoad(completed, completedAddress, Tag.C11.MO_ACQUIRE),
+                newJump(expressions.makeNot(isPhaseCompleted), wait),
+                newLocal(resultRegister, expressions.makeZero(resultType)),
+                newGoto(end),
+                last,
+                Llvm.newRMW(ignored, completedAddress, one, IntBinaryOp.ADD, Tag.C11.MO_RELEASE),
+                newLocal(resultRegister, expressions.makeValue(getPthreadBarrierSerialThread(), resultType)),
+                end
+        ));
+        return events;
+    }
+
+    private List<Event> inlinePthreadBarrierAttr(FunctionCall call) {
+        //see https://man7.org/linux/man-pages/man3/pthread_barrierattr_init.3p.html
+        // Process-sharing is not modeled, so the attributes have no effect.
+        final String suffix = call.getCalledFunction().getName().substring("pthread_barrierattr_".length());
+        final Register errorRegister = getResultRegisterAndCheckArguments(suffix.equals("setpshared") ? 2 : 1, call);
+        return List.of(assignSuccess(errorRegister));
+    }
 
     // ====================================================================
     private IntegerType getNativeIntType() {
