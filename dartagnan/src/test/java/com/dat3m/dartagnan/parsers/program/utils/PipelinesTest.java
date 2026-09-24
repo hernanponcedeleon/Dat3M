@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,8 +37,16 @@ public class PipelinesTest {
                     output: "{basename}.spvasm"
                     args: ["{cmd_input}", "-o", "{cmd_output}"]
                 pipelines:
-                  - pipeline: ".cl"
+                  - pipeline: ".c"
                     aliases: [".i"]
+                    output: "{basename}.ll"
+                    commands:
+                      - name: "Compile"
+                        tool: "clang"
+                        input: "{pipeline_input}"
+                        output: "{basename}.ll"
+                        args: ["{cmd_input}", "-o", "{cmd_output}"]
+                  - pipeline: ".cl"
                     output: "{basename}.spvasm"
                     commands:
                       - name: "Compile"
@@ -60,11 +69,13 @@ public class PipelinesTest {
         assertTrue(pipelines.needsCompilation(".cl"));
         assertTrue(pipelines.needsCompilation(".i"));
         assertFalse(pipelines.needsCompilation(".litmus"));
-        assertEquals(3, pipelines.getTools().size());
+        assertEquals(Set.of("clspv", "spirv-opt", "spirv-dis"), pipelines.getTools(".cl"));
+        assertEquals(Set.of("clang"), pipelines.getTools(".i"));
+        assertEquals(Set.of(), pipelines.getTools(".litmus"));
         assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), pipeline.output());
         assertEquals(List.of("--cl-std=CL2.0", "-g"), compile.options());
         assertEquals(List.of("--upgrade-memory-model"), upgradeMemoryModel.options());
-        assertEquals(pipeline.output(), aliasPipeline.output());
+        assertEquals(TEST_WORKDIR.resolve("example.ll").toString(), aliasPipeline.output());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.input());
         assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.input());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.args().get(0)); // {cmd_input}

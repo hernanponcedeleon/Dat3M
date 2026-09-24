@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 
 public class Dartagnan {
 
@@ -66,7 +67,9 @@ public class Dartagnan {
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
-        logEnvironmentInfo(pipelines.getTools());
+        final Set<String> tools = new HashSet<>();
+        progFiles.forEach(file -> tools.addAll(pipelines.getTools("." + getFileExtension(file))));
+        logEnvironmentInfo(tools);
 
         logger.info("CAT file path: {}", catFile);
 
