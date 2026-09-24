@@ -26,11 +26,4 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
 
     @Override
     protected Property getTestedProperty() { return Property.CAT_SPEC; }
-
-    @Override
-    protected boolean isLazyMethodEnabled() {
-        // FIXME: ArrayIndexOutOfBoundsException in indexedDomain.full().iterator().
-        return !programPath.endsWith("dart/no-herd/C-bool-const-01.litmus")
-                && !programPath.endsWith("dart/no-herd/C-bool-const-02.litmus");
-    }
 }
