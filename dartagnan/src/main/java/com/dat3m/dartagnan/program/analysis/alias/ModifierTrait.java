@@ -89,7 +89,7 @@ public interface ModifierTrait <Modifier> {
     /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
     record Sd(int offset, int alignment) {}
 
-    /// Enables field-sensitive alias analysis based on unions of one-dimensional linear sets.
+    /// Enables field-sensitive alias analysis based on unions of single-period linear sets.
     /// This is more precise than {@link Offsets} in presence of dynamic indexing into arrays.
     final class SdLinear implements ModifierTrait<Sd> {
         @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
@@ -131,9 +131,12 @@ public interface ModifierTrait <Modifier> {
         }
     }
 
+    /// Instances describe linear sets. `offset` is the *base*, `alignment` are the *periods*.
+    // If there is a lower bound, `alignment` contains only positive values.
+    // If there is no lower bound, `alignment` contains exactly one negative value.
     record Md(int offset, List<Integer> alignment) {}
 
-    /// Enables field-sensitive alias analysis based on multidimensional linear sets.
+    /// Enables field-sensitive alias analysis based on linear sets.
     /// This might be slightly more precise than {@link SdLinear} in presence of aggregates containing arrays.
     final class MdLinear implements ModifierTrait<Md> {
         @Override
@@ -163,39 +166,47 @@ public interface ModifierTrait <Modifier> {
         @Override
         public boolean mustInclude(Md left, Md right) {
             int offset = right.offset - left.offset;
+            // Case where `left` is functional.
             if (left.alignment.isEmpty()) {
                 return right.alignment.isEmpty() && offset == 0;
             }
-            // Case of unbounded dynamic indexes.
             int leftAlignment = singleAlignment(left.alignment);
             int rightAlignment = singleAlignment(right.alignment);
-            if (leftAlignment < 0 || rightAlignment < 0) {
-                if (leftAlignment >= 0) {
-                    return false;
-                }
+            // Case where `left` has no lower bound.
+            // Removing any lower bound on `right` should have no effect on the return value.
+            if (leftAlignment < 0) {
                 int l = -leftAlignment;
                 int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
                 return offset % l == 0 && r % l == 0;
             }
-            // Case of a single non-negative dynamic index.
-            if (left.alignment.size() == 1) {
+            // From here on, `left` has a lower bound.
+            // Cases where `right` has no lower bound or starts lower than `left`.
+            if (rightAlignment < 0 || offset < 0) {
+                return false;
+            }
+            // Fast path where `left` has only one dynamic index.
+            if (leftAlignment > 0) {
                 for (final Integer a : right.alignment) {
                     if (a % leftAlignment != 0) {
                         return false;
                     }
                 }
-                return offset % leftAlignment == 0 && offset >= 0;
+                return offset % leftAlignment == 0;
             }
-            // Case of multiple dynamic indexes with pairwise indivisible alignments.
-            if (offset < 0) {
-                return false;
-            }
+            // Slow path.
+            // Case where `left` has multiple periods.
+            // Inclusion between linear sets is decidable, but complex.
+            // Instead, consider the weaker condition:
+            // If `left.alignment` contains `offset` and all of `right.alignment`,
+            // then `left` includes `right`.
+            // The weaker condition fails for e.g. `Md[offset=0, alignment=[3,4,5]], Md[offset=3, alignment=[2]]`.
             final int gcd = IntMath.gcd(reduceGCD(left.alignment),
-                    IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset)));
-            if (gcd == 0) {
-                return true;
-            }
-            int max = Math.abs(offset);
+                    IntMath.gcd(reduceGCD(right.alignment), offset));
+            assert gcd != 0;
+            // Dynamic programming:
+            // Mark all integers that are linear combinations of `left.alignment`
+            // and are not greater than `offset` and all of `right.alignment`.
+            int max = offset;
             for (final Integer i : right.alignment) {
                 max = Math.max(max, i);
             }
@@ -214,7 +225,7 @@ public interface ModifierTrait <Modifier> {
                     return false;
                 }
             }
-            return mem[Math.abs(offset)/gcd];
+            return mem[offset / gcd];
         }
         @Override
         public int level(Md m) {
@@ -246,9 +257,6 @@ public interface ModifierTrait <Modifier> {
             }
             return constantModifier(modifier.offset);
         }
-        private static int singleAlignment(List<Integer> alignment) {
-            return alignment.size() != 1 ? 0 : alignment.get(0);
-        }
         // Computes the greatest common divisor of the operands.
         private static int reduceGCD(List<Integer> alignment) {
             if (alignment.isEmpty()) {
@@ -259,20 +267,6 @@ public interface ModifierTrait <Modifier> {
                 result = IntMath.gcd(result, a);
             }
             return result;
-        }
-        private static void sort(List<Integer> alignment) {
-            if (alignment.size() > 1) {
-                Collections.sort(alignment);
-            }
-        }
-        // Checks if value is no multiple of any element in the list.
-        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
-            for (final Integer candidate : candidates) {
-                if ((strict || value < candidate) && value % candidate == 0) {
-                    return false;
-                }
-            }
-            return true;
         }
         private List<Integer> compose(List<Integer> left, List<Integer> right) {
             if (left.isEmpty() || right.isEmpty() || (left.size() == 1 && left.equals(right))) {
@@ -301,8 +295,22 @@ public interface ModifierTrait <Modifier> {
                     result.add(j);
                 }
             }
-            sort(result);
+            if (result.size() > 1) {
+                Collections.sort(result);
+            }
             return result;
+        }
+        private static int singleAlignment(List<Integer> alignment) {
+            return alignment.size() != 1 ? 0 : alignment.get(0);
+        }
+        // Checks if value is no multiple of any element in the list.
+        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
+            for (final int candidate : candidates) {
+                if ((strict || value < candidate) && value % candidate == 0) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
