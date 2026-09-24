@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import org.junit.Test;
 
 import java.util.List;
@@ -154,9 +153,8 @@ public class HelperTagsTest {
                 "NonPrivatePointer|Aligned|MakePointerVisible", 4, List.of(1));
         doTestValidMemoryOperands(Set.of(MEM_VOLATILE, MEM_NONTEMPORAL, MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
                 "Volatile|Aligned|Nontemporal|NonPrivatePointer|MakePointerVisible", 4, List.of(1));
-        // TODO: Uncomment after implementing combined av-vis operands
-        //doTestValidMemoryOperands(Set.of(MEM_AVAILABLE, MEM_VISIBLE, DEVICE),
-        //        "MakePointerAvailable|MakePointerVisible", null, List.of(1, 2));
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_AVAILABLE, MEM_VISIBLE, DEVICE, WORKGROUP),
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1, 2));
     }
 
     @Test
@@ -196,8 +194,10 @@ public class HelperTagsTest {
 
         doTestInvalidMemoryOperandsParameters("NonPrivatePointer|MakePointerAvailable", null, List.of());
         doTestInvalidMemoryOperandsParameters("Aligned|NonPrivatePointer|MakePointerAvailable", 4, List.of(1, 2));
-        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1));
-        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1, 1, 1));
+        doTestInvalidMemoryOperandsParameters(
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters(
+                "NonPrivatePointer|MakePointerAvailable|MakePointerVisible", null, List.of(1, 1, 1));
     }
 
     @Test

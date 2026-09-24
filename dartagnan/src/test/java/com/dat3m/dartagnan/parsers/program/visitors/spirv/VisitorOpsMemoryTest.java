@@ -188,6 +188,214 @@ public class VisitorOpsMemoryTest {
     }
 
     @Test
+    public void testCopyMemoryScalar() {
+        // given
+        String input = "OpCopyMemory %target %source";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        ScopedPointerVariable target = builder.mockVariable("%target", "%int_ptr");
+        ScopedPointerVariable source = builder.mockVariable("%source", "%int_ptr");
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(source, load.getAddress());
+        assertEquals(target, store.getAddress());
+        assertEquals(load.getResultRegister(), store.getMemValue());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_WORKGROUP), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryBetweenStorageClasses() {
+        // given
+        String input = "OpCopyMemory %target %source";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%uniform_ptr", "%int", "Uniform");
+        builder.mockPtrType("%workgroup_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%uniform_ptr");
+        builder.mockVariable("%source", "%workgroup_ptr");
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryWithSharedMemoryOperands() {
+        // given
+        String input = "OpCopyMemory %target %source NonPrivatePointer";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.SC_WORKGROUP), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryWithSharedAvailabilityAndVisibility() {
+        // given
+        String input = "OpCopyMemory %target %source "
+                + "NonPrivatePointer|MakePointerAvailable|MakePointerVisible %workgroup %workgroup";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+        builder.mockConstant("%workgroup", "%int", 2);
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.MEM_VISIBLE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryWithSeparateMemoryOperands() {
+        // given
+        String input = "OpCopyMemory %target %source Aligned 4 NonPrivatePointer";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_WORKGROUP), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryWithSeparateAvailabilityAndVisibility() {
+        // given
+        String input = "OpCopyMemory %target %source "
+                + "NonPrivatePointer|MakePointerAvailable %device "
+                + "NonPrivatePointer|MakePointerVisible %workgroup";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+        builder.mockConstant("%device", "%int", 1);
+        builder.mockConstant("%workgroup", "%int", 2);
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(2);
+        Load load = (Load) events.get(0);
+        Store store = (Store) events.get(1);
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.MEM_VISIBLE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP), store.getTags());
+    }
+
+    @Test
+    public void testCopyMemoryRejectsVisibleTargetMask() {
+        // given
+        String input = "OpCopyMemory %target %source "
+                + "NonPrivatePointer|MakePointerVisible %device NonPrivatePointer";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+        builder.mockConstant("%device", "%int", 1);
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(String.format("OpCopyMemory cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE),
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCopyMemoryRejectsAvailableSourceMask() {
+        // given
+        String input = "OpCopyMemory %target %source Aligned 4 "
+                + "NonPrivatePointer|MakePointerAvailable %device";
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+        builder.mockConstant("%device", "%int", 1);
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(String.format("OpCopyMemory cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE),
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCopyMemoryUsesUniqueRegisters() {
+        // given
+        String input = """
+                OpCopyMemory %target %source
+                OpCopyMemory %target %source
+                """;
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
+        builder.mockVariable("%target", "%int_ptr");
+        builder.mockVariable("%source", "%int_ptr");
+
+        // when
+        parse(input);
+
+        // then
+        List<Event> events = getLastEvents(4);
+        Load firstLoad = (Load) events.get(0);
+        Store firstStore = (Store) events.get(1);
+        Load secondLoad = (Load) events.get(2);
+        Store secondStore = (Store) events.get(3);
+        assertEquals("copy_memory_0", firstLoad.getResultRegister().getName());
+        assertEquals("copy_memory_1", secondLoad.getResultRegister().getName());
+        assertEquals(firstLoad.getResultRegister(), firstStore.getMemValue());
+        assertEquals(secondLoad.getResultRegister(), secondStore.getMemValue());
+    }
+
+    @Test
     public void testVariable() {
         // given
         String input = """
@@ -981,6 +1189,11 @@ public class VisitorOpsMemoryTest {
             return events.get(events.size() - 1);
         }
         return null;
+    }
+
+    private List<Event> getLastEvents(int count) {
+        List<Event> events = builder.getCurrentFunction().getEvents();
+        return events.subList(events.size() - count, events.size());
     }
 
     private void parse(String input) {
