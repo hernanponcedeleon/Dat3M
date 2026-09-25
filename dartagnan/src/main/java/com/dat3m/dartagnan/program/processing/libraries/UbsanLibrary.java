@@ -1,26 +1,15 @@
 package com.dat3m.dartagnan.program.processing.libraries;
 
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.processing.Intrinsics;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import static com.dat3m.dartagnan.program.event.EventFactory.newDealloc;
-import static com.google.common.base.Preconditions.checkArgument;
 
 @Options
 public class UbsanLibrary extends AbstractLibrary<UbsanLibrary> {
