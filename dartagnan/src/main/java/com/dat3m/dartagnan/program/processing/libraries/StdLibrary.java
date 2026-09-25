@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 import static com.dat3m.dartagnan.program.event.EventFactory.newDealloc;
 import static com.google.common.base.Preconditions.checkArgument;
 
