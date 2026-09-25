@@ -2,70 +2,74 @@ package com.dat3m.dartagnan.solver.propagators;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.solver.caat.domain.Domain;
-import com.dat3m.dartagnan.solver.caat.domain.GenericDomain;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
+import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.PropagatorBackend;
 import org.sosy_lab.java_smt.basicimpl.AbstractUserPropagator;
 
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class AcyclicityPropagator extends AbstractUserPropagator {
+
+    private static final boolean enableTheoryPropagation = true;
+    // Might weaken propagation/learning if set to true?
+    private static final boolean stopOnConflict = false;
+    // If set to true, we can propagate the same edge twice but with different reasons
+    private static final boolean allowDuplicatePropagation = false;
 
     private final RelationAnalysis relationAnalysis;
     private final EncodingContext context;
     private final WmmEncoder wmmEncoder;
     private final List<Case> cases = new ArrayList<>();
     private final Map<BooleanFormula, Case> lit2Case = new HashMap<>();
-    private final Domain<Event> domain;
+    private final IndexedDomain<Event> domain;
 
+    // -------- Dynamic search data --------
     private int curLevel = 0;
-    private long numChecks = 0;
     private boolean raisedConflict = false;
 
-    // We use a "case" per acyclicity axiom we want to track
-    private record Case(Acyclicity axiom, SimpleGraph graph,
-                        BiMap<BooleanFormula, Edge> lit2Edge,
-                        BiMap<Edge, BooleanFormula> edge2Lit)  {
+    private final Queue<Integer> workqueue = new ArrayDeque<>(); // Used for BFS
+    private final VarGraph.Edge[] ingoingMap; // Spanning tree for forward search
+    private final VarGraph.Edge[] outgoingMap; // Spanning tree for backward search
 
-        public Case(Acyclicity axiom) {
-            this(axiom, HashBiMap.create());
-        }
+    // TODO: Evaluate the need for this.
+    // Track already-made propagations to avoid redundant propagation
+    private Set<VarGraph.Edge> alreadyPropagatedEdges;
 
-        private Case(Acyclicity axiom, BiMap<BooleanFormula, Edge> lit2Edge) {
-            this(axiom, new SimpleGraph(), lit2Edge, lit2Edge.inverse());
-        }
-    }
+    // -------- Misc --------
+    // Used to cheaply associate data with BooleanFormulas
+    private CachingFormulaMap<FormulaData> formulaLookup;
+
+    // -------- Statistics --------
+    private final Map<Set<BooleanFormula>, Integer> observedReasons = new HashMap<>();
+    private int numPropagations = 0;
+    private long numChecks = 0;
+
 
     public AcyclicityPropagator(WmmEncoder wmmEncoder, EncodingContext ctx) {
         this.context = ctx;
         this.relationAnalysis = ctx.getAnalysisContext().requires(RelationAnalysis.class);
         this.wmmEncoder = wmmEncoder;
 
-        // Set up domain
-        final List<Event> events = context.getTask().getProgram().getThreadEvents();
-        this.domain = new GenericDomain<>(events);
-        ensureCapacity(events.size());
+        this.domain = ctx.getAnalysisContext().requires(EventDomainRepository.class)
+                .getDomain(EventDomainRepository.DomainBound.VISIBLE);
+        ingoingMap = new VarGraph.Edge[domain.size()];
+        outgoingMap = new VarGraph.Edge[domain.size()];
     }
 
     public void registerAxiom(Acyclicity axiom) {
         if (cases.stream().anyMatch(c -> c.axiom() == axiom)) {
             return;
         }
-        final Case c = new Case(axiom);
-        c.graph.initializeToDomain(domain);
+        final Case c = new Case(axiom, new VarGraph(domain.size(), context.getBooleanFormulaManager()));
         cases.add(c);
     }
 
@@ -75,87 +79,225 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
 
         backend.notifyOnKnownValue();
 
+        AtomicInteger numDynamicEdges = new AtomicInteger();
         for (Case c : cases) {
             final Acyclicity axiom = c.axiom();
             final Relation rel = axiom.getRelation();
             final EventGraph must = relationAnalysis.getKnowledge(rel).getMustSet();
             final EventGraph relevantSet = wmmEncoder.getRelevantSet(axiom);
-            final SimpleGraph relationGraph = c.graph();
+            final VarGraph graph = c.graph();
 
             relevantSet.apply((x, y) -> {
-                final int idx = domain.getId(x);
-                final int idy = domain.getId(y);
+                final int idx = domain.indexOf(x);
+                final int idy = domain.indexOf(y);
                 if (must.contains(x, y)) {
                     // TODO: This is unsound unless the must-edges satisfy
                     //  (x,y) in must(r) /\ (y, z) in must(r) => (x, z) in must(r^+)
                     //  which is the case for SC
-                    relationGraph.add(new Edge(idx, idy, 0, 0));
-                } else if (relevantSet.contains(x, y)) {
+                    graph.addMustEdge(idx, idy);
+                } else {
                     final BooleanFormula edgeLit = context.edge(rel, x, y);
-                    final Edge edge = new Edge(idx, idy, 0, 0);
-                    c.lit2Edge.put(edgeLit, edge);
                     lit2Case.put(edgeLit, c);
+                    graph.addVarEdge(idx, idy, edgeLit);
                     backend.registerExpression(edgeLit);
+                    numDynamicEdges.getAndIncrement();
                 }
             });
-
-        }
-    }
-
-    @Override
-    public void onKnownValue(BooleanFormula expr, boolean value) {
-        if (value) {
-            final Case c = lit2Case.get(expr);
-            final Edge edge = c.lit2Edge.get(expr);
-            propagate(c, edge.withTime(curLevel));
-            numChecks++;
-
-            if (numChecks % 1000000 == 0) {
-                System.out.println("numChecks: " + numChecks);
-                printStatistic();
-            }
-        }
-    }
-
-    private void propagate(Case c, Edge edge) {
-        if (raisedConflict) {
-            return;
         }
 
-        final SimpleGraph relationGraph = c.graph();
-        final List<Edge> backPath = findShortestPath(c, edge.getSecond(), edge.getFirst());
-        if (!backPath.isEmpty()) {
-            List<BooleanFormula> reason = computePathReason(c, backPath);
-            reason.add(c.edge2Lit.get(edge)); // Add edge to complete cycle
-            trackReason(reason);
-            getBackend().propagateConflict(reason.toArray(new BooleanFormula[0]));
-            raisedConflict = true;
-        } else {
-            relationGraph.add(edge);
-        }
+        formulaLookup = new CachingFormulaMap<>(numDynamicEdges.get() * 2, key-> {
+            final VarGraph graph = lit2Case.get(key).graph();
+            final VarGraph.Edge edge = graph.getEdge(key);
+            return new FormulaData(graph, edge);
+        });
+        alreadyPropagatedEdges = Collections.newSetFromMap(new IdentityHashMap<>(numDynamicEdges.get()));
     }
 
     @Override
     public void onPush() {
         curLevel++;
+        cases.forEach(c -> c.graph.push());
+        // System.out.println("------- Push: " + curLevel + " -------");
     }
 
     @Override
     public void onPop(int numPoppedLevels) {
         raisedConflict = false;
         curLevel -= numPoppedLevels;
-        cases.forEach(c -> c.graph.backtrackTo(curLevel));
+        cases.forEach(c -> c.graph.pop(numPoppedLevels));
+        alreadyPropagatedEdges.clear();
+        // System.out.println("------- Pop to: " + curLevel + " -------");
     }
 
-    // -----
-    private Map<Set<BooleanFormula>, Integer> observedReasons = new HashMap<>();
-    private int numPropagations = 0;
+
+    @Override
+    public void onKnownValue(BooleanFormula expr, boolean value) {
+        if (raisedConflict && stopOnConflict) {
+            // We have a pending conflict
+            // System.out.println("Already conflict; skip " + expr);
+            return;
+        }
+
+        final FormulaData data = formulaLookup.get(expr);
+        final VarGraph graph = data.graph();
+        final VarGraph.Edge edge = data.edge();
+        graph.assignEdge(edge, value);
+
+        if (value) {
+            if (alreadyPropagatedEdges.contains(edge)) {
+                raisedConflict = true;
+                // System.out.println("Propagation conflict");
+                return;
+            }
+            processEdgeAddition(graph, edge);
+
+            numChecks++;
+            if (numChecks % 1000000 == 0) {
+                System.out.println("numChecks: " + numChecks);
+                printStatistics();
+            }
+        }
+    }
+
+    // Checks for cycles caused by adding <edge> and possibly raises a conflict.
+    // If no conflict is raised, tries to do theory propagation
+    private void processEdgeAddition(VarGraph graph, VarGraph.Edge edge) {
+
+        if (forwardBfsSearch(graph, edge, ingoingMap)) {
+            // We found a cycle
+            final List<BooleanFormula> conflict = computeCycleReason(edge, ingoingMap);
+            trackReason(conflict);
+            getBackend().propagateConflict(conflict.toArray(new BooleanFormula[0]));
+            raisedConflict = true;
+        } else if (enableTheoryPropagation) {
+            backwardBfsPropagate(graph, edge, ingoingMap);
+        }
+    }
+
+    private List<BooleanFormula> computeCycleReason(VarGraph.Edge edge, VarGraph.Edge[] ingoingMap) {
+        // Collect reason backwards
+        final List<BooleanFormula> conflict = new ArrayList<>();
+        int cur = edge.getSource();
+        VarGraph.Edge curEdge;
+        do {
+            curEdge = ingoingMap[cur];
+            if (!curEdge.isMust()) {
+                conflict.add(curEdge.getEdgeVar());
+            }
+            cur = curEdge.getSource();
+        } while (curEdge != edge);
+
+        return conflict;
+    }
+
+    // ==========================================================================
+
+
+    private boolean forwardBfsSearch(VarGraph graph, VarGraph.Edge addedEdge, VarGraph.Edge[] ingoingMap) {
+        Arrays.fill(ingoingMap, null);
+        workqueue.clear();
+        workqueue.add(addedEdge.getTarget());
+
+        final int target = addedEdge.getSource();
+        ingoingMap[addedEdge.getTarget()] = addedEdge;
+
+        do {
+            // Forward BFS
+            for (VarGraph.Edge outEdge : graph.getTrueOutEdges(workqueue.poll())) {
+                final int next = outEdge.getTarget();
+                if (next == target) {
+                    // Found cycle
+                    ingoingMap[next] = outEdge;
+                    return true;
+                } else if (ingoingMap[next] == null) {
+                    ingoingMap[next] = outEdge;
+                    workqueue.add(next);
+                }
+            }
+        } while (!workqueue.isEmpty());
+
+        // No cycle found
+        return false;
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Theory propagation
+
+    private void backwardBfsPropagate(VarGraph graph, VarGraph.Edge addedEdge, VarGraph.Edge[] ingoingMap) {
+        Arrays.fill(outgoingMap, null);
+        workqueue.clear();
+        workqueue.add(addedEdge.getSource());
+
+        // Do backward BFS to collect disabled edges
+        final List<VarGraph.Edge> disabledEdgesToPropagate = new ArrayList<>();
+        do {
+            for (VarGraph.Edge inEdge : graph.getInEdges(workqueue.poll())) {
+                if (inEdge.isFalse()) {
+                    continue;
+                }
+
+                final int next = inEdge.getSource();
+                if (ingoingMap[next] != null && (allowDuplicatePropagation || !alreadyPropagatedEdges.contains(inEdge))) {
+                    assert inEdge.isUnassigned();
+                    disabledEdgesToPropagate.add(inEdge);
+                    /*if ( !alreadyPropagatedEdges.contains(inEdge)) {
+                        System.out.println("New prop reason for: " + inEdge);
+                    }*/
+                } else if (inEdge.isTrue() && outgoingMap[next] == null) {
+                    outgoingMap[next] = inEdge;
+                    workqueue.add(next);
+                }
+            }
+        } while (!workqueue.isEmpty());
+
+        // Propagate disabled edges
+        propagateDisabledEdges(disabledEdgesToPropagate, ingoingMap, outgoingMap);
+    }
+
+    private void propagateDisabledEdges(List<VarGraph.Edge> disabledEdgesToPropagate, VarGraph.Edge[] ingoingMap, VarGraph.Edge[] outgoingMap) {
+        for (var edge : disabledEdgesToPropagate) {
+            assert edge.isUnassigned();
+            final List<BooleanFormula> reason = new ArrayList<>();
+
+            // Collect reason backwards
+            int cur = edge.getSource();
+            VarGraph.Edge curEdge;
+            while ((curEdge = ingoingMap[cur]) != null) {
+                if (!curEdge.isMust()) {
+                    reason.add(curEdge.getEdgeVar());
+                }
+                cur = curEdge.getSource();
+            }
+
+            final int target = cur;
+
+            // Collect reason forwards
+            cur = edge.getTarget();
+            while (cur != target) {
+                curEdge = outgoingMap[cur];
+                if (!curEdge.isMust()) {
+                    reason.add(curEdge.getEdgeVar());
+                }
+                cur = curEdge.getTarget();
+            }
+
+            // Propagate
+            assert !reason.isEmpty();
+            final BooleanFormula[] propReason = reason.toArray(new BooleanFormula[0]);
+            getBackend().propagateConsequence(propReason, edge.getNegEdgeVar());
+            numPropagations++;
+            alreadyPropagatedEdges.add(edge);
+
+        }
+    }
+
+    // ---------------------------------------- Statistics ----------------------------------------
 
     private void trackReason(List<BooleanFormula> reason) {
         observedReasons.compute(new HashSet<>(reason), (k, v) -> v == null ? 1 : v + 1);
     }
 
-    public void printStatistic() {
+    public void printStatistics() {
         int uniqueReasons = observedReasons.size();
         int totalReasons = observedReasons.values().stream().mapToInt(v -> v).sum();
         int maxDuplicate = observedReasons.values().stream().mapToInt(v -> v).max().orElse(0);
@@ -164,167 +306,30 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     }
 
 
-    // ==========================================================================
+    // ===================================== Helper classes ====================================
 
-    //TODO: This code is copied from PathAlgorithms and can surely be improved
-    private final Queue<Integer> queueForward = new ArrayDeque<>();
-    private final Queue<Integer> queueBackward = new ArrayDeque<>();
+    // We use a "case" per acyclicity axiom we want to track
+    private record Case(Acyclicity axiom, VarGraph graph) { }
 
-    private Edge[] ingoingMap = new Edge[0];
-    private Edge[] outgoingMap = new Edge[0];
+    private record FormulaData(VarGraph graph, VarGraph.Edge edge) { }
 
-    public void ensureCapacity(int capacity) {
-        if (capacity <= ingoingMap.length) {
-            return;
+
+    // TODO: Test code to minimize hashtable lookup times with BooleanFormula
+    //  The IdentityHashMap is used to avoid expensive .equals calls on BooleanFormula
+    //  We need to populate the map in onKnownValue because only there we get
+    //  canonical instances for BooleanFormula that can be compared by identity.
+    private static class CachingFormulaMap<TData> {
+        private final IdentityHashMap<BooleanFormula, TData> formulaLookup;
+        private final Function<BooleanFormula, TData> dataConstructor;
+
+        public CachingFormulaMap(int expectedMaxSize, Function<BooleanFormula, TData> dataConstructor) {
+            this.formulaLookup = new IdentityHashMap<>(expectedMaxSize);
+            this.dataConstructor = dataConstructor;
         }
 
-        ingoingMap = Arrays.copyOf(ingoingMap, capacity);
-        outgoingMap = Arrays.copyOf(outgoingMap, capacity);
-    }
-
-    private List<Edge> findShortestPath(Case c, int start, int end) {
-        Predicate<Edge> alwaysTrueFilter = (edge -> true);
-        return findShortestPath(c, start, end, alwaysTrueFilter);
-    }
-
-    /*
-        This uses a bidirectional BFS to find a shortest path.
-        A <filter> can be provided to skip certain edges during the search.
-     */
-    private List<Edge> findShortestPath(Case c, int start, int end, Predicate<Edge> filter) {
-        queueForward.clear();
-        queueBackward.clear();
-
-        Arrays.fill(ingoingMap, null);
-        System.arraycopy(ingoingMap, 0, outgoingMap, 0, Math.min(ingoingMap.length, outgoingMap.length));
-
-        queueForward.add(start);
-        queueBackward.add(end);
-        boolean found = false;
-        boolean doForwardBFS = true;
-        int cur = -1;
-        final RelationGraph graph = c.graph();
-
-        while (!found && (!queueForward.isEmpty() || !queueBackward.isEmpty())) {
-            if (doForwardBFS) {
-                // Forward BFS
-                int curSize = queueForward.size();
-                while (curSize-- > 0 && !found) {
-                    for (Edge next : graph.outEdges(queueForward.poll())) {
-                        if (!filter.test(next)) {
-                            continue;
-                        }
-
-                        cur = next.getSecond();
-
-                        if (cur == end || outgoingMap[cur] != null) {
-                            ingoingMap[cur] = next;
-                            found = true;
-                            break;
-                        } else if (ingoingMap[cur] == null) {
-                            ingoingMap[cur] = next;
-                            queueForward.add(cur);
-                        }
-                    }
-                }
-                doForwardBFS = false;
-            } else {
-                // Backward BFS
-                int curSize = queueBackward.size();
-                while (curSize-- > 0 && !found) {
-                    for (Edge next : graph.inEdges(queueBackward.poll())) {
-                        if (!filter.test(next)) {
-                            continue;
-                        }
-                        cur = next.getFirst();
-
-                        if (ingoingMap[cur] != null) {
-                            outgoingMap[cur] = next;
-                            found = true;
-                            break;
-                        } else if (outgoingMap[cur] == null) {
-                            outgoingMap[cur] = next;
-                            queueBackward.add(cur);
-                        }
-                    }
-                }
-                doForwardBFS = true;
-            }
-        }
-
-        if (!found) {
-            //theoryPropagate(c, start, end, ingoingMap, outgoingMap); // Test Code
-            return Collections.emptyList();
-        }
-
-        LinkedList<Edge> path = new LinkedList<>();
-        collectInPath(start, cur, path);
-        collectOutPath(cur, end, path);
-        return path;
-    }
-
-    // Test Code
-    // TODO: This is inefficient
-    private void theoryPropagate(Case c, int start, int end, Edge[] ingoingMap, Edge[] outgoingMap) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final Map<List<BooleanFormula>, List<BooleanFormula>> implications = new HashMap<>();
-        for (var entry : c.edge2Lit.entrySet()) {
-            int id1 = entry.getKey().getFirst();
-            int id2 = entry.getKey().getSecond();
-            BooleanFormula edgeLit = entry.getValue();
-            if (ingoingMap[id1] != null && outgoingMap[id2] != null) {
-                final LinkedList<Edge> path = new LinkedList<>();
-                collectInPath(start, id1, path);
-                collectOutPath(id2, end, path);
-                path.add(new Edge(end, start, 0, 0));
-                final List<BooleanFormula> pathReason = computePathReason(c, path);
-                implications.computeIfAbsent(pathReason, k -> new ArrayList<>()).add(bmgr.not(edgeLit));
-                numPropagations++;
-
-                //System.out.printf("%s  =>  not %s\n", Arrays.toString(pathReason), edgeLit);
-            }
-        }
-
-        for (var entry : implications.entrySet()) {
-            BooleanFormula[] premise = entry.getKey().toArray(new BooleanFormula[0]);
-            List<BooleanFormula> consequence = entry.getValue();
-
-            for (BooleanFormula con : consequence) {
-                getBackend().propagateConsequence(premise, con);
-            }
-            //getBackend().propagateConsequence(premise, bmgr.and(consequence));
-            //System.out.printf("%s  =>  %s\n", premise, consequence);
+        public TData get(BooleanFormula formula) {
+            return formulaLookup.computeIfAbsent(formula, dataConstructor);
         }
     }
-
-    private void collectInPath(int source, int target, LinkedList<Edge> path) {
-        int e = target;
-        while (e != source) {
-            Edge backEdge = ingoingMap[e];
-            path.addLast(backEdge);
-            e = backEdge.getFirst();
-        }
-    }
-
-    private void collectOutPath(int source, int target, LinkedList<Edge> path) {
-        int e = source;
-        while (e != target) {
-            Edge forwardEdge = outgoingMap[e];
-            path.addFirst(forwardEdge);
-            e = forwardEdge.getSecond();
-        }
-    }
-
-    private List<BooleanFormula> computePathReason(Case c, List<Edge> path) {
-        List<BooleanFormula> reason = new ArrayList<>();
-        for (Edge e : path) {
-            final BooleanFormula lit = c.edge2Lit.get(e);
-            if (lit != null) {
-                reason.add(lit);
-            }
-        }
-        return reason;
-    }
-
 
 }
