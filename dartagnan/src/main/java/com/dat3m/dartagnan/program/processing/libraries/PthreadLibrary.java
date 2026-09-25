@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.processing.PosixErrorCode;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,7 +33,6 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 import static com.google.common.base.Preconditions.checkArgument;
 
 //TODO: Deal with "late intrinsics".
-// Fix skipChecks defaulting to true (the option "notToInline" does not exist yet)
 @Options
 public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
@@ -129,6 +127,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private boolean pthreadCreateAlwaysSucceeds = true;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
+        super(config);
         config.inject(this);
     }
 
@@ -608,7 +607,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     private List<Event> newPthreadUnlock(Register oldValueRegister, Expression address) {
         final Expression unlocked = expressions.makeGeneralZero(oldValueRegister.getType());
-        final boolean skipCheck = true; //notToInline.contains(Intrinsics.AssertionType.USER);
+        final boolean skipCheck = notToInline.contains(AssertionType.USER);
         final Event load = skipCheck ? null : EventFactory.Llvm.newLoad(oldValueRegister, address, Tag.C11.MO_RELAXED);
         final Expression isLocked = skipCheck ? null : expressions.makeNEQ(oldValueRegister, unlocked);
         final Event check = skipCheck ? null : EventFactory.newAssert(isLocked, "Unlocking an already unlocked mutex");
@@ -817,17 +816,6 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
-    private List<Event> inlineAsZero(FunctionCall call) {
-        if (call instanceof ValueFunctionCall valueCall) {
-            final Register reg = valueCall.getResultRegister();
-            final Expression zero = expressions.makeGeneralZero(reg.getType());
-            //logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
-            return List.of(EventFactory.newLocal(reg, zero));
-        } else {
-            return List.of();
-        }
-    }
-
 
     // ====================================================================
     private IntegerType getNativeIntType() {
@@ -843,21 +831,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         return EventFactory.newLocal(errorRegister, expressions.makeGeneralZero(errorRegister.getType()));
     }
 
-    private Register getResultRegisterAndCheckArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArguments(expectedArgumentCount, call);
-        return getResultRegister(call);
-    }
-
-    private void checkArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArgument(call.getArguments().size() == expectedArgumentCount, "Wrong function type at %s", call);
-    }
-
     private void checkUnknownIntrinsic(boolean condition, FunctionCall call) {
         checkArgument(condition, "Unknown intrinsic \"%s\"", call);
     }
 
-    private Register getResultRegister(FunctionCall call) {
-        checkArgument(call instanceof ValueFunctionCall, "Unexpected value discard at intrinsic \"%s\"", call);
-        return ((ValueFunctionCall) call).getResultRegister();
-    }
 }

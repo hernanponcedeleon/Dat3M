@@ -11,14 +11,14 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 @Options
 public class LKMMLibrary extends AbstractLibrary<LKMMLibrary> {
@@ -54,7 +54,8 @@ public class LKMMLibrary extends AbstractLibrary<LKMMLibrary> {
     }
     
 
-    public LKMMLibrary() {
+    public LKMMLibrary(Configuration config) throws InvalidConfigurationException {
+        super(config);
     }
 
     @Override
@@ -188,10 +189,5 @@ public class LKMMLibrary extends AbstractLibrary<LKMMLibrary> {
         return IntBinaryOp.intToOp(literal.getValueAsInt());
     }
 
-    // ====================================================================
 
-    private void checkArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArgument(call.getArguments().size() == expectedArgumentCount, "Wrong function type at %s", call);
-    }
-    
 }
