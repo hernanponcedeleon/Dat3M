@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.verification.solving.PropagatorSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -50,6 +51,7 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
     private void initModelChecker() throws InvalidConfigurationException {
         Preconditions.checkState(modelChecker == null, "Model checker already initialized");
         modelChecker = switch (method) {
+            case PROPAGATOR -> PropagatorSolver.create(task);
             case EAGER -> AssumeSolver.create(task);
             case LAZY -> RefinementSolver.create(task);
         };

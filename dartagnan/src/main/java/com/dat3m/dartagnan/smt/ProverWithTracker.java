@@ -153,11 +153,6 @@ public class ProverWithTracker implements ProverEnvironment {
     }
 
     @Override
-    public boolean registerUserPropagator(UserPropagator propagator) {
-        return prover.registerUserPropagator(propagator);
-    }
-
-    @Override
     public List<BooleanFormula> getUnsatCore() {
         return prover.getUnsatCore();
     }

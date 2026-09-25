@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagatorNew;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
@@ -21,8 +21,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
 
 public class PropagatorSolver extends ModelChecker {
@@ -40,7 +38,7 @@ public class PropagatorSolver extends ModelChecker {
     protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         preprocessProgram(task, config);
-        preprocessMemoryModel(task, config);
+        preprocessMemoryModel(task);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
@@ -51,6 +49,7 @@ public class PropagatorSolver extends ModelChecker {
 
     @Override
     protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+        final VerificationTask task = (VerificationTask) this.task;
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
@@ -92,7 +91,7 @@ public class PropagatorSolver extends ModelChecker {
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
+        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperties());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
@@ -105,9 +104,9 @@ public class PropagatorSolver extends ModelChecker {
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : Result.UNKNOWN;
+            res = prover.isUnsat() ? ResultStatus.PASS : ResultStatus.UNKNOWN;
         } else {
-            res = FAIL;
+            res = ResultStatus.FAIL;
         }
 
         propagator.printStatistics();
@@ -117,7 +116,7 @@ public class PropagatorSolver extends ModelChecker {
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
-        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
+        res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result {}", res);
     }
 }
