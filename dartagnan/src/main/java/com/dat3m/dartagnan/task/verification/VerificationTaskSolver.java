@@ -48,6 +48,7 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
     private void initVerifier() throws InvalidConfigurationException {
         Preconditions.checkState(verifier == null, "Verifier already initialized");
         verifier = switch (method) {
+            case PROPAGATOR -> PropagatorSolver.create(task);
             case EAGER -> AssumeSolver.create(task);
             case LAZY -> RefinementSolver.create(task);
         };
