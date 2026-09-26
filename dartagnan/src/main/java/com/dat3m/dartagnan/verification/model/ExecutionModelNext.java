@@ -109,8 +109,12 @@ public class ExecutionModelNext {
         return violatedProperties.contains(property);
     }
 
-    public boolean isFlagged(Axiom axiom) {
-        return flaggedAxioms.contains(axiom);
+    public Optional<Axiom> getFlaggedAxiom(String name) {
+        return flaggedAxioms.stream().filter(axiom -> name.equals(axiom.getName())).findFirst();
+    }
+
+    public Optional<RelationModel> getRelationModel(Relation relation) {
+        return Optional.ofNullable(relationMap.get(relation));
     }
 
     public Map<ValueModel, Set<LoadModel>> getAddressReadsMap() {

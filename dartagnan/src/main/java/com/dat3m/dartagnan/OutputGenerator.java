@@ -249,10 +249,10 @@ public class OutputGenerator {
         }
 
         final VerificationTask task = result.getTask();
+        final ExecutionModelNext model = fromIREvaluator(result.getModel());
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                final ExecutionModelNext model = fromIREvaluator(result.getModel());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
@@ -263,8 +263,7 @@ public class OutputGenerator {
                 );
             }
             case SV -> {
-                final ExecutionModelNext model = fromIREvaluator(result.getModel());
-                final var witness = forViolation(model, task);
+                final var witness = forViolation(model, task.getProgram());
                 if (witness.isEmpty()) {
                     logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
                             String.join(", ", supportedPropertyNames()));

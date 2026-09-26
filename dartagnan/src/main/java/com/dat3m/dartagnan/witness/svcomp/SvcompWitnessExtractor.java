@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
@@ -23,8 +22,6 @@ import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.verification.model.event.AssertModel;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.LoadModel;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
 
@@ -56,20 +53,20 @@ public final class SvcompWitnessExtractor {
 
     private SvcompWitnessExtractor() { }
 
-    public static Optional<SvcompWitness> forViolation(ExecutionModelNext model, VerificationTask task)
+    public static Optional<SvcompWitness> forViolation(ExecutionModelNext model, Program program)
             throws IOException {
-        final Map<SvcompProperty, SvcompViolation> violations = new LinkedHashMap<>();
+        final Map<SvcompProperty, SvcompViolation> violations = new EnumMap<>(SvcompProperty.class);
         if (model.isViolated(PROGRAM_SPEC)) {
             findAssertionViolations(model)
                     .forEach(violation -> violations.putIfAbsent(violation.property(), violation));
         }
         if (model.isViolated(CAT_SPEC)) {
-            findDataRaceViolation(model, task.getMemoryModel())
+            findDataRaceViolation(model)
                     .ifPresent(violation -> violations.putIfAbsent(violation.property(), violation));
         }
         return switch (violations.size()) {
             case 0 -> Optional.empty();
-            case 1 -> Optional.of(extract(model, task.getProgram(), violations.values().iterator().next()));
+            case 1 -> Optional.of(extract(model, program, violations.values().iterator().next()));
             default -> throw new IOException("Cannot generate an SV-COMP witness for an execution that violates "
                     + "multiple SV-COMP properties: " + violations.keySet());
         };
@@ -84,16 +81,11 @@ public final class SvcompWitnessExtractor {
                 .toList();
     }
 
-    private static Optional<SvcompViolation> findDataRaceViolation(ExecutionModelNext model, Wmm memoryModel) {
-        final Optional<EdgeModel> dataRace = memoryModel.getAxioms().stream()
-                .filter(axiom -> DATA_RACE_AXIOM.equals(axiom.getName()))
-                .filter(model::isFlagged)
-                .map(Axiom::getRelation)
-                .flatMap(relation -> model.getRelationModels().stream()
-                        .filter(relationModel -> relationModel.getRelation().equals(relation))
-                        .flatMap(relationModel -> relationModel.getEdgeModels().stream()))
-                .findFirst();
-        return dataRace.map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
+    private static Optional<SvcompViolation> findDataRaceViolation(ExecutionModelNext model) {
+        return model.getFlaggedAxiom(DATA_RACE_AXIOM)
+                .flatMap(axiom -> model.getRelationModel(axiom.getRelation()))
+                .flatMap(relation -> relation.getEdgeModels().stream().findFirst())
+                .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
     private static SvcompWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
@@ -220,17 +212,13 @@ public final class SvcompWitnessExtractor {
     }
 
     private static Set<EdgeModel> relationEdges(ExecutionModelNext model, String name) {
-        return model.getRelationModels().stream()
-                .filter(relation -> relation.getRelation().hasName(name))
-                .findFirst()
+        return findRelationModel(model, name)
                 .map(RelationModel::getEdgeModels)
                 .orElse(Set.of());
     }
 
     private static List<EventModel> linearize(ExecutionModelNext model) {
-        final RelationModel hb = model.getRelationModels().stream()
-                .filter(relation -> relation.getRelation().hasName(HB))
-                .findFirst()
+        final RelationModel hb = findRelationModel(model, HB)
                 .orElseThrow(() -> new VerifyException(
                         "Execution model does not contain relation '%s'".formatted(HB)));
 
@@ -245,6 +233,12 @@ public final class SvcompWitnessExtractor {
         Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
                 "svcomp.cat produced a non-SC execution");
         return dependencyGraph.getNodeContents();
+    }
+
+    private static Optional<RelationModel> findRelationModel(ExecutionModelNext model, String name) {
+        return model.getRelationModels().stream()
+                .filter(relation -> relation.getRelation().hasName(name))
+                .findFirst();
     }
 
     private static Location targetLocation(EventModel target, SvcompProperty property, Path programFile,
