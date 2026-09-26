@@ -81,24 +81,29 @@ public class EnvironmentInfo {
 
     private static Optional<String> getToolVersion(String tool) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(tool, "--version");
-            Process process = pb.start();
-            if (process.waitFor() != 0) {
-                return Optional.empty();
-            }
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                List<String> lines = reader.lines()
-                        .map(String::trim)
-                        .filter(line -> !line.isEmpty())
-                        .toList();
-                return lines.isEmpty() ? Optional.empty() : Optional.of(String.join(" - ", lines));
+            for (String option : List.of("--version", "-version")) {
+                ProcessBuilder pb = new ProcessBuilder(tool, option);
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                if (process.waitFor() != 0) {
+                    continue;
+                }
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+                    List<String> lines = reader.lines()
+                            .map(String::trim)
+                            .filter(line -> !line.isEmpty())
+                            .toList();
+                    if (!lines.isEmpty()) {
+                        return Optional.of(String.join(" - ", lines));
+                    }
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return Optional.empty();
         } catch (IOException e) {
-            return Optional.empty();
+            // Tool not available.
         }
+        return Optional.empty();
     }
 }

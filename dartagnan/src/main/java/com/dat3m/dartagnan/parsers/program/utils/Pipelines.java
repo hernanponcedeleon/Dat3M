@@ -81,8 +81,9 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         return pipelines.stream().anyMatch(pipeline -> pipeline.matches(extension));
     }
 
-    public Set<String> getTools() {
+    public Set<String> getTools(String extension) {
         return pipelines.stream()
+                .filter(pipeline -> pipeline.matches(extension))
                 .flatMap(pipeline -> pipeline.commands().stream())
                 .map(Pipeline.Command::tool)
                 .collect(Collectors.toUnmodifiableSet());

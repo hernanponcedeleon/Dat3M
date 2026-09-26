@@ -28,11 +28,13 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 
 public class Dartagnan {
 
@@ -66,7 +68,12 @@ public class Dartagnan {
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
-        logEnvironmentInfo(pipelines.getTools());
+        final Set<String> neededTools = progFiles.stream()
+                .map(file -> "." + getFileExtension(file))
+                .distinct()
+                .flatMap(extension -> pipelines.getTools(extension).stream())
+                .collect(Collectors.toSet());
+        logEnvironmentInfo(neededTools);
 
         logger.info("CAT file path: {}", catFile);
 
