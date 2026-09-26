@@ -133,6 +133,42 @@ public class AliasAnalysisSoundnessTest {
     }
 
     @Test
+    public void pointerLoadedFromIndependentlyIndexedSlotIsNotMustAlias()
+            throws InvalidConfigurationException {
+        /*
+         * P0: storeIndex = nondet; slots[storeIndex] = &x;
+         * P1: loadIndex = nondet; pointer = slots[loadIndex]; *pointer = 0; *x = 0;
+         *
+         * The indirect access aliases x only when both indexes select the same slot.
+         */
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject slots = builder.newMemoryObject("slots", 16);
+        MemoryObject x = builder.newMemoryObject("x", 8);
+        builder.newThread(0);
+        builder.newThread(1);
+
+        IntegerType type = types.getArchType();
+        Expression elementSize = expressions.makeValue(8, type);
+        Register storeIndex = builder.getOrNewRegister(0, "storeIndex", type);
+        builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(storeIndex, builder.newConstant(type)));
+        Expression storeAddress = expressions.makeAdd(slots, expressions.makeMul(storeIndex, elementSize));
+        builder.addChildWithoutSourceLoc(0, EventFactory.newStore(storeAddress, x));
+
+        Register loadIndex = builder.getOrNewRegister(1, "loadIndex", type);
+        Register pointer = builder.getOrNewRegister(1, "pointer", type);
+        builder.addChildWithoutSourceLoc(1, EventFactory.newLocal(loadIndex, builder.newConstant(type)));
+        Expression loadAddress = expressions.makeAdd(slots, expressions.makeMul(loadIndex, elementSize));
+        builder.addChildWithoutSourceLoc(1, EventFactory.newLoad(pointer, loadAddress));
+        Store indirect = EventFactory.newStore(pointer, expressions.makeZero(type));
+        Store direct = EventFactory.newStore(x, expressions.makeZero(type));
+        builder.addChildWithoutSourceLoc(1, indirect);
+        builder.addChildWithoutSourceLoc(1, direct);
+
+        AnalysisResult result = analyze(builder.build(), indirect, direct);
+        assertMayButNotMust(result.analysis, result.event(0), result.event(1));
+    }
+
+    @Test
     public void conditionalExpressionMayAliasEitherObject() throws InvalidConfigurationException {
         /*
          * P0:
