@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -48,7 +47,11 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor.forViolation;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter.write;
 
 @Options
 public class OutputGenerator {
@@ -65,16 +68,16 @@ public class OutputGenerator {
 
     @Option(
             name = WITNESS,
-            description = "Type of the violation graph to generate in the output directory.")
+            description = "Type of violation witness to generate in the output directory.")
     private WitnessType witnessType = WitnessType.getDefault();
 
     @Option(name=WITNESS_FILENAME,
-            description="Name for the witness graph file.",
+            description="Name for the witness file.",
             secure=true)
     private String witnessFilename = "";
 
     @Option(name=WITNESS_UNKNOWN,
-            description="Generate witness graph even if result is UNKNOWN.",
+            description="Generate a witness even if result is UNKNOWN.",
             secure=true)
     private boolean generateWitnessForUnknown = false;
 
@@ -245,11 +248,11 @@ public class OutputGenerator {
             return null;
         }
 
-        final Task task = result.getTask();
+        final VerificationTask task = result.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-                final ExecutionModelNext model = ExecutionModelManager.fromIREvaluator(result.getModel());
+                final ExecutionModelNext model = fromIREvaluator(result.getModel());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
@@ -258,6 +261,18 @@ public class OutputGenerator {
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 );
+            }
+            case SV -> {
+                final ExecutionModelNext model = fromIREvaluator(result.getModel());
+                final var witness = forViolation(model, task, result.getModel());
+                if (witness.isEmpty()) {
+                    logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
+                            String.join(", ", supportedPropertyNames()));
+                    return null;
+                }
+                final Path witnessFile = getOrCreateOutputDirectory().resolve(filename + ".yml");
+                write(witness.get(), witnessFile);
+                return witnessFile;
             }
         }
 
