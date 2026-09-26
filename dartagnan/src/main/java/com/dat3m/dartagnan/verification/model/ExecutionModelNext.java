@@ -1,22 +1,25 @@
 package com.dat3m.dartagnan.verification.model;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.google.common.base.Preconditions;
 
 import java.util.*;
 
 
-// This is a new implementation of ExecutionModel which serves as the data structure
-// representing an execution in Dartagnan. It contains instances of EventModel for events
-// and RelationModel for relations. It is used only by ExecutionGraphVisualizer so far.
+// Represents a concrete execution, including its events, relations, memory layout, and violations.
 public class ExecutionModelNext {
     private final List<ThreadModel> threadList;
     private final List<EventModel> eventList;
     private final Map<Event, EventModel> eventMap;
     private final Map<Relation, RelationModel> relationMap;
     private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
+    private final Set<Property> violatedProperties;
+    private final Set<Axiom> flaggedAxioms;
 
     private final Map<ValueModel, Set<LoadModel>> addressReadsMap;
     private final Map<ValueModel, Set<StoreModel>> addressWritesMap;
@@ -26,7 +29,9 @@ public class ExecutionModelNext {
         eventList = new ArrayList<>();
         eventMap = new HashMap<>();
         relationMap = new HashMap<>();
-        memoryLayoutMap= new HashMap<>();
+        memoryLayoutMap = new HashMap<>();
+        violatedProperties = EnumSet.noneOf(Property.class);
+        flaggedAxioms = new HashSet<>();
 
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
@@ -47,6 +52,15 @@ public class ExecutionModelNext {
 
     public void addMemoryObject(MemoryObject m, MemoryObjectModel mModel) {
         memoryLayoutMap.put(m, mModel);
+    }
+
+    void addViolatedProperty(Property property) {
+        violatedProperties.add(property);
+    }
+
+    void addFlaggedAxiom(Axiom axiom) {
+        Preconditions.checkArgument(axiom.isFlagged(), "Axiom is not flagged: %s", axiom);
+        flaggedAxioms.add(axiom);
     }
 
     public void addAddressRead(ValueModel address, LoadModel read) {
@@ -89,6 +103,14 @@ public class ExecutionModelNext {
 
     public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() {
         return Collections.unmodifiableMap(memoryLayoutMap);
+    }
+
+    public boolean isViolated(Property property) {
+        return violatedProperties.contains(property);
+    }
+
+    public boolean isFlagged(Axiom axiom) {
+        return flaggedAxioms.contains(axiom);
     }
 
     public Map<ValueModel, Set<LoadModel>> getAddressReadsMap() {

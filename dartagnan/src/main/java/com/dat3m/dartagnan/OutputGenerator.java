@@ -264,7 +264,7 @@ public class OutputGenerator {
             }
             case SV -> {
                 final ExecutionModelNext model = fromIREvaluator(result.getModel());
-                final var witness = forViolation(model, task, result.getModel());
+                final var witness = forViolation(model, task);
                 if (witness.isEmpty()) {
                     logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
                             String.join(", ", supportedPropertyNames()));

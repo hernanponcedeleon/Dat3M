@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -24,7 +23,7 @@ import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.verification.model.event.AssertModel;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.LoadModel;
-import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
@@ -57,58 +56,44 @@ public final class SvcompWitnessExtractor {
 
     private SvcompWitnessExtractor() { }
 
-    public static Optional<SvcompWitness> forViolation(
-            ExecutionModelNext model, VerificationTask task, IREvaluator evaluator)
+    public static Optional<SvcompWitness> forViolation(ExecutionModelNext model, VerificationTask task)
             throws IOException {
-        final Optional<SvcompWitness> assertionViolation = findAssertionViolation(model, task, evaluator);
-        return assertionViolation.isPresent()
-                ? assertionViolation
-                : findDataRaceViolation(model, task, evaluator);
+        final Map<SvcompProperty, SvcompViolation> violations = new LinkedHashMap<>();
+        if (model.isViolated(PROGRAM_SPEC)) {
+            findAssertionViolations(model)
+                    .forEach(violation -> violations.putIfAbsent(violation.property(), violation));
+        }
+        if (model.isViolated(CAT_SPEC)) {
+            findDataRaceViolation(model, task.getMemoryModel())
+                    .ifPresent(violation -> violations.putIfAbsent(violation.property(), violation));
+        }
+        return switch (violations.size()) {
+            case 0 -> Optional.empty();
+            case 1 -> Optional.of(extract(model, task.getProgram(), violations.values().iterator().next()));
+            default -> throw new IOException("Cannot generate an SV-COMP witness for an execution that violates "
+                    + "multiple SV-COMP properties: " + violations.keySet());
+        };
     }
 
-    private static Optional<SvcompWitness> findAssertionViolation(
-            ExecutionModelNext model, VerificationTask task, IREvaluator evaluator) throws IOException {
-        if (!task.getProperties().contains(PROGRAM_SPEC) || !evaluator.propertyViolated(PROGRAM_SPEC)) {
-            return Optional.empty();
-        }
-        final AssertModel assertionViolation = model.getEventModels().stream()
+    private static List<SvcompViolation> findAssertionViolations(ExecutionModelNext model) {
+        return model.getEventModels().stream()
                 .filter(AssertModel.class::isInstance).map(AssertModel.class::cast)
-                .filter(assertion -> !assertion.getResult()).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Execution model contains no violated assertion"));
-        final Assert assertion = (Assert) assertionViolation.getEvent();
-        final SvcompViolation violation = new SvcompViolation(
-                fromAssertionError(assertion.getErrorMessage()), List.of(assertionViolation));
-        return Optional.of(extract(model, task.getProgram(), violation));
+                .filter(assertion -> !assertion.getResult())
+                .map(assertion -> new SvcompViolation(
+                        fromAssertionError(((Assert) assertion.getEvent()).getErrorMessage()), List.of(assertion)))
+                .toList();
     }
 
-    private static Optional<SvcompWitness> findDataRaceViolation(
-            ExecutionModelNext model, VerificationTask task, IREvaluator evaluator) throws IOException {
-        if (!task.getProperties().contains(CAT_SPEC)) {
-            return Optional.empty();
-        }
-        final Optional<EdgeModel> dataRace = task.getMemoryModel().getAxioms().stream()
-                .filter(Axiom::isFlagged)
+    private static Optional<SvcompViolation> findDataRaceViolation(ExecutionModelNext model, Wmm memoryModel) {
+        final Optional<EdgeModel> dataRace = memoryModel.getAxioms().stream()
                 .filter(axiom -> DATA_RACE_AXIOM.equals(axiom.getName()))
-                .filter(evaluator::isFlaggedAxiomViolated)
+                .filter(model::isFlagged)
                 .map(Axiom::getRelation)
                 .flatMap(relation -> model.getRelationModels().stream()
                         .filter(relationModel -> relationModel.getRelation().equals(relation))
                         .flatMap(relationModel -> relationModel.getEdgeModels().stream()))
                 .findFirst();
-        if (dataRace.isEmpty()) {
-            return Optional.empty();
-        }
-        final EdgeModel edge = dataRace.get();
-        final EventModel first = edge.from();
-        final EventModel second = edge.to();
-        if (!(first instanceof MemoryEventModel) || !(second instanceof MemoryEventModel)) {
-            throw new IllegalArgumentException("Data-race targets are not memory accesses");
-        }
-        if (first.getThreadModel().equals(second.getThreadModel())) {
-            throw new IllegalArgumentException("Data-race targets belong to the same thread");
-        }
-        final SvcompViolation violation = new SvcompViolation(DATA_RACE, List.of(first, second));
-        return Optional.of(extract(model, task.getProgram(), violation));
+        return dataRace.map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
     private static SvcompWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
