@@ -1,5 +1,13 @@
 [
     {
+        "name":"com.dat3m.dartagnan.program.processing.libraries.AbstractLibrary",
+        "allDeclaredFields": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary",
+        "allDeclaredFields": true
+    },
+    {
         "name":"com.dat3m.dartagnan.OutputGenerator",
         "allDeclaredFields": true
     },
