@@ -30,5 +30,6 @@ public class LibraryLinker implements ProgramProcessor {
     @Override
     public void run(Program program) {
         libraries.forEach(library -> library.link(program));
+        IdReassignment.newInstance().run(program);
     }
 }

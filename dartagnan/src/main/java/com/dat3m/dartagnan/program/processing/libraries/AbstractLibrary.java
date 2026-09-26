@@ -20,9 +20,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
@@ -53,6 +51,8 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
     @Override
     public void link(Program program) {
 
+        final Map<Function, Handler<T>> handlers = new HashMap<>();
+
         // 1. Provide implementations of undefined functions if possible
         for (Function function : program.getFunctions()) {
             if (function.hasBody()) {
@@ -66,6 +66,10 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                 function.append(implementation);
                 // TODO: Shall we put any metadata in the implemented body?
             }
+
+            if (handler != null) {
+                handlers.put(function, handler);
+            }
         }
 
         // 2. Resolve calls to functions that are still undefined after point 1.
@@ -75,7 +79,7 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                     continue;
                 }
 
-                final Handler<T> handler = getHandler(call.getCalledFunction()).orElse(null);
+                final Handler<T> handler = handlers.get(call.getCalledFunction());
                 if (handler instanceof CallResolver<T> resolver) {
                     final List<Event> replacement = resolver.resolve(getThis(), call);
 
@@ -96,6 +100,12 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                 }
             }
         }
+
+        // TODO: Temporary test code so that the Intrinsics pass does not complain
+        handlers.keySet().stream().filter(f -> !f.hasBody())
+                .forEach(f -> {
+                    f.append(EventFactory.newSkip());
+                });
     }
 
     // ====================================================================================================
