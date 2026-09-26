@@ -1751,7 +1751,7 @@ Equals : '=';
 Pipe : '|';
 Id : '%' [A-Za-z0-9_]+;
 fragment LiteralSciFloat : '-'? [0-9]+ '.' [0-9]* [eE] [+-]? [0-9]+;
-fragment LiteralHexFloat : '-'? '0x' ([0-9]+ '.'? | [0-9]* '.' [0-9]+) [Pp]? [+-]? [0-9]+ [DdFf]?;
+fragment LiteralHexFloat : '-'? '0x' ([0-9a-fA-F]+ '.'? | [0-9a-fA-F]* '.' [0-9a-fA-F]+) [Pp]? [+-]? [0-9]+ [DdFf]?;
 fragment LiteralBaseFloat : '-'? [0-9]+ '.' [0-9]*;
 LiteralFloat : LiteralHexFloat | LiteralSciFloat | LiteralBaseFloat;
 LiteralInteger : '-'? [0-9]+;
