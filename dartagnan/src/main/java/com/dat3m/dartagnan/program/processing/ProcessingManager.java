@@ -101,7 +101,6 @@ public class ProcessingManager implements ProgramProcessor {
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
                 LibraryLinker.fromConfig(config),
                 intrinsics.markIntrinsicsPass(),
-                ProgramProcessor.fromFunctionProcessor(intrinsics.earlyInliningPass(), Target.ALL, true),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),

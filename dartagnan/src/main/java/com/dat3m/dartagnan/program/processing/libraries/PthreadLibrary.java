@@ -46,6 +46,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         // TODO: These were late intrinsics which we cannot handle right now
        // P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), PthreadLibrary::inlinePthreadSelf),
         //P_THREAD_EQUAL("pthread_equal", PthreadLibrary::inlinePthreadEqual),
+        P_THREAD_ONCE("pthread_once", PthreadLibrary::inlinePthreadOnce),
         P_THREAD_ATTR_INIT("pthread_attr_init", PthreadLibrary::inlinePthreadAttr),
         P_THREAD_ATTR_DESTROY("pthread_attr_destroy", PthreadLibrary::inlinePthreadAttr),
         P_THREAD_ATTR_GET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_get" + a).toList(),
@@ -813,6 +814,40 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         checkUnknownIntrinsic(P_THREAD_RWLOCK_ATTR.contains(suffix.substring(3)), call);
         return List.of(
                 assignSuccess(errorRegister)
+        );
+    }
+
+    private List<Event> inlinePthreadOnce(FunctionCall call) {
+        final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression controlAddress = call.getArguments().get(0);
+        final Expression initRoutine = call.getArguments().get(1);
+
+        final IntegerType stateType = getNativeIntType();
+        final Expression uninitialized = expressions.makeZero(stateType);
+        final Expression running = expressions.makeOne(stateType);
+        final Expression complete = expressions.makeValue(2, stateType);
+        final Type stateAndSuccessType = types.getAggregateType(List.of(stateType, types.getBooleanType()));
+        final Register stateAndSuccess = call.getFunction().newUniqueRegister("__pthread_once", stateAndSuccessType);
+        final Register state = call.getFunction().newUniqueRegister("__pthread_once_state", stateType);
+
+        final Label wait = newLabel("__pthread_once_wait");
+        final Label runRoutine = newLabel("__pthread_once_run_routine");
+        final Label end = newLabel("__pthread_once_end");
+        final FunctionType initRoutineType = types.getFunctionType(types.getVoidType(), List.of());
+
+        return eventSequence(
+                Llvm.newCompareExchange(stateAndSuccess, controlAddress, uninitialized, running,
+                        Tag.C11.MO_ACQUIRE, true),
+                newJump(expressions.makeExtract(stateAndSuccess, 1), runRoutine),
+                wait,
+                Llvm.newLoad(state, controlAddress, Tag.C11.MO_ACQUIRE),
+                newJump(expressions.makeEQ(state, complete), end),
+                newGoto(wait),
+                runRoutine,
+                newVoidFunctionCall(initRoutineType, initRoutine, List.of()),
+                Llvm.newStore(controlAddress, complete, Tag.C11.MO_RELEASE),
+                end,
+                assignSuccess(resultRegister)
         );
     }
 
