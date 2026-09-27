@@ -50,10 +50,12 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
 
     @Override
     public void link(Program program) {
+        implementLibraryFunctions(program);
+        resolveLibraryCalls(program);
+    }
 
-        final Map<Function, Handler<T>> handlers = new HashMap<>();
-
-        // 1. Provide implementations of undefined functions if possible
+    // Provide implementations of undefined functions if possible
+    protected void implementLibraryFunctions(Program program) {
         for (Function function : program.getFunctions()) {
             if (function.hasBody()) {
                 continue;
@@ -66,20 +68,18 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                 function.append(implementation);
                 // TODO: Shall we put any metadata in the implemented body?
             }
-
-            if (handler != null) {
-                handlers.put(function, handler);
-            }
         }
+    }
 
-        // 2. Resolve calls to functions that are still undefined after point 1.
+    // Resolve calls to library functions that have no implementation.
+    protected void resolveLibraryCalls(Program program) {
         for (Function function : program.getFunctions()) {
             for (FunctionCall call : function.getEvents(FunctionCall.class)) {
                 if (!call.isDirectCall() || call.getCalledFunction().hasBody()) {
                     continue;
                 }
 
-                final Handler<T> handler = handlers.get(call.getCalledFunction());
+                final Handler<T> handler = getHandler(call.getCalledFunction()).orElse(null);
                 if (handler instanceof CallResolver<T> resolver) {
                     final List<Event> replacement = resolver.resolve(getThis(), call);
 
@@ -100,19 +100,6 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                 }
             }
         }
-
-        // Temporary
-        handlers.forEach((function, handler) -> {
-            if (handler instanceof AbstractLibrary.CallResolver<T>) {
-                program.removeFunction(function);
-            }
-        });
-
-        // TODO: Temporary test code so that the Intrinsics pass does not complain
-        /*handlers.keySet().stream().filter(f -> !f.hasBody())
-                .forEach(f -> {
-                    f.append(EventFactory.newSkip());
-                });*/
     }
 
     // ====================================================================================================
@@ -163,7 +150,7 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
     }
 
     protected List<Event> inlineAssert(AssertionType type, String errorMsg) {
-        return  inlineAssert(expressions.makeFalse(), true, type, errorMsg);
+        return inlineAssert(expressions.makeFalse(), true, type, errorMsg);
     }
 
     protected void checkArguments(int expectedArgumentCount, FunctionCall call) {
