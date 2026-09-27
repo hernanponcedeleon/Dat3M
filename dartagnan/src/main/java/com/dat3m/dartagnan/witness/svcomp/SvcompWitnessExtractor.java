@@ -109,7 +109,7 @@ public final class SvcompWitnessExtractor {
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
         final List<EventModel> linearized = linearize(model);
-        final Map<EventModel, String> assumptions = assumptionWaypoints(linearized, model, programFile);
+        final Map<EventModel, AssumptionExpression> assumptions = assumptionWaypoints(linearized, model, programFile);
         final Set<EventModel> prefix = eventsBefore(violation.targets());
         for (EventModel event : linearized) {
             if (!prefix.contains(event)) {
@@ -117,11 +117,11 @@ public final class SvcompWitnessExtractor {
             }
             final ThreadModel thread = event.getThreadModel();
             registerThread(segments, thread, threadIds, model, programFile);
-            final String assumption = assumptions.get(event);
+            final AssumptionExpression assumption = assumptions.get(event);
             if (assumption != null) {
                 final Location location = inputLocation(event, programFile);
                 segments.add(new Segment(List.of(new Assumption(
-                        threadIds.get(thread), assumption, "c_expression", location))));
+                        threadIds.get(thread), assumption, location))));
             }
         }
         for (EventModel target : violation.targets()) {
@@ -154,8 +154,8 @@ public final class SvcompWitnessExtractor {
      * ordered sequence of thread-tagged waypoints. We only constrain reads that actually read from another thread.
      * This keeps the witness coarse while recording the observable part of rf/co.
      */
-    private static Map<EventModel, String> assumptionWaypoints(List<EventModel> linearized, ExecutionModelNext model,
-            Path programFile) {
+    private static Map<EventModel, AssumptionExpression> assumptionWaypoints(List<EventModel> linearized,
+            ExecutionModelNext model, Path programFile) {
         final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile);
         final Set<EventModel> crossThreadReads = relationEdges(model, RF).stream()
                 .filter(edge -> edge.to() instanceof LoadModel)
@@ -165,23 +165,23 @@ public final class SvcompWitnessExtractor {
                 .collect(Collectors.toSet());
 
         final Map<SourcePoint, EventModel> representatives = new HashMap<>();
-        final Map<SourcePoint, Set<String>> constraints = new HashMap<>();
+        final Map<SourcePoint, Set<AssumptionExpression>> constraints = new HashMap<>();
         for (EventModel event : linearized) {
             final SourcePoint point = sourcePoints.get(event);
             if (!(event instanceof LoadModel load) || !crossThreadReads.contains(event)
                     || point == null) {
                 continue;
             }
-            final Optional<String> constraint = readValueAssumption(load, model);
+            final Optional<VariableEquality> constraint = readValueAssumption(load, model);
             if (constraint.isPresent()) {
                 representatives.putIfAbsent(point, event);
                 constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(constraint.get());
             }
         }
 
-        final Map<EventModel, String> result = new HashMap<>();
+        final Map<EventModel, AssumptionExpression> result = new HashMap<>();
         constraints.forEach((point, values) ->
-                result.put(representatives.get(point), String.join(" && ", values)));
+                result.put(representatives.get(point), values.stream().reduce(Conjunction::new).orElseThrow()));
         return result;
     }
 
@@ -205,7 +205,7 @@ public final class SvcompWitnessExtractor {
         return result;
     }
 
-    private static Optional<String> readValueAssumption(LoadModel load, ExecutionModelNext model) {
+    private static Optional<VariableEquality> readValueAssumption(LoadModel load, ExecutionModelNext model) {
         final MemoryCoreEvent event = (MemoryCoreEvent) load.getEvent();
         if (!(event.getAccessType() instanceof IntegerType) && !(event.getAccessType() instanceof BooleanType)) {
             return Optional.empty();
@@ -220,12 +220,12 @@ public final class SvcompWitnessExtractor {
         if (object.isEmpty()) {
             return Optional.empty();
         }
-        final Optional<String> literal = switch (load.getValue().value()) {
-            case Boolean booleanValue -> Optional.of(booleanValue ? "1" : "0");
-            case Number number -> Optional.of(number.toString());
+        final Optional<BigInteger> literal = switch (load.getValue().value()) {
+            case Boolean booleanValue -> Optional.of(booleanValue ? BigInteger.ONE : BigInteger.ZERO);
+            case Number number -> Optional.of(new BigInteger(number.toString()));
             case null, default -> Optional.empty();
         };
-        return literal.map(l -> String.format("(%s == %s)", object.get().object().getName(), l));
+        return literal.map(l -> new VariableEquality(object.get().object().getName(), l));
     }
 
     private static Set<EdgeModel> relationEdges(ExecutionModelNext model, String name) {

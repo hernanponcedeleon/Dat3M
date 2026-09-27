@@ -13,7 +13,7 @@ import java.util.EnumSet;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // A property verification task
-public final class VerificationTask extends Task {
+public sealed class VerificationTask extends Task permits WitnessValidationTask {
 
     private final EnumSet<Property> properties;
 

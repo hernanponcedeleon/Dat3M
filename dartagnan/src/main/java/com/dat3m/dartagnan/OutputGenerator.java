@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.Dartagnan.ExitCode;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
@@ -26,6 +27,7 @@ import com.dat3m.dartagnan.task.verification.VerificationResult;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.model.ExecutionModelNext;
@@ -96,7 +98,7 @@ public class OutputGenerator {
 
     private final boolean isBatchMode;
     private int batchIndex = -1;
-    private Path witnessFile = null;
+    private Optional<Path> witnessFile = Optional.empty();
     // Null unless generating SV-COMP witnesses.
     private final SvcompOutputGenerator svcompOutput;
 
@@ -111,7 +113,7 @@ public class OutputGenerator {
     }
 
     public Optional<Path> getWitnessFile() {
-        return Optional.ofNullable(witnessFile);
+        return witnessFile;
     }
 
     // ====================================================================================
@@ -229,15 +231,18 @@ public class OutputGenerator {
         final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
         final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
+        final boolean isWitnessValidation = task instanceof WitnessValidationTask;
         final long time = solver.getRuntime();
 
         // ----------------- Generate optional witness -----------------
         batchIndex++;
-        try {
-            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
-        } catch (IOException ex) {
-            logger.warn("Failed to generate witness file.", ex);
-            witnessFile = null;
+        witnessFile = Optional.empty();
+        if (!isWitnessValidation) {
+            try {
+                witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
+            } catch (IOException ex) {
+                logger.warn("Failed to generate witness file.", ex);
+            }
         }
 
         // ----------------- Generate output of verification result -----------------
@@ -254,7 +259,8 @@ public class OutputGenerator {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new Output(PROGRAM_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
+                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : PROGRAM_SPEC_VIOLATION;
+                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
@@ -270,7 +276,8 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
+                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : TERMINATION_VIOLATION;
+                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
@@ -280,7 +287,8 @@ public class OutputGenerator {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new Output(MEMORY_TRACKABILITY_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
+                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : MEMORY_TRACKABILITY_VIOLATION;
+                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
@@ -290,7 +298,8 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
+                    final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : CAT_SPEC_VIOLATION;
+                    return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
                             "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
@@ -322,20 +331,21 @@ public class OutputGenerator {
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
+        final ExitCode exitCode = isWitnessValidation ? WITNESS_NOT_VALIDATED : NORMAL_TERMINATION;
+        return new Output(exitCode, toVerificationSummary(programSource, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
-    private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
+    private Optional<Path> generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
         final VerificationStatus status = result.getStatus();
         if (witnessType == WitnessType.NONE || (status == UNKNOWN && !generateWitnessForUnknown)) {
-            return null;
+            return Optional.empty();
         }
 
         switch (witnessType) {
             case DOT, PNG -> {
                 if (!result.hasModel()) {
-                    return null;
+                    return Optional.empty();
                 }
                 final VerificationTask task = result.getTask();
                 final ExecutionModelNext model = fromIREvaluator(result.getModel());
@@ -343,18 +353,18 @@ public class OutputGenerator {
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
+                return Optional.ofNullable(generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
-                );
+                ));
             }
             case SV -> {
-                return svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
+                return Optional.ofNullable(svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml")));
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     // =========================================== Utility =================================================
@@ -472,14 +482,14 @@ public class OutputGenerator {
     }
 
     private static String toVerificationSummary(String programSource, String filter, VerificationStatus status, String condition,
-                                                String reason, String details, long time, Path witness) {
+                                                String reason, String details, long time, Optional<Path> witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
         final String shownDetails = formatOptional("Details:%n%s", details);
-        final String shownWitness = formatOptional("Witness: %s%n", witness);
+        final String shownWitness = witness.map(path -> String.format("Witness: %s%n", path)).orElse("");
         final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
 
         return String.format("%s%sResult: %s%n%s%s%s%s%s",
