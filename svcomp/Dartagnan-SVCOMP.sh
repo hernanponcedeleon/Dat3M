@@ -11,6 +11,11 @@ export DAT3M_OUTPUT=$DAT3M_HOME/output
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
     cmd=(dartagnan --version)
 else
+    witnesspath=""
+    if [ "$1" == "-witness" ]; then
+        witnesspath=$2
+        shift 2
+    fi
     propertypath=$1
     programpath=$2
 
@@ -26,6 +31,9 @@ else
     if [[ $propertypath == *"no-overflow.prp"* || $propertypath == *"valid-memsafety.prp"* \
             || $propertypath == *"termination.prp"* || $propertypath == *"no-data-race.prp"* ]]; then
         cmd+=(--program.processing.skipAssertionsOfType=USER)
+    fi
+    if [ -n "$witnesspath" ]; then
+        cmd+=("--validate=$witnesspath")
     fi
     cmd+=(cat/svcomp.cat "--svcomp.property=$propertypath" "$programpath")
 fi

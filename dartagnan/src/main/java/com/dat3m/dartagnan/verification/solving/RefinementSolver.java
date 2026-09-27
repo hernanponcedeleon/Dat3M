@@ -202,6 +202,11 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
 
         logger.info("Checking target property.");
         prover.push();
+        if (task instanceof WitnessValidationTask) {
+            final SvcompWitnessEncoder witnessEncoder = SvcompWitnessEncoder.withContext(context);
+            prover.writeComment("Witness encoding");
+            prover.addConstraint(witnessEncoder.encode());
+        }
         prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperties()));
 

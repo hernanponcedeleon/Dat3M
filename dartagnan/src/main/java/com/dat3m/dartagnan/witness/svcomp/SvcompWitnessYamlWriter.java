@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
@@ -76,11 +77,11 @@ public final class SvcompWitnessYamlWriter {
                                     thread_id: %d
                                     constraint:
                                       value: %s
-                                      format: %s
+                                      format: c_expression
                                     location:
                                       file_name: %s
                                       line: %d
-                        """.formatted(assumption.threadId(), yaml(assumption.value()), assumption.format(),
+                        """.formatted(assumption.threadId(), yaml(formatAssumption(assumption.expression())),
                         yaml(assumption.location().fileName()), assumption.location().line());
             }
             case FunctionEnter _ -> type = "function_enter";
@@ -96,6 +97,15 @@ public final class SvcompWitnessYamlWriter {
                               line: %d
                 """.formatted(type, waypoint.threadId(), yaml(waypoint.location().fileName()),
                 waypoint.location().line());
+    }
+
+    private static String formatAssumption(AssumptionExpression expression) {
+        return switch (expression) {
+            case BooleanConstant(boolean value) -> value ? "1" : "0";
+            case VariableEquality(String variable, BigInteger value) -> "(%s == %s)".formatted(variable, value);
+            case Conjunction(AssumptionExpression left, AssumptionExpression right) ->
+                    "(%s && %s)".formatted(formatAssumption(left), formatAssumption(right));
+        };
     }
 
     private static String yaml(Path value) {

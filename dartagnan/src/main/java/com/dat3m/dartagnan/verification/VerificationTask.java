@@ -12,12 +12,13 @@ import java.util.EnumSet;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // A property verification task
-public final class VerificationTask extends Task {
+public sealed class VerificationTask extends Task permits WitnessValidationTask {
 
     private final EnumSet<Property> properties;
 
     VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
-                     Configuration config, EnumSet<Property> properties) throws InvalidConfigurationException {
+                     Configuration config, EnumSet<Property> properties)
+            throws InvalidConfigurationException {
         super(program, memoryModel, progressModel, config);
         this.properties = checkNotNull(properties);
     }
