@@ -82,7 +82,9 @@ public final class SvcompWitnessExtractor {
     }
 
     private static Optional<SvcompViolation> findDataRaceViolation(ExecutionModelNext model) {
-        return model.getFlaggedAxiom(DATA_RACE_AXIOM)
+        return model.getFlaggedAxioms().stream()
+                .filter(axiom -> DATA_RACE_AXIOM.equals(axiom.getName()))
+                .findFirst()
                 .flatMap(axiom -> model.getRelationModel(axiom.getRelation()))
                 .flatMap(relation -> relation.getEdgeModels().stream().findFirst())
                 .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));

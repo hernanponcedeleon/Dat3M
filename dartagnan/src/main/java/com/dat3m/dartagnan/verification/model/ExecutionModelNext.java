@@ -31,7 +31,7 @@ public class ExecutionModelNext {
         relationMap = new HashMap<>();
         memoryLayoutMap = new HashMap<>();
         violatedProperties = EnumSet.noneOf(Property.class);
-        flaggedAxioms = new HashSet<>();
+        flaggedAxioms = new LinkedHashSet<>();
 
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
@@ -109,8 +109,8 @@ public class ExecutionModelNext {
         return violatedProperties.contains(property);
     }
 
-    public Optional<Axiom> getFlaggedAxiom(String name) {
-        return flaggedAxioms.stream().filter(axiom -> name.equals(axiom.getName())).findFirst();
+    public Set<Axiom> getFlaggedAxioms() {
+        return Collections.unmodifiableSet(flaggedAxioms);
     }
 
     public Optional<RelationModel> getRelationModel(Relation relation) {
