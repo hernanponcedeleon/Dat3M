@@ -19,18 +19,12 @@ import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -40,18 +34,9 @@ import static com.google.common.base.Preconditions.checkArgument;
  * Also defines the semantics of most intrinsics,
  * except some thread-library primitives, which are instead defined in {@link ThreadCreation}.
  */
-@Options
 public class Intrinsics {
 
     private static final Logger logger = LoggerFactory.getLogger(Intrinsics.class);
-
-    @Option(name = REMOVE_ASSERTION_OF_TYPE,
-            description = "Remove assertions of type [user, overflow, invalidderef, unknown_function].",
-            toUppercase=true,
-            secure = true)
-    private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
-
-    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
     private final boolean detectMixedSizeAccesses;
 
@@ -63,28 +48,15 @@ public class Intrinsics {
     }
 
     public static Intrinsics newInstance() {
-        return new Intrinsics(false);
+        return newInstance(false);
     }
     
-    public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
-            throws InvalidConfigurationException {
-        Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
-        config.inject(instance);
-        return instance;
+    public static Intrinsics newInstance(boolean detectMixedSizeAccesses) {
+        return new Intrinsics(detectMixedSizeAccesses);
     }
 
     public ProgramProcessor markIntrinsicsPass() {
         return this::markIntrinsics;
-    }
-
-    /*
-        This pass runs early in the processing chain and resolves intrinsics whose semantics
-        can be captured by a context-insensitive sequence of other events.
-
-        TODO: We could insert the definitions here directly into the function declarations of the intrinsics.
-     */
-    public FunctionProcessor earlyInliningPass() {
-        return this::inlineEarly;
     }
 
     /*
@@ -103,41 +75,36 @@ public class Intrinsics {
 
     public enum Info {
         // --------------------------- pthread threading ---------------------------
-        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, Intrinsics::inlinePthreadSelf),
-        P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
-        // --------------------------- __VERIFIER ---------------------------
-        LLVM_OBJECTSIZE("llvm.objectsize", false, false, true, false, null),
-        LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
+        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, Intrinsics::inlinePthreadSelf),
+        // --------------------------- LLVM ---------------------------
+        LLVM_OBJECTSIZE("llvm.objectsize", false, false, true, null),
+        LLVM_MEMCPY("llvm.memcpy", true, true, true, Intrinsics::inlineMemCpy),
+        LLVM_MEMSET("llvm.memset", true, false, true, Intrinsics::inlineMemSet),
         // --------------------------- Misc ---------------------------
-        STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        STD_MEMCPYS("memcpy_s", true, true, true, false, Intrinsics::inlineMemCpyS),
-        STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
-        STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
-        // ------------------------- Unknown function ---------------------------
-        MISSING(List.of(), false, false, false, true, Intrinsics::inlineUnknownFunction),
+        STD_MEMCPY("memcpy", true, true, true, Intrinsics::inlineMemCpy),
+        STD_MEMCPYS("memcpy_s", true, true, true, Intrinsics::inlineMemCpyS),
+        STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, Intrinsics::inlineMemSet),
+        STD_MEMCMP("memcmp", false, true, true, Intrinsics::inlineMemCmp)
         ;
 
         private final List<String> variants;
         private final boolean writesMemory;
         private final boolean readsMemory;
         private final boolean alwaysReturns;
-        private final boolean isEarly;
         private final Replacer replacer;
 
-        Info(List<String> variants, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
+        Info(List<String> variants, boolean writesMemory, boolean readsMemory, boolean alwaysReturns,
                 Replacer replacer) {
             this.variants = variants;
             this.writesMemory = writesMemory;
             this.readsMemory = readsMemory;
             this.alwaysReturns = alwaysReturns;
-            this.isEarly = isEarly;
             this.replacer = replacer;
         }
 
-        Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
+        Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns,
                 Replacer replacer) {
-            this(List.of(name), writesMemory, readsMemory, alwaysReturns, isEarly, replacer);
+            this(List.of(name), writesMemory, readsMemory, alwaysReturns, replacer);
         }
 
         public List<String> variants() {
@@ -154,10 +121,6 @@ public class Intrinsics {
 
         public boolean alwaysReturns() {
             return alwaysReturns;
-        }
-
-        public boolean isEarly() {
-            return isEarly;
         }
 
         private boolean matches(String funcName) {
@@ -177,21 +140,14 @@ public class Intrinsics {
     }
 
     private void markIntrinsics(Program program) {
-        final var missingSymbols = new TreeSet<String>();
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
                 final String funcName = func.getName();
                 Arrays.stream(Info.values())
                         .filter(info -> info.matches(funcName))
                         .findFirst()
-                        .ifPresentOrElse(func::setIntrinsicInfo, () -> {
-                            missingSymbols.add(funcName);
-                            func.setIntrinsicInfo(Info.MISSING);});
+                        .ifPresent(func::setIntrinsicInfo);
             }
-        }
-        if (!missingSymbols.isEmpty()) {
-            logger.warn("{}. Detecting calls to unknown functions requires --property=program_spec.",
-                    missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
         }
     }
 
@@ -222,16 +178,23 @@ public class Intrinsics {
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // Simple early intrinsics
+    // Simple late intrinsics
 
-    private void inlineEarly(Function function) {
+    private void inlineLate(Program program) {
+        program.getThreads().forEach(this::inlineLate);
+    }
+
+    private void inlineLate(Function function) {
         for (final FunctionCall call : function.getEvents(FunctionCall.class)) {
             if (!call.isDirectCall()) {
                 continue;
             }
             final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
-            if (info != null && info.isEarly()) {
+            if (info != null) {
                 replace(call, info.replacer);
+            } else {
+                final String error = String.format("Undefined function %s", call.getCalledFunction().getName());
+                throw new UnsupportedOperationException(error);
             }
         }
     }
@@ -245,64 +208,6 @@ public class Intrinsics {
         return List.of(newLocal(resultRegister, expressions.makeCast(tidExpr, resultRegister.getType())));
     }
 
-    private List<Event> inlinePthreadEqual(FunctionCall call) {
-        final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
-        final Expression leftId = call.getArguments().get(0);
-        final Expression rightId = call.getArguments().get(1);
-        final Expression equation = expressions.makeEQ(leftId, rightId);
-        return List.of(
-                EventFactory.newLocal(resultRegister, expressions.makeCast(equation, resultRegister.getType()))
-        );
-    }
-
-    private List<Event> inlineAssert(AssertionType skip, String errorMsg) {
-        final Expression condition = expressions.makeFalse();
-        final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
-        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return eventSequence(assertion, abort);
-    }
-
-
-
-    private List<Event> inlineUnknownFunction(FunctionCall call) {
-        final List<Event> replacement = new ArrayList<>();
-        if (call instanceof ValueFunctionCall) {
-            replacement.addAll(inlineCallAsNonDet(call));
-        }
-        replacement.addAll(inlineAssert(AssertionType.UNKNOWN_FUNCTION,
-            "Calling unknown function " + call.getCalledFunction().getName()));
-        return replacement;
-    }
-
-
-    // --------------------------------------------------------------------------------------------------------
-    // Simple late intrinsics
-
-    private void inlineLate(Program program) {
-        program.getThreads().forEach(this::inlineLate);
-    }
-
-    private void inlineLate(Function function) {
-        for (final FunctionCall call : function.getEvents(FunctionCall.class)) {
-            if (!call.isDirectCall()) {
-                continue;
-            }
-            final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
-            if (info != null && !info.isEarly()) {
-                replace(call, info.replacer);
-            } else {
-                final String error = String.format("Undefined function %s", call.getCalledFunction().getName());
-                throw new UnsupportedOperationException(error);
-            }
-        }
-    }
-
-    private List<Event> inlineCallAsNonDet(FunctionCall call) {
-        return List.of(
-                EventFactory.newSignedNonDetChoice(getResultRegister(call), true)
-        );
-    }
 
     // Handles both std.memcpy and llvm.memcpy
     // https://en.cppreference.com/w/c/string/byte/memcpy
@@ -575,15 +480,6 @@ public class Intrinsics {
             final Expression offsetBytes = expressions.makeValue(offset, countType);
             action.run(expressions.makeAdd(initialOffset, offsetBytes), restType);
         }
-    }
-
-    private Register getResultRegisterAndCheckArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArguments(expectedArgumentCount, call);
-        return getResultRegister(call);
-    }
-
-    private void checkArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArgument(call.getArguments().size() == expectedArgumentCount, "Wrong function type at %s", call);
     }
 
     private Register getResultRegister(FunctionCall call) {

@@ -71,7 +71,7 @@ public class VerifierLibrary extends AbstractLibrary<VerifierLibrary> {
     }
 
     @Override
-    protected Optional<Handler<VerifierLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<VerifierLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

@@ -70,7 +70,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
     }
 
     @Override
-    protected Optional<Handler<LLVMLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<LLVMLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

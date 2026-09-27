@@ -45,7 +45,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", PthreadLibrary::inlineAsZero),
         // TODO: These were late intrinsics which we cannot handle right now
        // P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), PthreadLibrary::inlinePthreadSelf),
-        //P_THREAD_EQUAL("pthread_equal", PthreadLibrary::inlinePthreadEqual),
+        P_THREAD_EQUAL("pthread_equal", PthreadLibrary::inlinePthreadEqual),
         P_THREAD_ONCE("pthread_once", PthreadLibrary::inlinePthreadOnce),
         P_THREAD_ATTR_INIT("pthread_attr_init", PthreadLibrary::inlinePthreadAttr),
         P_THREAD_ATTR_DESTROY("pthread_attr_destroy", PthreadLibrary::inlinePthreadAttr),
@@ -138,7 +138,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     @Override
-    protected Optional<Handler<PthreadLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<PthreadLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

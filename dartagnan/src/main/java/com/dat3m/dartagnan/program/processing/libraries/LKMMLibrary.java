@@ -64,7 +64,7 @@ public class LKMMLibrary extends AbstractLibrary<LKMMLibrary> {
     }
 
     @Override
-    protected Optional<Handler<LKMMLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<LKMMLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

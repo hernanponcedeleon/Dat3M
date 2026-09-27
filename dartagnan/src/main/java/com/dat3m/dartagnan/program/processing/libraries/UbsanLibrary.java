@@ -50,7 +50,7 @@ public class UbsanLibrary extends AbstractLibrary<UbsanLibrary> {
     }
 
     @Override
-    protected Optional<Handler<UbsanLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<UbsanLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

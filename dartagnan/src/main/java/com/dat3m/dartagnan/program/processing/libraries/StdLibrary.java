@@ -71,7 +71,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     }
 
     @Override
-    protected Optional<Handler<StdLibrary>> getHandler(Function func) {
+    protected Optional<? extends Handler<StdLibrary>> getHandler(Function func) {
         final String funcName = func.getName();
         return Arrays.stream(SupportedFunctions.values())
                 .filter(f -> f.matches(funcName))

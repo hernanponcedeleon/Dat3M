@@ -101,18 +101,25 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
             }
         }
 
+        // Temporary
+        handlers.forEach((function, handler) -> {
+            if (handler instanceof AbstractLibrary.CallResolver<T>) {
+                program.removeFunction(function);
+            }
+        });
+
         // TODO: Temporary test code so that the Intrinsics pass does not complain
-        handlers.keySet().stream().filter(f -> !f.hasBody())
+        /*handlers.keySet().stream().filter(f -> !f.hasBody())
                 .forEach(f -> {
                     f.append(EventFactory.newSkip());
-                });
+                });*/
     }
 
     // ====================================================================================================
 
     protected abstract T getThis();
 
-    protected abstract Optional<Handler<T>> getHandler(Function function);
+    protected abstract Optional<? extends Handler<T>> getHandler(Function function);
 
     protected sealed interface Handler<T> {}
 
