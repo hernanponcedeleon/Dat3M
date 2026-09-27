@@ -54,6 +54,7 @@ public class Program extends MetadataCarrierBase<Program> {
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Entrypoint entrypoint = new Entrypoint.None();
+    private Optional<Thread> mainThread = Optional.empty();
 
     // Spec
     private SpecificationType specificationType = SpecificationType.ASSERT;
@@ -130,6 +131,15 @@ public class Program extends MetadataCarrierBase<Program> {
 
     public Entrypoint getEntrypoint() {
         return entrypoint;
+    }
+
+    public void setMainThread(Thread thread) {
+        Preconditions.checkArgument(threads.contains(thread), "Main thread must belong to this program");
+        mainThread = Optional.of(thread);
+    }
+
+    public Optional<Thread> getMainThread() {
+        return mainThread;
     }
 
     public SpecificationType getSpecificationType() {

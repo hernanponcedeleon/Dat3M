@@ -67,11 +67,11 @@ public final class SvcompWitnessYamlWriter {
                                 thread_id: %d
                                 constraint:
                                   value: %s
-                                  format: %s
+                                  format: c_expression
                                 location:
                                   file_name: %s
                                   line: %d
-                    """.formatted(assumption.threadId(), yaml(assumption.value()), assumption.format(),
+                    """.formatted(assumption.threadId(), yaml(formatAssumption(assumption.expression())),
                     yaml(assumption.location().fileName()), assumption.location().line());
         }
 
@@ -93,6 +93,17 @@ public final class SvcompWitnessYamlWriter {
                               line: %d
                 """.formatted(type, waypoint.threadId(), yaml(waypoint.location().fileName()),
                 waypoint.location().line());
+    }
+
+    private static String formatAssumption(AssumptionExpression expression) {
+        if (expression instanceof BooleanConstant constant) {
+            return constant.value() ? "1" : "0";
+        }
+        if (expression instanceof VariableEquality equality) {
+            return "(%s == %s)".formatted(equality.variable(), equality.value());
+        }
+        final Conjunction conjunction = (Conjunction) expression;
+        return "(%s && %s)".formatted(formatAssumption(conjunction.left()), formatAssumption(conjunction.right()));
     }
 
     private static String yaml(Path value) {

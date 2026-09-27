@@ -11,6 +11,7 @@ public class OptionNames {
     public static final String METHOD = "method";
     public static final String SOLVER = "solver";
     public static final String TIMEOUT = "timeout";
+    public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
     public static final String WITNESS = "witness";
     public static final String SMTLIB2 = "smtlib2";

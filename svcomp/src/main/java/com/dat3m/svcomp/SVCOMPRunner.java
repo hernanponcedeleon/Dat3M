@@ -30,7 +30,8 @@ public class SVCOMPRunner {
     @Options
     public static class SVCOMPOptions {
 
-        private EnumSet<Property> property;
+        private EnumSet<Property> verificationProperties;
+        private EnumSet<Property> validationProperties;
 
         @Option(
                 name= PROPERTYPATH,
@@ -38,19 +39,33 @@ public class SVCOMPRunner {
                 description="The path to the property to be checked.")
         private void property(String p) {
             // TODO process the property file instead of assuming its contents based of its name
-            // We always enable PROGRAM_SPEC to detect calls to unknown functions.
+            // We always enable PROGRAM_SPEC for verification to detect calls to unknown functions.
             // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
+            // TODO: should we get rid of this detection and simply the code here?
             if(p.contains("no-data-race")) {
-                property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
+                verificationProperties = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
+                validationProperties = EnumSet.of(Property.CAT_SPEC);
             } else if(p.contains("termination")) {
-                property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
+                verificationProperties = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
+                validationProperties = EnumSet.of(Property.TERMINATION);
             } else if(p.contains("valid-memsafety")) {
-                property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
+                verificationProperties = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
+                validationProperties = EnumSet.of(Property.TRACKABILITY);
             } else if(p.contains("unreach-call") || p.contains("no-overflow")) {
-                property = EnumSet.of(Property.PROGRAM_SPEC);
+                verificationProperties = EnumSet.of(Property.PROGRAM_SPEC);
+                validationProperties = EnumSet.of(Property.PROGRAM_SPEC);
             } else {
                 throw new IllegalArgumentException("Unrecognized property " + p);
             }
+        }
+
+        @Option(
+                name=VALIDATE,
+                description="Run Dartagnan as a violation witness validator. Argument is the witness path.")
+        private String validationWitnessPath;
+
+        public boolean isWitnessValidation() {
+            return validationWitnessPath != null;
         }
 
         @Option(
@@ -92,7 +107,7 @@ public class SVCOMPRunner {
         Configuration config = Configuration.fromCmdLineArguments(argKeyword);
         SVCOMPOptions o = new SVCOMPOptions(config);
 
-        if(o.property == null) {
+        if(o.verificationProperties == null) {
             System.out.println("UNKNOWN");
             return;
         }
@@ -117,7 +132,11 @@ public class SVCOMPRunner {
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
-            cmd.add(String.format("--%s=%s", PROPERTY, o.property.stream().map(Enum::name).collect(Collectors.joining(","))));
+            final EnumSet<Property> properties = o.isWitnessValidation()
+                    ? o.validationProperties
+                    : o.verificationProperties;
+            cmd.add(String.format("--%s=%s", PROPERTY,
+                    properties.stream().map(Enum::name).collect(Collectors.joining(","))));
             cmd.addAll(filterOptions(config));
 
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);

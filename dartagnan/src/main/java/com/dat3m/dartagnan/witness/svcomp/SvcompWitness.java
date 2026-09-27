@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -61,12 +62,30 @@ public record SvcompWitness(Metadata metadata, List<Segment> segments) {
         }
     }
 
-    public record Assumption(int threadId, String value, String format, Location location) implements Waypoint {
+    public record Assumption(int threadId, AssumptionExpression expression, Location location) implements Waypoint {
         public Assumption {
             checkArgument(threadId >= 0, "Witness thread identifier must be non-negative");
-            value = Objects.requireNonNull(value);
-            format = Objects.requireNonNull(format);
+            expression = Objects.requireNonNull(expression);
             location = Objects.requireNonNull(location);
+        }
+    }
+
+    public sealed interface AssumptionExpression permits BooleanConstant, VariableEquality, Conjunction { }
+
+    public record BooleanConstant(boolean value) implements AssumptionExpression { }
+
+    public record VariableEquality(String variable, BigInteger value) implements AssumptionExpression {
+        public VariableEquality {
+            variable = Objects.requireNonNull(variable);
+            checkArgument(variable.matches("[A-Za-z_][A-Za-z0-9_$]*"), "Invalid assumption variable: %s", variable);
+            value = Objects.requireNonNull(value);
+        }
+    }
+
+    public record Conjunction(AssumptionExpression left, AssumptionExpression right) implements AssumptionExpression {
+        public Conjunction {
+            left = Objects.requireNonNull(left);
+            right = Objects.requireNonNull(right);
         }
     }
 

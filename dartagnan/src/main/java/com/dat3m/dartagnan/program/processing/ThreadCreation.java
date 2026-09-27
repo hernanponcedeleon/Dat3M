@@ -348,6 +348,9 @@ public class ThreadCreation implements ProgramProcessor {
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
+        if (creator == null) {
+            function.getProgram().setMainThread(thread);
+        }
 
         // ------------------- Copy function into thread -------------------
         final Map<Register, Register> registerReplacement = IRHelper.copyOverRegisters(function.getRegisters(), thread,
