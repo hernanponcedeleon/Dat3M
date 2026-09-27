@@ -107,11 +107,6 @@
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.program.processing.Intrinsics",
-        "allDeclaredFields":true,
-        "queryAllDeclaredMethods":true
-      },
-      {
         "name":"com.dat3m.dartagnan.program.processing.LoopUnrolling",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true

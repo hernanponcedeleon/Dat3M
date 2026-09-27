@@ -51,7 +51,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 AliasAnalysis.Config.class,
                 IntervalAnalysis.Config.class,
                 Inlining.class,
-                Intrinsics.class,
                 LoopUnrolling.class,
                 MemoryAllocation.class,
                 NonterminationDetection.class,
