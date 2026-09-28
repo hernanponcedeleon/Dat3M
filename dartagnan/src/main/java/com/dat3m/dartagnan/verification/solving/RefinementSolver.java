@@ -20,9 +20,8 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -67,7 +66,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
           provided by the theory solver.
  */
 @Options
-public class RefinementSolver extends ModelChecker {
+public class RefinementSolver extends ModelChecker implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
@@ -156,6 +155,16 @@ public class RefinementSolver extends ModelChecker {
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
         instrumentPolaritySeparation(memoryModel);
+    }
+
+    @Override
+    public VerificationResult verify() {
+        try {
+            run();
+            return new VerificationResult((VerificationTask) this.task, res, hasModel() ? getModel() : null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

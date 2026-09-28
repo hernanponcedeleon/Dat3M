@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -20,7 +17,7 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static java.util.Collections.singletonList;
 
-public class AssumeSolver extends ModelChecker {
+public class AssumeSolver extends ModelChecker implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
@@ -30,6 +27,17 @@ public class AssumeSolver extends ModelChecker {
 
     public static AssumeSolver create(VerificationTask task) throws InvalidConfigurationException {
         return new AssumeSolver(task);
+    }
+
+    @Override
+    public VerificationResult verify() {
+        try {
+            run();
+            return new VerificationResult((VerificationTask) this.task, res, hasModel() ? getModel() : null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
@@ -98,4 +106,5 @@ public class AssumeSolver extends ModelChecker {
         res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result {}", res);
     }
+
 }
