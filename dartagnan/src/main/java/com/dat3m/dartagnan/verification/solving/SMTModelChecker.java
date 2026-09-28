@@ -42,7 +42,7 @@ import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 // Base class for SMT-based model checkers
-public abstract class ModelChecker implements AutoCloseable {
+public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
 
     @Options
     public static class SMTConfig {
@@ -72,9 +72,9 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ModelChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(SMTModelChecker.class);
 
-    protected final Task task;
+    protected final TTask task;
     protected final SMTConfig smtConfig;
     private ShutdownManager shutdownManager = ShutdownManager.create();
 
@@ -84,7 +84,7 @@ public abstract class ModelChecker implements AutoCloseable {
 
     protected ResultStatus res = ResultStatus.UNKNOWN;
 
-    protected ModelChecker(Task task) throws InvalidConfigurationException {
+    protected SMTModelChecker(TTask task) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
         this.smtConfig = new SMTConfig();
 
@@ -123,10 +123,6 @@ public abstract class ModelChecker implements AutoCloseable {
         Preconditions.checkState(prover == null, "Model checker already ran.");
         runInternal();
         checkForInterrupts();
-    }
-
-    public void requestShutdown(String reason) {
-        shutdownManager.requestShutdown(reason);
     }
 
     protected void checkForInterrupts() throws InterruptedException {

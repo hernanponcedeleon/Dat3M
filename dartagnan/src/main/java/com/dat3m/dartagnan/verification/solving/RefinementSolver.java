@@ -66,7 +66,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
           provided by the theory solver.
  */
 @Options
-public class RefinementSolver extends ModelChecker implements Verifier {
+public class RefinementSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
@@ -161,7 +161,7 @@ public class RefinementSolver extends ModelChecker implements Verifier {
     public VerificationResult verify() {
         try {
             run();
-            return new VerificationResult((VerificationTask) this.task, res, hasModel() ? getModel() : null);
+            return new VerificationResult(this.task, res, hasModel() ? getModel() : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -170,7 +170,6 @@ public class RefinementSolver extends ModelChecker implements Verifier {
     @Override
     protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
         final Configuration config = task.getConfig();

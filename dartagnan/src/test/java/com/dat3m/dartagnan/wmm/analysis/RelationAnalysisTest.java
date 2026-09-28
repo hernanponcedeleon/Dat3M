@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.test.TestHelper.*;
-import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
+import static com.dat3m.dartagnan.verification.solving.SMTModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

@@ -17,7 +17,7 @@ import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 import static java.util.Collections.singletonList;
 
-public class AssumeSolver extends ModelChecker implements Verifier {
+public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
@@ -33,7 +33,7 @@ public class AssumeSolver extends ModelChecker implements Verifier {
     public VerificationResult verify() {
         try {
             run();
-            return new VerificationResult((VerificationTask) this.task, res, hasModel() ? getModel() : null);
+            return new VerificationResult(this.task, res, hasModel() ? getModel() : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -54,7 +54,6 @@ public class AssumeSolver extends ModelChecker implements Verifier {
 
     @Override
     protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
