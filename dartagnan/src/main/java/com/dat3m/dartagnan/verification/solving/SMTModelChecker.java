@@ -79,10 +79,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
     private ShutdownManager shutdownManager = ShutdownManager.create();
 
     protected SolverContext solverContext;
-    protected EncodingContext context;
     protected ProverWithTracker prover;
-
-    protected ResultStatus res = ResultStatus.UNKNOWN;
 
     protected SMTModelChecker(TTask task) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
@@ -91,38 +88,9 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         task.getConfig().inject(smtConfig);
     }
 
-    public final ResultStatus getResult() {
-        Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
-        return res;
-    }
-
     public void setShutdownManager(ShutdownManager shutdownManager) {
         Preconditions.checkNotNull(shutdownManager);
         this.shutdownManager = shutdownManager;
-    }
-
-    public boolean hasModel() {
-        if (!(context.getTask() instanceof VerificationTask veriTask)) {
-            return false;
-        }
-        final Property.Type propType = Property.getCombinedType(veriTask.getProperties(), veriTask);
-        final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
-        final boolean hasPositiveWitnesses  = res == PASS && propType == Property.Type.REACHABILITY;
-        final boolean hasReachedBounds      = res == UNKNOWN && propType == Property.Type.SAFETY;
-        return (hasViolationWitnesses || hasPositiveWitnesses || hasReachedBounds);
-    }
-
-    public IREvaluator getModel() throws SolverException {
-        Preconditions.checkState(hasModel(), "No model available");
-        return context.newEvaluator(prover);
-    }
-
-    protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
-
-    public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
-        Preconditions.checkState(prover == null, "Model checker already ran.");
-        runInternal();
-        checkForInterrupts();
     }
 
     protected void checkForInterrupts() throws InterruptedException {
@@ -135,6 +103,10 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
     // ====================================== Logging utility ================================================
 
     protected static void logProverStatistics(Logger logger, ProverWithTracker prover) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+
         StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
         for (String key : prover.getStatistics().keySet()) {
             smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));

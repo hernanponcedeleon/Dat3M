@@ -13,8 +13,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.ResultStatus.UNKNOWN;
 import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
@@ -32,35 +32,20 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
     @Override
     public VerificationResult verify() {
         try {
-            run();
-            return new VerificationResult(this.task, res, hasModel() ? getModel() : null);
+            return verifyInternal();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
-    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
-        final Configuration config = task.getConfig();
-        preprocessProgram(task, config);
-        preprocessMemoryModel(task);
-
-        final Context analysisContext = Context.create();
-        performStaticProgramAnalyses(task, analysisContext, config);
-        performStaticWmmAnalyses(task, analysisContext, config);
-        performIntervalAnalysis(task, analysisContext, config);
-        return analysisContext;
-    }
-
-    @Override
-    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+    public VerificationResult verifyInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
         final SolverContext solverContext = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
+        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
@@ -87,23 +72,37 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         checkForInterrupts();
 
         logger.info("Starting first solver.check()");
+        ResultStatus res;
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : ResultStatus.UNKNOWN;
+            res = prover.isUnsat() ? PASS : UNKNOWN;
         } else {
             res = FAIL;
         }
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
+        checkForInterrupts();
 
+        final IREvaluator model = (res != PASS) ? context.newEvaluator(prover) : null;
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
+
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(task, res, model);
     }
 
+    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
+        final Configuration config = task.getConfig();
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task);
+
+        final Context analysisContext = Context.create();
+        performStaticProgramAnalyses(task, analysisContext, config);
+        performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task, analysisContext, config);
+        return analysisContext;
+    }
 }

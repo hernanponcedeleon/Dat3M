@@ -139,6 +139,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     // ================================================================================================================
     // Refinement solver
 
+    private EncodingContext context;
+
     private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
         task.getConfig().inject(this);
@@ -160,15 +162,13 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     @Override
     public VerificationResult verify() {
         try {
-            run();
-            return new VerificationResult(this.task, res, hasModel() ? getModel() : null);
+            return verifyInternal();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
-    protected void runInternal()
+    protected VerificationResult verifyInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -242,6 +242,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
 
         RefinementTrace combinedTrace = propertyTrace;
 
+        ResultStatus res;
         long boundCheckTime = 0;
         if (smtStatus == SMTStatus.UNSAT) {
             // Do bound check
@@ -278,22 +279,22 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
 
         if (printCovReport) {
             System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));
         }
 
+        final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;
+        if (model != null) {
+            validateModel(solver.getExecution());
+        }
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
 
-        if (hasModel()) {
-            validateModel(solver.getExecution());
-        }
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(this.task, res, model);
     }
 
     private void validateModel(ExecutionModel model) {
