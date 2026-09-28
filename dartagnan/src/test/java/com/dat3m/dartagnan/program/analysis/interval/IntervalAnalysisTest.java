@@ -62,9 +62,9 @@ public class IntervalAnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
-        Local assignment0 = new Local(r0, expressions.makeZero(type));
-        Local assignment1 = new Local(r1, expressions.makeValue(42, type));
-        Local assignment2 = new Local(r2, expressions.makeValue(7, type));
+        Local assignment0 = newLocal(r0, expressions.makeZero(type));
+        Local assignment1 = newLocal(r1, expressions.makeValue(42, type));
+        Local assignment2 = newLocal(r2, expressions.makeValue(7, type));
         Label exit = b.getOrCreateLabel(0, "exit");
 
         b.addChildWithoutSourceLoc(0, assignment0);
@@ -103,8 +103,8 @@ public class IntervalAnalysisTest {
         CondJump goto1 = newGoto(join);
         CondJump goto2 = newGoto(join);
 
-        Local assignment0 = new Local(r0, expressions.makeZero(type));
-        Local assignment1 = new Local(r0, expressions.makeValue(42, type));
+        Local assignment0 = newLocal(r0, expressions.makeZero(type));
+        Local assignment1 = newLocal(r0, expressions.makeValue(42, type));
 
         b.addChildWithoutSourceLoc(0, jump);
         b.addChildWithoutSourceLoc(0, assignment0);
@@ -139,9 +139,9 @@ public class IntervalAnalysisTest {
         CondJump goto2 = newGoto(join);
         CondJump goto3 = newGoto(join);
 
-        Local assignment0 = new Local(r0, expressions.makeZero(type));
-        Local assignment1 = new Local(r0, expressions.makeValue(42, type));
-        Local assignment2 = new Local(r0, expressions.makeValue(7, type));
+        Local assignment0 = newLocal(r0, expressions.makeZero(type));
+        Local assignment1 = newLocal(r0, expressions.makeValue(42, type));
+        Local assignment2 = newLocal(r0, expressions.makeValue(7, type));
 
         b.addChildWithoutSourceLoc(0, jump1);
         b.addChildWithoutSourceLoc(0, jump2);

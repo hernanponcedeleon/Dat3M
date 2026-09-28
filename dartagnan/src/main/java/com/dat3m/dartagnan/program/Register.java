@@ -93,7 +93,8 @@ public class Register extends LeafExpressionBase<Type> {
 
     public enum UsageType {
         CTRL, DATA, ADDR, // The register value is used to determine control, data, or address.
-        OTHER            // The register value is used for a different purpose.
+        SPEC,             // The register value may be used in speculating the outcome of the event.
+        OTHER             // The register value is used for a different purpose.
     }
 
     /*

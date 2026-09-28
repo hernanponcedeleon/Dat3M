@@ -207,7 +207,11 @@ public class EventFactory {
     }
 
     public static Local newLocal(Register register, Expression expr) {
-        return new Local(register, expr);
+        return new Local(register, expr, false);
+    }
+
+    public static Local newSpeculatableLocal(Register register, Expression expr) {
+        return new Local(register, expr, true);
     }
 
     public static NonDetChoice newNonDetChoice(Register register) {
