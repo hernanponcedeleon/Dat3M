@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.processing.PosixErrorCode;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
