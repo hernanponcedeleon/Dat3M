@@ -25,11 +25,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class StdLibrary extends AbstractLibrary<StdLibrary> {
 
     public enum SupportedFunctions {
-        // --------------------------- Misc ---------------------------
-        //STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        //STD_MEMCPYS("memcpy_s", true, true, true, false, Intrinsics::inlineMemCpyS),
-        //STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
-        //STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
+        //STD_MEMCPY("memcpy", ...),
+        //STD_MEMCPYS("memcpy_s", ...),
+        //STD_MEMSET(List.of("memset", "__memset_chk"), ...),
+        //STD_MEMCMP("memcmp", ...),
         STD_MALLOC("malloc", StdLibrary::inlineMalloc),
         STD_CALLOC("calloc", StdLibrary::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", StdLibrary::inlineAlignedAlloc),

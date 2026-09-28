@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @Options
-public abstract class AbstractLibrary<T extends Library> implements Library {
+public abstract class AbstractLibrary<TSelf extends Library> implements Library {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractLibrary.class);
 
@@ -61,8 +61,8 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                 continue;
             }
 
-            final Handler<T> handler = getHandler(function).orElse(null);
-            if (handler instanceof ImplementationProvider<T> implementor) {
+            final Handler<TSelf> handler = getHandler(function).orElse(null);
+            if (handler instanceof ImplementationProvider<TSelf> implementor) {
                 final List<Event> implementation = implementor.implement(getThis(), function);
                 Verify.verify(!implementation.isEmpty());
                 function.append(implementation);
@@ -79,8 +79,8 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
                     continue;
                 }
 
-                final Handler<T> handler = getHandler(call.getCalledFunction()).orElse(null);
-                if (handler instanceof CallResolver<T> resolver) {
+                final Handler<TSelf> handler = getHandler(call.getCalledFunction()).orElse(null);
+                if (handler instanceof CallResolver<TSelf> resolver) {
                     final List<Event> replacement = resolver.resolve(getThis(), call);
 
                     if (replacement.isEmpty()) {
@@ -104,20 +104,20 @@ public abstract class AbstractLibrary<T extends Library> implements Library {
 
     // ====================================================================================================
 
-    protected abstract T getThis();
+    protected abstract TSelf getThis();
 
-    protected abstract Optional<? extends Handler<T>> getHandler(Function function);
+    protected abstract Optional<? extends Handler<TSelf>> getHandler(Function function);
 
-    protected sealed interface Handler<T> {}
+    protected sealed interface Handler<TSelf> {}
 
     @FunctionalInterface
-    protected non-sealed interface ImplementationProvider<T> extends Handler<T> {
-        List<Event> implement(T self, Function function);
+    protected non-sealed interface ImplementationProvider<TSelf> extends Handler<TSelf> {
+        List<Event> implement(TSelf self, Function function);
     }
 
     @FunctionalInterface
-    protected non-sealed interface CallResolver<T> extends Handler<T> {
-        List<Event> resolve(T self, FunctionCall call);
+    protected non-sealed interface CallResolver<TSelf> extends Handler<TSelf> {
+        List<Event> resolve(TSelf self, FunctionCall call);
     }
 
     // ====================================================================================================

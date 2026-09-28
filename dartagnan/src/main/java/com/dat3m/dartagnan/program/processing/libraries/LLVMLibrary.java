@@ -35,11 +35,11 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
                 LLVMLibrary::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", LLVMLibrary::inlineLLVMAssume),
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"),  AbstractLibrary::inlineAsZero),
-        // LLVM_OBJECTSIZE("llvm.objectsize", false, false, true, false, null),
         LLVM_EXPECT("llvm.expect", LLVMLibrary::inlineLLVMExpect),
-        // LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        // LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
         LLVM_THREADLOCAL("llvm.threadlocal.address.p0", LLVMLibrary::inlineLLVMThreadLocal),
+        // LLVM_OBJECTSIZE("llvm.objectsize", ...),
+        // LLVM_MEMCPY("llvm.memcpy", ...),
+        // LLVM_MEMSET("llvm.memset", ...),
         ;
 
         private final List<String> variants;

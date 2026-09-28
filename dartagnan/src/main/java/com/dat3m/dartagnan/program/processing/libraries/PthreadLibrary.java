@@ -32,7 +32,6 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
 import static com.google.common.base.Preconditions.checkArgument;
 
-//TODO: Deal with "late intrinsics".
 @Options
 public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
@@ -44,7 +43,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         P_THREAD_DETACH("pthread_detach", PthreadLibrary::inlinePthreadDetach),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", PthreadLibrary::inlineAsZero),
         // TODO: These were late intrinsics which we cannot handle right now
-       // P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), PthreadLibrary::inlinePthreadSelf),
+        // P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), ...),
         P_THREAD_EQUAL("pthread_equal", PthreadLibrary::inlinePthreadEqual),
         P_THREAD_ONCE("pthread_once", PthreadLibrary::inlinePthreadOnce),
         P_THREAD_ATTR_INIT("pthread_attr_init", PthreadLibrary::inlinePthreadAttr),

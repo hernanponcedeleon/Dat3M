@@ -73,6 +73,8 @@ public class Intrinsics {
     // --------------------------------------------------------------------------------------------------------
     // Marking
 
+    // TODO: We should introduce proper (intrinsic) events that can model the following functions.
+    //  Then we can implement them all in their respective library and remove the Intrinsics pass.
     public enum Info {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, Intrinsics::inlinePthreadSelf),
