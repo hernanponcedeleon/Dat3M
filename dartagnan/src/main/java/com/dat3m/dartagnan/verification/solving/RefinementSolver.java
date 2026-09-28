@@ -150,15 +150,6 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         return new RefinementSolver(task);
     }
 
-    protected void preprocess(Task task) throws InvalidConfigurationException {
-        final Configuration config = task.getConfig();
-        final Wmm memoryModel = task.getMemoryModel();
-
-        preprocessProgram(task, config);
-        preprocessMemoryModel(task);
-        instrumentPolaritySeparation(memoryModel);
-    }
-
     @Override
     public VerificationResult verify() {
         try {
@@ -168,27 +159,33 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         }
     }
 
-    protected VerificationResult verifyInternal()
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        final Program program = task.getProgram();
-        final Wmm memoryModel = task.getMemoryModel();
+    protected Context preprocessAndAnalyze(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
+        final Wmm memoryModel = task.getMemoryModel();
 
-        // ------------------------ Preprocessing / Analysis ------------------------
-        preprocess(task);
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task);
+        instrumentPolaritySeparation(memoryModel);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
         performIntervalAnalysis(task, analysisContext, config);
+        return analysisContext;
+    }
+
+    protected VerificationResult verifyInternal()
+            throws InterruptedException, SolverException, InvalidConfigurationException {
+        // ------------------------ Preprocessing / Analysis ------------------------
+        final Context analysisContext = preprocessAndAnalyze(task);
 
         // ------------------------ Encoding ------------------------
-        initSMTSolver(config);
+        initSMTSolver(task.getConfig());
         final SolverContext ctx = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
         //  ------- Generate refinement model -------
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(memoryModel));
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
@@ -282,7 +279,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         logProverStatistics(logger, prover);
 
         if (printCovReport) {
-            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));
+            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), task.getProgram(), analysisContext));
         }
 
         final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;

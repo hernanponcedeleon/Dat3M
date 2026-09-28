@@ -38,6 +38,18 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         }
     }
 
+    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
+        final Configuration config = task.getConfig();
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task);
+
+        final Context analysisContext = Context.create();
+        performStaticProgramAnalyses(task, analysisContext, config);
+        performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task, analysisContext, config);
+        return analysisContext;
+    }
+
     public VerificationResult verifyInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
@@ -94,15 +106,4 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         return new VerificationResult(task, res, model);
     }
 
-    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
-        final Configuration config = task.getConfig();
-        preprocessProgram(task, config);
-        preprocessMemoryModel(task);
-
-        final Context analysisContext = Context.create();
-        performStaticProgramAnalyses(task, analysisContext, config);
-        performStaticWmmAnalyses(task, analysisContext, config);
-        performIntervalAnalysis(task, analysisContext, config);
-        return analysisContext;
-    }
 }

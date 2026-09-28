@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -31,15 +29,14 @@ import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.*;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
 
 import java.nio.file.Path;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 // Base class for SMT-based model checkers
 public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
@@ -102,7 +99,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
 
     // ====================================== Logging utility ================================================
 
-    protected static void logProverStatistics(Logger logger, ProverWithTracker prover) {
+    protected static void logProverStatistics(Logger logger, ProverEnvironment prover) {
         if (!logger.isDebugEnabled()) {
             return;
         }
@@ -140,6 +137,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
     }
 
     // ====================================== Processing utility ==================================================
+    // TODO: Move all this code somewhere else
 
     public static void preprocessProgram(Task task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
