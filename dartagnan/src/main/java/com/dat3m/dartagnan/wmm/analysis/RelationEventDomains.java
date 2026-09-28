@@ -83,6 +83,8 @@ public final class RelationEventDomains {
         @Override
         public Result visitControlDependency(DirectControlDependency ctrl) { return Result.YY; }
         @Override
+        public Result visitPickDependency(DirectPickDependency pick) { return Result.YY; }
+        @Override
         public Result visitProjection(Projection proj) {
             final Set<Relation> relations = switch (proj.getDimension()) {
                 case DOMAIN -> relationsWithInvisibleDomain;

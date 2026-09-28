@@ -41,8 +41,8 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     }
 
     /**
-     * Indicates that this event does not initialise a register
-     * and loads are allowed to speculate that the value does not change.
+     * Indicates that processors are allowed to speculate that the value of {@code resultRegister} does not change.
+     * In that case, the visible data dependency may skip this event.
      */
     public boolean isSpeculatable() { return speculatable; }
 

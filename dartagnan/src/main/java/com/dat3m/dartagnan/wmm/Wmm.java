@@ -191,6 +191,7 @@ public class Wmm {
             case SI -> new SameInstruction(r);
             case CRIT -> new LinuxCriticalSections(r);
             case IDD -> new DirectDataDependency(r);
+            case PICKDIRECT -> new DirectPickDependency(r);
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);

@@ -126,7 +126,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
                 : null;
 
         solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
-        prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
+        prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS, SolverContext.ProverOptions.GENERATE_UNSAT_CORE);
     }
 
     @Override

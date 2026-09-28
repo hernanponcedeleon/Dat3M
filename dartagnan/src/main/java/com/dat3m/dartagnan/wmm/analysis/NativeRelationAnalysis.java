@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -697,13 +698,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitAddressDependency(DirectAddressDependency addrDep) {
-            return computeInternalDependencies(EnumSet.of(ADDR));
+            return computeInternalDependencies(EnumSet.of(ADDR), false);
         }
 
         @Override
         public MutableKnowledge visitInternalDataDependency(DirectDataDependency idd) {
             // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
-            return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
+            return computeInternalDependencies(EnumSet.of(DATA, CTRL, SPEC, OTHER), true);
+        }
+
+        @Override
+        public MutableKnowledge visitPickDependency(DirectPickDependency pick) {
+            return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER), false);
         }
 
         @Override
@@ -1058,12 +1064,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new MutableKnowledge(may, must);
         }
 
-        private MutableKnowledge computeInternalDependencies(Set<UsageType> usageTypes) {
+        private MutableKnowledge computeInternalDependencies(Set<UsageType> usageTypes, boolean speculate) {
             final IndexedEventGraph may = new IndexedEventGraph(allEvents);
             final IndexedEventGraph must = new IndexedEventGraph(allEvents);
 
             for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 final ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(regReader);
+                final Register speculatableRegister = speculate && regReader instanceof Local l && l.isSpeculatable()
+                        ? l.getResultRegister() : null;
                 for (Register.Read regRead : regReader.getRegisterReads()) {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
@@ -1073,7 +1081,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         may.add(regWriter, regReader);
                     }
                     for (Event regWriter : reachDef.getMustWriters()) {
-                        must.add(regWriter, regReader);
+                        if (speculatableRegister == null || (regWriter instanceof RegWriter w
+                                && w.getResultRegister().equals(speculatableRegister))) {
+                            must.add(regWriter, regReader);
+                        }
                     }
                 }
             }

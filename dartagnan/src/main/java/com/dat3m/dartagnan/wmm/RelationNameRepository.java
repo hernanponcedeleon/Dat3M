@@ -37,6 +37,7 @@ public class RelationNameRepository {
     public static final String IDD = "__idd";
     public static final String ADDRDIRECT = "__addrDirect";
     public static final String CTRLDIRECT = "__ctrlDirect";
+    public static final String PICKDIRECT = "__pickDirect";
     public static final String IDDTRANS = "__iddTrans";
 
     public static final String VISIBLE = Tag.VISIBLE;

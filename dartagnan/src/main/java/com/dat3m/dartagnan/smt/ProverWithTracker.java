@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.smt;
 import com.google.common.collect.ImmutableMap;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+import org.sosy_lab.java_smt.api.visitors.DefaultFormulaVisitor;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -76,7 +77,27 @@ public class ProverWithTracker implements ProverEnvironment {
         if(dump()) {
             write(fmgr.dumpFormula(f).toString());
         }
-        return prover.addConstraint(f);
+        List<Formula> x = new ArrayList<>();
+        this.fmgr.visit(f, new DefaultFormulaVisitor<Void>() {
+            @Override
+            protected Void visitDefault(Formula f) {
+                x.add(f);
+                return null;
+            }
+            @Override
+            public Void visitFunction(Formula f, List<Formula> args, FunctionDeclaration<?> functionDeclaration) {
+                if (functionDeclaration.getKind().equals(FunctionDeclarationKind.AND)) {
+                    args.forEach(a -> fmgr.visit(a, this));
+                } else {
+                    x.add(f);
+                }
+                return null;
+            }
+        });
+        for (Formula a : x) {
+            prover.addConstraint((BooleanFormula) a);
+        }
+        return null;
     }
 
     @Override

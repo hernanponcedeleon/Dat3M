@@ -468,7 +468,7 @@ public class ProgramEncoder {
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final boolean initializeRegisters = context.getTask().getProgram().registersAreZeroInitialized();
 
-        List<BooleanFormula> enc = new ArrayList<>();
+        final List<BooleanFormula> enc = new ArrayList<>();
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
             for (Register register : writers.getUsedRegisters()) {
@@ -502,6 +502,12 @@ public class ProgramEncoder {
                     overwrite.add(exprEnc.assignEqualAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
+            }
+        }
+        for (Local l : context.getTask().getProgram().getThreadEvents(Local.class)) {
+            if (l.isSpeculatable()) {
+                enc.add(bmgr.implication(context.speculate(l),
+                        context.getExpressionEncoder().equalAt(context.result(l), l, l.getResultRegister(), l)));
             }
         }
         return bmgr.and(enc);

@@ -71,6 +71,7 @@ public interface Constraint extends MetadataCarrier<Constraint> {
         default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
         default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
         default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
+        default T visitPickDependency(DirectPickDependency pick) { return visitDefinition(pick); }
         // ----- Target-specific definitions
         default T visitCASDependency(CASDependency casDep) { return visitDefinition(casDep); } // IMM
         default T visitLinuxCriticalSections(LinuxCriticalSections rscs) { return visitDefinition(rscs); } // Linux
