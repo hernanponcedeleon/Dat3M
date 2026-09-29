@@ -40,6 +40,21 @@ public class ModifierTraitSoundnessTest {
     }
 
     @Test
+    public void sdLinearBoundsNarrowingMustRetainNegativeDynamicIndex() {
+        /*
+         * An 8-byte object can be reached from its one-past address by an index of -1:
+         * 8 + (-1) * 8 == 0. Narrowing must not discard this in-bounds address.
+         */
+        ModifierTrait.SdLinear trait = new ModifierTrait.SdLinear();
+        ModifierTrait.Sd dynamic = new ModifierTrait.Sd(8, 8);
+        ModifierTrait.Sd base = trait.constantModifier(0);
+
+        assertTrue(trait.mayOverlap(dynamic, base));
+        assertTrue("Bounds narrowing lost an in-bounds address reached by a negative index",
+                trait.mayOverlap(trait.shrinkToBounds(dynamic, 8), base));
+    }
+
+    @Test
     public void mdLinearDoesNotMissOverlapsOrClaimFalseInclusions() {
         ModifierTrait.MdLinear trait = new ModifierTrait.MdLinear();
         // Regression: mustInclude previously claimed that a positive-only set included a bidirectional set, and that
