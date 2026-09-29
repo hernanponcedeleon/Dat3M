@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.UnionSet;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
@@ -30,6 +31,7 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.base.Preconditions;
@@ -38,6 +40,8 @@ import com.google.common.collect.HashBiMap;
 
 import java.math.BigInteger;
 import java.util.*;
+
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 
 
 public class ExecutionModelManager {
@@ -83,6 +87,7 @@ public class ExecutionModelManager {
         predicateCache.clear();
         edgeModelCache.clear();
         extractRelations();
+        extractViolations();
 
         this.context = null;
         this.model = null;
@@ -90,6 +95,19 @@ public class ExecutionModelManager {
         this.domain = null;
 
         return executionModel;
+    }
+
+    private void extractViolations() {
+        final VerificationTask task = (VerificationTask) context.getTask();
+        task.getProperties().stream()
+                .filter(model::propertyViolated)
+                .forEach(executionModel::addViolatedProperty);
+        if (task.getProperties().contains(CAT_SPEC)) {
+            wmm.getAxioms().stream()
+                    .filter(Axiom::isFlagged)
+                    .filter(model::isFlaggedAxiomViolated)
+                    .forEach(executionModel::addFlaggedAxiom);
+        }
     }
 
     private void extractEvents() {
