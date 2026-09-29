@@ -89,6 +89,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
+    private final Variable<Modifier> nullVariable = new Variable<>(null, null, "null");
+
     // When a variable gains an includes-edge, it is added to this queue for later processing.
     // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
     private final TreeMap<Integer, LinkedHashMap<Variable<Modifier>, List<IncludeEdge<Modifier>>>> queue = new TreeMap<>();
@@ -180,7 +182,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final List<IncludeEdge<Modifier>> oy = toIncludeSet(vy.base);
         for (final IncludeEdge<Modifier> ax : ox) {
             for (final IncludeEdge<Modifier> ay : oy) {
-                if (ax.source == ay.source) {
+                if (ax.source != null && ax.source == ay.source) {
                     final Modifier l = compose(ax.modifier, vx.modifier);
                     final Modifier r = compose(ay.modifier, vy.modifier);
                     if (trait.mayOverlap(l, r)) {
@@ -210,7 +212,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
         final DerivedVariable<Modifier> v = valueVariables.get(e);
-        return v == null ? e instanceof Load || e instanceof Store ? objectVariables.keySet() : Set.of()
+        return v == null || v.base == nullVariable ? e instanceof Load || e instanceof Store ? objectVariables.keySet() : Set.of()
                 : v.base.object != null ? Set.of(v.base.object)
                 : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
     }
@@ -256,7 +258,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final List<IncludeEdge<Modifier>> oy = toIncludeSet(vy.base);
         for (final IncludeEdge<Modifier> ax : toIncludeSet(vx.base)) {
             for (final IncludeEdge<Modifier> ay : oy) {
-                if (ax.source == ay.source) {
+                if (ax.source != null && ax.source == ay.source) {
                     final Modifier modifierX = compose(ax.modifier, vx.modifier);
                     final Modifier modifierY = compose(ay.modifier, vy.modifier);
                     fetchAllMixedOffsets(xSet, modifierX, bytesX, ySet, modifierY, bytesY);
@@ -407,9 +409,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // Propagates the pointer sets and tests for new communications.
     private void algorithm(Variable<Modifier> variable, List<IncludeEdge<Modifier>> edges) {
         logger.trace("{} includes {}", variable, edges);
-        verify(variable.object == null, "Trying to add include edge to object %s.", variable);
+        verify(variable != nullVariable && variable.object == null, "Trying to add include edge to object %s.", variable);
         // Propagate pointer sets.
-        final List<IncludeEdge<Modifier>> pointers = edges.stream().filter(e -> e.source.object != null).toList();
+        final List<IncludeEdge<Modifier>> pointers = edges.stream().filter(e -> e.source == nullVariable || e.source.object != null).toList();
         if (!pointers.isEmpty()) {
             for (final Variable<Modifier> user : List.copyOf(variable.seeAlso)) {
                 for (final IncludeEdge<Modifier> edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
@@ -428,11 +430,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
         }
         for (final IncludeEdge<Modifier> edgeAfter : edges) {
-            if (edgeAfter.source.object != null) {
+            if (edgeAfter.source == nullVariable || edgeAfter.source.object != null) {
                 continue;
             }
             for (final IncludeEdge<Modifier> edge : List.copyOf(edgeAfter.source.includes)) {
-                if (edge.source.object != null) {
+                if (edge.source == nullVariable || edge.source.object != null) {
                     addInclude(variable, compose(edge, edgeAfter.modifier));
                 }
             }
@@ -490,21 +492,29 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             return;
         }
         // Remove all obsolete inclusion relationships between register states.
-        address.base.includes.removeIf(i -> i.source.object == null);
+        address.base.includes.removeIf(i -> i.source != nullVariable && i.source.object == null);
         address.base.loads.clear();
         address.base.stores.clear();
         address.base.seeAlso.clear();
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
-                address.base.includes.stream().allMatch(i -> i.source.object == null)) {
+                address.base.includes.stream().allMatch(i -> i.source != nullVariable && i.source.object == null)) {
             logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
+        }
+        // If only null is accessible, allow all aliasing (without data flow propagation).
+        if (address.base == nullVariable || (address.base.object == null
+                && address.base.includes.stream().allMatch(i -> i.source == nullVariable))) {
+            entry.setValue(null);
+            return;
         }
         if (address.base.includes.size() != 1) {
             return;
         }
         final IncludeEdge<Modifier> includeEdge = address.base.includes.get(0);
         final Modifier modifier = compose(includeEdge.modifier, address.modifier);
-        assert includeEdge.source.object != null;
+        if (includeEdge.source.object == null) {
+            return;
+        }
         // If the only included address refers to the last element, treat it as a direct static offset instead.
         // This only works on concrete objects, where size is reliable.
         if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
@@ -621,7 +631,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private boolean includesPointerSet(Variable<Modifier> variable1, Variable<Modifier> variable2) {
         for (final IncludeEdge<Modifier> i : variable1.includes) {
-            if (i.source.object != null && !variable2.includes.contains(i)) {
+            if ((i.source == nullVariable || i.source.object != null) && !variable2.includes.contains(i)) {
                 return false;
             }
         }
@@ -852,6 +862,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         @Override
         public List<IncludeEdge<Modifier>> visitExpression(Expression expr) {
             final List<IncludeEdge<Modifier>> edges = new ArrayList<>();
+            edges.add(new IncludeEdge<>(nullVariable, RELAXED));
             expr.accept(new ExpressionInspector() {
                 @Override
                 public Expression visitRegister(Register register) {
@@ -890,10 +901,15 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
             final List<IncludeEdge<Modifier>> result = new ArrayList<>();
             final Modifier offsetModifier = constantModifier(offset.intValue());
+            if (operands.stream().noneMatch(o -> o.factor == 1)) {
+                for (ExprFlip operand : operands) {
+                    result.addAll(visitExpression(operand.x));
+                }
+                return result;
+            }
             for (int i = 0; i < operands.size(); i++) {
                 final ExprFlip operand = operands.get(i);
                 if (operand.factor != 1) {
-                    result.addAll(visitExpression(operand.x));
                     continue;
                 }
                 Modifier alignment = IDENTITY;
