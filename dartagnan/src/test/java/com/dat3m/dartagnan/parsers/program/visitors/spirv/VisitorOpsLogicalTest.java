@@ -1,9 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
+import com.dat3m.dartagnan.expression.floats.FloatCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
@@ -272,6 +276,95 @@ public class VisitorOpsLogicalTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Illegal result type for '%reg'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testOpSelectFloat() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockBoolType("%bool");
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%cond", "%bool", true);
+        builder.mockConstant("%v1", "%float", 1.0);
+        builder.mockConstant("%v2", "%float", 2.0);
+        String input = "%reg = OpSelect %float %cond %v1 %v2";
+
+        // when
+        Local local = visit(builder, input);
+        ITEExpr expr = (ITEExpr) local.getExpr();
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        assertEquals(builder.getExpression("%cond"), expr.getCondition());
+        assertEquals(builder.getExpression("%v1"), expr.getTrueCase());
+        assertEquals(builder.getExpression("%v2"), expr.getFalseCase());
+    }
+
+    @Test
+    public void testFloatComparisons() {
+        doTestFloatComparison("OpFOrdEqual", FloatCmpOp.OEQ);
+        doTestFloatComparison("OpFUnordEqual", FloatCmpOp.UEQ);
+        doTestFloatComparison("OpFOrdNotEqual", FloatCmpOp.ONEQ);
+        doTestFloatComparison("OpFUnordNotEqual", FloatCmpOp.UNEQ);
+        doTestFloatComparison("OpFOrdLessThan", FloatCmpOp.OLT);
+        doTestFloatComparison("OpFUnordLessThan", FloatCmpOp.ULT);
+        doTestFloatComparison("OpFOrdGreaterThan", FloatCmpOp.OGT);
+        doTestFloatComparison("OpFUnordGreaterThan", FloatCmpOp.UGT);
+        doTestFloatComparison("OpFOrdLessThanEqual", FloatCmpOp.OLTE);
+        doTestFloatComparison("OpFUnordLessThanEqual", FloatCmpOp.ULTE);
+        doTestFloatComparison("OpFOrdGreaterThanEqual", FloatCmpOp.OGTE);
+        doTestFloatComparison("OpFUnordGreaterThanEqual", FloatCmpOp.UGTE);
+    }
+
+    private void doTestFloatComparison(String name, FloatCmpOp op) {
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockBoolType("%bool");
+        builder.mockFloatType("%float", 32);
+        builder.mockConstant("%left", "%float", 1.0);
+        builder.mockConstant("%right", "%float", 2.0);
+
+        Local local = visit(builder, String.format("%%reg = %s %%bool %%left %%right", name));
+
+        FloatCmpExpr expr = (FloatCmpExpr) local.getExpr();
+        assertEquals(op, expr.getKind());
+        assertEquals(builder.getExpression("%left"), expr.getLeft());
+        assertEquals(builder.getExpression("%right"), expr.getRight());
+    }
+
+    @Test
+    public void testFloatVectorComparison() {
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockBoolType("%bool");
+        builder.mockFloatType("%float", 32);
+        builder.mockVectorType("%boolVector", "%bool", 2);
+        builder.mockVectorType("%floatVector", "%float", 2);
+        builder.mockConstant("%left", "%floatVector", List.of(1.0, 2.0));
+        builder.mockConstant("%right", "%floatVector", List.of(3.0, 4.0));
+
+        Local local = visit(builder, "%reg = OpFOrdEqual %boolVector %left %right");
+
+        ConstructExpr result = (ConstructExpr) local.getExpr();
+        assertEquals(2, result.getOperands().size());
+        for (Expression element : result.getOperands()) {
+            assertEquals(FloatCmpOp.OEQ, element.getKind());
+        }
+    }
+
+    @Test
+    public void testFloatComparisonRequiresMatchingOperandTypes() {
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockBoolType("%bool");
+        builder.mockFloatType("%float32", 32);
+        builder.mockFloatType("%float64", 64);
+        builder.mockConstant("%left", "%float32", 1.0);
+        builder.mockConstant("%right", "%float64", 2.0);
+
+        try {
+            visit(builder, "%reg = OpFOrdEqual %bool %left %right");
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            assertEquals("Illegal floating-point comparison for '%reg': operand types must match", e.getMessage());
         }
     }
 

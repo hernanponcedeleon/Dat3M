@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
@@ -143,6 +145,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (type instanceof IntegerType iType) {
             return expressions.makeZero(iType);
         }
+        if (type instanceof FloatType fType) {
+            // SPIR-V defines a null floating-point scalar as +0.0 (all bits zero).
+            // See https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#OpConstantNull.
+            return expressions.makePlusZero(fType);
+        }
         throw new ParsingException("Unsupported NULL constant type '%s'", typeId);
     }
 
@@ -168,7 +175,51 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             long intValue = Long.parseLong(value);
             return expressions.makeValue(intValue, iType);
         }
+        if (type instanceof FloatType fType) {
+            return makeFloatConstant(fType, value);
+        }
         throw new ParsingException("Illegal constant type '%s'", type);
+    }
+
+    /**
+     * SPIR-V assembly represents infinity and NaN with hexadecimal floating-point literals. For an IEEE format with
+     * {@code E} exponent bits, the special exponent is {@code 2^(E - 1)}: a significand of exactly {@code 1} denotes
+     * infinity, while a nonzero fractional part denotes NaN.
+     *
+     * @see <a href="https://github.com/KhronosGroup/SPIRV-Tools/blob/main/docs/syntax.md#floating-point-literals">
+     * SPIR-V Tools assembly syntax</a>
+     */
+    private Expression makeFloatConstant(FloatType type, String value) {
+        boolean isNegative = value.startsWith("-");
+        String magnitude = isNegative ? value.substring(1) : value;
+        if (magnitude.startsWith("0x") || magnitude.startsWith("0X")) {
+            BigDecimal parsed = parseHexFloat(magnitude);
+            BigDecimal firstSpecialValue = BigDecimal.valueOf(2)
+                    .pow(1 << (type.getExponentBits() - 1));
+            int comparison = parsed.compareTo(firstSpecialValue);
+            if (comparison == 0) {
+                return isNegative ? expressions.makeMinusInf(type) : expressions.makePlusInf(type);
+            }
+            if (comparison > 0) {
+                return expressions.makeNan(type);
+            }
+            return expressions.makeValue(parsed, isNegative, type);
+        }
+        return expressions.makeValue(new BigDecimal(magnitude), isNegative, type);
+    }
+
+    private BigDecimal parseHexFloat(String value) {
+        int exponentMarker = Math.max(value.indexOf('p'), value.indexOf('P'));
+        String significand = value.substring(2, exponentMarker);
+        int exponent = Integer.parseInt(value.substring(exponentMarker + 1));
+        int point = significand.indexOf('.');
+        String digits = point < 0 ? significand : significand.substring(0, point) + significand.substring(point + 1);
+        int fractionalNibbles = point < 0 ? 0 : significand.length() - point - 1;
+        BigDecimal integer = new BigDecimal(new BigInteger(digits, 16));
+        int binaryExponent = exponent - 4 * fractionalNibbles;
+        return binaryExponent >= 0
+                ? integer.multiply(BigDecimal.valueOf(2).pow(binaryExponent))
+                : integer.divide(BigDecimal.valueOf(2).pow(-binaryExponent));
     }
 
     private Expression makeConstantComposite(String id, Type type, List<String> elementIds) {
