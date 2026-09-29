@@ -29,17 +29,9 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         return new AssumeSolver(task);
     }
 
-    @Override
-    public VerificationResult verify() {
-        try {
-            return verifyInternal();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
+
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
 
@@ -50,7 +42,8 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         return analysisContext;
     }
 
-    public VerificationResult verifyInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+    @Override
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());

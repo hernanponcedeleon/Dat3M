@@ -150,22 +150,12 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         return new RefinementSolver(task);
     }
 
-    @Override
-    public VerificationResult verify() {
-        try {
-            return verifyInternal();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     protected Context preprocessAndAnalyze(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        final Wmm memoryModel = task.getMemoryModel();
 
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
-        instrumentPolaritySeparation(memoryModel);
+        instrumentPolaritySeparation(task.getMemoryModel());
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
@@ -174,8 +164,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         return analysisContext;
     }
 
-    protected VerificationResult verifyInternal()
-            throws InterruptedException, SolverException, InvalidConfigurationException {
+    @Override
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
         // ------------------------ Preprocessing / Analysis ------------------------
         final Context analysisContext = preprocessAndAnalyze(task);
 
