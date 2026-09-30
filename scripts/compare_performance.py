@@ -19,7 +19,14 @@ import yaml
 MAX_TIMEOUT_ATTEMPTS = 3
 
 
-TIME_PATTERN = re.compile(r"^Time:\s+(?:(?P<minutes>\d+):)?(?P<seconds>\d+(?:\.\d+)?)\s+(?:secs|mins)\s*$", re.MULTILINE)
+TIME_PATTERN = re.compile(
+    r"^Time:\s+(?:"
+    r"(?P<hours>\d+):(?P<hour_minutes>\d{2}):(?P<hour_seconds>\d{2})\s+hours|"
+    r"(?P<minutes>\d+):(?P<minute_seconds>\d{2})\s+mins|"
+    r"(?P<seconds>\d+(?:\.\d+)?)\s+secs"
+    r")\s*$",
+    re.MULTILINE,
+)
 RESULT_PATTERN = re.compile(r"^Result:\s+(?P<result>\S+)\s*$", re.MULTILINE)
 
 
@@ -113,7 +120,13 @@ def parse_time(output):
     match = TIME_PATTERN.search(output)
     if not match:
         raise ValueError("Dartagnan did not report a verification time")
-    return int(match.group("minutes") or 0) * 60 + float(match.group("seconds"))
+    if match.group("hours") is not None:
+        return float(int(match.group("hours")) * 3600
+                     + int(match.group("hour_minutes")) * 60
+                     + int(match.group("hour_seconds")))
+    if match.group("minutes") is not None:
+        return float(int(match.group("minutes")) * 60 + int(match.group("minute_seconds")))
+    return float(match.group("seconds"))
 
 
 def parse_result(output):
