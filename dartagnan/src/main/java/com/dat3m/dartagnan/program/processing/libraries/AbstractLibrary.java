@@ -134,7 +134,7 @@ public abstract class AbstractLibrary<TSelf extends Library> implements Library 
 
     protected List<Event> inlineCallAsNonDet(FunctionCall call) {
         return List.of(
-                EventFactory.newSignedNonDetChoice(getResultRegister(call), true)
+                EventFactory.newNonDetChoice(getResultRegister(call))
         );
     }
 

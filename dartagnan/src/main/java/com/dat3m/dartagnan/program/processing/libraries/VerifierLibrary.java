@@ -156,7 +156,7 @@ public class VerifierLibrary extends AbstractLibrary<VerifierLibrary> {
 
         final Register nonDetReg = call.getFunction().getOrNewRegister("__r_nondet_" + suffix, nonDetType);
         return List.of(
-                EventFactory.newSignedNonDetChoice(nonDetReg, signed),
+                EventFactory.newNonDetChoice(nonDetReg),
                 EventFactory.newLocal(result, expressions.makeCast(nonDetReg, result.getType(), signed))
         );
     }
