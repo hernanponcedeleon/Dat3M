@@ -39,13 +39,12 @@ public class DeadAssignmentElimination implements FunctionProcessor {
 
     private void eliminateDeadAssignments(Function function) {
         final Program program = function.getProgram();
-        Set<Register> usedRegs = new HashSet<>();
-        if(program.getSpecification() != null) {
+        final Set<Register> usedRegs = new HashSet<>();
+        if (program.getSpecification() != null) {
             usedRegs.addAll(program.getSpecification().getRegs());
-            // for litmus tests
-            if (program.getFilterSpecification() != null) {
-                usedRegs.addAll(program.getFilterSpecification().getRegs());
-            }
+        }
+        if (program.getFilterSpecification() != null) {
+            usedRegs.addAll(program.getFilterSpecification().getRegs());
         }
 
         // Compute events to be removed (removal is delayed)
