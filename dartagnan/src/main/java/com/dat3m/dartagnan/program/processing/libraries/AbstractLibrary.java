@@ -86,14 +86,13 @@ public abstract class AbstractLibrary<TSelf extends Library> implements Library 
                     if (replacement.isEmpty()) {
                         call.tryDelete();
                     } else {
-                        // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
-                        // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
+                        // NOTE: We deliberately do not use the call markers to avoid the inlined call being on the call stack.
                         // We may want to change this behaviour though.
                         call.insertBefore(EventFactory.newStringAnnotation(
-                                String.format("=== Calling library function %s ===", call.getCalledFunction().getName())
+                                String.format("=== Calling inlined library function %s ===", call.getCalledFunction().getName())
                         ));
                         call.insertAfter(EventFactory.newStringAnnotation(
-                                String.format("=== Returning from library function %s ===", call.getCalledFunction().getName())
+                                String.format("=== Returning from inlined library function %s ===", call.getCalledFunction().getName())
                         ));
                         IRHelper.replaceWithMetadata(call, replacement);
                     }
