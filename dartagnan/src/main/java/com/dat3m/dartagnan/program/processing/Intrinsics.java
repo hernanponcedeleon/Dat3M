@@ -1605,7 +1605,7 @@ public class Intrinsics {
 
     private List<Event> inlineCallAsNonDet(FunctionCall call) {
         return List.of(
-                EventFactory.newSignedNonDetChoice(getResultRegister(call), true)
+                EventFactory.newNonDetChoice(getResultRegister(call))
         );
     }
 
@@ -1657,7 +1657,7 @@ public class Intrinsics {
 
         final Register nonDetReg = call.getFunction().getOrNewRegister("__r_nondet_" + suffix, nonDetType);
         return List.of(
-                EventFactory.newSignedNonDetChoice(nonDetReg, signed),
+                EventFactory.newNonDetChoice(nonDetReg),
                 EventFactory.newLocal(result, expressions.makeCast(nonDetReg, result.getType(), signed))
         );
     }

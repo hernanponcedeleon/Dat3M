@@ -216,11 +216,7 @@ public class EventFactory {
     }
 
     public static NonDetChoice newNonDetChoice(Register register) {
-        return new NonDetChoice(register, false);
-    }
-
-    public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
-        return new NonDetChoice(register, isSigned);
+        return new NonDetChoice(register);
     }
 
     public static Label newLabel(String name) {
