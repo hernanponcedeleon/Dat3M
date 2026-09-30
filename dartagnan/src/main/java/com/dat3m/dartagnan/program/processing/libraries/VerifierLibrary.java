@@ -27,9 +27,6 @@ public class VerifierLibrary extends AbstractLibrary<VerifierLibrary> {
         VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", VerifierLibrary::inlineAtomicBegin),
         VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", VerifierLibrary::inlineAtomicEnd),
         // --------------------------- __VERIFIER ---------------------------
-        VERIFIER_LOOP_BEGIN("__VERIFIER_loop_begin",  AbstractLibrary::inlineAsZero),
-        VERIFIER_SPIN_START("__VERIFIER_spin_start", AbstractLibrary::inlineAsZero),
-        VERIFIER_SPIN_END("__VERIFIER_spin_end",  AbstractLibrary::inlineAsZero),
         VERIFIER_LOOP_BOUND("__VERIFIER_loop_bound",  VerifierLibrary::inlineLoopBound),
         VERIFIER_ASSUME("__VERIFIER_assume", VerifierLibrary::inlineAssume),
         VERIFIER_ASSERT("__VERIFIER_assert", VerifierLibrary::inlineVerifierAssert),
