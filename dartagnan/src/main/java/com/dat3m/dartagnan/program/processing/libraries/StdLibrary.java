@@ -25,6 +25,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class StdLibrary extends AbstractLibrary<StdLibrary> {
 
     public enum SupportedFunctions {
+        // TODO: These are "late intrinsics" still handled by the Intrinsics pass for now
         //STD_MEMCPY("memcpy", ...),
         //STD_MEMCPYS("memcpy_s", ...),
         //STD_MEMSET(List.of("memset", "__memset_chk"), ...),

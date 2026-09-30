@@ -40,8 +40,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         P_THREAD_EXIT("pthread_exit", PthreadLibrary::inlinePthreadExit),
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), PthreadLibrary::inlinePthreadJoin),
         P_THREAD_DETACH("pthread_detach", PthreadLibrary::inlinePthreadDetach),
-        P_THREAD_BARRIER_WAIT("pthread_barrier_wait", PthreadLibrary::inlineAsZero),
-        // TODO: These were late intrinsics which we cannot handle right now
+        // TODO: This is a "late intrinsic" still handled by the Intrinsics pass for now
         // P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), ...),
         P_THREAD_EQUAL("pthread_equal", PthreadLibrary::inlinePthreadEqual),
         P_THREAD_ONCE("pthread_once", PthreadLibrary::inlinePthreadOnce),

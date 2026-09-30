@@ -37,6 +37,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"),  AbstractLibrary::inlineAsZero),
         LLVM_EXPECT("llvm.expect", LLVMLibrary::inlineLLVMExpect),
         LLVM_THREADLOCAL("llvm.threadlocal.address.p0", LLVMLibrary::inlineLLVMThreadLocal),
+        // TODO: These are "late intrinsics" still handled by the Intrinsics pass for now
         // LLVM_OBJECTSIZE("llvm.objectsize", ...),
         // LLVM_MEMCPY("llvm.memcpy", ...),
         // LLVM_MEMSET("llvm.memset", ...),
