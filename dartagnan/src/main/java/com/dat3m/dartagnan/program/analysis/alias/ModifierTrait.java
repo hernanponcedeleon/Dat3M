@@ -127,7 +127,7 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Sd shrinkToBounds(Sd m, int objectSize) {
-            return m.alignment < objectSize ? m : constantModifier(m.offset);
+            return m.alignment < objectSize || objectSize <= m.offset || m.offset < 0 ? m : constantModifier(m.offset);
         }
     }
 
