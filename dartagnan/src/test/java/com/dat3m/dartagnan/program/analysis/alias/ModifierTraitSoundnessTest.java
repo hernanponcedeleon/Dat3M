@@ -40,18 +40,15 @@ public class ModifierTraitSoundnessTest {
     }
 
     @Test
-    public void sdLinearBoundsNarrowingMustRetainNegativeDynamicIndex() {
+    public void sdLinearBoundsNarrowingMustRetainInBoundsOverlaps() {
         /*
          * An 8-byte object can be reached from its one-past address by an index of -1:
          * 8 + (-1) * 8 == 0. Narrowing must not discard this in-bounds address.
          */
-        ModifierTrait.SdLinear trait = new ModifierTrait.SdLinear();
-        ModifierTrait.Sd dynamic = new ModifierTrait.Sd(8, 8);
-        ModifierTrait.Sd base = trait.constantModifier(0);
-
-        assertTrue(trait.mayOverlap(dynamic, base));
-        assertTrue("Bounds narrowing lost an in-bounds address reached by a negative index",
-                trait.mayOverlap(trait.shrinkToBounds(dynamic, 8), base));
+        final var trait = new ModifierTrait.SdLinear();
+        final ModifierTrait.Sd base = trait.constantModifier(0);
+        assertOverlapsInBounds(trait, new ModifierTrait.Sd(8, 8), base, 8);
+        assertOverlapsInBounds(trait, new ModifierTrait.Sd(-8, 8), base, 8);
     }
 
     @Test
@@ -85,6 +82,21 @@ public class ModifierTraitSoundnessTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void mdLinearBoundsNarrowingMustRetainInBoundsOverlaps() {
+        final var trait = new ModifierTrait.MdLinear();
+        final ModifierTrait.Md base = trait.constantModifier(0);
+        assertOverlapsInBounds(trait, new ModifierTrait.Md(8, List.of(-8)), base, 8);
+        assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(-8)), base, 8);
+        assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(8)), base, 8);
+    }
+
+    private static <M> void assertOverlapsInBounds(ModifierTrait<M> trait, M dynamic, M base, int bound) {
+        assertTrue(trait.mayOverlap(dynamic, base));
+        assertTrue("Bounds narrowing lost an in-bounds address",
+                trait.mayOverlap(trait.shrinkToBounds(dynamic, bound), base));
     }
 
     private Set<Integer> values(ModifierTrait.Sd modifier) {
