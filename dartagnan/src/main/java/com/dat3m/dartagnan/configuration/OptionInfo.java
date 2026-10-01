@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.libraries.AbstractLibrary;
+import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.TaskSolverBase;
@@ -49,7 +51,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 AliasAnalysis.Config.class,
                 IntervalAnalysis.Config.class,
                 Inlining.class,
-                Intrinsics.class,
                 LoopUnrolling.class,
                 MemoryAllocation.class,
                 NonterminationDetection.class,
@@ -64,7 +65,9 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
                 ExecutionGraphVisualizer.class,
-                Program.SemanticConfig.class
+                Program.SemanticConfig.class,
+                AbstractLibrary.class,
+                PthreadLibrary.class
         );
     }
 

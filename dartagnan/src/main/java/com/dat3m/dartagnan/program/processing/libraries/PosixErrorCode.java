@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.processing;
+package com.dat3m.dartagnan.program.processing.libraries;
 
 /**
  * Integer-valued error code as used in the GNU/Linux operating system and the C standard library.
@@ -140,6 +140,7 @@ enum PosixErrorCode {
     EHWPOISON, // 133 Memory page has hardware error
     ENOTSUP, // 134 Not supported parameter or option
     ;
+
     int getValue() {
         return ordinal();
     }
