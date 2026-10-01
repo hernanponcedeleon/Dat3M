@@ -56,7 +56,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             scope = currentThread = threadIds.get(threadIndex++);
             visitThreadContent(threadContentContext);
         }
-        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
+        VisitorLitmusAssertions.parseAssertions(
+                programBuilder, ctx.assertionList(), ctx.assertionFilter(), ctx.variableList());
         return programBuilder.build();
     }
 
