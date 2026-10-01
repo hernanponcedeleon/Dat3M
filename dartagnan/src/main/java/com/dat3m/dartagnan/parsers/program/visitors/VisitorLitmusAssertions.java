@@ -19,6 +19,9 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
@@ -40,7 +43,9 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
     static void parseAssertions(
             ProgramBuilder programBuilder,
             ParserRuleContext listContext,
-            ParserRuleContext filterContext) {
+            ParserRuleContext filterContext,
+            ParserRuleContext locationsContext) {
+        parseLocations(programBuilder, locationsContext);
         parseAssertions(programBuilder, listContext, false);
         parseAssertions(programBuilder, filterContext, true);
     }
@@ -49,15 +54,44 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         if (ctx == null) {
             return;
         }
+        final LitmusAssertionsParser parser = newParser(ctx);
+        ParserRuleContext parserEntryPoint = filter ? parser.assertionFilter() : parser.assertionList();
+        parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+    }
+
+    private static void parseLocations(ProgramBuilder programBuilder, ParserRuleContext ctx) {
+        if (ctx == null) {
+            return;
+        }
+        final VisitorLitmusAssertions visitor = new VisitorLitmusAssertions(programBuilder);
+        final Set<Expression> locations = new LinkedHashSet<>();
+        for (var value : newParser(ctx).locationList().locationValue()) {
+            if (!locations.add(value.accept(visitor))) {
+                throw new ParsingException("Duplicate location %s in locations annotation", value.getText());
+            }
+        }
+        programBuilder.setLocations(List.copyOf(locations));
+    }
+
+    @Override
+    public Expression visitLocationValue(LitmusAssertionsParser.LocationValueContext ctx) {
+        final String name = ctx.varName().getText();
+        if (ctx.threadId() != null) {
+            return programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+        }
+        final MemoryObject object = programBuilder.getMemoryObject(name);
+        checkState(object != null, "Undefined location %s", name);
+        return object;
+    }
+
+    private static LitmusAssertionsParser newParser(ParserRuleContext ctx) {
         int a = ctx.getStart().getStartIndex();
         int b = ctx.getStop().getStopIndex();
         String text = ctx.getStart().getInputStream().getText(new Interval(a, b));
         CharStream charStream = CharStreams.fromString(text);
         LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
-        ParserRuleContext parserEntryPoint = filter ? parser.assertionFilter() : parser.assertionList();
-        parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+        return new LitmusAssertionsParser(tokenStream);
     }
 
     @Override

@@ -135,6 +135,10 @@ public class ProgramBuilder {
         program.setFilterSpecification(ass);
     }
 
+    public void setLocations(List<Expression> locations) {
+        program.setLocations(locations);
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Threads and Functions
 

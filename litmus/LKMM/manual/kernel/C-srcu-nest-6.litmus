@@ -38,6 +38,6 @@ P2(int *x, int *y, struct srcu_struct *s1)
 	WRITE_ONCE(*x, 1);
 }
 
-locations [0:r1]
+locations [1:r1]
 filter (1:r4=1)
 exists (1:r1=1 /\ 0:r2=0)

@@ -59,6 +59,7 @@ public class Program extends MetadataCarrierBase<Program> {
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
+    private List<Expression> locations = List.of();
 
     // Semantic options
     private final SemanticConfig semanticConfig = new SemanticConfig();
@@ -155,6 +156,14 @@ public class Program extends MetadataCarrierBase<Program> {
     public void setFilterSpecification(Expression spec) {
         Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
+    }
+
+    public List<Expression> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(List<Expression> locations) {
+        this.locations = List.copyOf(locations);
     }
 
     public FloatingPointRoundingMode getFloatRoundingMode() {

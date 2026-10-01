@@ -41,7 +41,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
+        VisitorLitmusAssertions.parseAssertions(
+                programBuilder, ctx.assertionList(), ctx.assertionFilter(), ctx.variableList());
         Program prog = programBuilder.build();
         replaceZeroRegisters(prog, List.of("x0"));
         return prog;
