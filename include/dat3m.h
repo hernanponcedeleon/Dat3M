@@ -9,9 +9,9 @@ extern void __VERIFIER_loop_bound(int);
 extern unsigned int __VERIFIER_tid(void);
 
 // DEPRECATED
-#define __VERIFIER_loop_begin()
-#define __VERIFIER_spin_start()
-#define __VERIFIER_spin_end(v)
+#define __VERIFIER_loop_begin() ((void)(0))
+#define __VERIFIER_spin_start() ((void)(0))
+#define __VERIFIER_spin_end(v) ((void)(0))
 
 #define await_while(cond)                                                  \
     for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
