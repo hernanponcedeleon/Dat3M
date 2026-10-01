@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,12 +10,12 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class C11LocksTest extends AbstractCTest {
 
-    public C11LocksTest(String name, Arch target, ResultStatus expected) {
+    public C11LocksTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 

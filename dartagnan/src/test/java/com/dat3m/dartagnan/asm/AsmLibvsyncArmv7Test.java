@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.asm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class AsmLibvsyncArmv7Test extends AbstractAsmTest {
 
-    public AsmLibvsyncArmv7Test(String name, int bound, ResultStatus expected) {
+    public AsmLibvsyncArmv7Test(String name, int bound, VerificationStatus expected) {
         super(Arch.ARM7, name, bound, expected);
     }
 

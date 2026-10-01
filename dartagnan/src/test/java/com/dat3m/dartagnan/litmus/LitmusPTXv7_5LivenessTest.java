@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -12,7 +12,7 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class LitmusPTXv7_5LivenessTest extends AbstractLitmusTest {
 
-    public LitmusPTXv7_5LivenessTest(Path path, ResultStatus expected) {
+    public LitmusPTXv7_5LivenessTest(Path path, VerificationStatus expected) {
         super(Arch.PTX, path, expected);
     }
 

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -17,7 +17,7 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/LKMM/", "LKMM", "-DR");
     }
 
-    public LitmusLinuxRacesTest(Path path, ResultStatus expected) {
+    public LitmusLinuxRacesTest(Path path, VerificationStatus expected) {
         super(Arch.LKMM, path, expected);
     }
 

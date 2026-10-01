@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,7 +16,7 @@ public class LitmusPPCTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/PPC/", "PPC");
     }
 
-    public LitmusPPCTest(Path path, ResultStatus expected) {
+    public LitmusPPCTest(Path path, VerificationStatus expected) {
         super(Arch.POWER, path, expected);
     }
 }

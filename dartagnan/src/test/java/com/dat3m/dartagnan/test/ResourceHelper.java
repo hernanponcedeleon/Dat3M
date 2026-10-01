@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.test;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -10,8 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 public class ResourceHelper {
 
@@ -32,9 +32,9 @@ public class ResourceHelper {
         return getCatPathFromName(name);
     }
 
-    public static ImmutableMap<Path, ResultStatus> parseExpectedResults(Path path,
-            Function<String, Path> pathFromEntry) throws IOException {
-        var data = ImmutableMap.<Path, ResultStatus>builder();
+    public static ImmutableMap<Path, VerificationStatus> parseExpectedResults(Path path,
+                                                                              Function<String, Path> pathFromEntry) throws IOException {
+        var data = ImmutableMap.<Path, VerificationStatus>builder();
         Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
             String[] line = str.split(",");
             if (line.length == 2) {

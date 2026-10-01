@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -10,12 +10,12 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class LivenessTest extends AbstractCTest {
 
-    public LivenessTest(String name, Arch target, ResultStatus expected) {
+    public LivenessTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,7 +16,7 @@ public class LitmusPTXv7_5Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/PTX/", "PTXv7_5");
     }
 
-    public LitmusPTXv7_5Test(Path path, ResultStatus expected) {
+    public LitmusPTXv7_5Test(Path path, VerificationStatus expected) {
         super(Arch.PTX, path, expected);
     }
 

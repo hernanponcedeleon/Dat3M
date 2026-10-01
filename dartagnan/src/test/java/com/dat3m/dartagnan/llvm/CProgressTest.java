@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -11,15 +11,15 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.ProgressModel.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class CProgressTest extends AbstractCTest {
 
     protected ProgressModel progressModel;
 
-    public CProgressTest(String name, ProgressModel progressModel, ResultStatus expected) {
+    public CProgressTest(String name, ProgressModel progressModel, VerificationStatus expected) {
         super(name, C11, expected);
         this.progressModel = progressModel;
     }

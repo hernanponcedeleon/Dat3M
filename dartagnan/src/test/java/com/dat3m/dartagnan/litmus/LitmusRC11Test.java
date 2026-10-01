@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,7 +16,7 @@ public class LitmusRC11Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/C11/", "RC11");
     }
 
-    public LitmusRC11Test(Path path, ResultStatus expected) {
+    public LitmusRC11Test(Path path, VerificationStatus expected) {
         super(Arch.C11, path, expected);
     }
 

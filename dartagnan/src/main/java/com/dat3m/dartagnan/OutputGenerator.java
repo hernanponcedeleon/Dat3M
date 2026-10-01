@@ -46,7 +46,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
@@ -142,7 +142,7 @@ public class OutputGenerator {
     public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
-        final ResultStatus status = solver.getResultStatus();
+        final VerificationStatus status = result.getStatus();
         final Program p = task.getProgram();
         final String programSource = p.hasMetadata(SourcePath.class)
                 ? p.getMetadata(SourcePath.class).toString()
@@ -399,7 +399,7 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String programSource, String filter, ResultStatus status, String condition,
+    private static String toSummary(String programSource, String filter, VerificationStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
@@ -27,9 +27,9 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     protected final Arch target;
     protected final Path programPath;
-    private final ResultStatus expected;
+    private final VerificationStatus expected;
 
-    protected AbstractLitmusTest(Arch target, Path programPath, ResultStatus expected) {
+    protected AbstractLitmusTest(Arch target, Path programPath, VerificationStatus expected) {
         this.target = target;
         this.programPath = programPath;
         this.expected = expected;
@@ -41,14 +41,14 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
         final Path expectedPath = ResourceHelper.getTestResourcePath(arch + postfix + "-expected.csv");
-        final Map<Path, ResultStatus> expectedResults = ResourceHelper.parseExpectedResults(expectedPath,
+        final Map<Path, VerificationStatus> expectedResults = ResourceHelper.parseExpectedResults(expectedPath,
                 ResourceHelper::getRootPath);
         final Set<Path> skip = ResourceHelper.getSkipSet();
-        final Function<Path, ResultStatus> expected = path -> !skip.contains(path) ? expectedResults.get(path) : null;
+        final Function<Path, VerificationStatus> expected = path -> !skip.contains(path) ? expectedResults.get(path) : null;
         return buildLitmusTests(getRootPath(litmusPath), expected);
     }
 
-    static Iterable<Object[]> buildLitmusTests(Path litmusPath, Function<Path, ResultStatus> expected) throws IOException {
+    static Iterable<Object[]> buildLitmusTests(Path litmusPath, Function<Path, VerificationStatus> expected) throws IOException {
         try (Stream<Path> fileStream = Files.walk(litmusPath)) {
             return fileStream
                     .filter(Files::isRegularFile)
@@ -91,7 +91,7 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     protected EnumSet<Property> getTestedProperties() { return EnumSet.of(getTestedProperty()); }
 
     @Override
-    protected ResultStatus getExpected() throws Exception { return expected; }
+    protected VerificationStatus getExpected() throws Exception { return expected; }
 
     @Override
     protected boolean isLazyMethodEnabled() {

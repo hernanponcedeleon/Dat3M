@@ -13,8 +13,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.UNKNOWN;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.UNKNOWN;
 import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
@@ -77,7 +77,7 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         checkForInterrupts();
 
         logger.info("Starting first solver.check()");
-        ResultStatus res;
+        VerificationStatus res;
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");

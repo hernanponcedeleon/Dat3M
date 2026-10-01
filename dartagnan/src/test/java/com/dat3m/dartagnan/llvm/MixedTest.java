@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -12,13 +12,13 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.ARM8;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class MixedTest extends AbstractCTest {
 
-    public MixedTest(String name, Arch target, ResultStatus expected) {
+    public MixedTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 

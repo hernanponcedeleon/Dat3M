@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.litmus.AbstractLitmusTest;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -48,12 +48,12 @@ public abstract class AbstractComparisonTest extends AbstractLitmusTest {
     protected String getSourceWmmName() { return null; }
 
     @Override
-    protected ResultStatus getExpected() throws Exception {
+    protected VerificationStatus getExpected() throws Exception {
         final VerificationTask task = getSourceTask();
         try (VerificationTaskSolver sourceSolver = VerificationTaskSolver.createWithMethod(task, Method.EAGER)
                 .withShutdownManager(shutdownManager.get())) {
             sourceSolver.run();
-            return sourceSolver.getResultStatus();
+            return sourceSolver.getResult().getStatus();
         }
     }
 

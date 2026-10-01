@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.spirv.opencl;
 
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class PatternsAssertionsTest extends AbstractSpirvOpenclTest {
 
-    public PatternsAssertionsTest(String file, ResultStatus expected) {
+    public PatternsAssertionsTest(String file, VerificationStatus expected) {
         super("spirv/opencl/patterns/" + file, 1, expected);
     }
 

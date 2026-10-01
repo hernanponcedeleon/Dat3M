@@ -1,17 +1,17 @@
 package com.dat3m.dartagnan.spirv.vulkan;
 
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class BasicAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public BasicAssertionsTest(String file, int bound, ResultStatus expected) {
+    public BasicAssertionsTest(String file, int bound, VerificationStatus expected) {
         super("spirv/vulkan/basic/" + file, bound, expected);
     }
 

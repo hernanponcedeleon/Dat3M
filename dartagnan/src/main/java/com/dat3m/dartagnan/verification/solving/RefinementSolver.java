@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -229,7 +229,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
 
         RefinementTrace combinedTrace = propertyTrace;
 
-        ResultStatus res;
+        VerificationStatus res;
         long boundCheckTime = 0;
         if (smtStatus == SMTStatus.UNSAT) {
             // Do bound check
