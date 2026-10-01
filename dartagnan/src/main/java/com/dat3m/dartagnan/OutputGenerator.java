@@ -115,14 +115,21 @@ public class OutputGenerator {
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(programSource, "", INTERRUPTED,
-                    "", "", details, 0, null));
+            return new Output(exitCode, toErrorSummary(programSource, "INTERRUPTED", "", details));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(programSource, "", ERROR,
-                    "", reason, details, 0, null));
+            return new Output(UNKNOWN_ERROR, toErrorSummary(programSource, "ERROR", reason, details));
         }
     }
+
+    private static String toErrorSummary(String programSource, String errorType, String reason, String details) {
+        final String shownTest = formatOptional("Test: %s%n", programSource);
+        final String shownReason = formatOptional("Reason: %s%n", reason);
+        final String shownDetails = formatOptional("Details:%n%s", details);
+
+        return String.format("%sResult: %s%n%s%s", shownTest, errorType, shownReason, shownDetails);
+    }
+
 
     public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
