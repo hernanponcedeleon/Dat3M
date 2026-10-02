@@ -17,11 +17,13 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,9 +118,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // ================================ Debugging ================================
 
     // Count created variables.
-    private int totalVariables = 0;
+    private int totalVariables;
     // Count variable substitutions.
-    private int totalReplacements = 0;
+    private int totalReplacements;
+    // Count inclusion edges.
+    private int totalIncludeEdges;
     // Count times a piece of new information was added to the graph.
     private int addIntoGraphSuccesses, addIntoGraphFails, addIntoCyclesSuccesses, addIntoCyclesFails;
     // Count cycle checks, which can result in fast or slow rejects, or accepts.
@@ -145,6 +149,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 analysis.totalVariables);
         logger.debug("replacement count: {}",
                 analysis.totalReplacements);
+        logger.debug("include edge count: {}",
+                analysis.totalIncludeEdges);
         logger.debug("addInto graph: {} successes vs {} fails",
                 analysis.addIntoGraphSuccesses,
                 analysis.addIntoGraphFails);
@@ -314,10 +320,17 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
         }
+        // Sufficiently large to not trigger every time.
+        final int stepForStaticCycleDetection = 256;
         // Fixed-point computation:
+        int nextStaticCycleDetection = stepForStaticCycleDetection;
         while (!queue.isEmpty()) {
             final Map.Entry<Integer, LinkedHashMap<Variable<Modifier>, List<IncludeEdge<Modifier>>>> q = queue.pollFirstEntry();
             logger.trace("dequeue level={}", q.getKey());
+            if (q.getKey() >= nextStaticCycleDetection) {
+                nextStaticCycleDetection = q.getKey() + stepForStaticCycleDetection;
+                eliminateCycles();
+            }
             for (final Map.Entry<Variable<Modifier>, List<IncludeEdge<Modifier>>> e : q.getValue().entrySet()) {
                 algorithm(e.getKey(), e.getValue());
             }
@@ -418,13 +431,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     for (final IncludeEdge<Modifier> edge : pointers) {
                         addInclude(user, compose(edge, edgeAfter.modifier));
                     }
-                    // In a cycle, variable gets an accelerating self-loop.
-                    for (final IncludeEdge<Modifier> cycleEdge : detectCycles(user, edgeAfter)) {
-                        if (cycleEdge.source == user) {
-                            final Modifier composed = compose(cycleEdge.modifier, edgeAfter.modifier);
-                            final Modifier accelerated = trait.accelerate(composed);
-                            addInclude(user, new IncludeEdge<>(user, accelerated));
-                        }
+                    for (final Modifier cycle : detectCycles(user, edgeAfter)) {
+                        addInclude(user, new IncludeEdge<>(user, cycle));
                     }
                 }
             }
@@ -524,6 +532,30 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         entry.setValue(new DerivedVariable<>(includeEdge.source, post));
     }
 
+    private void eliminateCycles() {
+        logger.trace("Static elimination");
+        final int countEdgesBeforeCycleElimination = totalIncludeEdges;
+        final DependencyGraph<Variable<Modifier>> graph = DependencyGraph.from(
+                Iterables.transform(addressVariables.values(), d -> d.base),
+                v -> Iterables.transform(v.includes, i -> i.source));
+        for (Set<DependencyGraph<Variable<Modifier>>.Node> scc : graph.getSCCs()) {
+            // Self loops should have already been accelerated.
+            if (scc.size() < 2) {
+                continue;
+            }
+            final Set<Variable<Modifier>> set = new HashSet<>();
+            scc.forEach(n -> set.add(n.getContent()));
+            for (final DependencyGraph<Variable<Modifier>>.Node pivot : scc) {
+                final Variable<Modifier> start = pivot.getContent();
+                for (Modifier cycle : getAllCyclicPaths(start, set)) {
+                    addInclude(start, new IncludeEdge<>(start, cycle));
+                }
+                set.remove(start);
+            }
+        }
+        logger.debug("{} new cycles", totalIncludeEdges - countEdgesBeforeCycleElimination);
+    }
+
     // ================================ Internals ================================
 
     private static final class Variable<Modifier> {
@@ -583,6 +615,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         if (!addInto(variable.includes, edge, true)) {
             return;
         }
+        totalIncludeEdges++;
         edge.source.seeAlso.add(variable);
         final int level = trait.level(edge.modifier);
         // enqueue the new edge
@@ -600,10 +633,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     // Tries to detect cycles when a new edge is to be added.
     // Called when a pointer propagates from variable to successor, due to an inclusion edge.
-    private List<IncludeEdge<Modifier>> detectCycles(Variable<Modifier> variable, IncludeEdge<Modifier> edge) {
+    private List<Modifier> detectCycles(Variable<Modifier> variable, IncludeEdge<Modifier> edge) {
         // Fast check for cycles of length 1.
         if (edge.source == variable) {
-            return List.of(edge);
+            return Arrays.asList(edge.modifier);
         }
         // Fast check with lazy cycle detection:
         // Eventually, any cycle will have a 'new' edge, where the pointer sets are equal.
@@ -619,9 +652,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             return List.of();
         }
         cyclesDetected++;
-        final List<IncludeEdge<Modifier>> result = getAllCyclicPaths(edge, includerSet);
-        assert result.stream().anyMatch(e -> e.source == variable);
-        return result;
+        final List<Modifier> cycles = getAllCyclicPaths(variable, includerSet);
+        assert !cycles.isEmpty();
+        return cycles;
     }
 
     private boolean equalsPointerSet(Variable<Modifier> left, Variable<Modifier> right) {
@@ -663,12 +696,12 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         return result;
     }
 
-    private List<IncludeEdge<Modifier>> getAllCyclicPaths(IncludeEdge<Modifier> edge, Set<Variable<Modifier>> includerSet) {
-        final Map<Variable<Modifier>, List<IncludeEdge<Modifier>>> edges = new HashMap<>();
+    private List<Modifier> getAllCyclicPaths(Variable<Modifier> start, Set<Variable<Modifier>> includerSet) {
+        final List<Modifier> cycles = new ArrayList<>();
         // Use 'set' for performance.
         final Set<IncludeEdge<Modifier>> set = new HashSet<>();
         List<IncludeEdge<Modifier>> worklist = new ArrayList<>();
-        worklist.add(new IncludeEdge<>(edge.source, IDENTITY));
+        worklist.add(new IncludeEdge<>(start, IDENTITY));
         // Since cycles are detected lazily, we need a bound for cycle lengths.
         for (int length = 0; length < includerSet.size(); length++) {
             if (worklist.isEmpty()) {
@@ -677,20 +710,21 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             final List<IncludeEdge<Modifier>> next = new ArrayList<>();
             for (final IncludeEdge<Modifier> current : worklist) {
                 for (final IncludeEdge<Modifier> i : current.source.includes) {
-                    if (edge.source != i.source && includerSet.contains(i.source)) {
+                    if (includerSet.contains(i.source)) {
                         final IncludeEdge<Modifier> joinedEdge = compose(i, current.modifier);
-                        if (set.add(joinedEdge) &&
-                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
-                            next.add(joinedEdge);
+                        if (set.add(joinedEdge)) {
+                            if (start == i.source) {
+                                cycles.add(joinedEdge.modifier);
+                            } else {
+                                next.add(joinedEdge);
+                            }
                         }
                     }
                 }
             }
             worklist = next;
         }
-        final List<IncludeEdge<Modifier>> result = new ArrayList<>();
-        edges.values().forEach(result::addAll);
-        return result;
+        return cycles;
     }
 
     private boolean addInto(List<IncludeEdge<Modifier>> list, IncludeEdge<Modifier> element, boolean isGraphModification) {
