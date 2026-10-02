@@ -34,11 +34,7 @@ public final class EnumerationTaskSolver extends TaskSolverBase<EnumerationTaskS
         try (EnumerationSolver enumerator = EnumerationSolver.create(task)) {
             enumerator.setShutdownManager(shutdownManager);
             startRun();
-            enumerator.enumerate();
-
-            result = new EnumerationResult(task, /*enumerator.getResult(),*/
-                    enumerator.getVars(), enumerator.getEnumeratedStates()
-            );
+            result = enumerator.enumerate();
         } finally {
             endRun();
         }

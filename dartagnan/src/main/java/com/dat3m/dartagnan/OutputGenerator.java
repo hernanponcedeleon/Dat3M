@@ -38,7 +38,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -161,10 +160,10 @@ public class OutputGenerator {
                 ? p.getMetadata(SourcePath.class).toString()
                 : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final String filter = getFilterString(task);
-        final String enumerationResult = enumerationToString(result.getVars(), result.getEnumeratedStates());
+        final String enumeratedStates = enumerationToString(result.getVars(), result.getEnumeratedStates());
 
         return new Output(NORMAL_TERMINATION,
-                toEnumerationSummary(programSource, filter, enumerationResult, solver.getRuntime())
+                toEnumerationSummary(programSource, filter, enumeratedStates, result.getStatus(), solver.getRuntime())
         );
 
     }
@@ -197,14 +196,15 @@ public class OutputGenerator {
         throw new UnsupportedOperationException("Unknown expression type: " + expr.getClass());
     }
 
-    private static String toEnumerationSummary(String test, String filter, String enumerationOutput, long time) {
+    private static String toEnumerationSummary(String test, String filter, String enumerationOutput, EnumerationStatus status, long time) {
 
         final String shownTest = formatOptional("Test: %s%n", test);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
+        final String shownStatus = "Result: %s%n".formatted(status);
 
-        return String.format("%s%s%s%s",
-                shownTest, shownFilter, enumerationOutput, shownTime);
+        return String.format("%s%s%s%s%s",
+                shownTest, shownFilter, enumerationOutput, shownStatus, shownTime);
     }
 
     // ------------------------------------------------------------------------------

@@ -12,22 +12,21 @@ import java.util.Map;
 public final class EnumerationResult implements TaskResult<EnumerationTask> {
 
     private final EnumerationTask task;
-    //private final ResultStatus status;
+    private final EnumerationStatus status;
     private final ImmutableList<Expression> vars;
     private final ImmutableList<ImmutableMap<Expression, Expression>> enumeratedStates;
 
-    public EnumerationResult(EnumerationTask task, /*ResultStatus status,*/ List<Expression> vars, List<ImmutableMap<Expression, Expression>> enumeratedStates) {
+    public EnumerationResult(EnumerationTask task, EnumerationStatus status, List<Expression> vars, List<ImmutableMap<Expression, Expression>> enumeratedStates) {
         this.task = Preconditions.checkNotNull(task);
-        //this.status = status;
+        this.status = status;
         this.vars = ImmutableList.copyOf(vars);
         this.enumeratedStates = ImmutableList.copyOf(enumeratedStates);
     }
 
-    /*
-    @Override
-    public ResultStatus getStatus() {
+
+    public EnumerationStatus getStatus() {
         return status;
-    }*/
+    }
 
     @Override
     public EnumerationTask getTask() {
