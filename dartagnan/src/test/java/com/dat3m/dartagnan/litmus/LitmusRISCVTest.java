@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,7 +16,7 @@ public class LitmusRISCVTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/RISCV/", "RISCV");
     }
 
-    public LitmusRISCVTest(Path path, ResultStatus expected) {
+    public LitmusRISCVTest(Path path, VerificationStatus expected) {
         super(Arch.RISCV, path, expected);
     }
 }

@@ -25,7 +25,7 @@ import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.verification.solving.SMTModelChecker;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -51,7 +51,7 @@ import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.test.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
-import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
+import static com.dat3m.dartagnan.verification.solving.SMTModelChecker.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
 
@@ -865,9 +865,9 @@ public class AnalysisTest {
                 .build();
         Task task = Task.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
         Context analysisContext = Context.create();
-        ModelChecker.preprocessProgram(task, config);
-        ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
-        ModelChecker.performStaticWmmAnalyses(task, analysisContext, config);
+        SMTModelChecker.preprocessProgram(task, config);
+        SMTModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
+        SMTModelChecker.performStaticWmmAnalyses(task, analysisContext, config);
 
         RelationAnalysis.Knowledge rmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rmw);
         assertEquals(4, rmwKnowledge.getMaySet().size());

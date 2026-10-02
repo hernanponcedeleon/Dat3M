@@ -152,7 +152,7 @@
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.verification.solving.ModelChecker$SMTConfig",
+        "name":"com.dat3m.dartagnan.verification.solving.SMTModelChecker$SMTConfig",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },

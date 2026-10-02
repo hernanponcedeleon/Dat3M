@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,14 +10,14 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class MiscellaneousTest extends AbstractCTest {
 
     private final int bound;
 
-    public MiscellaneousTest(String name, Arch target, ResultStatus expected, int bound) {
+    public MiscellaneousTest(String name, Arch target, VerificationStatus expected, int bound) {
         super(name, target, expected);
         this.bound = bound;
     }

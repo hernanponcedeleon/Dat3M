@@ -46,7 +46,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
@@ -115,14 +115,21 @@ public class OutputGenerator {
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
-            return new Output(exitCode, toSummary(programSource, "", INTERRUPTED,
-                    "", "", details, 0, null));
+            return new Output(exitCode, toErrorSummary(programSource, "INTERRUPTED", "", details));
         } else {
             final String reason = exception.getClass().getSimpleName();
-            return new Output(UNKNOWN_ERROR, toSummary(programSource, "", ERROR,
-                    "", reason, details, 0, null));
+            return new Output(UNKNOWN_ERROR, toErrorSummary(programSource, "ERROR", reason, details));
         }
     }
+
+    private static String toErrorSummary(String programSource, String errorType, String reason, String details) {
+        final String shownTest = formatOptional("Test: %s%n", programSource);
+        final String shownReason = formatOptional("Reason: %s%n", reason);
+        final String shownDetails = formatOptional("Details:%n%s", details);
+
+        return String.format("%sResult: %s%n%s%s", shownTest, errorType, shownReason, shownDetails);
+    }
+
 
     public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
@@ -135,7 +142,7 @@ public class OutputGenerator {
     public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
-        final ResultStatus status = solver.getResultStatus();
+        final VerificationStatus status = result.getStatus();
         final Program p = task.getProgram();
         final String programSource = p.hasMetadata(SourcePath.class)
                 ? p.getMetadata(SourcePath.class).toString()
@@ -392,7 +399,7 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String programSource, String filter, ResultStatus status, String condition,
+    private static String toSummary(String programSource, String filter, VerificationStatus status, String condition,
                                     String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);

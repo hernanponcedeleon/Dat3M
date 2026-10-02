@@ -20,9 +20,8 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -52,7 +51,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -67,7 +66,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
           provided by the theory solver.
  */
 @Options
-public class RefinementSolver extends ModelChecker {
+public class RefinementSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
@@ -75,7 +74,7 @@ public class RefinementSolver extends ModelChecker {
     // Configuration
 
     @Option(name=COVERAGE,
-            description="Prints the coverage report (this option requires --method=caat).",
+            description="Prints the coverage report (this option requires --method=lazy).",
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;
@@ -140,6 +139,8 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
+    private EncodingContext context;
+
     private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
         task.getConfig().inject(this);
@@ -149,38 +150,32 @@ public class RefinementSolver extends ModelChecker {
         return new RefinementSolver(task);
     }
 
-    protected void preprocess(Task task) throws InvalidConfigurationException {
+    protected Context preprocessAndAnalyze(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        final Wmm memoryModel = task.getMemoryModel();
 
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
-        instrumentPolaritySeparation(memoryModel);
-    }
-
-    @Override
-    protected void runInternal()
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
-        final Program program = task.getProgram();
-        final Wmm memoryModel = task.getMemoryModel();
-        final Configuration config = task.getConfig();
-
-        // ------------------------ Preprocessing / Analysis ------------------------
-        preprocess(task);
+        instrumentPolaritySeparation(task.getMemoryModel());
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
         performIntervalAnalysis(task, analysisContext, config);
+        return analysisContext;
+    }
+
+    @Override
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
+        // ------------------------ Preprocessing / Analysis ------------------------
+        final Context analysisContext = preprocessAndAnalyze(task);
 
         // ------------------------ Encoding ------------------------
-        initSMTSolver(config);
+        initSMTSolver(task.getConfig());
         final SolverContext ctx = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
         //  ------- Generate refinement model -------
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(memoryModel));
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
@@ -234,6 +229,7 @@ public class RefinementSolver extends ModelChecker {
 
         RefinementTrace combinedTrace = propertyTrace;
 
+        VerificationStatus res;
         long boundCheckTime = 0;
         if (smtStatus == SMTStatus.UNSAT) {
             // Do bound check
@@ -270,22 +266,22 @@ public class RefinementSolver extends ModelChecker {
             logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
 
         if (printCovReport) {
-            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));
+            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), task.getProgram(), analysisContext));
         }
 
+        final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;
+        if (model != null) {
+            validateModel(solver.getExecution());
+        }
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
 
-        if (hasModel()) {
-            validateModel(solver.getExecution());
-        }
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(this.task, res, model);
     }
 
     private void validateModel(ExecutionModel model) {

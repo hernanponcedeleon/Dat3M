@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.spirv.vulkan;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
 
-    public GpuverifyRacesTest(String file, int bound, ResultStatus expected) {
+    public GpuverifyRacesTest(String file, int bound, VerificationStatus expected) {
         super("spirv/vulkan/gpuverify/" + file, bound, expected);
     }
 

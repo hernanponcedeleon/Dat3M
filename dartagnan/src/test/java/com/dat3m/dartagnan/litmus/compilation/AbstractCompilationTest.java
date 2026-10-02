@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -55,7 +55,7 @@ public abstract class AbstractCompilationTest extends AbstractLitmusTest {
     // ============================================================
 
     @Override
-    protected ResultStatus getExpected() throws Exception {
+    protected VerificationStatus getExpected() throws Exception {
         final VerificationTask task = getSourceTask();
         if (!isCompilableToHardware(task.getProgram())) {
             return null;
@@ -69,10 +69,10 @@ public abstract class AbstractCompilationTest extends AbstractLitmusTest {
             // We found no model showing a specific behaviour (either positively or negatively),
             // so the compiled code should also not exhibit that behaviour, unless we
             // know the compilation is broken
-            return switch (sourceSolver.getResultStatus()) {
-                case PASS -> isCompilationBroken() ? ResultStatus.FAIL : ResultStatus.PASS;
-                case FAIL -> isCompilationBroken() ? ResultStatus.PASS : ResultStatus.FAIL;
-                default -> sourceSolver.getResultStatus();
+            return switch (sourceSolver.getResult().getStatus()) {
+                case PASS -> isCompilationBroken() ? VerificationStatus.FAIL : VerificationStatus.PASS;
+                case FAIL -> isCompilationBroken() ? VerificationStatus.PASS : VerificationStatus.FAIL;
+                default -> sourceSolver.getResult().getStatus();
             };
         }
     }

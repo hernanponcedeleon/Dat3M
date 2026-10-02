@@ -1,19 +1,19 @@
 package com.dat3m.dartagnan.spirv.vulkan;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class BasicRacesTest extends AbstractSpirvVulkanTest {
 
-    public BasicRacesTest(String file, ResultStatus expected) {
+    public BasicRacesTest(String file, VerificationStatus expected) {
         super("spirv/vulkan/basic/" + file, 1, expected);
     }
 

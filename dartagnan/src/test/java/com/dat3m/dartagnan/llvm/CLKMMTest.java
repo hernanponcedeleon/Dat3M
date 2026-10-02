@@ -1,20 +1,20 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.LKMM;
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class CLKMMTest extends AbstractCTest {
 
-    public CLKMMTest(String name, Arch target, ResultStatus expected) {
+    public CLKMMTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 

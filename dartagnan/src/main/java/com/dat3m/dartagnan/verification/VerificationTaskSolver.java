@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -25,7 +24,7 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     // ====================================== State ======================================
 
-    private ModelChecker modelChecker;
+    private Verifier verifier;
 
     // =================================== Construction ===================================
 
@@ -47,29 +46,25 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     // ===================================== Solving =====================================
 
-    private void initModelChecker() throws InvalidConfigurationException {
-        Preconditions.checkState(modelChecker == null, "Model checker already initialized");
-        modelChecker = switch (method) {
+    private void initVerifier() throws InvalidConfigurationException {
+        Preconditions.checkState(verifier == null, "Verifier already initialized");
+        verifier = switch (method) {
             case EAGER -> AssumeSolver.create(task);
             case LAZY -> RefinementSolver.create(task);
         };
-        modelChecker.setShutdownManager(shutdownManager);
+        verifier.setShutdownManager(shutdownManager);
     }
 
     @Override
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
-        initModelChecker();
+        initVerifier();
 
         startRun();
         try {
-            modelChecker.run();
+            result = verifier.verify();
         } finally {
             endRun();
         }
-
-        result = new VerificationResult(task, modelChecker.getResult(),
-                modelChecker.hasModel() ? modelChecker.getModel() : null
-        );
     }
 
     // ===================================== Misc =====================================
@@ -86,12 +81,12 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
             result.getModel().close();
         }
 
-        if (modelChecker != null) {
-            modelChecker.close();
+        if (verifier != null) {
+            verifier.close();
         }
 
         result = null;
-        modelChecker = null;
+        verifier = null;
     }
 
 }

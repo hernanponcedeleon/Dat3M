@@ -44,11 +44,6 @@ public abstract sealed class TaskSolverBase<TSolver, TTask extends Task, TResult
         return result;
     }
 
-    public ResultStatus getResultStatus() {
-        checkHasRun();
-        return result.getStatus();
-    }
-
     public long getRuntime() {
         checkHasRun();
         return runtime;

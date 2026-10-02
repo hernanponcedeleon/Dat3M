@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -17,10 +15,7 @@ import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
@@ -34,18 +29,17 @@ import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.*;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
 
 import java.nio.file.Path;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 // Base class for SMT-based model checkers
-public abstract class ModelChecker implements AutoCloseable {
+public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
 
     @Options
     public static class SMTConfig {
@@ -75,61 +69,25 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ModelChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(SMTModelChecker.class);
 
-    protected final Task task;
+    protected final TTask task;
     protected final SMTConfig smtConfig;
     private ShutdownManager shutdownManager = ShutdownManager.create();
 
     protected SolverContext solverContext;
-    protected EncodingContext context;
     protected ProverWithTracker prover;
 
-    protected ResultStatus res = ResultStatus.UNKNOWN;
-
-    protected ModelChecker(Task task) throws InvalidConfigurationException {
+    protected SMTModelChecker(TTask task) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
         this.smtConfig = new SMTConfig();
 
         task.getConfig().inject(smtConfig);
     }
 
-    public final ResultStatus getResult() {
-        Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
-        return res;
-    }
-
     public void setShutdownManager(ShutdownManager shutdownManager) {
         Preconditions.checkNotNull(shutdownManager);
         this.shutdownManager = shutdownManager;
-    }
-
-    public boolean hasModel() {
-        if (!(context.getTask() instanceof VerificationTask veriTask)) {
-            return false;
-        }
-        final Property.Type propType = Property.getCombinedType(veriTask.getProperties(), veriTask);
-        final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
-        final boolean hasPositiveWitnesses  = res == PASS && propType == Property.Type.REACHABILITY;
-        final boolean hasReachedBounds      = res == UNKNOWN && propType == Property.Type.SAFETY;
-        return (hasViolationWitnesses || hasPositiveWitnesses || hasReachedBounds);
-    }
-
-    public IREvaluator getModel() throws SolverException {
-        Preconditions.checkState(hasModel(), "No model available");
-        return context.newEvaluator(prover);
-    }
-
-    protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
-
-    public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
-        Preconditions.checkState(prover == null, "Model checker already ran.");
-        runInternal();
-        checkForInterrupts();
-    }
-
-    public void requestShutdown(String reason) {
-        shutdownManager.requestShutdown(reason);
     }
 
     protected void checkForInterrupts() throws InterruptedException {
@@ -141,7 +99,11 @@ public abstract class ModelChecker implements AutoCloseable {
 
     // ====================================== Logging utility ================================================
 
-    protected static void logProverStatistics(Logger logger, ProverWithTracker prover) {
+    protected static void logProverStatistics(Logger logger, ProverEnvironment prover) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+
         StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
         for (String key : prover.getStatistics().keySet()) {
             smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
@@ -175,6 +137,7 @@ public abstract class ModelChecker implements AutoCloseable {
     }
 
     // ====================================== Processing utility ==================================================
+    // TODO: Move all this code somewhere else
 
     public static void preprocessProgram(Task task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessLobeTest extends AbstractLitmusTest {
 
-    public LitmusVulkanLivenessLobeTest(Path path, ResultStatus expected) {
+    public LitmusVulkanLivenessLobeTest(Path path, VerificationStatus expected) {
         super(Arch.VULKAN, path, expected);
     }
 

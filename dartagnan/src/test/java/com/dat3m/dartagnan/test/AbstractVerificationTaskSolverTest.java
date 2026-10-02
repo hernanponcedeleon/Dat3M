@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.test;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
@@ -54,14 +54,14 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     protected abstract EnumSet<Property> getTestedProperties();
 
-    protected abstract ResultStatus getExpected() throws Exception;
+    protected abstract VerificationStatus getExpected() throws Exception;
 
     protected boolean isEagerMethodEnabled() { return true; }
     protected boolean isLazyMethodEnabled() { return true; }
 
     private void testSolver(Method method) throws Exception {
         final VerificationTask task = getTask();
-        final ResultStatus expected = getExpected();
+        final VerificationStatus expected = getExpected();
         assumeNotNull(expected);
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, method)
                 .withShutdownManager(shutdownManager.get())) {

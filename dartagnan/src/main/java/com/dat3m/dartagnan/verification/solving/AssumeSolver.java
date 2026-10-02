@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -16,11 +13,10 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static java.util.Collections.singletonList;
 
-public class AssumeSolver extends ModelChecker {
+public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
@@ -34,6 +30,7 @@ public class AssumeSolver extends ModelChecker {
 
     protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
+
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
 
@@ -45,15 +42,14 @@ public class AssumeSolver extends ModelChecker {
     }
 
     @Override
-    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
         final SolverContext solverContext = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
+        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
@@ -80,22 +76,26 @@ public class AssumeSolver extends ModelChecker {
         checkForInterrupts();
 
         logger.info("Starting first solver.check()");
+        VerificationStatus res;
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : ResultStatus.UNKNOWN;
+            res = prover.isUnsat() ? PASS : UNKNOWN;
         } else {
             res = FAIL;
         }
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
+        checkForInterrupts();
 
+        final IREvaluator model = (res != PASS) ? context.newEvaluator(prover) : null;
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
+
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(task, res, model);
     }
+
 }

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,7 +16,7 @@ public class LitmusX86Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/X86/", "TSO");
     }
 
-    public LitmusX86Test(Path path, ResultStatus expected) {
+    public LitmusX86Test(Path path, VerificationStatus expected) {
         super(Arch.TSO, path, expected);
     }
 }

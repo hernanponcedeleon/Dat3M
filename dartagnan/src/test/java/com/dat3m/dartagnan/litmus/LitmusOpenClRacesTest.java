@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 
 import java.nio.file.Path;
 import java.io.IOException;
@@ -18,7 +18,7 @@ public class LitmusOpenClRacesTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/OPENCL/", "OPENCL", "-DR");
     }
 
-    public LitmusOpenClRacesTest(Path path, ResultStatus expected) {
+    public LitmusOpenClRacesTest(Path path, VerificationStatus expected) {
         super(Arch.OPENCL, path, expected);
     }
 

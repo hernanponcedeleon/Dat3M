@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.ResultStatus;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.Task;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
@@ -19,9 +19,9 @@ abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
     private final Arch target;
     private final String name;
     private final int bound;
-    private final ResultStatus expected;
+    private final VerificationStatus expected;
 
-    protected AbstractAsmTest(Arch target, String name, int bound, ResultStatus expected) {
+    protected AbstractAsmTest(Arch target, String name, int bound, VerificationStatus expected) {
         this.target = target;
         this.name = name;
         this.bound = bound;
@@ -52,5 +52,5 @@ abstract class AbstractAsmTest extends AbstractVerificationTaskSolverTest {
     protected EnumSet<Property> getTestedProperties() { return EnumSet.of(TERMINATION, PROGRAM_SPEC); }
 
     @Override
-    protected ResultStatus getExpected() { return expected; }
+    protected VerificationStatus getExpected() { return expected; }
 }
