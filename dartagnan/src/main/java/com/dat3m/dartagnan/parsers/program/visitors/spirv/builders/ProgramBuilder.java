@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.SpirvVersion;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Event;
@@ -33,6 +34,7 @@ public class ProgramBuilder {
     protected final Map<String, Expression> inputs = new HashMap<>();
     protected final Map<String, String> debugInfos = new HashMap<>();
     protected final ThreadGrid grid;
+    private final SpirvVersion spirvVersion;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
     protected DecorationsBuilder decorationsBuilder;
@@ -43,7 +45,12 @@ public class ProgramBuilder {
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
+        this(grid, SpirvVersion.UNKNOWN);
+    }
+
+    public ProgramBuilder(ThreadGrid grid, SpirvVersion spirvVersion) {
         this.grid = grid;
+        this.spirvVersion = spirvVersion;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
@@ -61,6 +68,10 @@ public class ProgramBuilder {
 
     public ThreadGrid getThreadGrid() {
         return grid;
+    }
+
+    public SpirvVersion getSpirvVersion() {
+        return spirvVersion;
     }
 
     public ControlFlowBuilder getControlFlowBuilder() {
