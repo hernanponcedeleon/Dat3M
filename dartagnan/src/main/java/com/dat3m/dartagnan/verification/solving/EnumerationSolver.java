@@ -157,14 +157,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
             });
         }
 
-       p.getLocations().forEach(location -> {
-            if (location instanceof MemoryObject o) {
-                // FIXME: This will likely fail for mixed size accesses
-                finalStateExprs.add(new FinalMemoryValue(o.getName(), o.getInitialValue(0).getType(), o, 0));
-            } else if (location instanceof Register r) {
-                finalStateExprs.add(r);
-            }
-        });
+        finalStateExprs.addAll(p.getLocations());
 
         return finalStateExprs.stream()
                 .sorted(this::compareExpr)

@@ -81,7 +81,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         }
         final MemoryObject object = programBuilder.getMemoryObject(name);
         checkState(object != null, "Undefined location %s", name);
-        return object;
+        return new FinalMemoryValue(object.getName(), object.getInitialValue(0).getType(), object, 0);
     }
 
     private static LitmusAssertionsParser newParser(ParserRuleContext ctx) {

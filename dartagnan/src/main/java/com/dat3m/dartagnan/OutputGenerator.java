@@ -191,9 +191,11 @@ public class OutputGenerator {
         } else if (expr instanceof IntLiteral intLiteral) {
             final BigInteger signedVal = IntegerHelper.normalizeSigned(intLiteral.getValue(), intLiteral.getType().getBitWidth());
             return signedVal.toString();
+        } else {
+            return expr.toString();
         }
 
-        throw new UnsupportedOperationException("Unknown expression type: " + expr.getClass());
+        //throw new UnsupportedOperationException("Unknown expression type: " + expr.getClass());
     }
 
     private static String toEnumerationSummary(String test, String filter, String enumerationOutput, EnumerationStatus status, long time) {
