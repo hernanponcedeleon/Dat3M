@@ -70,6 +70,10 @@ public class IREvaluator implements AutoCloseable {
         return evaluate(exprEnc.encodeAt(expression, at));
     }
 
+    public TypedValue<?, ?> evaluateFinal(Expression expression) {
+        return evaluate(exprEnc.encodeFinal(expression));
+    }
+
     // ====================================================================================
     // Program
 

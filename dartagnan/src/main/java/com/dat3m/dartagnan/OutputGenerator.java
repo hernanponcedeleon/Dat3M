@@ -6,13 +6,17 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -23,6 +27,7 @@ import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -35,9 +40,11 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -134,10 +141,76 @@ public class OutputGenerator {
     public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
             return getOutputFromSolver(verificationTaskSolver);
+        } else if (solver instanceof EnumerationTaskSolver enumerationTaskSolver) {
+            return getOutputFromSolver(enumerationTaskSolver);
         }
 
         throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
     }
+
+    // ------------------------------------------------------------------------------
+    // Enumeration
+
+    public Output getOutputFromSolver(EnumerationTaskSolver solver) {
+        final EnumerationResult result = solver.getResult();
+        final EnumerationTask task = result.getTask();
+        final Program p = task.getProgram();
+
+        final String programSource = p.hasMetadata(SourcePath.class)
+                ? p.getMetadata(SourcePath.class).toString()
+                : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
+        final String filter = getFilterString(task);
+        final String enumeratedStates = enumerationToString(result.getVars(), result.getEnumeratedStates());
+
+        return new Output(NORMAL_TERMINATION,
+                toEnumerationSummary(programSource, filter, enumeratedStates, result.getStatus(), solver.getRuntime())
+        );
+
+    }
+
+    private String enumerationToString(List<Expression> vars, List<? extends Map<Expression, Expression>> enumeratedStates) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Variables of interest: ").append(Lists.transform(vars, this::compactExprString)).append("\n");
+        sb.append("#Observed states: ").append(enumeratedStates.size()).append("\n");
+        sb.append("============ Outcomes ============\n");
+        for (Map<Expression, Expression> state : enumeratedStates) {
+            sb.append(vars.stream()
+                    .map(var -> compactExprString(var) + "=" + compactExprString(state.get(var)))
+                    .collect(Collectors.joining(", " , "{ ", " }\n" )));
+        }
+        sb.append("==================================\n");
+
+        return sb.toString();
+    }
+
+    private String compactExprString(Expression expr) {
+        if (expr instanceof Register reg) {
+            return reg.getThread().getName() + ":" + reg.getName();
+        } else if (expr instanceof FinalMemoryValue finalMemoryValue) {
+            return finalMemoryValue.getName();
+        } else if (expr instanceof IntLiteral intLiteral) {
+            final BigInteger signedVal = IntegerHelper.normalizeSigned(intLiteral.getValue(), intLiteral.getType().getBitWidth());
+            return signedVal.toString();
+        } else {
+            return expr.toString();
+        }
+
+        //throw new UnsupportedOperationException("Unknown expression type: " + expr.getClass());
+    }
+
+    private static String toEnumerationSummary(String test, String filter, String enumerationOutput, EnumerationStatus status, long time) {
+
+        final String shownTest = formatOptional("Test: %s%n", test);
+        final String shownFilter = formatOptional("Filter: %s%n", filter);
+        final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
+        final String shownStatus = "Result: %s%n".formatted(status);
+
+        return String.format("%s%s%s%s%s",
+                shownTest, shownFilter, enumerationOutput, shownStatus, shownTime);
+    }
+
+    // ------------------------------------------------------------------------------
+    // Verification
 
     public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
@@ -176,7 +249,7 @@ public class OutputGenerator {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new Output(PROGRAM_SPEC_VIOLATION, toSummary(programSource, filter, FAIL,
+                return new Output(PROGRAM_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
@@ -192,7 +265,7 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new Output(TERMINATION_VIOLATION, toSummary(programSource, filter, FAIL,
+                return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
@@ -202,7 +275,7 @@ public class OutputGenerator {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new Output(MEMORY_TRACKABILITY_VIOLATION, toSummary(programSource, filter, FAIL,
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
@@ -212,7 +285,7 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    return new Output(CAT_SPEC_VIOLATION, toSummary(programSource, filter, FAIL,
+                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                             "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
@@ -220,7 +293,7 @@ public class OutputGenerator {
             throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            return new Output(NORMAL_TERMINATION, toSummary(programSource, filter, status,
+            return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
         } else if (status == UNKNOWN && model != null) {
             // We reached unrolling bounds.
@@ -238,13 +311,13 @@ public class OutputGenerator {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            return new Output(BOUNDED_RESULT, toSummary(programSource, filter, status,
+            return new Output(BOUNDED_RESULT, toVerificationSummary(programSource, filter, status,
                     "", BOUND_REASON, details.toString(), time, witnessFile));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toSummary(programSource, filter, status,
+        return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
@@ -399,8 +472,8 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toSummary(String programSource, String filter, VerificationStatus status, String condition,
-                                    String reason, String details, long time, Path witness) {
+    private static String toVerificationSummary(String programSource, String filter, VerificationStatus status, String condition,
+                                                String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
