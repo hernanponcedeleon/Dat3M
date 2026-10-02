@@ -125,10 +125,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private int totalIncludeEdges;
     // Count times a piece of new information was added to the graph.
     private int addIntoGraphSuccesses, addIntoGraphFails, addIntoCyclesSuccesses, addIntoCyclesFails;
-    // Count cycle checks, which can result in fast or slow rejects, or accepts.
-    private int cyclesFastCulled;
-    private int cyclesSlowCulled;
-    private int cyclesDetected;
 
     // ================================ Construction ================================
 
@@ -157,10 +153,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         logger.debug("addInto for cycle detection: {} successes vs {} fails",
                 analysis.addIntoCyclesSuccesses,
                 analysis.addIntoCyclesFails);
-        logger.debug("cycles: {} detected vs {} fast-culled vs {} slow-culled",
-                analysis.cyclesDetected,
-                analysis.cyclesFastCulled,
-                analysis.cyclesSlowCulled);
         return analysis;
     }
 
@@ -431,9 +423,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     for (final IncludeEdge<Modifier> edge : pointers) {
                         addInclude(user, compose(edge, edgeAfter.modifier));
                     }
-                    for (final Modifier cycle : detectCycles(user, edgeAfter)) {
-                        addInclude(user, new IncludeEdge<>(user, cycle));
-                    }
                 }
             }
         }
@@ -629,71 +618,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private IncludeEdge<Modifier> tryAccelerate(Variable<Modifier> variable, IncludeEdge<Modifier> edge) {
         return edge.source != variable ? edge : new IncludeEdge<>(edge.source, trait.accelerate(edge.modifier));
-    }
-
-    // Tries to detect cycles when a new edge is to be added.
-    // Called when a pointer propagates from variable to successor, due to an inclusion edge.
-    private List<Modifier> detectCycles(Variable<Modifier> variable, IncludeEdge<Modifier> edge) {
-        // Fast check for cycles of length 1.
-        if (edge.source == variable) {
-            return Arrays.asList(edge.modifier);
-        }
-        // Fast check with lazy cycle detection:
-        // Eventually, any cycle will have a 'new' edge, where the pointer sets are equal.
-        // Therefore, we wait for this, instead of trying to immediately detect the cycle.
-        if (!equalsPointerSet(variable, edge.source)) {
-            cyclesFastCulled++;
-            return List.of();
-        }
-        // Slow check
-        final Set<Variable<Modifier>> includerSet = getIncluderSet(variable);
-        if (!includerSet.contains(edge.source)) {
-            cyclesSlowCulled++;
-            return List.of();
-        }
-        cyclesDetected++;
-        final List<Modifier> cycles = getAllCyclicPaths(variable, includerSet);
-        assert !cycles.isEmpty();
-        return cycles;
-    }
-
-    private boolean equalsPointerSet(Variable<Modifier> left, Variable<Modifier> right) {
-        // TODO hashing: each variable gets a hash code for its pointer set.
-        return includesPointerSet(left, right) && includesPointerSet(right, left);
-    }
-
-    private boolean includesPointerSet(Variable<Modifier> variable1, Variable<Modifier> variable2) {
-        for (final IncludeEdge<Modifier> i : variable1.includes) {
-            if ((i.source == nullVariable || i.source.object != null) && !variable2.includes.contains(i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private Set<Variable<Modifier>> getIncluderSet(Variable<Modifier> variable) {
-        final Set<Variable<Modifier>> result = new HashSet<>(List.of(variable));
-        List<Variable<Modifier>> worklist = new ArrayList<>(List.of(variable));
-        while (!worklist.isEmpty()) {
-            final List<Variable<Modifier>> next = new ArrayList<>();
-            for (final Variable<Modifier> current : worklist) {
-                for (final Variable<Modifier> v : current.seeAlso) {
-                    // Culling
-                    if (result.contains(v)) {
-                        continue;
-                    }
-                    // Try to find some include edge, as 'seeAlso' also indicates store and load edges.
-                    for (final IncludeEdge<Modifier> i : v.includes) {
-                        if (i.source == current && result.add(v)) {
-                            next.add(v);
-                            break;
-                        }
-                    }
-                }
-            }
-            worklist = next;
-        }
-        return result;
     }
 
     private List<Modifier> getAllCyclicPaths(Variable<Modifier> start, Set<Variable<Modifier>> includerSet) {
