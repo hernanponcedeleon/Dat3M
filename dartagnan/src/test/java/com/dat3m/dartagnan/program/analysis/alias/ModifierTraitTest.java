@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.Assert.*;
@@ -39,6 +40,34 @@ public class ModifierTraitTest {
     public void checkMdLinearSets() {
         final var t = new ModifierTrait.MdLinear();
         checkBasicProperties(t);
+    }
+
+    @Test
+    public void checkMdLinearNormalization() {
+        final var t = new ModifierTrait.MdLinear();
+
+        assertEquals(new ModifierTrait.Md(8, List.of(4, 6, 9, 10)),
+                t.compose(new ModifierTrait.Md(3, List.of(6, 10)),
+                        new ModifierTrait.Md(5, List.of(4, 9))));
+        assertEquals(new ModifierTrait.Md(0, List.of(2, 3)),
+                t.compose(new ModifierTrait.Md(0, List.of(4, 9)),
+                        new ModifierTrait.Md(0, List.of(2, 3))));
+        assertEquals(new ModifierTrait.Md(0, List.of(-2)),
+                t.compose(new ModifierTrait.Md(0, List.of(-6)),
+                        new ModifierTrait.Md(0, List.of(4, 10))));
+    }
+
+    @Test
+    public void checkMdLinearMultipleIndexesInclusion() {
+        final var t = new ModifierTrait.MdLinear();
+        final var left = new ModifierTrait.Md(0, List.of(4, 9));
+
+        // Regression: the normalization divisor omitted the left-hand alignments, so representable values such as
+        // 13 = 4 + 9 were not recognized. This was conservative, but retained redundant edges.
+        assertTrue(t.mustInclude(left, new ModifierTrait.Md(13, List.of())));
+        assertTrue(t.mustInclude(left, new ModifierTrait.Md(0, List.of(8, 18))));
+        assertFalse(t.mustInclude(left, new ModifierTrait.Md(7, List.of())));
+        assertFalse(t.mustInclude(left, new ModifierTrait.Md(0, List.of(7))));
     }
 
     private <T> void checkBasicProperties(ModifierTrait<T> t) {
