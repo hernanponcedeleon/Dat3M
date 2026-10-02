@@ -178,7 +178,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         final DerivedVariable<Modifier> vx = addressVariables.get(x);
         final DerivedVariable<Modifier> vy = addressVariables.get(y);
-        if (vx == null || vy == null) {
+        if (vx == null || vy == null || vx.base == nullVariable || vy.base == nullVariable) {
             return true;
         }
         if (vx.base == vy.base && trait.isFunctional(vx.modifier) && trait.isFunctional(vy.modifier)) {
@@ -188,7 +188,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final List<IncludeEdge<Modifier>> oy = toIncludeSet(vy.base);
         for (final IncludeEdge<Modifier> ax : ox) {
             for (final IncludeEdge<Modifier> ay : oy) {
-                if (ax.source != null && ax.source == ay.source) {
+                if (ax.source == ay.source) {
                     final Modifier l = compose(ax.modifier, vx.modifier);
                     final Modifier r = compose(ay.modifier, vy.modifier);
                     if (trait.mayOverlap(l, r)) {
@@ -264,7 +264,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final List<IncludeEdge<Modifier>> oy = toIncludeSet(vy.base);
         for (final IncludeEdge<Modifier> ax : toIncludeSet(vx.base)) {
             for (final IncludeEdge<Modifier> ay : oy) {
-                if (ax.source != null && ax.source == ay.source) {
+                if (ax.source == ay.source) {
                     final Modifier modifierX = compose(ax.modifier, vx.modifier);
                     final Modifier modifierY = compose(ay.modifier, vy.modifier);
                     fetchAllMixedOffsets(xSet, modifierX, bytesX, ySet, modifierY, bytesY);
@@ -512,7 +512,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         // If only null is accessible, allow all aliasing (without data flow propagation).
         if (address.base == nullVariable || (address.base.object == null
                 && address.base.includes.stream().allMatch(i -> i.source == nullVariable))) {
-            entry.setValue(null);
+            entry.setValue(new DerivedVariable<>(nullVariable, RELAXED));
             return;
         }
         if (address.base.includes.size() != 1) {
