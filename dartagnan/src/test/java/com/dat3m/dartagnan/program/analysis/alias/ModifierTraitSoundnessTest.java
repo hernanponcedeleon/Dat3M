@@ -45,8 +45,8 @@ public class ModifierTraitSoundnessTest {
          * An 8-byte object can be reached from its one-past address by an index of -1:
          * 8 + (-1) * 8 == 0. Narrowing must not discard this in-bounds address.
          */
-        final var trait = new ModifierTrait.SdLinear();
-        final ModifierTrait.Sd base = trait.constantModifier(0);
+        ModifierTrait.SdLinear trait = new ModifierTrait.SdLinear();
+        ModifierTrait.Sd base = trait.constantModifier(0);
         assertOverlapsInBounds(trait, new ModifierTrait.Sd(8, 8), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Sd(-8, 8), base, 8);
     }
@@ -86,8 +86,8 @@ public class ModifierTraitSoundnessTest {
 
     @Test
     public void mdLinearBoundsNarrowingMustRetainInBoundsOverlaps() {
-        final var trait = new ModifierTrait.MdLinear();
-        final ModifierTrait.Md base = trait.constantModifier(0);
+        ModifierTrait.MdLinear trait = new ModifierTrait.MdLinear();
+        ModifierTrait.Md base = trait.constantModifier(0);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(8, List.of(-8)), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(-8)), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(8)), base, 8);
