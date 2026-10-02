@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.Mode;
 import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
@@ -214,6 +215,16 @@ public class Dartagnan {
 
         public DartagnanOptions(Configuration config) throws InvalidConfigurationException {
             config.inject(this, DartagnanOptions.class);
+        }
+
+        @Option(
+                name = MODE,
+                description = "The mode of operation: verification (default) or enumeration.",
+                toUppercase = true)
+        private Mode mode = Mode.getDefault();
+
+        public Mode getMode() {
+            return mode;
         }
 
         @Option(

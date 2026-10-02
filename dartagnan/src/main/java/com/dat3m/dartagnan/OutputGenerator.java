@@ -38,6 +38,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -140,9 +141,9 @@ public class OutputGenerator {
 
     public Output getOutputFromSolver(TaskSolver solver) {
         if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
-            return getOutputFromSolver(verificationTaskSolver, programPath);
+            return getOutputFromSolver(verificationTaskSolver);
         } else if (solver instanceof EnumerationTaskSolver enumerationTaskSolver) {
-            return getOutputFromSolver(enumerationTaskSolver, programPath);
+            return getOutputFromSolver(enumerationTaskSolver);
         }
 
         throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
@@ -151,15 +152,19 @@ public class OutputGenerator {
     // ------------------------------------------------------------------------------
     // Enumeration
 
-    public Output getOutputFromSolver(EnumerationTaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(EnumerationTaskSolver solver) {
         final EnumerationResult result = solver.getResult();
         final EnumerationTask task = result.getTask();
+        final Program p = task.getProgram();
 
+        final String programSource = p.hasMetadata(SourcePath.class)
+                ? p.getMetadata(SourcePath.class).toString()
+                : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final String filter = getFilterString(task);
         final String enumerationResult = enumerationToString(result.getVars(), result.getEnumeratedStates());
 
         return new Output(NORMAL_TERMINATION,
-                toEnumerationSummary(programPath, filter, enumerationResult, solver.getRuntime())
+                toEnumerationSummary(programSource, filter, enumerationResult, solver.getRuntime())
         );
 
     }
@@ -205,7 +210,7 @@ public class OutputGenerator {
     // ------------------------------------------------------------------------------
     // Verification
 
-    public Output getOutputFromSolver(VerificationTaskSolver solver, String programPath) {
+    public Output getOutputFromSolver(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final VerificationStatus status = result.getStatus();
@@ -242,7 +247,7 @@ public class OutputGenerator {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                return new Output(PROGRAM_SPEC_VIOLATION, toVerificationSummary(programPath, filter, FAIL,
+                return new Output(PROGRAM_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
@@ -258,7 +263,7 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                return new Output(TERMINATION_VIOLATION, toVerificationSummary(programPath, filter, FAIL,
+                return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
@@ -268,7 +273,7 @@ public class OutputGenerator {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                return new Output(MEMORY_TRACKABILITY_VIOLATION, toVerificationSummary(programPath, filter, FAIL,
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
@@ -278,7 +283,7 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programPath, filter, FAIL,
+                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                             "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
@@ -286,7 +291,7 @@ public class OutputGenerator {
             throw new RuntimeException("Unreachable");
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
-            return new Output(NORMAL_TERMINATION, toVerificationSummary(programPath, filter, status,
+            return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
         } else if (status == UNKNOWN && model != null) {
             // We reached unrolling bounds.
@@ -304,13 +309,13 @@ public class OutputGenerator {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
-            return new Output(BOUNDED_RESULT, toVerificationSummary(programPath, filter, status,
+            return new Output(BOUNDED_RESULT, toVerificationSummary(programSource, filter, status,
                     "", BOUND_REASON, details.toString(), time, witnessFile));
         }
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new Output(NORMAL_TERMINATION, toVerificationSummary(programPath, filter, status,
+        return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
@@ -465,7 +470,7 @@ public class OutputGenerator {
         return isTrivialFilter ? "" : filter.toString();
     }
 
-    private static String toVerificationSummary(String test, String filter, ResultStatus status, String condition,
+    private static String toVerificationSummary(String programSource, String filter, VerificationStatus status, String condition,
                                                 String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);

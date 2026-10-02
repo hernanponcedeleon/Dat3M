@@ -1,10 +1,6 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.verification.solving.EnumerationSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -38,9 +34,9 @@ public final class EnumerationTaskSolver extends TaskSolverBase<EnumerationTaskS
         try (EnumerationSolver enumerator = EnumerationSolver.create(task)) {
             enumerator.setShutdownManager(shutdownManager);
             startRun();
-            enumerator.run();
+            enumerator.enumerate();
 
-            result = new EnumerationResult(task, enumerator.getResult(),
+            result = new EnumerationResult(task, /*enumerator.getResult(),*/
                     enumerator.getVars(), enumerator.getEnumeratedStates()
             );
         } finally {

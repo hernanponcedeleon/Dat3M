@@ -2,136 +2,87 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.EnumerationTask;
-import com.dat3m.dartagnan.verification.EnumerationTaskSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import com.dat3m.dartagnan.test.AbstractEnumerationTaskSolverTest;
+import com.dat3m.dartagnan.test.ResourceHelper;
+import com.dat3m.dartagnan.test.TestHelper;
+import com.dat3m.dartagnan.verification.Task;
+import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
-import static com.dat3m.dartagnan.configuration.OptionNames.SOLVER;
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
-import static com.google.common.io.Files.getNameWithoutExtension;
-import static org.junit.Assert.assertEquals;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
-public abstract class AbstractLitmusExplorationTest {
+public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationTaskSolverTest {
 
-    private Path path;
-    private final int expectedStateCount;
+    protected final Arch target;
+    protected final Path programPath;
+    private final int expectedNumStates;
 
-    protected AbstractLitmusExplorationTest(Path path, int expectedStateCount) {
-        this.path = path;
-        this.expectedStateCount = expectedStateCount;
+    protected AbstractLitmusExplorationTest(Arch target, Path programPath, int expectedNumStates) {
+        this.target = target;
+        this.programPath = programPath;
+        this.expectedNumStates = expectedNumStates;
     }
 
-    static Iterable<Object[]> buildLitmusExplorationTests(String litmusPath, String arch) throws IOException {
-        Map<Path, Integer> expectedResults = ResourceHelper.getExpectedExplorationResults(arch);
-        Set<Path> skip = ResourceHelper.getSkipSet();
+    static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch) throws IOException {
+        return buildLitmusTests(litmusPath, arch, "");
+    }
 
-        try (Stream<Path> fileStream = Files.walk(getRootPath(litmusPath))) {
+    static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
+        final Path expectedPath = ResourceHelper.getTestResourcePath(arch + postfix + "-expected-exploration.csv");
+        final Map<Path, Integer> expectedResults = ResourceHelper.parseExpectedExplorationResults(expectedPath,
+                ResourceHelper::getRootPath);
+        final Set<Path> skip = ResourceHelper.getSkipSet();
+        final Function<Path, Integer> expected = path -> !skip.contains(path) ? expectedResults.get(path) : null;
+        return buildLitmusTests(ResourceHelper.getRootPath(litmusPath), expected);
+    }
+
+    static Iterable<Object[]> buildLitmusTests(Path litmusPath, Function<Path, Integer> expected) throws IOException {
+        try (Stream<Path> fileStream = Files.walk(litmusPath)) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> hasExtension(f, EXTENSION_LITMUS))
-                    .filter(f -> !skip.contains(f))
-                    .filter(expectedResults::containsKey)
-                    .map(f -> new Object[]{f, expectedResults.get(f)})
-                    .collect(ArrayList::new,
-                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
+                    .filter(f -> hasExtension(f, TestHelper.EXTENSION_LITMUS))
+                    .map(f -> new Object[]{f, expected.apply(f)}).filter(f -> f[1] != null).toList();
         }
     }
 
-    protected abstract Provider<Arch> getTargetProvider();
+    // =================== Modifiable behavior ====================
 
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(getTargetProvider());
+    protected String getTargetWmmName() { return null; }
+
+    protected ProgressModel.Hierarchy getProgressModel() { return ProgressModel.defaultHierarchy(); }
+
+    protected int getBound() { return 1; }
+
+    @Override
+    protected long getTimeoutSeconds() { return 10; }
+
+    @Override
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder()
+                .withSolver(SolverContextFactory.Solvers.Z3)
+                .withBound(getBound())
+                .withTarget(target)
+                .withProgressModel(getProgressModel())
+                .withOption(PHANTOM_REFERENCES, "true")
+                .withOption(INITIALIZE_REGISTERS, "true");
     }
 
-    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
-        return ProgressModel::defaultHierarchy;
-    }
+    @Override
+    protected Path getTargetWmmPath() { return ResourceHelper.getCatPath(target, getTargetWmmName()); }
 
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 1;
-    }
+    @Override
+    protected Path getProgramPath() { return programPath; }
 
-    protected long getTimeout() {
-        return 30000;
-    }
+    @Override
+    protected int getExpectedNumStates() { return expectedNumStates; }
 
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder;
-    }
-
-    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> targetProvider = getTargetProvider();
-    protected final Provider<Path> filePathProvider = () -> path;
-    protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(path.getFileName().toString()));
-    protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
-    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
-    protected final Provider<EnumerationTask> taskProvider = Providers.createEnumerationTask(
-            programProvider, wmmProvider, progressModelProvider, configProvider);
-
-    private final Timeout timeout = Timeout.millis(getTimeout());
-    private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
-            .around(shutdownOnError)
-            .around(filePathProvider)
-            .around(nameProvider)
-            .around(boundProvider)
-            .around(programProvider)
-            .around(wmmProvider)
-            .around(progressModelProvider)
-            .around(configProvider)
-            .around(taskProvider)
-            .around(timeout);
-
-    private Configuration getConfiguration() throws InvalidConfigurationException {
-        var configBase = Configuration.builder()
-                .setOption(SOLVER, Z3.name())
-                .setOption(BOUND, boundProvider.get().toString())
-                .setOption(TARGET, targetProvider.get().name())
-                .setOption(PHANTOM_REFERENCES, "true")
-                .setOption(INITIALIZE_REGISTERS, "true");
-
-        return additionalConfig(configBase).build();
-    }
-
-    @Test
-    public void testStateCount() throws Exception {
-        try (EnumerationTaskSolver solver = EnumerationTaskSolver.create(taskProvider.get())
-                .withShutdownManager(shutdownManagerProvider.get())) {
-            solver.run();
-            assertEquals(path.toString(), expectedStateCount, solver.getResult().getEnumeratedStates().size());
-        }
-    }
 }

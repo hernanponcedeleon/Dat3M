@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -13,15 +12,11 @@ public class LitmusPPCExplorationTest extends AbstractLitmusExplorationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, states={1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusExplorationTests("litmus/PPC/", "PPC");
+        return buildLitmusTests("litmus/PPC/", "PPC");
     }
 
     public LitmusPPCExplorationTest(Path path, int expectedStateCount) {
-        super(path, expectedStateCount);
+        super(Arch.POWER, path, expectedStateCount);
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.POWER;
-    }
 }

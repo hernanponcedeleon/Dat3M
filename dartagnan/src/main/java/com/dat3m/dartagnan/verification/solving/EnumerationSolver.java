@@ -25,7 +25,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.math.BigInteger;
 import java.util.*;
 
-public class EnumerationSolver extends ModelChecker {
+public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
     private static final Logger logger = LoggerFactory.getLogger(EnumerationSolver.class);
 
@@ -40,7 +40,7 @@ public class EnumerationSolver extends ModelChecker {
     protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
         preprocessProgram(task, config);
-        preprocessMemoryModel(task, config);
+        preprocessMemoryModel(task);
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
@@ -59,20 +59,14 @@ public class EnumerationSolver extends ModelChecker {
         return enumeratedStates;
     }
 
-    @Override
-    public boolean hasModel() {
-        return false;
-    }
-
-    @Override
-    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+    public void enumerate() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
         final SolverContext solverContext = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
+        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
@@ -97,7 +91,7 @@ public class EnumerationSolver extends ModelChecker {
 
         final ImmutableList<Expression> finalStateExprs = getFinalStateExprsToEnumerate();
         if (finalStateExprs.isEmpty()) {
-            res = ResultStatus.PASS;
+            //res = ResultStatus.PASS;
             enumeratedStates = ImmutableList.of();
             vars = ImmutableList.of();
             logger.warn("No final states to enumerate");
@@ -133,7 +127,7 @@ public class EnumerationSolver extends ModelChecker {
         }
         // ======================================================
 
-        res = ResultStatus.PASS;
+        //res = ResultStatus.PASS;
         enumeratedStates = ImmutableList.copyOf(visitedStates);
         vars = finalStateExprs;
 
