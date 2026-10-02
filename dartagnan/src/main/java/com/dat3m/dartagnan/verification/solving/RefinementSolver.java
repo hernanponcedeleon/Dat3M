@@ -74,7 +74,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     // Configuration
 
     @Option(name=COVERAGE,
-            description="Prints the coverage report (this option requires --method=caat).",
+            description="Prints the coverage report (this option requires --method=lazy).",
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;

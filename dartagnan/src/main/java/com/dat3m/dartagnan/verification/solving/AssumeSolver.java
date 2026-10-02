@@ -14,7 +14,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.verification.VerificationStatus.*;
-import static com.dat3m.dartagnan.verification.VerificationStatus.UNKNOWN;
 import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
