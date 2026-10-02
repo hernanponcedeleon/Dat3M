@@ -125,6 +125,9 @@ public class MemoryTransformer extends ExprTransformer {
                     ? program.getMemory().allocateVirtual(memObj.getKnownSize(), true, null)
                     : program.getMemory().allocate(memObj.getKnownSize());
             copy.setName(makeVariableName(scopeDepth, memObj.getName()));
+            for (String tag : memObj.getFeatureTags()) {
+                copy.addFeatureTag(tag);
+            }
             for (int offset : memObj.getInitializedFields()) {
                 Expression value = memObj.getInitialValue(offset);
                 if (value instanceof NonDetValue) {

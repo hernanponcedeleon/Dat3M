@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,17 +16,10 @@ public class LitmusRC11Test extends AbstractLitmusTest {
         return buildLitmusTests("litmus/C11/", "RC11");
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.C11;
+    public LitmusRC11Test(Path path, VerificationStatus expected) {
+        super(Arch.C11, path, expected);
     }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
-    }
-
-    public LitmusRC11Test(Path path, ResultStatus expected) {
-        super(path, expected);
-    }
+    protected String getTargetWmmName() { return "rc11"; }
 }

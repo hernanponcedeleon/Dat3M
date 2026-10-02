@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -26,7 +28,8 @@ public class PipelinesTest {
                     tool: "spirv-opt"
                     input: "{basename}.spv"
                     output: "{basename}-vulkan.spv"
-                    args: ["--upgrade-memory-model", "{cmd_input}", "-o", "{cmd_output}"]
+                    options: ["--upgrade-memory-model"]
+                    args: ["{cmd_input}", "-o", "{cmd_output}"]
                   disassemble_cmd: &disassemble_cmd
                     name: "Disassemble"
                     tool: "spirv-dis"
@@ -34,15 +37,24 @@ public class PipelinesTest {
                     output: "{basename}.spvasm"
                     args: ["{cmd_input}", "-o", "{cmd_output}"]
                 pipelines:
-                  - pipeline: ".cl"
+                  - pipeline: ".c"
                     aliases: [".i"]
+                    output: "{basename}.ll"
+                    commands:
+                      - name: "Compile"
+                        tool: "clang"
+                        input: "{pipeline_input}"
+                        output: "{basename}.ll"
+                        args: ["{cmd_input}", "-o", "{cmd_output}"]
+                  - pipeline: ".cl"
                     output: "{basename}.spvasm"
                     commands:
                       - name: "Compile"
                         tool: "clspv"
                         input: "{pipeline_input}"
                         output: "{basename}.spv"
-                        args: ["{cmd_input}", "--cl-std=CL2.0", "-o", "{cmd_output}", "-g"]
+                        options: ["--cl-std=CL2.0", "-g"]
+                        args: ["{cmd_input}", "-o", "{cmd_output}"]
                       - *upgrade_cmd
                       - *disassemble_cmd
                 """);
@@ -57,17 +69,42 @@ public class PipelinesTest {
         assertTrue(pipelines.needsCompilation(".cl"));
         assertTrue(pipelines.needsCompilation(".i"));
         assertFalse(pipelines.needsCompilation(".litmus"));
-        assertEquals(3, pipelines.getTools().size());
+        assertEquals(Set.of("clspv", "spirv-opt", "spirv-dis"), pipelines.getTools(".cl"));
+        assertEquals(Set.of("clang"), pipelines.getTools(".i"));
+        assertEquals(Set.of(), pipelines.getTools(".litmus"));
         assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), pipeline.output());
-        assertEquals(pipeline.output(), aliasPipeline.output());
+        assertEquals(List.of("--cl-std=CL2.0", "-g"), compile.options());
+        assertEquals(List.of("--upgrade-memory-model"), upgradeMemoryModel.options());
+        assertEquals(TEST_WORKDIR.resolve("example.ll").toString(), aliasPipeline.output());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.input());
         assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.input());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.args().get(0)); // {cmd_input}
-        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), compile.args().get(3)); // {cmd_output}
-        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.args().get(1)); // {cmd_input}
-        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), upgradeMemoryModel.args().get(3)); // {cmd_output}
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), compile.args().get(2)); // {cmd_output}
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.args().get(0)); // {cmd_input}
+        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), upgradeMemoryModel.args().get(2)); // {cmd_output}
         assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), disassemble.args().get(0)); // {cmd_input}
         assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), disassemble.args().get(2)); // {cmd_output}
+    }
+
+    @Test
+    public void expandsCompilerOptions() {
+        assertEquals(List.of("fixed", "-O3", "-DTEST=1"),
+                Pipelines.expandEnvironmentOptions(
+                        List.of("fixed", "$DAT3M_COMPILER_OPTIONS"),
+                        Map.of("DAT3M_COMPILER_OPTIONS", "-O3  -DTEST=1")));
+    }
+
+    @Test
+    public void omitsUnsetCompilerOptions() {
+        assertEquals(List.of("fixed"),
+                Pipelines.expandEnvironmentOptions(
+                        List.of("fixed", "$DAT3M_COMPILER_OPTIONS"), Map.of()));
+    }
+
+    @Test
+    public void doesNotAddCompilerOptionsWithoutPlaceholder() {
+        assertEquals(List.of("fixed"), Pipelines.expandEnvironmentOptions(
+                List.of("fixed"), Map.of("DAT3M_COMPILER_OPTIONS", "-O3")));
     }
 
     @Test
@@ -172,8 +209,8 @@ public class PipelinesTest {
         final Path output = Files.createTempFile("output", ".spvasm");
         final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
                 ".cl", List.of(), output.toString(), List.of(
-                        new Pipelines.Pipeline.Command("compile", "tool", source.toString(), intermediate.toString(), List.of()),
-                        new Pipelines.Pipeline.Command("disassemble", "tool", intermediate.toString(), output.toString(), List.of())
+                        new Pipelines.Pipeline.Command("compile", "tool", source.toString(), intermediate.toString(), List.of(), List.of()),
+                        new Pipelines.Pipeline.Command("disassemble", "tool", intermediate.toString(), output.toString(), List.of(), List.of())
                 ));
 
         pipeline.removeIntermediateFiles();
@@ -194,8 +231,8 @@ public class PipelinesTest {
         final String java = ProcessHandle.current().info().command().orElseThrow();
         final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
                 ".cl", List.of(), output.toString(), List.of(
-                        new Pipelines.Pipeline.Command("compile", java, "input.cl", intermediate.toString(), List.of("--version")),
-                        new Pipelines.Pipeline.Command("disassemble", java, intermediate.toString(), output.toString(), List.of("--version"))
+                        new Pipelines.Pipeline.Command("compile", java, "input.cl", intermediate.toString(), List.of("--version"), List.of()),
+                        new Pipelines.Pipeline.Command("disassemble", java, intermediate.toString(), output.toString(), List.of(), List.of("--version"))
                 ));
 
         try {
@@ -219,7 +256,7 @@ public class PipelinesTest {
         final String java = ProcessHandle.current().info().command().orElseThrow();
         final Pipelines.Pipeline pipeline = new Pipelines.Pipeline(
                 ".cl", List.of(), output.toString(), List.of(
-                        new Pipelines.Pipeline.Command("compile", java, "input.cl", output.toString(), List.of("--version"))
+                        new Pipelines.Pipeline.Command("compile", java, "input.cl", output.toString(), List.of(), List.of("--version"))
                 ));
 
         try {

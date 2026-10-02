@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
@@ -11,10 +10,8 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.metadata.OriginalId;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -23,20 +20,17 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.Dimension;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -57,7 +51,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -72,21 +66,15 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
           provided by the theory solver.
  */
 @Options
-public class RefinementSolver extends ModelChecker {
+public class RefinementSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
     // ================================================================================================================
     // Configuration
 
-    @Option(name=BASELINE,
-            description="Refinement starts from this baseline WMM.",
-            secure=true,
-            toUppercase=true)
-    private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
-
     @Option(name=COVERAGE,
-            description="Prints the coverage report (this option requires --method=caat).",
+            description="Prints the coverage report (this option requires --method=lazy).",
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;
@@ -151,6 +139,8 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
+    private EncodingContext context;
+
     private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
         task.getConfig().inject(this);
@@ -160,45 +150,32 @@ public class RefinementSolver extends ModelChecker {
         return new RefinementSolver(task);
     }
 
-    protected void preprocess(Task task) throws InvalidConfigurationException {
+    protected Context preprocessAndAnalyze(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-        final Wmm memoryModel = task.getMemoryModel();
 
         preprocessProgram(task, config);
-        preprocessMemoryModel(task, config);
-        instrumentPolaritySeparation(memoryModel);
-    }
-
-    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
-    // constraints on hb, which is not encoded in Refinement.
-    @Override
-    protected void runInternal()
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
-        final Program program = task.getProgram();
-        final Wmm memoryModel = task.getMemoryModel();
-        final Configuration config = task.getConfig();
-
-        // ------------------------ Preprocessing / Analysis ------------------------
-        final Collection<Constraint> biases = addBiases(memoryModel, baselines);
-        preprocess(task);
+        preprocessMemoryModel(task);
+        instrumentPolaritySeparation(task.getMemoryModel());
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
         performIntervalAnalysis(task, analysisContext, config);
+        return analysisContext;
+    }
 
-        //  ------- Generate refinement model -------
-        final Collection<Constraint> wmmConstraintsToEncode = new LinkedHashSet<>(biases);
-        // The cut has to be encoded.
-        wmmConstraintsToEncode.addAll(generateCut(memoryModel));
+    @Override
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
+        // ------------------------ Preprocessing / Analysis ------------------------
+        final Context analysisContext = preprocessAndAnalyze(task);
 
         // ------------------------ Encoding ------------------------
-        initSMTSolver(config);
+        initSMTSolver(task.getConfig());
         final SolverContext ctx = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), wmmConstraintsToEncode);
+        //  ------- Generate refinement model -------
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
@@ -228,7 +205,7 @@ public class RefinementSolver extends ModelChecker {
         prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperties()));
 
-        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
+        final RefinementTrace propertyTrace = runRefinement(prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
         if (smtStatus == SMTStatus.UNKNOWN) {
@@ -252,6 +229,7 @@ public class RefinementSolver extends ModelChecker {
 
         RefinementTrace combinedTrace = propertyTrace;
 
+        VerificationStatus res;
         long boundCheckTime = 0;
         if (smtStatus == SMTStatus.UNSAT) {
             // Do bound check
@@ -263,7 +241,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
-            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
+            final RefinementTrace boundTrace = runRefinement(prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
             smtStatus = boundTrace.getFinalResult();
@@ -288,22 +266,22 @@ public class RefinementSolver extends ModelChecker {
             logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
 
         if (printCovReport) {
-            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));
+            System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), task.getProgram(), analysisContext));
         }
 
+        final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;
+        if (model != null) {
+            validateModel(solver.getExecution());
+        }
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
 
-        if (hasModel()) {
-            validateModel(solver.getExecution());
-        }
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(this.task, res, model);
     }
 
     private void validateModel(ExecutionModel model) {
@@ -361,7 +339,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(Task task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -485,8 +463,16 @@ public class RefinementSolver extends ModelChecker {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
+        // We also cut annotated constraints.
         final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
         for (Constraint c : model.getConstraints()) {
+            // Cut annotated constraints
+            if (c.hasMetadata(Wmm.CutAnnotation.class) ||
+                    c instanceof Definition def && def.getDefinedRelation().hasMetadata(Wmm.CutAnnotation.class)) {
+                constraintsToCut.add(c);
+                continue;
+            }
+
             if (c instanceof Axiom ax && ax.isNegated()) {
                 // (i) Negated axioms
                 constraintsToCut.add(ax);
@@ -508,68 +494,6 @@ public class RefinementSolver extends ModelChecker {
         return constraintsToCut;
     }
 
-    private static Collection<Constraint> addBiases(Wmm wmm, EnumSet<Baseline> biases) {
-        if (biases.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Base relations
-        final Relation rf = wmm.getRelation(RF);
-        final Relation co = wmm.getOrCreatePredefinedRelation(CO);
-        final Relation loc = wmm.getOrCreatePredefinedRelation(LOC);
-        final Relation po = wmm.getOrCreatePredefinedRelation(PO);
-        final Relation ext = wmm.getOrCreatePredefinedRelation(EXT);
-
-        // rf^-1;co
-        final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
-        final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
-
-        // [R \ range(rf)];loc;[W]
-        final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Dimension.RANGE));
-        final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
-        final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
-        final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
-        final Relation urSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), ur));
-        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), urSet, loc));
-        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writesSet));
-
-        // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
-        final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
-
-        final List<Constraint> constraints = new ArrayList<>();
-        if (biases.contains(Baseline.UNIPROC)) {
-            // ---- acyclic(po-loc | com) ----
-            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
-                rf,
-                co,
-                fr
-            ))));
-        }
-        if (biases.contains(Baseline.NO_OOTA)) {
-            // ---- acyclic (dep | rf) ----
-            constraints.add(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
-                wmm.getOrCreatePredefinedRelation(CTRL),
-                wmm.getOrCreatePredefinedRelation(DATA),
-                wmm.getOrCreatePredefinedRelation(ADDR),
-                rf)
-            )));
-        }
-        if (biases.contains(Baseline.ATOMIC_RMW)) {
-            // ---- empty (rmw & fre;coe) ----
-            final Relation amo = wmm.getOrCreatePredefinedRelation(AMO);
-            final Relation lxsx = wmm.getOrCreatePredefinedRelation(LXSX);
-            final Relation rmw = wmm.addDefinition(new Union(wmm.newRelation(), amo, lxsx));
-            final Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
-            final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
-            final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
-            final Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
-            constraints.add(new Emptiness(rmwANDfrecoe));
-        }
-        constraints.forEach(wmm::addConstraint);
-        return constraints;
-    }
 
     /*
         The constraints/relations of the Wmm can be categorised into positive and negative,
@@ -783,12 +707,12 @@ public class RefinementSolver extends ModelChecker {
 
         final Set<Event> programEvents = program.getThreadEvents(MemoryEvent.class).stream()
                 // TODO: Can we have events with source information but without oid?
-                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
+                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(Event.OriginalId.class))
                 .collect(Collectors.toSet());
         
         // Track (covered) events and branches via oId
-        final Set<OriginalId> branches = new HashSet<>();
-        final Set<OriginalId> coveredBranches = new HashSet<>();
+        final Set<Event.OriginalId> branches = new HashSet<>();
+        final Set<Event.OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -798,7 +722,7 @@ public class RefinementSolver extends ModelChecker {
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
             Event symmRep = symm.map(e, clazz.getRepresentative());
-            OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
+            Event.OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(Event.OriginalId.class);
             assert branchRepId != null;
 
             if(coveredEvents.contains(e)) {

@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,17 +16,16 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/LKMM/", "LKMM");
     }
 
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.LKMM;
+    public LitmusLinuxTest(Path path, VerificationStatus expected) {
+        super(Arch.LKMM, path, expected);
     }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "linux-kernel");
-    }
+    protected String getTargetWmmName() { return "linux-kernel"; }
 
-    public LitmusLinuxTest(Path path, ResultStatus expected) {
-        super(path, expected);
+    @Override
+    protected boolean isLazyMethodEnabled() {
+        // TODO: No support for synchronize_srcu.
+        return false;
     }
 }

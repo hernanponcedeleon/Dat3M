@@ -13,11 +13,9 @@ import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import scala.Int;
 
 import java.math.BigInteger;
 import java.util.List;

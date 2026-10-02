@@ -99,6 +99,20 @@ public class VisitorOpsControlFlowTest {
     }
 
     @Test
+    public void testBlockEndRemovesSourceLocation() {
+        // given
+        builder.mockFunctionStart(false);
+        visit("%label = OpLabel");
+        cfBuilder.setCurrentLocation("test.spvasm", 42);
+
+        // when
+        visit("OpBranch %label");
+
+        // then
+        assertFalse(cfBuilder.hasCurrentLocation());
+    }
+
+    @Test
     public void testOpBranchNested() {
         // given
         String input = """

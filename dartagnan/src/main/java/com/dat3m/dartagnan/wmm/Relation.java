@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
@@ -14,9 +15,8 @@ import static com.google.common.base.Preconditions.checkState;
  * Given an execution, describes a set of events or a binary relation between events,
  * constrained by the associated {@link Definition}.
  */
-public final class Relation implements Dependent<Relation> {
+public final class Relation extends MetadataCarrierBase<Relation> implements Dependent<Relation> {
 
-    private final Wmm wmm;
     private final Arity arity;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
@@ -25,7 +25,6 @@ public final class Relation implements Dependent<Relation> {
     public enum Arity { UNARY, BINARY }
 
     Relation(Wmm wmm, Arity arity) {
-        this.wmm = wmm;
         this.arity = arity;
     }
 

@@ -1,4 +1,4 @@
-let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+let fr = rf^-1;co | ([R \ range(rf)]);loc;[W]
 
 let po-loc = po & loc
 let rmw = amo | lxsx
@@ -13,6 +13,6 @@ let fri = fr & int
 let fencerel(F) = po;[F];po
 
 // Enforce that reads from uninitialized memory are impossible if an init write exists.
-empty (([R] \ [range(rf)]);loc;[IW])
+empty ([R \ range(rf)]);loc;[IW] as force-init-read
 
 flag ~empty [UB] as undefined-behavior

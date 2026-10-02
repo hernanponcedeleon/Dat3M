@@ -24,9 +24,11 @@ public class DenseIntegerSet implements Set<Integer> {
         }
     }
 
+    @Override
     public int size() {
         return size;
     }
+    @Override
     public boolean isEmpty() {
         return size == 0;
     }

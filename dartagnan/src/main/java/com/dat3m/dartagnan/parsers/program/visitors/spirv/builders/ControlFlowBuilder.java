@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -76,7 +76,9 @@ public class ControlFlowBuilder {
         return currentLocation;
     }
 
-    public void setCurrentLocation(SourceLocation loc) { currentLocation = loc; }
+    public void setCurrentLocation(String file, int line) {
+        currentLocation = new SourceLocation.Generic(file, line);
+    }
 
     public void removeCurrentLocation() { currentLocation = null; }
 

@@ -8,10 +8,10 @@ extern void __VERIFIER_assert(int cond);
 extern void __VERIFIER_loop_bound(int);
 extern unsigned int __VERIFIER_tid(void);
 
-// Used for spinloops
-extern void __VERIFIER_loop_begin(void);
-extern void __VERIFIER_spin_start(void);
-extern void __VERIFIER_spin_end(int);
+// DEPRECATED
+#define __VERIFIER_loop_begin() ((void)(0))
+#define __VERIFIER_spin_start() ((void)(0))
+#define __VERIFIER_spin_end(v) ((void)(0))
 
 #define await_while(cond)                                                  \
     for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \

@@ -28,10 +28,28 @@ jobs:
         run: |
           echo "❌ PRs must not target 'master', please use 'development' or some other branch"
           exit 1
+
+  code-style:
+    name: Check code style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Check code style
+        run: mvn --batch-mode -Pstyle-check clean test-compile
   
   asm-tests:
     name: Asm tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -54,6 +72,7 @@ jobs:
   litmus-tests:
     name: Litmus tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -96,6 +115,7 @@ jobs:
   llvm-tests:
     name: LLVM tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -117,6 +137,7 @@ jobs:
   other-tests:
     name: Other tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -144,15 +165,34 @@ jobs:
       - name: Build jar file # used by some unit tests
         run: mvn clean install -DskipTests
 
-      - name: Other tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
+      - name: Configuration tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/configuration/**/*" -f dartagnan/pom.xml
+
+      - name: Exception tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/exception/**/*" -f dartagnan/pom.xml
+
+      - name: Expression tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/expression/**/*" -f dartagnan/pom.xml
 
       - name: Parsers tests
         run: mvn test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
 
+      - name: Program tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/program/**/*" -f dartagnan/pom.xml
+
+      - name: Utils tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/utils/**/*" -f dartagnan/pom.xml
+
+      - name: Wmm tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/wmm/**/*" -f dartagnan/pom.xml
+
+      - name: Other tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/*" -f dartagnan/pom.xml
+
   spirv-tests:
     name: SPIRV tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
@@ -174,6 +214,7 @@ jobs:
   weekly:
     name: All tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: github.event_name == 'schedule'
     steps:
       - name: Checkout development branch

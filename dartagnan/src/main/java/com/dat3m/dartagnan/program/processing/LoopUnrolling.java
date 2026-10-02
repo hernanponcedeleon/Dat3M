@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
-import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
-import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.csv.CSVFormat;
@@ -118,7 +116,7 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private void run(Function function) {
-        function.getEvents().forEach(e -> e.setMetadata(new UnrollingId(e.getGlobalId()))); // Track ids before unrolling
+        function.getEvents().forEach(e -> e.setMetadata(new Event.UnrollingId(e.getGlobalId()))); // Track ids before unrolling
         unrollLoopsInFunction(function, bound);
     }
 
@@ -186,7 +184,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 // This is the last iteration, so we replace the back jump by a bound event.
                 final Event boundEvent = EventFactory.newTerminator(loopBackJump.getFunction(), Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
                 IRHelper.replaceWithMetadata(loopBackJump, boundEvent);
-                boundEvent.setMetadata(new UnrollingBound(bound));
+                boundEvent.setMetadata(new Event.UnrollingBound(bound));
 
                 // Mark end of loop, so we can find it later again
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
@@ -228,13 +226,13 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     public static int getPersistentLoopId(CondJump loopBackjump) {
-        final UnrollingId id = loopBackjump.getMetadata(UnrollingId.class);
+        final Event.UnrollingId id = loopBackjump.getMetadata(Event.UnrollingId.class);
         return id != null ? id.value() : loopBackjump.getGlobalId();
     }
 
     public static int getUnrollingBoundAnnotation(CondJump boundEvent) {
         Preconditions.checkArgument(boundEvent.hasTag(Tag.BOUND));
-        return boundEvent.getMetadata(UnrollingBound.class).value();
+        return boundEvent.getMetadata(Event.UnrollingBound.class).value();
     }
 
     private Map<Function, Map<CondJump, Integer>> loadLoopBoundsMapFromFile(Program program, Path filePath) {

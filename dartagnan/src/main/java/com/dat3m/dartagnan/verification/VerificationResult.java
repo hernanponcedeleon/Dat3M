@@ -6,17 +6,16 @@ import com.google.common.base.Preconditions;
 public final class VerificationResult implements TaskResult<VerificationTask> {
 
     private final VerificationTask task;
-    private final ResultStatus status;
+    private final VerificationStatus status;
     private final IREvaluator model;
 
-    public VerificationResult(VerificationTask task, ResultStatus status, IREvaluator model) {
+    public VerificationResult(VerificationTask task, VerificationStatus status, IREvaluator model) {
         this.task = Preconditions.checkNotNull(task);
         this.status = status;
         this.model = model;
     }
 
-    @Override
-    public ResultStatus getStatus() {
+    public VerificationStatus getStatus() {
         return status;
     }
 

@@ -48,7 +48,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
                 programBuilder.addSwwPairThreads(threadId0, threadId1);
             }
         }
-        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
+        VisitorLitmusAssertions.parseAssertions(
+                programBuilder, ctx.assertionList(), ctx.assertionFilter(), ctx.variableList());
         return programBuilder.build();
     }
 

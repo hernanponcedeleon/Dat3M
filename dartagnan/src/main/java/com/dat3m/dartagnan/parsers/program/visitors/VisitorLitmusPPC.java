@@ -42,7 +42,8 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
+        VisitorLitmusAssertions.parseAssertions(
+                programBuilder, ctx.assertionList(), ctx.assertionFilter(), ctx.variableList());
         return programBuilder.build();
     }
 

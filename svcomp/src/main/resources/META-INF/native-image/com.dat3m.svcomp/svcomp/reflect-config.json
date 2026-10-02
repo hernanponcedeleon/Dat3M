@@ -1,6 +1,6 @@
 [
     {
-        "name":"com.dat3m.svcomp.SVCOMPRunner",
+        "name":"com.dat3m.svcomp.SVCOMPRunner$SVCOMPOptions",
         "allDeclaredFields":true,
         "allDeclaredMethods": true,
         "queryAllDeclaredMethods":true

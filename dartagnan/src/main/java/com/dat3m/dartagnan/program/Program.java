@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -25,7 +26,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS
 import static com.dat3m.dartagnan.configuration.OptionNames.ROUNDING_MODE_FLOATS;
 import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
-public class Program {
+public class Program extends MetadataCarrierBase<Program> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
@@ -58,6 +59,7 @@ public class Program {
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
+    private List<Expression> locations = List.of();
 
     // Semantic options
     private final SemanticConfig semanticConfig = new SemanticConfig();
@@ -154,6 +156,14 @@ public class Program {
     public void setFilterSpecification(Expression spec) {
         Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
+    }
+
+    public List<Expression> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(List<Expression> locations) {
+        this.locations = List.copyOf(locations);
     }
 
     public FloatingPointRoundingMode getFloatRoundingMode() {

@@ -8,6 +8,28 @@
 #define TEST_ID 1
 #endif
 
+#if TEST_ID == 17
+__attribute__((noinline)) int unordered_equal(double x, double y) {
+    return isnan(x) || isnan(y) || x == y;
+}
+
+__attribute__((noinline)) int unordered_less_than(double x, double y) {
+    return isnan(x) || isnan(y) || x < y;
+}
+
+__attribute__((noinline)) int unordered_less_than_equal(double x, double y) {
+    return isnan(x) || isnan(y) || x <= y;
+}
+
+__attribute__((noinline)) int unordered_greater_than(double x, double y) {
+    return isnan(x) || isnan(y) || x > y;
+}
+
+__attribute__((noinline)) int unordered_greater_than_equal(double x, double y) {
+    return isnan(x) || isnan(y) || x >= y;
+}
+#endif
+
 int main(void) {
     float  f = __VERIFIER_nondet_float();
     double d = __VERIFIER_nondet_double();
@@ -171,6 +193,16 @@ int main(void) {
  #endif
     }
 
+#elif TEST_ID == 17
+    /* --- Unordered comparisons --- */
+    /* Compile with -O1 so Clang combines each helper into an unordered fcmp. */
+    if (isnan(d)) {
+        assert(unordered_equal(d, 0.0));
+        assert(unordered_less_than(d, 0.0));
+        assert(unordered_less_than_equal(d, 0.0));
+        assert(unordered_greater_than(d, 0.0));
+        assert(unordered_greater_than_equal(d, 0.0));
+    }
 
 #else
 #error "Unknown TEST_ID"

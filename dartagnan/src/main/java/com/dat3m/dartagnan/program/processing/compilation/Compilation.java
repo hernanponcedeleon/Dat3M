@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
@@ -143,7 +142,7 @@ public class Compilation implements ProgramProcessor {
     }
 
     private void compileEvent(Event toBeCompiled, VisitorBase compiler) {
-        toBeCompiled.setMetadata(new CompilationId(toBeCompiled.getGlobalId()));
+        toBeCompiled.setMetadata(new Event.CompilationId(toBeCompiled.getGlobalId()));
         final Event pred = toBeCompiled.getPredecessor();
         if (pred == null) {
             return; // We do not compile the entry event.
@@ -158,6 +157,8 @@ public class Compilation implements ProgramProcessor {
                     toBeCompiled.getGlobalId(), toBeCompiled);
             throw new IllegalStateException(error);
         }
+
+        toBeCompiled.removeMetadata(Event.CustomPrinting.class);
         IRHelper.replaceWithMetadata(toBeCompiled, compiledEvents);
     }
 }

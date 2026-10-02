@@ -77,6 +77,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
         return item == null ? Collections.emptyList() : item.edgeList;
     }
 
+    @Override
     public Edge get(Edge edge) {
         return edgeMap.get(edge);
     }
@@ -92,7 +93,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
         return item == null ? 0 : item.size();
     }
 
-    public boolean contains(Edge e) {
+    @Override public boolean contains(Edge e) {
         return edgeMap.containsKey(e);
     }
 
@@ -214,7 +215,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
         }
 
 
-        public Iterator<Edge> iterator() {
+        @Override public Iterator<Edge> iterator() {
             return edgeList.iterator();
         }
         public Stream<Edge> stream() {

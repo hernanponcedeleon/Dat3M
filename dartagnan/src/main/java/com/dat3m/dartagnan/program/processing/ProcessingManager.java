@@ -83,7 +83,7 @@ public class ProcessingManager implements ProgramProcessor {
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.fromConfig(config, detectMixedSizeAccesses);
+        final Intrinsics intrinsics = Intrinsics.newInstance(detectMixedSizeAccesses);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor assignmentInlining = performAssignmentInlining ? AssignmentInlining.newInstance() : null;
@@ -100,7 +100,7 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
                 intrinsics.markIntrinsicsPass(),
-                ProgramProcessor.fromFunctionProcessor(intrinsics.earlyInliningPass(), Target.ALL, true),
+                LibraryLinker.fromConfig(config),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
@@ -169,6 +169,7 @@ public class ProcessingManager implements ProgramProcessor {
     }
 
     // ==================================================
+    @Override
     public void run(Program program) {
         programProcessors.forEach(p -> p.run(program));
     }

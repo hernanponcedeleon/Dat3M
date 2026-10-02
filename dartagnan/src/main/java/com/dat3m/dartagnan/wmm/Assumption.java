@@ -6,7 +6,7 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class Assumption implements Constraint {
+public final class Assumption extends ConstraintBase {
 
     private final Relation rel;
     private final EventGraph may;

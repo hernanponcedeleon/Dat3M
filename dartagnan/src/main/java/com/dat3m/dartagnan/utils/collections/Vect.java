@@ -43,6 +43,7 @@ public final class Vect<T> extends AbstractList<T> {
         return numElements;
     }
 
+    @Override
     public boolean isEmpty() {
         return numElements == 0;
     }
@@ -68,7 +69,7 @@ public final class Vect<T> extends AbstractList<T> {
         return array[index];
     }
 
-    public T get(int index) {
+    @Override public T get(int index) {
         checkGetRange(index);
         return array[index];
     }
@@ -79,7 +80,7 @@ public final class Vect<T> extends AbstractList<T> {
         return old;
     }
 
-    public T set(int index, T value) {
+    @Override public T set(int index, T value) {
         checkSetRange(index);
         return setUnsafe(index, value);
     }
@@ -198,7 +199,7 @@ public final class Vect<T> extends AbstractList<T> {
         return old;
     }
 
-    public T remove(int index) {
+    @Override public T remove(int index) {
         checkGetRange(index);
         return removeUnsafe(index);
     }
@@ -627,7 +628,7 @@ public final class Vect<T> extends AbstractList<T> {
         deleteFromAndClearUnsafe(0);
     }
 
-    public ListIterator<T> listIterator() {
+    @Override public ListIterator<T> listIterator() {
         return new VectIterator();
     }
 

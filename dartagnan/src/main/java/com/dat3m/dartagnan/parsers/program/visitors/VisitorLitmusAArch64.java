@@ -57,7 +57,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
+        VisitorLitmusAssertions.parseAssertions(
+                programBuilder, ctx.assertionList(), ctx.assertionFilter(), ctx.variableList());
         Program prog = programBuilder.build();
 
         final List<String> zeroRegs = Arrays.asList("XZR", "WZR");
@@ -80,7 +81,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitTypedVariableDeclarator(TypedVariableDeclaratorContext ctx) {
-        final int typeBytes = typeBytes(ctx.type());
+        final int typeBytes = typeBytes();
         if (ctx.constant() != null) {
             final IntegerType type = types.getIntegerType(8 * typeBytes);
             programBuilder.initLocEqConst(ctx.location().getText(), parseValue(ctx.constant(), type));
@@ -92,7 +93,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitTypedArrayDeclarator(TypedArrayDeclaratorContext ctx) {
-        final int typeBytes = typeBytes(ctx.type());
+        final int typeBytes = typeBytes();
         final int arraySize = toInt(ctx.constant());
         programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
         return null;
@@ -112,7 +113,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitTypedRegisterDeclarator(TypedRegisterDeclaratorContext ctx) {
-        final int typeSize = typeBytes(ctx.type());
+        final int typeSize = typeBytes();
         final IntegerType type = types.getIntegerType(8 * typeSize);
         if (ctx.constant() == null) {
             programBuilder.getOrNewRegister(ctx.threadId().id, ctx.register64().id, type);
@@ -499,8 +500,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return Integer.parseInt(node.getText(), radix);
     }
 
-    private int typeBytes(TypeContext ignore) {
-        //defaults to 64 bits
+    private int typeBytes() {
+        // TODO: Use the type context instead of defaulting to 64 bits.
         return 8;
     }
 

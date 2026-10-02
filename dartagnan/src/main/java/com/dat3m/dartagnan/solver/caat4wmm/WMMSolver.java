@@ -122,6 +122,7 @@ public class WMMSolver {
         public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
         public int getNumComputedReducedCoreReasons() { return numComputedReducedCoreReasons; }
 
+        @Override
         public String toString() {
             StringBuilder str = new StringBuilder();
             str.append("Model extraction time(ms): ").append(getModelExtractionTime()).append("\n");

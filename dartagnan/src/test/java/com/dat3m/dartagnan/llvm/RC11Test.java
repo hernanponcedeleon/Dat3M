@@ -1,49 +1,34 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.C11;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class RC11Test extends AbstractCTest {
 
-    public RC11Test(String name, Arch target, ResultStatus expected) {
+    public RC11Test(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("rc11/" + name + ".ll");
-    }
+    protected String getProgramPathString() { return "rc11/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 60000;
-    }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
-    }
+    protected String getWmmName() { return "rc11"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"2+2W", C11, PASS},
                 {"IRIW-acq-sc", C11, FAIL},
@@ -56,15 +41,5 @@ public class RC11Test extends AbstractCTest {
                 {"WWmerge", C11, FAIL},
                 {"Z6.U", C11, FAIL},
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

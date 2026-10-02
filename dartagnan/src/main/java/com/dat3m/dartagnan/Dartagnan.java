@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.OptionInfo;
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -9,41 +10,35 @@ import com.dat3m.dartagnan.parsers.program.utils.Pipelines;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.TaskSolver;
 import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.verification.Task.TaskBuilder;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.io.CharSource;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ExitCode.NORMAL_TERMINATION;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.*;
-import static com.dat3m.dartagnan.GlobalSettings.getHomeDirectory;
+import static com.dat3m.dartagnan.utils.Utils.getFileExtension;
 
-@Options
-public class Dartagnan extends BaseOptions {
+public class Dartagnan {
 
     private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
-
-    private Dartagnan(Configuration config) throws InvalidConfigurationException {
-        config.recursiveInject(this);
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -65,7 +60,7 @@ public class Dartagnan extends BaseOptions {
         }
 
         final Configuration config = loadConfigurationFromArgs(args);
-        final Dartagnan o = new Dartagnan(config);
+        final DartagnanOptions o = new DartagnanOptions(config);
         final Pipelines pipelines = Pipelines.load(o.getCompilationPipelinePath());
         final ProgramParser programParser = new ProgramParser(pipelines);
         final Path catFile  = getCatFileFromArgs(args);
@@ -73,7 +68,12 @@ public class Dartagnan extends BaseOptions {
         final boolean isBatchMode = progFiles.size() > 1;
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
-        logEnvironmentInfo(pipelines.getTools());
+        final Set<String> neededTools = progFiles.stream()
+                .map(file -> "." + getFileExtension(file))
+                .distinct()
+                .flatMap(extension -> pipelines.getTools(extension).stream())
+                .collect(Collectors.toSet());
+        logEnvironmentInfo(neededTools);
 
         logger.info("CAT file path: {}", catFile);
 
@@ -108,14 +108,14 @@ public class Dartagnan extends BaseOptions {
                 taskSolver.run();
 
                 // ----------- Generate output-----------
-                output = outputGenerator.getOutputFromSolver(taskSolver, progFile.toString());
+                output = outputGenerator.getOutputFromSolver(taskSolver);
             } catch (Exception e) {
                 output = OutputGenerator.getOutputFromException(e, progFile.toString());
             }
             outputs.add(output);
         }
 
-        printOutputs(outputs, catFile.toString(), config);
+        printOutputs(outputs, catFile, config);
         // Running batch mode results in normal termination independent of the individual results
         final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode();
         exit(exitCode);
@@ -132,19 +132,10 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printVersion() {
-        final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
-        final Path pomPath = getHomeDirectory().resolve("pom.xml");
-
-        try (BufferedReader reader = Files.newBufferedReader(pomPath)) {
-            final String base = mvnReader.read(reader).getVersion();
-            final String version = base.equals(getGitTags()) ? base : String.format("%s (commit %s)", base, getGitId());
-            System.out.println(version);
-        } catch (Exception e) {
-            logger.warn("Failed to load {}", pomPath);
-        }
+        System.out.println(getVersion());
     }
 
-    private static void printOutputs(List<Output> outputs, String catFile, Configuration config) {
+    private static void printOutputs(List<Output> outputs, Path catFile, Configuration config) {
         if (outputs.isEmpty()) {
             return;
         }
@@ -215,4 +206,73 @@ public class Dartagnan extends BaseOptions {
             return List.of();
         }
     }
+
+    // ========================================== Options ==========================================
+
+    @Options
+    public static class DartagnanOptions {
+
+        public DartagnanOptions(Configuration config) throws InvalidConfigurationException {
+            config.inject(this, DartagnanOptions.class);
+        }
+
+        @Option(
+                name = PROPERTY,
+                description = "A combination of properties to check for: program_spec, termination, cat_spec (defaults to all).",
+                toUppercase = true)
+        private EnumSet<Property> property = Property.getDefault();
+
+        public EnumSet<Property> getProperty() {
+            return property;
+        }
+
+        @Option(
+                name = PROGRESSMODEL,
+                description = """
+                            The progress model to assume: fair (default), hsa, obe, unfair.
+                            To specify progress models per scope, use [<scope>=<progressModel>,...].
+                            Defaults to "fair" for unspecified scopes unless "default=<progressModel>" is specified.
+                            """,
+                toUppercase = true)
+        private ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
+
+        public ProgressModel.Hierarchy getProgressModel() {
+            return this.progressModel;
+        }
+
+        @Option(
+                name = CAT_INCLUDE,
+                description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
+        )
+        private String catIncludePath = GlobalSettings.getCatDirectory().toString();
+
+        public Path getCatIncludePath() {
+            return Path.of(catIncludePath);
+        }
+
+        @Option(
+                name = ENTRY,
+                description = "Name of the entry point function."
+        )
+        private String entryFunction = "";
+
+        public String getEntryFunction() {
+            return entryFunction;
+        }
+
+        public boolean overrideEntryFunction() {
+            return !entryFunction.isEmpty();
+        }
+
+        @Option(
+                name = COMPILATION_PIPELINE,
+                description = "Path to the yaml file defining the compilation pipeline."
+        )
+        private String compilationPipelinePath = GlobalSettings.getCompilationPipelinePath().toString();
+
+        public Path getCompilationPipelinePath() {
+            return Path.of(compilationPipelinePath);
+        }
+    }
+
 }

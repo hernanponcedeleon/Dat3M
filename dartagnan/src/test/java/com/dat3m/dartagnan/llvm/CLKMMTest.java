@@ -1,42 +1,33 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.LKMM;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
-import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
+import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class CLKMMTest extends AbstractCTest {
 
-    public CLKMMTest(String name, Arch target, ResultStatus expected) {
+    public CLKMMTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("lkmm/" + name + ".ll");
+    protected String getProgramPathString() {
+        return "lkmm/%s.ll";
     }
 
     @Override
-    protected long getTimeout() {
-        return 300000;
-    }
+    protected long getTimeoutSeconds() { return 300; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"2+2W+onces+locked", LKMM, PASS},
                 {"C-atomic-op-return-simple-02-2", LKMM, FAIL},
@@ -67,15 +58,5 @@ public class CLKMMTest extends AbstractCTest {
                 // this one passes even with cat/lkmm-v00.cat
                 //{"qspinlock-fixed", LKMM, PASS}
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

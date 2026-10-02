@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -58,10 +59,30 @@ public class IndexedSetTest {
         }
     }
 
+    @Test
+    public void smallDomain() {
+        final var emptyDomain = new IndexedDomain<>(List.of());
+        testEmptySetSemantics(emptyDomain.emptySet());
+        testEmptySetSemantics(emptyDomain.newSet());
+        testEmptySetSemantics(emptyDomain.fullSet());
+        final var singletonDomain = new IndexedDomain<>(List.of(new Object()));
+        testEmptySetSemantics(singletonDomain.emptySet());
+        assertEquals(Set.of(singletonDomain.element(0)), singletonDomain.fullSet());
+        final IndexedSet<Object> set = singletonDomain.newSet();
+        testEmptySetSemantics(set);
+        set.add(singletonDomain.element(0));
+        assertEquals(singletonDomain.fullSet(), set);
+        set.remove(singletonDomain.element(0));
+        testEmptySetSemantics(set);
+        set.addAll(singletonDomain.fullSet());
+        assertEquals(singletonDomain.fullSet(), set);
+    }
+
     private void testEmptySetSemantics(Set<?> set) {
         assertTrue(set.isEmpty());
         assertEquals(0, set.size());
         assertFalse(set.iterator().hasNext());
         assertTrue(set.containsAll(Set.of()));
+        assertFalse(set.contains(new Object()));
     }
 }

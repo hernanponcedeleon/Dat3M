@@ -27,7 +27,6 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
-import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -217,11 +216,7 @@ public class EventFactory {
     }
 
     public static NonDetChoice newNonDetChoice(Register register) {
-        return new NonDetChoice(register, false);
-    }
-
-    public static NonDetChoice newSignedNonDetChoice(Register register, boolean isSigned) {
-        return new NonDetChoice(register, isSigned);
+        return new NonDetChoice(register);
     }
 
     public static Label newLabel(String name) {
@@ -612,7 +607,7 @@ public class EventFactory {
             };
         }
 
-        private static final CustomPrinting LDOP_PRINTING = e -> {
+        private static final Event.CustomPrinting LDOP_PRINTING = e -> {
             if (!(e instanceof RMWFetchOp ldop)) {
                 return Optional.empty();
             }
@@ -626,7 +621,7 @@ public class EventFactory {
             return Optional.of("LD%s%s%s%s %s, %s, [%s]".formatted(op, acq, rel, size, loadReg, operand, address));
         };
 
-        private static final CustomPrinting STOP_PRINTING = e -> {
+        private static final Event.CustomPrinting STOP_PRINTING = e -> {
             if (!(e instanceof RMWOp stop)) {
                 return Optional.empty();
             }
@@ -638,7 +633,7 @@ public class EventFactory {
             return Optional.of("ST%s%s%s %s, [%s]".formatted(op, rel, size, operand, address));
         };
 
-        private static final CustomPrinting SWP_PRINTING = e -> {
+        private static final Event.CustomPrinting SWP_PRINTING = e -> {
             if (!(e instanceof Xchg xchg)) {
                 return Optional.empty();
             }
@@ -651,7 +646,7 @@ public class EventFactory {
             return Optional.of("SWP%s%s%s %s, %s, [%s]".formatted(acq, rel, size, value, loadReg, address));
         };
 
-        private static final CustomPrinting CAS_PRINTING = e -> {
+        private static final Event.CustomPrinting CAS_PRINTING = e -> {
             if (!(e instanceof CAS cas)) {
                 return Optional.empty();
             }

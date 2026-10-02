@@ -30,10 +30,10 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
         this.accessType = other.accessType;
     }
 
-    public Expression getAddress() { return address; }
-    public void setAddress(Expression address) { this.address = address; }
+    @Override public Expression getAddress() { return address; }
+    @Override public void setAddress(Expression address) { this.address = address; }
 
-    public Type getAccessType() { return accessType; }
+    @Override public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }
 
     @Override

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -17,16 +16,6 @@ public class LKMMToPPCTest extends AbstractCompilationTest {
     }
 
     public LKMMToPPCTest(Path path) {
-        super(path);
-    }
-
-    @Override
-    protected Provider<Arch> getSourceProvider() {
-        return () -> Arch.LKMM;
-    }
-
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.POWER;
+        super(Arch.LKMM, Arch.POWER, path);
     }
 }

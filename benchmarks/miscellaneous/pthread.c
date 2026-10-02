@@ -453,6 +453,47 @@ void detach_test()
     thread_create(detach_test_attr, NULL);
 }
 
+// -------- one-time initialization
+
+pthread_once_t once0 = PTHREAD_ONCE_INIT;
+pthread_once_t once1 = PTHREAD_ONCE_INIT;
+int once_calls;
+int once_value;
+
+void once_init0()
+{
+    ++once_calls;
+    once_value = 42;
+}
+
+void once_init1()
+{
+    ++once_calls;
+}
+
+void* once_worker(void* ignore)
+{
+    int status = pthread_once(&once0, once_init0);
+    assert(status == 0);
+    assert(once_value == 42);
+    return NULL;
+}
+
+void once_test()
+{
+    pthread_t worker0 = thread_create(once_worker, NULL);
+    pthread_t worker1 = thread_create(once_worker, NULL);
+    thread_join(worker0);
+    thread_join(worker1);
+    assert(once_calls == 1);
+
+    int status = pthread_once(&once1, once_init1);
+    assert(status == 0);
+    status = pthread_once(&once1, once_init1);
+    assert(status == 0);
+    assert(once_calls == 2);
+}
+
 int main()
 {
     switch (__VERIFIER_nondet_int()) {
@@ -461,5 +502,6 @@ int main()
         case 3: rwlock_test(); break;
         case 4: key_test(); break;
         case 5: detach_test(); break;
+        case 6: once_test(); break;
     }
 }

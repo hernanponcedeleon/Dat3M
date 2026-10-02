@@ -241,7 +241,7 @@ public class DependencyGraph<T> {
         public int getTopologicalIndex() { return topologicalIndex; }
 
         public List<Node> getDependents() { return dependents; }
-        public List<Node> getDependencies() { return dependencies; }
+        @Override public List<Node> getDependencies() { return dependencies; }
         public Set<Node> getSCC() { return scc; }
 
         @Override

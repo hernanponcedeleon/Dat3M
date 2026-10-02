@@ -46,7 +46,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitXchg(Xchg e) {
-        String mo = e.getMo();
+
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
@@ -68,7 +68,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-        String mo = e.getMo();
+
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
@@ -389,6 +389,7 @@ class VisitorRISCV extends VisitorBase {
         );
     }
 
+    @Override
     public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();

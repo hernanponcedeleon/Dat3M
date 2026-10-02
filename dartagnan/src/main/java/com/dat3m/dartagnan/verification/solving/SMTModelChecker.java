@@ -1,0 +1,189 @@
+package com.dat3m.dartagnan.verification.solving;
+
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.utils.EnvironmentInfo;
+import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.smt.ProverWithTracker;
+import com.dat3m.dartagnan.verification.*;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.*;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.nio.file.Path;
+import java.util.List;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
+
+// Base class for SMT-based model checkers
+public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
+
+    @Options
+    public static class SMTConfig {
+        @Option(
+                name = SOLVER,
+                description = "Uses the specified SMT solver as a backend.",
+                toUppercase = true)
+        private SolverContextFactory.Solvers solver = getDefaultSolver();
+
+        private static SolverContextFactory.Solvers getDefaultSolver() {
+            return EnvironmentInfo.getOperatingSystem() == EnvironmentInfo.OperatingSystem.LINUX
+                    ? SolverContextFactory.Solvers.YICES2
+                    : SolverContextFactory.Solvers.Z3;
+        }
+
+        public SolverContextFactory.Solvers getSolver() {
+            return solver;
+        }
+
+        @Option(
+                name = SMTLIB2,
+                description = "Dump encoding to an SMTLIB2 file.")
+        private boolean smtlib = false;
+
+        public boolean getDumpSmtLib() {
+            return smtlib;
+        }
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(SMTModelChecker.class);
+
+    protected final TTask task;
+    protected final SMTConfig smtConfig;
+    private ShutdownManager shutdownManager = ShutdownManager.create();
+
+    protected SolverContext solverContext;
+    protected ProverWithTracker prover;
+
+    protected SMTModelChecker(TTask task) throws InvalidConfigurationException {
+        this.task = Preconditions.checkNotNull(task);
+        this.smtConfig = new SMTConfig();
+
+        task.getConfig().inject(smtConfig);
+    }
+
+    public void setShutdownManager(ShutdownManager shutdownManager) {
+        Preconditions.checkNotNull(shutdownManager);
+        this.shutdownManager = shutdownManager;
+    }
+
+    protected void checkForInterrupts() throws InterruptedException {
+        // Sometimes the shutdown can be requested without triggering an exception
+        // if we are not in native code at the time of request
+        // This can lead to strange behaviors, so also do explicit checks
+        shutdownManager.getNotifier().shutdownIfNecessary();
+    }
+
+    // ====================================== Logging utility ================================================
+
+    protected static void logProverStatistics(Logger logger, ProverEnvironment prover) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+
+        StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
+        for (String key : prover.getStatistics().keySet()) {
+            smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+        }
+        logger.debug(smtStatistics.toString());
+    }
+
+    // ====================================== Solver utility ==================================================
+
+    protected void initSMTSolver(Configuration config) throws InvalidConfigurationException {
+        Preconditions.checkState(solverContext == null, "SolverContext already initialized");
+
+        final Path smtDumpPath = smtConfig.getDumpSmtLib()
+                ? GlobalSettings.getOutputDirectory().resolve(String.format("%s.smt2", task.getProgram().getName()))
+                : null;
+
+        solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
+        prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
+    }
+
+    @Override
+    public void close() {
+        if (prover != null) {
+            prover.close();
+            prover = null;
+        }
+        if (solverContext != null) {
+            solverContext.close();
+            solverContext = null;
+        }
+    }
+
+    // ====================================== Processing utility ==================================================
+    // TODO: Move all this code somewhere else
+
+    public static void preprocessProgram(Task task, Configuration config) throws InvalidConfigurationException {
+        Program program = task.getProgram();
+        ProcessingManager.fromConfig(config).run(program);
+    }
+
+    public static void preprocessMemoryModel(Task task) {
+        final Wmm memoryModel = task.getMemoryModel();
+
+        // We remove flagged axioms if we do not check for them.
+        if (task instanceof VerificationTask veriTask && !veriTask.getProperties().contains(Property.CAT_SPEC)) {
+            List.copyOf(task.getMemoryModel().getAxioms()).stream()
+                    .filter(Axiom::isFlagged)
+                    .forEach(task.getMemoryModel()::removeConstraint);
+        }
+        WmmProcessingManager.newInstance().run(memoryModel);
+    }
+
+    public static void performStaticProgramAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        final Program program = task.getProgram();
+        analysisContext.register(EventDomainRepository.class, EventDomainRepository.forProgram(program));
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(),
+                analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
+                analysisContext, config));
+        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
+        analysisContext.register(AliasAnalysis.class, alias);
+        analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
+
+        for(Thread thread : program.getThreads()) {
+            for(Event e : thread.getEvents()) {
+                // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
+                // which may rely on previous "global" analyses
+                e.runLocalAnalysis(program, analysisContext);
+            }
+        }
+    }
+
+    public static void performStaticWmmAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
+        analysisContext.register(RelationEventDomains.class, RelationEventDomains.newInstance(task.getMemoryModel(), analysisContext));
+        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+    }
+
+    public static void performIntervalAnalysis(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        analysisContext.registerOptional(IntervalAnalysis.class, IntervalAnalysis.fromConfig(task.getProgram(), analysisContext, task.getMemoryModel(), config));
+    }
+}

@@ -22,7 +22,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
@@ -53,6 +53,7 @@ public final class Tearing implements ProgramProcessor {
         return new Tearing(config);
     }
 
+    @Override
     public void run(Program program) {
         logger.trace("Perform analyses");
         AliasAnalysis alias;

@@ -1,52 +1,36 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.C11;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.verification.ResultStatus.*;
+import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class RC11LFDSTest extends AbstractCTest {
 
-    public RC11LFDSTest(String name, Arch target, ResultStatus expected) {
+    public RC11LFDSTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("lfds/" + name + ".ll");
-    }
+    protected String getProgramPathString() { return "lfds/%s.ll"; }
 
     @Override
-    protected long getTimeout() {
-        return 600000;
-    }
-
-    protected Provider<Integer> getBoundProvider() {
-        return () -> 2;
-    }
+    protected long getTimeoutSeconds() { return 600; }
 
     @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
-    }
+    protected int getBound() { return 2; }
+
+    @Override
+    protected String getWmmName() { return "rc11"; }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"dglm", C11, UNKNOWN},
                 {"dglm-CAS-relaxed", C11, FAIL},
@@ -60,15 +44,5 @@ public class RC11LFDSTest extends AbstractCTest {
                 {"hash_table", C11, PASS},
                 {"hash_table-fail", C11, FAIL},
         });
-    }
-
-    // @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

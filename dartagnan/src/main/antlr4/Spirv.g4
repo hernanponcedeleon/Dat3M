@@ -1695,8 +1695,33 @@ literalExtInstInteger
     :   clspvReflection
     |   glsl
     |   opencl
+    |   debugInfo
     ;
 
+// Extension NonSemantic.Shader.DebugInfo.100
+debugInfo
+    :   (ModeExt_DebugCompilationUnit
+    |   ModeExt_DebugEntryPoint
+    |   ModeExt_DebugExpression
+    |   ModeExt_DebugFunction
+    |   ModeExt_DebugFunctionDefinition
+    |   ModeExt_DebugGlobalVariable
+    |   ModeExt_DebugInfoNone
+    |   ModeExt_DebugLine
+    |   ModeExt_DebugLocalVariable
+    |   ModeExt_DebugNoLine
+    |   ModeExt_DebugNoScope
+    |   ModeExt_DebugScope
+    |   ModeExt_DebugSource
+    |   ModeExt_DebugTypeArray
+    |   ModeExt_DebugTypeBasic
+    |   ModeExt_DebugTypeComposite
+    |   ModeExt_DebugTypeFunction
+    |   ModeExt_DebugTypeMember
+    |   ModeExt_DebugTypeQualifier
+    |   ModeExt_DebugTypeVector
+    |   ModeExt_DebugValue) idRef*
+    ;
 
 // Extension clspvReflection
 clspvReflection

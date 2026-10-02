@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.configuration;
 
+import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
@@ -8,12 +9,13 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.libraries.AbstractLibrary;
+import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.TaskSolverBase;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.verification.solving.SMTModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -49,7 +51,6 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 AliasAnalysis.Config.class,
                 IntervalAnalysis.Config.class,
                 Inlining.class,
-                Intrinsics.class,
                 LoopUnrolling.class,
                 MemoryAllocation.class,
                 NonterminationDetection.class,
@@ -57,14 +58,16 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 SparseConditionalConstantPropagation.class,
                 Compilation.class,
                 CoreReasoner.class,
-                BaseOptions.class,
+                Dartagnan.DartagnanOptions.class,
                 Printer.class,
-                ModelChecker.SMTConfig.class,
+                SMTModelChecker.SMTConfig.class,
                 RefinementSolver.class,
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
                 ExecutionGraphVisualizer.class,
-                Program.SemanticConfig.class
+                Program.SemanticConfig.class,
+                AbstractLibrary.class,
+                PthreadLibrary.class
         );
     }
 
@@ -109,14 +112,12 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     private final ClassInfo parent;
     private final Option option;
     private final Member member;
-    private final Type type;
     private final Class<?> domain;
 
     private OptionInfo(ClassInfo i, Option o, Member m, Type t) {
         parent = i;
         option = o;
         member = m;
-        type = t;
         Type raw = t instanceof ParameterizedType ? ((ParameterizedType) t).getRawType() : t;
         verify(raw instanceof Class);
         domain = (Class<?>) raw;

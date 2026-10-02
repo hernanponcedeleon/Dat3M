@@ -2082,8 +2082,29 @@ ModeExt_shuffle2 : 'shuffle2';
 ModeExt_printf : 'printf';
 ModeExt_prefetch : 'prefetch';
 
+ModeExt_DebugCompilationUnit : 'DebugCompilationUnit';
+ModeExt_DebugEntryPoint : 'DebugEntryPoint';
+ModeExt_DebugExpression : 'DebugExpression';
+ModeExt_DebugFunction : 'DebugFunction';
+ModeExt_DebugFunctionDefinition : 'DebugFunctionDefinition';
+ModeExt_DebugGlobalVariable : 'DebugGlobalVariable';
+ModeExt_DebugInfoNone : 'DebugInfoNone';
+ModeExt_DebugLine : 'DebugLine';
+ModeExt_DebugLocalVariable : 'DebugLocalVariable';
+ModeExt_DebugNoLine : 'DebugNoLine';
+ModeExt_DebugNoScope : 'DebugNoScope';
+ModeExt_DebugScope : 'DebugScope';
+ModeExt_DebugSource : 'DebugSource';
+ModeExt_DebugTypeArray : 'DebugTypeArray';
+ModeExt_DebugTypeBasic : 'DebugTypeBasic';
+ModeExt_DebugTypeComposite : 'DebugTypeComposite';
+ModeExt_DebugTypeFunction : 'DebugTypeFunction';
+ModeExt_DebugTypeMember : 'DebugTypeMember';
+ModeExt_DebugTypeQualifier : 'DebugTypeQualifier';
+ModeExt_DebugTypeVector : 'DebugTypeVector';
+ModeExt_DebugValue : 'DebugValue';
+
 ModeExt_Id : '%' [A-Za-z0-9_]+ -> type(Id);
 ModeExt_LineComment : ';' ~[\n]* -> skip;
 ModeExt_Whitespace : [ \t\r]+ -> skip;
 ModeExt_NewLine : [\n]+ -> popMode, skip;
-

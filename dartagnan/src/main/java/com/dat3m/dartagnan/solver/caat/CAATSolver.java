@@ -137,6 +137,7 @@ public class CAATSolver {
         public int getNumComputedReasons() { return numComputedReasons; }
         public int getNumComputedReducedReasons() { return numComputedReducedReasons; }
 
+        @Override
         public String toString() {
             StringBuilder str = new StringBuilder();
             str.append("Model construction time(ms): ").append(populationTime).append("\n");

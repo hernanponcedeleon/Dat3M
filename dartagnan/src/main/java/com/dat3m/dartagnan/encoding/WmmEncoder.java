@@ -1087,10 +1087,11 @@ public class WmmEncoder {
             List<Event[]> triangles = new ArrayList<>();
 
             // Build variable elimination ordering
-            List<Event> varOrderings = new ArrayList<>(); // We should order this
+            List<Event> varOrderings = new ArrayList<>();
             while (!nodes.isEmpty()) {
                 // Find best vertex e to eliminate
-                final Comparator<Event> comparator = Comparator.comparingInt(ev -> vertEleInEdges.get(ev).size() * vertEleOutEdges.get(ev).size());
+                final Comparator<Event> comparator = Comparator.comparingInt(
+                        ev -> inEdges.get(ev).size() * outEdges.get(ev).size());
                 final Event e = nodes.stream().min(comparator).get();
                 varOrderings.add(e);
 

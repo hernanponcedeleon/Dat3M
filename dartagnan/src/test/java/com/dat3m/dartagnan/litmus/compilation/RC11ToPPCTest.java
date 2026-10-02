@@ -1,12 +1,9 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.verification.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 
@@ -23,26 +20,14 @@ public class RC11ToPPCTest extends AbstractCompilationTest {
     }
 
     public RC11ToPPCTest(Path path) {
-        super(path);
+        super(Arch.C11, Arch.POWER, path);
     }
 
     @Override
-    protected Provider<Arch> getSourceProvider() {
-        return () -> Arch.C11;
-    }
+    protected String getSourceWmmName() { return "rc11"; }
 
     @Override
-    protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
-    }
-
-    @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.POWER;
-    }
-
-    @Override
-    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder.setOption(USE_RC11_TO_ARCH_SCHEME, "true");
+    protected Task.TaskBuilder getTaskBuilder() {
+        return super.getTaskBuilder().withOption(USE_RC11_TO_ARCH_SCHEME, "true");
     }
 }

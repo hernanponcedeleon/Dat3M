@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME)* (QUOTED_STRING)? (definition | include | show)+ EOF
+    :   (NAME)* (QUOTED_STRING)? (definition | include | show | cut)+ EOF
     ;
 
 definition
@@ -66,6 +66,11 @@ show
     :   SHOW expression (AS NAME)? (COMMA expression (AS NAME)?)*
     ;
 
+// Custom extension
+cut
+    :   CUT n = NAME
+    ;
+
 parameterList
     : (NAME (COMMA NAME)*)
     ;
@@ -81,6 +86,7 @@ AS      :   'as';
 TOID    :   'toid';
 SHOW    :   'show';
 INCLUDE :   'include';
+CUT     :   'cut';
 
 ACYCLIC     :   'acyclic';
 IRREFLEXIVE :   'irreflexive';

@@ -10,6 +10,15 @@ assertionFilter
     :   AssertionFilter a = assertion Semi?
     ;
 
+locationList
+    :   Locations LBracket locationValue (Semi locationValue)* Semi? RBracket
+    ;
+
+locationValue
+    :   varName
+    |   threadId Colon varName
+    ;
+
 assertionList
     :   AssertionExists a = assertion Semi?
     |   AssertionNot AssertionExists a = assertion Semi?
@@ -93,6 +102,10 @@ AssertionForall
 
 AssertionFilter
     :   'filter'
+    ;
+
+Locations
+    :   'locations'
     ;
 
 AssertionNot

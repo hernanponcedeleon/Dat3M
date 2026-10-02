@@ -27,11 +27,8 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Arrays.asList;
 
 /*
     This class is responsible for doing all encoding related to IR types, in particular, all kinds of expressions.
@@ -293,7 +290,6 @@ public class ExpressionEncoder {
             final TypedFormula<IntegerType, ?> lhs = encodeIntegerExpr(iBin.getLeft());
             final TypedFormula<IntegerType, ?> rhs = encodeIntegerExpr(iBin.getRight());
             final IntegerType type = iBin.getType();
-            final int bitWidth = type.getBitWidth();
 
             final BitvectorFormula bv1 = (BitvectorFormula) lhs.formula();
             final BitvectorFormula bv2 = (BitvectorFormula) rhs.formula();
@@ -441,6 +437,7 @@ public class ExpressionEncoder {
             return new TypedFormula<>(expr.getType(), enc);
         }
 
+        @Override
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = expr.getTargetType();
@@ -516,28 +513,34 @@ public class ExpressionEncoder {
             final BooleanFormula result = switch (op) {
                 case EQ -> fpmgr.assignment(l, r);
                 case NEQ -> bmgr.not(fpmgr.assignment(l, r));
-                case OEQ -> fromUnordToOrd(l, r, fpmgr.equalWithFPSemantics(l, r));
-                case ONEQ -> fromUnordToOrd(l, r, bmgr.not(fpmgr.equalWithFPSemantics(l, r)));
-                case OLT -> fromUnordToOrd(l, r, fpmgr.lessThan(l, r));
-                case OLTE -> fromUnordToOrd(l, r, fpmgr.lessOrEquals(l, r));
-                case OGT -> fromUnordToOrd(l, r, fpmgr.greaterThan(l, r));
-                case OGTE -> fromUnordToOrd(l, r, fpmgr.greaterOrEquals(l, r));
-                case ORD -> bmgr.not(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)));
-                case UEQ -> fpmgr.equalWithFPSemantics(l, r);
-                case UNEQ -> bmgr.not(fpmgr.equalWithFPSemantics(l, r));
-                case ULT -> fpmgr.lessThan(l, r);
-                case ULTE -> fpmgr.lessOrEquals(l, r);
-                case UGT -> fpmgr.greaterThan(l, r);
-                case UGTE -> fpmgr.greaterOrEquals(l, r);
-                case UNO -> bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r));
+                case OEQ -> toOrd(l, r, fpmgr.equalWithFPSemantics(l, r));
+                case ONEQ -> toOrd(l, r, bmgr.not(fpmgr.equalWithFPSemantics(l, r)));
+                case OLT -> toOrd(l, r, fpmgr.lessThan(l, r));
+                case OLTE -> toOrd(l, r, fpmgr.lessOrEquals(l, r));
+                case OGT -> toOrd(l, r, fpmgr.greaterThan(l, r));
+                case OGTE -> toOrd(l, r, fpmgr.greaterOrEquals(l, r));
+                case ORD -> toOrd(l, r, bmgr.makeTrue());
+                case UEQ -> toUnord(l, r, fpmgr.equalWithFPSemantics(l, r));
+                case UNEQ -> toUnord(l, r, bmgr.not(fpmgr.equalWithFPSemantics(l, r)));
+                case ULT -> toUnord(l, r, fpmgr.lessThan(l, r));
+                case ULTE -> toUnord(l, r, fpmgr.lessOrEquals(l, r));
+                case UGT -> toUnord(l, r, fpmgr.greaterThan(l, r));
+                case UGTE -> toUnord(l, r, fpmgr.greaterOrEquals(l, r));
+                case UNO -> toUnord(l, r, bmgr.makeFalse());
             };
             return new TypedFormula<>(types.getBooleanType(), result);
         }
 
-        private BooleanFormula fromUnordToOrd(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
+        private BooleanFormula toOrd(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
             final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
             final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
-            return fmgr.ifThenElse(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)), bmgr.makeFalse(), cmp);
+            return bmgr.and(bmgr.not(fpmgr.isNaN(l)), bmgr.not(fpmgr.isNaN(r)), cmp);
+        }
+
+        private BooleanFormula toUnord(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+            return bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r), cmp);
         }
 
         @Override

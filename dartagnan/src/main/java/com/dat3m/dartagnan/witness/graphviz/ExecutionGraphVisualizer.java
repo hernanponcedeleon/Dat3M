@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
@@ -318,7 +318,7 @@ public class ExecutionGraphVisualizer {
         if (e instanceof MemoryEventModel mem) {
             String address = getAddressString(mem.getAccessedAddress());
             ValueModel value = mem.getValue();
-            MemoryOrder mo = mem.getEvent().getMetadata(MemoryOrder.class);
+            MemoryCoreEvent.MemoryOrder mo = mem.getEvent().getMetadata(MemoryCoreEvent.MemoryOrder.class);
             String moString = mo == null ? "" : ", " + mo.value();
             tag = mem instanceof StoreModel ?
                     String.format("W(%s, %s%s)", address, value, moString) :
