@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.verification.Context;
@@ -359,7 +358,7 @@ public class AliasAnalysisSoundnessTest {
 
     private MemoryCoreEvent findProcessedEvent(Program program, Event original) {
         return (MemoryCoreEvent) program.getThreadEvents().stream()
-                .filter(event -> event.hasEqualMetadata(original, OriginalId.class))
+                .filter(event -> event.hasEqualMetadata(original, Event.OriginalId.class))
                 .findFirst()
                 .orElseThrow();
     }
