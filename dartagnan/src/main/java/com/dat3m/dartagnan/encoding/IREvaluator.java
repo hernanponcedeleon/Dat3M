@@ -157,10 +157,20 @@ public class IREvaluator implements AutoCloseable {
     // Properties
 
     public boolean propertyViolated(Property property) {
+        if (property == CAT_SPEC) {
+            return ctx.getTask().getMemoryModel().getAxioms().stream()
+                    .filter(Axiom::isFlagged)
+                    .anyMatch(this::isFlaggedAxiomViolated);
+        }
         return FALSE.equals(smtModel.evaluate(property.getSMTVariable(ctx)));
     }
 
     public boolean propertySatisfied(Property property) {
+        if (property == CAT_SPEC) {
+            return ctx.getTask().getMemoryModel().getAxioms().stream()
+                    .filter(Axiom::isFlagged)
+                    .allMatch(axiom -> TRUE.equals(smtModel.evaluate(CAT_SPEC.getSMTVariable(axiom, ctx))));
+        }
         return TRUE.equals(smtModel.evaluate(property.getSMTVariable(ctx)));
     }
 
