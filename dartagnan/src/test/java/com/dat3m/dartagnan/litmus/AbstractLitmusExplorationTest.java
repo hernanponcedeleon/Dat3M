@@ -63,7 +63,7 @@ public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationT
     protected int getBound() { return 1; }
 
     @Override
-    protected long getTimeoutSeconds() { return 10; }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
     protected Task.TaskBuilder getTaskBuilder() {

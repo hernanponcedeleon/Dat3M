@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.test;
 
-import com.dat3m.dartagnan.configuration.Method;
-import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -12,11 +10,8 @@ import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 
 import java.nio.file.Path;
-import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractEnumerationTaskSolverTest {
 
