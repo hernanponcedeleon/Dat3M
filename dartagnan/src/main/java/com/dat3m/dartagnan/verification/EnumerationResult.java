@@ -1,13 +1,11 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
-import java.util.Map;
 
 public final class EnumerationResult implements TaskResult<EnumerationTask> {
 

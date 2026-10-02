@@ -136,7 +136,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         throw new UnsupportedOperationException("Unsupported type " + value.type());
     }
 
-    // We collect the expression values to enumerate from the spec
+    // We collect the expression values to enumerate from the spec and the explicitly specified locations
     private ImmutableList<Expression> getFinalStateExprsToEnumerate() {
         final Program p = task.getProgram();
 
@@ -159,8 +159,10 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
        p.getLocations().forEach(location -> {
             if (location instanceof MemoryObject o) {
-                // FIXME: This will fail for mixed size accesses
+                // FIXME: This will likely fail for mixed size accesses
                 finalStateExprs.add(new FinalMemoryValue(o.getName(), o.getInitialValue(0).getType(), o, 0));
+            } else if (location instanceof Register r) {
+                finalStateExprs.add(r);
             }
         });
 
