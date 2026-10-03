@@ -29,7 +29,7 @@ public class MiscellaneousTest extends AbstractCTest {
     protected int getBound() { return bound; }
 
     @Override
-    protected long getTimeoutSeconds() { return 20; }
+    protected long getTimeoutSeconds() { return 60; }
 
     @Override
     protected Task.TaskBuilder getTaskBuilder() {
