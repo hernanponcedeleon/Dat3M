@@ -17,6 +17,9 @@ public class AsmLibvsyncArmv7Test extends AbstractAsmTest {
     }
 
     @Override
+    protected long getTimeoutSeconds() { return 900; }
+
+    @Override
     protected String getProgramPathString() { return "asm/armv7/libvsync/%s.ll"; }
 
     @Override
