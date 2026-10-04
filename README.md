@@ -83,7 +83,6 @@ Dartagnan can verify programs relative to any given CAT memory model. However, d
 - imm
 - tso
 - power
-- arm7
 - arm8
 - riscv
 - ptx
