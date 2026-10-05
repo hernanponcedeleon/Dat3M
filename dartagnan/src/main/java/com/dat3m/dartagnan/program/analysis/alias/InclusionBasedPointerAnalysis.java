@@ -170,7 +170,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         final DerivedVariable<Modifier> vx = addressVariables.get(x);
         final DerivedVariable<Modifier> vy = addressVariables.get(y);
-        if (vx == null || vy == null || vx.base == nullVariable || vy.base == nullVariable) {
+        if (vx == null || vy == null) {
             return true;
         }
         if (vx.base == vy.base && trait.isFunctional(vx.modifier) && trait.isFunctional(vy.modifier)) {
@@ -180,7 +180,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         final List<IncludeEdge<Modifier>> oy = toIncludeSet(vy.base);
         for (final IncludeEdge<Modifier> ax : ox) {
             for (final IncludeEdge<Modifier> ay : oy) {
-                if (ax.source == ay.source) {
+                if (ax.source.object != null && ax.source == ay.source) {
                     final Modifier l = compose(ax.modifier, vx.modifier);
                     final Modifier r = compose(ay.modifier, vy.modifier);
                     if (trait.mayOverlap(l, r)) {
@@ -497,12 +497,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         if (logger.isWarnEnabled() && address.base.object == null &&
                 address.base.includes.stream().allMatch(i -> i.source != nullVariable && i.source.object == null)) {
             logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
-        }
-        // If only null is accessible, allow all aliasing (without data flow propagation).
-        if (address.base == nullVariable || (address.base.object == null
-                && address.base.includes.stream().allMatch(i -> i.source == nullVariable))) {
-            entry.setValue(new DerivedVariable<>(nullVariable, RELAXED));
-            return;
         }
         if (address.base.includes.size() != 1) {
             return;
