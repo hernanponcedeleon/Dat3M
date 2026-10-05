@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
@@ -91,8 +92,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
-    private final Variable<Modifier> nullVariable = new Variable<>(null, null, "null");
-
     // When a variable gains an includes-edge, it is added to this queue for later processing.
     // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
     private final TreeMap<Integer, LinkedHashMap<Variable<Modifier>, List<IncludeEdge<Modifier>>>> queue = new TreeMap<>();
@@ -101,9 +100,13 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private final Map<MemoryCoreEvent, DerivedVariable<Modifier>> addressVariables = new HashMap<>();
     private final Map<MemoryCoreEvent, DerivedVariable<Modifier>> valueVariables = new HashMap<>();
 
+    // These variables should always have empty includes-sets.
+    // The variable representing the null pointer.
+    private final Variable<Modifier> nullVariable = new Variable<>(null, null, "null");
     // Maps memory objects to variables representing their base address.
-    // These Variables should always have empty includes-sets.
     private final Map<MemoryObject, Variable<Modifier>> objectVariables = new HashMap<>();
+    // Maps nondeterministic values to variables representing their assumed value, which might be a valid address.
+    private final Map<NonDetValue, Variable<Modifier>> nonDetVariables = new HashMap<>();
 
     // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
     // Non-trivial modifiers may only appear for singleton Locals.
@@ -296,12 +299,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private void run(Program program, AliasAnalysis.Config configuration) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
-        // Pre-processing:
-        // Each memory object gets a variable representing its base address value.
-        for (final MemoryObject object : program.getMemory().getObjects()) {
-            totalVariables++;
-            objectVariables.put(object, new Variable<>(object, null, object.toString()));
-        }
+        initialise(program);
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
         // If needed, a register gets a "phi" variable representing its phi-node's value set.
@@ -334,6 +332,24 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             postProcess(entry);
         }
         registerVariables.clear();
+    }
+
+    private void initialise(Program program) {
+        // Each memory object gets a variable representing its base address value.
+        for (final MemoryObject object : program.getMemory().getObjects()) {
+            objectVariables.put(object, new Variable<>(object, null, object.toString()));
+        }
+        // Each constant gets all provenance.
+        for (final NonDetValue constant : program.getConstants()) {
+            final var pointerSet = new Variable<Modifier>(null, null, constant.toString());
+            nonDetVariables.put(constant, pointerSet);
+            pointerSet.includes.add(new IncludeEdge<>(nullVariable, RELAXED));
+            for (final Variable<Modifier> object : objectVariables.values()) {
+                pointerSet.includes.add(new IncludeEdge<>(object, RELAXED));
+            }
+        }
+        totalVariables = 1 + objectVariables.size() + nonDetVariables.size();
+        totalIncludeEdges = nonDetVariables.size() * (1 + objectVariables.size());
     }
 
     // Declares the "out" variable of 'event' and inserts initial 'includes' and 'loads' edges.
@@ -416,7 +432,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         logger.trace("{} includes {}", variable, edges);
         verify(variable != nullVariable && variable.object == null, "Trying to add include edge to object %s.", variable);
         // Propagate pointer sets.
-        final List<IncludeEdge<Modifier>> pointers = edges.stream().filter(e -> e.source == nullVariable || e.source.object != null).toList();
+        final List<IncludeEdge<Modifier>> pointers = edges.stream().filter(this::doesPropagate).toList();
         if (!pointers.isEmpty()) {
             for (final Variable<Modifier> user : List.copyOf(variable.seeAlso)) {
                 for (final IncludeEdge<Modifier> edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
@@ -427,7 +443,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
         }
         for (final IncludeEdge<Modifier> edgeAfter : edges) {
-            if (edgeAfter.source == nullVariable || edgeAfter.source.object != null) {
+            if (doesPropagate(edgeAfter)) {
                 continue;
             }
             for (final IncludeEdge<Modifier> edge : List.copyOf(edgeAfter.source.includes)) {
@@ -574,6 +590,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private record StoreEdge<Modifier>(DerivedVariable<Modifier> value, Modifier addressModifier) {}
 
     private record DerivedVariable<Modifier>(Variable<Modifier> base, Modifier modifier) {}
+
+    private boolean doesPropagate(IncludeEdge<Modifier> edge) {
+        return edge.source == nullVariable || edge.source.object != null;
+    }
 
     private DerivedVariable<Modifier> derive(Variable<Modifier> base) {
         return new DerivedVariable<>(base, IDENTITY);
@@ -826,6 +846,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     edges.add(new IncludeEdge<>(objectVariables.get(object), RELAXED));
                     return object;
                 }
+                @Override
+                public Expression visitNonDetValue(NonDetValue value) {
+                    edges.add(new IncludeEdge<>(nonDetVariables.get(value), RELAXED));
+                    return value;
+                }
             });
             return edges;
         }
@@ -921,6 +946,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         public List<IncludeEdge<Modifier>> visitRegister(Register r) {
             DerivedVariable<Modifier> phiVariable = getPhiNodeVariable(r, reader);
             return List.of(includeEdge(phiVariable));
+        }
+
+        @Override
+        public List<IncludeEdge<Modifier>> visitNonDetValue(NonDetValue value) {
+            return List.of(new IncludeEdge<>(nonDetVariables.get(value), IDENTITY));
         }
 
         @Override
