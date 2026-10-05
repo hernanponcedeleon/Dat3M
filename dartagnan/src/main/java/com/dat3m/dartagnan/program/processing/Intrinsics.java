@@ -240,24 +240,25 @@ public class Intrinsics {
         final Expression src = call.getArguments().get(2);
         final Expression countExpr = call.getArguments().get(3);
 
-        // Runtime checks
-        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        // Runtime checks use the program's pointer width.
+        final IntegerType pointerType = caller.getProgram().getMemory().getPointerType();
+        final Expression nullExpr = expressions.makeZero(pointerType);
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
-        // We assume RSIZE_MAX = 2^64-1
-        final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
-        // These parameters have type rsize_t/size_t which we model as types.getArchType(), thus the cast
-        final Expression castDestszExpr = expressions.makeCast(destszExpr, types.getArchType());
-        final Expression castCountExpr = expressions.makeCast(countExpr, types.getArchType());
+        // Preserve the existing maximum-value model, using the width of size_t.
+        final Expression rsize_max = expressions.makeValue(
+                BigInteger.ONE.shiftLeft(pointerType.getBitWidth()).subtract(BigInteger.ONE), pointerType);
+        final Expression castDestszExpr = expressions.makeCast(destszExpr, pointerType);
+        final Expression castCountExpr = expressions.makeCast(countExpr, pointerType);
 
         final Expression invalidDestsz = expressions.makeGT(castDestszExpr, rsize_max, false);
         final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
         final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
-                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
+                expressions.makeGT(addByteOffset(src, castCountExpr), dest, false),
+                expressions.makeGT(addByteOffset(dest, castCountExpr), src, false));
 
         final List<Event> replacement = new ArrayList<>();
         
@@ -303,7 +304,7 @@ public class Intrinsics {
 
         // Otherwise, return error = 0 and do the actual copy.
         forEachMemSpan(replacement, destszExpr, call, (offset, type) -> {
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression destAddr = addByteOffset(dest, offset);
             final Expression zero = expressions.makeZero(type);
             replacement.add(EventFactory.newStore(destAddr, zero));
         });
@@ -326,8 +327,8 @@ public class Intrinsics {
     private void insertMemCopy(List<Event> replacement, Expression src, Expression dest, Expression count,
             Function caller, FunctionCall call) {
         forEachMemSpan(replacement, count, call, (offset, type) -> {
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression srcAddr = addByteOffset(src, offset);
+            final Expression destAddr = addByteOffset(dest, offset);
             final Register register = caller.newUniqueRegister("__memcpy", type);
             final Event load = EventFactory.newLoad(register, srcAddr);
             final Event store = EventFactory.newStore(destAddr, register);
@@ -354,8 +355,8 @@ public class Intrinsics {
         replacement.add(EventFactory.newLocal(cmpReg, expressions.makeZero(types.getByteType())));
         // Compare all bytes in order.
         forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
-            final Expression src1Addr = expressions.makeAdd(src1, offset);
-            final Expression src2Addr = expressions.makeAdd(src2, offset);
+            final Expression src1Addr = addByteOffset(src1, offset);
+            final Expression src2Addr = addByteOffset(src2, offset);
             final Register regSrc1 = caller.newUniqueRegister("__memcmp_src1", type);
             final Register regSrc2 = caller.newUniqueRegister("__memcmp_src2", type);
             replacement.add(EventFactory.newLoad(regSrc1, src1Addr));
@@ -398,7 +399,7 @@ public class Intrinsics {
         final Map<Integer, Expression> fillByBitWidth = new HashMap<>();
         fillByBitWidth.put(8, fillByte);
         forEachMemSpan(replacement, countExpr, call, (offset, type) -> {
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression destAddr = addByteOffset(dest, offset);
             final Expression fill = fillByBitWidth.computeIfAbsent(type.getBitWidth(),
                     n -> expressions.makeIntConcat(IntStream.range(0, n / 8).mapToObj(x -> fillByte).toList()));
 
@@ -482,6 +483,10 @@ public class Intrinsics {
             final Expression offsetBytes = expressions.makeValue(offset, countType);
             action.run(expressions.makeAdd(initialOffset, offsetBytes), restType);
         }
+    }
+
+    private Expression addByteOffset(Expression address, Expression offset) {
+        return expressions.makeAdd(address, expressions.makeCast(offset, address.getType()));
     }
 
     private Register getResultRegister(FunctionCall call) {

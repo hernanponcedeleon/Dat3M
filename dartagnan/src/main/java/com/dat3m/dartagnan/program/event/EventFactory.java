@@ -27,6 +27,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -97,14 +98,14 @@ public class EventFactory {
 
     public static Alloc newAlloc(Register register, Type allocType, Expression arraySize,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        final Expression defaultAlignment = expressions.makeValue(8, types.getArchType());
-        return newAlignedAlloc(register, allocType, arraySize, defaultAlignment, isHeapAlloc, doesZeroOutMemory);
+        final Expression alignment = expressions.makeValue(Memory.DEFAULT_ALIGNMENT, (IntegerType) register.getType());
+        return newAlignedAlloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 
     public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        arraySize = expressions.makeCast(arraySize, types.getArchType(), false);
-        alignment = expressions.makeCast(alignment, types.getArchType(), false);
+        arraySize = expressions.makeCast(arraySize, register.getType(), false);
+        alignment = expressions.makeCast(alignment, register.getType(), false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 

@@ -4,8 +4,9 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.parsers.LLVMIR;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
-import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
+import com.dat3m.dartagnan.parsers.LLVMIR.*;
 import com.dat3m.dartagnan.parsers.program.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
@@ -18,6 +19,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -52,10 +54,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
-    private final IntegerType integerType = types.getArchType();
+    private final IntegerType pointerType;
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
+    private final Map<String, TypeContext> namedTypeContexts = new HashMap<>();
+    private final DataLayout dataLayout;
     private final Map<String, Type> typeMap = new HashMap<>();
     private final Map<String, MdNode> metadataSymbolTable = new LinkedHashMap<>();
     private int functionCounter;
@@ -72,8 +75,23 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Nonnull, if a type has been parsed.
     private Type parsedType;
 
-    public VisitorLlvm(Program p) {
-        program = p;
+    public VisitorLlvm(CompilationUnitContext ctx) {
+        dataLayout = parseDataLayout(ctx);
+        program = new Program(new Memory(dataLayout.bigEndian, dataLayout.pointerSize),
+                Program.SourceLanguage.LLVM);
+        pointerType = program.getMemory().getPointerType();
+    }
+
+    private static DataLayout parseDataLayout(CompilationUnitContext ctx) {
+        final DataLayout dataLayout = new DataLayout();
+        for (TopLevelEntityContext entity : ctx.topLevelEntity()) {
+            final TargetDefContext target = entity.targetDef();
+            if (target != null && target.targetDataLayout() != null) {
+                dataLayout.visit(target.targetDataLayout().dataLayout());
+                break;
+            }
+        }
+        return dataLayout;
     }
 
     public Program buildProgram() {
@@ -84,7 +102,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
         // Create the metadata mapping beforehand, so that instructions can get all attachments.
-        // Also parse all type definitions.
+        // Also collect all type definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() != null) {
                 entity.accept(this);
@@ -116,7 +134,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.metadataDef() == null &&
+            if (entity.targetDef() == null &&
+                    entity.metadataDef() == null &&
                     entity.globalDef() == null &&
                     entity.typeDef() == null &&
                     entity.funcDecl() == null) {
@@ -133,6 +152,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitTypeDef(TypeDefContext ctx) {
         final String name = localIdent(ctx.LocalIdent());
         typeDefinitionMap.put(name, ctx);
+        namedTypeContexts.put(name, ctx.type());
         return null;
     }
 
@@ -253,7 +273,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
         final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
         if (size > 0) {
-            final MemoryObject globalObject = program.getMemory().allocate(size);
+            final AlignContext explicitAlignment = ctx.globalField().stream()
+                    .map(GlobalFieldContext::align).filter(Objects::nonNull).findFirst().orElse(null);
+            final int alignment = getAllocationAlignment(ctx.type(), explicitAlignment);
+            final MemoryObject globalObject = program.getMemory().allocate(size, alignment);
             globalObject.setName(name);
             if (ctx.threadLocal() != null) {
                 globalObject.setIsThreadLocal(true);
@@ -533,18 +556,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type elementType = parseType(ctx.type());
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
-            sizeExpression = expressions.makeOne(integerType);
+            sizeExpression = expressions.makeOne(pointerType);
         } else {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
-        final Event alloc;
-        if(ctx.align() != null) {
-            final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
-            alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
-        } else {
-            alloc = EventFactory.newAlloc(register, elementType, sizeExpression, false, false);
-        }
+        final int alignment = getAllocationAlignment(ctx.type(), ctx.align());
+        final Expression alignmentExpression = expressions.makeValue(alignment, pointerType);
+        final Event alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression,
+                alignmentExpression, false, false);
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
         block.events.add(alloc);
         return register;
@@ -944,7 +964,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeZero(pointerType);
     }
 
     @Override
@@ -1663,6 +1683,190 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return (events != null) ? Optional.of(events) : Optional.empty();
         } catch (ParsingException ignored) {
             return Optional.empty();
+        }
+    }
+
+    private int getTypeAlignment(TypeContext ctx, boolean preferred) {
+        final Alignment alignment;
+        if (ctx.opaquePointerType() != null || ctx.type() != null && ctx.params() == null) {
+            final AddrSpaceContext addressSpace = ctx.opaquePointerType() != null
+                    ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace();
+            final int space = addressSpace == null ? 0 : Integer.parseInt(addressSpace.IntLit().getText());
+            alignment = dataLayout.getPointerAlignment(space);
+        } else if (ctx.intType() != null) {
+            final int width = Integer.parseInt(ctx.intType().IntType().getText().substring(1));
+            alignment = dataLayout.getIntegerAlignment(width);
+        } else if (ctx.floatType() != null) {
+            final int width = switch (ctx.floatType().floatKind().getText()) {
+                case "half", "bfloat" -> 16;
+                case "float" -> 32;
+                case "double" -> 64;
+                case "x86_fp80" -> 80;
+                case "fp128", "ppc_fp128" -> 128;
+                default -> throw new ParsingException("Unsupported floating-point type %s", ctx.getText());
+            };
+            alignment = dataLayout.getFloatAlignment(width);
+        } else if (ctx.arrayType() != null) {
+            return getTypeAlignment(ctx.arrayType().type(), preferred);
+        } else if (ctx.namedType() != null) {
+            final TypeContext definition = namedTypeContexts.get(localIdent(ctx.namedType().LocalIdent()));
+            check(definition != null, "Undefined named type %s.", ctx);
+            return getTypeAlignment(definition, preferred);
+        } else if (ctx.structType() != null) {
+            final StructTypeContext struct = ctx.structType();
+            final boolean packed = struct.packed != null;
+            if (packed && !preferred) {
+                return 1;
+            }
+            // Struct layout uses member ABI alignment, even when computing preferred alignment.
+            int memberAlignment = 1;
+            if (!packed) {
+                for (TypeContext field : struct.type()) {
+                    memberAlignment = Math.max(memberAlignment, getTypeAlignment(field, false));
+                }
+            }
+            return Math.max(memberAlignment, dataLayout.aggregateAlignment.get(preferred));
+        } else {
+            throw new ParsingException("Unsupported alignment for type %s", ctx.getText());
+        }
+        return alignment.get(preferred);
+    }
+
+    private int getAllocationAlignment(TypeContext type, AlignContext explicitAlignment) {
+        if (explicitAlignment == null) {
+            return getTypeAlignment(type, true);
+        }
+        final BigInteger value = parseBigInteger(explicitAlignment.IntLit());
+        if (value.signum() == 0) {
+            return getTypeAlignment(type, true);
+        }
+        check(value.signum() > 0 && value.bitCount() == 1 && value.bitLength() < 32,
+                "Unsupported allocation alignment in %s.", explicitAlignment);
+        return value.intValueExact();
+    }
+
+    private static final class DataLayout extends LLVMIRBaseVisitor<Void> {
+
+        private int pointerSize = 64;
+        private boolean bigEndian;
+        // Integer widths need ordered lookup: use an exact match, then the next larger width, then the largest.
+        private final NavigableMap<Integer, Alignment> integerAlignments = new TreeMap<>(Map.of(
+                8, new Alignment(1, 1),
+                16, new Alignment(2, 2),
+                32, new Alignment(4, 4),
+                64, new Alignment(4, 8)));
+        // Floating-point widths use exact lookup, falling back to natural alignment; key order is unnecessary.
+        private final Map<Integer, Alignment> floatAlignments = new HashMap<>(Map.of(
+                16, new Alignment(2, 2),
+                32, new Alignment(4, 4),
+                64, new Alignment(8, 8),
+                128, new Alignment(16, 16)));
+        // Pointer address spaces use exact lookup, falling back to address space 0; key order is unnecessary.
+        private final Map<Integer, Alignment> pointerAlignments = new HashMap<>(Map.of(
+                0, new Alignment(8, 8)));
+        private Alignment aggregateAlignment = new Alignment(1, 8);
+
+        private Alignment getPointerAlignment(int addressSpace) {
+            return pointerAlignments.getOrDefault(addressSpace, pointerAlignments.get(0));
+        }
+
+        private Alignment getIntegerAlignment(int width) {
+            final Map.Entry<Integer, Alignment> entry = integerAlignments.ceilingEntry(width);
+            return (entry != null ? entry : integerAlignments.lastEntry()).getValue();
+        }
+
+        private Alignment getFloatAlignment(int width) {
+            final Alignment alignment = floatAlignments.get(width);
+            if (alignment != null) {
+                return alignment;
+            }
+            // LLVM falls back to the smallest power of two at least as large as the type's size in bytes
+            // when no floating-point alignment is specified (e.g., 80 bits -> 10 bytes -> 16-byte alignment).
+            // See DataLayout::getAlignment: https://llvm.org/doxygen/DataLayout_8cpp_source.html
+            final int sizeInBytes = (width + 7) / 8;
+            final int naturalAlignment = Integer.highestOneBit(sizeInBytes - 1) << 1;
+            return new Alignment(naturalAlignment, naturalAlignment);
+        }
+
+        @Override
+        public Void visitEndianness(EndiannessContext ctx) {
+            bigEndian = ctx.order.getType() == LLVMIR.DataLayoutBigEndian;
+            return null;
+        }
+
+        @Override
+        public Void visitPointerLayout(PointerLayoutContext ctx) {
+            final int addressSpace = ctx.addressSpace == null ? 0 : parseInt(ctx.addressSpace);
+            final int size = parseInt(ctx.size);
+            check(size > 0, "Pointer size must be positive");
+            check(addressSpace < (1 << 24), "Pointer address space exceeds LLVM's limit");
+            if (ctx.indexSize != null) {
+                final int indexSize = parseInt(ctx.indexSize);
+                check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
+            }
+            pointerAlignments.put(addressSpace, parseAlignment(ctx.alignment(), false));
+            if (addressSpace == 0) {
+                pointerSize = size;
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitIntegerLayout(IntegerLayoutContext ctx) {
+            final int width = parseInt(ctx.width);
+            check(width > 0, "Integer width must be positive");
+            final Alignment alignment = parseAlignment(ctx.alignment(), false);
+            check(width != 8 || alignment.abi() == 1, "i8 must be byte-aligned");
+            integerAlignments.put(width, alignment);
+            return null;
+        }
+
+        @Override
+        public Void visitFloatLayout(FloatLayoutContext ctx) {
+            final int width = parseInt(ctx.width);
+            check(width > 0, "Floating-point width must be positive");
+            floatAlignments.put(width, parseAlignment(ctx.alignment(), false));
+            return null;
+        }
+
+        @Override
+        public Void visitAggregateLayout(AggregateLayoutContext ctx) {
+            aggregateAlignment = parseAlignment(ctx.alignment(), true);
+            return null;
+        }
+
+        private int parseInt(Token token) {
+            try {
+                return Integer.parseInt(token.getText());
+            } catch (NumberFormatException e) {
+                throw new ParsingException("Data-layout value '%s' exceeds the supported range", token.getText());
+            }
+        }
+
+        private Alignment parseAlignment(AlignmentContext ctx, boolean aggregate) {
+            final int abi = parseInt(ctx.abi);
+            final int preferred = ctx.preferred == null ? abi : parseInt(ctx.preferred);
+            check(validAlignment(abi, aggregate) && validAlignment(preferred, aggregate),
+                    "Alignment must be a power of two in bits, at least one byte");
+            check(preferred >= abi, "Preferred alignment is smaller than ABI alignment");
+            return new Alignment(Math.max(1, abi / 8), Math.max(1, preferred / 8));
+        }
+
+        private boolean validAlignment(int bits, boolean aggregate) {
+            return aggregate && bits == 0 || bits >= 8 && bits < (1 << 16) && (bits & (bits - 1)) == 0;
+        }
+
+        private void check(boolean condition, String message) {
+            if (!condition) {
+                throw new ParsingException(message);
+            }
+        }
+    }
+
+    // Both alignment values are in bytes.
+    private record Alignment(int abi, int preferred) {
+        private int get(boolean usePrefered) {
+            return usePrefered ? preferred : abi;
         }
     }
 

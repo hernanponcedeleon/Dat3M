@@ -389,8 +389,6 @@ public final class ExpressionFactory {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
-                "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
         "Stride cannot be smaller than indexing type");
         return new GEPExpr(indexingType, base, offsets, stride);
