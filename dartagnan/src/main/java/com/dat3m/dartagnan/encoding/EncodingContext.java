@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -325,7 +324,7 @@ public final class EncodingContext {
         for (MemoryObject memoryObject : task.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
-                    TypeFactory.getInstance().getArchType())
+                    task.getProgram().getMemory().getPointerType())
             );
         }
 

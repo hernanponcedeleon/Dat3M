@@ -72,7 +72,6 @@ public class ThreadCreation implements ProgramProcessor {
 
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final IntegerType archType = types.getArchType();
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
 
@@ -158,7 +157,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Event> replacement = eventSequence(
                         newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
+                        newLocal(tidRegister, new TIdExpr((IntegerType) tidRegister.getType(), spawnedThread.thread()))
                 );
                 IRHelper.replaceWithMetadata(create, replacement);
 
@@ -356,7 +355,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.getEntry().insertAfter(body);
 
         // ------------------- Define runtime thread id -------------------
-        final var tidExpr = new TIdExpr(types.getArchType(), thread);
+        final var tidExpr = new TIdExpr(function.getProgram().getMemory().getPointerType(), thread);
         thread.getEntry().insertAfter(newLocal(thread.getOrNewRegister(THREAD_SELF_REGISTER_NAME, tidExpr.getType()), tidExpr));
 
         // ------------------- Create thread-local variables -------------------
@@ -439,17 +438,17 @@ public class ThreadCreation implements ProgramProcessor {
             final Type memoryType = types.getAggregateType(contentTypes, offsets);
 
             // Allocate single object of memory type
-            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, types.getPointerType());
-            final Event localAlloc = EventFactory.newAlloc(
-                    reg, memoryType, expressions.makeOne(types.getArchType()),
-                    false, true
+            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, memory.getPointerType());
+            final Event localAlloc = EventFactory.newAlignedAlloc(
+                    reg, memoryType, expressions.makeOne(memory.getPointerType()),
+                    memoryObject.alignment(), false, true
             );
 
             // Initialize allocated object with regular stores.
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        expressions.makeAdd(reg, expressions.makeValue(initOffset, types.getArchType())),
+                        expressions.makeAdd(reg, expressions.makeValue(initOffset, memory.getPointerType())),
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
@@ -495,7 +494,7 @@ public class ThreadCreation implements ProgramProcessor {
         interface StorageField { MemoryObject get(Storage s); }
         interface Match { Expression compute(StorageField f, Expression k); }
         final List<Storage> storage = new ArrayList<>();
-        final Type type = types.getPointerType();
+        final Type type = program.getMemory().getPointerType();
         final int size = types.getMemorySizeInBytes(type);
         final Expression nil = expressions.makeGeneralZero(type);
         for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {

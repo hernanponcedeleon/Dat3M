@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -379,7 +378,7 @@ public class ProgramEncoder {
     }
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
-        final IntegerType archType = TypeFactory.getInstance().getArchType();
+        final IntegerType pointerType = memory.getPointerType();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<BooleanFormula> enc = new ArrayList<>();
 
@@ -401,8 +400,8 @@ public class ProgramEncoder {
                 alignment = cur.alignment();
             } else {
                 final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
-                final Expression zero = exprs.makeValue(BigInteger.ZERO, archType);
-                final Expression one = exprs.makeValue(BigInteger.ONE, archType);
+                final Expression zero = exprs.makeZero(pointerType);
+                final Expression one = exprs.makeOne(pointerType);
 
                 // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
                 // even if the allocation does not get executed. This improves performance.

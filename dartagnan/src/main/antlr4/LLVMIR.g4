@@ -18,15 +18,34 @@
   SOFTWARE.
  */
 
-grammar LLVMIR;
+parser grammar LLVMIR;
 
+options { tokenVocab = LLVMIRLexer; }
 
 compilationUnit: topLevelEntity* EOF;
 
 targetDef: targetDataLayout | targetTriple;
-sourceFilename: 'source_filename' '=' StringLit;
-targetDataLayout: 'target' 'datalayout' '=' StringLit;
-targetTriple: 'target' 'triple' '=' StringLit;
+sourceFilename: 'source_filename' Equal StringLit;
+targetDataLayout: 'target' DataLayoutStart Equal dataLayout;
+
+dataLayout: DataLayoutQuote (specification (Minus specification)*)? DataLayoutQuote;
+specification:
+    endianness
+    | pointerLayout
+    | integerLayout
+    | floatLayout
+    | aggregateLayout
+    | DataLayoutIgnoredSpecification;
+endianness: order = (DataLayoutLittleEndian | DataLayoutBigEndian);
+pointerLayout:
+    DataLayoutPointer addressSpace = DataLayoutInt? Colon size = DataLayoutInt Colon alignment
+    (Colon indexSize = DataLayoutInt)?;
+integerLayout: DataLayoutInteger width = DataLayoutInt Colon alignment;
+floatLayout: DataLayoutFloat width = DataLayoutInt Colon alignment;
+aggregateLayout: DataLayoutAggregate Colon alignment;
+alignment: abi = DataLayoutInt (Colon preferred = DataLayoutInt)?;
+
+targetTriple: 'target' 'triple' Equal StringLit;
 
 topLevelEntity:
 	sourceFilename
@@ -44,9 +63,9 @@ topLevelEntity:
 	| useListOrder
 	| useListOrderBB;
 moduleAsm: 'module' 'asm' StringLit;
-typeDef: LocalIdent '=' 'type' type;
+typeDef: LocalIdent Equal 'type' type;
 comdatDef:
-	ComdatName '=' 'comdat' selectionKind = (
+	ComdatName Equal 'comdat' selectionKind = (
 		'any'
 		| 'exactmatch'
 		| 'largest'
@@ -54,13 +73,13 @@ comdatDef:
 		| 'samesize'
 	);
 globalDef:
-	GlobalIdent '=' (externalLinkage | internalLinkage)? preemption? visibility? dllStorageClass? threadLocal?
+	GlobalIdent Equal (externalLinkage | internalLinkage)? preemption? visibility? dllStorageClass? threadLocal?
 		unnamedAddr? addrSpace? externallyInitialized? immutable type constant? (
 		',' globalField
 	)* (',' metadataAttachment)* funcAttribute*;
 
 indirectSymbolDef:
-	GlobalIdent '=' linkage? preemption? visibility? dllStorageClass? threadLocal? unnamedAddr?
+	GlobalIdent Equal linkage? preemption? visibility? dllStorageClass? threadLocal? unnamedAddr?
 		indirectSymbolKind = ('alias' | 'ifunc') type ',' indirectSymbol (
 		',' partition
 	)*;
@@ -68,11 +87,11 @@ indirectSymbolDef:
 funcDecl: 'declare' metadataAttachment* funcHeader;
 funcDef: 'define' funcHeader metadataAttachment* funcBody;
 attrGroupDef:
-	'attributes' AttrGroupId '=' '{' funcAttribute* '}';
+	'attributes' AttrGroupId Equal '{' funcAttribute* '}';
 namedMetadataDef:
-	MetadataName '=' '!' '{' (metadataNode (',' metadataNode)*)? '}';
+	MetadataName Equal '!' '{' (metadataNode (',' metadataNode)*)? '}';
 metadataDef:
-	MetadataId '=' distinct? (mdTuple | specializedMDNode);
+	MetadataId Equal distinct? (mdTuple | specializedMDNode);
 useListOrder:
 	'uselistorder' typeValue ',' '{' IntLit (',' IntLit)* '}';
 useListOrderBB:
@@ -135,7 +154,7 @@ terminator:
 	| cleanupRetTerm
 	| unreachableTerm
 	) (',' metadataAttachment)*;
-localDefTerm: LocalIdent '=' valueTerminator;
+localDefTerm: LocalIdent Equal valueTerminator;
 valueTerminator: invokeTerm | callBrTerm | catchSwitchTerm;
 retTerm:
 	'ret' 'void'
@@ -357,11 +376,11 @@ paramAttribute:
 	| range
 	| structRetAttr;
 attrString: StringLit;
-attrPair: StringLit '=' StringLit;
+attrPair: StringLit Equal StringLit;
 align: 'align' IntLit | 'align' '(' IntLit ')';
-alignPair: 'align' '=' IntLit;
+alignPair: 'align' Equal IntLit;
 alignStack: 'alignstack' '(' IntLit ')';
-alignStackPair: 'alignstack' '=' IntLit;
+alignStackPair: 'alignstack' Equal IntLit;
 allocKind: 'allockind' '(' StringLit ')';
 allocSize: 'allocsize' '(' IntLit (',' IntLit)? ')';
 unwindTable:
@@ -434,7 +453,7 @@ labelType: 'label';
 arrayType: '[' IntLit 'x' type ']';
 structType:
 	'{' (type (',' type)*)? '}'
-	| '<' '{' (type (',' type)*)? '}' '>';
+	| packed = '<' '{' (type (',' type)*)? '}' '>';
 namedType: LocalIdent;
 mmxType: 'x86_mmx';
 tokenType: 'token';
@@ -488,7 +507,7 @@ mulExpr: 'mul' '(' typeConst ',' typeConst ')';
 fNegExpr: 'fneg' '(' typeConst ')';
 
 // instructions
-localDefInst: LocalIdent '=' valueInstruction;
+localDefInst: LocalIdent Equal valueInstruction;
 valueInstruction:
 	// Unary instructions
 	fNegInst
@@ -1343,62 +1362,3 @@ varField: 'var:' mdField;
 virtualIndexField: 'virtualIndex:' IntLit;
 virtualityField: 'virtuality:' DwarfVirtuality;
 vtableHolderField: 'vtableHolder:' mdField;
-
-fragment AsciiLetter: [A-Za-z];
-fragment Letter: AsciiLetter | [-$._];
-fragment EscapeLetter: Letter | '\\';
-fragment DecimalDigit: [0-9];
-fragment HexDigit: [A-Fa-f] | DecimalDigit;
-fragment Decimals: DecimalDigit+;
-fragment Name: Letter (Letter | DecimalDigit)*;
-fragment EscapeName:
-	EscapeLetter (EscapeLetter | DecimalDigit)*;
-fragment Id: Decimals;
-fragment IntHexLit: [us] '0x' HexDigit+;
-// 浮点型常量
-fragment Sign: [+-];
-fragment FracLit: Sign? Decimals '.' DecimalDigit*;
-fragment SciLit: FracLit [eE] Sign? Decimals;
-/*
- HexFPConstant 0x{_hex_digit}+ // 16 hex digits
- HexFP80Constant 0xK{_hex_digit}+ // 20 hex digits
- HexFP128Constant 0xL{_hex_digit}+ // 32 hex digits
- HexPPC128Constant 0xM{_hex_digit}+ // 32 hex
- digits
- HexHalfConstant 0xH{_hex_digit}+ // 4 hex digits
- HexBFloatConstant 0xR{_hex_digit}+ // 4
- hex digits
- */
-fragment FloatHexLit: '0x' [KLMHR]? HexDigit+;
-fragment GlobalName: '@' (Name | QuotedString);
-fragment GlobalId: '@' Id;
-fragment LocalName: '%' (Name | QuotedString);
-fragment LocalId: '%' Id;
-fragment QuotedString: '"' (~["\r\n])* '"';
-
-
-Comment: ';' .*? '\r'? '\n' -> channel(HIDDEN);
-WhiteSpace: [ \t\n\r]+ -> skip;
-IntLit: '-'? DecimalDigit+ | IntHexLit;
-FloatLit: FracLit | SciLit | FloatHexLit;
-StringLit: QuotedString;
-GlobalIdent: GlobalName | GlobalId;
-LocalIdent: LocalName | LocalId;
-LabelIdent: (Letter | DecimalDigit)+ ':' | QuotedString ':';
-AttrGroupId: '#' Id;
-DebugRecord: '#dbg_' Name;
-ComdatName: '$' (Name | QuotedString);
-MetadataName: '!' EscapeName;
-MetadataId: '!' Id;
-IntType: 'i' DecimalDigit+;
-DwarfTag: 'DW_TAG_' (AsciiLetter | DecimalDigit | '_')*;
-DwarfAttEncoding: 'DW_ATE_' (AsciiLetter | DecimalDigit | '_')*;
-DiFlag: 'DIFlag' (AsciiLetter | DecimalDigit | '_')*;
-DispFlag: 'DISPFlag' (AsciiLetter | DecimalDigit | '_')*;
-DwarfLang: 'DW_LANG_' (AsciiLetter | DecimalDigit | '_')*;
-DwarfCc: 'DW_CC_' (AsciiLetter | DecimalDigit | '_')*;
-ChecksumKind: 'CSK_' (AsciiLetter | DecimalDigit | '_')*;
-DwarfVirtuality:
-	'DW_VIRTUALITY_' (AsciiLetter | DecimalDigit | '_')*;
-DwarfMacinfo: 'DW_MACINFO_' (AsciiLetter | DecimalDigit | '_')*;
-DwarfOp: 'DW_OP_' (AsciiLetter | DecimalDigit | '_')*;

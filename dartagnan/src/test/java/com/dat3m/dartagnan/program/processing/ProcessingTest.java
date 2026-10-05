@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -166,7 +167,8 @@ public class ProcessingTest {
     }
 
     private Event newAlloc(Register address, Type type, int count) {
-        return EventFactory.newAlloc(address, type, expressions.makeValue(count, types.getArchType()), false, false);
+        final IntegerType pointerType = (IntegerType) address.getType();
+        return EventFactory.newAlloc(address, type, expressions.makeValue(count, pointerType), false, false);
     }
 
     private void assertLocal(Event event) {
