@@ -27,17 +27,6 @@ public interface ModifierTrait <Modifier> {
     /// This method must not have false positives, but is allowed to have false negatives.
     boolean mustInclude(Modifier larger, Modifier smaller);
 
-    /// Estimates the *complexity* of `modifier`.
-    /// For each `l`, there should only exist finitely many `m` with `level(m) <= l`.
-    /// Ideally, `includes(larger,smaller)` implies `level(larger) < level(smaller)`.
-    /// <p>
-    /// Undetected cycles in the dynamic inclusion graph produce address sets of increasing `level`.
-    /// This may cause the analysis to never terminate.
-    /// A dynamic cycle detection mechanism triggers when values propagate between temporarily-equal address sets.
-    /// The analysis prioritises low-`level` values to guarantee that this happens eventually for each cycle.
-    /// @return Non-negative value, zero for `relaxedModifier()`.
-    int level(Modifier modifier);
-
     /// Describes a relation including `{ (x,y) | x + offset == y }`.
     Modifier constantModifier(int offset);
 
@@ -63,7 +52,6 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Void modifier) { return true; }
         @Override public boolean mayOverlap(Void left, Void right) { return true; }
         @Override public boolean mustInclude(Void larger, Void smaller) { return true; }
-        @Override public int level(Void modifier) { return 0; }
         @Override public Void constantModifier(int offset) { return null; }
         @Override public Void relaxedModifier(int alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
@@ -78,7 +66,6 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
         @Override public boolean mayOverlap(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
         @Override public boolean mustInclude(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
-        @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
         @Override public Integer constantModifier(int offset) { return offset; }
         @Override public Integer relaxedModifier(int alignment) { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
@@ -114,7 +101,6 @@ public interface ModifierTrait <Modifier> {
             int r = right.alignment;
             return offset % l == 0 && r % l == 0;
         }
-        @Override public int level(Sd m) { return Math.abs(m.offset); }
         @Override public Sd constantModifier(int offset) { return new Sd(offset, 0); }
         @Override public Sd relaxedModifier(int alignment) { return new Sd(0, Math.abs(alignment)); }
         @Override
@@ -226,10 +212,6 @@ public interface ModifierTrait <Modifier> {
                 }
             }
             return mem[offset / gcd];
-        }
-        @Override
-        public int level(Md m) {
-            return Math.abs(m.offset);
         }
         @Override
         public Md constantModifier(int offset) {
