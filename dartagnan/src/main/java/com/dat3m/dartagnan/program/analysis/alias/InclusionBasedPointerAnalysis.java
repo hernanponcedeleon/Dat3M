@@ -94,7 +94,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     // When a variable gains an includes-edge, it is added to this queue for later processing.
     // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
-    private final TreeMap<Integer, LinkedHashMap<Variable<Modifier>, List<IncludeEdge<Modifier>>>> queue = new TreeMap<>();
+    private final Map<Variable<Modifier>, List<IncludeEdge<Modifier>>> queue = new LinkedHashMap<>();
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable<Modifier>> addressVariables = new HashMap<>();
@@ -310,18 +310,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
         }
-        // Sufficiently large to not trigger every time.
-        final int stepForStaticCycleDetection = 256;
-        // Fixed-point computation:
-        int nextStaticCycleDetection = stepForStaticCycleDetection;
         while (!queue.isEmpty()) {
-            final Map.Entry<Integer, LinkedHashMap<Variable<Modifier>, List<IncludeEdge<Modifier>>>> q = queue.pollFirstEntry();
-            logger.trace("dequeue level={}", q.getKey());
-            if (q.getKey() >= nextStaticCycleDetection) {
-                nextStaticCycleDetection = q.getKey() + stepForStaticCycleDetection;
-                eliminateCycles();
-            }
-            for (final Map.Entry<Variable<Modifier>, List<IncludeEdge<Modifier>>> e : q.getValue().entrySet()) {
+            eliminateCycles();
+            final var current = List.copyOf(queue.entrySet());
+            queue.clear();
+            for (final Map.Entry<Variable<Modifier>, List<IncludeEdge<Modifier>>> e : current) {
                 algorithm(e.getKey(), e.getValue());
             }
         }
@@ -620,14 +613,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
         totalIncludeEdges++;
         edge.source.seeAlso.add(variable);
-        final int level = trait.level(edge.modifier);
-        // enqueue the new edge
-        final List<IncludeEdge<Modifier>> edges = queue.computeIfAbsent(level, k -> new LinkedHashMap<>())
-                .computeIfAbsent(variable, k -> new ArrayList<>());
-        if (edges.isEmpty()) {
-            logger.trace("enqueue level={} variable={}", level, variable);
-        }
-        edges.add(edge);
+        queue.computeIfAbsent(variable, k -> new ArrayList<>()).add(edge);
     }
 
     private IncludeEdge<Modifier> tryAccelerate(Variable<Modifier> variable, IncludeEdge<Modifier> edge) {

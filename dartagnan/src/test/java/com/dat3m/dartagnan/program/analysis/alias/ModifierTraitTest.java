@@ -17,7 +17,6 @@ public class ModifierTraitTest {
         assertTrue(t.isIdentity(unit));
         assertTrue(t.mayOverlap(unit, unit));
         assertTrue(t.mustInclude(unit, unit));
-        assertEquals(0, t.level(unit));
         assertEquals(unit, t.constantModifier(1));
         assertEquals(unit, t.relaxedModifier(1));
         assertEquals(unit, t.compose(unit, unit));
@@ -75,7 +74,6 @@ public class ModifierTraitTest {
         final T all = t.relaxedModifier(1);
         assertEquals(id, t.compose(id, id));
         assertEquals(id, t.accelerate(id));
-        assertTrue(t.level(all) <= t.level(id));
         assertTrue(t.mustInclude(id, id));
         assertTrue(t.mayOverlap(id, id));
         checkBasicPropertiesForInstance(t, all);
@@ -95,8 +93,6 @@ public class ModifierTraitTest {
             checkOverlap(false, t, positive, negative);
             checkOverlap(true, t, all, positive);
             checkOverlap(true, t, all, negative);
-            assertTrue(t.level(all) <= t.level(positive));
-            assertTrue(t.level(all) <= t.level(negative));
             assertEquals(positive, t.constantModifier(i));
             assertEquals(id, t.compose(positive, negative));
             assertEquals(id, t.compose(negative, positive));
@@ -135,8 +131,6 @@ public class ModifierTraitTest {
             assertFalse(t.mustInclude(m, a));
             assertFalse(t.mustInclude(mm, m));
         }
-        assertTrue(t.level(a) <= t.level(m));
-        assertTrue(t.level(a) <= t.level(mm));
     }
 
     private <M> void checkOverlap(boolean expected, ModifierTrait<M> t, M l, M r) {
