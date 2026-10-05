@@ -114,6 +114,14 @@ public class PropertyEncoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
+        if (properties.contains(CAT_SPEC)) {
+            final BooleanFormula allCATSpecificationsHold = bmgr.and(memoryModel.getAxioms().stream()
+                    .filter(Axiom::isFlagged)
+                    .map(axiom -> CAT_SPEC.getSMTVariable(axiom, context))
+                    .toList());
+            encoding = bmgr.and(encoding,
+                    bmgr.equivalence(CAT_SPEC.getSMTVariable(context), allCATSpecificationsHold));
+        }
         if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION) || properties.contains(TRACKABILITY)) {
             // Both litmus assertions and termination need to identify
             // the final stores to addresses.
