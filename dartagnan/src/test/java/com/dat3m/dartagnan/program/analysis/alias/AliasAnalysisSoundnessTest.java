@@ -319,12 +319,13 @@ public class AliasAnalysisSoundnessTest {
          * The conservative fallback must retain both x and y as possible objects.
          */
         ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        Expression guessedAddress = builder.newConstant(types.getPointerType());
         MemoryObject x = builder.newMemoryObject("x", 8);
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
         IntegerType type = types.getArchType();
-        Store unknown = EventFactory.newStore(expressions.makeZero(type), expressions.makeZero(type));
+        Store unknown = EventFactory.newStore(guessedAddress, expressions.makeZero(type));
         Store atX = EventFactory.newStore(x, expressions.makeZero(type));
         Store atY = EventFactory.newStore(y, expressions.makeZero(type));
         builder.addChildWithoutSourceLoc(0, unknown);
