@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,16 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     public IntegerType mockIntType(String id, int bitWidth) {
         return (IntegerType) addType(id, typeFactory.getIntegerType(bitWidth));
+    }
+
+    public FloatType mockFloatType(String id, int bitWidth) {
+        FloatType type = switch (bitWidth) {
+            case 16 -> typeFactory.getIEEEHalfType();
+            case 32 -> typeFactory.getIEEESingleType();
+            case 64 -> typeFactory.getIEEEDoubleType();
+            default -> throw new IllegalArgumentException("Unsupported floating-point width " + bitWidth);
+        };
+        return (FloatType) addType(id, type);
     }
 
     public ScopedPointerType mockPtrType(String id, String typeId, String storageClass) {
@@ -89,6 +100,9 @@ public class MockProgramBuilder extends ProgramBuilder {
         } else if (type instanceof IntegerType iType) {
             IntLiteral iValue = exprFactory.makeValue((int) value, iType);
             return addExpression(id, iValue);
+        } else if (type instanceof FloatType fType) {
+            BigDecimal fValue = new BigDecimal(value.toString());
+            return addExpression(id, exprFactory.makeValue(fValue, fValue.signum() < 0, fType));
         } else if (type instanceof ArrayType aType) {
             List<Expression> elements = mockConstantArrayElements(aType.getElementType(), value);
             Expression construction = exprFactory.makeArray(aType, elements);
@@ -125,6 +139,13 @@ public class MockProgramBuilder extends ProgramBuilder {
         if (element instanceof Integer && elementType instanceof IntegerType iType) {
             return lValue.stream()
                     .map(v -> exprFactory.makeValue((int) v, iType))
+                    .collect(Collectors.toList());
+        }
+        if (element instanceof Number && elementType instanceof FloatType fType) {
+            return lValue.stream()
+                    .map(Object::toString)
+                    .map(BigDecimal::new)
+                    .map(v -> exprFactory.makeValue(v, v.signum() < 0, fType))
                     .collect(Collectors.toList());
         }
         throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);

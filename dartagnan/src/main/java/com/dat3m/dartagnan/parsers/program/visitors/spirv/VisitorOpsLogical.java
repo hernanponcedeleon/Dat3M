@@ -4,11 +4,14 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.floats.FloatCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -18,8 +21,12 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Local;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
 public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
 
@@ -59,11 +66,11 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                     "expected two operands type '%s but received '%s' and '%s'",
                     id, type, op1.getType(), op2.getType());
         }
-        if (op1.getType() instanceof IntegerType || op1.getType() instanceof BooleanType) {
+        if (isScalar(op1.getType())) {
             return builder.addEvent(EventFactory.newLocal(register, expressions.makeITE(cond, op1, op2)));
         }
         throw new ParsingException("Illegal definition for '%s', " +
-                "operands must be integers or arrays of booleans", id);
+                "operands must be scalar values", id);
     }
 
     @Override
@@ -116,6 +123,66 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.LTE);
     }
 
+    @Override
+    public Event visitOpFOrdEqual(SpirvParser.OpFOrdEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.OEQ);
+    }
+
+    @Override
+    public Event visitOpFUnordEqual(SpirvParser.OpFUnordEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.UEQ);
+    }
+
+    @Override
+    public Event visitOpFOrdNotEqual(SpirvParser.OpFOrdNotEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.ONEQ);
+    }
+
+    @Override
+    public Event visitOpFUnordNotEqual(SpirvParser.OpFUnordNotEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.UNEQ);
+    }
+
+    @Override
+    public Event visitOpFOrdLessThan(SpirvParser.OpFOrdLessThanContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.OLT);
+    }
+
+    @Override
+    public Event visitOpFUnordLessThan(SpirvParser.OpFUnordLessThanContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.ULT);
+    }
+
+    @Override
+    public Event visitOpFOrdGreaterThan(SpirvParser.OpFOrdGreaterThanContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.OGT);
+    }
+
+    @Override
+    public Event visitOpFUnordGreaterThan(SpirvParser.OpFUnordGreaterThanContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.UGT);
+    }
+
+    @Override
+    public Event visitOpFOrdLessThanEqual(SpirvParser.OpFOrdLessThanEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.OLTE);
+    }
+
+    @Override
+    public Event visitOpFUnordLessThanEqual(SpirvParser.OpFUnordLessThanEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.ULTE);
+    }
+
+    @Override
+    public Event visitOpFOrdGreaterThanEqual(SpirvParser.OpFOrdGreaterThanEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.OGTE);
+    }
+
+    @Override
+    public Event visitOpFUnordGreaterThanEqual(SpirvParser.OpFUnordGreaterThanEqualContext ctx) {
+        return visitFloatBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), FloatCmpOp.UGTE);
+    }
+
     private Event visitLogicalUnExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
@@ -159,6 +226,50 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                     "operands have different types: '%s' is '%s' and '%s' is '%s'",
                     id, op1Ctx.getText(), op1.getType(), op2Ctx.getText(), op2.getType());
         });
+    }
+
+    private Event visitFloatBinExpression(
+            SpirvParser.IdResultContext idCtx,
+            SpirvParser.IdResultTypeContext typeCtx,
+            SpirvParser.Operand1Context op1Ctx,
+            SpirvParser.Operand2Context op2Ctx,
+            FloatCmpOp op
+    ) {
+        String id = idCtx.getText();
+        Type resultType = builder.getType(typeCtx.getText());
+        Expression op1 = builder.getExpression(op1Ctx.getText());
+        Expression op2 = builder.getExpression(op2Ctx.getText());
+        if (!op1.getType().equals(op2.getType())) {
+            throw new ParsingException("Illegal floating-point comparison for '%s': operand types must match", id);
+        }
+
+        Expression result;
+        if (resultType instanceof BooleanType && op1.getType() instanceof FloatType) {
+            result = expressions.makeFloatCmp(op1, op, op2);
+        } else if (resultType instanceof ArrayType resultArray
+                && resultArray.hasKnownNumElements()
+                && resultArray.getElementType() instanceof BooleanType
+                && op1.getType() instanceof ArrayType operandArray
+                && operandArray.hasKnownNumElements()
+                && operandArray.getElementType() instanceof FloatType
+                && resultArray.getNumElements() == operandArray.getNumElements()) {
+            List<Expression> elements = IntStream.range(0, resultArray.getNumElements())
+                    .mapToObj(index -> expressions.makeFloatCmp(
+                            getElement(op1, index), op, getElement(op2, index)))
+                    .toList();
+            result = expressions.makeArray(resultArray, elements);
+        } else {
+            throw new ParsingException("Illegal floating-point comparison for '%s': incompatible result and operand types", id);
+        }
+
+        Register register = builder.addRegister(id, resultType);
+        return builder.addEvent(EventFactory.newLocal(register, result));
+    }
+
+    private Expression getElement(Expression expression, int index) {
+        return expression instanceof ConstructExpr
+                ? expression.getOperands().get(index)
+                : expressions.makeExtract(expression, index);
     }
 
     private Event forType(String id, String typeId, Function<BooleanType, Expression> f) {
@@ -208,7 +319,19 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                 "OpULessThan",
                 "OpSLessThan",
                 "OpULessThanEqual",
-                "OpSLessThanEqual"
+                "OpSLessThanEqual",
+                "OpFOrdEqual",
+                "OpFUnordEqual",
+                "OpFOrdNotEqual",
+                "OpFUnordNotEqual",
+                "OpFOrdLessThan",
+                "OpFUnordLessThan",
+                "OpFOrdGreaterThan",
+                "OpFUnordGreaterThan",
+                "OpFOrdLessThanEqual",
+                "OpFUnordLessThanEqual",
+                "OpFOrdGreaterThanEqual",
+                "OpFUnordGreaterThanEqual"
         );
     }
 }

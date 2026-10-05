@@ -62,6 +62,19 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
     }
 
     @Override
+    public Type visitOpTypeFloat(SpirvParser.OpTypeFloatContext ctx) {
+        String id = ctx.idResult().getText();
+        int width = Integer.parseInt(ctx.widthLiteralInteger().getText());
+        Type type = switch (width) {
+            case 16 -> types.getIEEEHalfType();
+            case 32 -> types.getIEEESingleType();
+            case 64 -> types.getIEEEDoubleType();
+            default -> throw new ParsingException("Unsupported floating-point width %d for type '%s'", width, id);
+        };
+        return builder.addType(id, type);
+    }
+
+    @Override
     public Type visitOpTypeVector(SpirvParser.OpTypeVectorContext ctx) {
         String id = ctx.idResult().getText();
         String elementTypeName = ctx.componentTypeIdRef().getText();
@@ -169,6 +182,7 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
                 "OpTypeVoid",
                 "OpTypeBool",
                 "OpTypeInt",
+                "OpTypeFloat",
                 "OpTypeVector",
                 "OpTypeArray",
                 "OpTypeRuntimeArray",

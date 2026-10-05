@@ -51,6 +51,8 @@ public class FormulaManagerExt {
         } else if (left instanceof BitvectorFormula x && right instanceof BitvectorFormula y) {
             final BitvectorFormulaManager bvmgr = getBitvectorFormulaManager();
             return bvmgr.getLength(x) == bvmgr.getLength(y);
+        } else if (left instanceof FloatingPointFormula && right instanceof FloatingPointFormula) {
+            return fmgr.getFormulaType(left).equals(fmgr.getFormulaType(right));
         } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
             if (x.elements.size() != y.elements.size()) {
                 return false;
@@ -72,6 +74,8 @@ public class FormulaManagerExt {
             return getBitvectorFormulaManager().equal(l, (BitvectorFormula) right);
         } else if (left instanceof BooleanFormula l) {
             return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);
+        } else if (left instanceof FloatingPointFormula l) {
+            return getFloatingPointFormulaManager().assignment(l, (FloatingPointFormula) right);
         } else if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
             Preconditions.checkArgument(l.elements.size() == r.elements.size());
             final BooleanFormulaManager bmgr = getBooleanFormulaManager();
