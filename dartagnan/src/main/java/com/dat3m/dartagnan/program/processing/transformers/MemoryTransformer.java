@@ -26,6 +26,7 @@ public class MemoryTransformer extends ExprTransformer {
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
 
     private final Program program;
+    private final Type pointerType;
     private final Function function;
     private final BuiltIn builtIn;
     private final List<? extends Map<MemoryObject, MemoryObject>> scopeMapping;
@@ -38,6 +39,7 @@ public class MemoryTransformer extends ExprTransformer {
 
     public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
         this.program = function.getProgram();
+        this.pointerType = program.getPointerType();
         this.function = function;
         this.builtIn = builtIn;
         this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
@@ -65,7 +67,7 @@ public class MemoryTransformer extends ExprTransformer {
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
                 toMap(r -> r, r -> {
-                    Type type = r.getType() instanceof ScopedPointerType ? program.getPointerType() : r.getType();
+                    Type type = r.getType() instanceof ScopedPointerType ? pointerType : r.getType();
                     return thread.getOrNewRegister(r.getName(), type);
                 }));
         nonDetMapping = new HashMap<>();
