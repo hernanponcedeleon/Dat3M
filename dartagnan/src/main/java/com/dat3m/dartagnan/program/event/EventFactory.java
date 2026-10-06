@@ -98,14 +98,16 @@ public class EventFactory {
 
     public static Alloc newAlloc(Register register, Type allocType, Expression arraySize,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        final Expression alignment = expressions.makeValue(Memory.DEFAULT_ALIGNMENT, (IntegerType) register.getType());
-        return newAlignedAlloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
+        final IntegerType archType = types.getIntegerType(types.getMemorySizeInBits(register.getType()));
+        final Expression defaultAlignment = expressions.makeValue(Memory.DEFAULT_ALIGNMENT, archType);
+        return newAlignedAlloc(register, allocType, arraySize, defaultAlignment, isHeapAlloc, doesZeroOutMemory);
     }
 
     public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        arraySize = expressions.makeCast(arraySize, register.getType(), false);
-        alignment = expressions.makeCast(alignment, register.getType(), false);
+        final IntegerType archType = types.getIntegerType(types.getMemorySizeInBits(register.getType()));
+        arraySize = expressions.makeCast(arraySize, archType, false);
+        alignment = expressions.makeCast(alignment, archType, false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 

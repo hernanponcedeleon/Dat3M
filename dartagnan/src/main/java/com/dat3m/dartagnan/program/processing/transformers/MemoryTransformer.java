@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -65,7 +65,7 @@ public class MemoryTransformer extends ExprTransformer {
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
                 toMap(r -> r, r -> {
-                    Type type = r.getType() instanceof ScopedPointerType ? program.getMemory().getPointerType() : r.getType();
+                    Type type = r.getType() instanceof ScopedPointerType ? program.getPointerType() : r.getType();
                     return thread.getOrNewRegister(r.getName(), type);
                 }));
         nonDetMapping = new HashMap<>();

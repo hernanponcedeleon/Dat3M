@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -27,7 +28,7 @@ public class VisitorSpirvVulkanTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final IntegerType archType = types.getArchType();
+    private static final IntegerType archType = Memory.getDefaultArchType();
     private static final FunctionType funcType = types.getFunctionType(types.getVoidType(), List.of());
 
     private final VisitorSpirvVulkan visitor = new VisitorSpirvVulkan();

@@ -15,11 +15,13 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -146,8 +148,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     // ========================================================================================
 
-    private IntegerType getPointerType(FunctionCall call) {
-        return call.getFunction().getProgram().getMemory().getPointerType();
+    private Type getPointerType(FunctionCall call) {
+        return call.getFunction().getProgram().getPointerType();
     }
 
     private List<Event> inlinePthreadCreate(FunctionCall call) {
@@ -162,9 +164,9 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
-        final IntegerType pointerType = getPointerType(call);
+        final Type pointerType = getPointerType(call);
         final FunctionType threadType = types.getFunctionType(pointerType, List.of(pointerType));
-        final Register tidReg = call.getFunction().newUniqueRegister("__tid", pointerType);
+        final Register tidReg = call.getFunction().newUniqueRegister("__tid", call.getFunction().getProgram().getArchType());
         final Event createEvent = newDynamicThreadCreate(tidReg, threadType, targetFunction, List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
@@ -626,7 +628,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
         final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
-                newLoopBound(expressions.makeValue(1, types.getArchType())),
+                newLoopBound(expressions.makeValue(1, oldValueSuccessRegister.getFunction().getProgram().getArchType())),
                 spinLoopHead,
                 newPthreadTryLock(oldValueSuccessRegister, address),
                 EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),
@@ -659,7 +661,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         //TODO store a value such that later uses of the lock fail
         //final Expression lock = call.getArguments().get(0);
-        //final Expression finalizedValue = expressions.makeZero(types.getArchType());
+        //final Expression finalizedValue = expressions.makeZero(Memory.getDefaultArchType());
         return List.of(
                 //EventFactory.newStore(lock, finalizedValue)
                 assignSuccess(errorRegister)
@@ -783,7 +785,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private IntegerType getRwlockDatatype() {
-        return types.getArchType();
+        return Memory.getDefaultArchType();
     }
 
     private IntLiteral getRwlockUnlockedValue() {

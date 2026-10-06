@@ -26,7 +26,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.RISCV);
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final IntegerType archType = types.getArchType();
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

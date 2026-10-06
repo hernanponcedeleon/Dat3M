@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
@@ -44,6 +46,8 @@ public abstract sealed class Task permits VerificationTask {
     }
 
     public Program getProgram() { return program; }
+    public Type getPointerType() { return program.getPointerType(); }
+    public IntegerType getArchType() { return program.getArchType(); }
     public Wmm getMemoryModel() { return memoryModel; }
     public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
