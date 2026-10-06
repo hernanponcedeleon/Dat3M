@@ -177,7 +177,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
             }
             return r1.getName().compareTo(r2.getName());
         } else if (x instanceof FinalMemoryValue f1 && y instanceof FinalMemoryValue f2) {
-            return f1.getName().compareTo(f2.getName());
+            return f1.getMemoryObject().getName().compareTo(f2.getMemoryObject().getName());
         } else {
             //return x.toString().compareTo(y.toString());
             throw new  UnsupportedOperationException("Unsupported type " + x.getClass());

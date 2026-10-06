@@ -20,10 +20,6 @@ public class FinalMemoryValue extends LeafExpressionBase<Type> {
         this.offset = offset;
     }
 
-    public String getName() {
-        return base.getName();
-    }
-
     public MemoryObject getMemoryObject() {
         return base;
     }
