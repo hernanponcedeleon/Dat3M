@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.exception.ParsingException;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
@@ -55,10 +55,10 @@ public class LitmusLocationsTest {
         final List<Expression> locations = program.getLocations();
 
         assertEquals(3, locations.size());
-        assertEquals("y", ((MemoryObject) locations.get(0)).getName());
-        assertEquals(register, ((Register) locations.get(1)).getName());
+        assertEquals("y", getName(locations.get(0)));
+        assertEquals(register, getName(locations.get(1)));
         assertSame(program.getThreads().get(0), ((Register) locations.get(1)).getThread());
-        assertEquals("x", ((MemoryObject) locations.get(2)).getName());
+        assertEquals("x", getName(locations.get(2)));
     }
 
     @Test
@@ -93,5 +93,14 @@ public class LitmusLocationsTest {
         final ParsingException exception = assertThrows(ParsingException.class,
                 () -> parse("locations [0:" + register + "; P0:" + register + "]"));
         assertTrue(exception.getMessage().contains("Duplicate location P0:" + register));
+    }
+
+    private static String getName(Expression expr) {
+        if (expr instanceof Register reg) {
+            return reg.getName();
+        } else if (expr instanceof FinalMemoryValue fv) {
+            return fv.getMemoryObject().getName();
+        }
+        throw new UnsupportedOperationException("Unexpected expression");
     }
 }

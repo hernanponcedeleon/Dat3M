@@ -186,16 +186,12 @@ public class OutputGenerator {
     private String compactExprString(Expression expr) {
         if (expr instanceof Register reg) {
             return reg.getThread().getName() + ":" + reg.getName();
-        } else if (expr instanceof FinalMemoryValue finalMemoryValue) {
-            return finalMemoryValue.getMemoryObject().getName();
         } else if (expr instanceof IntLiteral intLiteral) {
             final BigInteger signedVal = IntegerHelper.normalizeSigned(intLiteral.getValue(), intLiteral.getType().getBitWidth());
             return signedVal.toString();
         } else {
             return expr.toString();
         }
-
-        //throw new UnsupportedOperationException("Unknown expression type: " + expr.getClass());
     }
 
     private static String toEnumerationSummary(String test, String filter, String enumerationOutput, EnumerationStatus status, long time) {
