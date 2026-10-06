@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -42,6 +43,10 @@ public class Intrinsics {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+    private Type pointerType;
+    private IntegerType archType;
+    private boolean bigEndian;
 
     private Intrinsics(boolean msa) {
         detectMixedSizeAccesses = msa;
@@ -183,6 +188,9 @@ public class Intrinsics {
     // Simple late intrinsics
 
     private void inlineLate(Program program) {
+        pointerType = program.getPointerType();
+        archType = program.getArchType();
+        bigEndian = program.getMemory().isBigEndian();
         program.getThreads().forEach(this::inlineLate);
     }
 
@@ -241,12 +249,11 @@ public class Intrinsics {
         final Expression countExpr = call.getArguments().get(3);
 
         // Runtime checks
-        final Expression nullExpr = expressions.makeGeneralZero(caller.getProgram().getPointerType());
+        final Expression nullExpr = expressions.makeGeneralZero(pointerType);
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
         // Preserve the existing maximum-value model, using the width of size_t.
-        final IntegerType archType = caller.getProgram().getArchType();
         final Expression rsize_max = expressions.makeValue(
                 BigInteger.ONE.shiftLeft(archType.getBitWidth()).subtract(BigInteger.ONE), archType);
         final Expression castDestszExpr = expressions.makeCast(destszExpr, archType);
@@ -346,8 +353,6 @@ public class Intrinsics {
         // Stores the result in eight bits.
         final Register cmpReg = caller.newUniqueRegister("__memcmp_cmp", types.getByteType());
         // When this intrinsics is implemented with multibyte accesses, this determines the comparison order.
-        final boolean bigEndian = caller.getProgram().getMemory().isBigEndian();
-        assert bigEndian != caller.getProgram().getMemory().isLittleEndian();
 
         final List<Event> replacement = new ArrayList<>();
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
@@ -486,9 +491,8 @@ public class Intrinsics {
     }
 
     private Expression addByteOffset(Expression address, Expression offset) {
-        final IntegerType integerType = types.getIntegerType(types.getMemorySizeInBits(address.getType()));
-        final Expression integerAddress = expressions.makeCast(address, integerType);
-        final Expression integerOffset = expressions.makeCast(offset, integerType);
+        final Expression integerAddress = expressions.makeCast(address, archType);
+        final Expression integerOffset = expressions.makeCast(offset, archType);
         return expressions.makeCast(expressions.makeAdd(integerAddress, integerOffset), address.getType());
     }
 
