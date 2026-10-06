@@ -4,19 +4,18 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 // TODO: Should work with an arbitrary pointer rather than "base + offset"
 // Represents the final (co-maximal) value at a memory address as if read by a load instruction
 // that observed the final store.
 public class FinalMemoryValue extends LeafExpressionBase<Type> {
 
-    private final String name;
     private final MemoryObject base;
     private final int offset;
 
-    public FinalMemoryValue(String displayName, Type loadType, MemoryObject base, int offset) {
+    public FinalMemoryValue(Type loadType, MemoryObject base, int offset) {
         super(loadType);
-        this.name = displayName;
         this.base = base;
         this.offset = offset;
     }
@@ -45,10 +44,17 @@ public class FinalMemoryValue extends LeafExpressionBase<Type> {
 
     @Override
     public String toString() {
-        if (name == null) {
-            return String.format("%s[%s]", base, offset);
+        final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(getType());
+        final int lowerByte = offset;
+        final int upperByte = offset + accessSize;
+        final String baseName = base.toString().substring(1);
+        if (base.hasKnownSize() && (lowerByte == 0 && upperByte == base.getKnownSize())) {
+            // Access whole range: just print the variable
+            return baseName;
+        } else {
+            // Access subrange: print the subrange
+            return String.format("%s[%s..%s]", baseName, lowerByte, upperByte);
         }
-        return name;
     }
 
     @Override

@@ -81,7 +81,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         }
         final MemoryObject object = programBuilder.getMemoryObject(name);
         checkState(object != null, "Undefined location %s", name);
-        return new FinalMemoryValue(object.getName(), object.getInitialValue(0).getType(), object, 0);
+        return new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0);
     }
 
     private static LitmusAssertionsParser newParser(ParserRuleContext ctx) {
@@ -161,6 +161,6 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
         final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize()));
-        return right && offset == null ? base : new FinalMemoryValue(name, type, base, o);
+        return right && offset == null ? base : new FinalMemoryValue(type, base, o);
     }
 }

@@ -198,6 +198,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
         int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
-        return new FinalMemoryValue(name, elType, base.getAddress(), offset);
+        return new FinalMemoryValue(elType, base.getAddress(), offset);
     }
 }

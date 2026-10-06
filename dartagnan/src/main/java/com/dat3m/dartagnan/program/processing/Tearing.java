@@ -324,7 +324,7 @@ public final class Tearing implements ProgramProcessor {
             final List<Expression> result = new ArrayList<>();
             for (int offset = begin; offset < end;) {
                 final Type t = typesByOffset.get(offset);
-                result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
+                result.add(new FinalMemoryValue(t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);
             }
             final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeMemoryConcat(result);
