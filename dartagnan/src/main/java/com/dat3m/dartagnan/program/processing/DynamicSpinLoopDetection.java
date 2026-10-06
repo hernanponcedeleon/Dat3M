@@ -181,7 +181,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
         if (loop.isSideEffectFree()) {
-            final Event loopBound = EventFactory.newLoopBound(expressions.makeValue(1, types.getArchType()));
+            final Event loopBound = EventFactory.newLoopBound(expressions.makeValue(1, loop.getStart().getFunction().getProgram().getArchType()));
             loop.getStart().insertBefore(loopBound);
         }
     }

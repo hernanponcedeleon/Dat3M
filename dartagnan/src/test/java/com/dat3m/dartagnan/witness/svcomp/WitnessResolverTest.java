@@ -77,9 +77,9 @@ public class WitnessResolverTest {
     private record TestProgram(Program program, AliasAnalysis alias, MemoryObject x) {
 
         static TestProgram build(int workers) throws Exception {
-            final FunctionType mainType = types.getFunctionType(types.getArchType(), List.of());
-            final FunctionType workerType = types.getFunctionType(types.getVoidType(), List.of());
             final ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+            final FunctionType mainType = types.getFunctionType(builder.getArchType(), List.of());
+            final FunctionType workerType = types.getFunctionType(types.getVoidType(), List.of());
             final MemoryObject x = builder.newMemoryObject("x", 4);
             final MemoryObject y = builder.newMemoryObject("y", 4);
             final Function main = builder.newFunction("main", 0, mainType, List.of());

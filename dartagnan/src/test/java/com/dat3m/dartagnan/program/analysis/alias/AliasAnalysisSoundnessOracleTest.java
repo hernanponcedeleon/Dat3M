@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class AliasAnalysisSoundnessOracleTest {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Parameterized.Parameters(name = "{0}")
@@ -96,7 +94,7 @@ public class AliasAnalysisSoundnessOracleTest {
             }
         }
         for (MemoryObject object : List.of(x, y, z)) {
-            IntegerType type = types.getArchType();
+            IntegerType type = builder.getArchType();
             Expression index = makeChoice(builder, expressions.makeZero(type), expressions.makeOne(type));
             Expression address = expressions.makeAdd(
                     object, expressions.makeMul(index, expressions.makeValue(8, type)));
@@ -130,7 +128,7 @@ public class AliasAnalysisSoundnessOracleTest {
 
     private AccessCase addAccess(ProgramBuilder builder, Expression address,
             Set<PointerValue> values, String description) {
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register pointer = builder.getOrNewRegister(0, "pointer" + nextId(), type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(pointer, address));
         Store store = EventFactory.newStore(pointer, expressions.makeZero(type));
@@ -139,7 +137,7 @@ public class AliasAnalysisSoundnessOracleTest {
     }
 
     private Expression makeChoice(ProgramBuilder builder, Expression first, Expression second) {
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register condition = builder.getOrNewRegister(0, "condition" + nextId(), type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(condition, builder.newConstant(type)));
         return expressions.makeITE(expressions.makeEQ(condition, expressions.makeZero(type)), first, second);
@@ -193,7 +191,7 @@ public class AliasAnalysisSoundnessOracleTest {
     private record PointerValue(MemoryObject object, int offset) {
         private Expression toExpression() {
             return offset == 0 ? object : expressions.makeAdd(
-                    object, expressions.makeValue(offset, types.getArchType()));
+                    object, expressions.makeValue(offset, (IntegerType) object.size().getType()));
         }
 
         @Override

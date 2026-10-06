@@ -37,7 +37,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Express
         this.programBuilder = programBuilder;
         this.types = programBuilder.getTypeFactory();
         this.expressions = programBuilder.getExpressionFactory();
-        this.archType = programBuilder.getTypeFactory().getArchType();
+        this.archType = programBuilder.getArchType();
     }
 
     public static void parseAssertions(
