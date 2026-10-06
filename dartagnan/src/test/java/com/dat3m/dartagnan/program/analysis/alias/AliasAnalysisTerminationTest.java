@@ -107,15 +107,15 @@ public class AliasAnalysisTerminationTest {
 
     private Register loadAndIncrease(ProgramBuilder builder, int threadId, String name,
             MemoryObject source, MemoryObject destination) {
-        Register pointer = builder.getOrNewRegister(threadId, name, types.getArchType());
-        Expression next = expressions.makeAdd(pointer, expressions.makeValue(8, types.getArchType()));
+        Register pointer = builder.getOrNewRegister(threadId, name, builder.getArchType());
+        Expression next = expressions.makeAdd(pointer, expressions.makeValue(8, builder.getArchType()));
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newLoad(pointer, source));
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newStore(destination, next));
         return pointer;
     }
 
     private Store addStore(ProgramBuilder builder, int threadId, Expression address) {
-        Store store = EventFactory.newStore(address, expressions.makeZero(types.getArchType()));
+        Store store = EventFactory.newStore(address, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(threadId, store);
         return store;
     }

@@ -62,7 +62,7 @@ public class Function implements LeafExpression {
     public Type getType() {
         Preconditions.checkState(program != null,
                 "Function must belong to a program before querying its pointer type.");
-        return program.getMemory().getPointerType();
+        return program.getPointerType();
     }
 
     @Override

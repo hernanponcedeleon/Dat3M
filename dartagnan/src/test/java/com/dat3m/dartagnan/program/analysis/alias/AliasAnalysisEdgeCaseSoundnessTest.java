@@ -79,7 +79,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register condition = builder.getOrNewRegister(0, "condition", type);
         Register carried = builder.getOrNewRegister(0, "carried", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
@@ -124,7 +124,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         builder.newThread(0);
 
         IntegerType i32 = types.getIntegerType(32);
-        IntegerType i64 = types.getArchType();
+        IntegerType i64 = builder.getArchType();
         IntegerType i128 = types.getIntegerType(128);
         Register zeroExtended = addCast(builder, "zeroExtended", x, i128, false);
         Register signExtended = addCast(builder, "signExtended", x, i128, true);
@@ -160,7 +160,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject x = builder.newMemoryObject("x", 16);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register index = builder.getOrNewRegister(0, "index", type);
         Register firstOrOutOfBounds = builder.getOrNewRegister(0, "firstOrOutOfBounds", type);
         Register lastOrOutOfBounds = builder.getOrNewRegister(0, "lastOrOutOfBounds", type);
@@ -205,7 +205,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject target = builder.newMemoryObject("target", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register address = builder.getOrNewRegister(0, "address", type);
         Register loadedPointer = builder.getOrNewRegister(0, "loadedPointer", type);
         Load load = EventFactory.newLoad(loadedPointer, address);
@@ -243,7 +243,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         builder.newThread(0);
         Thread spawnedThread = builder.newThread(1);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         ThreadCreate create = EventFactory.newThreadCreate(List.of(argumentTarget));
         create.setSpawnedThread(spawnedThread);
         builder.addChildWithoutSourceLoc(0, create);
@@ -253,7 +253,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         Store throughArgument = EventFactory.newStore(argument, expressions.makeZero(type));
         builder.addChildWithoutSourceLoc(1, throughArgument);
 
-        Register allocatedPointer = builder.getOrNewRegister(0, "allocatedPointer", types.getPointerType());
+        Register allocatedPointer = builder.getOrNewRegister(0, "allocatedPointer", builder.getPointerType());
         Alloc alloc = EventFactory.newAlloc(
                 allocatedPointer, type, expressions.makeValue(1, type), false, false);
         alloc.setAllocatedObject(allocated);
@@ -285,7 +285,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register loaded = builder.getOrNewRegister(0, "loaded", type);
         Register condition = builder.getOrNewRegister(0, "condition", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(condition, builder.newConstant(type)));
@@ -323,7 +323,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 16);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register condition = builder.getOrNewRegister(0, "condition", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(condition, builder.newConstant(type)));
@@ -355,7 +355,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         ArrayType innerType = types.getArrayType(type, 2);
         ArrayType outerType = types.getArrayType(innerType, 2);
         Expression innerX = expressions.makeArray(innerType, List.of(x, x));
@@ -390,7 +390,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         MemoryObject target = builder.newMemoryObject("target", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register index = builder.getOrNewRegister(0, "index", type);
         Register address = builder.getOrNewRegister(0, "address", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
@@ -421,14 +421,14 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
          *   return object
          * The store can access `object`.
          */
-        IntegerType type = types.getArchType();
-        FunctionType workerType = types.getFunctionType(type, List.of());
         ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        IntegerType type = builder.getArchType();
+        FunctionType workerType = types.getFunctionType(type, List.of());
         MemoryObject x = builder.newMemoryObject("x", 8);
         Function main = builder.newFunction("main", 0, workerType, List.of());
         Expression worker = builder.newFunction("worker", 1, workerType, List.of());
 
-        Register r0 = builder.getOrNewRegister(0, "r0", types.getAggregateType(List.of(type, type)));
+        Register r0 = builder.getOrNewRegister(0, "r0", types.getTupleType(List.of(type, type)));
         Register workerId = builder.getOrNewRegister(0, "workerId");
         builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadCreate(workerId, workerType, worker, List.of()));
         builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadJoin(r0, workerId));
@@ -455,10 +455,10 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
          * Exactly one thread joins P1 per execution. The analysis visits P0's join before
          * P1's load, and P2's join afterwards, so cached return values must survive replacement.
          */
-        IntegerType type = types.getArchType();
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        IntegerType type = builder.getArchType();
         FunctionType p1Type = types.getFunctionType(type, List.of());
         FunctionType p2Type = types.getFunctionType(type, List.of(type));
-        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         MemoryObject x = builder.newMemoryObject("x", 8);
         x.setInitialValue(0, expressions.makeZero(type));
         MemoryObject slot = builder.newMemoryObject("slot", 8);
@@ -470,9 +470,9 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         Expression choice = builder.newConstant(types.getBooleanType());
         Register p1Id = builder.getOrNewRegister(0, "p1Id");
         Register p2Id = builder.getOrNewRegister(0, "p2Id");
-        Register p0Result = builder.getOrNewRegister(0, "p0Result", types.getAggregateType(List.of(type, type)));
+        Register p0Result = builder.getOrNewRegister(0, "p0Result", types.getTupleType(List.of(type, type)));
         Register p1Result = builder.getOrNewRegister(1, "p1Result", type);
-        Register p2Result = builder.getOrNewRegister(2, "p2Result", types.getAggregateType(List.of(type, type)));
+        Register p2Result = builder.getOrNewRegister(2, "p2Result", types.getTupleType(List.of(type, type)));
         Label p0End = EventFactory.newLabel("p0End");
         Label p2End = EventFactory.newLabel("p2End");
         Store p0Indirect = EventFactory.newStore(expressions.makeExtract(p0Result, 1), expressions.makeZero(type));
@@ -515,16 +515,16 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
          *   *x = 0;
          * ThreadCreation ends P1 with a ThreadReturn that has no value.
          */
-        FunctionType mainType = types.getFunctionType(types.getArchType(), List.of());
-        FunctionType workerType = types.getFunctionType(types.getVoidType(), List.of());
         ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        FunctionType mainType = types.getFunctionType(builder.getArchType(), List.of());
+        FunctionType workerType = types.getFunctionType(types.getVoidType(), List.of());
         MemoryObject x = builder.newMemoryObject("x", 8);
         Function main = builder.newFunction("main", 0, mainType, List.of());
         Expression worker = builder.newFunction("worker", 1, workerType, List.of());
 
         Register workerId = builder.getOrNewRegister(0, "workerId");
         builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadCreate(workerId, workerType, worker, List.of()));
-        Store store = EventFactory.newStore(x, expressions.makeZero(types.getArchType()));
+        Store store = EventFactory.newStore(x, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(1, store);
 
         Program program = builder.build();
@@ -551,7 +551,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
     }
 
     private Store addStore(ProgramBuilder builder, Expression address) {
-        Store store = EventFactory.newStore(address, expressions.makeZero(types.getArchType()));
+        Store store = EventFactory.newStore(address, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(0, store);
         return store;
     }

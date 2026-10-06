@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class AliasAnalysisCyclicSoundnessTest {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Parameterized.Parameters(name = "{0}")
@@ -103,7 +101,7 @@ public class AliasAnalysisCyclicSoundnessTest {
         MemoryObject slotB = builder.newMemoryObject("slotB", 8);
         MemoryObject x = builder.newMemoryObject("x", 32);
         MemoryObject y = builder.newMemoryObject("y", 32);
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Expression xPlusEight = add(x, 8);
         Expression yPlusEight = add(y, 8);
         slotA.setInitialValue(0, x);
@@ -149,20 +147,20 @@ public class AliasAnalysisCyclicSoundnessTest {
 
     private Register loadAndForward(ProgramBuilder builder, int threadId, String name,
             MemoryObject source, MemoryObject destination) {
-        Register pointer = builder.getOrNewRegister(threadId, name, types.getArchType());
+        Register pointer = builder.getOrNewRegister(threadId, name, builder.getArchType());
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newLoad(pointer, source));
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newStore(destination, pointer));
         return pointer;
     }
 
     private Store addStore(ProgramBuilder builder, int threadId, Expression address) {
-        Store store = EventFactory.newStore(address, expressions.makeZero(types.getArchType()));
+        Store store = EventFactory.newStore(address, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(threadId, store);
         return store;
     }
 
     private Expression add(Expression expression, long offset) {
-        return expressions.makeAdd(expression, expressions.makeValue(offset, types.getArchType()));
+        return expressions.makeAdd(expression, expressions.makeValue(offset, (IntegerType) expression.getType()));
     }
 
     private AnalysisResult analyze(Program program, Event... originalEvents) throws Exception {

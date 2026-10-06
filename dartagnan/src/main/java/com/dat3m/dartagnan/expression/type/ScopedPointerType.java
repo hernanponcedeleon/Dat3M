@@ -1,12 +1,14 @@
 package com.dat3m.dartagnan.expression.type;
 
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.program.memory.Memory;
+
 
 import java.util.Objects;
 
 public class ScopedPointerType extends IntegerType {
 
-    private static final int ARCH_SIZE = TypeFactory.getInstance().getArchType().getBitWidth();
+    private static final int ARCH_SIZE = Memory.DEFAULT_POINTER_SIZE;
 
     private final String scopeId;
     private final Type pointedType;
