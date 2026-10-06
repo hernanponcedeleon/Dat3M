@@ -26,7 +26,6 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final Type unitType = getAggregateType(List.of());
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerType = getIntegerType(64); //TODO add proper pointer type
 
     private TypeFactory() {
     }
@@ -45,10 +44,6 @@ public final class TypeFactory {
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
-    }
-
-    public IntegerType getArchType() {
-        return pointerType;
     }
 
     public IntegerType getByteType() {
@@ -77,10 +72,6 @@ public final class TypeFactory {
     public FloatType getIEEEHalfType() { return getFloatType(10, 5); }
     public FloatType getIEEESingleType() { return getFloatType(23, 8); }
     public FloatType getIEEEDoubleType() { return getFloatType(52, 11); }
-
-    public Type getPointerType() {
-        return pointerType;
-    }
 
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
         checkNotNull(scopeId);

@@ -42,7 +42,7 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
-        IntegerType mockType = types.getArchType();
+        IntegerType mockType = builder.getArchType();
         try {
             return expressions.makeValue(Long.parseLong(ctx.getText()), mockType);
         } catch (ParsingException e) {

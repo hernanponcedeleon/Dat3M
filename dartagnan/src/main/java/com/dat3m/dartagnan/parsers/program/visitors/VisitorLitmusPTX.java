@@ -24,7 +24,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.PTX);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final TypeFactory types = programBuilder.getTypeFactory();
-    private final IntegerType archType = types.getArchType();
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

@@ -240,17 +240,17 @@ public class Intrinsics {
         final Expression src = call.getArguments().get(2);
         final Expression countExpr = call.getArguments().get(3);
 
-        // Runtime checks use the program's pointer width.
-        final IntegerType pointerType = caller.getProgram().getMemory().getPointerType();
-        final Expression nullExpr = expressions.makeZero(pointerType);
+        // Runtime checks
+        final Expression nullExpr = expressions.makeGeneralZero(caller.getProgram().getPointerType());
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
         // Preserve the existing maximum-value model, using the width of size_t.
+        final IntegerType archType = caller.getProgram().getArchType();
         final Expression rsize_max = expressions.makeValue(
-                BigInteger.ONE.shiftLeft(pointerType.getBitWidth()).subtract(BigInteger.ONE), pointerType);
-        final Expression castDestszExpr = expressions.makeCast(destszExpr, pointerType);
-        final Expression castCountExpr = expressions.makeCast(countExpr, pointerType);
+                BigInteger.ONE.shiftLeft(archType.getBitWidth()).subtract(BigInteger.ONE), archType);
+        final Expression castDestszExpr = expressions.makeCast(destszExpr, archType);
+        final Expression castCountExpr = expressions.makeCast(countExpr, archType);
 
         final Expression invalidDestsz = expressions.makeGT(castDestszExpr, rsize_max, false);
         final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
@@ -486,7 +486,10 @@ public class Intrinsics {
     }
 
     private Expression addByteOffset(Expression address, Expression offset) {
-        return expressions.makeAdd(address, expressions.makeCast(offset, address.getType()));
+        final IntegerType integerType = types.getIntegerType(types.getMemorySizeInBits(address.getType()));
+        final Expression integerAddress = expressions.makeCast(address, integerType);
+        final Expression integerOffset = expressions.makeCast(offset, integerType);
+        return expressions.makeCast(expressions.makeAdd(integerAddress, integerOffset), address.getType());
     }
 
     private Register getResultRegister(FunctionCall call) {

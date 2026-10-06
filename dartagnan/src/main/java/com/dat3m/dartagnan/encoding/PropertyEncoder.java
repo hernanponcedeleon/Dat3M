@@ -330,7 +330,7 @@ public class PropertyEncoder {
 
     private boolean mayBePointerValue(List<Store> stores) {
         final TypeFactory types = TypeFactory.getInstance();
-        final int pointerSize = context.getTask().getProgram().getMemory().getPointerType().getBitWidth();
+        final int pointerSize = types.getMemorySizeInBits(context.getTask().getPointerType());
         if (stores.size() == 1) {
             return stores.get(0).getAccessType() instanceof IntegerType intType
                     && intType.getBitWidth() == pointerSize;
@@ -350,7 +350,7 @@ public class PropertyEncoder {
         final ExpressionFactory exprs = context.getExpressionFactory();
         return exprs.makeFromMemoryCast(
                 exprs.makeMemoryConcat(stores.stream().map(Store::getMemValue).toList()),
-                context.getTask().getProgram().getMemory().getPointerType()
+                context.getTask().getPointerType()
         );
     }
 

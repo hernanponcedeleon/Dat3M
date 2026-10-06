@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.program.memory.Memory;
 import org.junit.Test;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 public class HelperTagsTest {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private static final IntegerType archType = Memory.getDefaultArchType();
 
     @Test
     public void testValidScope() {

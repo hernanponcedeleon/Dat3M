@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 
@@ -36,7 +37,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, Expression alignment, boolean isHeapAllocation,
                  boolean doesZeroOutMemory) {
-        Preconditions.checkArgument(resultRegister.getType() instanceof IntegerType);
+        Preconditions.checkArgument(Memory.isPointerType(resultRegister.getType()));
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         Preconditions.checkArgument(alignment.getType() instanceof IntegerType);
         this.resultRegister = resultRegister;

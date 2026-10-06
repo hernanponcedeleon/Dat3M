@@ -7,14 +7,15 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Test;
@@ -252,7 +253,7 @@ public class VisitorOpsMemoryTest {
                 %v4 = OpVariable %struct_ptr Uniform
                 """;
 
-        IntegerType archType = types.getArchType();
+        IntegerType archType = Memory.getDefaultArchType();
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(7890, archType);
         List<Expression> iValues = Stream.of(1, 2, 3).map(i -> (Expression) expressions.makeValue(i, archType)).toList();
@@ -333,7 +334,7 @@ public class VisitorOpsMemoryTest {
                 %v3 = OpVariable %v3_ptr Uniform
                 """;
 
-        IntegerType archType = types.getArchType();
+        IntegerType archType = Memory.getDefaultArchType();
         ArrayType arr1Type = types.getArrayType(archType, 2);
         ArrayType arr2Type = types.getArrayType(arr1Type, 3);
         AggregateType aggType = types.getAggregateType(List.of(archType, arr1Type));
@@ -433,7 +434,7 @@ public class VisitorOpsMemoryTest {
                 %v2 = OpVariable %v2_ptr Uniform
                 """;
 
-        IntegerType archType = types.getArchType();
+        IntegerType archType = Memory.getDefaultArchType();
         ArrayType arr1Type = types.getArrayType(archType, 2);
         ArrayType arr2Type = types.getArrayType(archType, 3);
         Expression i1 = expressions.makeValue(1, archType);
@@ -567,7 +568,7 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %i_ptr Uniform";
 
-        IntegerType archType = types.getArchType();
+        IntegerType archType = Memory.getDefaultArchType();
         ArrayType arrayType = types.getArrayType(archType, 2);
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(2, archType);
@@ -664,7 +665,7 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %i_ptr Uniform %i_const";
 
-        IntegerType archType = types.getArchType();
+        IntegerType archType = Memory.getDefaultArchType();
         Expression v = expressions.makeValue(2, archType);
 
         builder = new MockProgramBuilder();

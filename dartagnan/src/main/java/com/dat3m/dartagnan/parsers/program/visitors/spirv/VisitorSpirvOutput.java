@@ -120,7 +120,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     @Override
     public Expression visitAssertionValue(SpirvParser.AssertionValueContext ctx) {
         if (ctx.initBaseValue() != null) {
-            return expressions.parseValue(ctx.initBaseValue().getText(), types.getArchType());
+            return expressions.parseValue(ctx.initBaseValue().getText(), builder.getArchType());
         }
         String name = ctx.varName().getText();
         Expression expression = builder.getExpression(name);

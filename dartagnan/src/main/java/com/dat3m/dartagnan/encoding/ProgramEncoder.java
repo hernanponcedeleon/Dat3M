@@ -378,7 +378,7 @@ public class ProgramEncoder {
     }
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
-        final IntegerType pointerType = memory.getPointerType();
+        final IntegerType archType = memory.getArchType();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<BooleanFormula> enc = new ArrayList<>();
 
@@ -400,8 +400,8 @@ public class ProgramEncoder {
                 alignment = cur.alignment();
             } else {
                 final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
-                final Expression zero = exprs.makeZero(pointerType);
-                final Expression one = exprs.makeOne(pointerType);
+                final Expression zero = exprs.makeZero(archType);
+                final Expression one = exprs.makeOne(archType);
 
                 // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
                 // even if the allocation does not get executed. This improves performance.

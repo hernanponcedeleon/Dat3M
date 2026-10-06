@@ -324,7 +324,7 @@ public final class EncodingContext {
         for (MemoryObject memoryObject : task.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
-                    task.getProgram().getMemory().getPointerType())
+                    task.getArchType())
             );
         }
 

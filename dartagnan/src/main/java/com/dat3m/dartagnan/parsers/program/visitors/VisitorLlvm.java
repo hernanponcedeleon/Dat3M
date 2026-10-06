@@ -4,9 +4,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
+import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.parsers.LLVMIR.*;
 import com.dat3m.dartagnan.parsers.LLVMIR;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
-import com.dat3m.dartagnan.parsers.LLVMIR.*;
 import com.dat3m.dartagnan.parsers.program.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
@@ -17,8 +19,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.metadata.Metadata;
-import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -54,7 +54,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final IntegerType pointerType;
+    private final Type pointerType;
+    private final IntegerType integerType;
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, TypeContext> namedTypeContexts = new HashMap<>();
@@ -79,7 +80,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         dataLayout = parseDataLayout(ctx);
         program = new Program(new Memory(dataLayout.bigEndian, dataLayout.pointerSize),
                 Program.SourceLanguage.LLVM);
-        pointerType = program.getMemory().getPointerType();
+        pointerType = program.getPointerType();
+        integerType = program.getArchType();
     }
 
     private static DataLayout parseDataLayout(CompilationUnitContext ctx) {
@@ -556,13 +558,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type elementType = parseType(ctx.type());
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
-            sizeExpression = expressions.makeOne(pointerType);
+            sizeExpression = expressions.makeOne(integerType);
         } else {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
         final int alignment = getAllocationAlignment(ctx.type(), ctx.align());
-        final Expression alignmentExpression = expressions.makeValue(alignment, pointerType);
+        final Expression alignmentExpression = expressions.makeValue(alignment, integerType);
         final Event alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression,
                 alignmentExpression, false, false);
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
@@ -964,7 +966,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero(pointerType);
+        return expressions.makeGeneralZero(pointerType);
     }
 
     @Override

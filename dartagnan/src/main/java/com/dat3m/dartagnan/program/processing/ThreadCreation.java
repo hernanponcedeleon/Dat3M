@@ -355,7 +355,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.getEntry().insertAfter(body);
 
         // ------------------- Define runtime thread id -------------------
-        final var tidExpr = new TIdExpr(function.getProgram().getMemory().getPointerType(), thread);
+        final var tidExpr = new TIdExpr(function.getProgram().getArchType(), thread);
         thread.getEntry().insertAfter(newLocal(thread.getOrNewRegister(THREAD_SELF_REGISTER_NAME, tidExpr.getType()), tidExpr));
 
         // ------------------- Create thread-local variables -------------------
@@ -440,7 +440,7 @@ public class ThreadCreation implements ProgramProcessor {
             // Allocate single object of memory type
             final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, memory.getPointerType());
             final Event localAlloc = EventFactory.newAlignedAlloc(
-                    reg, memoryType, expressions.makeOne(memory.getPointerType()),
+                    reg, memoryType, expressions.makeOne(memory.getArchType()),
                     memoryObject.alignment(), false, true
             );
 
@@ -448,7 +448,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        expressions.makeAdd(reg, expressions.makeValue(initOffset, memory.getPointerType())),
+                        expressions.makeAdd(reg, expressions.makeValue(initOffset, memory.getArchType())),
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
@@ -494,7 +494,7 @@ public class ThreadCreation implements ProgramProcessor {
         interface StorageField { MemoryObject get(Storage s); }
         interface Match { Expression compute(StorageField f, Expression k); }
         final List<Storage> storage = new ArrayList<>();
-        final Type type = program.getMemory().getPointerType();
+        final Type type = program.getPointerType();
         final int size = types.getMemorySizeInBytes(type);
         final Expression nil = expressions.makeGeneralZero(type);
         for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {

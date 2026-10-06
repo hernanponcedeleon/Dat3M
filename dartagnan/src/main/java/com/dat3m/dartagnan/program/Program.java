@@ -124,6 +124,14 @@ public class Program extends MetadataCarrierBase<Program> {
         return this.memory;
     }
 
+    public Type getPointerType() {
+        return memory.getPointerType();
+    }
+
+    public IntegerType getArchType() {
+        return memory.getArchType();
+    }
+
     public void setEntrypoint(Entrypoint entrypoint) {
         this.entrypoint = Preconditions.checkNotNull(entrypoint);
     }
