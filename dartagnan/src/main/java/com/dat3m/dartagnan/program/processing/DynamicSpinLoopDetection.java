@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -53,6 +54,7 @@ import java.util.Set;
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpinLoopDetection.class);
+    private IntegerType archType;
 
     public static DynamicSpinLoopDetection fromConfig(Configuration config) {
         return new DynamicSpinLoopDetection();
@@ -60,6 +62,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        archType = program.getArchType();
         Preconditions.checkArgument(!program.isUnrolled(),
                 "DynamicSpinLoopDetection cannot be run on already unrolled programs.");
 
@@ -181,7 +184,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
         if (loop.isSideEffectFree()) {
-            final Event loopBound = EventFactory.newLoopBound(expressions.makeValue(1, loop.getStart().getFunction().getProgram().getArchType()));
+            final Event loopBound = EventFactory.newLoopBound(expressions.makeOne(archType));
             loop.getStart().insertBefore(loopBound);
         }
     }
