@@ -67,11 +67,20 @@ public class ParserLlvmTest {
     @Test
     public void rejectsInvalidOrUnrepresentableAllocationAlignments() {
         for (long alignment : new long[]{3, 1L << 33}) {
+            assertThrows(ParsingException.class, () -> parse("e-p:64:64",
+                    "@g = global i8 0, align " + alignment, "ret i32 0"));
             assertThrows(ParsingException.class, () -> parse("e-p:64:64", "",
                     "%p = alloca i8, align " + alignment + "\nret i32 0"));
         }
         assertThrows(ParsingException.class, () -> parse("e-p:32:32", "",
                 "%p = alloca i8, align 4294967296\nret i32 0"));
+    }
+
+    @Test
+    public void rejectsNonPowerOfTwoDataLayoutAlignments() {
+        for (String layout : new String[]{"e-p:64:24", "e-p:64:64:96", "e-i32:24:32", "e-a:0:24"}) {
+            assertThrows(ParsingException.class, () -> parse(layout, "", "ret i32 0"));
+        }
     }
 
     @Test
