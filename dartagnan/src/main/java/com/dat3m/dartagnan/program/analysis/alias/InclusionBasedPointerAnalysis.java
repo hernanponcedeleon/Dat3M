@@ -299,7 +299,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private void run(Program program, AliasAnalysis.Config configuration) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
-        initialise(program);
+        initialise(program, configuration);
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
         // If needed, a register gets a "phi" variable representing its phi-node's value set.
@@ -327,7 +327,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         registerVariables.clear();
     }
 
-    private void initialise(Program program) {
+    private void initialise(Program program, AliasAnalysis.Config configuration) {
         // Each memory object gets a variable representing its base address value.
         for (final MemoryObject object : program.getMemory().getObjects()) {
             objectVariables.put(object, new Variable<>(object, null, object.toString()));
@@ -337,12 +337,14 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             final var pointerSet = new Variable<Modifier>(null, null, constant.toString());
             nonDetVariables.put(constant, pointerSet);
             pointerSet.includes.add(new IncludeEdge<>(nullVariable, RELAXED));
-            for (final Variable<Modifier> object : objectVariables.values()) {
-                pointerSet.includes.add(new IncludeEdge<>(object, RELAXED));
+            if (configuration.nondetAddresses) {
+                for (final Variable<Modifier> object : objectVariables.values()) {
+                    pointerSet.includes.add(new IncludeEdge<>(object, RELAXED));
+                }
             }
         }
         totalVariables = 1 + objectVariables.size() + nonDetVariables.size();
-        totalIncludeEdges = nonDetVariables.size() * (1 + objectVariables.size());
+        totalIncludeEdges = nonDetVariables.size() * (configuration.nondetAddresses ? 1 + objectVariables.size() : 1);
     }
 
     // Declares the "out" variable of 'event' and inserts initial 'includes' and 'loads' edges.

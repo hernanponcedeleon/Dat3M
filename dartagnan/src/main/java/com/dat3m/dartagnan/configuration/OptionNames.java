@@ -55,6 +55,7 @@ public class OptionNames {
     // Program Property Options
     public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";
     public static final String ALIAS_METHOD = "program.analysis.alias";
+    public static final String ALIAS_NONDET_ADDRESSES = "program.analysis.nondetAddresses";
     public static final String ALIAS_GRAPHVIZ = "program.analysis.generateAliasGraph";
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
     public static final String ALIAS_GRAPHVIZ_SHOW_ALL = "program.analysis.generateAliasGraph.showAllEvents";
