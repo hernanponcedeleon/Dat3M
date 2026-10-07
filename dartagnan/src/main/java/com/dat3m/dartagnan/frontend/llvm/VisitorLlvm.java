@@ -304,13 +304,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     public void visitGlobalDeclaration(GlobalDefContext ctx) {
+        checkPointerAddressSpace(ctx.addrSpace());
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
         final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
         if (size > 0) {
             final AlignContext explicitAlignment = ctx.globalField().stream()
                     .map(GlobalFieldContext::align).filter(Objects::nonNull).findFirst().orElse(null);
-            final int alignment = getAllocationAlignment(ctx.type(), explicitAlignment);
+            final long alignment = getAllocationAlignment(ctx.type(), explicitAlignment);
             final MemoryObject globalObject = program.getMemory().allocate(size, alignment);
             globalObject.setName(name);
             if (ctx.threadLocal() != null) {
@@ -584,6 +585,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Instructions producing a value
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
+        checkPointerAddressSpace(ctx.addrSpace());
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
         final Register register = getOrNewCurrentRegister(pointerType);
         //final var inalloca = ctx.inAllocaTok != null;
@@ -596,7 +598,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
-        final int alignment = getAllocationAlignment(ctx.type(), ctx.align());
+        final long alignment = getAllocationAlignment(ctx.type(), ctx.align());
         final Expression alignmentExpression = expressions.makeValue(alignment, integerType);
         final Event alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression,
                 alignmentExpression, false, false);
@@ -954,12 +956,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPtrToIntInst(PtrToIntInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
     public Expression visitIntToPtrInst(IntToPtrInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
@@ -1186,12 +1188,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPtrToIntExpr(PtrToIntExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitIntToPtrExpr(IntToPtrExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
@@ -1265,6 +1267,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
+        checkPointerAddressSpace(ctx.opaquePointerType() != null
+                ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
         parsedType = pointerType;
         return null;
     }
@@ -1295,6 +1299,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitType(TypeContext ctx) {
         // translate opaque pointer types
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
+            checkPointerAddressSpace(ctx.opaquePointerType() != null
+                    ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
             parsedType = pointerType;
             return null;
         } else if (ctx.getText().equals("void")) {
@@ -1721,6 +1727,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
     }
 
+    private void checkPointerAddressSpace(AddrSpaceContext ctx) {
+        final int space = ctx == null ? 0 : Integer.parseInt(ctx.IntLit().getText());
+        if (dataLayout.pointerSizes.getOrDefault(space, dataLayout.pointerSize) != dataLayout.pointerSize) {
+            throw new ParsingException("Different pointer sizes across address spaces are unsupported: address space " + space);
+        }
+    }
+
     private int getTypeAlignment(TypeContext ctx, boolean preferred) {
         final Alignment alignment;
         if (ctx.opaquePointerType() != null || ctx.type() != null && ctx.params() == null) {
@@ -1767,7 +1780,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return alignment.get(preferred);
     }
 
-    private int getAllocationAlignment(TypeContext type, AlignContext explicitAlignment) {
+    private long getAllocationAlignment(TypeContext type, AlignContext explicitAlignment) {
         if (explicitAlignment == null) {
             return getTypeAlignment(type, true);
         }
@@ -1775,14 +1788,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (value.signum() == 0) {
             return getTypeAlignment(type, true);
         }
-        check(value.signum() > 0 && value.bitCount() == 1 && value.bitLength() < 32,
+        check(value.signum() > 0 && value.bitCount() == 1 && value.bitLength() <= 33,
                 "Unsupported allocation alignment in %s.", explicitAlignment);
-        return value.intValueExact();
+        check(value.bitLength() <= dataLayout.pointerSize,
+                "Allocation alignment cannot be represented by the program's pointer type in %s.", explicitAlignment);
+        return value.longValueExact();
     }
 
     private static final class DataLayout extends LLVMIRBaseVisitor<Void> {
 
         private int pointerSize = 64;
+        private final Map<Integer, Integer> pointerSizes = new HashMap<>();
         private boolean bigEndian;
         // Integer widths need ordered lookup: use an exact match, then the next larger width, then the largest.
         private final NavigableMap<Integer, Alignment> integerAlignments = new TreeMap<>(Map.of(
@@ -1840,6 +1856,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
             }
             pointerAlignments.put(addressSpace, parseAlignment(ctx.alignment(), false));
+            pointerSizes.put(addressSpace, size);
             if (addressSpace == 0) {
                 pointerSize = size;
             }
