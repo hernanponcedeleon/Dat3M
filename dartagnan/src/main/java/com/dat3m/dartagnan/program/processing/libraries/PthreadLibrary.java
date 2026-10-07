@@ -149,13 +149,13 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     // ========================================================================================
 
     private IntegerType archType;
-    private FunctionType pthread_threadType;
+    private FunctionType pthreadThreadType;
 
     @Override
     public void link(Program program) {
         final Type pointerType = program.getPointerType();
         archType = program.getArchType();
-        pthread_threadType = types.getFunctionType(pointerType, List.of(pointerType));
+        pthreadThreadType = types.getFunctionType(pointerType, List.of(pointerType));
         super.link(program);
     }
 
@@ -172,7 +172,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         assert resultRegister.getType() instanceof IntegerType;
 
         final Register tidReg = call.getFunction().newUniqueRegister("__tid", archType);
-        final Event createEvent = newDynamicThreadCreate(tidReg, pthread_threadType, targetFunction, List.of(argument));
+        final Event createEvent = newDynamicThreadCreate(tidReg, pthreadThreadType, targetFunction, List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
 
@@ -221,7 +221,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
 
-        final Type joinType = types.getAggregateType(List.of(types.getByteType(), pthread_threadType.getReturnType()));
+        final Type joinType = types.getAggregateType(List.of(types.getByteType(), pthreadThreadType.getReturnType()));
         final Register joinReg = call.getFunction().newUniqueRegister("__joinReg", joinType);
 
         final Expression status = expressions.makeExtract(joinReg, 0);
@@ -264,7 +264,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     private List<Event> inlinePthreadExit(FunctionCall call) {
         final List<Expression> arguments = call.getArguments();
-        assert arguments.size() == 1 && arguments.get(0).getType().equals(pthread_threadType.getReturnType());
+        assert arguments.size() == 1 && arguments.get(0).getType().equals(pthreadThreadType.getReturnType());
 
         return List.of(newThreadReturn(arguments.get(0)));
     }
