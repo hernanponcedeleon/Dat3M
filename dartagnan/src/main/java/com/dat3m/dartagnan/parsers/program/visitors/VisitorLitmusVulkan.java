@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusVulkanParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;

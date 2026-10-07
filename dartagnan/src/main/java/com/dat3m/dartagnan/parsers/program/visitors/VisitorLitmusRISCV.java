@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
