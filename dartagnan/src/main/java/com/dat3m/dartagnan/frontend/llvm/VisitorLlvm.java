@@ -1884,8 +1884,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // Both alignment values are in bytes.
     private record Alignment(int abi, int preferred) {
-        private int get(boolean usePrefered) {
-            return usePrefered ? preferred : abi;
+        private int get(boolean usePreferred) {
+            return usePreferred ? preferred : abi;
         }
     }
 

@@ -20,11 +20,11 @@ public class ParserLlvmTest {
     @Test
     public void pointerCastsZeroExtend() {
         for (String pointer : new String[]{"ptr", "i8*"}) {
-            assertCastValue(32, "ptrtoint " + pointer + " inttoptr (i64 2147483648 to " + pointer + ") to i64");
-            assertCastValue(64, "inttoptr i32 2147483648 to " + pointer);
-            assertCastValue(32, "add i64 ptrtoint (" + pointer
+            assertCastPreservesHighBitValue(32, "ptrtoint " + pointer + " inttoptr (i64 2147483648 to " + pointer + ") to i64");
+            assertCastPreservesHighBitValue(64, "inttoptr i32 2147483648 to " + pointer);
+            assertCastPreservesHighBitValue(32, "add i64 ptrtoint (" + pointer
                     + " inttoptr (i64 2147483648 to " + pointer + ") to i64), 0");
-            assertCastValue(64, "ptrtoint " + pointer + " inttoptr (i32 2147483648 to " + pointer + ") to i64");
+            assertCastPreservesHighBitValue(64, "ptrtoint " + pointer + " inttoptr (i32 2147483648 to " + pointer + ") to i64");
         }
     }
 
@@ -74,7 +74,54 @@ public class ParserLlvmTest {
                 "%p = alloca i8, align 4294967296\nret i32 0"));
     }
 
-    private static void assertCastValue(int pointerWidth, String instruction) {
+    @Test
+    public void infersIntegerAllocationAlignments() {
+        assertInferredAlignment("e", "i64", 8);
+        assertInferredAlignment("e-i32:32:128", "i32", 16);
+        // Unlisted widths use the next larger integer width, or the largest available width.
+        assertInferredAlignment("e-i32:32:128", "i24", 16);
+        assertInferredAlignment("e", "i128", 8);
+    }
+
+    @Test
+    public void infersArrayAllocationAlignmentsFromElements() {
+        assertInferredAlignment("e-i32:32:128", "[3 x i32]", 16);
+        assertInferredAlignment("e-i32:32:128", "[2 x [3 x i32]]", 16);
+    }
+
+    @Test
+    public void infersStructAllocationAlignments() {
+        // Member ABI alignment contributes to struct alignment; member preferred alignment does not.
+        assertInferredAlignment("e-i32:32:256-a:0:64", "{ i8, i32 }", 8);
+        assertInferredAlignment("e-i32:128:256-a:0:64", "{ i8, i32 }", 16);
+        assertInferredAlignment("e-i32:32:256-a:128:256", "{ i8, i32 }", 32);
+        // Packed members do not raise the aggregate's preferred alignment.
+        assertInferredAlignment("e-i32:128:256-a:0:64", "<{ i8, i32 }>", 8);
+    }
+
+    @Test
+    public void infersNamedStructAllocationAlignments() {
+        final Program program = parse("e-i32:128:256-a:0:64",
+                "%S = type { i8, i32 }\n@g = global %S zeroinitializer",
+                "%p = alloca %S\nret i32 0");
+        assertAllocationAlignments(program, 16);
+    }
+
+    private static void assertInferredAlignment(String layout, String type, long expected) {
+        final Program program = parse(layout, "@g = global " + type + " zeroinitializer",
+                "%p = alloca " + type + "\nret i32 0");
+        assertAllocationAlignments(program, expected);
+    }
+
+    private static void assertAllocationAlignments(Program program, long expected) {
+        final Alloc alloc = program.getFunctions().stream().flatMap(function -> function.getEvents().stream())
+                .filter(Alloc.class::isInstance).map(Alloc.class::cast).findFirst().orElseThrow();
+        assertEquals(BigInteger.valueOf(expected), ((IntLiteral) alloc.getAlignment()).getValue());
+        assertEquals(BigInteger.valueOf(expected),
+                ((IntLiteral) program.getMemory().getObjects().iterator().next().alignment()).getValue());
+    }
+
+    private static void assertCastPreservesHighBitValue(int pointerWidth, String instruction) {
         final Program program = parse("e-p:" + pointerWidth + ":" + pointerWidth, "",
                 "%r = " + instruction + "\nret i32 0");
         final Local assignment = program.getFunctions().stream().flatMap(function -> function.getEvents().stream())
