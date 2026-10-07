@@ -25,7 +25,6 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     private record CmpInstruction(Expression left, Expression right) {}
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.POWER);
-    private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = programBuilder.getArchType();
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
