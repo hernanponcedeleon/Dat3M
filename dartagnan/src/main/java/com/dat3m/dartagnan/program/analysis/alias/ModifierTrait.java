@@ -27,17 +27,6 @@ public interface ModifierTrait <Modifier> {
     /// This method must not have false positives, but is allowed to have false negatives.
     boolean mustInclude(Modifier larger, Modifier smaller);
 
-    /// Estimates the *complexity* of `modifier`.
-    /// For each `l`, there should only exist finitely many `m` with `level(m) <= l`.
-    /// Ideally, `includes(larger,smaller)` implies `level(larger) < level(smaller)`.
-    /// <p>
-    /// Undetected cycles in the dynamic inclusion graph produce address sets of increasing `level`.
-    /// This may cause the analysis to never terminate.
-    /// A dynamic cycle detection mechanism triggers when values propagate between temporarily-equal address sets.
-    /// The analysis prioritises low-`level` values to guarantee that this happens eventually for each cycle.
-    /// @return Non-negative value, zero for `relaxedModifier()`.
-    int level(Modifier modifier);
-
     /// Describes a relation including `{ (x,y) | x + offset == y }`.
     Modifier constantModifier(int offset);
 
@@ -63,7 +52,6 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Void modifier) { return true; }
         @Override public boolean mayOverlap(Void left, Void right) { return true; }
         @Override public boolean mustInclude(Void larger, Void smaller) { return true; }
-        @Override public int level(Void modifier) { return 0; }
         @Override public Void constantModifier(int offset) { return null; }
         @Override public Void relaxedModifier(int alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
@@ -78,7 +66,6 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
         @Override public boolean mayOverlap(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
         @Override public boolean mustInclude(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
-        @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
         @Override public Integer constantModifier(int offset) { return offset; }
         @Override public Integer relaxedModifier(int alignment) { return null; }
         @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
@@ -89,7 +76,7 @@ public interface ModifierTrait <Modifier> {
     /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
     record Sd(int offset, int alignment) {}
 
-    /// Enables field-sensitive alias analysis based on unions of one-dimensional linear sets.
+    /// Enables field-sensitive alias analysis based on unions of single-period linear sets.
     /// This is more precise than {@link Offsets} in presence of dynamic indexing into arrays.
     final class SdLinear implements ModifierTrait<Sd> {
         @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
@@ -114,7 +101,6 @@ public interface ModifierTrait <Modifier> {
             int r = right.alignment;
             return offset % l == 0 && r % l == 0;
         }
-        @Override public int level(Sd m) { return Math.abs(m.offset); }
         @Override public Sd constantModifier(int offset) { return new Sd(offset, 0); }
         @Override public Sd relaxedModifier(int alignment) { return new Sd(0, Math.abs(alignment)); }
         @Override
@@ -127,13 +113,16 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Sd shrinkToBounds(Sd m, int objectSize) {
-            return m.alignment < objectSize ? m : constantModifier(m.offset);
+            return m.alignment < objectSize || objectSize <= m.offset || m.offset < 0 ? m : constantModifier(m.offset);
         }
     }
 
+    /// Instances describe linear sets. `offset` is the *base*, `alignment` are the *periods*.
+    // If there is a lower bound, `alignment` contains only positive values.
+    // If there is no lower bound, `alignment` contains exactly one negative value.
     record Md(int offset, List<Integer> alignment) {}
 
-    /// Enables field-sensitive alias analysis based on multidimensional linear sets.
+    /// Enables field-sensitive alias analysis based on linear sets.
     /// This might be slightly more precise than {@link SdLinear} in presence of aggregates containing arrays.
     final class MdLinear implements ModifierTrait<Md> {
         @Override
@@ -163,32 +152,47 @@ public interface ModifierTrait <Modifier> {
         @Override
         public boolean mustInclude(Md left, Md right) {
             int offset = right.offset - left.offset;
+            // Case where `left` is functional.
             if (left.alignment.isEmpty()) {
                 return right.alignment.isEmpty() && offset == 0;
             }
-            // Case of unbounded dynamic indexes.
             int leftAlignment = singleAlignment(left.alignment);
             int rightAlignment = singleAlignment(right.alignment);
-            if (leftAlignment < 0 || rightAlignment < 0) {
-                int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
+            // Case where `left` has no lower bound.
+            // Removing any lower bound on `right` should have no effect on the return value.
+            if (leftAlignment < 0) {
+                int l = -leftAlignment;
                 int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
                 return offset % l == 0 && r % l == 0;
             }
-            // Case of a single non-negative dynamic index.
-            if (left.alignment.size() == 1) {
+            // From here on, `left` has a lower bound.
+            // Cases where `right` has no lower bound or starts lower than `left`.
+            if (rightAlignment < 0 || offset < 0) {
+                return false;
+            }
+            // Fast path where `left` has only one dynamic index.
+            if (leftAlignment > 0) {
                 for (final Integer a : right.alignment) {
                     if (a % leftAlignment != 0) {
                         return false;
                     }
                 }
-                return offset % leftAlignment == 0 && offset >= 0;
+                return offset % leftAlignment == 0;
             }
-            // Case of multiple dynamic indexes with pairwise indivisible alignments.
-            final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
-            if (gcd == 0) {
-                return true;
-            }
-            int max = Math.abs(offset);
+            // Slow path.
+            // Case where `left` has multiple periods.
+            // Inclusion between linear sets is decidable, but complex.
+            // Instead, consider the weaker condition:
+            // If `left.alignment` contains `offset` and all of `right.alignment`,
+            // then `left` includes `right`.
+            // The weaker condition fails for e.g. `Md[offset=0, alignment=[3,4,5]], Md[offset=3, alignment=[2]]`.
+            final int gcd = IntMath.gcd(reduceGCD(left.alignment),
+                    IntMath.gcd(reduceGCD(right.alignment), offset));
+            assert gcd != 0;
+            // Dynamic programming:
+            // Mark all integers that are linear combinations of `left.alignment`
+            // and are not greater than `offset` and all of `right.alignment`.
+            int max = offset;
             for (final Integer i : right.alignment) {
                 max = Math.max(max, i);
             }
@@ -207,11 +211,7 @@ public interface ModifierTrait <Modifier> {
                     return false;
                 }
             }
-            return mem[Math.abs(offset)/gcd];
-        }
-        @Override
-        public int level(Md m) {
-            return Math.abs(m.offset);
+            return mem[offset / gcd];
         }
         @Override
         public Md constantModifier(int offset) {
@@ -239,9 +239,6 @@ public interface ModifierTrait <Modifier> {
             }
             return constantModifier(modifier.offset);
         }
-        private static int singleAlignment(List<Integer> alignment) {
-            return alignment.size() != 1 ? 0 : alignment.get(0);
-        }
         // Computes the greatest common divisor of the operands.
         private static int reduceGCD(List<Integer> alignment) {
             if (alignment.isEmpty()) {
@@ -252,20 +249,6 @@ public interface ModifierTrait <Modifier> {
                 result = IntMath.gcd(result, a);
             }
             return result;
-        }
-        private static void sort(List<Integer> alignment) {
-            if (alignment.size() > 1) {
-                Collections.sort(alignment);
-            }
-        }
-        // Checks if value is no multiple of any element in the list.
-        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
-            for (final Integer candidate : candidates) {
-                if ((strict || value < candidate) && value % candidate == 0) {
-                    return false;
-                }
-            }
-            return true;
         }
         private List<Integer> compose(List<Integer> left, List<Integer> right) {
             if (left.isEmpty() || right.isEmpty() || (left.size() == 1 && left.equals(right))) {
@@ -294,8 +277,22 @@ public interface ModifierTrait <Modifier> {
                     result.add(j);
                 }
             }
-            sort(result);
+            if (result.size() > 1) {
+                Collections.sort(result);
+            }
             return result;
+        }
+        private static int singleAlignment(List<Integer> alignment) {
+            return alignment.size() != 1 ? 0 : alignment.get(0);
+        }
+        // Checks if value is no multiple of any element in the list.
+        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
+            for (final int candidate : candidates) {
+                if ((strict || value < candidate) && value % candidate == 0) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 

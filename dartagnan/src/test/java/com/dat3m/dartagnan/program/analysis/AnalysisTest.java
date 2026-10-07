@@ -382,7 +382,7 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
         b.addChildWithoutSourceLoc(0, e1);
-        Store e2 = newStore(r0);
+        Store e2 = newStore(r0, r0);
         b.addChildWithoutSourceLoc(0, e2);
         Store e3 = newStore(plus(r0, 8), r0);
         b.addChildWithoutSourceLoc(0, e3);
