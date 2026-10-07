@@ -68,10 +68,12 @@ public class Memory {
         return allocate(size, DEFAULT_ALIGNMENT);
     }
 
-    public MemoryObject allocate(int size, int alignment) {
+    public MemoryObject allocate(int size, long alignment) {
         final Expression sizeExpr = createSizeExpression(size);
         Preconditions.checkArgument(alignment > 0 && (alignment & (alignment - 1)) == 0,
                 "Alignment must be a positive power of two");
+        Preconditions.checkArgument(Long.SIZE - Long.numberOfLeadingZeros(alignment) <= archType.getBitWidth(),
+                "Alignment cannot be represented by the program's pointer type");
         final Expression alignmentExpr = expressions.makeValue(alignment, archType);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, alignmentExpr, null, ptrType);
         objects.add(memoryObject);
