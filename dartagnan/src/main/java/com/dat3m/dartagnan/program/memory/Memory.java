@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,16 +65,15 @@ public class Memory {
     }
 
     // Generates a new, statically allocated memory object.
-    public MemoryObject allocate(int size) {
+    public MemoryObject allocate(long size) {
         return allocate(size, DEFAULT_ALIGNMENT);
     }
 
-    public MemoryObject allocate(int size, long alignment) {
+    public MemoryObject allocate(long size, long alignment) {
         final Expression sizeExpr = createSizeExpression(size);
-        Preconditions.checkArgument(alignment > 0 && (alignment & (alignment - 1)) == 0,
-                "Alignment must be a positive power of two");
-        Preconditions.checkArgument(Long.SIZE - Long.numberOfLeadingZeros(alignment) <= archType.getBitWidth(),
-                "Alignment cannot be represented by the program's pointer type");
+        Preconditions.checkArgument(alignment > 0, "Alignment must be positive");
+        Preconditions.checkArgument(archType.canContain(BigInteger.valueOf(alignment)),
+                "Alignment does not fit the program's address width");
         final Expression alignmentExpr = expressions.makeValue(alignment, archType);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, alignmentExpr, null, ptrType);
         objects.add(memoryObject);
@@ -89,7 +89,7 @@ public class Memory {
         return memoryObject;
     }
 
-    public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(long size, boolean generic, VirtualMemoryObject alias) {
         final Expression sizeExpr = createSizeExpression(size);
         final VirtualMemoryObject memoryObject = new VirtualMemoryObject(nextIndex++, sizeExpr, defaultAlignment,
                 generic, alias, ptrType);
@@ -109,8 +109,10 @@ public class Memory {
         return type.equals(createPointerType(types.getMemorySizeInBits(type)));
     }
 
-    private Expression createSizeExpression(int size) {
+    private Expression createSizeExpression(long size) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
+        Preconditions.checkArgument(archType.canContain(BigInteger.valueOf(size)),
+                "Allocation size does not fit the program's address width");
         return expressions.makeValue(size, archType);
     }
 

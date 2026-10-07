@@ -633,7 +633,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
         final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
-                newLoopBound(expressions.makeOne(archType)),
+                newLoopBound(expressions.makeOne(types.getIntegerType(32))),
                 spinLoopHead,
                 newPthreadTryLock(oldValueSuccessRegister, address),
                 EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
@@ -254,8 +253,7 @@ public class Intrinsics {
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
         // Preserve the existing maximum-value model, using the width of size_t.
-        final Expression rsize_max = expressions.makeValue(
-                BigInteger.ONE.shiftLeft(archType.getBitWidth()).subtract(BigInteger.ONE), archType);
+        final Expression rsize_max = expressions.makeValue(archType.getMaximumValue(false), archType);
         final Expression castDestszExpr = expressions.makeCast(destszExpr, archType);
         final Expression castCountExpr = expressions.makeCast(countExpr, archType);
 
@@ -491,9 +489,7 @@ public class Intrinsics {
     }
 
     private Expression addByteOffset(Expression address, Expression offset) {
-        final Expression integerAddress = expressions.makeCast(address, archType);
-        final Expression integerOffset = expressions.makeCast(offset, archType);
-        return expressions.makeCast(expressions.makeAdd(integerAddress, integerOffset), address.getType());
+        return expressions.makeAdd(address, expressions.makeCast(offset, archType));
     }
 
     private Register getResultRegister(FunctionCall call) {

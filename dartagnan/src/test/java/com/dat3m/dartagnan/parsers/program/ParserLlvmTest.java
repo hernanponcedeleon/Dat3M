@@ -56,8 +56,8 @@ public class ParserLlvmTest {
         for (long alignment : new long[]{1L << 31, 1L << 32}) {
             final Program program = parse("e-p:64:64", "@g = global i8 0, align " + alignment,
                     "%p = alloca i8, align " + alignment + "\nret i32 0");
-            final Alloc alloc = program.getFunctions().stream().flatMap(function -> function.getEvents().stream())
-                    .filter(Alloc.class::isInstance).map(Alloc.class::cast).findFirst().orElseThrow();
+            final Alloc alloc = program.getFunctions().stream().flatMap(function -> function.getEvents(Alloc.class).stream())
+                    .findFirst().orElseThrow();
             assertEquals(BigInteger.valueOf(alignment), ((IntLiteral) alloc.getAlignment()).getValue());
             assertEquals(BigInteger.valueOf(alignment),
                     ((IntLiteral) program.getMemory().getObjects().iterator().next().alignment()).getValue());
@@ -114,8 +114,8 @@ public class ParserLlvmTest {
     }
 
     private static void assertAllocationAlignments(Program program, long expected) {
-        final Alloc alloc = program.getFunctions().stream().flatMap(function -> function.getEvents().stream())
-                .filter(Alloc.class::isInstance).map(Alloc.class::cast).findFirst().orElseThrow();
+        final Alloc alloc = program.getFunctions().stream().flatMap(function -> function.getEvents(Alloc.class).stream())
+                .findFirst().orElseThrow();
         assertEquals(BigInteger.valueOf(expected), ((IntLiteral) alloc.getAlignment()).getValue());
         assertEquals(BigInteger.valueOf(expected),
                 ((IntLiteral) program.getMemory().getObjects().iterator().next().alignment()).getValue());
@@ -124,8 +124,7 @@ public class ParserLlvmTest {
     private static void assertCastPreservesHighBitValue(int pointerWidth, String instruction) {
         final Program program = parse("e-p:" + pointerWidth + ":" + pointerWidth, "",
                 "%r = " + instruction + "\nret i32 0");
-        final Local assignment = program.getFunctions().stream().flatMap(function -> function.getEvents().stream())
-                .filter(Local.class::isInstance).map(Local.class::cast)
+        final Local assignment = program.getFunctions().stream().flatMap(function -> function.getEvents(Local.class).stream())
                 .filter(local -> local.getResultRegister().getName().equals("rr"))
                 .findFirst().orElseThrow();
         assertEquals(BigInteger.ONE.shiftLeft(31),
