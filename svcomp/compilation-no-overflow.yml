@@ -10,5 +10,5 @@ pipelines:
         tool: "clang"
         input: "{pipeline_input}"
         output: "{basename}.ll"
-        options: ["-I", "$DAT3M_HOME/include", "-fgnu89-inline", "-fsanitize=signed-integer-overflow,shift", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info"]
+        options: ["-I", "$DAT3M_HOME/include", "-fgnu89-inline", "-fsanitize=signed-integer-overflow,shift", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "$DAT3M_COMPILER_OPTIONS"]
         args: ["{cmd_input}", "-o", "{cmd_output}"]
