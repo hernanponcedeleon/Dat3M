@@ -231,6 +231,14 @@ public class HelperTagsTest {
         doTestInvalidMemoryOperandsDuplicate("MakePointerAvailable|MakePointerAvailableKHR", null, List.of(1, 2));
     }
 
+    @Test
+    public void testInvalidAlignment() {
+        for (int alignment : new int[]{-1, 0, 3, 6}) {
+            doTestInvalidMemoryOperands("Alignment must be a positive power of two",
+                    "Aligned", alignment, List.of());
+        }
+    }
+
     private void doTestInvalidMemoryOperandsParameters(String operand, Integer alignment, List<Integer> params) {
         String error = String.format("Illegal parameter(s) in memory operands definition '%s'", operand);
         doTestInvalidMemoryOperands(error, operand, alignment, params);
