@@ -20,6 +20,7 @@ public class UbsanLibrary extends AbstractLibrary<UbsanLibrary> {
                 "__ubsan_handle_negate_overflow", "__ubsan_handle_shift_out_of_bounds"),
                 UbsanLibrary::inlineIntegerOverflow),
         UBSAN_TYPE_MISSMATCH("__ubsan_handle_type_mismatch_v1", UbsanLibrary::inlineInvalidDereference),
+        UBSAN_OUT_OF_BOUNDS("__ubsan_handle_out_of_bounds", UbsanLibrary::inlineInvalidDereference),
         ;
 
         private final List<String> variants;
