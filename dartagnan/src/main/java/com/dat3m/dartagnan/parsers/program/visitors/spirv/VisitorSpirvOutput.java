@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -144,10 +145,10 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         if (targetType.equals(otherType)) {
             return target;
         }
-        if (target instanceof FinalMemoryValue && other.getKind() == Other.LITERAL) {
+        if ((target instanceof FinalMemoryValue || target instanceof NamedExpression) && other.getKind() == Other.LITERAL) {
             return target;
         }
-        if (target instanceof IntLiteral iValue && other instanceof FinalMemoryValue) {
+        if (target instanceof IntLiteral iValue /* && other instanceof FinalMemoryValue*/) {
             int size = types.getMemorySizeInBits(otherType);
             IntegerType newType = types.getIntegerType(size);
             return new IntLiteral(newType, iValue.getValue());

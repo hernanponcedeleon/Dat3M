@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -100,6 +101,8 @@ public class LitmusLocationsTest {
             return reg.getName();
         } else if (expr instanceof FinalMemoryValue fv) {
             return fv.getMemoryObject().getName();
+        } else if (expr instanceof NamedExpression nexpr) {
+            return nexpr.getName();
         }
         throw new UnsupportedOperationException("Unexpected expression");
     }
