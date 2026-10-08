@@ -28,7 +28,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENUMERATION_LIMIT;
 import static com.dat3m.dartagnan.verification.EnumerationStatus.*;
 
