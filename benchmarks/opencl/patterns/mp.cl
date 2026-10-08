@@ -1,14 +1,10 @@
-// Currently, clspv inserts Coherent decorations only if accesses are separated
-// by a global control barrier, ignoring release-acquire synchronization.
-// To work around this, we manually insert Coherent decoration for variable 'data'
-// before upgrading the memory model.
-
-// clspv mp.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv > mp.spvasm
-// Add 'OpDecorate %18 Coherent' (id might be different depending on clspv version)
-// spirv-as mp.spvasm -o a.spv
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > mp.spvasm
+//; @Input: %flag = {{0}}
+//; @Input: %data = {{0}}
+//; @Input: %r0 = {{0}}
+//; @Input: %r1 = {{0}}
+//; @Output: forall (%r0[0][0] != 1 or %r1[0][0] == 1)
+//; @Filter: %r0[0][0] == 1
+//; @Config: 2, 1, 1
 
 #ifdef ACQ2RX
 #define mo_acq memory_order_relaxed

@@ -1,6 +1,10 @@
-// clspv corr.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > corr.spvasm
+//; @Input: %x = {{0}}
+//; @Input: %r0 = {{0}}
+//; @Input: %r1 = {{0}}
+//; @Input: %r2 = {{0}}
+//; @Input: %r3 = {{0}}
+//; @Output: not exists (%r0[0][0] == 2 and %r1[0][0] == 1 and %r2[0][0] == 1 and %r3[0][0] == 2)
+//; @Config: 1, 1, 4
 
 __kernel void test(global atomic_uint* x, global uint* r0, global uint* r1, global uint* r2, global uint* r3) {
     if (get_group_id(0) == 0) {
