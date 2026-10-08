@@ -45,6 +45,7 @@ public class Intrinsics {
 
     private Type pointerType;
     private IntegerType archType;
+    // Determines byte comparison order for memcmp when using multibyte accesses.
     private boolean bigEndian;
 
     private Intrinsics(boolean msa) {
@@ -350,7 +351,6 @@ public class Intrinsics {
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
         // Stores the result in eight bits.
         final Register cmpReg = caller.newUniqueRegister("__memcmp_cmp", types.getByteType());
-        // When this intrinsics is implemented with multibyte accesses, this determines the comparison order.
 
         final List<Event> replacement = new ArrayList<>();
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
