@@ -16,8 +16,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.Utils.hasExtension;
 
 public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationTaskSolverTest {
@@ -62,6 +61,8 @@ public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationT
 
     protected int getBound() { return 1; }
 
+    protected int getEnumerationLimit() { return 5000; }
+
     @Override
     protected long getTimeoutSeconds() { return 60; }
 
@@ -72,6 +73,7 @@ public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationT
                 .withBound(getBound())
                 .withTarget(target)
                 .withProgressModel(getProgressModel())
+                .withOption(ENUMERATION_LIMIT, String.valueOf(getEnumerationLimit()))
                 .withOption(PHANTOM_REFERENCES, "true")
                 .withOption(INITIALIZE_REGISTERS, "true");
     }

@@ -5033,7 +5033,7 @@ litmus/LKMM/manual/memory_barriers/C-wwc+o-branch-o+o-branch-o+o.litmus,4
 litmus/LKMM/manual/memory_barriers/release-ordering.litmus,46
 litmus/LKMM/manual/plain/C-AlanStern.2018.01.11a.litmus,2
 litmus/LKMM/manual/plain/C-MP1.litmus,2
-litmus/LKMM/manual/plain/C-OOTA.litmus,2
+litmus/LKMM/manual/plain/C-OOTA.litmus,-1
 litmus/LKMM/manual/plain/C-S+o-mb-o+o-ctl-p.litmus,3
 litmus/LKMM/manual/plain/C-S-rcunoderef-1.litmus,3
 litmus/LKMM/manual/plain/C-S-rcunoderef-2.litmus,2

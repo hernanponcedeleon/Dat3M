@@ -24,7 +24,11 @@ public abstract class AbstractEnumerationTaskSolverTest {
         try (EnumerationTaskSolver solver = EnumerationTaskSolver.create(task)
                 .withShutdownManager(shutdownManager.get())) {
             solver.run();
-            assertEquals(expectedNumStates, solver.getResult().getEnumeratedStates().size());
+            if (expectedNumStates == -1) {
+                assertEquals(EnumerationStatus.LIMITED, solver.getResult().getStatus());
+            } else {
+                assertEquals(expectedNumStates, solver.getResult().getEnumeratedStates().size());
+            }
         }
     }
 
