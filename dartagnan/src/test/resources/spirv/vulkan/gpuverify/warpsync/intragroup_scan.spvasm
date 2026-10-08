@@ -1,4 +1,7 @@
+; @Input: %15=3
 ; @Config: 3, 1, 1
+; UB: A (%18) is read before initialization. With three threads, lane 31 never
+; writes the warp total to %5, which is also read before initialization.
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0
