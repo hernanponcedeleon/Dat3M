@@ -32,10 +32,14 @@ public class RemoveUnusedMemory implements ProgramProcessor {
                 .forEach(o -> o.getInitializedFields()
                         .forEach(f -> collector.memoryObjects.addAll(o.getInitialValue(f).getMemoryObjects())));
 
-        // Assertions
+        // Spec
         if (program.getSpecification() != null) {
             collector.memoryObjects.addAll(program.getSpecification().getMemoryObjects());
         }
+        if (program.getFilterSpecification() != null) {
+            collector.memoryObjects.addAll(program.getFilterSpecification().getMemoryObjects());
+        }
+        program.getLocations().forEach(loc -> collector.memoryObjects.addAll(loc.getMemoryObjects()));
 
         // Remove unused objects
         Sets.difference(memory.getObjects(), collector.memoryObjects).forEach(memory::deleteMemoryObject);
