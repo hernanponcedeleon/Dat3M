@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -26,14 +28,30 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENUMERATION_LIMIT;
 import static com.dat3m.dartagnan.verification.EnumerationStatus.*;
 
+@Options
 public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
     private static final Logger logger = LoggerFactory.getLogger(EnumerationSolver.class);
 
+    // ================================================================================================================
+    // Configuration
+
+    @Option(name=ENUMERATION_LIMIT,
+            description="Sets a limit for number of enumerated states. The value -1 means no limit.",
+            secure=true,
+            toUppercase=true)
+    private int numLimitEnumeratedStates = 5000;
+
+    // ================================================================================================================
+
     private EnumerationSolver(EnumerationTask task) throws InvalidConfigurationException {
         super(task);
+
+        task.getConfig().inject(this);
     }
 
     public static EnumerationSolver create(EnumerationTask task) throws InvalidConfigurationException {
@@ -89,12 +107,12 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         // ===================== Enumerate states =====================
         logger.info("Starting state space enumeration");
-        final int MAX_ENUMERATED_STATES = 10000;
         final List<ImmutableMap<Expression, Expression>> visitedStates = new ArrayList<>();
         EnumerationStatus status = COMPLETE;
         while (!prover.isUnsat()) {
-            if (visitedStates.size() > MAX_ENUMERATED_STATES) {
-                System.out.println("Too many states, stopping enumeration");
+            if (numLimitEnumeratedStates != -1 && visitedStates.size() > numLimitEnumeratedStates) {
+                logger.info("Enumeration limit reached.");
+                visitedStates.remove(visitedStates.size() - 1);
                 status = LIMITED;
                 break;
             }
@@ -164,10 +182,10 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
     }
 
     // For sorting expressions in a canonical manner:
-    //  (1) Registers before memory locations
+    //  (1) Registers before everything else
     //     (1.1) Among different-thread registers, sort by thread id
     //     (1.2) Among same-thread registers, sort by name
-    //  (2) Memory locations are sorted by name.
+    //  (2) The rest are sorted by name (string representation)
     private int compareExpr(Expression x, Expression y) {
         if ((x instanceof Register) != (y instanceof Register)) {
             return (x instanceof Register) ? -1 : 1;
@@ -176,8 +194,6 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
                 return r1.getThread().getId() - r2.getThread().getId();
             }
             return r1.getName().compareTo(r2.getName());
-        } else if (x instanceof FinalMemoryValue f1 && y instanceof FinalMemoryValue f2) {
-            return f1.getMemoryObject().getName().compareTo(f2.getMemoryObject().getName());
         } else {
             return x.toString().compareTo(y.toString());
         }

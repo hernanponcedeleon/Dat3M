@@ -19,6 +19,7 @@ public class OptionNames {
     public static final String MIXED_SIZE = "mixedSize";
     public static final String ENTRY = "entry";
     public static final String COMPILATION_PIPELINE = "compilation.pipeline";
+    public static final String ENUMERATION_LIMIT = "enumeration.limit";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";
