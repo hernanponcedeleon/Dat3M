@@ -1,4 +1,6 @@
+; @Input: %11=3
 ; @Config: 3, 1, 1
+; UB: values read from uninitialized A (%14) index B (%18) without bounds checks.
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0
