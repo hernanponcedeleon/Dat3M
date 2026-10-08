@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.Lists;
 
@@ -48,6 +49,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
                 SIMPLE_UNARY_OPERATIONS.contains(kind) || // Omit at e.g. negations.
                 ASSOCIATIVE_OPERATIONS.contains(kind) && parentKind == kind || // Omit at e.g. A+B+C.
                 AGGREGATE_OPERATIONS.contains(kind) ||  // Aggregates have their own parenthesis/brackets
+                kind == ExpressionKind.Other.NAMED || // Named expressions are treated like leafs
                 expr.getOperands().isEmpty(); // Omit at registers, non-det values and literals.
         kind = parentKind;
         return noParentheses ? inner : "(" + inner + ")";
@@ -163,5 +165,10 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     @Override
     public String visitRegister(Register reg) {
         return printRegistersWithFunctionId ? reg.getFunction().getId() + ":" + reg.getName() : reg.toString();
+    }
+
+    @Override
+    public String visitNamedExpression(NamedExpression expr) {
+        return expr.getName();
     }
 }

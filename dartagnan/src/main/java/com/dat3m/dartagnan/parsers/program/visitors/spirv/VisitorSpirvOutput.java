@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -48,6 +49,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             type = FORALL;
             condition = expressions.makeTrue();
         }
+
         builder.setSpecification(type, condition);
         if (filter != null) {
             builder.setFilterSpecification(filter);
@@ -190,7 +192,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Unrecognised comparison operator");
     }
 
-    private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
+    private Expression createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
         Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
@@ -198,6 +200,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
         int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
-        return new FinalMemoryValue(elType, base.getAddress(), offset);
+        return expressions.makeNamedExpression(name, new FinalMemoryValue(elType, base.getAddress(), offset));
     }
 }

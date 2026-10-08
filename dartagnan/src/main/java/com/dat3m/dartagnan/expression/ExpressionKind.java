@@ -25,7 +25,8 @@ public interface ExpressionKind {
         INSERT,
         BV_EXTRACT,
         BV_CONCAT,
-        FORMULA;
+        FORMULA,
+        NAMED;
 
         @Override
         public String getSymbol() {

@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
@@ -63,10 +65,12 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         if (ctx == null) {
             return;
         }
+
         final VisitorLitmusAssertions visitor = new VisitorLitmusAssertions(programBuilder);
         final Set<Expression> locations = new LinkedHashSet<>();
         for (var value : newParser(ctx).locationList().locationValue()) {
-            if (!locations.add(value.accept(visitor))) {
+            final Expression nexpr = value.accept(visitor);
+            if (!locations.add(nexpr)) {
                 throw new ParsingException("Duplicate location %s in locations annotation", value.getText());
             }
         }
@@ -81,7 +85,9 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         }
         final MemoryObject object = programBuilder.getMemoryObject(name);
         checkState(object != null, "Undefined location %s", name);
-        return new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0);
+
+        return expressions.makeNamedExpression(name,
+                new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0));
     }
 
     private static LitmusAssertionsParser newParser(ParserRuleContext ctx) {

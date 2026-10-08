@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
@@ -638,6 +639,11 @@ public class ExpressionEncoder {
             final Formula tBranch = encode(iteExpr.getTrueCase());
             final Formula fBranch = encode(iteExpr.getFalseCase());
             return fmgr.ifThenElse(guard, tBranch, fBranch);
+        }
+
+        @Override
+        public Formula visitNamedExpression(NamedExpression expr) {
+            return expr.getOperand().accept(this);
         }
 
         // ====================================================================================
