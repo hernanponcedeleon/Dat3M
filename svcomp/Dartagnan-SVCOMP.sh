@@ -5,16 +5,16 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
-export DAT3M_HOME=$(pwd)
+export DAT3M_HOME="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 
-if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    cmd=(dartagnan --version)
+if [ "$1" == "-v" ] || [ "$1" == "--version" ]; then
+    cmd=("$DAT3M_HOME/dartagnan/target/dartagnan" --version)
 else
     propertypath=$1
     programpath=$2
 
-    cmd=(svcomp/target/svcomp)
+    cmd=("$DAT3M_HOME/svcomp/target/svcomp")
     compilation_pipeline=svcomp/compilation.yml
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
         compilation_pipeline=svcomp/compilation-no-overflow.yml
@@ -27,6 +27,6 @@ else
             || $propertypath == *"termination.prp"* || $propertypath == *"no-data-race.prp"* ]]; then
         cmd+=(--program.processing.skipAssertionsOfType=USER)
     fi
-    cmd+=(cat/svcomp.cat "--svcomp.property=$propertypath" "$programpath")
+    cmd+=("$DAT3M_HOME/cat/svcomp.cat" "--svcomp.property=$propertypath" "$programpath")
 fi
-"${cmd[@]}"
+exec "${cmd[@]}"

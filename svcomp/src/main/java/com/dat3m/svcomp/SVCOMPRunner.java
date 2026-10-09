@@ -114,7 +114,7 @@ public class SVCOMPRunner {
             }
             cmd.add(fileModel.toString());
             cmd.add(programPath.toString());
-            cmd.add("svcomp.properties");
+            cmd.add(getHomeDirectory().resolve("svcomp/svcomp.properties").toString());
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
             cmd.add(String.format("--%s=%s", PROPERTY, o.property.stream().map(Enum::name).collect(Collectors.joining(","))));
