@@ -48,7 +48,9 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
 
     public static Pipelines load(Path yamlPath) throws IOException {
         try {
-            return loadConfiguration(yamlPath);
+            return loadConfiguration(yamlPath, Map.of(
+                    "DAT3M_HOME", getHomeDirectory().toString(),
+                    "DAT3M_OUTPUT", getOutputDirectory().toString()));
         } catch (IOException exception) {
             throw withConfigurationPath(yamlPath, exception);
         } catch (RuntimeException exception) {
@@ -56,11 +58,9 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
         }
     }
 
-    private static Pipelines loadConfiguration(Path yamlPath) throws IOException {
+    static Pipelines loadConfiguration(Path yamlPath, Map<String, String> directories) throws IOException {
         try (InputStream inputStream = Files.newInputStream(yamlPath)) {
-            final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .replace("$DAT3M_HOME", getHomeDirectory().toString())
-                    .replace("$DAT3M_OUTPUT", getOutputDirectory().toString());
+            final String rawData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             final Object yamlData = new Yaml().load(rawData);
             if (!(yamlData instanceof Map<?, ?> yamlMapping)) {
                 throw new IOException("Compilation pipeline configuration must be a YAML mapping");
@@ -68,13 +68,31 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
             final Map<String, Object> configuration = new LinkedHashMap<>();
             for (Map.Entry<?, ?> entry : yamlMapping.entrySet()) {
                 if (entry.getKey() instanceof String key && !key.startsWith("x-")) {
-                    configuration.put(key, entry.getValue());
+                    configuration.put(key, expandDirectories(entry.getValue(), directories));
                 }
             }
             final ObjectMapper mapper = new ObjectMapper();
             mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, true);
             return mapper.convertValue(configuration, Pipelines.class);
         }
+    }
+
+    private static Object expandDirectories(Object value, Map<String, String> directories) {
+        if (value instanceof String string) {
+            for (Map.Entry<String, String> directory : directories.entrySet()) {
+                string = string.replace("$" + directory.getKey(), directory.getValue());
+            }
+            return string;
+        }
+        if (value instanceof List<?> list) {
+            return list.stream().map(item -> expandDirectories(item, directories)).toList();
+        }
+        if (value instanceof Map<?, ?> map) {
+            final Map<Object, Object> expanded = new LinkedHashMap<>();
+            map.forEach((key, item) -> expanded.put(key, expandDirectories(item, directories)));
+            return expanded;
+        }
+        return value;
     }
 
     public boolean needsCompilation(String extension) {

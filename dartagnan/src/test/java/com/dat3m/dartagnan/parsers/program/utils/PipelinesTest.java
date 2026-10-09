@@ -87,6 +87,32 @@ public class PipelinesTest {
     }
 
     @Test
+    public void expandsDirectoriesWithoutInterpretingYamlEscapes() throws Exception {
+        final String home = "D:\\a\\Dat3M\\Dat3M";
+        final String output = home + "\\output";
+        final Path yaml = writeConfiguration("""
+                workdir: "$DAT3M_OUTPUT"
+                pipelines:
+                  - pipeline: ".c"
+                    output: "{basename}.ll"
+                    commands:
+                      - name: "Compile"
+                        tool: "$DAT3M_HOME/clang"
+                        input: "{pipeline_input}"
+                        output: "{basename}.ll"
+                        options: ["-I$DAT3M_HOME/include"]
+                        args: ["{cmd_input}", "-o", "{cmd_output}"]
+                """);
+
+        final Pipelines pipelines = Pipelines.loadConfiguration(yaml,
+                Map.of("DAT3M_HOME", home, "DAT3M_OUTPUT", output));
+        final Pipelines.Pipeline.Command command = pipelines.pipelines().get(0).commands().get(0);
+        assertEquals(Path.of(output).toAbsolutePath().normalize().toString(), pipelines.workdir());
+        assertEquals(home + "/clang", command.tool());
+        assertEquals(List.of("-I" + home + "/include"), command.options());
+    }
+
+    @Test
     public void expandsCompilerOptions() {
         assertEquals(List.of("fixed", "-O3", "-DTEST=1"),
                 Pipelines.expandEnvironmentOptions(
