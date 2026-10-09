@@ -74,7 +74,7 @@ public final class SvcompWitnessYamlParser {
                     throw new IOException("Unsupported waypoint action '%s' for type '%s'"
                             .formatted(action, type));
                 }
-                final int threadId = getInteger(body, "thread_id");
+                final int threadId = body.containsKey("thread_id") ? getInteger(body, "thread_id") : 0;
                 final Map<?, ?> location = getMapping(body, "location");
                 final Location parsedLocation = new Location(
                         Path.of(getString(location, "file_name")),
