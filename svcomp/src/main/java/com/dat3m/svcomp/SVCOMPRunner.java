@@ -149,10 +149,15 @@ public class SVCOMPRunner {
             }
             cmd.addAll(filterOptions(config));
 
-            ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+            ProcessBuilder processBuilder = new ProcessBuilder(cmd).redirectErrorStream(true);
             try {
                 Process proc = processBuilder.start();
-                BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+                    String line;
+                    while ((line = read.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
                 exitCode = proc.waitFor();
                 if (exitCode == ExitCode.UNKNOWN_ERROR.asInt()) {
                     System.out.println("Unknown error in dartagnan");
@@ -161,9 +166,6 @@ public class SVCOMPRunner {
                 if (isExternalError(exitCode)) { // E.g., SMT solver crash
                     System.out.println("Unknown external error");
                     System.exit(0);
-                }
-                while(read.ready()) {
-                    System.out.println(read.readLine());
                 }
             } catch(Exception e) {
                 System.out.println(e.getMessage());
