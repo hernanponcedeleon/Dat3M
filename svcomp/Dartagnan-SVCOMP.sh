@@ -5,11 +5,11 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-export DAT3M_HOME=$(pwd)
+export DAT3M_HOME="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 
-if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    cmd=(dartagnan --version)
+if [ "$1" == "-v" ] || [ "$1" == "--version" ]; then
+    cmd=("$DAT3M_HOME/dartagnan/target/dartagnan" --version)
 else
     witnesspath=""
     if [ "$1" == "-witness" ]; then
@@ -29,7 +29,7 @@ else
         *) echo "Unsupported data model: ${3} (expected ILP32 or LP64)" >&2; exit 1 ;;
     esac
 
-    cmd=(svcomp/target/svcomp)
+    cmd=("$DAT3M_HOME/svcomp/target/svcomp")
     compilation_pipeline=svcomp/compilation.yml
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
         compilation_pipeline=svcomp/compilation-no-overflow.yml
@@ -45,6 +45,6 @@ else
     if [ -n "$witnesspath" ]; then
         cmd+=("--validate=$witnesspath")
     fi
-    cmd+=(cat/svcomp.cat "--svcomp.property=$propertypath" "$programpath")
+    cmd+=("$DAT3M_HOME/cat/svcomp.cat" "--svcomp.property=$propertypath" "$programpath")
 fi
-"${cmd[@]}"
+exec "${cmd[@]}"
