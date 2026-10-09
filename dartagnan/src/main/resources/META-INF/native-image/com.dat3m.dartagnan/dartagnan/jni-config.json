@@ -23,5 +23,39 @@
           "returnType": "boolean"
         }
       ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.bitwuzla.api.BitwuzlaNativeJNI",
+      "methods": [
+        {
+          "name": "SwigDirector_Terminator_terminate",
+          "parameterTypes": ["org.sosy_lab.java_smt.solvers.bitwuzla.api.Terminator"]
+        }
+      ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.bitwuzla.api.Terminator",
+      "methods": [
+        { "name": "terminate", "parameterTypes": [] }
+      ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.bitwuzla.BitwuzlaTheoremProver$1",
+      "methods": [
+        { "name": "terminate", "parameterTypes": [] }
+      ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.boolector.BtorJNI$TerminationCallback",
+      "methods": [
+        { "name": "shouldTerminate", "parameterTypes": [] }
+      ]
+    },
+    {
+      "name": "java.math.BigInteger",
+      "methods": [
+        { "name": "<init>", "parameterTypes": ["byte[]"] },
+        { "name": "toByteArray", "parameterTypes": [] }
+      ]
     }
 ]

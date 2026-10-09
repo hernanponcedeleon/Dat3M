@@ -20,6 +20,10 @@ public class EnvironmentInfo {
         LINUX, MACOS, WINDOWS, OTHER
     }
 
+    public enum Architecture {
+        X86_64, ARM64, OTHER
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(EnvironmentInfo.class);
 
     private static final Properties properties = new Properties();
@@ -70,6 +74,14 @@ public class EnvironmentInfo {
     public static String getVersion() {
         final String version = properties.getProperty("git.build.version", "unknown");
         return version.equals(getGitTags()) ? version : String.format("%s (commit %s)", version, getGitId());
+    }
+
+    public static Architecture getArchitecture() {
+        return switch (System.getProperty("os.arch", "").toLowerCase(Locale.ROOT)) {
+            case "amd64", "x86_64" -> Architecture.X86_64;
+            case "aarch64", "arm64" -> Architecture.ARM64;
+            default -> Architecture.OTHER;
+        };
     }
 
     private static String getOSInfo() {
