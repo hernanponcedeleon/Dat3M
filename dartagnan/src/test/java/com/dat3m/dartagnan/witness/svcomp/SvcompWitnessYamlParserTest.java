@@ -82,12 +82,74 @@ public class SvcompWitnessYamlParserTest {
         assertTrue(exception.getMessage().contains("Multiple input file hashes match"));
     }
 
+    @Test
+    public void defaultsMissingThreadIdsToMainThread() throws Exception {
+        assertThreadIds("", 0);
+    }
+
+    @Test
+    public void preservesExplicitThreadIds() throws Exception {
+        assertThreadIds("thread_id: 0", 0);
+        assertThreadIds("thread_id: 2", 2);
+    }
+
+    @Test
+    public void rejectsInvalidExplicitThreadIds() {
+        for (String threadId : new String[]{"-1", "invalid", "null"}) {
+            assertThrows(IOException.class, () -> assertThreadIds("thread_id: " + threadId, 0));
+        }
+    }
+
+    private void assertThreadIds(String threadId, int expected) throws IOException {
+        final SvcompWitness witness = parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        %s
+                        location: {file_name: example.c, line: 7}
+                - segment:
+                    - waypoint:
+                        type: assumption
+                        action: follow
+                        %s
+                        constraint: {value: 'true', format: c_expression}
+                        location: {file_name: example.c, line: 8}
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        %s
+                        location: {file_name: example.c, line: 9}
+                """.formatted(threadId, threadId, threadId));
+        assertEquals(3, witness.segments().size());
+        for (Segment segment : witness.segments()) {
+            assertEquals(expected, segment.waypoints().get(0).threadId());
+        }
+    }
+
     private AssumptionExpression parse(String source, String format) throws IOException {
         final SvcompWitness witness = parseWitness(source, format, "{example.c: deadbeef}");
         return ((Assumption) witness.segments().get(0).waypoints().get(0)).expression();
     }
 
     private SvcompWitness parseWitness(String source, String format, String hashes) throws IOException {
+        return parseWitness(hashes, """
+                - segment:
+                    - waypoint:
+                        type: assumption
+                        action: follow
+                        thread_id: 0
+                        constraint:
+                          value: '%s'
+                          format: '%s'
+                        location:
+                          file_name: example.c
+                          line: 7
+                """.formatted(source, format));
+    }
+
+    private SvcompWitness parseWitness(String hashes, String content) throws IOException {
         final Path file = temporaryFolder.newFile().toPath();
         Files.writeString(file, """
                 - entry_type: violation_sequence
@@ -105,18 +167,8 @@ public class SvcompWitnessYamlParserTest {
                       data_model: LP64
                       language: C
                   content:
-                    - segment:
-                        - waypoint:
-                            type: assumption
-                            action: follow
-                            thread_id: 0
-                            constraint:
-                              value: '%s'
-                              format: '%s'
-                            location:
-                              file_name: example.c
-                              line: 7
-                """.formatted(hashes, source, format));
+                %s
+                """.formatted(hashes, content.indent(4)));
         return SvcompWitnessYamlParser.parse(file);
     }
 }
