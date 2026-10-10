@@ -99,8 +99,8 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         final ExpressionEncoder expressionEncoder = context.getExpressionEncoder();
         final ExpressionFactory exprs = context.getExpressionFactory();
 
-        final ImmutableList<Expression> finalStateExprs = getFinalStateExprsToEnumerate();
-        if (finalStateExprs.isEmpty()) {
+        final ImmutableList<Expression> observables = getObservablesToEnumerate();
+        if (observables.isEmpty()) {
             logger.warn("No final states to enumerate");
             return new EnumerationResult(task, COMPLETE, ImmutableList.of(), ImmutableList.of());
         }
@@ -120,10 +120,10 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
             checkForInterrupts();
 
             try (IREvaluator evaluator = context.newEvaluator(prover)) {
-                final var state = ImmutableMap.<Expression, Expression>builderWithExpectedSize(finalStateExprs.size());
+                final var state = ImmutableMap.<Expression, Expression>builderWithExpectedSize(observables.size());
 
-                final List<BooleanFormula> stateCube = new ArrayList<>(finalStateExprs.size());
-                for (Expression finalExpr : finalStateExprs) {
+                final List<BooleanFormula> stateCube = new ArrayList<>(observables.size());
+                for (Expression finalExpr : observables) {
                     final Expression val = toExpression(evaluator.evaluateFinal(finalExpr), exprs);
                     state.put(finalExpr, val);
                     stateCube.add(expressionEncoder.equal(finalExpr, val));
@@ -138,7 +138,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         // TODO: Add bounds check
 
-        return new EnumerationResult(task, status, finalStateExprs, ImmutableList.copyOf(visitedStates));
+        return new EnumerationResult(task, status, observables, ImmutableList.copyOf(visitedStates));
 
     }
 
@@ -154,34 +154,36 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
     }
 
     // We collect the expression values to enumerate from the spec and the explicitly specified locations
-    private ImmutableList<Expression> getFinalStateExprsToEnumerate() {
+    // TODO: The program should specify all observables in a single place
+    private ImmutableList<Expression> getObservablesToEnumerate() {
         final Program p = task.getProgram();
 
-        final Set<Expression> finalStateExprs = new HashSet<>();
+        final Set<Expression> observables = new HashSet<>();
         if (p.getSpecification() != null) {
             p.getSpecification().accept(new ExpressionInspector() {
                 @Override
                 public Expression visitFinalMemoryValue(FinalMemoryValue val) {
-                    finalStateExprs.add(val);
+                    observables.add(val);
                     return val;
                 }
 
                 @Override
                 public Expression visitRegister(Register reg) {
-                    finalStateExprs.add(reg);
+                    observables.add(reg);
                     return reg;
                 }
 
                 @Override
                 public Expression visitNamedExpression(NamedExpression expr) {
-                    return  expr;
+                    observables.add(expr);
+                    return expr;
                 }
             });
         }
 
-        finalStateExprs.addAll(p.getLocations());
+        observables.addAll(p.getLocations());
 
-        return finalStateExprs.stream()
+        return observables.stream()
                 .sorted(this::compareExpr)
                 .collect(ImmutableList.toImmutableList());
     }
