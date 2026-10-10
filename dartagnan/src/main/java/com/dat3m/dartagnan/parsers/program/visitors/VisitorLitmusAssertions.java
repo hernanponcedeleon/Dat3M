@@ -77,10 +77,11 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     @Override
     public Expression visitLocationValue(LitmusAssertionsParser.LocationValueContext ctx) {
-        final String name = ctx.varName().getText();
+        String name = ctx.varName().getText();
         final Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            name = ctx.threadId().id + ":" + name;
         } else {
             final MemoryObject object = programBuilder.getMemoryObject(name);
             checkState(object != null, "Undefined location %s", name);
@@ -163,6 +164,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            name = ctx.threadId().id + ":" + name;
         } else {
             MemoryObject base = programBuilder.getMemoryObject(name);
             checkState(base != null, "uninitialized location %s", name);
