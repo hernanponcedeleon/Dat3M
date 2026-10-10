@@ -37,6 +37,8 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.Architecture.X86_64;
+import static com.dat3m.dartagnan.utils.EnvironmentInfo.OperatingSystem.LINUX;
 
 // Base class for SMT-based model checkers
 public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
@@ -50,7 +52,8 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         private SolverContextFactory.Solvers solver = getDefaultSolver();
 
         private static SolverContextFactory.Solvers getDefaultSolver() {
-            return EnvironmentInfo.getOperatingSystem() == EnvironmentInfo.OperatingSystem.LINUX
+            return EnvironmentInfo.getOperatingSystem() == LINUX
+                    && EnvironmentInfo.getArchitecture() == X86_64
                     ? SolverContextFactory.Solvers.YICES2
                     : SolverContextFactory.Solvers.Z3;
         }
