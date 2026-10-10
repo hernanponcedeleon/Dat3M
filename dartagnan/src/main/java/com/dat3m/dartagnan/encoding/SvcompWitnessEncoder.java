@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -61,8 +62,8 @@ import java.util.*;
  *
  * Segment order: to order segments, at least one executed candidate event is selected
  * per segment. A selected assumption event must also satisfy its value constraints.
- * Integer clocks place selected events from consecutive segments in
- * strictly increasing order. Clocks also respect every encoded hb-consistency edge and
+ * Bitvector ranks place selected events from consecutive segments in
+ * strictly increasing order. Ranks also respect every encoded hb-consistency edge and
  * program order between executed candidate events in the same thread. Thus, the witness
  * order must be compatible with the memory model, while unrelated events may also be ordered.
  */
@@ -76,6 +77,8 @@ public final class SvcompWitnessEncoder {
     private final SvcompWitness witness;
     private final Program program;
     private final BooleanFormulaManager bmgr;
+    private final BitvectorFormulaManager bvmgr;
+    private final int rankWidth;
     private final Map<MemoryObject, List<Store>> writesByObject = new HashMap<>();
     private final Map<FunctionEnter, Thread> enteredThreads = new IdentityHashMap<>();
 
@@ -84,6 +87,11 @@ public final class SvcompWitnessEncoder {
         this.witness = witness;
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();
+        this.bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+        // Every integer ordering of N events can be ranked from 0 to N - 1.
+        // Use unsigned comparisons without arithmetic, so ranks cannot wrap around.
+        this.rankWidth = Math.max(1, Integer.SIZE - Integer.numberOfLeadingZeros(
+                program.getThreadEvents().size() - 1));
     }
 
     public static SvcompWitnessEncoder withContext(EncodingContext context) {
@@ -228,8 +236,9 @@ public final class SvcompWitnessEncoder {
     }
 
     private BooleanFormula before(Event first, Event second) {
-        return context.getFormulaManager().getIntegerFormulaManager().lessThan(
-                context.clockVariable(WITNESS_CLOCK, first), context.clockVariable(WITNESS_CLOCK, second));
+        final String name = context.getFormulaManager().escape(WITNESS_CLOCK) + " ";
+        return bvmgr.lessThan(bvmgr.makeVariable(rankWidth, name + first.getGlobalId()),
+                bvmgr.makeVariable(rankWidth, name + second.getGlobalId()), false);
     }
 
     private List<Event> eventsForWaypoint(Waypoint waypoint, Map<Integer, Thread> threads) {
