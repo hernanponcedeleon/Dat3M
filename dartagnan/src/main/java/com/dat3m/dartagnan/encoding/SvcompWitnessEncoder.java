@@ -31,6 +31,7 @@ import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Witness data is interpreted as follows:
@@ -103,7 +104,13 @@ public final class SvcompWitnessEncoder {
 
     public BooleanFormula encode() {
         logger.info("Encoding witness");
-        final Map<Integer, Thread> threads = resolveThreads();
+        final Optional<Map<Integer, Thread>> resolvedThreads = resolveThreads();
+        if (resolvedThreads.isEmpty()) {
+            // The witness needs more children than this bounded program contains.
+            // An unsatisfiable witness lets the solver check reachable bounds and retry.
+            return bmgr.makeFalse();
+        }
+        final Map<Integer, Thread> threads = resolvedThreads.orElseThrow();
         final List<BooleanFormula> constraints = new ArrayList<>();
         final List<Map<Event, BooleanFormula>> segmentsEnc = new ArrayList<>();
         for (Segment segment : witness.segments()) {
@@ -274,12 +281,13 @@ public final class SvcompWitnessEncoder {
         return bmgr.and(constraints);
     }
 
-    private Map<Integer, Thread> resolveThreads() {
+    private Optional<Map<Integer, Thread>> resolveThreads() {
         final Map<Integer, Thread> result = new HashMap<>();
         result.put(0, program.getMainThread().orElseThrow(
                 () -> new IllegalArgumentException("Witness validation requires a designated main thread")));
-        final List<Thread> remainingThreads = new ArrayList<>(program.getThreads().stream()
-                .filter(thread -> thread.getEntry().isSpawned()).toList());
+        final List<Thread> spawnedThreads = program.getThreads().stream()
+                .filter(thread -> thread.getEntry().isSpawned()).toList();
+        final List<Thread> remainingThreads = new ArrayList<>(spawnedThreads);
         final List<FunctionEnter> entries = witness.segments().stream()
                 .flatMap(segment -> segment.waypoints().stream())
                 .filter(FunctionEnter.class::isInstance)
@@ -289,12 +297,17 @@ public final class SvcompWitnessEncoder {
             final Thread parent = Optional.ofNullable(result.get(enter.threadId()))
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Witness creates a thread from unknown thread " + enter.threadId()));
-            final Thread child = remainingThreads.stream()
-                    .filter(thread -> {
-                        final ThreadCreate createEvent = thread.getEntry().getCreator();
-                        return createEvent.getThread().equals(parent) && matches(createEvent, enter.location());
-                    })
-                    .findFirst()
+            final Predicate<Thread> matchesCreation = thread -> {
+                final ThreadCreate createEvent = thread.getEntry().getCreator();
+                return createEvent.getThread().equals(parent) && matches(createEvent, enter.location());
+            };
+            final Optional<Thread> availableChild = remainingThreads.stream().filter(matchesCreation).findFirst();
+            if (availableChild.isEmpty() && spawnedThreads.stream().anyMatch(matchesCreation)) {
+                logger.info("Witness requires another child of thread {} at {}:{} absent from the bounded program",
+                        enter.threadId(), enter.location().fileName(), enter.location().line());
+                return Optional.empty();
+            }
+            final Thread child = availableChild
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Witness function entry at %s:%d matches no thread creation"
                                     .formatted(enter.location().fileName(), enter.location().line())));
@@ -302,7 +315,7 @@ public final class SvcompWitnessEncoder {
             enteredThreads.put(enter, child);
             remainingThreads.remove(child);
         }
-        return result;
+        return Optional.of(result);
     }
 
     private static boolean matches(Event event, Location location) {
