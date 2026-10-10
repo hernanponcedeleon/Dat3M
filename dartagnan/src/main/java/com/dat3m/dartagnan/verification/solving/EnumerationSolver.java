@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.MemoryType;
@@ -169,6 +170,11 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
                 public Expression visitRegister(Register reg) {
                     finalStateExprs.add(reg);
                     return reg;
+                }
+
+                @Override
+                public Expression visitNamedExpression(NamedExpression expr) {
+                    return  expr;
                 }
             });
         }
