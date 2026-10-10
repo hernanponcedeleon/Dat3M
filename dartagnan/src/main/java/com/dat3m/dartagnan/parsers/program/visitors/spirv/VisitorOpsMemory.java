@@ -100,7 +100,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                         "expected an array of scalars but received %s", id, type);
             }
             for (int i = 0; i < arrayType.getNumElements(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                List<Expression> index = List.of(expressions.makeValue(i, builder.getArchType()));
                 Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index, arrayType.getStride());
                 events.add(f.apply(i, address));
             }
@@ -111,7 +111,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                         "expected an struct of scalars but received %s", id, type);
             }
             for (int i = 0; i < aggregateType.getFields().size(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                List<Expression> index = List.of(expressions.makeValue(i, builder.getArchType()));
                 Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
                 events.add(f.apply(i, address));
             }

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -389,7 +390,7 @@ public final class ExpressionFactory {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+        Preconditions.checkArgument(Memory.isPointerType(base.getType()),
                 "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
         "Stride cannot be smaller than indexing type");

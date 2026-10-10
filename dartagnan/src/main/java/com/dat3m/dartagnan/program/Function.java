@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -61,7 +60,9 @@ public class Function implements LeafExpression {
 
     @Override
     public Type getType() {
-        return TypeFactory.getInstance().getArchType();
+        Preconditions.checkState(program != null,
+                "Function must belong to a program before querying its pointer type.");
+        return program.getPointerType();
     }
 
     @Override

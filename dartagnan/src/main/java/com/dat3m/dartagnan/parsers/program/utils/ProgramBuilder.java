@@ -7,7 +7,9 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Thread;
@@ -16,7 +18,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -39,7 +40,7 @@ public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final int ARCH_SIZE = types.getMemorySizeInBytes(types.getArchType());
+    private final int archSize;
     private static final FunctionType DEFAULT_THREAD_TYPE =
             types.getFunctionType(types.getVoidType(), List.of());
 
@@ -54,6 +55,7 @@ public class ProgramBuilder {
     private ProgramBuilder(SourceLanguage format) {
         Preconditions.checkArgument(format == SourceLanguage.LITMUS);
         this.program = new Program(new Memory(), format);
+        archSize = types.getMemorySizeInBytes(program.getArchType());
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -121,6 +123,10 @@ public class ProgramBuilder {
 
     public TypeFactory getTypeFactory() {
         return types;
+    }
+
+    public IntegerType getArchType() {
+        return program.getArchType();
     }
 
     public ExpressionFactory getExpressionFactory() {
@@ -216,7 +222,7 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
-        return getOrNewMemoryObject(name, ARCH_SIZE);
+        return getOrNewMemoryObject(name, archSize);
     }
 
     public MemoryObject newMemoryObject(String name, int size) {
@@ -285,7 +291,7 @@ public class ProgramBuilder {
     }
 
     public Register getOrNewRegister(int fid, String name) {
-        return getOrNewRegister(fid, name, types.getArchType());
+        return getOrNewRegister(fid, name, getArchType());
     }
 
     public Register getOrNewRegister(int fid, String name, Type type) {
@@ -367,11 +373,11 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewVirtualMemoryObject(String name) {
-        return getOrNewMemoryObject(name, ARCH_SIZE, (m, s) -> m.allocateVirtual(s, true, null));
+        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(s, true, null));
     }
 
     private MemoryObject getOrNewVirtualMemoryObject(String name, boolean generic, VirtualMemoryObject alias) {
-        return getOrNewMemoryObject(name, ARCH_SIZE, (m, s) -> m.allocateVirtual(s, generic, alias));
+        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(s, generic, alias));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

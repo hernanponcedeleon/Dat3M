@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -24,9 +24,9 @@ import static com.dat3m.dartagnan.program.event.EventFactory.RISCV.MemoryOrder.*
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.RISCV);
-    private final TypeFactory types = programBuilder.getTypeFactory();
+    
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final IntegerType archType = types.getArchType();
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

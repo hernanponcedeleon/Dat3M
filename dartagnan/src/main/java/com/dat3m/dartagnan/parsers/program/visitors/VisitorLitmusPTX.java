@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPTXParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -23,8 +23,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.PTX);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final TypeFactory types = programBuilder.getTypeFactory();
-    private final IntegerType archType = types.getArchType();
+    
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

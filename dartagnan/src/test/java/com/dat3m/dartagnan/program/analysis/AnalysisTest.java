@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
@@ -191,7 +192,7 @@ public class AnalysisTest {
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        b.newFunction("test", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
+        b.newFunction("test", 0, types.getFunctionType(Memory.getDefaultArchType(), List.of()), List.of());
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -211,7 +212,7 @@ public class AnalysisTest {
         Local r20 = newLocal(r2, r0);
         b.addChildWithoutSourceLoc(0, r20);
         //  r3 = 0
-        Local r30 = newLocal(r3, expressions.makeZero(types.getArchType()));
+        Local r30 = newLocal(r3, expressions.makeZero(Memory.getDefaultArchType()));
         b.addChildWithoutSourceLoc(0, r30);
         //  do {
         Label begin = b.getOrCreateLabel(0, "begin");
@@ -419,7 +420,7 @@ public class AnalysisTest {
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        IntegerType type = types.getArchType();
+        IntegerType type = Memory.getDefaultArchType();
         MemoryObject x = b.newMemoryObject("x", 24);
 
         b.newThread(0);
@@ -675,7 +676,7 @@ public class AnalysisTest {
     }
 
     private Store newStore(Expression address) {
-        return newStore(address, expressions.makeZero(types.getArchType()));
+        return newStore(address, expressions.makeZero(Memory.getDefaultArchType()));
     }
 
     private Store newStore(Expression address, Expression value) {
@@ -683,7 +684,7 @@ public class AnalysisTest {
     }
 
     private Expression value(long v) {
-        return expressions.makeValue(v, types.getArchType());
+        return expressions.makeValue(v, Memory.getDefaultArchType());
     }
 
     private Expression plus(Expression lhs, long rhs) {
@@ -767,7 +768,7 @@ public class AnalysisTest {
     public void allKindsOfMixedSizeAccesses() throws Exception {
         TypeFactory types = TypeFactory.getInstance();
         ExpressionFactory expressions = ExpressionFactory.getInstance();
-        IntegerType pointerType = types.getArchType();
+        IntegerType pointerType = Memory.getDefaultArchType();
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
         Register r8 = b.getOrNewRegister(0, "r8", types.getIntegerType(8));
