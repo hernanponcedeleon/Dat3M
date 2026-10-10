@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.ArrayList;
@@ -169,6 +170,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitMemoryExtendExpression(MemoryExtend expr) {
         return expressions.makeMemoryExtend(expr.getOperand().accept(this), expr.getTargetType());
+    }
+
+    @Override
+    public Expression visitNamedExpression(NamedExpression expr) {
+        return expressions.makeNamedExpression(expr.getName(), expr.getOperand().accept(this));
     }
 
     @Override

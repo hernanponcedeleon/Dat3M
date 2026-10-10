@@ -44,6 +44,18 @@ public class ResourceHelper {
         return data.build();
     }
 
+    public static ImmutableMap<Path, Integer> parseExpectedExplorationResults(Path path,
+                                                                              Function<String, Path> pathFromEntry) throws IOException {
+        var data = ImmutableMap.<Path, Integer>builder();
+        Files.readAllLines(path).stream().filter(ResourceHelper::isValidEntry).forEach(str -> {
+            String[] line = str.split(",");
+            if (line.length == 2) {
+                data.put(pathFromEntry.apply(line[0]), Integer.parseInt(line[1]));
+            }
+        });
+        return data.build();
+    }
+
     public static ImmutableSet<Path> getSkipSet() throws IOException {
         return Files.readAllLines(getTestResourcePath("dartagnan-skip.csv")).stream()
                 .filter(ResourceHelper::isValidEntry)

@@ -47,6 +47,8 @@ public class DeadAssignmentElimination implements FunctionProcessor {
             usedRegs.addAll(program.getFilterSpecification().getRegs());
         }
 
+        program.getLocations().forEach(expr -> usedRegs.addAll(expr.getRegs()));
+
         // Compute events to be removed (removal is delayed)
         final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();

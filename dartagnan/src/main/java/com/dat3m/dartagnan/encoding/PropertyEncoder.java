@@ -206,7 +206,7 @@ public class PropertyEncoder {
         return new TrackableFormula(trackingLiteral, encoding);
     }
 
-    private BooleanFormula encodeProgramTermination() {
+    public BooleanFormula encodeProgramTermination() {
         final BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
                 .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());

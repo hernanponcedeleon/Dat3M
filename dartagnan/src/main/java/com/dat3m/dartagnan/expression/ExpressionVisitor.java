@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -61,6 +62,7 @@ public interface ExpressionVisitor<TRet> {
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
+    default TRet visitNamedExpression(NamedExpression expr) { return visitUnaryExpression(expr); }
 
     // =================================== Program-specific ===================================
     default TRet visitRegister(Register reg) { return visitLeafExpression(reg); }

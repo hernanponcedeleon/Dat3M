@@ -178,7 +178,7 @@ public class WmmEncoder {
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     final BooleanFormula sameValue = exprEncoder.assignEqual(
-                            new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
+                            new FinalMemoryValue(init.getValue().getType(), init.getBase(), init.getOffset()),
                             context.value(w1),
                             MEMORY_ROUND_TRIP_RELAXED
                     );
@@ -195,7 +195,7 @@ public class WmmEncoder {
             for (Init init : initWrites) {
                 BooleanFormula readLastStore = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
+                Expression finalValue = new FinalMemoryValue(init.getValue().getType(), init.getBase(), init.getOffset());
                 for (Store w : program.getThreadEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
                         continue;
