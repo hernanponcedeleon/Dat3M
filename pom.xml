@@ -17,6 +17,9 @@
         <dat3m.library.path>libs</dat3m.library.path>
         <!-- Default for Surefire's late-bound argument line; JaCoCo overrides it where enabled. -->
         <argLine></argLine>
+        <native-dependencies.skip>true</native-dependencies.skip>
+        <native-library.type>unsupported</native-library.type>
+        <z3.native.arch>unsupported</z3.native.arch>
 
         <!-- Plugin version -->
         <maven-clean-plugin.version>3.3.1</maven-clean-plugin.version>
@@ -37,7 +40,6 @@
         <mathsat.version>5.6.10</mathsat.version>
         <cvc4.version>1.8-prerelease-2020-06-24-g7825d8f28</cvc4.version>
         <cvc5.version>1.0.5-g4cb2ab9eb</cvc5.version>
-        <opensmt.version>2.6.0-g2f72cc0e</opensmt.version>
         <yices2-api.version>4.1.1-734-g3732f7e08</yices2-api.version>
         <yices2.version>2.6.2-396-g194350c1</yices2.version>
         <z3.version>4.14.0</z3.version>
@@ -47,6 +49,9 @@
         <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
         <logback.version>1.4.14</logback.version>
+        <slf4j.version>2.0.7</slf4j.version>
+        <sosy-common.version>0.3000-585-g7a5f95c1</sosy-common.version>
+        <checker-qual.version>3.33.0</checker-qual.version>
         <native-maven-plugin.version>0.11.3</native-maven-plugin.version>
         <maven-model.version>3.3.9</maven-model.version>
         <commons-csv.version>1.12.0</commons-csv.version>
@@ -56,8 +61,10 @@
         <snakeyaml.version>2.6</snakeyaml.version>
 
         <!-- 3rd party plugin versions -->
-        <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
         <error-prone.version>2.42.0</error-prone.version>
+        <error-prone.checks>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:MissingOverride:ERROR
+            -Xep:RemoveUnusedImports:ERROR -Xep:UnusedVariable:ERROR
+            -XepExcludedPaths:.*[/\\]target[/\\]generated-sources[/\\].*</error-prone.checks>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
     </properties>
@@ -67,6 +74,96 @@
         <module>ui</module>
         <module>svcomp</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.dat3m</groupId>
+                <artifactId>dartagnan</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>${antlr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>java-smt</artifactId>
+                <version>${java-smt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>common</artifactId>
+                <version>${sosy-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker-qual.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-model</artifactId>
+                <version>${maven-model.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-csv</artifactId>
+                <version>${commons-csv.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-z3</artifactId>
+                <version>${z3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fifesoft</groupId>
+                <artifactId>rsyntaxtextarea</artifactId>
+                <version>${rsyntaxtextarea.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <finalName>${project.artifactId}</finalName>
@@ -83,6 +180,9 @@
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>${maven-dependency-plugin.version}</version>
+                    <configuration>
+                        <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>copy-dependencies</id>
@@ -91,9 +191,8 @@
                                 <goal>copy-dependencies</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
                                 <includeTypes>jar</includeTypes>
-                                <includeScope>compile</includeScope>
+                                <includeScope>runtime</includeScope>
                                 <excludeGroupIds>com.dat3m</excludeGroupIds>
                             </configuration>
                         </execution>
@@ -104,13 +203,72 @@
                                 <goal>copy-dependencies</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
                                 <includeTypes>jar</includeTypes>
                                 <includeScope>compile</includeScope>
                                 <includeGroupIds>com.dat3m</includeGroupIds>
                             </configuration>
                         </execution>
+                        <execution>
+                            <id>copy-native-libraries</id>
+                            <phase>initialize</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${native-dependencies.skip}</skip>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-z3</artifactId>
+                                        <type>${native-library.type}</type>
+                                        <classifier>libz3java-${z3.native.arch}</classifier>
+                                        <destFileName>libz3java.${native-library.type}</destFileName>
+                                    </artifactItem>
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-z3</artifactId>
+                                        <type>${native-library.type}</type>
+                                        <classifier>libz3-${z3.native.arch}</classifier>
+                                        <destFileName>libz3.${native-library.type}</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-maven-plugin</artifactId>
+                    <version>${antlr.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>pl.project13.maven</groupId>
+                    <artifactId>git-commit-id-plugin</artifactId>
+                    <version>${git-commit-id-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${native-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>native-compile</id>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <buildArgs>
+                            <buildArg>-Dlogback.statusListenerClass=</buildArg>
+                            <buildArg>--no-fallback</buildArg>
+                        </buildArgs>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
@@ -159,10 +317,7 @@
                             <compilerArgs>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
-                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:MissingOverride:ERROR
-                                    -Xep:RemoveUnusedImports:ERROR
-                                    -Xep:UnusedVariable:ERROR
-                                    -XepExcludedPaths:.*[/\\]target[/\\]generated-sources[/\\].*</arg>
+                                <arg>${error-prone.checks}</arg>
                                 <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                             </compilerArgs>
                             <annotationProcessorPaths>
@@ -189,10 +344,7 @@
                             <compilerArgs>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
-                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:MissingOverride:ERROR
-                                    -Xep:RemoveUnusedImports:ERROR
-                                    -Xep:UnusedVariable:ERROR
-                                    -XepExcludedPaths:.*[/\\]target[/\\]generated-sources[/\\].*
+                                <arg>${error-prone.checks}
                                     -XepPatchChecks:MissingOverride,RemoveUnusedImports,UnusedVariable
                                     -XepPatchLocation:IN_PLACE</arg>
                                 <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
@@ -211,13 +363,23 @@
         </profile>
 
         <profile>
+            <id>native</id>
+            <properties>
+                <cyclonedx.skip>true</cyclonedx.skip>
+            </properties>
+        </profile>
+        <profile>
             <id>linux-x86_64</id>
+            <properties>
+                <native-dependencies.skip>false</native-dependencies.skip>
+                <native-library.type>so</native-library.type>
+                <z3.native.arch>x64</z3.native.arch>
+            </properties>
             <activation>
                 <os>
                     <family>linux</family>
-                    <arch>x86_64</arch>
+                    <arch>amd64</arch>
                 </os>
-                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <!-- Z3 dependencies -->
@@ -225,17 +387,17 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>so</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3-x64</classifier>
+                    <classifier>libz3-${z3.native.arch}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>so</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3java-x64</classifier>
+                    <classifier>libz3java-${z3.native.arch}</classifier>
                 </dependency>
 
                 <!-- Bitwuzla dependencies -->
@@ -371,30 +533,6 @@
                     <classifier>libpolyxx</classifier>
                 </dependency>
 
-                <!-- OpenSMT dependencies -->
-                <dependency>
-                    <groupId>org.sosy-lab</groupId>
-                    <artifactId>javasmt-solver-opensmt</artifactId>
-                    <version>${opensmt.version}</version>
-                    <classifier>opensmt</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.sosy-lab</groupId>
-                    <artifactId>javasmt-solver-opensmt</artifactId>
-                    <version>${opensmt.version}</version>
-                    <type>so</type>
-                    <scope>provided</scope>
-                    <classifier>libopensmt</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.sosy-lab</groupId>
-                    <artifactId>javasmt-solver-opensmt</artifactId>
-                    <version>${opensmt.version}</version>
-                    <type>so</type>
-                    <scope>provided</scope>
-                    <classifier>libopensmtjava</classifier>
-                </dependency>
-
                 <!-- Yices2 dependencies -->
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
@@ -417,168 +555,131 @@
                             <artifactId>maven-dependency-plugin</artifactId>
                             <executions>
                                 <execution>
-                                    <id>copy</id>
-                                    <phase>initialize</phase>
-                                    <goals>
-                                        <goal>copy</goal>
-                                    </goals>
+                                    <id>copy-native-libraries</id>
+                                    <configuration>
+                                        <artifactItems combine.children="append">
+                                            <!-- Bitwuzla dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-bitwuzla</artifactId>
+                                                <type>so</type>
+                                                <classifier>libbitwuzlaj</classifier>
+                                                <destFileName>libbitwuzlaj.so</destFileName>
+                                            </artifactItem>
+
+                                            <!-- MathSAT5 dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-mathsat5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libmathsat5j</classifier>
+                                                <destFileName>libmathsat5j.so</destFileName>
+                                            </artifactItem>
+
+                                            <!-- Boolector dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-boolector</artifactId>
+                                                <type>so</type>
+                                                <classifier>libboolector</classifier>
+                                                <destFileName>libboolector.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-boolector</artifactId>
+                                                <type>so</type>
+                                                <classifier>libminisat</classifier>
+                                                <destFileName>libminisat.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-boolector</artifactId>
+                                                <type>so</type>
+                                                <classifier>libpicosat</classifier>
+                                                <destFileName>libpicosat.so</destFileName>
+                                            </artifactItem>
+
+                                            <!-- CVC4 dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc4</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc4</classifier>
+                                                <destFileName>libcvc4.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc4</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc4jni</classifier>
+                                                <destFileName>libcvc4jni.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc4</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc4parser</classifier>
+                                                <destFileName>libcvc4parser.so</destFileName>
+                                            </artifactItem>
+
+                                            <!-- CVC5 dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc5</classifier>
+                                                <destFileName>libcvc5.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc5jni</classifier>
+                                                <destFileName>libcvc5jni.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libcvc5parser</classifier>
+                                                <destFileName>libcvc5parser.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libpoly</classifier>
+                                                <destFileName>libpoly.so</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-cvc5</artifactId>
+                                                <type>so</type>
+                                                <classifier>libpolyxx</classifier>
+                                                <destFileName>libpolyxx.so</destFileName>
+                                            </artifactItem>
+
+                                            <!-- Yices2 dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-yices2</artifactId>
+                                                <type>so</type>
+                                                <classifier>libyices2j</classifier>
+                                                <destFileName>libyices2j.so</destFileName>
+                                            </artifactItem>
+                                        </artifactItems>
+                                    </configuration>
                                 </execution>
                             </executions>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
-                                <artifactItems>
-                                    <!-- Z3 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>so</type>
-                                        <classifier>libz3java-x64</classifier>
-                                        <destFileName>libz3java.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>so</type>
-                                        <classifier>libz3-x64</classifier>
-                                        <destFileName>libz3.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- Bitwuzla dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-bitwuzla</artifactId>
-                                        <type>so</type>
-                                        <classifier>libbitwuzlaj</classifier>
-                                        <destFileName>libbitwuzlaj.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- MathSAT5 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-mathsat5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libmathsat5j</classifier>
-                                        <destFileName>libmathsat5j.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- Boolector dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-boolector</artifactId>
-                                        <type>so</type>
-                                        <classifier>libboolector</classifier>
-                                        <destFileName>libboolector.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-boolector</artifactId>
-                                        <type>so</type>
-                                        <classifier>libminisat</classifier>
-                                        <destFileName>libminisat.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-boolector</artifactId>
-                                        <type>so</type>
-                                        <classifier>libpicosat</classifier>
-                                        <destFileName>libpicosat.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- CVC4 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc4</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc4</classifier>
-                                        <destFileName>libcvc4.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc4</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc4jni</classifier>
-                                        <destFileName>libcvc4jni.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc4</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc4parser</classifier>
-                                        <destFileName>libcvc4parser.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- CVC5 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc5</classifier>
-                                        <destFileName>libcvc5.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc5jni</classifier>
-                                        <destFileName>libcvc5jni.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libcvc5parser</classifier>
-                                        <destFileName>libcvc5parser.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libpoly</classifier>
-                                        <destFileName>libpoly.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-cvc5</artifactId>
-                                        <type>so</type>
-                                        <classifier>libpolyxx</classifier>
-                                        <destFileName>libpolyxx.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- OpenSMT dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-opensmt</artifactId>
-                                        <type>so</type>
-                                        <classifier>libopensmtjava</classifier>
-                                        <destFileName>libopensmtjava.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-opensmt</artifactId>
-                                        <type>so</type>
-                                        <classifier>libopensmt</classifier>
-                                        <destFileName>libopensmt.so</destFileName>
-                                    </artifactItem>
-
-                                    <!-- Yices2 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-yices2</artifactId>
-                                        <type>so</type>
-                                        <classifier>libyices2j</classifier>
-                                        <destFileName>libyices2j.so</destFileName>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
                         </plugin>
                         <plugin>
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
-                            <argLine>
-                                @{argLine}
-                                -Djava.library.path=${project.build.directory}/${dat3m.library.path}:{java.library.path}
-                                --enable-native-access=ALL-UNNAMED
-                            </argLine>
+                                <argLine>
+                                    @{argLine}
+                                    -Djava.library.path=${project.build.directory}/${dat3m.library.path}:${java.library.path}
+                                    --enable-native-access=ALL-UNNAMED
+                                </argLine>
                             </configuration>
                         </plugin>
                     </plugins>
@@ -587,6 +688,11 @@
         </profile>
         <profile>
             <id>linux-aarch64</id>
+            <properties>
+                <native-dependencies.skip>false</native-dependencies.skip>
+                <native-library.type>so</native-library.type>
+                <z3.native.arch>arm64</z3.native.arch>
+            </properties>
             <activation>
                 <os>
                     <family>linux</family>
@@ -599,58 +705,26 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>so</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3-arm64</classifier>
+                    <classifier>libz3-${z3.native.arch}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>so</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3java-arm64</classifier>
+                    <classifier>libz3java-${z3.native.arch}</classifier>
                 </dependency>
             </dependencies>
             <build>
                 <pluginManagement>
                     <plugins>
                         <plugin>
-                            <artifactId>maven-dependency-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>copy</id>
-                                    <phase>initialize</phase>
-                                    <goals>
-                                        <goal>copy</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
-                                <artifactItems>
-                                    <!-- Z3 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>so</type>
-                                        <classifier>libz3java-arm64</classifier>
-                                        <destFileName>libz3java.so</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>so</type>
-                                        <classifier>libz3-arm64</classifier>
-                                        <destFileName>libz3.so</destFileName>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
-                        </plugin>
-                        <plugin>
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
-                                <argLine>@{argLine} -Djava.library.path=${project.build.directory}/${dat3m.library.path}:{java.library.path}</argLine>
+                                <argLine>@{argLine} -Djava.library.path=${project.build.directory}/${dat3m.library.path}:${java.library.path}</argLine>
                             </configuration>
                         </plugin>
                     </plugins>
@@ -659,6 +733,11 @@
         </profile>
         <profile>
             <id>osx-x86_64</id>
+            <properties>
+                <native-dependencies.skip>false</native-dependencies.skip>
+                <native-library.type>dylib</native-library.type>
+                <z3.native.arch>x64</z3.native.arch>
+            </properties>
             <activation>
                 <os>
                     <family>mac</family>
@@ -671,54 +750,22 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dylib</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3-x64</classifier>
+                    <classifier>libz3-${z3.native.arch}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dylib</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3java-x64</classifier>
+                    <classifier>libz3java-${z3.native.arch}</classifier>
                 </dependency>
             </dependencies>
             <build>
                 <pluginManagement>
                     <plugins>
-                        <plugin>
-                            <artifactId>maven-dependency-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>copy</id>
-                                    <phase>initialize</phase>
-                                    <goals>
-                                        <goal>copy</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
-                                <artifactItems>
-                                    <!-- Z3 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dylib</type>
-                                        <classifier>libz3java-x64</classifier>
-                                        <destFileName>libz3java.dylib</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dylib</type>
-                                        <classifier>libz3-x64</classifier>
-                                        <destFileName>libz3.dylib</destFileName>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
-                        </plugin>
                         <plugin>
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
@@ -731,6 +778,11 @@
         </profile>
         <profile>
             <id>osx-aarch64</id>
+            <properties>
+                <native-dependencies.skip>false</native-dependencies.skip>
+                <native-library.type>dylib</native-library.type>
+                <z3.native.arch>arm64</z3.native.arch>
+            </properties>
             <activation>
                 <os>
                     <family>mac</family>
@@ -743,54 +795,22 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dylib</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3-arm64</classifier>
+                    <classifier>libz3-${z3.native.arch}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dylib</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3java-arm64</classifier>
+                    <classifier>libz3java-${z3.native.arch}</classifier>
                 </dependency>
-             </dependencies>
+            </dependencies>
             <build>
                 <pluginManagement>
                     <plugins>
-                        <plugin>
-                            <artifactId>maven-dependency-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>copy</id>
-                                    <phase>initialize</phase>
-                                    <goals>
-                                        <goal>copy</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
-                                <artifactItems>
-                                    <!-- Z3 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dylib</type>
-                                        <classifier>libz3java-arm64</classifier>
-                                        <destFileName>libz3java.dylib</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dylib</type>
-                                        <classifier>libz3-arm64</classifier>
-                                        <destFileName>libz3.dylib</destFileName>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
-                        </plugin>
                         <plugin>
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
@@ -803,6 +823,11 @@
         </profile>
         <profile>
             <id>windows</id>
+            <properties>
+                <native-dependencies.skip>false</native-dependencies.skip>
+                <native-library.type>dll</native-library.type>
+                <z3.native.arch>x64</z3.native.arch>
+            </properties>
             <activation>
                 <os>
                     <family>windows</family>
@@ -814,20 +839,26 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dll</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3-x64</classifier>
+                    <classifier>libz3-${z3.native.arch}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-z3</artifactId>
                     <version>${z3.version}</version>
-                    <type>dll</type>
+                    <type>${native-library.type}</type>
                     <scope>provided</scope>
-                    <classifier>libz3java-x64</classifier>
+                    <classifier>libz3java-${z3.native.arch}</classifier>
                 </dependency>
 
                 <!-- Bitwuzla dependencies -->
+                <dependency>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>javasmt-solver-bitwuzla</artifactId>
+                    <version>${bitwuzla.version}</version>
+                    <classifier>bitwuzla</classifier>
+                </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-bitwuzla</artifactId>
@@ -870,65 +901,44 @@
                             <artifactId>maven-dependency-plugin</artifactId>
                             <executions>
                                 <execution>
-                                    <id>copy</id>
-                                    <phase>initialize</phase>
-                                    <goals>
-                                        <goal>copy</goal>
-                                    </goals>
+                                    <id>copy-native-libraries</id>
+                                    <configuration>
+                                        <artifactItems combine.children="append">
+                                            <!-- Bitwuzla dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-bitwuzla</artifactId>
+                                                <type>dll</type>
+                                                <classifier>libbitwuzlaj</classifier>
+                                                <destFileName>libbitwuzlaj.dll</destFileName>
+                                            </artifactItem>
+
+                                            <!-- MathSAT5 dependencies -->
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-mathsat5</artifactId>
+                                                <type>dll</type>
+                                                <classifier>mathsat5j</classifier>
+                                                <destFileName>mathsat5j.dll</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-mathsat5</artifactId>
+                                                <type>dll</type>
+                                                <classifier>mathsat</classifier>
+                                                <destFileName>mathsat.dll</destFileName>
+                                            </artifactItem>
+                                            <artifactItem>
+                                                <groupId>org.sosy-lab</groupId>
+                                                <artifactId>javasmt-solver-mathsat5</artifactId>
+                                                <type>dll</type>
+                                                <classifier>mpir</classifier>
+                                                <destFileName>mpir.dll</destFileName>
+                                            </artifactItem>
+                                        </artifactItems>
+                                    </configuration>
                                 </execution>
                             </executions>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
-                                <artifactItems>
-                                    <!-- Z3 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dll</type>
-                                        <classifier>libz3java-x64</classifier>
-                                        <destFileName>libz3java.dll</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-z3</artifactId>
-                                        <type>dll</type>
-                                        <classifier>libz3-x64</classifier>
-                                        <destFileName>libz3.dll</destFileName>
-                                    </artifactItem>
-
-                                    <!-- Bitwuzla dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-bitwuzla</artifactId>
-                                        <type>dll</type>
-                                        <classifier>libbitwuzlaj</classifier>
-                                        <destFileName>libbitwuzlaj.dll</destFileName>
-                                    </artifactItem>
-
-                                    <!-- MathSAT5 dependencies -->
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-mathsat5</artifactId>
-                                        <type>dll</type>
-                                        <classifier>mathsat5j</classifier>
-                                        <destFileName>mathsat5j.dll</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-mathsat5</artifactId>
-                                        <type>dll</type>
-                                        <classifier>mathsat</classifier>
-                                        <destFileName>mathsat.dll</destFileName>
-                                    </artifactItem>
-                                    <artifactItem>
-                                        <groupId>org.sosy-lab</groupId>
-                                        <artifactId>javasmt-solver-mathsat5</artifactId>
-                                        <type>dll</type>
-                                        <classifier>mpir</classifier>
-                                        <destFileName>mpir.dll</destFileName>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
                         </plugin>
                         <plugin>
                             <artifactId>maven-surefire-plugin</artifactId>

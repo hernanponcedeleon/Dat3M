@@ -19,6 +19,38 @@ on:
 
 jobs:
 
+  native-build:
+    name: Native (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15-intel, macos-15, windows-2022]
+    env:
+      DAT3M_HOME: ${{ github.workspace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm'
+          cache: maven
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build native executable
+        run: mvn --batch-mode -pl dartagnan -am -Pnative package -DskipTests
+
+      - name: Check native mode and solvers
+        run: python .github/scripts/check-native-and-solvers.py
+
   enforce-not-master-target:
     name: Check target branch
     runs-on: ubuntu-latest
