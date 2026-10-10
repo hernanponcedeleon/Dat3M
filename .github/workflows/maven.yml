@@ -98,7 +98,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: Asm tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/asm/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/asm/**/*" -f dartagnan/pom.xml
 
 
   litmus-tests:
@@ -121,7 +121,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: Litmus tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*,!com/dat3m/dartagnan/litmus/**/*ExplorationTest" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/litmus/**/*" -f dartagnan/pom.xml
 
   litmus-exploration-tests:
     name: Litmus exploration tests
@@ -164,7 +164,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: LLVM tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/llvm/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/llvm/**/*" -f dartagnan/pom.xml
 
   other-tests:
     name: Other tests
@@ -195,31 +195,31 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y graphviz
 
       - name: Build jar file # used by some unit tests
-        run: mvn clean install -DskipTests
+        run: mvn --batch-mode clean install -DskipTests
 
       - name: Configuration tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/configuration/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/configuration/**/*" -f dartagnan/pom.xml
 
       - name: Exception tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/exception/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/exception/**/*" -f dartagnan/pom.xml
 
       - name: Expression tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/expression/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/expression/**/*" -f dartagnan/pom.xml
 
       - name: Parsers tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
 
       - name: Program tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/program/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/program/**/*" -f dartagnan/pom.xml
 
       - name: Utils tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/utils/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/utils/**/*" -f dartagnan/pom.xml
 
       - name: Wmm tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/wmm/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/wmm/**/*" -f dartagnan/pom.xml
 
       - name: Other tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/*" -f dartagnan/pom.xml
 
   spirv-tests:
     name: SPIRV tests
@@ -241,7 +241,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: SPIRV tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
 
   weekly:
     name: All tests
@@ -282,10 +282,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y graphviz
 
       - name: Build jar file # used by some unit tests
-        run: mvn clean install -DskipTests
+        run: mvn --batch-mode clean install -DskipTests
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -Pnative test
+        run: mvn --batch-mode --update-snapshots -Pnative test -DforkCount=2
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile
