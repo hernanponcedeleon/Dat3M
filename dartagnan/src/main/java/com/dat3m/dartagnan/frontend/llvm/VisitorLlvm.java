@@ -1699,6 +1699,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (dataLayout.pointerSizes.getOrDefault(space, dataLayout.pointerSize) != dataLayout.pointerSize) {
             throw new ParsingException("Different pointer sizes across address spaces are unsupported: address space " + space);
         }
+        final int indexSize = dataLayout.pointerIndexSizes.getOrDefault(space,
+                dataLayout.pointerIndexSizes.getOrDefault(0, dataLayout.pointerSize));
+        if (indexSize != dataLayout.pointerSize) {
+            throw new ParsingException("Pointer index widths different from pointer widths are unsupported: address space " + space);
+        }
     }
 
     private int getTypeAlignment(TypeContext ctx, boolean preferred) {
@@ -1766,6 +1771,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         private int pointerSize = 64;
         private final Map<Integer, Integer> pointerSizes = new HashMap<>();
+        private final Map<Integer, Integer> pointerIndexSizes = new HashMap<>();
         private boolean bigEndian;
         // Integer widths need ordered lookup: use an exact match, then the next larger width, then the largest.
         private final NavigableMap<Integer, Alignment> integerAlignments = new TreeMap<>(Map.of(
@@ -1818,12 +1824,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final int size = parseInt(ctx.size);
             check(size > 0, "Pointer size must be positive");
             check(addressSpace < (1 << 24), "Pointer address space exceeds LLVM's limit");
-            if (ctx.indexSize != null) {
-                final int indexSize = parseInt(ctx.indexSize);
-                check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
-            }
+            final int indexSize = ctx.indexSize == null ? size : parseInt(ctx.indexSize);
+            check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
             pointerAlignments.put(addressSpace, parseAlignment(ctx.alignment(), false));
             pointerSizes.put(addressSpace, size);
+            pointerIndexSizes.put(addressSpace, indexSize);
             if (addressSpace == 0) {
                 pointerSize = size;
             }

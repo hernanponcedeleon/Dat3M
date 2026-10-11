@@ -89,6 +89,66 @@ public class ParserLlvmTest {
     }
 
     @Test
+    public void acceptsOmittedAndEqualPointerIndexWidths() {
+        for (int width : new int[]{32, 64}) {
+            for (String suffix : new String[]{"", ":" + width + ":" + width}) {
+                final Program program = parse("e-p:" + width + ":" + width + suffix,
+                        "@g = global ptr addrspace(1) null", "%p = alloca i8\nret i32 0");
+                assertEquals(width, program.getArchType().getBitWidth());
+            }
+        }
+    }
+
+    @Test
+    public void rejectsNarrowPointerIndexWidthInDefaultAddressSpace() {
+        for (int width : new int[]{32, 64}) {
+            final String layout = "e-p:" + width + ":" + width + ":" + width + ":" + width / 2;
+            final ParsingException exception = assertThrows(ParsingException.class,
+                    () -> parse(layout, "", "%p = alloca i8\nret i32 0"));
+            assertTrue(exception.getMessage().contains("Pointer index widths different from pointer widths"));
+            assertTrue(exception.getMessage().contains("address space 0"));
+        }
+    }
+
+    @Test
+    public void rejectsNarrowPointerIndexWidthInUsedAddressSpace() {
+        for (String layout : new String[]{"e-p:64:64-p1:64:64:64:32", "e-p1:64:64:64:32-p:64:64"}) {
+            for (String pointer : new String[]{"ptr addrspace(1)", "i8 addrspace(1)*"}) {
+                final ParsingException exception = assertThrows(ParsingException.class,
+                        () -> parse(layout, "@g = global " + pointer + " null", "ret i32 0"));
+                assertTrue(exception.getMessage().contains("Pointer index widths different from pointer widths"));
+                assertTrue(exception.getMessage().contains("address space 1"));
+            }
+        }
+    }
+
+    @Test
+    public void rejectsInheritedNarrowPointerIndexWidth() {
+        final ParsingException exception = assertThrows(ParsingException.class,
+                () -> parse("e-p:64:64:64:32", "",
+                        "%p = ptrtoint ptr addrspace(1) null to i64\nret i32 0"));
+        assertTrue(exception.getMessage().contains("Pointer index widths different from pointer widths"));
+        assertTrue(exception.getMessage().contains("address space 1"));
+    }
+
+    @Test
+    public void acceptsUnusedAddressSpacesWithNarrowPointerIndexWidths() {
+        for (String layout : new String[]{"e-p:64:64-p1:64:64:64:32", "e-p1:64:64:64:32-p:64:64"}) {
+            final Program program = parse(layout, "@g = global i8 0", "%p = alloca i8\nret i32 0");
+            assertEquals(64, program.getArchType().getBitWidth());
+        }
+    }
+
+    @Test
+    public void rejectsInvalidPointerIndexWidths() {
+        for (int indexWidth : new int[]{0, 128}) {
+            final ParsingException exception = assertThrows(ParsingException.class,
+                    () -> parse("e-p1:64:64:64:" + indexWidth, "", "ret i32 0"));
+            assertTrue(exception.getMessage().contains("Pointer index size must be positive and at most the pointer size"));
+        }
+    }
+
+    @Test
     public void acceptsLargeExplicitAllocationAlignments() {
         for (long alignment : new long[]{1L << 31, 1L << 32}) {
             final Program program = parse("e-p:64:64", "@g = global i8 0, align " + alignment,
