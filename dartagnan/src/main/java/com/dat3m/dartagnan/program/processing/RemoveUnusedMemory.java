@@ -25,7 +25,7 @@ public class RemoveUnusedMemory implements ProgramProcessor {
         final MemoryObjectCollector collector = new MemoryObjectCollector();
 
         // Threads
-        program.getThreadEvents(RegReader.class).forEach(r -> r.transformExpressions(collector));
+        program.getThreadEvents(RegReader.class).forEach(r -> r.inspectExpressions(collector));
 
         // Initial values
         memory.getObjects()

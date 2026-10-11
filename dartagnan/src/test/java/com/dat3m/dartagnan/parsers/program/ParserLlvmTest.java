@@ -3,19 +3,56 @@ package com.dat3m.dartagnan.parsers.program;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class ParserLlvmTest {
+
+    @Test
+    public void processesProgramsWithDifferentPointerWidths() throws InvalidConfigurationException {
+        for (int pointerWidth : new int[]{32, 64}) {
+            final Program program = parse("e-p:" + pointerWidth + ":" + pointerWidth,
+                    "@g = global [2 x i8] zeroinitializer\n@slot = global ptr null", """
+                    %p = alloca i8
+                    store ptr %p, ptr @slot
+                    store i8 1, ptr %p
+                    %v = load i8, ptr %p
+                    %q = getelementptr i8, ptr @g, i16 1
+                    store i8 %v, ptr %q
+                    ret i32 0
+                    """);
+
+            ProcessingManager.fromConfig(Configuration.defaultConfiguration()).run(program);
+
+            final TypeFactory types = TypeFactory.getInstance();
+            final List<Alloc> allocations = program.getThreadEvents(Alloc.class);
+            for (Alloc allocation : allocations) {
+                assertEquals(pointerWidth, types.getMemorySizeInBits(allocation.getResultRegister().getType()));
+                assertEquals(pointerWidth, types.getMemorySizeInBits(allocation.getAllocatedObject().getType()));
+            }
+            final List<MemoryAccess> accesses = program.getThreadEvents(MemoryEvent.class).stream()
+                    .flatMap(event -> event.getMemoryAccesses().stream()).toList();
+            for (MemoryAccess access : accesses) {
+                assertEquals(pointerWidth, types.getMemorySizeInBits(access.address().getType()));
+            }
+        }
+    }
 
     @Test
     public void pointerCastsZeroExtend() {

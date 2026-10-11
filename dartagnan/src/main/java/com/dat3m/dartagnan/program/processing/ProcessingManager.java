@@ -101,6 +101,7 @@ public class ProcessingManager implements ProgramProcessor {
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
                 intrinsics.markIntrinsicsPass(),
                 LibraryLinker.fromConfig(config),
+                PointerWidthVerification.newInstance(),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
@@ -153,6 +154,7 @@ public class ProcessingManager implements ProgramProcessor {
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
+                PointerWidthVerification.newInstance(),
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
                 ProgramProcessor.fromFunctionProcessor(

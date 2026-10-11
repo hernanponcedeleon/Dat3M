@@ -105,10 +105,6 @@ public class Memory {
         return types.getIntegerType(DEFAULT_POINTER_SIZE);
     }
 
-    public static boolean isPointerType(Type type) {
-        return type.equals(createPointerType(types.getMemorySizeInBits(type)));
-    }
-
     private Expression createSizeExpression(long size) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
         Preconditions.checkArgument(archType.canContain(BigInteger.valueOf(size)),
