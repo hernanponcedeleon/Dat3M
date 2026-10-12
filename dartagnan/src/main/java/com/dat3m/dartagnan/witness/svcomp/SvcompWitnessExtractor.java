@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
@@ -22,6 +24,7 @@ import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.verification.model.event.AssertModel;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.LoadModel;
+import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
 
@@ -109,20 +112,37 @@ public final class SvcompWitnessExtractor {
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
         final List<EventModel> linearized = linearize(model);
-        final Map<EventModel, AssumptionExpression> assumptions = assumptionWaypoints(linearized, model, programFile);
-        final Set<EventModel> prefix = eventsBefore(violation.targets());
+        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile);
+        final Map<SourcePoint, AssumptionExpression> assumptions = assumptionWaypoints(linearized, model, sourcePoints);
+        final Map<Event, ThreadModel> spawnedThreads = new HashMap<>();
+        for (ThreadModel thread : model.getThreadModels()) {
+            final ThreadStart start = thread.getThread().getEntry();
+            if (start.isSpawned()) {
+                spawnedThreads.put(start.getCreator(), thread);
+            }
+        }
+        final Set<SourcePoint> creationPoints = linearized.stream()
+                .filter(event -> spawnedThreads.containsKey(event.getEvent()))
+                .map(sourcePoints::get).filter(Objects::nonNull).collect(Collectors.toSet());
+        final Set<SourcePoint> visited = new HashSet<>();
         for (EventModel event : linearized) {
-            if (!prefix.contains(event)) {
+            // Keep both race targets in the final segment.
+            if (violation.targets().contains(event)) {
+                break;
+            }
+            final ThreadModel spawned = spawnedThreads.get(event.getEvent());
+            if (spawned != null) {
+                registerThread(segments, spawned, threadIds, model, programFile);
+            }
+            final SourcePoint point = sourcePoints.get(event);
+            if (!(event instanceof MemoryEventModel) || event.getEvent() instanceof Init
+                    || point == null || creationPoints.contains(point) || !visited.add(point)) {
                 continue;
             }
             final ThreadModel thread = event.getThreadModel();
             registerThread(segments, thread, threadIds, model, programFile);
-            final AssumptionExpression assumption = assumptions.get(event);
-            if (assumption != null) {
-                final Location location = inputLocation(event, programFile);
-                segments.add(new Segment(List.of(new Assumption(
-                        threadIds.get(thread), assumption, location))));
-            }
+            segments.add(new Segment(List.of(new Assumption(threadIds.get(thread),
+                    assumptions.getOrDefault(point, new BooleanConstant(true)), point.location()))));
         }
         for (EventModel target : violation.targets()) {
             registerThread(segments, target.getThreadModel(), threadIds, model, programFile);
@@ -151,12 +171,11 @@ public final class SvcompWitnessExtractor {
 
     /*
      * Version 2.2 has no direct representation of rf or co. Instead, a concurrent execution is described by an
-     * ordered sequence of thread-tagged waypoints. We only constrain reads that actually read from another thread.
-     * This keeps the witness coarse while recording the observable part of rf/co.
+     * ordered sequence of thread-tagged memory-access waypoints. Value constraints describe reads from other
+     * threads; other accesses use a true assumption to record their place in the interleaving.
      */
-    private static Map<EventModel, AssumptionExpression> assumptionWaypoints(List<EventModel> linearized,
-            ExecutionModelNext model, Path programFile) {
-        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile);
+    private static Map<SourcePoint, AssumptionExpression> assumptionWaypoints(List<EventModel> linearized,
+            ExecutionModelNext model, Map<EventModel, SourcePoint> sourcePoints) {
         final Set<EventModel> crossThreadReads = relationEdges(model, RF).stream()
                 .filter(edge -> edge.to() instanceof LoadModel)
                 .filter(edge -> !(edge.from().getEvent() instanceof Init))
@@ -164,7 +183,6 @@ public final class SvcompWitnessExtractor {
                 .map(EdgeModel::to)
                 .collect(Collectors.toSet());
 
-        final Map<SourcePoint, EventModel> representatives = new HashMap<>();
         final Map<SourcePoint, Set<AssumptionExpression>> constraints = new HashMap<>();
         for (EventModel event : linearized) {
             final SourcePoint point = sourcePoints.get(event);
@@ -173,15 +191,12 @@ public final class SvcompWitnessExtractor {
                 continue;
             }
             final Optional<VariableEquality> constraint = readValueAssumption(load, model);
-            if (constraint.isPresent()) {
-                representatives.putIfAbsent(point, event);
-                constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(constraint.get());
-            }
+            constraint.ifPresent(equality -> constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(equality));
         }
 
-        final Map<EventModel, AssumptionExpression> result = new HashMap<>();
+        final Map<SourcePoint, AssumptionExpression> result = new HashMap<>();
         constraints.forEach((point, values) ->
-                result.put(representatives.get(point), values.stream().reduce(Conjunction::new).orElseThrow()));
+                result.put(point, values.stream().reduce(Conjunction::new).orElseThrow()));
         return result;
     }
 
@@ -246,10 +261,54 @@ public final class SvcompWitnessExtractor {
             predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
         }
 
+        for (ThreadModel thread : model.getThreadModels()) {
+            final List<EventModel> threadEvents = thread.getEventModels();
+            for (int i = 1; i < threadEvents.size(); i++) {
+                predecessors.computeIfAbsent(threadEvents.get(i), _ -> new HashSet<>())
+                        .add(threadEvents.get(i - 1));
+            }
+            final ThreadStart start = thread.getThread().getEntry();
+            if (start.isSpawned() && !threadEvents.isEmpty()) {
+                final EventModel createEvent = model.getEventModelByEvent(start.getCreator());
+                Verify.verify(createEvent != null, "Thread creator is not part of the execution model");
+                predecessors.computeIfAbsent(threadEvents.get(0), _ -> new HashSet<>()).add(createEvent);
+            }
+        }
+
         final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);
         Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
                 "svcomp.cat produced a non-SC execution");
-        return dependencyGraph.getNodeContents();
+
+        final Map<EventModel, EventModel> groupForEvent = new HashMap<>();
+        final Map<EventModel, List<EventModel>> groups = new LinkedHashMap<>();
+        for (ThreadModel thread : model.getThreadModels()) {
+            EventModel atomicBegin = null;
+            for (EventModel event : thread.getEventModels()) {
+                if (event.getEvent() instanceof BeginAtomic) {
+                    atomicBegin = event;
+                }
+                final EventModel group = atomicBegin != null ? atomicBegin : event;
+                groupForEvent.put(event, group);
+                groups.computeIfAbsent(group, _ -> new ArrayList<>()).add(event);
+                if (event.getEvent() instanceof EndAtomic) {
+                    atomicBegin = null;
+                }
+            }
+        }
+        final Map<EventModel, Set<EventModel>> groupPredecessors = new HashMap<>();
+        predecessors.forEach((event, dependencies) -> {
+            final EventModel group = groupForEvent.get(event);
+            for (EventModel dependency : dependencies) {
+                final EventModel predecessor = groupForEvent.get(dependency);
+                if (group != predecessor) {
+                    groupPredecessors.computeIfAbsent(group, _ -> new HashSet<>()).add(predecessor);
+                }
+            }
+        });
+        final DependencyGraph<EventModel> groupGraph = DependencyGraph.from(groups.keySet(), groupPredecessors);
+        Verify.verify(groupGraph.getSCCs().size() == groups.size(),
+                "svcomp.cat produced an execution with incompatible atomic sections");
+        return groupGraph.getNodeContents().stream().flatMap(group -> groups.get(group).stream()).toList();
     }
 
     private static Optional<RelationModel> findRelationModel(ExecutionModelNext model, String name) {
@@ -302,19 +361,6 @@ public final class SvcompWitnessExtractor {
     private static ThreadModel threadOf(Event event, ExecutionModelNext model) {
         return model.getThreadModels().stream().filter(thread -> thread.getThread().equals(event.getThread()))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Thread creator is not part of the execution model"));
-    }
-
-    private static Set<EventModel> eventsBefore(List<EventModel> targets) {
-        final Set<EventModel> result = new HashSet<>();
-        for (EventModel target : targets) {
-            final List<EventModel> events = target.getThreadModel().getEventModels();
-            final int index = events.indexOf(target);
-            if (index < 0) {
-                throw new IllegalArgumentException("Violation target is not part of the execution model");
-            }
-            result.addAll(events.subList(0, index));
-        }
-        return result;
     }
 
     private static Location requireInputLocation(EventModel event, Path programFile) {

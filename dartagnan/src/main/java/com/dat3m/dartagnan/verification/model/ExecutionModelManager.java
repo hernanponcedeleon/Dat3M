@@ -6,6 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
@@ -171,6 +174,7 @@ public class ExecutionModelManager {
                 ValueModel value = new ValueModel(model.result(local).value());
                 yield new LocalModel(local, tm, id, value);
             }
+            case ThreadCreate _, BeginAtomic _, EndAtomic _ -> new DefaultEventModel(e, tm, id);
             case CondJump cj -> new CondJumpModel(cj, tm, id);
             // Should never happen.
             default -> throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));
@@ -186,6 +190,9 @@ public class ExecutionModelManager {
                || e instanceof GenericVisibleEvent
                || e instanceof Local
                || e instanceof Assert
+               || e instanceof ThreadCreate
+               || e instanceof BeginAtomic
+               || e instanceof EndAtomic
                || e instanceof CondJump;
     }
 
