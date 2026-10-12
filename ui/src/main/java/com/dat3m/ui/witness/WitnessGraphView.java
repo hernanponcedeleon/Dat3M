@@ -233,7 +233,6 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     public static Stroke strokeOf(String relation, float width) {
         return switch (relation) {
             case FR -> new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, new float[]{6f, 5f}, 0f);
-            case CO -> new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, new float[]{1f, 5f}, 0f);
             default -> new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         };
     }
