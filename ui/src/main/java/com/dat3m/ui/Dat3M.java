@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.ui.components.AppIcon;
 import com.dat3m.ui.components.Buttons;
 import com.dat3m.ui.components.Chip;
 import com.dat3m.ui.components.HeaderBar;
@@ -76,6 +77,11 @@ public class Dat3M extends JFrame {
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
 
         setTitle("Dat3M");
+        setIconImages(AppIcon.images());
+        // Some platforms, like macOS, show the icon of the application rather than the one of its windows.
+        if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)) {
+            Taskbar.getTaskbar().setIconImage(AppIcon.image(512, 0.1));
+        }
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(960, 600));

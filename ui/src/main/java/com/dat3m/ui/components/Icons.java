@@ -107,20 +107,18 @@ public final class Icons {
         }
     }
 
+    // The application icon in the colors of the current theme.
     private static final class Logo implements Icon {
 
         private static final int SIZE = 28;
-        private static final Shape RAPIER = path("M 8 20 L 20 8 M 16.5 8 L 20 8 L 20 11.5 M 8 16 L 12 20");
 
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             final Graphics2D g2 = Theme.smooth(g.create());
             g2.translate(x, y);
-            g2.setColor(Theme.p().ink());
-            g2.fillRoundRect(0, 0, SIZE, SIZE, 12, 12);
-            g2.setColor(Theme.p().panel());
-            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.draw(RAPIER);
+            // The plume needs a different blue on the light tile of the dark theme to stay visible.
+            final Color plume = Theme.isDark() ? new Color(0x2545D3) : new Color(0x8FB0FF);
+            AppIcon.paint(g2, SIZE, Theme.p().ink(), Theme.p().panel(), plume);
             g2.dispose();
         }
 
