@@ -4,48 +4,49 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import com.dat3m.ui.theme.Theme;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-import static java.awt.FlowLayout.LEFT;
-
 public class LogPane extends JPanel {
 
-    private static final int PREFERRED_HEIGHT = 240;
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
             .withZone(ZoneId.systemDefault());
 
-    private final JTextArea logArea = new JTextArea();
+    private final JTextArea logArea = new JTextArea() {
+        @Override
+        public void updateUI() {
+            super.updateUI();
+            setFont(Theme.mono(12f));
+            setBackground(Theme.p().panel());
+            setForeground(Theme.p().ink());
+        }
+    };
     private final Logger rootLogger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+    private final JComboBox<Level> levelSelector = new JComboBox<>(new Level[]{
+            Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR
+    });
 
     public LogPane() {
         super(new BorderLayout());
-        final TitledBorder border = BorderFactory.createTitledBorder("Log");
-        border.setTitleJustification(TitledBorder.CENTER);
-        setBorder(border);
-        setMinimumSize(new Dimension(0, 120));
-        setPreferredSize(new Dimension(0, PREFERRED_HEIGHT));
 
         logArea.setEditable(false);
-        logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, logArea.getFont().getSize()));
+        logArea.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        logArea.getAccessibleContext().setAccessibleName("Log");
 
-        final JComboBox<Level> levelSelector = new JComboBox<>(new Level[]{
-                Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR
-        });
         levelSelector.setSelectedItem(rootLogger.getEffectiveLevel());
+        levelSelector.setToolTipText("Log level");
+        levelSelector.getAccessibleContext().setAccessibleName("Log level");
         levelSelector.addActionListener(ignored -> rootLogger.setLevel((Level) levelSelector.getSelectedItem()));
 
-        final JPanel controls = new JPanel(new FlowLayout(LEFT));
-        controls.add(new JLabel("Log level:"));
-        controls.add(levelSelector);
-        add(controls, BorderLayout.NORTH);
-        add(new JScrollPane(logArea), BorderLayout.CENTER);
+        final JScrollPane scroll = new JScrollPane(logArea);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        add(scroll, BorderLayout.CENTER);
 
         final AppenderBase<ILoggingEvent> appender = new AppenderBase<>() {
             @Override
@@ -55,6 +56,11 @@ public class LogPane extends JPanel {
         };
         appender.start();
         rootLogger.addAppender(appender);
+    }
+
+    // The selector is placed by the owner of the pane, next to the tab of the log.
+    public JComboBox<Level> getLevelSelector() {
+        return levelSelector;
     }
 
     public void clear() {
