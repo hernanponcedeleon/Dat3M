@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.verification.model.event.GenericVisibleEventModel;
 import com.dat3m.dartagnan.verification.model.event.LocalModel;
 import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.dat3m.dartagnan.verification.model.event.StoreModel;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 
 import java.math.BigInteger;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,9 +47,12 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
     Nodes are arranged in columns (one for the initial writes and one per thread) and rows (program order).
  */
 public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> edges,
+                           Map<String, List<Edge>> modelRelations,
                            List<AxiomInfo> axioms, List<MemoryValue> finalMemory) {
 
     public static final String FR = "fr";
+    // The relations that every witness shows in a condensed form.
+    private static final List<String> STANDARD_RELATIONS = List.of(PO, RF, CO, FR);
     private static final String INIT_COLUMN = "Init";
     private static final String UNKNOWN_LOCATION = "@unknown";
 
@@ -88,7 +93,7 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             return new Node(node.id(), node.column(), node.row(), node.label(), function.apply(node.sublabel()),
                     node.isInit(), node.kind(), node.address(), Collections.unmodifiableMap(details));
         }).toList();
-        return new WitnessGraph(columns, mappedNodes, edges, axioms, finalMemory);
+        return new WitnessGraph(columns, mappedNodes, edges, modelRelations, axioms, finalMemory);
     }
 
     // The memory locations that are accessed by the events of the graph.
@@ -188,7 +193,30 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             rawEdges.forEach(edge -> edges.add(new Edge(edge.relation(), ids.get(edge.from()), ids.get(edge.to()))));
 
             return new WitnessGraph(List.copyOf(columns), List.copyOf(nodes), List.copyOf(edges),
-                    getAxioms(), getFinalMemory(coEdges));
+                    getModelRelations(ids), getAxioms(), getFinalMemory(coEdges));
+        }
+
+        // The other named relations of the memory model, sorted by name, restricted to the events of the graph.
+        // Unlike co and fr, they are not reduced to their immediate edges.
+        private Map<String, List<Edge>> getModelRelations(Map<EventModel, Integer> ids) {
+            final Map<String, List<Edge>> relations = new TreeMap<>();
+            for (RelationModel relationModel : model.getRelationModels()) {
+                final Relation relation = relationModel.getRelation();
+                final boolean isStandard = STANDARD_RELATIONS.stream().anyMatch(relation::hasName);
+                if (relation.isSet() || relation.getName().isEmpty() || isStandard) {
+                    continue;
+                }
+                final List<Edge> edges = relationModel.getEdgeModels().stream()
+                        .filter(edge -> !edge.from().equals(edge.to()))
+                        .filter(edge -> ids.containsKey(edge.from()) && ids.containsKey(edge.to()))
+                        .map(edge -> new Edge(relation.getName().orElseThrow(), ids.get(edge.from()), ids.get(edge.to())))
+                        .sorted(Comparator.comparingInt(Edge::from).thenComparingInt(Edge::to))
+                        .toList();
+                if (!edges.isEmpty()) {
+                    relations.put(relation.getName().orElseThrow(), edges);
+                }
+            }
+            return Collections.unmodifiableMap(relations);
         }
 
         private static boolean isShown(EventModel event) {

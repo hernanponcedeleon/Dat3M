@@ -39,11 +39,19 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private static final int MARGIN = 40;
     private static final int HEADER_HEIGHT = 44;
     private static final int GRID = 24;
+    // Blue, purple, teal, magenta and brown: apart from the black, green, red and orange of the standard relations.
+    private static final Color[] MODEL_RELATION_COLORS_LIGHT = {
+            new Color(0x2545D3), new Color(0x7A4FBF), new Color(0x0A7F86), new Color(0xB3267F), new Color(0x8A5A2B)};
+    private static final Color[] MODEL_RELATION_COLORS_DARK = {
+            new Color(0x8FB0FF), new Color(0xC3A6FF), new Color(0x5FD3D0), new Color(0xF28AC6), new Color(0xD9A66B)};
+    private static final double[] MODEL_RELATION_OFFSETS = {-5, 5, -15, 15, -20, 20};
     private static final double MIN_SCALE = 0.4;
     private static final double MAX_SCALE = 2.5;
 
     private WitnessGraph graph;
     private final Set<String> visibleRelations = new HashSet<>();
+    // The relations of the memory model that were shown so far, in the order in which they were added.
+    private final List<String> modelRelations = new ArrayList<>();
     private final Set<Integer> hiddenNodes = new HashSet<>();
     private final Set<Kind> hiddenKinds = EnumSet.noneOf(Kind.class);
     // The layout only covers the visible nodes. Hiding nodes closes the gaps they leave.
@@ -83,6 +91,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         this.graph = graph;
         this.visibleRelations.clear();
         this.visibleRelations.addAll(visibleRelations);
+        this.modelRelations.clear();
         this.hiddenNodes.clear();
         this.hiddenKinds.clear();
         this.highlightedAddress = null;
@@ -167,6 +176,14 @@ public class WitnessGraphView extends JComponent implements Scrollable {
                     visibleEdges.add(edge);
                 }
             }
+            // Relations of the memory model only take part while they are shown, since they can be large.
+            for (String relation : visibleRelations) {
+                for (Edge edge : graph.modelRelations().getOrDefault(relation, List.of())) {
+                    if (layout.containsKey(edge.from()) && layout.containsKey(edge.to())) {
+                        visibleEdges.add(edge);
+                    }
+                }
+            }
             if (selected != null && !isVisible(selected)) {
                 select(null);
             }
@@ -203,10 +220,13 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     public void setRelationVisible(String relation, boolean visible) {
         if (visible) {
             visibleRelations.add(relation);
+            if (graph != null && graph.modelRelations().containsKey(relation) && !modelRelations.contains(relation)) {
+                modelRelations.add(relation);
+            }
         } else {
             visibleRelations.remove(relation);
         }
-        repaint();
+        relayout();
     }
 
     public void setSelectionListener(Consumer<Node> listener) {
@@ -219,14 +239,18 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         repaint();
     }
 
-    public static Color colorOf(String relation) {
+    public Color colorOf(String relation) {
         final Theme.Palette p = Theme.p();
         return switch (relation) {
             case PO -> p.po();
             case RF -> p.rf();
             case CO -> p.co();
             case FR -> p.fr();
-            default -> p.muted();
+            // Relations of the memory model get their colors in the order in which they were added.
+            default -> {
+                final Color[] colors = Theme.isDark() ? MODEL_RELATION_COLORS_DARK : MODEL_RELATION_COLORS_LIGHT;
+                yield colors[Math.max(0, modelRelations.indexOf(relation)) % colors.length];
+            }
         };
     }
 
@@ -418,7 +442,10 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             line = new CubicCurve2D.Double(start.getX(), start.getY(), start.getX() + reach, start.getY(),
                     beforeTip.getX(), beforeTip.getY(), tip.getX(), tip.getY());
             // Labels sit near the start, where edges of different sources have not yet converged.
-            labelAnchor = new Point2D.Double(start.getX() + (leftToRight ? 26 : -26), start.getY() + (tip.getY() - start.getY()) * 0.1);
+            // They are staggered, so that the labels of parallel edges do not cover each other.
+            final double distance = 26 + (offset + 10) * 2.2;
+            labelAnchor = new Point2D.Double(start.getX() + (leftToRight ? distance : -distance),
+                    start.getY() + (tip.getY() - start.getY()) * 0.1);
         } else {
             // Edges that skip columns travel through the gap above the row of their target and enter it from the top,
             // so that they do not cross the events of the columns in between.
@@ -436,7 +463,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             path.lineTo(tip.getX() - direction * 12, laneY);
             path.quadTo(tip.getX(), laneY, tip.getX(), tip.getY());
             line = path;
-            labelAnchor = new Point2D.Double(laneStart + direction * 24, laneY);
+            labelAnchor = new Point2D.Double(laneStart + direction * (24 + (offset + 10) * 2.2), laneY);
         }
 
         g2.setColor(color);
@@ -459,11 +486,12 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     }
 
     // Relations get distinct heights so that edges between the same events do not overlap.
-    private static double offsetOf(String relation) {
+    private double offsetOf(String relation) {
         return switch (relation) {
             case RF -> -10;
             case CO -> 10;
-            default -> 0;
+            case FR -> 0;
+            default -> MODEL_RELATION_OFFSETS[Math.max(0, modelRelations.indexOf(relation)) % MODEL_RELATION_OFFSETS.length];
         };
     }
 

@@ -37,6 +37,7 @@ public class WitnessPane extends JPanel {
     private static final int INSPECTOR_WIDTH = 300;
     private static final Set<String> DEFAULT_RELATIONS = Set.of(PO, RF, CO);
     private static final String NO_HIGHLIGHT = "None";
+    private static final String ADD_RELATION = "Add relation of the memory model…";
     private static final Map<String, String> RELATION_DESCRIPTIONS = Map.of(
             PO, "program order", RF, "read from", CO, "coherence", FR, "from read");
 
@@ -47,6 +48,7 @@ public class WitnessPane extends JPanel {
     private final JPanel eventPanel = new JPanel(new GridBagLayout());
     private final JPanel relationsPanel = new JPanel();
     private final JPanel kindsPanel = new JPanel();
+    private final JComboBox<String> relationSelector = new JComboBox<>();
     private final JButton showHiddenButton = Buttons.plain("Show hidden events", null);
     private final JComboBox<String> addressSelector = new JComboBox<>();
     private boolean isUpdatingState;
@@ -70,6 +72,13 @@ public class WitnessPane extends JPanel {
         graphView.setSelectionListener(this::showEvent);
         graphView.setStateListener(this::updateState);
         showHiddenButton.addActionListener(event -> graphView.showHiddenEvents());
+        relationSelector.getAccessibleContext().setAccessibleName("Add relation of the memory model");
+        relationSelector.addActionListener(event -> {
+            final String relation = (String) relationSelector.getSelectedItem();
+            if (!isUpdatingState && relation != null && !relation.equals(ADD_RELATION)) {
+                addModelRelation(relation);
+            }
+        });
         addressSelector.getAccessibleContext().setAccessibleName("Highlighted memory location");
         addressSelector.addActionListener(event -> {
             if (!isUpdatingState && addressSelector.getSelectedItem() != null) {
@@ -119,9 +128,15 @@ public class WitnessPane extends JPanel {
         relationsPanel.removeAll();
         for (String relation : List.of(PO, RF, CO, FR)) {
             if (graph.relations().contains(relation)) {
-                relationsPanel.add(newRelationToggle(relation, visible.contains(relation)));
+                relationsPanel.add(newRelationToggle(relation, RELATION_DESCRIPTIONS.get(relation), visible.contains(relation)));
             }
         }
+        isUpdatingState = true;
+        relationSelector.removeAllItems();
+        relationSelector.addItem(ADD_RELATION);
+        graph.modelRelations().keySet().forEach(relationSelector::addItem);
+        relationSelector.setVisible(!graph.modelRelations().isEmpty());
+        isUpdatingState = false;
 
         memoryPanel.removeAll();
         int row = 0;
@@ -213,8 +228,10 @@ public class WitnessPane extends JPanel {
         inspector.add(addressSelector, constraints);
         constraints.insets = new Insets(0, 0, 10, 0);
         inspector.add(new Text("Relations", Text.Role.SECTION), constraints);
-        constraints.insets = new Insets(0, 0, 28, 0);
+        constraints.insets = new Insets(0, 0, 8, 0);
         inspector.add(relationsPanel, constraints);
+        constraints.insets = new Insets(0, 0, 28, 0);
+        inspector.add(relationSelector, constraints);
         constraints.insets = new Insets(0, 0, 10, 0);
         inspector.add(new Text("Final memory", Text.Role.SECTION), constraints);
         constraints.insets = new Insets(0, 0, 0, 0);
@@ -231,7 +248,21 @@ public class WitnessPane extends JPanel {
         return frame;
     }
 
-    private JComponent newRelationToggle(String relation, boolean isVisible) {
+    // Shows the relation in the graph and moves it from the selector to the list of toggles.
+    private void addModelRelation(String relation) {
+        final int edges = graph.modelRelations().get(relation).size();
+        relationsPanel.add(newRelationToggle(relation, "%d edge%s".formatted(edges, edges == 1 ? "" : "s"), true));
+        graphView.setRelationVisible(relation, true);
+        isUpdatingState = true;
+        relationSelector.removeItem(relation);
+        relationSelector.setSelectedItem(ADD_RELATION);
+        relationSelector.setVisible(relationSelector.getItemCount() > 1);
+        isUpdatingState = false;
+        relationsPanel.revalidate();
+        relationsPanel.repaint();
+    }
+
+    private JComponent newRelationToggle(String relation, String description, boolean isVisible) {
         final JCheckBox toggle = new JCheckBox();
         toggle.setSelected(isVisible);
         toggle.setOpaque(false);
@@ -242,7 +273,7 @@ public class WitnessPane extends JPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 final Graphics2D g2 = Theme.smooth(g.create());
-                g2.setColor(WitnessGraphView.colorOf(relation));
+                g2.setColor(graphView.colorOf(relation));
                 g2.setStroke(WitnessGraphView.strokeOf(relation, 2f));
                 g2.drawLine(1, getHeight() / 2, getWidth() - 1, getHeight() / 2);
                 g2.dispose();
@@ -256,7 +287,7 @@ public class WitnessPane extends JPanel {
         row.add(toggle);
         row.add(swatch);
         row.add(new Text(relation, Text.Role.MONO));
-        row.add(new Text(RELATION_DESCRIPTIONS.getOrDefault(relation, ""), Text.Role.MUTED));
+        row.add(new Text(description, Text.Role.MUTED));
         return row;
     }
 
