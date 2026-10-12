@@ -281,13 +281,25 @@ public class WitnessPane extends JPanel {
         };
         swatch.setPreferredSize(new Dimension(24, 16));
 
-        final JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        final JPanel label = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        label.setOpaque(false);
+        label.add(toggle);
+        label.add(swatch);
+        final Text name = new Text(relation, Text.Role.MONO);
+        label.add(name);
+        label.add(new Text(description, Text.Role.MUTED));
+
+        final JCheckBox reduceToggle = new JCheckBox("reduce", graphView.isReduced(relation));
+        reduceToggle.setOpaque(false);
+        reduceToggle.setToolTipText("Remove the transitive edges of " + relation);
+        reduceToggle.getAccessibleContext().setAccessibleName("Remove the transitive edges of " + relation);
+        reduceToggle.addActionListener(event -> graphView.setReduced(relation, reduceToggle.isSelected()));
+
+        final JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.add(toggle);
-        row.add(swatch);
-        row.add(new Text(relation, Text.Role.MONO));
-        row.add(new Text(description, Text.Role.MUTED));
+        row.add(label, BorderLayout.CENTER);
+        row.add(reduceToggle, BorderLayout.EAST);
         return row;
     }
 

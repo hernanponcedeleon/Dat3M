@@ -15,13 +15,16 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -45,6 +48,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private static final Color[] MODEL_RELATION_COLORS_DARK = {
             new Color(0x8FB0FF), new Color(0xC3A6FF), new Color(0x5FD3D0), new Color(0xF28AC6), new Color(0xD9A66B)};
     private static final double[] MODEL_RELATION_OFFSETS = {-5, 5, -15, 15, -20, 20};
+    private static final Set<String> DEFAULT_REDUCED_RELATIONS = Set.of(PO, RF, CO, FR);
     private static final double MIN_SCALE = 0.4;
     private static final double MAX_SCALE = 2.5;
 
@@ -52,6 +56,8 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private final Set<String> visibleRelations = new HashSet<>();
     // The relations of the memory model that were shown so far, in the order in which they were added.
     private final List<String> modelRelations = new ArrayList<>();
+    // The relations whose transitive edges are left out.
+    private final Set<String> reducedRelations = new HashSet<>();
     private final Set<Integer> hiddenNodes = new HashSet<>();
     private final Set<Kind> hiddenKinds = EnumSet.noneOf(Kind.class);
     // The layout only covers the visible nodes. Hiding nodes closes the gaps they leave.
@@ -92,6 +98,8 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         this.visibleRelations.clear();
         this.visibleRelations.addAll(visibleRelations);
         this.modelRelations.clear();
+        this.reducedRelations.clear();
+        this.reducedRelations.addAll(DEFAULT_REDUCED_RELATIONS);
         this.hiddenNodes.clear();
         this.hiddenKinds.clear();
         this.highlightedAddress = null;
@@ -154,35 +162,21 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         layout.clear();
         visibleEdges.clear();
         if (graph != null) {
-            final Map<Integer, Node> lastInColumn = new HashMap<>();
-            final Map<Integer, Integer> rows = new HashMap<>();
+            final Map<Integer, List<Node>> columns = new HashMap<>();
             for (Node node : graph.nodes()) {
                 if (!isVisible(node)) {
                     continue;
                 }
-                final int row = rows.merge(node.column(), 1, Integer::sum) - 1;
+                final List<Node> column = columns.computeIfAbsent(node.column(), key -> new ArrayList<>());
                 layout.put(node.id(), new Rectangle2D.Double(
                         MARGIN + node.column() * (NODE_WIDTH + COLUMN_GAP),
-                        MARGIN + HEADER_HEIGHT + row * (NODE_HEIGHT + ROW_GAP),
+                        MARGIN + HEADER_HEIGHT + column.size() * (NODE_HEIGHT + ROW_GAP),
                         NODE_WIDTH, NODE_HEIGHT));
-                // The program order is shown between the visible events, skipping the hidden ones.
-                final Node previous = lastInColumn.put(node.column(), node);
-                if (previous != null && !node.isInit()) {
-                    visibleEdges.add(new Edge(PO, previous.id(), node.id()));
-                }
+                column.add(node);
             }
-            for (Edge edge : graph.edges()) {
-                if (!edge.relation().equals(PO) && layout.containsKey(edge.from()) && layout.containsKey(edge.to())) {
-                    visibleEdges.add(edge);
-                }
-            }
-            // Relations of the memory model only take part while they are shown, since they can be large.
+            // Edges are only computed for the relations that are shown, since relations can be large.
             for (String relation : visibleRelations) {
-                for (Edge edge : graph.modelRelations().getOrDefault(relation, List.of())) {
-                    if (layout.containsKey(edge.from()) && layout.containsKey(edge.to())) {
-                        visibleEdges.add(edge);
-                    }
-                }
+                visibleEdges.addAll(getVisibleEdges(relation, columns));
             }
             if (selected != null && !isVisible(selected)) {
                 select(null);
@@ -191,6 +185,80 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         stateListener.run();
         revalidate();
         repaint();
+    }
+
+    // The edges of the relation between the visible events, without transitive edges if the relation is reduced.
+    private List<Edge> getVisibleEdges(String relation, Map<Integer, List<Node>> columns) {
+        final boolean isReduced = isReduced(relation);
+        if (relation.equals(PO)) {
+            // The program order follows from the order of the events in their columns.
+            final List<Edge> edges = new ArrayList<>();
+            for (List<Node> column : columns.values()) {
+                for (int i = 0; i < column.size() && !column.get(i).isInit(); i++) {
+                    for (int j = i + 1; j < (isReduced ? Math.min(i + 2, column.size()) : column.size()); j++) {
+                        edges.add(new Edge(PO, column.get(i).id(), column.get(j).id()));
+                    }
+                }
+            }
+            return edges;
+        }
+        final List<Edge> edges = getAllEdges(relation).stream()
+                .filter(edge -> layout.containsKey(edge.from()) && layout.containsKey(edge.to()))
+                .toList();
+        if (!isReduced) {
+            return edges;
+        }
+        if (relation.equals(FR)) {
+            // A read is only connected to the earliest writes that overwrite the value it read.
+            final Set<Edge> coherence = new HashSet<>(getAllEdges(CO));
+            return edges.stream()
+                    .filter(edge -> edges.stream().noneMatch(other -> other.from() == edge.from()
+                            && coherence.contains(new Edge(CO, other.to(), edge.to()))))
+                    .toList();
+        }
+        final List<Edge> reduced = removeTransitiveEdges(edges);
+        if (relation.equals(CO)) {
+            // Like in the graphical witnesses, coherence edges within a thread are omitted because they follow from po.
+            return reduced.stream()
+                    .filter(edge -> graph.nodes().get(edge.from()).column() != graph.nodes().get(edge.to()).column())
+                    .toList();
+        }
+        return reduced;
+    }
+
+    private List<Edge> getAllEdges(String relation) {
+        final List<Edge> modelRelation = graph.modelRelations().get(relation);
+        return modelRelation != null ? modelRelation
+                : graph.edges().stream().filter(edge -> edge.relation().equals(relation)).toList();
+    }
+
+    /*
+        Removes every edge (a, c) for which some event b lies strictly between a and c, i.e.,
+        b is reachable from a and reaches c, but neither reaches a nor is reachable from c.
+        On acyclic relations this is the transitive reduction. Edges within cycles are all kept.
+     */
+    private static List<Edge> removeTransitiveEdges(List<Edge> edges) {
+        final Map<Integer, Set<Integer>> successors = new HashMap<>();
+        edges.forEach(edge -> successors.computeIfAbsent(edge.from(), key -> new HashSet<>()).add(edge.to()));
+        final Map<Integer, Set<Integer>> reachable = new HashMap<>();
+        for (Integer start : successors.keySet()) {
+            final Set<Integer> reached = new HashSet<>();
+            final Deque<Integer> worklist = new ArrayDeque<>(successors.get(start));
+            while (!worklist.isEmpty()) {
+                final Integer next = worklist.pop();
+                if (reached.add(next)) {
+                    worklist.addAll(successors.getOrDefault(next, Set.of()));
+                }
+            }
+            reachable.put(start, reached);
+        }
+        final BiPredicate<Integer, Integer> reaches = (from, to) -> reachable.getOrDefault(from, Set.of()).contains(to);
+        return edges.stream()
+                .filter(edge -> reachable.get(edge.from()).stream().noneMatch(between ->
+                        reaches.test(between, edge.to())
+                                && !reaches.test(between, edge.from())
+                                && !reaches.test(edge.to(), between)))
+                .toList();
     }
 
     private void showMenu(MouseEvent event) {
@@ -227,6 +295,20 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             visibleRelations.remove(relation);
         }
         relayout();
+    }
+
+    // A reduced relation is shown without the edges that are implied by its other edges.
+    public void setReduced(String relation, boolean reduced) {
+        if (reduced) {
+            reducedRelations.add(relation);
+        } else {
+            reducedRelations.remove(relation);
+        }
+        relayout();
+    }
+
+    public boolean isReduced(String relation) {
+        return reducedRelations.contains(relation);
     }
 
     public void setSelectionListener(Consumer<Node> listener) {
@@ -415,7 +497,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         final Point2D tip;
         final Point2D beforeTip;
         final Point2D labelAnchor;
-        if (edge.relation().equals(PO)) {
+        if (edge.relation().equals(PO) && Math.abs(b.getMinY() - a.getMaxY() - ROW_GAP) < 0.5) {
             // Neighbours in a column are connected by a straight line.
             final Point2D start = new Point2D.Double(a.getCenterX(), a.getMaxY());
             tip = new Point2D.Double(b.getCenterX(), b.getMinY());

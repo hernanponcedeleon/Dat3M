@@ -189,15 +189,24 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
                 }
             }
 
+            // The graph keeps co and fr completely. Their immediate edges only determined which initial writes to show.
             final Set<Edge> edges = new LinkedHashSet<>();
-            rawEdges.forEach(edge -> edges.add(new Edge(edge.relation(), ids.get(edge.from()), ids.get(edge.to()))));
+            rawEdges.stream()
+                    .filter(edge -> edge.relation().equals(PO) || edge.relation().equals(RF))
+                    .forEach(edge -> edges.add(new Edge(edge.relation(), ids.get(edge.from()), ids.get(edge.to()))));
+            for (String relation : List.of(CO, FR)) {
+                getEdges(relation).stream()
+                        .filter(edge -> ids.containsKey(edge.from()) && ids.containsKey(edge.to()))
+                        .map(edge -> new Edge(relation, ids.get(edge.from()), ids.get(edge.to())))
+                        .sorted(Comparator.comparingInt(Edge::from).thenComparingInt(Edge::to))
+                        .forEach(edges::add);
+            }
 
             return new WitnessGraph(List.copyOf(columns), List.copyOf(nodes), List.copyOf(edges),
                     getModelRelations(ids), getAxioms(), getFinalMemory(coEdges));
         }
 
         // The other named relations of the memory model, sorted by name, restricted to the events of the graph.
-        // Unlike co and fr, they are not reduced to their immediate edges.
         private Map<String, List<Edge>> getModelRelations(Map<EventModel, Integer> ids) {
             final Map<String, List<Edge>> relations = new TreeMap<>();
             for (RelationModel relationModel : model.getRelationModels()) {
