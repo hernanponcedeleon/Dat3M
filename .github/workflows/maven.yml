@@ -126,6 +126,7 @@ jobs:
   litmus-exploration-tests:
     name: Litmus exploration tests
     runs-on: ubuntu-latest
+    needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout

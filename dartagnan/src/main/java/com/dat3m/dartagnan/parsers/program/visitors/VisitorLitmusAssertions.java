@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
@@ -81,14 +80,13 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         final Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
-            name = ctx.threadId().id + ":" + name;
         } else {
             final MemoryObject object = programBuilder.getMemoryObject(name);
             checkState(object != null, "Undefined location %s", name);
             value = new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0);
         }
 
-        return expressions.makeNamedExpression(name, value);
+        return expressions.makeNamedExpression(ctx.getText(), value);
 
     }
 
@@ -161,10 +159,9 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
             return expressions.parseValue(constant.getText(), archType);
         }
         String name = ctx.varName().getText();
-        Expression value;
+        final Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
-            name = ctx.threadId().id + ":" + name;
         } else {
             MemoryObject base = programBuilder.getMemoryObject(name);
             checkState(base != null, "uninitialized location %s", name);
@@ -174,6 +171,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
             value = right && offset == null ? base : new FinalMemoryValue(type, base, o);
         }
 
-        return value instanceof MemoryObject ? value : expressions.makeNamedExpression(name, value);
+        // We wrap registers and final memory values into named expressions
+        return value instanceof MemoryObject ? value : expressions.makeNamedExpression(ctx.getText(), value);
     }
 }
