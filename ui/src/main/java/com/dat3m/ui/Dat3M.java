@@ -3,52 +3,68 @@ package com.dat3m.ui;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.ui.components.Buttons;
+import com.dat3m.ui.components.Chip;
+import com.dat3m.ui.components.HeaderBar;
+import com.dat3m.ui.components.Icons;
+import com.dat3m.ui.components.Text;
 import com.dat3m.ui.editor.Editor;
-import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.editor.EditorsPane;
-import com.dat3m.ui.listener.EditorListener;
 import com.dat3m.ui.options.OptionsPane;
-import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.result.ReachabilityResult;
-import com.dat3m.ui.utils.ImageLabel;
+import com.dat3m.ui.result.ResultPane;
+import com.dat3m.ui.theme.Theme;
 import com.dat3m.ui.utils.UiOptions;
+import com.dat3m.ui.witness.WitnessPane;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.Token;
 import org.sosy_lab.common.ShutdownManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.initEnvironmentInfo;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.logEnvironmentInfo;
 import static com.dat3m.ui.utils.Utils.showError;
-import static javax.swing.BorderFactory.createEmptyBorder;
-import static javax.swing.UIManager.getDefaults;
 
-public class Dat3M extends JFrame implements ActionListener {
+public class Dat3M extends JFrame {
 
     private static final String UI_SOURCE_NAME = "dat3mUI";
+    private static final String TEMPORARY_SOURCE_PREFIX = "dat3m-ui-";
+    private static final Pattern TEMPORARY_SOURCE = Pattern.compile(Pattern.quote(TEMPORARY_SOURCE_PREFIX) + "\\d+(\\.[A-Za-z]+)+");
+    private static final String WORKBENCH_CARD = "workbench";
+    private static final String WITNESS_CARD = "witness";
 
     private final OptionsPane optionsPane = new OptionsPane();
     private final ProgramParser programParser;
     private final EditorsPane editorsPane;
+    private final ResultPane resultPane = new ResultPane();
+    private final WitnessPane witnessPane = new WitnessPane(this::showWorkbench);
+    private final CardLayout screens = new CardLayout();
 
-    private ReachabilityResult testResult;
+    private final HeaderBar header;
+    private final Text statusText = new Text("Not verified", Text.Role.MUTED);
+    private final JButton verifyButton = Buttons.primary("Verify", Icons.play());
+    private final JButton cancelButton = Buttons.plain("Cancel", Icons.stop());
+
     private SwingWorker<VerificationOutcome, Void> verificationWorker;
     private volatile ShutdownManager shutdownManager;
     private boolean cancellationRequested;
+    private boolean timeoutElapsed;
     private final Timer verificationTimer;
+    private Timer timeoutTimer;
     private long verificationStartTime;
 
     private Dat3M() throws IOException {
@@ -58,48 +74,50 @@ public class Dat3M extends JFrame implements ActionListener {
                 .filter(extension -> !extension.equals(ProgramParser.EXTENSION_SPV_DIS))
                 .collect(Collectors.toUnmodifiableSet()));
         verificationTimer = new Timer(1000, ignored -> updateVerificationTime());
-        getDefaults().put("SplitPane.border", createEmptyBorder());
 
         setTitle("Dat3M");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-//      setIconImage(IconHelper.getIcon(IconCode.DAT3M).getImage());
+        setMinimumSize(new Dimension(960, 600));
+        setJMenuBar(newMenuBar());
 
-        JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu("File");
-        fileMenu.add(editorsPane.getMenuImporter());
-        fileMenu.add(editorsPane.getMenuExporter());
-        menuBar.add(fileMenu);
-        JMenu viewMenu = new JMenu("View");
-        JCheckBoxMenuItem showLogItem = new JCheckBoxMenuItem("Show log");
-        showLogItem.addItemListener(event -> editorsPane.setLogVisible(showLogItem.isSelected()));
-        viewMenu.add(showLogItem);
-        menuBar.add(viewMenu);
-        setJMenuBar(menuBar);
+        cancelButton.setVisible(false);
+        verifyButton.addActionListener(event -> runTest());
+        cancelButton.addActionListener(event -> cancelVerification());
+        header = new HeaderBar(statusText, cancelButton, verifyButton);
 
-        JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());
-        mainPane.setDividerSize(2);
-        add(mainPane);
+        final JSplitPane editorsAndResult = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorsPane.getMainPane(), resultPane);
+        editorsAndResult.setResizeWeight(1);
+        editorsAndResult.setDividerSize(5);
+        editorsAndResult.setBorder(BorderFactory.createEmptyBorder());
 
-        // Start listening to button events
-        optionsPane.getTestButton().addActionListener(this);
-        optionsPane.getCancelButton().addActionListener(this);
+        final JPanel workbench = new JPanel(new BorderLayout());
+        workbench.add(header, BorderLayout.NORTH);
+        workbench.add(optionsPane, BorderLayout.WEST);
+        workbench.add(editorsAndResult, BorderLayout.CENTER);
 
-        // optionsPane needs to listen to editor to clean the console
-        editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane::clearConsole);
-        editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane::clearConsole);
+        getContentPane().setLayout(screens);
+        getContentPane().add(workbench, WORKBENCH_CARD);
+        getContentPane().add(witnessPane, WITNESS_CARD);
 
-        // The console shall be cleaned every time the program or MM is modified from the editor
-        EditorListener listener = new EditorListener(optionsPane.getConsolePane());
-        editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
-        editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
+        resultPane.setWitnessAction(() -> screens.show(getContentPane(), WITNESS_CARD));
+
+        // A result becomes stale as soon as its inputs change.
+        final Editor programEditor = editorsPane.getProgramEditor();
+        final Editor modelEditor = editorsPane.getModelEditor();
+        optionsPane.addChangeListener(this::invalidateResult);
+        programEditor.addChangeListener(this::onSourceChanged);
+        modelEditor.addChangeListener(this::onSourceChanged);
+        onSourceChanged();
 
         pack();
     }
 
     public static void main(String[] args) {
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+        System.setProperty("apple.awt.application.name", "Dat3M");
         EventQueue.invokeLater(() -> {
+            Theme.install(false);
             try {
                 Dat3M app = new Dat3M();
                 app.setVisible(true);
@@ -109,73 +127,79 @@ public class Dat3M extends JFrame implements ActionListener {
         });
     }
 
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        String command = event.getActionCommand();
-        if (ControlCode.TEST.actionCommand().equals(command)) {
-            runTest();
-        } else if (ControlCode.CANCEL.actionCommand().equals(command)) {
-            cancelVerification();
-        }
+    private JMenuBar newMenuBar() {
+        final JMenu fileMenu = new JMenu("File");
+        fileMenu.add(editorsPane.getProgramEditor().getImportAction());
+        fileMenu.add(editorsPane.getModelEditor().getImportAction());
+        fileMenu.addSeparator();
+        fileMenu.add(editorsPane.getProgramEditor().getExportAction());
+        fileMenu.add(editorsPane.getModelEditor().getExportAction());
+
+        final JMenu viewMenu = new JMenu("View");
+        final JCheckBoxMenuItem darkThemeItem = new JCheckBoxMenuItem("Dark theme");
+        darkThemeItem.addItemListener(event -> Theme.install(darkThemeItem.isSelected()));
+        viewMenu.add(darkThemeItem);
+
+        final JMenuBar menuBar = new JMenuBar();
+        menuBar.add(fileMenu);
+        menuBar.add(viewMenu);
+        return menuBar;
     }
 
-    private void showViolation(ReachabilityResult testResult) {
-        final String filePath = testResult.getWitnessFile().toAbsolutePath().toString();
+    private void showWorkbench() {
+        screens.show(getContentPane(), WORKBENCH_CARD);
+    }
 
-        // Generate scroll pane with image of violation
-        final ImageIcon imageIcon = new ImageIcon(filePath);
-        imageIcon.getImage().flush(); // Flush the caches for otherwise we might show a previously loaded file!!!
+    private void onSourceChanged() {
+        final File programFile = editorsPane.getProgramEditor().getLoadedFile().orElse(null);
+        final File modelFile = editorsPane.getModelEditor().getLoadedFile().orElse(null);
+        optionsPane.setFiles(programFile == null ? null : programFile.getPath(), modelFile == null ? null : modelFile.getPath());
+        if (programFile == null) {
+            header.setLocation("", "untitled");
+        } else {
+            final File directory = programFile.getParentFile();
+            header.setLocation(directory == null ? "" : directory.getName(), programFile.getName());
+        }
+        invalidateResult();
+    }
 
-        final ImageLabel imgLabel = new ImageLabel(imageIcon);
-        final JScrollPane scrollPane = new JScrollPane(imgLabel);
-
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        // Generate window frame at center of screen that embeds the scrollable image
-        final JFrame imageFrame = new JFrame();
-        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        final int x = (screenSize.width - imageFrame.getSize().width) / 2;
-        final int y = (screenSize.height - imageFrame.getSize().height) / 2;
-        final int extraFrameSize = 100;
-
-        // Add zoomability to the witness
-        imageFrame.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyChar() == '+') {
-                    imgLabel.zoom(1.05);
-                } else if (e.getKeyChar() == '-') {
-                    imgLabel.zoom(0.95);
-                }
-            }
-        });
-
-        imageFrame.setSize(imageIcon.getIconWidth() + extraFrameSize, imageIcon.getIconHeight() + extraFrameSize);
-        imageFrame.getContentPane().add(scrollPane);
-        imageFrame.setLocation(x, y);
-        imageFrame.setVisible(true);
+    private void invalidateResult() {
+        if (verificationWorker != null && !verificationWorker.isDone()) {
+            return;
+        }
+        resultPane.showIdle();
+        statusText.setText("Not verified");
     }
 
     private void runTest() {
         final UiOptions options = optionsPane.getOptions();
-        final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
+        final Editor programEditor = editorsPane.getProgramEditor();
         final String sourceCode = programEditor.getEditorPane().getText();
         final String format = programEditor.getSelectedFormat();
-        final String wmmCode = editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText();
+        final String wmmCode = editorsPane.getModelEditor().getEditorPane().getText();
+        final String programName = programEditor.getLoadedFile().map(File::getName).orElse("untitled");
 
-        testResult = null;
         cancellationRequested = false;
-        editorsPane.getLogPane().clear();
+        timeoutElapsed = false;
+        resultPane.getLogPane().clear();
         final ShutdownManager manager = ShutdownManager.create();
         shutdownManager = manager;
 
-        optionsPane.getTestButton().setEnabled(false);
-        optionsPane.getClearButton().setEnabled(false);
-        optionsPane.getCancelButton().setEnabled(true);
+        verifyButton.setEnabled(false);
+        cancelButton.setEnabled(true);
+        cancelButton.setVisible(true);
+        resultPane.showRunning();
         verificationStartTime = System.nanoTime();
         verificationTimer.start();
         updateVerificationTime();
+        if (options.timeout() > 0) {
+            timeoutTimer = new Timer(options.timeout() * 1000, ignored -> {
+                timeoutElapsed = true;
+                manager.requestShutdown("Timeout elapsed");
+            });
+            timeoutTimer.setRepeats(false);
+            timeoutTimer.start();
+        }
         verificationWorker = new SwingWorker<>() {
             @Override
             protected VerificationOutcome doInBackground() {
@@ -199,53 +223,105 @@ public class Dat3M extends JFrame implements ActionListener {
 
             @Override
             protected void done() {
+                final String elapsedTime = getElapsedTime();
                 verificationTimer.stop();
-                optionsPane.getTestButton().setEnabled(true);
-                optionsPane.getClearButton().setEnabled(true);
-                optionsPane.getCancelButton().setEnabled(false);
+                if (timeoutTimer != null) {
+                    timeoutTimer.stop();
+                    timeoutTimer = null;
+                }
+                verifyButton.setEnabled(true);
+                cancelButton.setVisible(false);
                 shutdownManager = null;
                 try {
-                    if (cancellationRequested) {
-                        optionsPane.getConsolePane().setText("CANCELLED");
-                        return;
-                    }
-                    final VerificationOutcome outcome = get();
-                    if (outcome.errorMessage() != null) {
-                        optionsPane.getConsolePane().setText("");
-                        showError(outcome.errorMessage(), outcome.errorTitle());
-                        return;
-                    }
-
-                    testResult = outcome.result();
-                    optionsPane.getConsolePane().setText(testResult.getVerdict());
-                    if (options.showWitness() && testResult.hasWitness()) {
-                        showViolation(testResult);
-                    }
+                    showOutcome(get(), options, programName, elapsedTime);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    optionsPane.getConsolePane().setText("");
-                    showError("Verification was interrupted", "Verification error");
+                    showFailure("Verification error", "The verification was interrupted.");
                 } catch (ExecutionException e) {
-                    optionsPane.getConsolePane().setText("");
-                    showError(e.getCause().getMessage(), "Verification error");
+                    showFailure("Verification error", String.valueOf(e.getCause()));
                 }
             }
         };
         verificationWorker.execute();
     }
 
-    private void updateVerificationTime() {
+    private void showOutcome(VerificationOutcome outcome, UiOptions options, String programName, String elapsedTime) {
         if (cancellationRequested) {
+            statusText.setText("Cancelled");
+            resultPane.showOutcome(Chip.Kind.NEUTRAL, "Cancelled", "Verification cancelled",
+                    "after " + elapsedTime, "", "", false);
             return;
         }
+        if (timeoutElapsed) {
+            statusText.setText("Timeout");
+            resultPane.showOutcome(Chip.Kind.NEUTRAL, "Timeout", "Verification timed out",
+                    "after %d s".formatted(options.timeout()), "", "", false);
+            return;
+        }
+        if (outcome.errorMessage() != null) {
+            showFailure(outcome.errorTitle(), outcome.errorMessage());
+            return;
+        }
+        final ReachabilityResult result = outcome.result();
+        if (result.isError() || result.getStatus().isEmpty()) {
+            showFailure(result.isInterrupted() ? "Verification interrupted" : "Verification error", result.getVerdict());
+            return;
+        }
+
+        final VerificationStatus status = result.getStatus().orElseThrow();
+        final Chip.Kind kind = switch (status) {
+            case PASS -> Chip.Kind.PASS;
+            case FAIL -> Chip.Kind.FAIL;
+            case UNKNOWN -> Chip.Kind.NEUTRAL;
+        };
+        // The program is parsed from a temporary file, whose name is meaningless to the user.
+        final UnaryOperator<String> sourceNamer = text -> TEMPORARY_SOURCE.matcher(text).replaceAll(Matcher.quoteReplacement(programName));
+        final String summary = sourceNamer.apply(result.getVerdict());
+        final String reason = getSummaryEntry(summary, "Reason: ");
+        final String title = !reason.isEmpty() ? reason : switch (status) {
+            case PASS -> "Verification passed";
+            case FAIL -> "Verification failed";
+            case UNKNOWN -> "No conclusive result";
+        };
+        final String specification = getSummaryEntry(summary, "Condition: ");
+        statusText.setText("Finished in " + elapsedTime);
+        resultPane.showOutcome(kind, status.toString(), title, "in " + elapsedTime, specification, summary, result.hasWitness());
+        if (result.hasWitness()) {
+            witnessPane.showWitness(result.getWitness().mapSourceTexts(sourceNamer), programName, status.toString(), kind,
+                    specification.isEmpty() ? title : specification);
+        }
+    }
+
+    private void showFailure(String title, String message) {
+        statusText.setText("Error");
+        resultPane.showOutcome(Chip.Kind.FAIL, "Error", title, "", "", message == null ? "" : message, false);
+    }
+
+    // The summary of a verification consists of lines of the form "Key: value".
+    private static String getSummaryEntry(String summary, String key) {
+        return summary.lines()
+                .filter(line -> line.startsWith(key))
+                .map(line -> line.substring(key.length()).strip())
+                .findFirst().orElse("");
+    }
+
+    private String getElapsedTime() {
         final long elapsedSeconds = (System.nanoTime() - verificationStartTime) / 1_000_000_000;
         final long hours = elapsedSeconds / 3600;
         final long minutes = (elapsedSeconds % 3600) / 60;
         final long seconds = elapsedSeconds % 60;
-        final String elapsedTime = hours > 0
+        return hours > 0
                 ? "%d:%02d:%02d".formatted(hours, minutes, seconds)
                 : "%d:%02d".formatted(minutes, seconds);
-        optionsPane.getConsolePane().setText("Running... " + elapsedTime);
+    }
+
+    private void updateVerificationTime() {
+        if (cancellationRequested) {
+            return;
+        }
+        final String elapsedTime = getElapsedTime();
+        statusText.setText("Verifying… " + elapsedTime);
+        resultPane.setElapsedTime(elapsedTime);
     }
 
     private void cancelVerification() {
@@ -253,8 +329,8 @@ public class Dat3M extends JFrame implements ActionListener {
             return;
         }
         cancellationRequested = true;
-        optionsPane.getCancelButton().setEnabled(false);
-        optionsPane.getConsolePane().setText("Cancelling...");
+        cancelButton.setEnabled(false);
+        statusText.setText("Cancelling…");
         final ShutdownManager manager = shutdownManager;
         if (manager != null) {
             manager.requestShutdown("Cancelled by user");
@@ -276,7 +352,7 @@ public class Dat3M extends JFrame implements ActionListener {
     private static Path createTemporarySourceFile(String sourceDirectory, String format) throws IOException {
         if (!sourceDirectory.isEmpty()) {
             try {
-                return Files.createTempFile(Path.of(sourceDirectory), "dat3m-ui-", format);
+                return Files.createTempFile(Path.of(sourceDirectory), TEMPORARY_SOURCE_PREFIX, format);
             } catch (IOException exception) {
                 throw new IOException(
                         "Cannot create a temporary source file in %s. Save the source to a writable directory first."
@@ -285,7 +361,7 @@ public class Dat3M extends JFrame implements ActionListener {
                 );
             }
         }
-        return Files.createTempFile("dat3m-ui-", format);
+        return Files.createTempFile(TEMPORARY_SOURCE_PREFIX, format);
     }
 
     private record VerificationOutcome(ReachabilityResult result, String errorTitle, String errorMessage) {
@@ -306,7 +382,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
         private static VerificationOutcome memoryModelError(Exception exception) {
             final String message = exception.getMessage() == null ? "Memory model cannot be parsed" : exception.getMessage();
-            return new VerificationOutcome(null, "Target memory model error", message);
+            return new VerificationOutcome(null, "Memory model error", message);
         }
     }
 }

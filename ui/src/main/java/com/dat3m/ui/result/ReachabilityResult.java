@@ -4,31 +4,39 @@ import com.dat3m.dartagnan.OutputGenerator;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.verification.VerificationResult;
+import com.dat3m.dartagnan.verification.VerificationStatus;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.verification.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
-import com.dat3m.ui.utils.Utils;
-import org.sosy_lab.common.configuration.Configuration;
+import com.dat3m.ui.witness.WitnessGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
 
-import java.nio.file.Path;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.witness.WitnessType.NONE;
-import static com.dat3m.dartagnan.witness.WitnessType.PNG;
 
 public class ReachabilityResult {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReachabilityResult.class);
 
     private final Program program;
     private final Wmm wmm;
     private final UiOptions options;
     private final ShutdownManager shutdownManager;
 
+    // The status is only available if the verification ran to completion.
+    private VerificationStatus status;
     private String verdict;
-    private Path witnessFile;
-
+    private WitnessGraph witness;
+    private boolean isInterrupted;
+    private boolean isError;
 
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options, ShutdownManager shutdownManager) {
         this.program = program;
@@ -38,29 +46,45 @@ public class ReachabilityResult {
         run();
     }
 
+    public Optional<VerificationStatus> getStatus() {
+        return Optional.ofNullable(status);
+    }
+
     public String getVerdict() {
         return verdict;
     }
 
     public boolean hasWitness() {
-        return witnessFile != null;
+        return witness != null;
     }
 
-    public Path getWitnessFile() {
-        return witnessFile;
+    public WitnessGraph getWitness() {
+        return witness;
+    }
+
+    public boolean isInterrupted() {
+        return isInterrupted;
+    }
+
+    public boolean isError() {
+        return isError;
     }
 
     private void run() {
-        if (!validate()) {
+        final Arch arch = program.getArch() != null ? program.getArch() : options.target();
+        if (arch == null) {
+            verdict = "Missing target architecture.";
+            isError = true;
             return;
         }
+        program.setArch(arch);
 
         try {
-            final Arch arch = program.getArch() != null ? program.getArch() : options.target();
+            // The UI draws witnesses itself. Graphical witness files are only generated if explicitly configured.
             final Configuration config = Configuration.builder()
                     .setOption(WITNESS_FILENAME, "dat3mUI")
+                    .setOption(WITNESS, NONE.asStringOption())
                     .setOptions(options.config())
-                    .setOption(WITNESS, options.showWitness() ? PNG.asStringOption() : NONE.asStringOption())
                     .build();
             final VerificationTask task = Task.builder()
                     .withConfig(config)
@@ -75,23 +99,28 @@ public class ReachabilityResult {
                     .withShutdownManager(shutdownManager)) {
                 solver.run();
 
+                final VerificationResult result = solver.getResult();
+                status = result.getStatus();
                 verdict = outputGenerator.getOutputFromSolver(solver).summary();
-                witnessFile = outputGenerator.getWitnessFile().orElse(null);
+                if (options.showWitness() && result.hasModel()) {
+                    witness = extractWitness(result);
+                }
             }
         } catch (InterruptedException e) {
-            verdict = "TIMEOUT";
+            verdict = "The verification was interrupted.";
+            isInterrupted = true;
         } catch (Exception e) {
-            verdict = "ERROR: " + e;
+            verdict = String.valueOf(e);
+            isError = true;
         }
     }
 
-    private boolean validate() {
-        Arch target = program.getArch() == null ? options.target() : program.getArch();
-        if (target == null) {
-            Utils.showError("Missing target architecture.");
-            return false;
+    private WitnessGraph extractWitness(VerificationResult result) {
+        try {
+            return WitnessGraph.from(result);
+        } catch (RuntimeException e) {
+            logger.warn("Failed to extract the witness execution.", e);
+            return null;
         }
-        program.setArch(target);
-        return true;
     }
 }

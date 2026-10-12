@@ -57,6 +57,7 @@
         <commons-csv.version>1.12.0</commons-csv.version>
         <mockito.version>5.21.0</mockito.version>
         <rsyntaxtextarea.version>3.3.4</rsyntaxtextarea.version>
+        <flatlaf.version>3.6</flatlaf.version>
         <jackson.version>2.15.2</jackson.version>
         <snakeyaml.version>2.6</snakeyaml.version>
 
@@ -161,6 +162,11 @@
                 <groupId>com.fifesoft</groupId>
                 <artifactId>rsyntaxtextarea</artifactId>
                 <version>${rsyntaxtextarea.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.formdev</groupId>
+                <artifactId>flatlaf</artifactId>
+                <version>${flatlaf.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
