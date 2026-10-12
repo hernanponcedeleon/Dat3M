@@ -205,6 +205,13 @@ public class Editor extends JPanel {
         return Optional.ofNullable(loadedFile);
     }
 
+    // Sets the directory that the dialogs for opening and saving files show first.
+    public void setInitialDirectory(File directory) {
+        if (directory.isDirectory()) {
+            chooser.setCurrentDirectory(directory);
+        }
+    }
+
     public RSyntaxTextArea getEditorPane() {
         return editorPane;
     }
@@ -239,9 +246,17 @@ public class Editor extends JPanel {
             showError("Please select a *" + String.join(", *", allowedFormats) + " file", "Invalid file format");
             return;
         }
+        load(selectedFile);
+    }
+
+    // The file must have one of the formats that this editor allows.
+    public void load(File selectedFile) {
+        final String format = allowedFormats.stream()
+                .filter(selectedFile.getName()::endsWith)
+                .findFirst().orElseThrow();
         setLoadedFile(selectedFile);
         if (formatSelector != null) {
-            formatSelector.setSelectedItem(format.orElseThrow());
+            formatSelector.setSelectedItem(format);
         }
         try (final var r = new FileReader(selectedFile)) {
             editorPane.read(r, null);
