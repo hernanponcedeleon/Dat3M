@@ -6,9 +6,12 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Entrypoint;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -29,6 +32,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.verification.Context;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -404,6 +408,38 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
 
         assertMayAlias(analysis, indirect, atTarget);
         assertContains(analysis.addressableObjects(indirect), target);
+    }
+
+    @Test
+    public void supportForThreadJoin() throws Exception {
+        /*
+         * P0:
+         *   pointer = thread_join(thread_create(P1))
+         *   *pointer = 0;
+         * P1:
+         *   return object
+         * The store can access `object`.
+         */
+        IntegerType type = types.getArchType();
+        FunctionType workerType = types.getFunctionType(type, List.of());
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = builder.newMemoryObject("x", 8);
+        Function main = builder.newFunction("main", 0, workerType, List.of());
+        Expression worker = builder.newFunction("worker", 1, workerType, List.of());
+
+        Register r0 = builder.getOrNewRegister(0, "r0", types.getAggregateType(List.of(type, type)));
+        Register workerId = builder.getOrNewRegister(0, "workerId");
+        builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadCreate(workerId, workerType, worker, List.of()));
+        builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadJoin(r0, workerId));
+        Store indirect = addStore(builder, expressions.makeExtract(r0, 0));
+        builder.addChildWithoutSourceLoc(1, EventFactory.newThreadReturn(x));
+
+        Program program = builder.build();
+        program.setEntrypoint(new Entrypoint.Simple(main));
+        ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
+        AliasAnalysis analysis = analyze(program);
+
+        assertContains(analysis.addressableObjects(indirect), x);
     }
 
     private Register addCast(ProgramBuilder builder, String name, Expression operand,
