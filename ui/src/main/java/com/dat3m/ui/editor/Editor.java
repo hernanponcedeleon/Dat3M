@@ -8,7 +8,6 @@ import com.dat3m.ui.theme.Theme;
 import com.google.common.collect.ImmutableSet;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Style;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.SyntaxScheme;
 import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -70,7 +69,7 @@ public class Editor extends JPanel {
         }
     };
 
-    Editor(String title, Set<String> allowedFormats, boolean selectFormat) {
+    Editor(String title, Set<String> allowedFormats, boolean selectFormat, String syntaxStyle) {
         super(new BorderLayout());
         this.title = title;
         this.allowedFormats = ImmutableSet.copyOf(allowedFormats);
@@ -80,7 +79,7 @@ public class Editor extends JPanel {
             chooser.addChoosableFileFilter(new FileNameExtensionFilter("*" + format, extension));
         }
 
-        editorPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
+        editorPane.setSyntaxEditingStyle(syntaxStyle);
         editorPane.setCodeFoldingEnabled(true);
         editorPane.getAccessibleContext().setAccessibleName(title);
         editorPane.getDocument().addDocumentListener(documentListener);
