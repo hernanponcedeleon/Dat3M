@@ -10,12 +10,15 @@ import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -100,10 +103,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private final Map<MemoryCoreEvent, DerivedVariable<Modifier>> addressVariables = new HashMap<>();
     private final Map<MemoryCoreEvent, DerivedVariable<Modifier>> valueVariables = new HashMap<>();
 
-    // These variables should always have empty includes-sets.
     // The variable representing the null pointer.
+    // This variable should always have an empty includes-set.
     private final Variable<Modifier> nullVariable = new Variable<>(null, null, "null");
     // Maps memory objects to variables representing their base address.
+    // These variables should always have empty includes-sets themselves.
     private final Map<MemoryObject, Variable<Modifier>> objectVariables = new HashMap<>();
     // Maps nondeterministic values to variables representing their assumed value, which might be a valid address.
     private final Map<NonDetValue, Variable<Modifier>> nonDetVariables = new HashMap<>();
@@ -111,6 +115,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
     // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable<Modifier>> registerVariables = new HashMap<>();
+    private final Map<Thread, DerivedVariable<Modifier>> threadReturnVariables = new HashMap<>();
 
     // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
     private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
@@ -364,6 +369,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             if (value == null) {
                 return;
             }
+        } else if (event instanceof ThreadJoin join) {
+            value = threadReturnVariables.computeIfAbsent(join.getJoinThread(), this::newThreadReturnVariable);
         } else if (event instanceof Load load) {
             final DerivedVariable<Modifier> address = getResultVariable(load.getAddress(), load);
             if (address == null) {
@@ -371,7 +378,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 return;
             }
             addressVariables.put(load, address);
-            final Variable<Modifier> result = newVariable("ld" + load.getGlobalId() + "(" + load.getResultRegister().getName() + ")");
+            final Variable<Modifier> result = newVariable("ld%d(%s)".formatted(load.getGlobalId(), load.getResultRegister().getName()));
             address.base.loads.add(new LoadEdge<>(result, address.modifier));
             result.seeAlso.add(address.base);
             value = derive(result);
@@ -384,6 +391,17 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             assert trait.isIdentity(old.modifier);
             replace(old.base, value);
         }
+    }
+
+    private DerivedVariable<Modifier> newThreadReturnVariable(Thread thread) {
+        if (types.getVoidType().equals(thread.getFunctionType().getReturnType())) {
+            return derive(nullVariable);
+        }
+        final List<IncludeEdge<Modifier>> result = thread.getEvents(ThreadReturn.class).stream()
+                .map(r -> getResultVariable(r.getValue().orElseThrow(), r))
+                .map(v -> new IncludeEdge<>(v.base, v.modifier))
+                .toList();
+        return getOrNewVariable(result, "return%d".formatted(thread.getId()));
     }
 
     // Declares the "res" variables of the address of 'event', if needed, and inserts 'stores' relationships.
