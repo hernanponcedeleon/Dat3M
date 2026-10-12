@@ -63,6 +63,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         if (ctx == null) {
             return;
         }
+
         final VisitorLitmusAssertions visitor = new VisitorLitmusAssertions(programBuilder);
         final Set<Expression> locations = new LinkedHashSet<>();
         for (var value : newParser(ctx).locationList().locationValue()) {
@@ -75,13 +76,18 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     @Override
     public Expression visitLocationValue(LitmusAssertionsParser.LocationValueContext ctx) {
-        final String name = ctx.varName().getText();
+        String name = ctx.varName().getText();
+        final Expression value;
         if (ctx.threadId() != null) {
-            return programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+        } else {
+            final MemoryObject object = programBuilder.getMemoryObject(name);
+            checkState(object != null, "Undefined location %s", name);
+            value = new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0);
         }
-        final MemoryObject object = programBuilder.getMemoryObject(name);
-        checkState(object != null, "Undefined location %s", name);
-        return object;
+
+        return expressions.makeNamedExpression(ctx.getText(), value);
+
     }
 
     private static LitmusAssertionsParser newParser(ParserRuleContext ctx) {
@@ -153,14 +159,19 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
             return expressions.parseValue(constant.getText(), archType);
         }
         String name = ctx.varName().getText();
+        final Expression value;
         if (ctx.threadId() != null) {
-            return programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+        } else {
+            MemoryObject base = programBuilder.getMemoryObject(name);
+            checkState(base != null, "uninitialized location %s", name);
+            TerminalNode offset = ctx.DigitSequence();
+            int o = offset == null ? 0 : Integer.parseInt(offset.getText());
+            final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize()));
+            value = right && offset == null ? base : new FinalMemoryValue(type, base, o);
         }
-        MemoryObject base = programBuilder.getMemoryObject(name);
-        checkState(base != null, "uninitialized location %s", name);
-        TerminalNode offset = ctx.DigitSequence();
-        int o = offset == null ? 0 : Integer.parseInt(offset.getText());
-        final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize()));
-        return right && offset == null ? base : new FinalMemoryValue(name, type, base, o);
+
+        // We wrap registers and final memory values into named expressions
+        return value instanceof MemoryObject ? value : expressions.makeNamedExpression(ctx.getText(), value);
     }
 }

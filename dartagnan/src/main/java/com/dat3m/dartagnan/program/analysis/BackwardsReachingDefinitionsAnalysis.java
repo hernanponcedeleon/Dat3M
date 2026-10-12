@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -118,6 +119,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
         if (program.getFilterSpecification() != null) {
             finalRegisters.addAll(program.getFilterSpecification().getRegs());
         }
+        program.getLocations().stream().map(Expression::getRegs).forEach(finalRegisters::addAll);
         return finalRegisters;
     }
 
