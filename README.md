@@ -42,7 +42,7 @@ export DAT3M_OUTPUT=$DAT3M_HOME/output
 // The ones below are only required for native mode
 export GRAALVM_HOME=<GraalVM distribution root>
 export PATH=$DAT3M_HOME/dartagnan/target/:$PATH
-// Use DYLD_LIBRARY_PATH for MacOS
+// Use DYLD_LIBRARY_PATH for macOS
 export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
 
@@ -89,11 +89,11 @@ Dartagnan can verify programs relative to any given CAT memory model. However, d
 - vulkan
 - opencl
 
-The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
+The target architecture is supposed to match (this is the responsibility of the user) the intended weak memory model specified by the CAT file.
 
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `bound`: unrolling bound for the BMC (default is 1).
-- `property`: the properties to be checked. Possible values are `program_spec` (e.g, safety properties as program assertions), `termination` (i.e., all loops terminate), `cat_spec` (e.g., [data races as specified in the cat file](https://github.com/hernanponcedeleon/Dat3M/blob/master/cat/rc11.cat#L34-L39)). Default is `program_spec,cat_spec,termination`.
+- `property`: the properties to be checked. Possible values are `program_spec` (e.g., safety properties as program assertions), `termination` (i.e., all loops terminate), `cat_spec` (e.g., [data races as specified in the cat file](https://github.com/hernanponcedeleon/Dat3M/blob/master/cat/rc11.cat#L34-L39)). Default is `program_spec,cat_spec,termination`.
 - `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Yices2 on Linux x86-64 and Z3 on other platforms).
 - `method`: specifies which solving method to use. Option `eager` (the default one) solves a monolithic formula using SMT solving. Option `lazy` uses a customized solver for memory consistency.
 
