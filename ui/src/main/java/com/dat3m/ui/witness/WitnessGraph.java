@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -50,8 +51,24 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
     private static final String INIT_COLUMN = "Init";
     private static final String UNKNOWN_LOCATION = "@unknown";
 
+    public enum Kind {
+        READ("Reads"), WRITE("Writes"), LOCAL("Local computations"), ASSERTION("Assertions"), OTHER("Other events");
+
+        private final String description;
+
+        Kind(String description) {
+            this.description = description;
+        }
+
+        @Override
+        public String toString() {
+            return description;
+        }
+    }
+
+    // The address is null for events that do not access memory.
     public record Node(int id, int column, int row, String label, String sublabel, boolean isInit,
-                       Map<String, String> details) {
+                       Kind kind, String address, Map<String, String> details) {
     }
 
     public record Edge(String relation, int from, int to) {
@@ -69,9 +86,14 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             final Map<String, String> details = new LinkedHashMap<>();
             node.details().forEach((key, value) -> details.put(key, function.apply(value)));
             return new Node(node.id(), node.column(), node.row(), node.label(), function.apply(node.sublabel()),
-                    node.isInit(), Collections.unmodifiableMap(details));
+                    node.isInit(), node.kind(), node.address(), Collections.unmodifiableMap(details));
         }).toList();
         return new WitnessGraph(columns, mappedNodes, edges, axioms, finalMemory);
+    }
+
+    // The memory locations that are accessed by the events of the graph.
+    public List<String> addresses() {
+        return nodes.stream().map(Node::address).filter(Objects::nonNull).distinct().sorted().toList();
     }
 
     public List<String> relations() {
@@ -228,8 +250,12 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             details.put("Thread", threadName);
             details.put("Event", "E" + event.getEvent().getGlobalId());
             String label = event.getEvent().toString();
+            Kind kind = Kind.OTHER;
+            String accessedAddress = null;
             if (event instanceof MemoryEventModel memoryEvent) {
                 final String address = getAddressString(memoryEvent.getAccessedAddress());
+                accessedAddress = address;
+                kind = event instanceof StoreModel ? Kind.WRITE : Kind.READ;
                 final String value = String.valueOf(memoryEvent.getValue());
                 final boolean isWrite = event instanceof StoreModel;
                 label = "%s(%s, %s)".formatted(isWrite ? "W" : "R", address, value);
@@ -239,10 +265,12 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             } else if (event instanceof LocalModel local) {
                 label = "%s <- %s".formatted(local.getEvent().getResultRegister(), local.getValue());
                 details.put("Kind", "Local computation");
+                kind = Kind.LOCAL;
                 details.put("Value", String.valueOf(local.getValue()));
             } else if (event instanceof AssertModel assertion) {
                 label = "Assertion(%s)".formatted(assertion.getResult());
                 details.put("Kind", "Assertion");
+                kind = Kind.ASSERTION;
                 details.put("Holds", String.valueOf(assertion.getResult()));
             }
             final String location = getSourceLocationString(event.getEvent());
@@ -255,7 +283,8 @@ public record WitnessGraph(List<String> columns, List<Node> nodes, List<Edge> ed
             final String sublabel = isInit ? "initial value"
                     : !sourceLocation.isBlank() ? sourceLocation
                     : event.getEvent().toString();
-            return new Node(id, column, row, label, sublabel, isInit, Collections.unmodifiableMap(details));
+            return new Node(id, column, row, label, sublabel, isInit, kind, accessedAddress,
+                    Collections.unmodifiableMap(details));
         }
 
         private String getAddressString(ValueModel address) {

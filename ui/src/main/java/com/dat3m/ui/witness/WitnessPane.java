@@ -10,6 +10,7 @@ import com.dat3m.ui.components.Text;
 import com.dat3m.ui.theme.Theme;
 import com.dat3m.ui.witness.WitnessGraph.AxiomInfo;
 import com.dat3m.ui.witness.WitnessGraph.Edge;
+import com.dat3m.ui.witness.WitnessGraph.Kind;
 import com.dat3m.ui.witness.WitnessGraph.MemoryValue;
 import com.dat3m.ui.witness.WitnessGraph.Node;
 
@@ -35,6 +36,7 @@ public class WitnessPane extends JPanel {
 
     private static final int INSPECTOR_WIDTH = 300;
     private static final Set<String> DEFAULT_RELATIONS = Set.of(PO, RF, CO);
+    private static final String NO_HIGHLIGHT = "None";
     private static final Map<String, String> RELATION_DESCRIPTIONS = Map.of(
             PO, "program order", RF, "read from", CO, "coherence", FR, "from read");
 
@@ -44,6 +46,10 @@ public class WitnessPane extends JPanel {
     private final WitnessGraphView graphView = new WitnessGraphView();
     private final JPanel eventPanel = new JPanel(new GridBagLayout());
     private final JPanel relationsPanel = new JPanel();
+    private final JPanel kindsPanel = new JPanel();
+    private final JButton showHiddenButton = Buttons.plain("Show hidden events", null);
+    private final JComboBox<String> addressSelector = new JComboBox<>();
+    private boolean isUpdatingState;
     private final JPanel memoryPanel = new JPanel(new GridBagLayout());
     private final JPanel axiomsPanel = new JPanel(new GridBagLayout());
     private final JFileChooser exportChooser = new JFileChooser();
@@ -62,6 +68,15 @@ public class WitnessPane extends JPanel {
 
         exportChooser.setFileFilter(new FileNameExtensionFilter("*.png", "png"));
         graphView.setSelectionListener(this::showEvent);
+        graphView.setStateListener(this::updateState);
+        showHiddenButton.addActionListener(event -> graphView.showHiddenEvents());
+        addressSelector.getAccessibleContext().setAccessibleName("Highlighted memory location");
+        addressSelector.addActionListener(event -> {
+            if (!isUpdatingState && addressSelector.getSelectedItem() != null) {
+                final String address = (String) addressSelector.getSelectedItem();
+                graphView.setHighlightedAddress(address.equals(NO_HIGHLIGHT) ? null : address);
+            }
+        });
 
         final JPanel center = new JPanel(new BorderLayout());
         center.add(newVerdictStrip(), BorderLayout.NORTH);
@@ -82,6 +97,24 @@ public class WitnessPane extends JPanel {
         final Set<String> visible = new HashSet<>(DEFAULT_RELATIONS);
         visible.retainAll(graph.relations());
         graphView.setGraph(graph, visible);
+
+        kindsPanel.removeAll();
+        for (Kind eventKind : Kind.values()) {
+            if (graph.nodes().stream().anyMatch(node -> node.kind() == eventKind)) {
+                final JCheckBox toggle = new JCheckBox(eventKind.toString(), true);
+                toggle.setOpaque(false);
+                toggle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                toggle.addActionListener(event -> graphView.setKindVisible(eventKind, toggle.isSelected()));
+                kindsPanel.add(toggle);
+            }
+        }
+
+        isUpdatingState = true;
+        addressSelector.removeAllItems();
+        addressSelector.addItem(NO_HIGHLIGHT);
+        graph.addresses().forEach(addressSelector::addItem);
+        isUpdatingState = false;
+        updateState();
 
         relationsPanel.removeAll();
         for (String relation : List.of(PO, RF, CO, FR)) {
@@ -160,12 +193,24 @@ public class WitnessPane extends JPanel {
         eventPanel.setOpaque(false);
         relationsPanel.setOpaque(false);
         relationsPanel.setLayout(new BoxLayout(relationsPanel, BoxLayout.Y_AXIS));
+        kindsPanel.setOpaque(false);
+        kindsPanel.setLayout(new BoxLayout(kindsPanel, BoxLayout.Y_AXIS));
         memoryPanel.setOpaque(false);
 
         constraints.insets = new Insets(0, 0, 10, 0);
         inspector.add(new Text("Selected event", Text.Role.SECTION), constraints);
         constraints.insets = new Insets(0, 0, 28, 0);
         inspector.add(eventPanel, constraints);
+        constraints.insets = new Insets(0, 0, 10, 0);
+        inspector.add(new Text("Events", Text.Role.SECTION), constraints);
+        constraints.insets = new Insets(0, 0, 8, 0);
+        inspector.add(kindsPanel, constraints);
+        constraints.insets = new Insets(0, 0, 28, 0);
+        inspector.add(showHiddenButton, constraints);
+        constraints.insets = new Insets(0, 0, 10, 0);
+        inspector.add(new Text("Highlight memory location", Text.Role.SECTION), constraints);
+        constraints.insets = new Insets(0, 0, 28, 0);
+        inspector.add(addressSelector, constraints);
         constraints.insets = new Insets(0, 0, 10, 0);
         inspector.add(new Text("Relations", Text.Role.SECTION), constraints);
         constraints.insets = new Insets(0, 0, 28, 0);
@@ -257,9 +302,35 @@ public class WitnessPane extends JPanel {
                     addRow(eventPanel, row++, new Text("Reads from", Text.Role.MUTED), wrapped(origin + source.label()));
                 }
             }
+
+            final JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            actions.setOpaque(false);
+            final JButton hideButton = Buttons.plain("Hide", null);
+            hideButton.setToolTipText("Hide this event");
+            hideButton.addActionListener(event -> graphView.hide(node));
+            actions.add(hideButton);
+            if (node.address() != null) {
+                final JButton highlightButton = Buttons.plain("Highlight location", null);
+                highlightButton.setToolTipText("Highlight all events that access " + node.address());
+                highlightButton.addActionListener(event -> graphView.setHighlightedAddress(node.address()));
+                actions.add(Box.createHorizontalStrut(8));
+                actions.add(highlightButton);
+            }
+            addRow(eventPanel, row, actions, null);
         }
         eventPanel.revalidate();
         eventPanel.repaint();
+    }
+
+    // Keeps the controls of the inspector in sync with what the graph currently hides and highlights.
+    private void updateState() {
+        final int hidden = graphView.getHiddenEventCount();
+        showHiddenButton.setText(hidden == 0 ? "No hidden events" : "Show %d hidden event%s".formatted(hidden, hidden == 1 ? "" : "s"));
+        showHiddenButton.setEnabled(hidden > 0);
+        isUpdatingState = true;
+        final String highlighted = graphView.getHighlightedAddress();
+        addressSelector.setSelectedItem(highlighted == null ? NO_HIGHLIGHT : highlighted);
+        isUpdatingState = false;
     }
 
     // Long values, e.g., instructions, wrap instead of widening the inspector.

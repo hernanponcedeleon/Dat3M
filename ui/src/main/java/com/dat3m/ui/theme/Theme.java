@@ -24,7 +24,7 @@ public final class Theme {
             Color codeBlock, Color codeBlockInk,
             Color passFill, Color passInk, Color failFill, Color failInk, Color neutralFill, Color neutralInk,
             Color po, Color rf, Color fr, Color co,
-            Color nodeFill, Color nodeLine, Color grid,
+            Color nodeFill, Color nodeLine, Color grid, Color highlightFill, Color highlightLine,
             Color keyword, Color comment, Color string, Color number) {
     }
 
@@ -34,7 +34,7 @@ public final class Theme {
             c(0x151A26), c(0xE6E9EF),
             c(0xE8ECFC), c(0x1A329C), c(0xFFF0E0), c(0x8F3D00), c(0xEEF0F4), c(0x566072),
             c(0x000000), c(0x1E8E3E), c(0xC2570C), c(0xD32F2F),
-            c(0xFFFFFF), c(0xC9CEDA), c(0xDDE1E8),
+            c(0xFFFFFF), c(0xC9CEDA), c(0xDDE1E8), c(0xFFF3C4), c(0xA86F00),
             c(0x2545D3), c(0x6B7385), c(0x8F3D00), c(0x0A6B6B));
 
     private static final Palette DARK = new Palette(
@@ -43,7 +43,7 @@ public final class Theme {
             c(0x0E1117), c(0xE6E9EF),
             c(0x16223F), c(0xA9C1FF), c(0x2E1F10), c(0xF7B978), c(0x1B212B), c(0x9AA3B5),
             c(0xE6E9EF), c(0x5FD068), c(0xF2A65A), c(0xFF6B6B),
-            c(0x1B212B), c(0x3A4456), c(0x232B38),
+            c(0x1B212B), c(0x3A4456), c(0x232B38), c(0x3A2F0B), c(0xF2C94C),
             c(0x8FB0FF), c(0x8A93A5), c(0xF7B978), c(0x6FD3C7));
 
     private static final List<String> UI_FONTS = List.of("IBM Plex Sans");

@@ -2,6 +2,7 @@ package com.dat3m.ui.witness;
 
 import com.dat3m.ui.theme.Theme;
 import com.dat3m.ui.witness.WitnessGraph.Edge;
+import com.dat3m.ui.witness.WitnessGraph.Kind;
 import com.dat3m.ui.witness.WitnessGraph.Node;
 
 import javax.swing.*;
@@ -14,7 +15,12 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -38,9 +44,16 @@ public class WitnessGraphView extends JComponent implements Scrollable {
 
     private WitnessGraph graph;
     private final Set<String> visibleRelations = new HashSet<>();
+    private final Set<Integer> hiddenNodes = new HashSet<>();
+    private final Set<Kind> hiddenKinds = EnumSet.noneOf(Kind.class);
+    // The layout only covers the visible nodes. Hiding nodes closes the gaps they leave.
+    private final Map<Integer, Rectangle2D> layout = new HashMap<>();
+    private final List<Edge> visibleEdges = new ArrayList<>();
+    private String highlightedAddress;
     private Node selected;
     private double scale = 1.0;
     private Consumer<Node> selectionListener = node -> { };
+    private Runnable stateListener = () -> { };
 
     public WitnessGraphView() {
         setOpaque(true);
@@ -48,6 +61,12 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             @Override
             public void mousePressed(MouseEvent event) {
                 select(findNode(event.getX() / scale, event.getY() / scale));
+                showMenu(event);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                showMenu(event);
             }
         });
         addMouseWheelListener(event -> {
@@ -64,10 +83,121 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         this.graph = graph;
         this.visibleRelations.clear();
         this.visibleRelations.addAll(visibleRelations);
+        this.hiddenNodes.clear();
+        this.hiddenKinds.clear();
+        this.highlightedAddress = null;
         this.scale = 1.0;
         select(null);
+        relayout();
+    }
+
+    // ================================= Hiding and highlighting =================================
+
+    public void hide(Node node) {
+        hiddenNodes.add(node.id());
+        relayout();
+    }
+
+    public void showHiddenEvents() {
+        hiddenNodes.clear();
+        relayout();
+    }
+
+    // The number of events that were hidden individually.
+    public int getHiddenEventCount() {
+        return hiddenNodes.size();
+    }
+
+    public void setKindVisible(Kind kind, boolean visible) {
+        if (visible) {
+            hiddenKinds.remove(kind);
+        } else {
+            hiddenKinds.add(kind);
+        }
+        relayout();
+    }
+
+    // Emphasizes the events that access the address. Null removes the emphasis.
+    public void setHighlightedAddress(String address) {
+        highlightedAddress = address;
+        stateListener.run();
+        repaint();
+    }
+
+    public String getHighlightedAddress() {
+        return highlightedAddress;
+    }
+
+    // The listener is notified whenever events get hidden, shown or highlighted.
+    public void setStateListener(Runnable listener) {
+        this.stateListener = listener;
+    }
+
+    private boolean isVisible(Node node) {
+        return !hiddenNodes.contains(node.id()) && !hiddenKinds.contains(node.kind());
+    }
+
+    private boolean isHighlighted(Node node) {
+        return highlightedAddress != null && highlightedAddress.equals(node.address());
+    }
+
+    private void relayout() {
+        layout.clear();
+        visibleEdges.clear();
+        if (graph != null) {
+            final Map<Integer, Node> lastInColumn = new HashMap<>();
+            final Map<Integer, Integer> rows = new HashMap<>();
+            for (Node node : graph.nodes()) {
+                if (!isVisible(node)) {
+                    continue;
+                }
+                final int row = rows.merge(node.column(), 1, Integer::sum) - 1;
+                layout.put(node.id(), new Rectangle2D.Double(
+                        MARGIN + node.column() * (NODE_WIDTH + COLUMN_GAP),
+                        MARGIN + HEADER_HEIGHT + row * (NODE_HEIGHT + ROW_GAP),
+                        NODE_WIDTH, NODE_HEIGHT));
+                // The program order is shown between the visible events, skipping the hidden ones.
+                final Node previous = lastInColumn.put(node.column(), node);
+                if (previous != null && !node.isInit()) {
+                    visibleEdges.add(new Edge(PO, previous.id(), node.id()));
+                }
+            }
+            for (Edge edge : graph.edges()) {
+                if (!edge.relation().equals(PO) && layout.containsKey(edge.from()) && layout.containsKey(edge.to())) {
+                    visibleEdges.add(edge);
+                }
+            }
+            if (selected != null && !isVisible(selected)) {
+                select(null);
+            }
+        }
+        stateListener.run();
         revalidate();
         repaint();
+    }
+
+    private void showMenu(MouseEvent event) {
+        if (!event.isPopupTrigger() || graph == null) {
+            return;
+        }
+        final Node node = findNode(event.getX() / scale, event.getY() / scale);
+        final JPopupMenu menu = new JPopupMenu();
+        if (node != null) {
+            menu.add("Hide event").addActionListener(ignored -> hide(node));
+            if (node.address() != null && !isHighlighted(node)) {
+                menu.add("Highlight accesses to " + node.address())
+                        .addActionListener(ignored -> setHighlightedAddress(node.address()));
+            }
+        }
+        if (highlightedAddress != null) {
+            menu.add("Remove highlight").addActionListener(ignored -> setHighlightedAddress(null));
+        }
+        if (!hiddenNodes.isEmpty()) {
+            menu.add("Show hidden events").addActionListener(ignored -> showHiddenEvents());
+        }
+        if (menu.getComponentCount() > 0) {
+            menu.show(this, event.getX(), event.getY());
+        }
     }
 
     public void setRelationVisible(String relation, boolean visible) {
@@ -125,28 +255,28 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     // ================================= Layout =================================
 
     private Dimension getGraphSize() {
-        if (graph == null || graph.nodes().isEmpty()) {
+        if (graph == null || graph.columns().isEmpty()) {
             return new Dimension(2 * MARGIN, 2 * MARGIN);
         }
-        final int rows = graph.nodes().stream().mapToInt(Node::row).max().orElse(0) + 1;
         final int columns = graph.columns().size();
+        final double bottom = layout.values().stream().mapToDouble(Rectangle2D::getMaxY).max()
+                .orElse(MARGIN + HEADER_HEIGHT);
         return new Dimension(
                 2 * MARGIN + columns * NODE_WIDTH + (columns - 1) * COLUMN_GAP,
-                2 * MARGIN + HEADER_HEIGHT + rows * NODE_HEIGHT + (rows - 1) * ROW_GAP);
+                (int) bottom + MARGIN);
     }
 
     private Rectangle2D boundsOf(Node node) {
-        return new Rectangle2D.Double(
-                MARGIN + node.column() * (NODE_WIDTH + COLUMN_GAP),
-                MARGIN + HEADER_HEIGHT + node.row() * (NODE_HEIGHT + ROW_GAP),
-                NODE_WIDTH, NODE_HEIGHT);
+        return layout.get(node.id());
     }
 
     private Node findNode(double x, double y) {
         if (graph == null) {
             return null;
         }
-        return graph.nodes().stream().filter(node -> boundsOf(node).contains(x, y)).findFirst().orElse(null);
+        return graph.nodes().stream()
+                .filter(node -> layout.containsKey(node.id()) && boundsOf(node).contains(x, y))
+                .findFirst().orElse(null);
     }
 
     private void select(Node node) {
@@ -193,14 +323,23 @@ public class WitnessGraphView extends JComponent implements Scrollable {
                     MARGIN + column * (NODE_WIDTH + COLUMN_GAP), MARGIN + 12);
         }
 
-        for (Edge edge : graph.edges()) {
+        // While a memory location is highlighted, everything that is unrelated to it fades into the background.
+        final Composite opaque = g2.getComposite();
+        final Composite faded = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f);
+        for (Edge edge : visibleEdges) {
             if (visibleRelations.contains(edge.relation())) {
+                final boolean isRelated = isHighlighted(graph.nodes().get(edge.from())) && isHighlighted(graph.nodes().get(edge.to()));
+                g2.setComposite(highlightedAddress == null || isRelated ? opaque : faded);
                 paintEdge(g2, edge);
             }
         }
         for (Node node : graph.nodes()) {
-            paintNode(g2, node);
+            if (layout.containsKey(node.id())) {
+                g2.setComposite(highlightedAddress == null || isHighlighted(node) ? opaque : faded);
+                paintNode(g2, node);
+            }
         }
+        g2.setComposite(opaque);
     }
 
     private void paintNode(Graphics2D g2, Node node) {
@@ -210,10 +349,11 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         final Shape box = new java.awt.geom.RoundRectangle2D.Double(
                 bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), 12, 12);
 
-        g2.setColor(isSelected ? p.selection() : node.isInit() ? p.panel() : p.nodeFill());
+        final boolean isHighlighted = isHighlighted(node);
+        g2.setColor(isSelected ? p.selection() : isHighlighted ? p.highlightFill() : node.isInit() ? p.panel() : p.nodeFill());
         g2.fill(box);
-        g2.setColor(isSelected ? p.accent() : p.nodeLine());
-        g2.setStroke(isSelected ? new BasicStroke(2f)
+        g2.setColor(isSelected ? p.accent() : isHighlighted ? p.highlightLine() : p.nodeLine());
+        g2.setStroke(isSelected || isHighlighted ? new BasicStroke(2f)
                 : node.isInit() ? new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 1f, new float[]{4f, 3f}, 0f)
                 : new BasicStroke(1f));
         g2.draw(box);
@@ -252,7 +392,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         final Point2D tip;
         final Point2D beforeTip;
         final Point2D labelAnchor;
-        if (from.column() == to.column() && to.row() == from.row() + 1) {
+        if (edge.relation().equals(PO)) {
             // Neighbours in a column are connected by a straight line.
             final Point2D start = new Point2D.Double(a.getCenterX(), a.getMaxY());
             tip = new Point2D.Double(b.getCenterX(), b.getMinY());
@@ -261,7 +401,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             labelAnchor = new Point2D.Double(start.getX() + 16, (start.getY() + tip.getY()) / 2);
         } else if (from.column() == to.column()) {
             // Other edges within a column bulge out to the right, so that they do not cross the events in between.
-            final double bulge = Math.min(COLUMN_GAP - 30, 30 + 14 * Math.abs(to.row() - from.row()));
+            final double bulge = Math.min(COLUMN_GAP - 30, 30 + 14 * Math.abs(b.getY() - a.getY()) / (NODE_HEIGHT + ROW_GAP));
             final Point2D start = new Point2D.Double(a.getMaxX(), a.getCenterY());
             tip = new Point2D.Double(b.getMaxX(), b.getCenterY());
             beforeTip = new Point2D.Double(tip.getX() + bulge, tip.getY());
@@ -286,7 +426,8 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             final int direction = from.column() < to.column() ? 1 : -1;
             final double offset = offsetOf(edge.relation());
             final Point2D start = new Point2D.Double(direction > 0 ? a.getMaxX() : a.getMinX(), a.getCenterY() + offset);
-            final double laneY = b.getMinY() - (to.row() == 0 ? HEADER_HEIGHT - 26 : ROW_GAP / 2.0) + offset / 2;
+            final boolean isTopRow = b.getMinY() <= MARGIN + HEADER_HEIGHT;
+            final double laneY = b.getMinY() - (isTopRow ? HEADER_HEIGHT - 26 : ROW_GAP / 2.0) + offset / 2;
             final double laneStart = start.getX() + direction * (COLUMN_GAP / 2.0 + 20);
             tip = new Point2D.Double(b.getCenterX() - direction * (40 - 2 * offset), b.getMinY());
             beforeTip = new Point2D.Double(tip.getX(), laneY);
