@@ -16,9 +16,16 @@ import java.util.Set;
 public class LoopBound extends CodeAnnotation implements RegReader {
 
     private Expression bound;
+    // A soft bound gets overwritten by the user-specified global bound if that is larger.
+    // A hard bound is never overwritten.
+    private final boolean isSoft;
 
     public Expression getBound() {
         return bound;
+    }
+
+    public boolean isSoft() {
+        return isSoft;
     }
 
     public int getConstantBound() {
@@ -30,19 +37,21 @@ public class LoopBound extends CodeAnnotation implements RegReader {
         return bound;
     }
 
-    public LoopBound(Expression bound) {
+    public LoopBound(Expression bound, boolean isSoft) {
         Preconditions.checkArgument(bound.getType() instanceof IntegerType);
         this.bound = bound;
+        this.isSoft = isSoft;
     }
 
     protected LoopBound(LoopBound other) {
         super(other);
         this.bound = other.bound;
+        this.isSoft = other.isSoft;
     }
 
     @Override
     public String defaultString() {
-        return String.format("#__VERIFIER_loop_bound(%s)", bound);
+        return String.format("#__VERIFIER_loop_bound(%s)%s", bound, isSoft ? " [soft]" : "");
     }
 
     @Override
