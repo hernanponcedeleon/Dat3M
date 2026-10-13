@@ -67,6 +67,16 @@ public class ScalarEvolutionTest {
     }
 
     @Test
+    public void largeBoundsAreCapped() throws InvalidConfigurationException {
+        // for (i = 0; i < 19; i++)
+        assertEquals(20, computeBound(value(0), 1, IntCmpOp.LT, value(19), 1, 0));
+        // for (i = 0; i < 20; i++)
+        assertEquals(20, computeBound(value(0), 1, IntCmpOp.LT, value(20), 1, 0));
+        // for (i = 0; i < 1000; i++)
+        assertEquals(20, computeBound(value(0), 1, IntCmpOp.LT, value(1000), 1, 0));
+    }
+
+    @Test
     public void neverEntered() throws InvalidConfigurationException {
         // for (i = 8; i < 5; i++)
         assertEquals(1, computeBound(value(8), 1, IntCmpOp.LT, value(5), 1, 0));
