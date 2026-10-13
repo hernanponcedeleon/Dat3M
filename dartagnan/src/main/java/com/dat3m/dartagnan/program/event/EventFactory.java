@@ -262,7 +262,11 @@ public class EventFactory {
     }
 
     public static LoopBound newLoopBound(Expression bound) {
-        return new LoopBound(bound);
+        return newLoopBound(bound, false);
+    }
+
+    public static LoopBound newLoopBound(Expression bound, boolean isSoft) {
+        return new LoopBound(bound, isSoft);
     }
 
     // ------------------------------------------ RMW events ------------------------------------------

@@ -147,8 +147,10 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 if (isLoop) {
                     // Bound annotation > Spin loop tag > default bound
-                    final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
-                            : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
+                    // NOTE: Soft bound annotations get overwritten by larger default bounds.
+                    final int bound = curBoundAnnotation == null ? (label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound)
+                            : curBoundAnnotation.isSoft() ? Math.max(curBoundAnnotation.getConstantBound(), defaultBound)
+                            : curBoundAnnotation.getConstantBound();
                     loopBoundsMap.put(backjump.get(), bound);
                     curBoundAnnotation = null;
                 }

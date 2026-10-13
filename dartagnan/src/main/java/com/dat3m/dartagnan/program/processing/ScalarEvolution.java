@@ -29,10 +29,15 @@ import com.dat3m.dartagnan.utils.DominatorTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.IntegerOption;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.*;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND_CAP;
 
 /*
     This pass performs a simple form of "Scalar Evolution" on (not yet unrolled) loops
@@ -69,24 +74,31 @@ import java.util.*;
 
     for which we compute the count "(a < n) ? ((n - a - 1) udiv 2) + 1 : 0" under the assumption "n <= MAX_INT - 1".
 */
+@Options
 public class ScalarEvolution implements FunctionProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ScalarEvolution.class);
 
-    // The maximal loop bound this pass annotates: larger computed bounds get capped to this value.
-    private static final int MAX_BOUND_ANNOTATION = 20;
-
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final TypeFactory types = TypeFactory.getInstance();
 
+    @Option(name = BOUND_CAP,
+            description = "Caps the loop bounds that get computed automatically: " +
+                    "loops with a larger bound get unrolled at least this many times (or more if the bound is larger)." +
+                    " The value 0 disables the cap. Defaults to 0.",
+            secure = true)
+    @IntegerOption(min = 0)
+    private int boundCap = 0;
+
     private final ReachingDefinitionsAnalysis.Config reachingDefinitionsAnalysis;
 
-    private ScalarEvolution(ReachingDefinitionsAnalysis.Config c) {
-        reachingDefinitionsAnalysis = c;
+    private ScalarEvolution(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
+        reachingDefinitionsAnalysis = ReachingDefinitionsAnalysis.configure(config);
     }
 
     public static ScalarEvolution fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ScalarEvolution(ReachingDefinitionsAnalysis.configure(config));
+        return new ScalarEvolution(config);
     }
 
     @Override
@@ -142,9 +154,16 @@ public class ScalarEvolution implements FunctionProcessor {
         // The last iteration only performs the exit check, hence the "+1".
         final int bitWidth = literal.getType().getBitWidth();
         final BigInteger bound = IntegerHelper.normalizeUnsigned(literal.getValue(), bitWidth).add(BigInteger.ONE);
-        // We cap large bounds to avoid excessive unrolling: such loops will not get fully unrolled.
-        final BigInteger cappedBound = bound.min(BigInteger.valueOf(MAX_BOUND_ANNOTATION));
-        loopHeader.insertBefore(EventFactory.newLoopBound(expressions.makeValue(cappedBound, types.getArchType())));
+        // We cap large bounds (if enabled) to avoid excessive unrolling. Since a capped bound is insufficient
+        // to fully unroll the loop, it is only a soft bound that the user can overwrite by a larger global bound.
+        final BigInteger cap = BigInteger.valueOf(boundCap);
+        final boolean isCapped = boundCap > 0 && bound.compareTo(cap) > 0;
+        if (!isCapped && bound.bitLength() >= Integer.SIZE) {
+            // The loop is too large to get unrolled.
+            return;
+        }
+        final Expression boundExpr = expressions.makeValue(isCapped ? cap : bound, types.getArchType());
+        loopHeader.insertBefore(EventFactory.newLoopBound(boundExpr, isCapped));
     }
 
     // ======================================================================================
