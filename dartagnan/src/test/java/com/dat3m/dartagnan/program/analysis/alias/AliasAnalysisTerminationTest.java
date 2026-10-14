@@ -83,6 +83,28 @@ public class AliasAnalysisTerminationTest {
         analyze(builder.build(), indirectA, indirectB, indirectC, atX, atY, atZ);
     }
 
+    @Test
+    public void communicationCycleWithoutDereference() throws Exception {
+        /*
+         * Initially: slotA = &x
+         * P0: pointerA = *slotA; *slotB = pointerA + 8;
+         * P1: pointerB = *slotB; *slotA = pointerB + 8;
+         * Neither pointerA nor pointerB is ever used as an address.
+         */
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject slotA = builder.newMemoryObject("slotA", 8);
+        MemoryObject slotB = builder.newMemoryObject("slotB", 8);
+        MemoryObject x = builder.newMemoryObject("x", 8);
+        slotA.setInitialValue(0, x);
+        builder.newThread(0);
+        builder.newThread(1);
+
+        loadAndIncrease(builder, 0, "pointerA", slotA, slotB);
+        loadAndIncrease(builder, 1, "pointerB", slotB, slotA);
+
+        analyze(builder.build());
+    }
+
     private Register loadAndIncrease(ProgramBuilder builder, int threadId, String name,
             MemoryObject source, MemoryObject destination) {
         Register pointer = builder.getOrNewRegister(threadId, name, types.getArchType());

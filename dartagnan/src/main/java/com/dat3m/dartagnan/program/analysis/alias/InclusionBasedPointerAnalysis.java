@@ -35,6 +35,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
@@ -550,8 +551,12 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private void eliminateCycles() {
         logger.trace("Static elimination");
         final int countEdgesBeforeCycleElimination = totalIncludeEdges;
+        final Set<Variable<Modifier>> variables = Stream.of(List.of(nullVariable), objectVariables.values())
+                .flatMap(Collection::stream)
+                .flatMap(v -> v.seeAlso.stream())
+                .collect(Collectors.toSet());
         final DependencyGraph<Variable<Modifier>> graph = DependencyGraph.from(
-                Iterables.transform(addressVariables.values(), d -> d.base),
+                variables,
                 v -> Iterables.transform(v.includes, i -> i.source));
         for (Set<DependencyGraph<Variable<Modifier>>.Node> scc : graph.getSCCs()) {
             // Self loops should have already been accelerated.
