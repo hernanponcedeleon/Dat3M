@@ -21,7 +21,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-
 import java.math.BigInteger;
 import java.util.*;
 
@@ -214,7 +213,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
 
-        final Type joinType = types.getAggregateType(List.of(types.getByteType(), pthreadThreadType(call).getReturnType()));
+        final Type joinType = types.getTupleType(List.of(types.getByteType(), pthreadThreadType(call).getReturnType()));
         final Register joinReg = call.getFunction().newUniqueRegister("__joinReg", joinType);
 
         final Expression status = expressions.makeExtract(joinReg, 0);
@@ -424,7 +423,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(mutexType, types.getBooleanType()));
         final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_wait", mutexType);
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_wait", oldValueAndSuccessType);
         return eventSequence(
@@ -444,7 +443,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(mutexType, types.getBooleanType()));
         final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", mutexType);
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", oldValueAndSuccessType);
         return eventSequence(
@@ -546,7 +545,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
         final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(mutexType, types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_lock", oldValueAndSuccessType);
         final Expression lockAddress = call.getArguments().get(0);
         return eventSequence(
@@ -559,7 +558,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getPthreadMutexType(), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(getPthreadMutexType(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", oldValueAndSuccessType);
         final Expression lockAddress = call.getArguments().get(0);
         final Expression fail = expressions.makeNot(expressions.makeExtract(oldValueAndSuccess, 1));
@@ -669,7 +668,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_rwlock_wrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
@@ -685,7 +684,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_rwlock_trywrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
@@ -707,7 +706,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_rdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_rdlock", oldValueAndSuccessType);
         final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
         final Expression lockAddress = call.getArguments().get(0);
@@ -731,7 +730,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getTupleType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_try_rdlock", oldValueAndSuccessType);
         final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
         final Expression lockAddress = call.getArguments().get(0);
@@ -824,7 +823,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression uninitialized = expressions.makeZero(stateType);
         final Expression running = expressions.makeOne(stateType);
         final Expression complete = expressions.makeValue(2, stateType);
-        final Type stateAndSuccessType = types.getAggregateType(List.of(stateType, types.getBooleanType()));
+        final Type stateAndSuccessType = types.getTupleType(List.of(stateType, types.getBooleanType()));
         final Register stateAndSuccess = call.getFunction().newUniqueRegister("__pthread_once", stateAndSuccessType);
         final Register state = call.getFunction().newUniqueRegister("__pthread_once_state", stateType);
 

@@ -1,17 +1,19 @@
 package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.GEPToAddition;
+import com.dat3m.dartagnan.program.processing.LibraryLinker;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
@@ -26,6 +28,46 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class ParserLlvmTest {
+
+    @Test
+    public void expressionTransformationsPreserveScalarGepAllocationStride() {
+        final Program program = parse("e-i32:64:64", "", """
+                %next = getelementptr i32, ptr null, i32 1
+                ret i32 0
+                """);
+        program.getFunctions().forEach(function -> function.getEvents(Local.class)
+                .forEach(local -> local.transformExpressions(new ExprSimplifier(true))));
+        assertConstantAssignment(program, "rnext", 8);
+    }
+
+    @Test
+    public void overflowIntrinsicsPreserveTheirParsedResultLayout() throws InvalidConfigurationException {
+        for (int alignment : new int[]{32, 64, 128, 32}) {
+            for (String operation : new String[]{"sadd", "ssub", "smul"}) {
+                final Program program = parse("e-p:32:32-i64:" + alignment,
+                        "declare { i64, i1 } @llvm." + operation + ".with.overflow.i64(i64, i64)",
+                        "%r = call { i64, i1 } @llvm." + operation + ".with.overflow.i64(i64 1, i64 2)\n"
+                                + "%value = extractvalue { i64, i1 } %r, 0\nret i32 0");
+                final var function = program.getFunctionByName("main").orElseThrow();
+                final var result = function.getRegisters().stream().filter(r -> r.getName().equals("rr"))
+                        .findFirst().orElseThrow();
+                final var type = result.getType();
+                final int size = alignment == 32 ? 12 : alignment == 64 ? 16 : 32;
+                assertEquals(size, TypeFactory.getInstance().getMemorySizeInBytes(type));
+
+                LibraryLinker.fromConfig(Configuration.defaultConfiguration())
+                        .run(program);
+                final Local assignment = function.getEvents(Local.class).stream()
+                        .filter(local -> local.getResultRegister() == result).findFirst().orElseThrow();
+                assertEquals(type, assignment.getExpr().getType());
+                final Expression value = ExpressionFactory.getInstance()
+                        .makeExtract(assignment.getExpr(), 0).accept(new ExprSimplifier(true));
+                assertEquals(BigInteger.valueOf(operation.equals("sadd") ? 3 : operation.equals("ssub") ? -1 : 2),
+                        ((IntLiteral) value).getValue());
+                ProcessingManager.fromConfig(Configuration.defaultConfiguration()).run(program);
+            }
+        }
+    }
 
     @Test
     public void structLayoutUsesMemberAbiAlignmentAndKeepsProgramsIndependent() {

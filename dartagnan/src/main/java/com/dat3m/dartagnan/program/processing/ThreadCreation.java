@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TupleType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -182,8 +182,8 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression tidExpr = join.getTid();
 
             final Register joinRegister = join.getResultRegister();
-            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
-            final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
+            final IntegerType statusType = (IntegerType) ((TupleType)joinRegister.getType()).getFields().get(0);
+            final Type retValType = ((TupleType)joinRegister.getType()).getFields().get(1);
 
             final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
             final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);

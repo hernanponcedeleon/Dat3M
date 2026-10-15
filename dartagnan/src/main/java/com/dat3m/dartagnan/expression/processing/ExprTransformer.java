@@ -138,7 +138,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         for (Expression offset : gep.getOffsets()) {
             offsets.add(offset.accept(this));
         }
-        return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+        return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets, gep.getStride());
     }
 
     @Override

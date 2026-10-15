@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.dat3m;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TupleType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
@@ -44,9 +44,9 @@ public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegRe
     protected Expression tid;
 
     public DynamicThreadJoin(Register resultRegister, Expression tid) {
-        Preconditions.checkArgument(resultRegister.getType() instanceof AggregateType aggType
+        Preconditions.checkArgument(resultRegister.getType() instanceof TupleType aggType
                 && aggType.getFields().size() == 2
-                && aggType.getFields().get(0).type() instanceof IntegerType intType
+                && aggType.getFields().get(0) instanceof IntegerType intType
                 && IntegerHelper.isRepresentable(BigInteger.valueOf(Status.values().length - 1), intType.getBitWidth())
         );
         this.resultRegister = resultRegister;

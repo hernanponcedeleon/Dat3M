@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
+
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -54,6 +55,6 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     public Expression visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
         List<Expression> structMembers = ctx.initValues().initValue().stream().map(this::visitInitValue).toList();
         List<Type> structTypes = structMembers.stream().map(Expression::getType).toList();
-        return expressions.makeConstruct(types.getAggregateType(structTypes), structMembers);
+        return expressions.makeConstruct(types.getTupleType(structTypes), structMembers);
     }
 }

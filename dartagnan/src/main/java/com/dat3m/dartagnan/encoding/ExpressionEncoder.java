@@ -105,6 +105,12 @@ public class ExpressionEncoder {
                 fields.add(makeVariable(name + "@" + field.offset(), field.type()).formula());
             }
             variable = fmgr.getTupleFormulaManager().makeTuple(fields);
+        } else if (type instanceof TupleType tupleType) {
+            final List<Formula> fields = new ArrayList<>(tupleType.getFields().size());
+            for (int i = 0; i < tupleType.getFields().size(); i++) {
+                fields.add(makeVariable(name + "@" + i, tupleType.getFields().get(i)).formula());
+            }
+            variable = fmgr.getTupleFormulaManager().makeTuple(fields);
         } else if (type instanceof ArrayType arrType) {
             Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
             final List<Formula> elements = new ArrayList<>(arrType.getNumElements());

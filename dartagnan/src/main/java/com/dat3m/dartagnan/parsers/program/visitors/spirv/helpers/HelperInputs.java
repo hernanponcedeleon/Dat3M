@@ -78,7 +78,9 @@ public class HelperInputs {
                 }
                 List<Type> fields = elements.stream().map(Expression::getType).toList();
                 List<Integer> offsets = type.getFields().stream().map(TypeOffset::offset).toList();
-                AggregateType aType = types.getAggregateType(fields, offsets);
+                AggregateType aType = type.getSize() < 0
+                        ? NaturalMemoryLayout.getAggregateType(fields, offsets, type.getAlignment())
+                        : types.getAggregateType(fields, offsets, type.getAlignment(), type.getSize());
                 return expressions.makeConstruct(aType, elements);
             }
         }
