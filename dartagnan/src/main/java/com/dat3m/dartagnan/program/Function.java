@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.utils.UniqueIdGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -60,9 +61,7 @@ public class Function implements LeafExpression {
 
     @Override
     public Type getType() {
-        Preconditions.checkState(program != null,
-                "Function must belong to a program before querying its pointer type.");
-        return program.getPointerType();
+        return program != null ? program.getPointerType() : Memory.getDefaultArchType();
     }
 
     @Override

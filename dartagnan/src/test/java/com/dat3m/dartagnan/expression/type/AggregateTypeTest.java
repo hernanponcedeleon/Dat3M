@@ -6,11 +6,25 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 public class AggregateTypeTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+
+    @Test
+    public void layoutIsPartOfTheCanonicalType() {
+        final var fields = List.<Type>of(types.getIntegerType(64));
+        final var offsets = List.of(0);
+        final var natural = types.getAggregateType(fields, offsets);
+        final var abi32 = types.getAggregateType(fields, offsets, 4);
+        assertNotEquals(natural, abi32);
+        assertEquals(abi32, types.getAggregateType(fields, offsets, 4));
+        final var padded = types.getAggregateType(fields, offsets, 4, 12);
+        assertNotEquals(abi32, padded);
+        assertEquals(12, types.getMemorySizeInBytes(padded));
+    }
 
     @Test
     public void testDefaultOffsets() {
