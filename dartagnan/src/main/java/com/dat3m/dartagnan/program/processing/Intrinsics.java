@@ -43,10 +43,6 @@ public class Intrinsics {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private Type pointerType;
-    private IntegerType archType;
-    // Determines byte comparison order for memcmp when using multibyte accesses.
-    private boolean bigEndian;
 
     private Intrinsics(boolean msa) {
         detectMixedSizeAccesses = msa;
@@ -188,9 +184,6 @@ public class Intrinsics {
     // Simple late intrinsics
 
     private void inlineLate(Program program) {
-        pointerType = program.getPointerType();
-        archType = program.getArchType();
-        bigEndian = program.getMemory().isBigEndian();
         program.getThreads().forEach(this::inlineLate);
     }
 
@@ -249,6 +242,8 @@ public class Intrinsics {
         final Expression countExpr = call.getArguments().get(3);
 
         // Runtime checks
+        final Type pointerType = caller.getProgram().getPointerType();
+        final IntegerType archType = caller.getProgram().getArchType();
         final Expression nullExpr = expressions.makeGeneralZero(pointerType);
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
@@ -349,6 +344,7 @@ public class Intrinsics {
         final Expression src2 = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
+        final boolean bigEndian = caller.getProgram().getMemory().isBigEndian();
         // Stores the result in eight bits.
         final Register cmpReg = caller.newUniqueRegister("__memcmp_cmp", types.getByteType());
 
@@ -489,7 +485,7 @@ public class Intrinsics {
     }
 
     private Expression addByteOffset(Expression address, Expression offset) {
-        return expressions.makeAdd(address, expressions.makeCast(offset, archType));
+        return expressions.makeAdd(address, expressions.makeCast(offset, address.getType()));
     }
 
     private Register getResultRegister(FunctionCall call) {
