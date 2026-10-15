@@ -104,7 +104,37 @@ public final class TypeFactory {
 
     public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets) {
         checkNotNull(fields);
+        checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
+        final int alignment = fields.stream().map(this::getAlignment).max(Integer::compare).orElse(1);
+        return getAggregateType(fields, offsets, alignment);
+    }
+
+    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets, int alignment) {
+        checkAggregateLayout(fields, offsets, alignment);
+        final int size;
+        if (fields.stream().anyMatch(f -> !hasKnownSize(f))) {
+            size = -1;
+        } else if (fields.isEmpty()) {
+            size = 0;
+        } else {
+            final int last = fields.size() - 1;
+            size = paddedSize(offsets.get(last) + getMemorySizeInBytes(fields.get(last)), alignment);
+        }
+        return getAggregateType(fields, offsets, alignment, size);
+    }
+
+    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets, int alignment, int size) {
+        checkAggregateLayout(fields, offsets, alignment);
+        checkArgument(size == -1 || size >= 0 && (fields.isEmpty()
+                || size >= offsets.get(offsets.size() - 1) + Math.max(0, getMemorySizeInBytes(fields.get(fields.size() - 1)))),
+                "Aggregate size is too small");
+        return typeNormalizer.normalize(new AggregateType(fields, offsets, alignment, size));
+    }
+
+    private void checkAggregateLayout(List<Type> fields, List<Integer> offsets, int alignment) {
+        checkNotNull(fields);
         checkNotNull(offsets);
+        checkArgument(alignment > 0, "Alignment must be positive");
         checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
         checkArgument(fields.size() == offsets.size(), "Offsets number does not match the fields number");
         checkArgument(offsets.stream().noneMatch(o -> o < 0), "Offset cannot be negative");
@@ -115,7 +145,6 @@ public final class TypeFactory {
         checkArgument(IntStream.range(0, fields.size() - 1).allMatch(
                 i -> hasKnownSize(fields.get(i))),
                 "Non-last element with unknown size");
-        return typeNormalizer.normalize(new AggregateType(fields, offsets));
     }
 
     private List<Integer> computeDefaultOffsets(List<Type> fields) {
@@ -199,6 +228,9 @@ public final class TypeFactory {
                 return size;
             }
         } else if (type instanceof AggregateType aType) {
+            if (padded) {
+                return aType.getSize();
+            }
             List<TypeOffset> typeOffsets = aType.getFields();
             if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
@@ -208,9 +240,6 @@ public final class TypeFactory {
             }
             TypeOffset lastTypeOffset = typeOffsets.get(typeOffsets.size() - 1);
             int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
-            if (padded) {
-                return paddedSize(baseSize, getAlignment(type));
-            }
             return baseSize;
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
@@ -228,7 +257,7 @@ public final class TypeFactory {
             return getAlignment(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
+            return aType.getAlignment();
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }

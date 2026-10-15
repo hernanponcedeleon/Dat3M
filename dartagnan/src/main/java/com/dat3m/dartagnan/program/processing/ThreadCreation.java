@@ -72,8 +72,6 @@ public class ThreadCreation implements ProgramProcessor {
 
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private Type pointerType;
-    private IntegerType archType;
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
 
@@ -90,8 +88,6 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        pointerType = program.getPointerType();
-        archType = program.getArchType();
         if (program.getEntrypoint() instanceof Entrypoint.None) {
             throw new MalformedProgramException("Program has no entry point.");
         }
@@ -133,6 +129,7 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
 
     private List<ThreadData> createThreads(Entrypoint.Simple entrypoint) {
+        final IntegerType archType = entrypoint.function().getProgram().getArchType();
 
         // NOTE: We start from id = 0 which overlaps with existing function ids.
         // However, we reassign ids after thread creation so that functions get higher ids.
@@ -345,6 +342,7 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
+        final IntegerType archType = function.getProgram().getArchType();
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
@@ -424,6 +422,8 @@ public class ThreadCreation implements ProgramProcessor {
 
 
     private void replaceThreadLocalsWithStackalloc(Memory memory, Thread thread) {
+        final Type pointerType = memory.getPointerType();
+        final IntegerType archType = memory.getArchType();
         // Translate thread-local memory object to local stack allocation
         Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
         for (MemoryObject memoryObject : memory.getObjects()) {
@@ -432,14 +432,9 @@ public class ThreadCreation implements ProgramProcessor {
             }
             Preconditions.checkState(memoryObject.hasKnownSize());
 
-            // Compute type of memory object based on initial values
-            final List<Type> contentTypes = new ArrayList<>();
-            final List<Integer> offsets = new ArrayList<>();
-            for (Integer initOffset : memoryObject.getInitializedFields()) {
-                contentTypes.add(memoryObject.getInitialValue(initOffset).getType());
-                offsets.add(initOffset);
-            }
-            final Type memoryType = types.getAggregateType(contentTypes, offsets);
+            // Preserve the source allocation's exact size, including ABI padding.
+            // Reconstructing a struct from its initial values would apply natural alignment again.
+            final Type memoryType = types.getArrayType(types.getByteType(), Math.toIntExact(memoryObject.getKnownSize()));
 
             // Allocate single object of memory type
             final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, pointerType);
@@ -498,7 +493,7 @@ public class ThreadCreation implements ProgramProcessor {
         interface StorageField { MemoryObject get(Storage s); }
         interface Match { Expression compute(StorageField f, Expression k); }
         final List<Storage> storage = new ArrayList<>();
-        final Type type = pointerType;
+        final Type type = program.getPointerType();
         final int size = types.getMemorySizeInBytes(type);
         final Expression nil = expressions.makeGeneralZero(type);
         for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {

@@ -4,12 +4,15 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.program.processing.GEPToAddition;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -23,6 +26,140 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class ParserLlvmTest {
+
+    @Test
+    public void structLayoutUsesMemberAbiAlignmentAndKeepsProgramsIndependent() {
+        for (int alignment : new int[]{32, 64, 32}) {
+            final int fieldOffset = alignment / 8;
+            final int size = alignment == 32 ? 12 : 16;
+            final Program program = parse("e-p:32:32-i64:" + alignment,
+                    "%S = type { i32, i64 }\n@g = global %S { i32 7, i64 9 }", """
+                    %p = alloca %S, i32 2
+                    %field = getelementptr %S, ptr null, i32 0, i32 1
+                    %next = getelementptr %S, ptr null, i32 1
+                    ret i32 0
+                    """);
+            final var global = program.getMemory().getObjects().iterator().next();
+            assertEquals(size, global.getKnownSize());
+            assertTrue(global.getInitializedFields().contains(fieldOffset));
+            final Alloc alloc = allocations(program).get(0);
+            assertEquals(BigInteger.valueOf(2L * size), ((IntLiteral) alloc.getAllocationSize()).getValue());
+            assertConstantAssignment(program, "rfield", fieldOffset);
+            assertConstantAssignment(program, "rnext", size);
+        }
+    }
+
+    @Test
+    public void nestedStructsArraysAndPackedStructsRetainTheirLayout() {
+        final Program program = parse("e-p:32:32-i64:32", """
+                %S = type { i32, i64 }
+                @nested = global { i8, %S, i8 } zeroinitializer
+                @array = global [2 x %S] zeroinitializer
+                @packed = global <{ i8, i64 }> zeroinitializer
+                """, """
+                %field = getelementptr [2 x %S], ptr null, i32 1, i32 1, i32 1
+                ret i32 0
+                """);
+        final var objects = program.getMemory().getObjects();
+        assertEquals(20, objects.stream().filter(o -> o.getName().equals("nested")).findFirst().orElseThrow().getKnownSize());
+        assertEquals(24, objects.stream().filter(o -> o.getName().equals("array")).findFirst().orElseThrow().getKnownSize());
+        assertEquals(9, objects.stream().filter(o -> o.getName().equals("packed")).findFirst().orElseThrow().getKnownSize());
+        assertConstantAssignment(program, "rfield", 40);
+    }
+
+    @Test
+    public void scalarAllocationSizeAndGepStrideUseAbiAlignment() {
+        final Program program = parse("e-i32:64:64", "@g = global i32 0", """
+                %p = alloca i32, i32 3
+                %next = getelementptr i32, ptr null, i32 1
+                ret i32 0
+                """);
+        assertEquals(8, program.getMemory().getObjects().iterator().next().getKnownSize());
+        assertEquals(BigInteger.valueOf(24), ((IntLiteral) allocations(program).get(0).getAllocationSize()
+                .accept(new ExprSimplifier(true))).getValue());
+        assertConstantAssignment(program, "rnext", 8);
+    }
+
+    @Test
+    public void packedStructKeepsAllocationPaddingOfItsLastMember() {
+        final Program program = parse("e-i32:128:128", "@g = global <{ i32 }> zeroinitializer", """
+                %next = getelementptr <{ i32 }>, ptr null, i32 1
+                ret i32 0
+                """);
+        assertEquals(16, program.getMemory().getObjects().iterator().next().getKnownSize());
+        assertConstantAssignment(program, "rnext", 16);
+    }
+
+    @Test
+    public void pointersAndIntegersOfTheSameWidthKeepDifferentAlignments() {
+        final Program program = parse("e-p:32:64-i32:32", """
+                @integer = global { i8, i32 } zeroinitializer
+                @pointer = global { i8, ptr } zeroinitializer
+                """, "ret i32 0");
+        assertEquals(8, program.getMemory().getObjects().stream()
+                .filter(o -> o.getName().equals("integer")).findFirst().orElseThrow().getKnownSize());
+        assertEquals(16, program.getMemory().getObjects().stream()
+                .filter(o -> o.getName().equals("pointer")).findFirst().orElseThrow().getKnownSize());
+    }
+
+    @Test
+    public void pointerCompareExchangeResultKeepsPointerAlignment() {
+        parse("e-p:64:128-i64:32", "@slot = global ptr null", """
+                %pair = cmpxchg ptr @slot, ptr null, ptr null seq_cst seq_cst
+                %old = extractvalue { ptr, i1 } %pair, 0
+                ret i32 0
+                """);
+    }
+
+    @Test
+    public void processingCanBeReusedForPthreadProgramsWithDifferentPointerWidths()
+            throws InvalidConfigurationException {
+        final ProcessingManager processing = ProcessingManager.fromConfig(Configuration.defaultConfiguration());
+        for (int width : new int[]{32, 64, 32}) {
+            final String integer = "i" + width;
+            final Program program = parse("e-p:" + width + ":" + width, """
+                    declare i32 @pthread_create(ptr, ptr, ptr, ptr)
+                    declare i32 @pthread_join(%s, ptr)
+                    define ptr @worker(ptr %%arg) {
+                    entry:
+                        ret ptr %%arg
+                    }
+                    """.formatted(integer), """
+                    %%slot = alloca %1$s
+                    %%created = call i32 @pthread_create(ptr %%slot, ptr null, ptr @worker, ptr null)
+                    %%tid = load %1$s, ptr %%slot
+                    %%joined = call i32 @pthread_join(%1$s %%tid, ptr null)
+                    ret i32 0
+                    """.formatted(integer));
+            processing.run(program);
+            assertEquals(width, program.getArchType().getBitWidth());
+        }
+    }
+
+    @Test
+    public void threadLocalCopiesPreserveTheSourceAllocationSize() throws InvalidConfigurationException {
+        for (int width : new int[]{32, 64}) {
+            final Program program = parse("e-p:" + width + ":" + width + "-i64:" + width,
+                    "%S = type { i32, i64 }\n@tls = thread_local global %S { i32 7, i64 9 }",
+                    "%value = load i32, ptr @tls\nret i32 %value");
+            final long size = program.getMemory().getObjects().iterator().next().getKnownSize();
+            ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
+            final Alloc copy = program.getThreadEvents(Alloc.class).stream().findFirst().orElseThrow();
+            assertEquals(BigInteger.valueOf(size), ((IntLiteral) copy.getAllocationSize()).getValue());
+        }
+    }
+
+    private static List<Alloc> allocations(Program program) {
+        return program.getFunctions().stream().flatMap(f -> f.getEvents(Alloc.class).stream()).toList();
+    }
+
+    private static void assertConstantAssignment(Program program, String name, long expected) {
+        GEPToAddition.newInstance().run(program);
+        final Local local = program.getFunctions().stream().flatMap(f -> f.getEvents(Local.class).stream())
+                .filter(e -> e.getResultRegister().getName().equals(name)).findFirst().orElseThrow();
+        final Expression simplified = local.getExpr().accept(new ExprSimplifier(true));
+        assertEquals(BigInteger.valueOf(expected), ((IntLiteral) simplified).getValue());
+    }
 
     @Test
     public void processesProgramsWithDifferentPointerWidths() throws InvalidConfigurationException {
