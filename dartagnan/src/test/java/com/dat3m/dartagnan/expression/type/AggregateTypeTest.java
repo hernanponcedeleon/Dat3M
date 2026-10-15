@@ -17,10 +17,10 @@ public class AggregateTypeTest {
     public void layoutIsPartOfTheCanonicalType() {
         final var fields = List.<Type>of(types.getIntegerType(64));
         final var offsets = List.of(0);
-        final var natural = types.getAggregateType(fields, offsets);
-        final var abi32 = types.getAggregateType(fields, offsets, 4);
+        final var natural = NaturalMemoryLayout.getAggregateType(fields, offsets);
+        final var abi32 = types.getAggregateType(fields, offsets, 4, 8);
         assertNotEquals(natural, abi32);
-        assertEquals(abi32, types.getAggregateType(fields, offsets, 4));
+        assertEquals(abi32, types.getAggregateType(fields, offsets, 4, 8));
         final var padded = types.getAggregateType(fields, offsets, 4, 12);
         assertNotEquals(abi32, padded);
         assertEquals(12, types.getMemorySizeInBytes(padded));
@@ -49,7 +49,7 @@ public class AggregateTypeTest {
         testStandardOffsets(List.of(arr2), List.of(0), -1);
         testStandardOffsets(List.of(i16, arr2), List.of(0, 2), -1);
 
-        Type s1 = types.getAggregateType(List.of(i32, i8));
+        Type s1 = NaturalMemoryLayout.getAggregateType(List.of(i32, i8));
 
         testStandardOffsets(List.of(s1, i16), List.of(0, 8), 12);
     }
@@ -79,7 +79,7 @@ public class AggregateTypeTest {
         testExplicitOffsets(List.of(arr1, i16), List.of(0, 8), 10);
         testExplicitOffsets(List.of(i16, arr2), List.of(0, 8), -1);
 
-        Type s1 = types.getAggregateType(List.of(i32, i8));
+        Type s1 = NaturalMemoryLayout.getAggregateType(List.of(i32, i8));
 
         testExplicitOffsets(List.of(s1, i16), List.of(0, 5), 8);
         testExplicitOffsets(List.of(s1, i16), List.of(0, 6), 8);
@@ -101,8 +101,8 @@ public class AggregateTypeTest {
 
     @Test
     public void testEmptyType() {
-        Type empty = types.getAggregateType(List.of());
-        Type emptyAlt = types.getAggregateType(List.of(), List.of());
+        Type empty = NaturalMemoryLayout.getAggregateType(List.of());
+        Type emptyAlt = NaturalMemoryLayout.getAggregateType(List.of(), List.of());
 
         assertEquals(empty, emptyAlt);
 
@@ -119,14 +119,14 @@ public class AggregateTypeTest {
     }
 
     private void testDefaultOffsets(List<Type> fields, List<Integer> offsets, int size) {
-        AggregateType type = types.getAggregateType(fields);
+        AggregateType type = NaturalMemoryLayout.getAggregateType(fields);
         assertEquals(fields, type.getFields().stream().map(TypeOffset::type).toList());
         assertEquals(offsets, type.getFields().stream().map(TypeOffset::offset).toList());
         assertEquals(size, types.getMemorySizeInBytes(type));
     }
 
     private void testExplicitOffsets(List<Type> fields, List<Integer> offsets, int size) {
-        AggregateType type = types.getAggregateType(fields, offsets);
+        AggregateType type = NaturalMemoryLayout.getAggregateType(fields, offsets);
         assertEquals(fields, type.getFields().stream().map(TypeOffset::type).toList());
         assertEquals(offsets, type.getFields().stream().map(TypeOffset::offset).toList());
         assertEquals(size, types.getMemorySizeInBytes(type));
@@ -134,7 +134,7 @@ public class AggregateTypeTest {
 
     private void testIllegalOffsets(List<Type> fields, List<Integer> offsets, String error) {
         try {
-            types.getAggregateType(fields, offsets);
+            NaturalMemoryLayout.getAggregateType(fields, offsets);
             fail("Should throw exception");
         } catch (IllegalArgumentException e) {
             assertEquals(error, e.getMessage());

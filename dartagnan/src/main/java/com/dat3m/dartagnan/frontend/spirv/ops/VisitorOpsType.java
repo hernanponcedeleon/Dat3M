@@ -5,13 +5,14 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.NaturalMemoryLayout;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.frontend.spirv.decorations.ArrayStride;
 import com.dat3m.dartagnan.frontend.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.frontend.spirv.decorations.Offset;
 import com.dat3m.dartagnan.frontend.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -121,12 +122,12 @@ public class VisitorOpsType extends VisitorOps<Type> {
                     }
                     return offsets.get(i);
                 }).toList();
-                Type type = types.getAggregateType(memberTypes, memberOffsets);
+                Type type = NaturalMemoryLayout.getAggregateType(memberTypes, memberOffsets);
                 return builder.addType(id, type);
             }
             throw new ParsingException("Illegal member offset decorations for struct '%s'", id);
         }
-        Type type = types.getAggregateType(memberTypes);
+        Type type = NaturalMemoryLayout.getAggregateType(memberTypes);
         return builder.addType(id, type);
     }
 

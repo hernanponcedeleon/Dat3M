@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ExpressionHelper {
@@ -43,6 +45,9 @@ public class ExpressionHelper {
             case ArrayType arrayType -> checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
                     "Index %s out of bounds for type %s.",
                     index, arrayType);
+            case TupleType tupleType -> checkArgument(index < tupleType.getFields().size(),
+                    "Index %s out of bounds for type %s.",
+                    index, aggregateType);
             default -> { }
         }
     }
@@ -51,8 +56,22 @@ public class ExpressionHelper {
         return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType;
     }
 
+    public static boolean isAggregate(Type type) {
+        return type instanceof AggregateType || type instanceof TupleType;
+    }
+
+    public static List<Type> getFieldTypes(Type type) {
+        if (type instanceof AggregateType aggregateType) {
+            return aggregateType.getFields().stream().map(TypeOffset::type).toList();
+        }
+        if (type instanceof TupleType tupleType) {
+            return tupleType.getFields();
+        }
+        throw new IllegalArgumentException("Non-aggregate type " + type);
+    }
+
     public static boolean isAggregateLike(Type type) {
-        return type instanceof AggregateType || type instanceof ArrayType;
+        return type instanceof AggregateType || type instanceof TupleType || type instanceof ArrayType;
     }
 
     public static boolean isAggregateLike(Expression expr) {
@@ -65,6 +84,7 @@ public class ExpressionHelper {
             type = switch (type) {
                 case AggregateType aggregateType -> aggregateType.getFields().get(index).type();
                 case ArrayType arrayType -> arrayType.getElementType();
+                case TupleType tupleType -> tupleType.getFields().get(index);
                 // Actually unreachable, because checkInbounds does this already.
                 default -> throw new IllegalArgumentException("Cannot extract from non-aggregate type " + type);
             };
