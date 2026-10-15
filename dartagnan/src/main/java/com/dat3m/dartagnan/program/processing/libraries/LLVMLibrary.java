@@ -327,7 +327,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
                 expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
                 types.getIntegerType(1)
         );
-        final Type type = types.getAggregateType(List.of(result.getType(), flag.getType()));
+        final Type type = resultReg.getType();
         return List.of(
                 EventFactory.newLocal(resultReg, expressions.makeConstruct(type, List.of(result, flag)))
         );

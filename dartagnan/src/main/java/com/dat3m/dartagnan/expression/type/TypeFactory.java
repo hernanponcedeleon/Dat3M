@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
 
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -24,9 +23,8 @@ public final class TypeFactory {
     private final Normalizer typeNormalizer = new Normalizer();
 
     private final VoidType voidType = new VoidType();
-    private final Type unitType = getAggregateType(List.of());
+    private final Type unitType = getAggregateType(List.of(), List.of(), 1, 0);
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerType = getIntegerType(64); //TODO add proper pointer type
 
     private TypeFactory() {
     }
@@ -45,10 +43,6 @@ public final class TypeFactory {
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
-    }
-
-    public IntegerType getArchType() {
-        return pointerType;
     }
 
     public IntegerType getByteType() {
@@ -78,10 +72,6 @@ public final class TypeFactory {
     public FloatType getIEEESingleType() { return getFloatType(23, 8); }
     public FloatType getIEEEDoubleType() { return getFloatType(52, 11); }
 
-    public Type getPointerType() {
-        return pointerType;
-    }
-
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
         checkNotNull(scopeId);
         checkNotNull(pointedType);
@@ -107,14 +97,28 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes, isVarArg));
     }
 
-    public AggregateType getAggregateType(List<Type> fields) {
-        return getAggregateType(fields, computeDefaultOffsets(fields));
+    /** Creates a group of register values without assigning a memory layout. */
+    public TupleType getTupleType(List<? extends Type> fields) {
+        checkNotNull(fields);
+        checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
+        return typeNormalizer.normalize(new TupleType(fields));
     }
 
-    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets) {
+    /** Creates a memory aggregate with an explicitly computed layout. */
+    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets, int alignment, int size) {
+        checkAggregateLayout(fields, offsets, alignment);
+        checkArgument(size == -1 || size >= 0 && (fields.isEmpty()
+                || size >= offsets.get(offsets.size() - 1) + Math.max(0, getMemorySizeInBytes(fields.get(fields.size() - 1)))),
+                "Aggregate size is too small");
+        return typeNormalizer.normalize(new AggregateType(fields, offsets, alignment, size));
+    }
+
+    void checkAggregateLayout(List<Type> fields, List<Integer> offsets, int alignment) {
         checkNotNull(fields);
         checkNotNull(offsets);
+        checkArgument(alignment > 0, "Alignment must be positive");
         checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
+        checkArgument(fields.stream().noneMatch(t -> t instanceof TupleType), "Tuples have no memory layout");
         checkArgument(fields.size() == offsets.size(), "Offsets number does not match the fields number");
         checkArgument(offsets.stream().noneMatch(o -> o < 0), "Offset cannot be negative");
         checkArgument(offsets.isEmpty() || offsets.get(0) == 0, "The first offset must be zero");
@@ -124,22 +128,6 @@ public final class TypeFactory {
         checkArgument(IntStream.range(0, fields.size() - 1).allMatch(
                 i -> hasKnownSize(fields.get(i))),
                 "Non-last element with unknown size");
-        return typeNormalizer.normalize(new AggregateType(fields, offsets));
-    }
-
-    private List<Integer> computeDefaultOffsets(List<Type> fields) {
-        List<Integer> offsets = new ArrayList<>();
-        int offset = 0;
-        if (!fields.isEmpty()) {
-            offset = getMemorySizeInBytes(fields.get(0));
-            offsets.add(0);
-        }
-        for (int i = 1; i < fields.size(); i++) {
-            offset = paddedSize(offset, getAlignment(fields.get(i)));
-            offsets.add(offset);
-            offset += getMemorySizeInBytes(fields.get(i));
-        }
-        return offsets;
     }
 
     public ArrayType getArrayType(Type element) {
@@ -156,6 +144,7 @@ public final class TypeFactory {
     }
 
     public ArrayType getArrayType(Type element, int size, Integer stride, Integer alignment) {
+        checkArgument(!(element instanceof TupleType), "Tuples have no memory layout");
         checkArgument(stride == null || alignment == null,
                 "Stride and alignment cannot be used simultaneously");
         if (stride != null) {
@@ -178,6 +167,11 @@ public final class TypeFactory {
         return getMemorySizeInBytes(type) * 8;
     }
 
+    /**
+     * Returns scalar storage size or the layout recorded in a composite memory type.
+     * Scalar ABI allocation padding must be supplied by the frontend through allocation types and strides.
+     * Tuples have no memory representation.
+     */
     public int getMemorySizeInBytes(Type type) {
         return getMemorySizeInBytes(type, true);
     }
@@ -208,6 +202,9 @@ public final class TypeFactory {
                 return size;
             }
         } else if (type instanceof AggregateType aType) {
+            if (padded) {
+                return aType.getSize();
+            }
             List<TypeOffset> typeOffsets = aType.getFields();
             if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
@@ -217,27 +214,7 @@ public final class TypeFactory {
             }
             TypeOffset lastTypeOffset = typeOffsets.get(typeOffsets.size() - 1);
             int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
-            if (padded) {
-                return paddedSize(baseSize, getAlignment(type));
-            }
             return baseSize;
-        }
-        throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
-    }
-
-    private int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
-            return getMemorySizeInBytes(type);
-        }
-        if (type instanceof ArrayType arrayType) {
-            Integer alignment = arrayType.getAlignment();
-            if (alignment != null) {
-                return alignment;
-            }
-            return getAlignment(arrayType.getElementType());
-        }
-        if (type instanceof AggregateType aType) {
-            return aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
@@ -258,6 +235,9 @@ public final class TypeFactory {
         }
         if (type instanceof AggregateType aType) {
             return aType.getFields().stream().allMatch(o -> isStaticType(o.type()));
+        }
+        if (type instanceof TupleType tupleType) {
+            return tupleType.getFields().stream().allMatch(this::isStaticType);
         }
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }

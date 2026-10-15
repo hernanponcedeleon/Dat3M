@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.NaturalMemoryLayout;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
@@ -69,8 +70,8 @@ public class MockProgramBuilder extends ProgramBuilder {
         Map<Integer, Integer> offsets = decoration.getValue(id);
         List<Type> innerTypes = Arrays.stream(innerTypeIds).map(this::getType).toList();
         AggregateType type = offsets != null
-                ? typeFactory.getAggregateType(innerTypes, new ArrayList<>(offsets.values()))
-                : typeFactory.getAggregateType(innerTypes);
+                ? NaturalMemoryLayout.getAggregateType(innerTypes, new ArrayList<>(offsets.values()))
+                : NaturalMemoryLayout.getAggregateType(innerTypes);
         return (AggregateType) addType(id, type);
     }
 

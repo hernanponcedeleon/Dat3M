@@ -105,6 +105,9 @@ public class HelperTags {
         if (isAligned && alignment == null || !isAligned && alignment != null) {
             throwIllegalParametersException(operands);
         }
+        if (isAligned && (alignment <= 0 || (alignment & (alignment - 1)) != 0)) {
+            throw new ParsingException("Alignment must be a positive power of two");
+        }
         return tagList;
     }
 

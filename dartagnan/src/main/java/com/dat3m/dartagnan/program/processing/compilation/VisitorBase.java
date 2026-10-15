@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -94,17 +94,18 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public final List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         final Type resultType = e.getResultRegister().getType();
-        verify(resultType instanceof AggregateType t && t.getFields().size() == 2, "Invalid result type of '%s'", e);
-        final AggregateType type = (AggregateType) resultType;
+        verify(ExpressionHelper.isAggregate(resultType) && ExpressionHelper.getFieldTypes(resultType).size() == 2,
+                "Invalid result type of '%s'", e);
+        final List<Type> fields = ExpressionHelper.getFieldTypes(resultType);
         final Register oldValue = e.getFunction().newUniqueRegister("LlvmCmpXchg.oldValue", e.getExpectedValue().getType());
         final Register success = e.getFunction().newUniqueRegister("LlvmCmpXchg.success", types.getBooleanType());
-        final Expression r0 = expressions.makeCast(oldValue, type.getFields().get(0).type());
-        final Expression r1 = expressions.makeCast(success, type.getFields().get(1).type());
+        final Expression r0 = expressions.makeCast(oldValue, fields.get(0));
+        final Expression r1 = expressions.makeCast(success, fields.get(1));
         final Expression expected = e.getExpectedValue();
         final Expression newValue = e.getStoreValue();
         return EventFactory.eventSequence(
                 newLlvmCmpXchg(oldValue, success, e.getAddress(), expected, newValue, e.getMo(), e.isStrong()),
-                EventFactory.newLocal(e.getResultRegister(), expressions.makeConstruct(type, List.of(r0, r1)))
+                EventFactory.newLocal(e.getResultRegister(), expressions.makeConstruct(resultType, List.of(r0, r1)))
         );
     }
 

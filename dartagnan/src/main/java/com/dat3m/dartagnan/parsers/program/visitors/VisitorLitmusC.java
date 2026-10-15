@@ -28,7 +28,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
+    private final IntegerType archType = programBuilder.getArchType();
     private final int archSize = TypeFactory.getInstance().getMemorySizeInBytes(archType);
     private int currentThread;
     private int scope;

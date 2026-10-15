@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusVulkanParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -27,8 +27,8 @@ import java.util.List;
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final TypeFactory types = programBuilder.getTypeFactory();
-    private final IntegerType archType = types.getArchType();
+    
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

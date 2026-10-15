@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.NaturalMemoryLayout;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
@@ -56,7 +57,7 @@ public class VisitorOpsTypeTest {
         Type typeArray = types.getArrayType(typeInteger, 20);
         Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger, null);
         Type typeFunction = types.getFunctionType(typeVoid, List.of(typePointer, typeInteger));
-        Type typeStruct = types.getAggregateType(List.of(typeInteger, typePointer, typeArray), List.of(0, 2, 10));
+        Type typeStruct = NaturalMemoryLayout.getAggregateType(List.of(typeInteger, typePointer, typeArray), List.of(0, 2, 10));
 
         assertEquals(typeVoid, data.get("%void"));
         assertEquals(typeBoolean, data.get("%bool"));
@@ -322,10 +323,10 @@ public class VisitorOpsTypeTest {
         Type typeBoolean = types.getBooleanType();
         Type typeInteger = types.getIntegerType(32);
         Type typeArray = types.getArrayType(typeInteger, 10);
-        Type typeStructFirst = types.getAggregateType(List.of(typeInteger, typeArray), List.of(0, 4));
+        Type typeStructFirst = NaturalMemoryLayout.getAggregateType(List.of(typeInteger, typeArray), List.of(0, 4));
         Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeStructFirst, null);
-        Type typeStructSecond = types.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 1));
-        Type typeStructThird = types.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 2));
+        Type typeStructSecond = NaturalMemoryLayout.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 1));
+        Type typeStructThird = NaturalMemoryLayout.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 2));
 
         assertEquals(data.get("%s1"), typeStructFirst);
         assertEquals(data.get("%s2"), typeStructSecond);

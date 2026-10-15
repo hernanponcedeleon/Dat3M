@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -18,9 +18,9 @@ import org.antlr.v4.runtime.ParserRuleContext;
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.TSO);
-    private final TypeFactory types = programBuilder.getTypeFactory();
+    
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
-    private final IntegerType archType = types.getArchType();
+    private final IntegerType archType = programBuilder.getArchType();
     private int mainThread;
     private int threadCount = 0;
 

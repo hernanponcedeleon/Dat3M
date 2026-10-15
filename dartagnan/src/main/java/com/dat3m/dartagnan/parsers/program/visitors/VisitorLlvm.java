@@ -4,8 +4,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
+import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.parsers.LLVMIR.*;
+import com.dat3m.dartagnan.parsers.LLVMIR;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
-import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
 import com.dat3m.dartagnan.parsers.program.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
@@ -16,8 +19,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.metadata.Metadata;
-import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -52,11 +54,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
-    private final IntegerType integerType = types.getArchType();
+    private final Type pointerType;
+    private final IntegerType integerType;
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
-    private final Map<String, Type> typeMap = new HashMap<>();
+    private final DataLayout dataLayout;
+    private final Map<String, ParsedType> typeMap = new HashMap<>();
     private final Map<String, MdNode> metadataSymbolTable = new LinkedHashMap<>();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
@@ -70,10 +73,26 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Nonnull, if the visitor is inside a named instruction.
     private String currentRegisterName;
     // Nonnull, if a type has been parsed.
-    private Type parsedType;
+    private ParsedType parsedType;
 
-    public VisitorLlvm(Program p) {
-        program = p;
+    public VisitorLlvm(CompilationUnitContext ctx) {
+        dataLayout = parseDataLayout(ctx);
+        program = new Program(new Memory(dataLayout.bigEndian, dataLayout.pointerSize),
+                Program.SourceLanguage.LLVM);
+        pointerType = program.getPointerType();
+        integerType = program.getArchType();
+    }
+
+    private static DataLayout parseDataLayout(CompilationUnitContext ctx) {
+        final DataLayout dataLayout = new DataLayout();
+        for (TopLevelEntityContext entity : ctx.topLevelEntity()) {
+            final TargetDefContext target = entity.targetDef();
+            if (target != null && target.targetDataLayout() != null) {
+                dataLayout.visit(target.targetDataLayout().dataLayout());
+                break;
+            }
+        }
+        return dataLayout;
     }
 
     public Program buildProgram() {
@@ -84,7 +103,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
         // Create the metadata mapping beforehand, so that instructions can get all attachments.
-        // Also parse all type definitions.
+        // Also collect all type definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() != null) {
                 entity.accept(this);
@@ -116,7 +135,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.metadataDef() == null &&
+            if (entity.targetDef() == null &&
+                    entity.metadataDef() == null &&
                     entity.globalDef() == null &&
                     entity.typeDef() == null &&
                     entity.funcDecl() == null) {
@@ -249,11 +269,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     public void visitGlobalDeclaration(GlobalDefContext ctx) {
+        checkPointerAddressSpace(ctx.addrSpace());
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
-        final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
+        final ParsedType type = parseTypeLayout(ctx.type());
+        final int size = type.allocationSize();
         if (size > 0) {
-            final MemoryObject globalObject = program.getMemory().allocate(size);
+            final AlignContext explicitAlignment = ctx.globalField().stream()
+                    .map(GlobalFieldContext::align).filter(Objects::nonNull).findFirst().orElse(null);
+            final long alignment = getAllocationAlignment(type, explicitAlignment);
+            final MemoryObject globalObject = program.getMemory().allocate(size, alignment);
             globalObject.setName(name);
             if (ctx.threadLocal() != null) {
                 globalObject.setIsThreadLocal(true);
@@ -526,11 +551,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Instructions producing a value
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
+        checkPointerAddressSpace(ctx.addrSpace());
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
         final Register register = getOrNewCurrentRegister(pointerType);
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
-        final Type elementType = parseType(ctx.type());
+        final ParsedType elementType = parseTypeLayout(ctx.type());
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
             sizeExpression = expressions.makeOne(integerType);
@@ -538,13 +564,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
-        final Event alloc;
-        if(ctx.align() != null) {
-            final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
-            alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
-        } else {
-            alloc = EventFactory.newAlloc(register, elementType, sizeExpression, false, false);
-        }
+        final long alignment = getAllocationAlignment(elementType, ctx.align());
+        final Expression alignmentExpression = expressions.makeValue(alignment, integerType);
+        final Event alloc = EventFactory.newAlignedAlloc(register, elementType.allocationType(), sizeExpression,
+                alignmentExpression, false, false);
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
         block.events.add(alloc);
         return register;
@@ -783,14 +806,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGetElementPtrInst(GetElementPtrInstContext ctx) {
-        final Type type = parseType(ctx.type());
+        final ParsedType type = parseTypeLayout(ctx.type());
         final var operands = new ArrayList<Expression>();
         for (final TypeValueContext typeValue : ctx.typeValue()) {
             operands.add(visitTypeValue(typeValue));
         }
         assert !operands.isEmpty();
         return assignToRegister(
-                expressions.makeGetElementPointer(type, operands.get(0), operands.subList(1, operands.size())));
+                expressions.makeGetElementPointer(type.type(), operands.get(0), operands.subList(1, operands.size()), type.allocationSize()));
     }
 
     @Override
@@ -813,8 +836,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check(comparator.getType().equals(substitute.getType()), "Type mismatch for comparator and new in %s.", ctx);
         final boolean strong = ctx.weak == null;
         final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
+        final ParsedType valueType = parseTypeLayout(ctx.typeValue(1).firstClassType());
         final Register register = currentRegisterName == null ? null :
-                getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
+                getOrNewCurrentRegister(dataLayout.structType(List.of(
+                        valueType, dataLayout.valueType(getIntegerType(1))), false).type());
         block.events.add(Llvm.newCompareExchange(register, address, comparator, substitute, mo, strong));
         return register;
     }
@@ -899,12 +924,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPtrToIntInst(PtrToIntInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
     public Expression visitIntToPtrInst(IntToPtrInstContext ctx) {
-        return conversionInstruction(ctx.typeValue(), ctx.type(), true);
+        return conversionInstruction(ctx.typeValue(), ctx.type(), false);
     }
 
     @Override
@@ -944,7 +969,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeGeneralZero(pointerType);
     }
 
     @Override
@@ -1022,9 +1047,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitStructConst(StructConstContext ctx) {
-        List<Expression> structMembers = ctx.typeConst().stream().map(this::visitTypeConst).toList();
-        List<Type> structTypes = structMembers.stream().map(Expression::getType).toList();
-        return expressions.makeConstruct(types.getAggregateType(structTypes), structMembers);
+        final Type type = expectedType;
+        final List<Expression> structMembers = ctx.typeConst().stream().map(this::visitTypeConst).toList();
+        return expressions.makeConstruct(type, structMembers);
     }
 
     @Override
@@ -1131,12 +1156,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPtrToIntExpr(PtrToIntExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitIntToPtrExpr(IntToPtrExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
@@ -1151,13 +1176,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGetElementPtrExpr(GetElementPtrExprContext ctx) {
-        final Type indexingType = parseType(ctx.type());
+        final ParsedType indexingType = parseTypeLayout(ctx.type());
         final Expression base = visitTypeConst(ctx.typeConst());
         final var offsets = new ArrayList<Expression>();
         for (final GepIndexContext index : ctx.gepIndex()) {
             offsets.add(visitTypeConst(index.typeConst()));
         }
-        return expressions.makeGetElementPointer(indexingType, base, offsets);
+        return expressions.makeGetElementPointer(indexingType.type(), base, offsets, indexingType.allocationSize());
     }
 
     @Override
@@ -1198,41 +1223,45 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitIntType(IntTypeContext ctx) {
-        parsedType = parseIntType(ctx.IntType());
+        final IntegerType type = parseIntType(ctx.IntType());
+        parsedType = new ParsedType(type, dataLayout.getIntegerAlignment(type.getBitWidth()));
         return null;
     }
 
     @Override
     public Expression visitFloatType(FloatTypeContext ctx) {
-        parsedType = parseFloatType(ctx.floatKind());
+        final FloatType type = parseFloatType(ctx.floatKind());
+        parsedType = new ParsedType(type, dataLayout.getFloatAlignment(type.getBitWidth()));
         return null;
     }
 
     @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
-        parsedType = pointerType;
+        checkPointerAddressSpace(ctx.opaquePointerType() != null
+                ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
+        final AddrSpaceContext space = ctx.opaquePointerType() != null
+                ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace();
+        parsedType = pointerTypeLayout(space);
         return null;
     }
 
     @Override
     public Expression visitStructType(StructTypeContext ctx) {
-        final var fields = new ArrayList<Type>();
+        final var fields = new ArrayList<ParsedType>();
         for (final TypeContext typeContext : ctx.type()) {
-            fields.add(parseType(typeContext));
+            fields.add(parseTypeLayout(typeContext));
         }
-        parsedType = types.getAggregateType(fields);
+        parsedType = dataLayout.structType(fields, ctx.packed != null);
         return null;
     }
 
     @Override
     public Expression visitArrayType(ArrayTypeContext ctx) {
-        final Type elementType = parseType(ctx.type());
-        if (ctx.IntLit() == null) {
-            parsedType = types.getArrayType(elementType);
-        } else {
-            final int size = Integer.parseUnsignedInt(ctx.IntLit().getText());
-            parsedType = types.getArrayType(elementType, size);
-        }
+        final ParsedType element = parseTypeLayout(ctx.type());
+        final int size = ctx.IntLit() == null ? -1 : Integer.parseUnsignedInt(ctx.IntLit().getText());
+        final int stride = element.allocationSize();
+        final Type array = types.getArrayType(element.type(), size, stride > 0 ? stride : null, null);
+        parsedType = new ParsedType(array, element.alignment());
         return null;
     }
 
@@ -1240,23 +1269,24 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitType(TypeContext ctx) {
         // translate opaque pointer types
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
-            parsedType = pointerType;
+            checkPointerAddressSpace(ctx.opaquePointerType() != null
+                    ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
+            parsedType = pointerTypeLayout(ctx.opaquePointerType() != null
+                    ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
             return null;
         } else if (ctx.getText().equals("void")) {
-            parsedType = types.getVoidType();
+            parsedType = new ParsedType(types.getVoidType(), new Alignment(1, 1));
             return null;
         } else if (ctx.type() != null && ctx.params() != null) {
             //FIXME: this should parse a function type "retType (params)", but
             // for now we just return "retType"
-            ctx.type().accept(this);
-            final Type returnType = parsedType;
+            final Type returnType = parseType(ctx.type());
             final boolean isVarArgs = ctx.params().ellipsis != null;
             final List<Type> paramTypes = new ArrayList<>();
             for (ParamContext paramContext : ctx.params().param()) {
-                paramContext.type().accept(this);
-                paramTypes.add(parsedType);
+                paramTypes.add(parseType(paramContext.type()));
             }
-            parsedType = types.getFunctionType(returnType, paramTypes, isVarArgs);
+            parsedType = new ParsedType(types.getFunctionType(returnType, paramTypes, isVarArgs), new Alignment(1, 1));
             return null;
         } else {
             return super.visitType(ctx);
@@ -1269,8 +1299,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // define types on demand, as they might be used before their definition.
         final TypeDefContext definition = typeDefinitionMap.remove(name);
         if (definition != null) {
-            final Type type = parseType(definition.type());
-            final Type oldType = typeMap.putIfAbsent(name, type);
+            final ParsedType type = parseTypeLayout(definition.type());
+            final ParsedType oldType = typeMap.putIfAbsent(name, type);
             check(oldType == null, "Type redefinition in %s.", definition);
         }
         parsedType = typeMap.get(name);
@@ -1278,12 +1308,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    private Type parseIntType(TerminalNode t) {
+    private IntegerType parseIntType(TerminalNode t) {
         assert t.getText().startsWith("i");
         return getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
     }
 
-    private Type parseFloatType(FloatKindContext ctx) {
+    private FloatType parseFloatType(FloatKindContext ctx) {
         return switch (ctx.getText()) {
             case "half" -> types.getIEEEHalfType();
             case "float" -> types.getIEEESingleType();
@@ -1293,10 +1323,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private Type parseType(ParserRuleContext context) {
+        return parseTypeLayout(context).type();
+    }
+
+    private ParsedType parseTypeLayout(ParserRuleContext context) {
         Expression o = context.accept(this);
         assert o == null : "Unexpected return value, expected type.";
         checkSupport(parsedType != null, "Unsupported type in %s.", context);
-        Type type = parsedType != null ? parsedType : types.getVoidType();
+        final ParsedType type = parsedType;
         parsedType = null;
         return type;
     }
@@ -1665,5 +1699,203 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return Optional.empty();
         }
     }
+
+    private void checkPointerAddressSpace(AddrSpaceContext ctx) {
+        final int space = ctx == null ? 0 : Integer.parseInt(ctx.IntLit().getText());
+        if (dataLayout.pointerSizes.getOrDefault(space, dataLayout.pointerSize) != dataLayout.pointerSize) {
+            throw new ParsingException("Different pointer sizes across address spaces are unsupported: address space " + space);
+        }
+        final int indexSize = dataLayout.pointerIndexSizes.getOrDefault(space,
+                dataLayout.pointerIndexSizes.getOrDefault(0, dataLayout.pointerSize));
+        if (indexSize != dataLayout.pointerSize) {
+            throw new ParsingException("Pointer index widths different from pointer widths are unsupported: address space " + space);
+        }
+    }
+
+    private ParsedType pointerTypeLayout(AddrSpaceContext ctx) {
+        final int space = ctx == null ? 0 : Integer.parseInt(ctx.IntLit().getText());
+        return new ParsedType(pointerType, dataLayout.getPointerAlignment(space));
+    }
+
+    private long getAllocationAlignment(ParsedType type, AlignContext explicitAlignment) {
+        if (explicitAlignment == null) {
+            return type.alignment().preferred();
+        }
+        final BigInteger value = parseBigInteger(explicitAlignment.IntLit());
+        if (value.signum() == 0) {
+            return type.alignment().preferred();
+        }
+        check(value.signum() > 0 && value.bitCount() == 1 && value.bitLength() <= 33,
+                "Unsupported allocation alignment in %s.", explicitAlignment);
+        check(value.bitLength() <= dataLayout.pointerSize,
+                "Allocation alignment cannot be represented by the program's pointer type in %s.", explicitAlignment);
+        return value.longValueExact();
+    }
+
+    // Keep layout alongside the parsed type: pointers and integers can have the same
+    // internal representation while LLVM assigns them different ABI alignments.
+    private record ParsedType(Type type, Alignment alignment) {
+        private int allocationSize() {
+            final int size = TypeFactory.getInstance().getMemorySizeInBytes(type);
+            return size < 0 ? size : alignTo(size, alignment.abi());
+        }
+
+        private Type allocationType() {
+            final TypeFactory types = TypeFactory.getInstance();
+            final int size = allocationSize();
+            return size == types.getMemorySizeInBytes(type) ? type : types.getArrayType(type, 1, size);
+        }
+    }
+
+    private static int alignTo(int size, int alignment) {
+        return Math.addExact(size, Math.floorMod(-size, alignment));
+    }
+
+    private static final class DataLayout extends LLVMIRBaseVisitor<Void> {
+
+        private int pointerSize = 64;
+        private final Map<Integer, Integer> pointerSizes = new HashMap<>();
+        private final Map<Integer, Integer> pointerIndexSizes = new HashMap<>();
+        private boolean bigEndian;
+        // Integer widths need ordered lookup: use an exact match, then the next larger width, then the largest.
+        private final NavigableMap<Integer, Alignment> integerAlignments = new TreeMap<>(Map.of(
+                8, new Alignment(1, 1),
+                16, new Alignment(2, 2),
+                32, new Alignment(4, 4),
+                64, new Alignment(4, 8)));
+        // Floating-point widths use exact lookup, falling back to natural alignment; key order is unnecessary.
+        private final Map<Integer, Alignment> floatAlignments = new HashMap<>(Map.of(
+                16, new Alignment(2, 2),
+                32, new Alignment(4, 4),
+                64, new Alignment(8, 8),
+                128, new Alignment(16, 16)));
+        // Pointer address spaces use exact lookup, falling back to address space 0; key order is unnecessary.
+        private final Map<Integer, Alignment> pointerAlignments = new HashMap<>(Map.of(
+                0, new Alignment(8, 8)));
+        private Alignment aggregateAlignment = new Alignment(1, 8);
+
+        private ParsedType valueType(Type type) {
+            if (type instanceof IntegerType integer) {
+                return new ParsedType(type, getIntegerAlignment(integer.getBitWidth()));
+            }
+            throw new ParsingException("Unsupported LLVM value layout: %s", type);
+        }
+
+        private ParsedType structType(List<ParsedType> fields, boolean packed) {
+            final List<Integer> offsets = new ArrayList<>();
+            int offset = 0;
+            int abi = packed ? 1 : aggregateAlignment.abi();
+            for (ParsedType field : fields) {
+                final int alignment = packed ? 1 : field.alignment().abi();
+                abi = Math.max(abi, alignment);
+                offset = alignTo(offset, alignment);
+                offsets.add(offset);
+                offset = Math.addExact(offset, field.allocationSize());
+            }
+            final Type type = TypeFactory.getInstance().getAggregateType(
+                    fields.stream().map(ParsedType::type).toList(), offsets, abi,
+                    fields.stream().anyMatch(f -> f.allocationSize() < 0) ? -1 : alignTo(offset, abi));
+            return new ParsedType(type, new Alignment(abi, Math.max(abi, aggregateAlignment.preferred())));
+        }
+
+        private Alignment getPointerAlignment(int addressSpace) {
+            return pointerAlignments.getOrDefault(addressSpace, pointerAlignments.get(0));
+        }
+
+        private Alignment getIntegerAlignment(int width) {
+            final Map.Entry<Integer, Alignment> entry = integerAlignments.ceilingEntry(width);
+            return (entry != null ? entry : integerAlignments.lastEntry()).getValue();
+        }
+
+        private Alignment getFloatAlignment(int width) {
+            final Alignment alignment = floatAlignments.get(width);
+            if (alignment != null) {
+                return alignment;
+            }
+            // LLVM falls back to the smallest power of two at least as large as the type's size in bytes
+            // when no floating-point alignment is specified (e.g., 80 bits -> 10 bytes -> 16-byte alignment).
+            // See DataLayout::getAlignment: https://llvm.org/doxygen/DataLayout_8cpp_source.html
+            final int sizeInBytes = (width + 7) / 8;
+            final int naturalAlignment = Integer.highestOneBit(sizeInBytes - 1) << 1;
+            return new Alignment(naturalAlignment, naturalAlignment);
+        }
+
+        @Override
+        public Void visitEndianness(EndiannessContext ctx) {
+            bigEndian = ctx.order.getType() == LLVMIR.DataLayoutBigEndian;
+            return null;
+        }
+
+        @Override
+        public Void visitPointerLayout(PointerLayoutContext ctx) {
+            final int addressSpace = ctx.addressSpace == null ? 0 : parseInt(ctx.addressSpace);
+            final int size = parseInt(ctx.size);
+            check(size > 0, "Pointer size must be positive");
+            check(addressSpace < (1 << 24), "Pointer address space exceeds LLVM's limit");
+            final int indexSize = ctx.indexSize == null ? size : parseInt(ctx.indexSize);
+            check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
+            pointerAlignments.put(addressSpace, parseAlignment(ctx.alignment(), false));
+            pointerSizes.put(addressSpace, size);
+            pointerIndexSizes.put(addressSpace, indexSize);
+            if (addressSpace == 0) {
+                pointerSize = size;
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitIntegerLayout(IntegerLayoutContext ctx) {
+            final int width = parseInt(ctx.width);
+            check(width > 0, "Integer width must be positive");
+            final Alignment alignment = parseAlignment(ctx.alignment(), false);
+            check(width != 8 || alignment.abi() == 1, "i8 must be byte-aligned");
+            integerAlignments.put(width, alignment);
+            return null;
+        }
+
+        @Override
+        public Void visitFloatLayout(FloatLayoutContext ctx) {
+            final int width = parseInt(ctx.width);
+            check(width > 0, "Floating-point width must be positive");
+            floatAlignments.put(width, parseAlignment(ctx.alignment(), false));
+            return null;
+        }
+
+        @Override
+        public Void visitAggregateLayout(AggregateLayoutContext ctx) {
+            aggregateAlignment = parseAlignment(ctx.alignment(), true);
+            return null;
+        }
+
+        private int parseInt(Token token) {
+            try {
+                return Integer.parseInt(token.getText());
+            } catch (NumberFormatException e) {
+                throw new ParsingException("Data-layout value '%s' exceeds the supported range", token.getText());
+            }
+        }
+
+        private Alignment parseAlignment(AlignmentContext ctx, boolean aggregate) {
+            final int abi = parseInt(ctx.abi);
+            final int preferred = ctx.preferred == null ? abi : parseInt(ctx.preferred);
+            check(validAlignment(abi, aggregate) && validAlignment(preferred, aggregate),
+                    "Alignment must be a power of two in bits, at least one byte");
+            check(preferred >= abi, "Preferred alignment is smaller than ABI alignment");
+            return new Alignment(Math.max(1, abi / 8), Math.max(1, preferred / 8));
+        }
+
+        private boolean validAlignment(int bits, boolean aggregate) {
+            return aggregate && bits == 0 || bits >= 8 && bits < (1 << 16) && (bits & (bits - 1)) == 0;
+        }
+
+        private void check(boolean condition, String message) {
+            if (!condition) {
+                throw new ParsingException(message);
+            }
+        }
+    }
+
+    // Both alignment values are in bytes.
+    private record Alignment(int abi, int preferred) { }
 
 }

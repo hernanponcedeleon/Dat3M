@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TupleType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
@@ -200,6 +201,8 @@ public class IREvaluator implements AutoCloseable {
                     .map(field -> getDummyModelOfType(field.type()))
                     .toList()
             );
+        } else if (type instanceof TupleType tupleType) {
+            return new TupleValue(tupleType.getFields().stream().map(this::getDummyModelOfType).toList());
         } else {
             throw new UnsupportedOperationException("Dummy model for type " + type + " is not implemented");
         }

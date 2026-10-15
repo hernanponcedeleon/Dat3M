@@ -7,6 +7,9 @@ public record TypeOffset(Type type, int offset) {
     private static final TypeFactory types = TypeFactory.getInstance();
 
     public static TypeOffset of(Type type, int index) {
+        if (type instanceof TupleType) {
+            throw new UnsupportedOperationException("Tuples have no memory offsets: " + type);
+        }
         if (index == 0) {
             return new TypeOffset(type, 0);
         }

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -114,7 +113,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         }
         final Expression exception = event instanceof CondJump j ? j.getGuard()
                 : event instanceof Local e && !liveRegisters.contains(e.getResultRegister()) ? e.getExpr() : null;
-        final var collector = new ExpressionVisitor<Expression>() {
+        final var collector = new ExpressionInspector() {
             @Override
             public Expression visitExpression(Expression x) {
                 if (!x.equals(exception)) {
@@ -123,7 +122,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
                 return x;
             }
         };
-        reader.transformExpressions(collector);
+        reader.inspectExpressions(collector);
         return expressions;
     }
 

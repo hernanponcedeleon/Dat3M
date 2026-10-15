@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ExpressionHelper {
@@ -40,6 +42,9 @@ public class ExpressionHelper {
             checkArgument(index < aggType.getFields().size(),
                     "Index %s out of bounds for type %s.",
                     index, aggregateType);
+        } else if (aggregateType instanceof TupleType tupleType) {
+            checkArgument(index < tupleType.getFields().size(),
+                    "Index %s out of bounds for type %s.", index, aggregateType);
         } else if (aggregateType instanceof ArrayType arrayType) {
             checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
                     "Index %s out of bounds for type %s.",
@@ -51,8 +56,22 @@ public class ExpressionHelper {
         return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType;
     }
 
+    public static boolean isAggregate(Type type) {
+        return type instanceof AggregateType || type instanceof TupleType;
+    }
+
+    public static List<Type> getFieldTypes(Type type) {
+        if (type instanceof AggregateType aggregateType) {
+            return aggregateType.getFields().stream().map(TypeOffset::type).toList();
+        }
+        if (type instanceof TupleType tupleType) {
+            return tupleType.getFields();
+        }
+        throw new IllegalArgumentException("Non-aggregate type " + type);
+    }
+
     public static boolean isAggregateLike(Type type) {
-        return type instanceof AggregateType || type instanceof ArrayType;
+        return type instanceof AggregateType || type instanceof TupleType || type instanceof ArrayType;
     }
 
     public static boolean isAggregateLike(Expression expr) {
@@ -64,6 +83,8 @@ public class ExpressionHelper {
             checkInbounds(type, index);
             if (type instanceof AggregateType aggregateType) {
                 type = aggregateType.getFields().get(index).type();
+            } else if (type instanceof TupleType tupleType) {
+                type = tupleType.getFields().get(index);
             } else if (type instanceof ArrayType arrayType) {
                 type = arrayType.getElementType();
             } else {

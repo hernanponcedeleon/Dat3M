@@ -1,17 +1,23 @@
 package com.dat3m.dartagnan.expression.type;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import com.dat3m.dartagnan.expression.Type;
 import com.google.common.collect.ImmutableList;
 
-public class AggregateType implements Type {
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+/** A memory aggregate with field offsets, alignment, and size fixed by its frontend. */
+public final class AggregateType implements Type {
 
     private final ImmutableList<TypeOffset> fields;
+    private final int alignment;
+    private final int size;
 
-    AggregateType(List<? extends Type> fields, List<Integer> offsets) {
+    AggregateType(List<? extends Type> fields, List<Integer> offsets, int alignment, int size) {
+        this.alignment = alignment;
+        this.size = size;
         this.fields = IntStream.range(0, fields.size())
                 .mapToObj(i -> new TypeOffset(fields.get(i), offsets.get(i)))
                 .collect(ImmutableList.toImmutableList());
@@ -21,14 +27,23 @@ public class AggregateType implements Type {
         return fields;
     }
 
+    public int getAlignment() {
+        return alignment;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
     @Override
     public int hashCode() {
-        return fields.hashCode();
+        return Objects.hash(fields, alignment, size);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return this == obj || obj instanceof AggregateType o && fields.equals(o.fields);
+        return this == obj || obj instanceof AggregateType o
+                && alignment == o.alignment && size == o.size && fields.equals(o.fields);
     }
 
     @Override

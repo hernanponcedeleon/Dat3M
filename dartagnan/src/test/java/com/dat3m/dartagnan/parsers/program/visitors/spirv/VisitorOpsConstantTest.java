@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.program.memory.Memory;
 import org.junit.Test;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import static org.junit.Assert.fail;
 public class VisitorOpsConstantTest {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private static final IntegerType archType = Memory.getDefaultArchType();
     private final MockProgramBuilder builder = new MockProgramBuilder();
 
     @Test

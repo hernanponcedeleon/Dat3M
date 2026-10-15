@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -61,6 +62,10 @@ public class ProgramBuilder {
 
     public ThreadGrid getThreadGrid() {
         return grid;
+    }
+
+    public IntegerType getArchType() {
+        return program.getArchType();
     }
 
     public ControlFlowBuilder getControlFlowBuilder() {

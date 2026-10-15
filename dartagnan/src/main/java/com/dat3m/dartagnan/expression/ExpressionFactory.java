@@ -389,8 +389,6 @@ public final class ExpressionFactory {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
-                "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
         "Stride cannot be smaller than indexing type");
         return new GEPExpr(indexingType, base, offsets, stride);
@@ -477,12 +475,9 @@ public final class ExpressionFactory {
                 zeroes.add(zero);
             }
             return makeArray(arrayType, zeroes);
-        } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
-            for (TypeOffset typeOffset : structType.getFields()) {
-                zeroes.add(makeGeneralZero(typeOffset.type()));
-            }
-            return makeConstruct(structType, zeroes);
+        } else if (ExpressionHelper.isAggregate(type)) {
+            List<Expression> zeroes = ExpressionHelper.getFieldTypes(type).stream().map(this::makeGeneralZero).toList();
+            return makeConstruct(type, zeroes);
         } else if (type instanceof IntegerType intType) {
             return makeZero(intType);
         } else if (type instanceof BooleanType) {
@@ -547,7 +542,7 @@ public final class ExpressionFactory {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } else if (type instanceof FloatType) {
             return makeFloatCmp(leftOperand, FloatCmpOp.NEQ, rightOperand);
-        } else if (type instanceof AggregateType) {
+        } else if (ExpressionHelper.isAggregate(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);

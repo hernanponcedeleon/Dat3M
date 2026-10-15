@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.utils.UniqueIdGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -61,7 +61,7 @@ public class Function implements LeafExpression {
 
     @Override
     public Type getType() {
-        return TypeFactory.getInstance().getArchType();
+        return program != null ? program.getPointerType() : Memory.getDefaultArchType();
     }
 
     @Override
