@@ -45,27 +45,20 @@ public class HelperTags {
         if (tagList.size() != tagSet.size()) {
             throwDuplicatesException(operands);
         }
+        int expectedScopeCount = (tagSet.contains(MEM_AVAILABLE) ? 1 : 0)
+                + (tagSet.contains(MEM_VISIBLE) ? 1 : 0);
+        if (paramIds.size() != expectedScopeCount) {
+            throwIllegalParametersException(operands);
+        }
         int i = 0;
-        for (String tag : List.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_VISIBLE)) {
+        for (String tag : List.of(MEM_AVAILABLE, MEM_VISIBLE)) {
             if (tagSet.contains(tag)) {
-                if (paramIds.size() <= i) {
-                    throwIllegalParametersException(operands);
-                }
-                String scopeTag = HelperTags.parseScope(paramIds.get(i), paramsValues.get(i));
-                tagSet.add(scopeTag);
+                tagSet.add(HelperTags.parseScope(paramIds.get(i), paramsValues.get(i)));
                 i++;
             }
         }
-        if (i != paramsValues.size()) {
-            throwIllegalParametersException(operands);
-        }
         if (!tagSet.contains(MEM_NON_PRIVATE) && (tagSet.contains(Tag.Spirv.MEM_AVAILABLE) || tagSet.contains(MEM_VISIBLE))) {
             throw new ParsingException("Missing NonPrivatePointer bit in memory operands '%s'",
-                    String.join("|", operands));
-        }
-        // TODO: Implementation: this is a legal combination for OpCopyMemory and OpCopyMemorySized
-        if (tagSet.contains(MEM_AVAILABLE) && tagSet.contains(MEM_VISIBLE)) {
-            throw new ParsingException("Unsupported combination of memory operands '%s'",
                     String.join("|", operands));
         }
         return tagSet;
