@@ -3,13 +3,16 @@ package com.dat3m.dartagnan.program.memory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
+import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.*;
 
@@ -19,11 +22,15 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<Type> {
+public class MemoryObject extends MetadataCarrierBase<MemoryObject> implements LeafExpression {
+
+    // Source-level variable name associated with this memory object.
+    public record VariableName(String value) implements Metadata { }
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
     private final int id;
+    private final Type type;
     private final Expression size;
     private final Expression alignment;
     private final Alloc allocationSite;
@@ -35,7 +42,6 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
     MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
-        super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
         Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);
         Preconditions.checkArgument(alignment.getType() == size.getType(),
@@ -43,10 +49,17 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         Preconditions.checkArgument(types.getMemorySizeInBytes(size.getType()) == types.getMemorySizeInBytes(ptrType),
                 "Size expression %s should be of a type whose size matches the pointer type %s.", size, ptrType);
         this.id = id;
+        this.type = ptrType;
         this.alignment = alignment;
         this.size = size;
         this.allocationSite = allocationSite;
     }
+
+    @Override
+    public Type getType() { return type; }
+
+    @Override
+    public ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
 
     public boolean hasName() { return name != null; }
     public String getName() { return name; }

@@ -1,6 +1,11 @@
-// clspv iriw.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-opt --upgrade-memory-model a.spv -o a.spv
-// spirv-dis a.spv > iriw.spvasm
+//; @Input: %x = {{0}}
+//; @Input: %y = {{0}}
+//; @Input: %r0 = {{0}}
+//; @Input: %r1 = {{0}}
+//; @Input: %r2 = {{0}}
+//; @Input: %r3 = {{0}}
+//; @Output: exists (%r0[0][0] == 1 and %r1[0][0] == 0 and %r2[0][0] == 1 and %r3[0][0] == 0)
+//; @Config: 4, 1, 1
 
 __kernel void test(global atomic_uint* x, global atomic_uint* y, global uint* r0, global uint* r1, global uint* r2, global uint* r3) {
     if (get_local_id(0) == 0) {

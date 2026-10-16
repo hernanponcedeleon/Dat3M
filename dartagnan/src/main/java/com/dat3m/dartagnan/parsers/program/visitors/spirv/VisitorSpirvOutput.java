@@ -123,7 +123,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             return expressions.parseValue(ctx.initBaseValue().getText(), types.getArchType());
         }
         String name = ctx.varName().getText();
-        Expression expression = builder.getExpression(name);
+        Expression expression = builder.getExpressionFromHeader(name);
         if (expression instanceof Register && expression.getType() instanceof ScopedPointerType) {
             expression = builder.getExpression(HelperInputs.castPointerId(name));
         }
