@@ -150,68 +150,73 @@ public interface ModifierTrait <Modifier> {
             return leftDirectedTowardsRight && rightDirectedTowardsLeft && offset % divisor == 0;
         }
         @Override
-        public boolean mustInclude(Md left, Md right) {
-            int offset = right.offset - left.offset;
-            // Case where `left` is functional.
-            if (left.alignment.isEmpty()) {
-                return right.alignment.isEmpty() && offset == 0;
+        public boolean mustInclude(Md larger, Md smaller) {
+            final int offset = smaller.offset - larger.offset;
+            // Case where `larger` is functional.
+            if (larger.alignment.isEmpty()) {
+                return smaller.alignment.isEmpty() && offset == 0;
             }
-            int leftAlignment = singleAlignment(left.alignment);
-            int rightAlignment = singleAlignment(right.alignment);
-            // Case where `left` has no lower bound.
-            // Removing any lower bound on `right` should have no effect on the return value.
-            if (leftAlignment < 0) {
-                int l = -leftAlignment;
-                int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
+            final int alignmentLarger = singleAlignment(larger.alignment);
+            final int alignmentSmaller = singleAlignment(smaller.alignment);
+            // Case where `larger` has no lower bound.
+            // Removing any lower bound on `smaller` should have no effect on the return value.
+            if (alignmentLarger < 0) {
+                final int l = -alignmentLarger;
+                final int r = alignmentSmaller < 0 ? -alignmentSmaller : reduceGCD(smaller.alignment);
                 return offset % l == 0 && r % l == 0;
             }
-            // From here on, `left` has a lower bound.
-            // Cases where `right` has no lower bound or starts lower than `left`.
-            if (rightAlignment < 0 || offset < 0) {
+            // From here on, `larger` has a lower bound.
+            // Cases where `smaller` has no lower bound or starts lower than `larger`.
+            if (alignmentSmaller < 0 || offset < 0) {
                 return false;
             }
-            // Fast path where `left` has only one dynamic index.
-            if (leftAlignment > 0) {
-                for (final Integer a : right.alignment) {
-                    if (a % leftAlignment != 0) {
+            // Fast path where `larger` has only one dynamic index.
+            if (alignmentLarger > 0) {
+                for (final int a : smaller.alignment) {
+                    if (a % alignmentLarger != 0) {
                         return false;
                     }
                 }
-                return offset % leftAlignment == 0;
+                return offset % alignmentLarger == 0;
             }
             // Slow path.
-            // Case where `left` has multiple periods.
+            // Case where `larger` has multiple periods.
             // Inclusion between linear sets is decidable, but complex.
             // Instead, consider the weaker condition:
-            // If `left.alignment` contains `offset` and all of `right.alignment`,
-            // then `left` includes `right`.
+            // If `larger.alignment` contains `offset` and all of `smaller.alignment`,
+            // then `larger` includes `smaller`.
             // The weaker condition fails for e.g. `Md[offset=0, alignment=[3,4,5]], Md[offset=3, alignment=[2]]`.
-            final int gcd = IntMath.gcd(reduceGCD(left.alignment),
-                    IntMath.gcd(reduceGCD(right.alignment), offset));
+            final int gcd = IntMath.gcd(reduceGCD(larger.alignment),
+                    IntMath.gcd(reduceGCD(smaller.alignment), offset));
             assert gcd != 0;
             // Dynamic programming:
-            // Mark all integers that are linear combinations of `left.alignment`
-            // and are not greater than `offset` and all of `right.alignment`.
-            int max = offset;
-            for (final Integer i : right.alignment) {
-                max = Math.max(max, i);
+            // Mark all integers that are linear combinations of `larger.alignment`
+            // and are not greater than `offset` and all of `smaller.alignment`.
+            int bound = offset;
+            for (final int a : smaller.alignment) {
+                bound = Math.max(bound, a);
             }
-            final var mem = new boolean[max / gcd + 1];
-            mem[0] = true;
-            for (int j = 1; j < mem.length; j++) {
-                for (final Integer i : left.alignment) {
-                    if (j - i/gcd >= 0 && mem[j - i/gcd]) {
-                        mem[j] = true;
+            if (bound / gcd >= 1 << 16) {
+                // Give up before the task gets too expensive.
+                // Also avoid integer overflow.
+                return false;
+            }
+            final var contained = new boolean[bound / gcd + 1];
+            contained[0] = true;
+            for (int j = 1; j < contained.length; j++) {
+                for (final int a : larger.alignment) {
+                    if (j - a / gcd >= 0 && contained[j - a / gcd]) {
+                        contained[j] = true;
                         break;
                     }
                 }
             }
-            for (final Integer j : right.alignment) {
-                if (!mem[j/gcd]) {
+            for (final int a : smaller.alignment) {
+                if (!contained[a / gcd]) {
                     return false;
                 }
             }
-            return mem[offset / gcd];
+            return contained[offset / gcd];
         }
         @Override
         public Md constantModifier(int offset) {
@@ -256,11 +261,11 @@ public interface ModifierTrait <Modifier> {
             }
             // Negative values are unrestricted and compose always.
             // Therefore, each list shall either contain a single negative value, or only positive values.
-            int leftAlignment = singleAlignment(left);
-            int rightAlignment = singleAlignment(right);
+            final int leftAlignment = singleAlignment(left);
+            final int rightAlignment = singleAlignment(right);
             if (leftAlignment < 0 || rightAlignment < 0) {
                 int alignment = leftAlignment < 0 ? -leftAlignment : -rightAlignment;
-                for (Integer other : leftAlignment < 0 ? right : left) {
+                for (final Integer other : leftAlignment < 0 ? right : left) {
                     alignment = IntMath.gcd(alignment, Math.abs(other));
                 }
                 return List.of(-alignment);

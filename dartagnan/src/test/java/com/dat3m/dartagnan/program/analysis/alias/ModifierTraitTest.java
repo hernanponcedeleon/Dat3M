@@ -24,6 +24,16 @@ public class ModifierTraitTest {
     }
 
     @Test
+    public void largeOffsetInclusionDoesNotCrash() {
+        final ModifierTrait.MdLinear trait = new ModifierTrait.MdLinear();
+        // Either answer is permitted: mustInclude may conservatively return false.
+        // This test only requires the check to complete without an exception.
+        trait.mustInclude(
+                new ModifierTrait.Md(0, List.of(2, 3)),
+                new ModifierTrait.Md(Integer.MAX_VALUE, List.of()));
+    }
+
+    @Test
     public void checkFiniteSets() {
         final var t = new ModifierTrait.Offsets();
         checkBasicProperties(t);
