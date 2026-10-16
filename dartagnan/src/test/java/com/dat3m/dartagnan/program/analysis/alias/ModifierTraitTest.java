@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import org.junit.Test;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,13 +13,13 @@ public class ModifierTraitTest {
     @Test
     public void checkUnit() {
         final var t = new ModifierTrait.VoidTrait();
-        final Void unit = t.constantModifier(0);
+        final Void unit = t.constantModifier(BigInteger.ZERO);
         assertFalse(t.isFunctional(unit));
         assertTrue(t.isIdentity(unit));
         assertTrue(t.mayOverlap(unit, unit));
         assertTrue(t.mustInclude(unit, unit));
-        assertEquals(unit, t.constantModifier(1));
-        assertEquals(unit, t.relaxedModifier(1));
+        assertEquals(unit, t.constantModifier(BigInteger.ONE));
+        assertEquals(unit, t.relaxedModifier(BigInteger.ONE));
         assertEquals(unit, t.compose(unit, unit));
         assertEquals(unit, t.accelerate(unit));
     }
@@ -80,8 +81,8 @@ public class ModifierTraitTest {
     }
 
     private <T> void checkBasicProperties(ModifierTrait<T> t) {
-        final T id = t.constantModifier(0);
-        final T all = t.relaxedModifier(1);
+        final T id = t.constantModifier(BigInteger.ZERO);
+        final T all = t.relaxedModifier(BigInteger.ONE);
         assertEquals(id, t.compose(id, id));
         assertEquals(id, t.accelerate(id));
         assertTrue(t.mustInclude(id, id));
@@ -89,8 +90,8 @@ public class ModifierTraitTest {
         checkBasicPropertiesForInstance(t, all);
         assertTrue(t.mustInclude(all, id));
         for (int i = 16; i < 1024; i += 16) {
-            final T positive = t.constantModifier(i);
-            final T negative = t.constantModifier(-i);
+            final T positive = t.constantModifier(BigInteger.valueOf(i));
+            final T negative = t.constantModifier(BigInteger.valueOf(-i));
             checkBasicPropertiesForInstance(t, positive);
             if (Objects.equals(positive, negative)) {
                 assertFalse(t.isFunctional(positive));
@@ -103,7 +104,7 @@ public class ModifierTraitTest {
             checkOverlap(false, t, positive, negative);
             checkOverlap(true, t, all, positive);
             checkOverlap(true, t, all, negative);
-            assertEquals(positive, t.constantModifier(i));
+            assertEquals(positive, t.constantModifier(BigInteger.valueOf(i)));
             assertEquals(id, t.compose(positive, negative));
             assertEquals(id, t.compose(negative, positive));
             assertEquals(positive, t.compose(positive, id));

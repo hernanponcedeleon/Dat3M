@@ -167,8 +167,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private InclusionBasedPointerAnalysis(ModifierTrait<Modifier> t, Program p, ReachingDefinitionsAnalysis d) {
         trait = t;
-        IDENTITY = t.constantModifier(0);
-        RELAXED = t.relaxedModifier(1);
+        IDENTITY = t.constantModifier(BigInteger.ZERO);
+        RELAXED = t.relaxedModifier(BigInteger.ONE);
         dependency = d;
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
@@ -287,9 +287,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     }
 
     private void fetchMixedOffsets(Set<Integer> out, Modifier modifier0, int bytes0, Modifier modifier1, int bytes1) {
-        final Modifier next = compose(modifier1, constantModifier(bytes1));
+        final Modifier next = compose(modifier1, constantModifier(BigInteger.valueOf(bytes1)));
         for (int i = 1; i < bytes0; i++) {
-            final Modifier offset = compose(modifier0, constantModifier(i));
+            final Modifier offset = compose(modifier0, constantModifier(BigInteger.valueOf(i)));
             if (trait.mayOverlap(offset, modifier1) || trait.mayOverlap(offset, next)) {
                 out.add(i);
             }
@@ -751,12 +751,13 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
     }
 
-    private Modifier constantModifier(int offset) {
-        return offset == 0 ? IDENTITY : trait.constantModifier(offset);
+    private Modifier constantModifier(BigInteger offset) {
+        return offset.equals(BigInteger.ZERO) ? IDENTITY : trait.constantModifier(offset);
     }
 
-    private Modifier relaxedModifier(int alignment) {
-        return alignment == 0 ? IDENTITY : Math.abs(alignment) == 1 ? RELAXED : trait.relaxedModifier(alignment);
+    private Modifier relaxedModifier(BigInteger alignment) {
+        return alignment.equals(BigInteger.ZERO) ? IDENTITY
+                : alignment.abs().equals(BigInteger.ONE) ? RELAXED : trait.relaxedModifier(alignment);
     }
 
     private Modifier compose(Modifier left, Modifier right) {
@@ -866,14 +867,14 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             return edges;
         }
 
-        record ExprFlip(Expression x, int factor) {}
+        record ExprFlip(Expression x, BigInteger factor) {}
 
         @Override
         public List<IncludeEdge<Modifier>> visitIntBinaryExpression(IntBinaryExpr x) {
             BigInteger offset = BigInteger.ZERO;
             final List<ExprFlip> operands = new ArrayList<>();
             final Stack<ExprFlip> stack = new Stack<>();
-            if (!matchLinearExpression(new ExprFlip(x, 1), stack)) {
+            if (!matchLinearExpression(new ExprFlip(x, BigInteger.ONE), stack)) {
                 return visitExpression(x);
             }
             while (!stack.isEmpty()) {
@@ -882,14 +883,14 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     continue;
                 }
                 if (operand.x instanceof IntLiteral literal) {
-                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                    offset = offset.add(literal.getValue().multiply(operand.factor));
                 } else {
                     operands.add(operand);
                 }
             }
             final List<IncludeEdge<Modifier>> result = new ArrayList<>();
-            final Modifier offsetModifier = constantModifier(offset.intValue());
-            if (operands.stream().noneMatch(o -> o.factor == 1)) {
+            final Modifier offsetModifier = constantModifier(offset);
+            if (operands.stream().noneMatch(o -> o.factor.equals(BigInteger.ONE))) {
                 for (ExprFlip operand : operands) {
                     result.addAll(visitExpression(operand.x));
                 }
@@ -897,7 +898,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
             for (int i = 0; i < operands.size(); i++) {
                 final ExprFlip operand = operands.get(i);
-                Modifier alignment = operand.factor == 1 ? IDENTITY : RELAXED;
+                Modifier alignment = operand.factor.equals(BigInteger.ONE) ? IDENTITY : RELAXED;
                 for (int j = 0; j < operands.size(); j++) {
                     alignment = j == i ? alignment : compose(alignment, relaxedModifier(operands.get(j).factor));
                 }
@@ -916,15 +917,15 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             final boolean sub = operand.x.getKind().equals(IntBinaryOp.SUB);
             final boolean mul = operand.x.getKind().equals(IntBinaryOp.MUL);
             if (add || sub) {
-                stack.push(new ExprFlip(right, operand.factor * (add ? 1 : -1)));
+                stack.push(new ExprFlip(right, add ? operand.factor : operand.factor.negate()));
                 stack.push(new ExprFlip(left, operand.factor));
                 return true;
             } else if (mul) {
                 final IntLiteral leftLiteral = left instanceof IntLiteral l ? l : null;
                 final IntLiteral rightLiteral = right instanceof IntLiteral l ? l : null;
                 if (leftLiteral != null || rightLiteral != null) {
-                    final int factor = (leftLiteral != null ? leftLiteral : rightLiteral).getValueAsInt();
-                    stack.push(new ExprFlip(leftLiteral != null ? right : left, operand.factor * factor));
+                    final BigInteger factor = (leftLiteral != null ? leftLiteral : rightLiteral).getValue();
+                    stack.push(new ExprFlip(leftLiteral != null ? right : left, operand.factor.multiply(factor)));
                     return true;
                 }
             }
