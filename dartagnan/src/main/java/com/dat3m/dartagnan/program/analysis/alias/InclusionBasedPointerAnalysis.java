@@ -897,15 +897,13 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
             for (int i = 0; i < operands.size(); i++) {
                 final ExprFlip operand = operands.get(i);
-                if (operand.factor != 1) {
-                    continue;
-                }
-                Modifier alignment = IDENTITY;
+                Modifier alignment = operand.factor == 1 ? IDENTITY : RELAXED;
                 for (int j = 0; j < operands.size(); j++) {
                     alignment = j == i ? alignment : compose(alignment, relaxedModifier(operands.get(j).factor));
                 }
+                final Modifier aligned = compose(offsetModifier, alignment);
                 for (IncludeEdge<Modifier> subResult : operand.x.accept(this)) {
-                    addInto(result, compose(subResult, compose(offsetModifier, alignment)), false);
+                    addInto(result, compose(subResult, aligned), false);
                 }
             }
             return result;
