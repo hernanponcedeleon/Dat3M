@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.google.common.math.IntMath;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,10 +29,10 @@ public interface ModifierTrait <Modifier> {
     boolean mustInclude(Modifier larger, Modifier smaller);
 
     /// Describes a relation including `{ (x,y) | x + offset == y }`.
-    Modifier constantModifier(int offset);
+    Modifier constantModifier(BigInteger offset);
 
     /// Describes a relation including `{ (x,y) | exists z. x + alignment * z == y }`.
-    Modifier relaxedModifier(int alignment);
+    Modifier relaxedModifier(BigInteger alignment);
 
     /// Describes a relation including `{ (x,z) | exists y. x[first]y && y[second]z }`.
     Modifier compose(Modifier first, Modifier second);
@@ -52,8 +53,8 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Void modifier) { return true; }
         @Override public boolean mayOverlap(Void left, Void right) { return true; }
         @Override public boolean mustInclude(Void larger, Void smaller) { return true; }
-        @Override public Void constantModifier(int offset) { return null; }
-        @Override public Void relaxedModifier(int alignment) { return null; }
+        @Override public Void constantModifier(BigInteger offset) { return null; }
+        @Override public Void relaxedModifier(BigInteger alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
         @Override public Void accelerate(Void m) { return null; }
         @Override public Void shrinkToBounds(Void m, int s) { return null; }
@@ -61,16 +62,16 @@ public interface ModifierTrait <Modifier> {
 
     /// Enables field-sensitive alias analysis based on finite sets.
     /// Each non-null integer `i` describes the relation `[i]` as `{ (x,y) | x + i == y }`.
-    final class Offsets implements ModifierTrait<Integer> {
-        @Override public boolean isFunctional(Integer v) { return v != null; }
-        @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
-        @Override public boolean mayOverlap(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
-        @Override public boolean mustInclude(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
-        @Override public Integer constantModifier(int offset) { return offset; }
-        @Override public Integer relaxedModifier(int alignment) { return null; }
-        @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
-        @Override public Integer accelerate(Integer v) { return isIdentity(v) ? v : null; }
-        @Override public Integer shrinkToBounds(Integer v, int s) { return v; }
+    final class Offsets implements ModifierTrait<BigInteger> {
+        @Override public boolean isFunctional(BigInteger v) { return v != null; }
+        @Override public boolean isIdentity(BigInteger v) { return BigInteger.ZERO.equals(v); }
+        @Override public boolean mayOverlap(BigInteger l, BigInteger r) { return l == null || r == null || l.equals(r); }
+        @Override public boolean mustInclude(BigInteger larger, BigInteger smaller) { return larger == null || larger.equals(smaller); }
+        @Override public BigInteger constantModifier(BigInteger offset) { return offset; }
+        @Override public BigInteger relaxedModifier(BigInteger alignment) { return null; }
+        @Override public BigInteger compose(BigInteger l, BigInteger r) { return l == null || r == null ? null : r.add(l); }
+        @Override public BigInteger accelerate(BigInteger v) { return isIdentity(v) ? v : null; }
+        @Override public BigInteger shrinkToBounds(BigInteger v, int s) { return v; }
     }
 
     /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
@@ -101,8 +102,22 @@ public interface ModifierTrait <Modifier> {
             int r = right.alignment;
             return offset % l == 0 && r % l == 0;
         }
-        @Override public Sd constantModifier(int offset) { return new Sd(offset, 0); }
-        @Override public Sd relaxedModifier(int alignment) { return new Sd(0, Math.abs(alignment)); }
+        @Override
+        public Sd constantModifier(BigInteger offset) {
+            try {
+                return new Sd(offset.intValueExact(), 0);
+            } catch (ArithmeticException x) {
+                return new Sd(0, 1);
+            }
+        }
+        @Override
+        public Sd relaxedModifier(BigInteger alignment) {
+            try {
+                return new Sd(0, Math.abs(alignment.intValueExact()));
+            } catch (ArithmeticException x) {
+                return new Sd(0, 1);
+            }
+        }
         @Override
         public Sd compose(Sd left, Sd right) {
             return new Sd(left.offset + right.offset, IntMath.gcd(left.alignment, right.alignment));
@@ -113,7 +128,8 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Sd shrinkToBounds(Sd m, int objectSize) {
-            return m.alignment < objectSize || objectSize <= m.offset || m.offset < 0 ? m : constantModifier(m.offset);
+            return m.alignment < objectSize || objectSize <= m.offset || m.offset < 0 ? m
+                    : constantModifier(BigInteger.valueOf(m.offset));
         }
     }
 
@@ -219,12 +235,21 @@ public interface ModifierTrait <Modifier> {
             return contained[offset / gcd];
         }
         @Override
-        public Md constantModifier(int offset) {
-            return new Md(offset, List.of());
+        public Md constantModifier(BigInteger offset) {
+            try {
+                return new Md(offset.intValueExact(), List.of());
+            } catch (ArithmeticException x) {
+                return new Md(0, List.of(-1));
+            }
         }
         @Override
-        public Md relaxedModifier(int alignment) {
-            return new Md(0, alignment == 0 ? List.of() : List.of(-Math.abs(alignment)));
+        public Md relaxedModifier(BigInteger alignment) {
+            try {
+                final int a = Math.abs(alignment.intValueExact());
+                return new Md(0, a == 0 ? List.of() : List.of(-a));
+            } catch (ArithmeticException x) {
+                return new Md(0, List.of(-1));
+            }
         }
         @Override
         public Md compose(Md left, Md right) {
@@ -242,7 +267,7 @@ public interface ModifierTrait <Modifier> {
                     return modifier;
                 }
             }
-            return constantModifier(modifier.offset);
+            return constantModifier(BigInteger.valueOf(modifier.offset));
         }
         // Computes the greatest common divisor of the operands.
         private static int reduceGCD(List<Integer> alignment) {

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import org.junit.Test;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +47,7 @@ public class ModifierTraitSoundnessTest {
          * 8 + (-1) * 8 == 0. Narrowing must not discard this in-bounds address.
          */
         ModifierTrait.SdLinear trait = new ModifierTrait.SdLinear();
-        ModifierTrait.Sd base = trait.constantModifier(0);
+        ModifierTrait.Sd base = trait.constantModifier(BigInteger.ZERO);
         assertOverlapsInBounds(trait, new ModifierTrait.Sd(8, 8), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Sd(-8, 8), base, 8);
     }
@@ -87,7 +88,7 @@ public class ModifierTraitSoundnessTest {
     @Test
     public void mdLinearBoundsNarrowingMustRetainInBoundsOverlaps() {
         ModifierTrait.MdLinear trait = new ModifierTrait.MdLinear();
-        ModifierTrait.Md base = trait.constantModifier(0);
+        ModifierTrait.Md base = trait.constantModifier(BigInteger.ZERO);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(8, List.of(-8)), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(-8)), base, 8);
         assertOverlapsInBounds(trait, new ModifierTrait.Md(-8, List.of(8)), base, 8);
