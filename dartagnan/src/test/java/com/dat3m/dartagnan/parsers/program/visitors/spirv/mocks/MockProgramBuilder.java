@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.SpirvVersion;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
@@ -31,6 +32,11 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     public MockProgramBuilder(ThreadGrid grid) {
         super(grid);
+        controlFlowBuilder = new MockControlFlowBuilder(expressions);
+    }
+
+    public MockProgramBuilder(SpirvVersion spirvVersion) {
+        super(new ThreadGrid(1, 1, 1, 1, 1), spirvVersion);
         controlFlowBuilder = new MockControlFlowBuilder(expressions);
     }
 

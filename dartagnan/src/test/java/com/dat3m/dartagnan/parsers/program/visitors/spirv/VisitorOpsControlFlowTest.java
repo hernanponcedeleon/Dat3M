@@ -571,24 +571,52 @@ public class VisitorOpsControlFlowTest {
     }
 
     @Test
-    public void testOpBranchConditionalSameLabels() {
+    public void testOpBranchConditionalSameLabelsSpirv15() {
         // given
         String input = """
                 %label0 = OpLabel
                 OpBranchConditional %value %label1 %label1
                 """;
 
+        MockProgramBuilder builder = new MockProgramBuilder(new SpirvVersion(1, 5));
+        builder.mockFunctionStart(false);
+        builder.mockBoolType("%bool");
+        builder.mockUndefinedValue("%value", "%bool");
+
+        // when
+        new MockSpirvParser(input).spv().accept(new VisitorOpsControlFlow(builder));
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+        CondJump trueJump = (CondJump) events.get(1);
+        CondJump falseJump = (CondJump) events.get(2);
+        assertFalse(trueJump.isGoto());
+        assertTrue(falseJump.isGoto());
+        assertEquals("%label1", trueJump.getLabel().getName());
+        assertEquals("%label1", falseJump.getLabel().getName());
+    }
+
+    @Test
+    public void testOpBranchConditionalSameLabelsSpirv16() {
+        // given
+        String input = """
+                %label0 = OpLabel
+                OpBranchConditional %value %label1 %label1
+                """;
+
+        MockProgramBuilder builder = new MockProgramBuilder(new SpirvVersion(1, 6));
         builder.mockFunctionStart(false);
         builder.mockBoolType("%bool");
         builder.mockUndefinedValue("%value", "%bool");
 
         try {
             // when
-            visit(input);
+            new MockSpirvParser(input).spv().accept(new VisitorOpsControlFlow(builder));
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Labels of conditional branch cannot be the same", e.getMessage());
+            assertEquals("Labels of conditional branch must be different in SPIR-V 1.6 and later",
+                    e.getMessage());
         }
     }
 

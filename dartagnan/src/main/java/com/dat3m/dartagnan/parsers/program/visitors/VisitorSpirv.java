@@ -66,6 +66,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
         ThreadGrid grid = new ThreadGrid(1, 1, 1, 1, 1);
+        SpirvVersion version = SpirvVersion.parse(ctx.getStart().getInputStream().toString());
         boolean hasConfig = false;
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
             SpirvParser.ConfigHeaderContext cfgCtx = header.configHeader();
@@ -85,7 +86,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 logger.warn("Unknown header {}", unknownCtx.ModeHeader_UnknownType());
             }
         }
-        return new ProgramBuilder(grid);
+        return new ProgramBuilder(grid, version);
     }
 
     private void initializeVisitors() {

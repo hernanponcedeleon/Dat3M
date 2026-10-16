@@ -21,6 +21,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newFunctionReturn;
 
 public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
+    private static final SpirvVersion VERSION_1_6 = new SpirvVersion(1, 6);
     private static final TypeFactory types = TypeFactory.getInstance();
     private final ProgramBuilder builder;
     private final ControlFlowBuilder cfBuilder;
@@ -104,8 +105,8 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         Expression guard = builder.getExpression(ctx.condition().getText());
         String trueLabelId = ctx.trueLabel().getText();
         String falseLabelId = ctx.falseLabel().getText();
-        if (trueLabelId.equals(falseLabelId)) {
-            throw new ParsingException("Labels of conditional branch cannot be the same");
+        if (trueLabelId.equals(falseLabelId) && builder.getSpirvVersion().isAtLeast(VERSION_1_6)) {
+            throw new ParsingException("Labels of conditional branch must be different in SPIR-V 1.6 and later");
         }
         if (mergeLabelId != null) {
             if (continueLabelId != null) {
