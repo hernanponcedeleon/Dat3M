@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import org.junit.Test;
 
+import java.math.BigInteger;
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.Assert.*;
@@ -11,16 +13,25 @@ public class ModifierTraitTest {
     @Test
     public void checkUnit() {
         final var t = new ModifierTrait.VoidTrait();
-        final Void unit = t.constantModifier(0);
+        final Void unit = t.constantModifier(BigInteger.ZERO);
         assertFalse(t.isFunctional(unit));
         assertTrue(t.isIdentity(unit));
         assertTrue(t.mayOverlap(unit, unit));
         assertTrue(t.mustInclude(unit, unit));
-        assertEquals(0, t.level(unit));
-        assertEquals(unit, t.constantModifier(1));
-        assertEquals(unit, t.relaxedModifier(1));
+        assertEquals(unit, t.constantModifier(BigInteger.ONE));
+        assertEquals(unit, t.relaxedModifier(BigInteger.ONE));
         assertEquals(unit, t.compose(unit, unit));
         assertEquals(unit, t.accelerate(unit));
+    }
+
+    @Test
+    public void largeOffsetInclusionDoesNotCrash() {
+        final ModifierTrait.MdLinear trait = new ModifierTrait.MdLinear();
+        // Either answer is permitted: mustInclude may conservatively return false.
+        // This test only requires the check to complete without an exception.
+        trait.mustInclude(
+                new ModifierTrait.Md(0, List.of(2, 3)),
+                new ModifierTrait.Md(Integer.MAX_VALUE, List.of()));
     }
 
     @Test
@@ -41,19 +52,46 @@ public class ModifierTraitTest {
         checkBasicProperties(t);
     }
 
+    @Test
+    public void checkMdLinearNormalization() {
+        final var t = new ModifierTrait.MdLinear();
+
+        assertEquals(new ModifierTrait.Md(8, List.of(4, 6, 9, 10)),
+                t.compose(new ModifierTrait.Md(3, List.of(6, 10)),
+                        new ModifierTrait.Md(5, List.of(4, 9))));
+        assertEquals(new ModifierTrait.Md(0, List.of(2, 3)),
+                t.compose(new ModifierTrait.Md(0, List.of(4, 9)),
+                        new ModifierTrait.Md(0, List.of(2, 3))));
+        assertEquals(new ModifierTrait.Md(0, List.of(-2)),
+                t.compose(new ModifierTrait.Md(0, List.of(-6)),
+                        new ModifierTrait.Md(0, List.of(4, 10))));
+    }
+
+    @Test
+    public void checkMdLinearMultipleIndexesInclusion() {
+        final var t = new ModifierTrait.MdLinear();
+        final var left = new ModifierTrait.Md(0, List.of(4, 9));
+
+        // Regression: the normalization divisor omitted the left-hand alignments, so representable values such as
+        // 13 = 4 + 9 were not recognized. This was conservative, but retained redundant edges.
+        assertTrue(t.mustInclude(left, new ModifierTrait.Md(13, List.of())));
+        assertTrue(t.mustInclude(left, new ModifierTrait.Md(0, List.of(8, 18))));
+        assertFalse(t.mustInclude(left, new ModifierTrait.Md(7, List.of())));
+        assertFalse(t.mustInclude(left, new ModifierTrait.Md(0, List.of(7))));
+    }
+
     private <T> void checkBasicProperties(ModifierTrait<T> t) {
-        final T id = t.constantModifier(0);
-        final T all = t.relaxedModifier(1);
+        final T id = t.constantModifier(BigInteger.ZERO);
+        final T all = t.relaxedModifier(BigInteger.ONE);
         assertEquals(id, t.compose(id, id));
         assertEquals(id, t.accelerate(id));
-        assertTrue(t.level(all) <= t.level(id));
         assertTrue(t.mustInclude(id, id));
         assertTrue(t.mayOverlap(id, id));
         checkBasicPropertiesForInstance(t, all);
         assertTrue(t.mustInclude(all, id));
         for (int i = 16; i < 1024; i += 16) {
-            final T positive = t.constantModifier(i);
-            final T negative = t.constantModifier(-i);
+            final T positive = t.constantModifier(BigInteger.valueOf(i));
+            final T negative = t.constantModifier(BigInteger.valueOf(-i));
             checkBasicPropertiesForInstance(t, positive);
             if (Objects.equals(positive, negative)) {
                 assertFalse(t.isFunctional(positive));
@@ -66,9 +104,7 @@ public class ModifierTraitTest {
             checkOverlap(false, t, positive, negative);
             checkOverlap(true, t, all, positive);
             checkOverlap(true, t, all, negative);
-            assertTrue(t.level(all) <= t.level(positive));
-            assertTrue(t.level(all) <= t.level(negative));
-            assertEquals(positive, t.constantModifier(i));
+            assertEquals(positive, t.constantModifier(BigInteger.valueOf(i)));
             assertEquals(id, t.compose(positive, negative));
             assertEquals(id, t.compose(negative, positive));
             assertEquals(positive, t.compose(positive, id));
@@ -106,8 +142,6 @@ public class ModifierTraitTest {
             assertFalse(t.mustInclude(m, a));
             assertFalse(t.mustInclude(mm, m));
         }
-        assertTrue(t.level(a) <= t.level(m));
-        assertTrue(t.level(a) <= t.level(mm));
     }
 
     private <M> void checkOverlap(boolean expected, ModifierTrait<M> t, M l, M r) {

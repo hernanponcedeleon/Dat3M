@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.google.common.math.IntMath;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,22 +28,11 @@ public interface ModifierTrait <Modifier> {
     /// This method must not have false positives, but is allowed to have false negatives.
     boolean mustInclude(Modifier larger, Modifier smaller);
 
-    /// Estimates the *complexity* of `modifier`.
-    /// For each `l`, there should only exist finitely many `m` with `level(m) <= l`.
-    /// Ideally, `includes(larger,smaller)` implies `level(larger) < level(smaller)`.
-    /// <p>
-    /// Undetected cycles in the dynamic inclusion graph produce address sets of increasing `level`.
-    /// This may cause the analysis to never terminate.
-    /// A dynamic cycle detection mechanism triggers when values propagate between temporarily-equal address sets.
-    /// The analysis prioritises low-`level` values to guarantee that this happens eventually for each cycle.
-    /// @return Non-negative value, zero for `relaxedModifier()`.
-    int level(Modifier modifier);
-
     /// Describes a relation including `{ (x,y) | x + offset == y }`.
-    Modifier constantModifier(int offset);
+    Modifier constantModifier(BigInteger offset);
 
     /// Describes a relation including `{ (x,y) | exists z. x + alignment * z == y }`.
-    Modifier relaxedModifier(int alignment);
+    Modifier relaxedModifier(BigInteger alignment);
 
     /// Describes a relation including `{ (x,z) | exists y. x[first]y && y[second]z }`.
     Modifier compose(Modifier first, Modifier second);
@@ -63,9 +53,8 @@ public interface ModifierTrait <Modifier> {
         @Override public boolean isIdentity(Void modifier) { return true; }
         @Override public boolean mayOverlap(Void left, Void right) { return true; }
         @Override public boolean mustInclude(Void larger, Void smaller) { return true; }
-        @Override public int level(Void modifier) { return 0; }
-        @Override public Void constantModifier(int offset) { return null; }
-        @Override public Void relaxedModifier(int alignment) { return null; }
+        @Override public Void constantModifier(BigInteger offset) { return null; }
+        @Override public Void relaxedModifier(BigInteger alignment) { return null; }
         @Override public Void compose(Void l, Void r) { return null; }
         @Override public Void accelerate(Void m) { return null; }
         @Override public Void shrinkToBounds(Void m, int s) { return null; }
@@ -73,23 +62,22 @@ public interface ModifierTrait <Modifier> {
 
     /// Enables field-sensitive alias analysis based on finite sets.
     /// Each non-null integer `i` describes the relation `[i]` as `{ (x,y) | x + i == y }`.
-    final class Offsets implements ModifierTrait<Integer> {
-        @Override public boolean isFunctional(Integer v) { return v != null; }
-        @Override public boolean isIdentity(Integer v) { return v != null && v == 0; }
-        @Override public boolean mayOverlap(Integer l, Integer r) { return l == null || r == null || l.equals(r); }
-        @Override public boolean mustInclude(Integer larger, Integer smaller) { return larger == null || larger.equals(smaller); }
-        @Override public int level(Integer v) { return v == null ? 0 : Math.abs(v); }
-        @Override public Integer constantModifier(int offset) { return offset; }
-        @Override public Integer relaxedModifier(int alignment) { return null; }
-        @Override public Integer compose(Integer l, Integer r) { return l == null || r == null ? null : r + l; }
-        @Override public Integer accelerate(Integer v) { return isIdentity(v) ? v : null; }
-        @Override public Integer shrinkToBounds(Integer v, int s) { return v; }
+    final class Offsets implements ModifierTrait<BigInteger> {
+        @Override public boolean isFunctional(BigInteger v) { return v != null; }
+        @Override public boolean isIdentity(BigInteger v) { return BigInteger.ZERO.equals(v); }
+        @Override public boolean mayOverlap(BigInteger l, BigInteger r) { return l == null || r == null || l.equals(r); }
+        @Override public boolean mustInclude(BigInteger larger, BigInteger smaller) { return larger == null || larger.equals(smaller); }
+        @Override public BigInteger constantModifier(BigInteger offset) { return offset; }
+        @Override public BigInteger relaxedModifier(BigInteger alignment) { return null; }
+        @Override public BigInteger compose(BigInteger l, BigInteger r) { return l == null || r == null ? null : r.add(l); }
+        @Override public BigInteger accelerate(BigInteger v) { return isIdentity(v) ? v : null; }
+        @Override public BigInteger shrinkToBounds(BigInteger v, int s) { return v; }
     }
 
     /// Describes `{ (x,y) | exists z: y = x + offset + z * alignment }`.
     record Sd(int offset, int alignment) {}
 
-    /// Enables field-sensitive alias analysis based on unions of one-dimensional linear sets.
+    /// Enables field-sensitive alias analysis based on unions of single-period linear sets.
     /// This is more precise than {@link Offsets} in presence of dynamic indexing into arrays.
     final class SdLinear implements ModifierTrait<Sd> {
         @Override public boolean isFunctional(Sd m) { return m.alignment == 0; }
@@ -114,9 +102,22 @@ public interface ModifierTrait <Modifier> {
             int r = right.alignment;
             return offset % l == 0 && r % l == 0;
         }
-        @Override public int level(Sd m) { return Math.abs(m.offset); }
-        @Override public Sd constantModifier(int offset) { return new Sd(offset, 0); }
-        @Override public Sd relaxedModifier(int alignment) { return new Sd(0, Math.abs(alignment)); }
+        @Override
+        public Sd constantModifier(BigInteger offset) {
+            try {
+                return new Sd(offset.intValueExact(), 0);
+            } catch (ArithmeticException x) {
+                return new Sd(0, 1);
+            }
+        }
+        @Override
+        public Sd relaxedModifier(BigInteger alignment) {
+            try {
+                return new Sd(0, Math.abs(alignment.intValueExact()));
+            } catch (ArithmeticException x) {
+                return new Sd(0, 1);
+            }
+        }
         @Override
         public Sd compose(Sd left, Sd right) {
             return new Sd(left.offset + right.offset, IntMath.gcd(left.alignment, right.alignment));
@@ -127,13 +128,17 @@ public interface ModifierTrait <Modifier> {
         }
         @Override
         public Sd shrinkToBounds(Sd m, int objectSize) {
-            return m.alignment < objectSize ? m : constantModifier(m.offset);
+            return m.alignment < objectSize || objectSize <= m.offset || m.offset < 0 ? m
+                    : constantModifier(BigInteger.valueOf(m.offset));
         }
     }
 
+    /// Instances describe linear sets. `offset` is the *base*, `alignment` are the *periods*.
+    // If there is a lower bound, `alignment` contains only positive values.
+    // If there is no lower bound, `alignment` contains exactly one negative value.
     record Md(int offset, List<Integer> alignment) {}
 
-    /// Enables field-sensitive alias analysis based on multidimensional linear sets.
+    /// Enables field-sensitive alias analysis based on linear sets.
     /// This might be slightly more precise than {@link SdLinear} in presence of aggregates containing arrays.
     final class MdLinear implements ModifierTrait<Md> {
         @Override
@@ -161,65 +166,90 @@ public interface ModifierTrait <Modifier> {
             return leftDirectedTowardsRight && rightDirectedTowardsLeft && offset % divisor == 0;
         }
         @Override
-        public boolean mustInclude(Md left, Md right) {
-            int offset = right.offset - left.offset;
-            if (left.alignment.isEmpty()) {
-                return right.alignment.isEmpty() && offset == 0;
+        public boolean mustInclude(Md larger, Md smaller) {
+            final int offset = smaller.offset - larger.offset;
+            // Case where `larger` is functional.
+            if (larger.alignment.isEmpty()) {
+                return smaller.alignment.isEmpty() && offset == 0;
             }
-            // Case of unbounded dynamic indexes.
-            int leftAlignment = singleAlignment(left.alignment);
-            int rightAlignment = singleAlignment(right.alignment);
-            if (leftAlignment < 0 || rightAlignment < 0) {
-                int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
-                int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
+            final int alignmentLarger = singleAlignment(larger.alignment);
+            final int alignmentSmaller = singleAlignment(smaller.alignment);
+            // Case where `larger` has no lower bound.
+            // Removing any lower bound on `smaller` should have no effect on the return value.
+            if (alignmentLarger < 0) {
+                final int l = -alignmentLarger;
+                final int r = alignmentSmaller < 0 ? -alignmentSmaller : reduceGCD(smaller.alignment);
                 return offset % l == 0 && r % l == 0;
             }
-            // Case of a single non-negative dynamic index.
-            if (left.alignment.size() == 1) {
-                for (final Integer a : right.alignment) {
-                    if (a % leftAlignment != 0) {
+            // From here on, `larger` has a lower bound.
+            // Cases where `smaller` has no lower bound or starts lower than `larger`.
+            if (alignmentSmaller < 0 || offset < 0) {
+                return false;
+            }
+            // Fast path where `larger` has only one dynamic index.
+            if (alignmentLarger > 0) {
+                for (final int a : smaller.alignment) {
+                    if (a % alignmentLarger != 0) {
                         return false;
                     }
                 }
-                return offset % leftAlignment == 0 && offset >= 0;
+                return offset % alignmentLarger == 0;
             }
-            // Case of multiple dynamic indexes with pairwise indivisible alignments.
-            final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
-            if (gcd == 0) {
-                return true;
+            // Slow path.
+            // Case where `larger` has multiple periods.
+            // Inclusion between linear sets is decidable, but complex.
+            // Instead, consider the weaker condition:
+            // If `larger.alignment` contains `offset` and all of `smaller.alignment`,
+            // then `larger` includes `smaller`.
+            // The weaker condition fails for e.g. `Md[offset=0, alignment=[3,4,5]], Md[offset=3, alignment=[2]]`.
+            final int gcd = IntMath.gcd(reduceGCD(larger.alignment),
+                    IntMath.gcd(reduceGCD(smaller.alignment), offset));
+            assert gcd != 0;
+            // Dynamic programming:
+            // Mark all integers that are linear combinations of `larger.alignment`
+            // and are not greater than `offset` and all of `smaller.alignment`.
+            int bound = offset;
+            for (final int a : smaller.alignment) {
+                bound = Math.max(bound, a);
             }
-            int max = Math.abs(offset);
-            for (final Integer i : right.alignment) {
-                max = Math.max(max, i);
+            if (bound / gcd >= 1 << 16) {
+                // Give up before the task gets too expensive.
+                // Also avoid integer overflow.
+                return false;
             }
-            final var mem = new boolean[max / gcd + 1];
-            mem[0] = true;
-            for (int j = 1; j < mem.length; j++) {
-                for (final Integer i : left.alignment) {
-                    if (j - i/gcd >= 0 && mem[j - i/gcd]) {
-                        mem[j] = true;
+            final var contained = new boolean[bound / gcd + 1];
+            contained[0] = true;
+            for (int j = 1; j < contained.length; j++) {
+                for (final int a : larger.alignment) {
+                    if (j - a / gcd >= 0 && contained[j - a / gcd]) {
+                        contained[j] = true;
                         break;
                     }
                 }
             }
-            for (final Integer j : right.alignment) {
-                if (!mem[j/gcd]) {
+            for (final int a : smaller.alignment) {
+                if (!contained[a / gcd]) {
                     return false;
                 }
             }
-            return mem[Math.abs(offset)/gcd];
+            return contained[offset / gcd];
         }
         @Override
-        public int level(Md m) {
-            return Math.abs(m.offset);
+        public Md constantModifier(BigInteger offset) {
+            try {
+                return new Md(offset.intValueExact(), List.of());
+            } catch (ArithmeticException x) {
+                return new Md(0, List.of(-1));
+            }
         }
         @Override
-        public Md constantModifier(int offset) {
-            return new Md(offset, List.of());
-        }
-        @Override
-        public Md relaxedModifier(int alignment) {
-            return new Md(0, alignment == 0 ? List.of() : List.of(-Math.abs(alignment)));
+        public Md relaxedModifier(BigInteger alignment) {
+            try {
+                final int a = Math.abs(alignment.intValueExact());
+                return new Md(0, a == 0 ? List.of() : List.of(-a));
+            } catch (ArithmeticException x) {
+                return new Md(0, List.of(-1));
+            }
         }
         @Override
         public Md compose(Md left, Md right) {
@@ -237,10 +267,7 @@ public interface ModifierTrait <Modifier> {
                     return modifier;
                 }
             }
-            return constantModifier(modifier.offset);
-        }
-        private static int singleAlignment(List<Integer> alignment) {
-            return alignment.size() != 1 ? 0 : alignment.get(0);
+            return constantModifier(BigInteger.valueOf(modifier.offset));
         }
         // Computes the greatest common divisor of the operands.
         private static int reduceGCD(List<Integer> alignment) {
@@ -253,31 +280,17 @@ public interface ModifierTrait <Modifier> {
             }
             return result;
         }
-        private static void sort(List<Integer> alignment) {
-            if (alignment.size() > 1) {
-                Collections.sort(alignment);
-            }
-        }
-        // Checks if value is no multiple of any element in the list.
-        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
-            for (final Integer candidate : candidates) {
-                if ((strict || value < candidate) && value % candidate == 0) {
-                    return false;
-                }
-            }
-            return true;
-        }
         private List<Integer> compose(List<Integer> left, List<Integer> right) {
             if (left.isEmpty() || right.isEmpty() || (left.size() == 1 && left.equals(right))) {
                 return right.isEmpty() ? left : right;
             }
             // Negative values are unrestricted and compose always.
             // Therefore, each list shall either contain a single negative value, or only positive values.
-            int leftAlignment = singleAlignment(left);
-            int rightAlignment = singleAlignment(right);
+            final int leftAlignment = singleAlignment(left);
+            final int rightAlignment = singleAlignment(right);
             if (leftAlignment < 0 || rightAlignment < 0) {
                 int alignment = leftAlignment < 0 ? -leftAlignment : -rightAlignment;
-                for (Integer other : leftAlignment < 0 ? right : left) {
+                for (final Integer other : leftAlignment < 0 ? right : left) {
                     alignment = IntMath.gcd(alignment, Math.abs(other));
                 }
                 return List.of(-alignment);
@@ -294,8 +307,22 @@ public interface ModifierTrait <Modifier> {
                     result.add(j);
                 }
             }
-            sort(result);
+            if (result.size() > 1) {
+                Collections.sort(result);
+            }
             return result;
+        }
+        private static int singleAlignment(List<Integer> alignment) {
+            return alignment.size() != 1 ? 0 : alignment.get(0);
+        }
+        // Checks if value is no multiple of any element in the list.
+        private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
+            for (final int candidate : candidates) {
+                if ((strict || value < candidate) && value % candidate == 0) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
