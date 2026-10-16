@@ -337,6 +337,43 @@ public class AliasAnalysisSoundnessTest {
         assertContains(result.analysis.addressableObjects(unknown), x, y);
     }
 
+    @Test
+    public void cancellingIntegerAddressTermsRetainProvenance() throws Exception {
+        final TypeFactory types = TypeFactory.getInstance();
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final IntegerType type = types.getArchType();
+        final ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        final MemoryObject x = builder.newMemoryObject("x", 64);
+        final MemoryObject y = builder.newMemoryObject("y", 8);
+        final MemoryObject slot = builder.newMemoryObject("slot", 8);
+        slot.setInitialValue(0, y);
+        builder.newThread(0);
+
+        final Register p = builder.getOrNewRegister(0, "p", type);
+        final Register q = builder.getOrNewRegister(0, "q", type);
+        builder.addChildWithoutSourceLoc(0, EventFactory.newLoad(p, slot));
+        builder.addChildWithoutSourceLoc(0, EventFactory.newLoad(q, slot));
+
+        // Both loads read y: there are no other writes to slot.
+        // Integer address arithmetic: p + 2*x - q - x == x.
+        // The 8-byte store fits inside the 64-byte object,
+        // regardless of its base address.
+        final Expression address = expressions.makeSub(
+                        expressions.makeAdd(expressions.makeMul(x, expressions.makeValue(2, type)), p),
+                        expressions.makeAdd(q, x));
+        final Store indirect = EventFactory.newStore(address, expressions.makeZero(type));
+        final Store direct = EventFactory.newStore(x, expressions.makeZero(type));
+        builder.addChildWithoutSourceLoc(0, indirect);
+        builder.addChildWithoutSourceLoc(0, direct);
+
+        final AnalysisResult result = analyze(builder.build(), indirect, direct);
+
+        assertTrue(method + " lost x from the addressable objects",
+                result.analysis.addressableObjects(result.events[0]).contains(x));
+        assertTrue(method + " missed two accesses to x + 8",
+                result.analysis.mayAlias(result.events[0], result.events[1]));
+    }
+
     private AnalysisResult analyze(Program program, Event... originalEvents) throws InvalidConfigurationException {
         Configuration configuration = Configuration.builder()
                 .setOption(ALIAS_METHOD, method.asStringOption())
