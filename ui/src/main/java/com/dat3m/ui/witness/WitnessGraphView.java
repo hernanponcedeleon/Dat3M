@@ -1,5 +1,6 @@
 package com.dat3m.ui.witness;
 
+import com.dat3m.ui.components.PinchZoom;
 import com.dat3m.ui.theme.Theme;
 import com.dat3m.ui.witness.WitnessGraph.Edge;
 import com.dat3m.ui.witness.WitnessGraph.Kind;
@@ -85,6 +86,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private Dimension layeredSize;
     private Node selected;
     private double scale = 1.0;
+    private Point lastPointer;
     private Consumer<Node> selectionListener = node -> { };
     private Runnable stateListener = () -> { };
 
@@ -102,9 +104,18 @@ public class WitnessGraphView extends JComponent implements Scrollable {
                 showMenu(event);
             }
         });
+        addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent event) {
+                lastPointer = event.getPoint();
+            }
+        });
+        // Pinching on a trackpad zooms around the pointer, like Ctrl or Cmd with the mouse wheel.
+        PinchZoom.install(this, factor -> zoomAt(factor, lastPointer));
         addMouseWheelListener(event -> {
             if (event.isControlDown() || event.isMetaDown()) {
-                zoom(event.getWheelRotation() < 0 ? 1.1 : 1 / 1.1);
+                // Precise rotations make trackpads that report Ctrl + wheel for pinching zoom smoothly.
+                zoomAt(Math.pow(1.1, -event.getPreciseWheelRotation()), event.getPoint());
             } else {
                 // Let the enclosing scroll pane handle ordinary scrolling.
                 getParent().dispatchEvent(SwingUtilities.convertMouseEvent(this, event, getParent()));
@@ -350,8 +361,34 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         this.selectionListener = listener;
     }
 
+    // Zooms around the center of the visible part.
     public void zoom(double factor) {
-        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+        final Rectangle visible = getVisibleRect();
+        zoomAt(factor, new Point((int) visible.getCenterX(), (int) visible.getCenterY()));
+    }
+
+    // Zooms such that the point of the graph under the anchor, in the coordinates of this view, stays where it is.
+    private void zoomAt(double factor, Point anchor) {
+        final double newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+        if (newScale == scale) {
+            return;
+        }
+        final Point fixed = anchor != null ? anchor : new Point((int) getVisibleRect().getCenterX(), (int) getVisibleRect().getCenterY());
+        final double graphX = fixed.x / scale;
+        final double graphY = fixed.y / scale;
+        scale = newScale;
+        if (getParent() instanceof JViewport viewport) {
+            final Point position = viewport.getViewPosition();
+            final Dimension size = getPreferredSize();
+            final Dimension extent = viewport.getExtentSize();
+            setSize(Math.max(size.width, extent.width), Math.max(size.height, extent.height));
+            final int x = (int) Math.round(graphX * scale - (fixed.x - position.x));
+            final int y = (int) Math.round(graphY * scale - (fixed.y - position.y));
+            viewport.setViewPosition(new Point(
+                    Math.max(0, Math.min(x, getWidth() - extent.width)),
+                    Math.max(0, Math.min(y, getHeight() - extent.height))));
+            lastPointer = new Point((int) Math.round(graphX * scale), (int) Math.round(graphY * scale));
+        }
         revalidate();
         repaint();
     }

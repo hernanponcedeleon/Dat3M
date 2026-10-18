@@ -66,6 +66,10 @@
                             <classpathPrefix>${dat3m.library.path}</classpathPrefix>
                             <mainClass>com.dat3m.ui.Dat3M</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <!-- Pinch-to-zoom on macOS uses the gesture support of the JDK. Other platforms ignore this. -->
+                            <Add-Exports>java.desktop/com.apple.eawt.event</Add-Exports>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
