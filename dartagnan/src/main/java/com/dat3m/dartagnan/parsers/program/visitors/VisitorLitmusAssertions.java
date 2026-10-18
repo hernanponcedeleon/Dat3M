@@ -77,16 +77,18 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
     @Override
     public Expression visitLocationValue(LitmusAssertionsParser.LocationValueContext ctx) {
         String name = ctx.varName().getText();
+        String displayName = ctx.getText();
         final Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            displayName = "%s:%s".formatted(ctx.threadId().id, name);
         } else {
             final MemoryObject object = programBuilder.getMemoryObject(name);
             checkState(object != null, "Undefined location %s", name);
             value = new FinalMemoryValue(object.getInitialValue(0).getType(), object, 0);
         }
 
-        return expressions.makeNamedExpression(ctx.getText(), value);
+        return expressions.makeNamedExpression(displayName, value);
 
     }
 
@@ -158,10 +160,13 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
             }
             return expressions.parseValue(constant.getText(), archType);
         }
+
         String name = ctx.varName().getText();
+        String displayName = ctx.getText();
         final Expression value;
         if (ctx.threadId() != null) {
             value = programBuilder.getOrErrorRegister(ctx.threadId().id, name);
+            displayName = "%s:%s".formatted(ctx.threadId().id, name);
         } else {
             MemoryObject base = programBuilder.getMemoryObject(name);
             checkState(base != null, "uninitialized location %s", name);
@@ -172,6 +177,6 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         }
 
         // We wrap registers and final memory values into named expressions
-        return value instanceof MemoryObject ? value : expressions.makeNamedExpression(ctx.getText(), value);
+        return value instanceof MemoryObject ? value : expressions.makeNamedExpression(displayName, value);
     }
 }

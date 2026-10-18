@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.exception.ParsingException;
 import org.antlr.v4.runtime.CharStreams;
@@ -52,13 +53,14 @@ public class LitmusLocationsTest {
 
     @Test
     public void retainsLocationsInSourceOrderWithoutAnAssertion() {
-        final Program program = parse("locations [y; 0:" + register + "; x;]");
+        final String regWithTid = "0:" + register;
+        final Program program = parse("locations [y; " + regWithTid + "; x;]");
         final List<Expression> locations = program.getLocations();
 
         assertEquals(3, locations.size());
         assertEquals("y", getName(locations.get(0)));
-        assertEquals(register, getName(locations.get(1)));
-        assertSame(program.getThreads().get(0), ((Register) locations.get(1)).getThread());
+        assertEquals(regWithTid, getName(locations.get(1)));
+        assertSame(program.getThreads().get(0), getThread(locations.get(1)));
         assertEquals("x", getName(locations.get(2)));
     }
 
@@ -94,6 +96,15 @@ public class LitmusLocationsTest {
         final ParsingException exception = assertThrows(ParsingException.class,
                 () -> parse("locations [0:" + register + "; P0:" + register + "]"));
         assertTrue(exception.getMessage().contains("Duplicate location P0:" + register));
+    }
+
+    private static Thread getThread(Expression expr) {
+        if (expr instanceof NamedExpression nexpr) {
+            return getThread(nexpr.getOperand());
+        } else if (expr instanceof Register reg) {
+            return reg.getThread();
+        }
+        throw new UnsupportedOperationException("Unexpected expression");
     }
 
     private static String getName(Expression expr) {
