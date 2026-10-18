@@ -89,9 +89,6 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
-        // Encode last values and enforce termination
-        prover.addConstraint(wmmEncoder.encodeLastCoConstraints());
-        prover.addConstraint(propertyEncoder.encodeProgramTermination());
 
         checkForInterrupts();
 
@@ -105,10 +102,19 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
             return new EnumerationResult(task, COMPLETE, ImmutableList.of(), ImmutableList.of());
         }
 
+        // ===================== Bounds check =====================
+        logger.info("Starting bounds check");
+        prover.push(propertyEncoder.encodeBoundEventExec());
+        EnumerationStatus status = prover.isUnsat() ? COMPLETE : INCOMPLETE;
+        prover.pop();
+
         // ===================== Enumerate states =====================
+        // Encode last values and enforce termination
+        prover.addConstraint(wmmEncoder.encodeLastCoConstraints());
+        prover.addConstraint(propertyEncoder.encodeProgramTermination());
+
         logger.info("Starting state space enumeration");
         final List<ImmutableMap<Expression, Expression>> visitedStates = new ArrayList<>();
-        EnumerationStatus status = COMPLETE;
         while (!prover.isUnsat()) {
             if (numLimitEnumeratedStates != -1 && visitedStates.size() > numLimitEnumeratedStates) {
                 logger.info("Enumeration limit reached.");
