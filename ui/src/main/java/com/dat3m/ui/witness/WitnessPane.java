@@ -171,6 +171,13 @@ public class WitnessPane extends JPanel {
         zoomOut.addActionListener(event -> graphView.zoom(1 / 1.2));
         final JButton zoomIn = Buttons.icon(Icons.plus(), "Zoom in");
         zoomIn.addActionListener(event -> graphView.zoom(1.2));
+        final JComboBox<WitnessGraphView.LayoutMode> layoutSelector = new JComboBox<>(WitnessGraphView.LayoutMode.values());
+        layoutSelector.setToolTipText("Layout of the witness");
+        layoutSelector.getAccessibleContext().setAccessibleName("Layout of the witness");
+        layoutSelector.addActionListener(event ->
+                graphView.setLayoutMode((WitnessGraphView.LayoutMode) layoutSelector.getSelectedItem()));
+        zoom.add(layoutSelector);
+        zoom.add(Box.createHorizontalStrut(8));
         zoom.add(zoomOut);
         zoom.add(zoomIn);
 

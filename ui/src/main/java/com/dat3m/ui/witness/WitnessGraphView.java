@@ -35,6 +35,21 @@ import static com.dat3m.ui.witness.WitnessGraph.FR;
 // Draws a witness execution: one column per thread, events in program order from top to bottom.
 public class WitnessGraphView extends JComponent implements Scrollable {
 
+    public enum LayoutMode {
+        COLUMNS("Columns"), LAYERED("Layered");
+
+        private final String description;
+
+        LayoutMode(String description) {
+            this.description = description;
+        }
+
+        @Override
+        public String toString() {
+            return description;
+        }
+    }
+
     private static final int NODE_WIDTH = 200;
     private static final int NODE_HEIGHT = 52;
     private static final int COLUMN_GAP = 120;
@@ -64,6 +79,10 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private final Map<Integer, Rectangle2D> layout = new HashMap<>();
     private final List<Edge> visibleEdges = new ArrayList<>();
     private String highlightedAddress;
+    private LayoutMode layoutMode = LayoutMode.COLUMNS;
+    // Only used by the layered layout, which also decides how edges run.
+    private final Map<Edge, LayeredLayout.Route> routes = new HashMap<>();
+    private Dimension layeredSize;
     private Node selected;
     private double scale = 1.0;
     private Consumer<Node> selectionListener = node -> { };
@@ -177,6 +196,17 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             // Edges are only computed for the relations that are shown, since relations can be large.
             for (String relation : visibleRelations) {
                 visibleEdges.addAll(getVisibleEdges(relation, columns));
+            }
+            routes.clear();
+            layeredSize = null;
+            if (layoutMode == LayoutMode.LAYERED && !layout.isEmpty()) {
+                // The layers follow the edges that are shown, so showing a single relation lays out that relation.
+                final List<Node> visibleNodes = graph.nodes().stream().filter(node -> layout.containsKey(node.id())).toList();
+                final LayeredLayout.Result result = LayeredLayout.compute(visibleNodes, visibleEdges,
+                        new Dimension(NODE_WIDTH, NODE_HEIGHT), MARGIN);
+                layout.putAll(result.nodes());
+                routes.putAll(result.routes());
+                layeredSize = result.size();
             }
             if (selected != null && !isVisible(selected)) {
                 select(null);
@@ -311,6 +341,11 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         return reducedRelations.contains(relation);
     }
 
+    public void setLayoutMode(LayoutMode mode) {
+        layoutMode = mode;
+        relayout();
+    }
+
     public void setSelectionListener(Consumer<Node> listener) {
         this.selectionListener = listener;
     }
@@ -362,6 +397,9 @@ public class WitnessGraphView extends JComponent implements Scrollable {
     private Dimension getGraphSize() {
         if (graph == null || graph.columns().isEmpty()) {
             return new Dimension(2 * MARGIN, 2 * MARGIN);
+        }
+        if (layeredSize != null) {
+            return layeredSize;
         }
         final int columns = graph.columns().size();
         final double bottom = layout.values().stream().mapToDouble(Rectangle2D::getMaxY).max()
@@ -423,7 +461,7 @@ public class WitnessGraphView extends JComponent implements Scrollable {
 
         g2.setFont(Theme.tracked(Theme.ui(11f, Font.BOLD), 0.06f));
         g2.setColor(p.muted());
-        for (int column = 0; column < graph.columns().size(); column++) {
+        for (int column = 0; layeredSize == null && column < graph.columns().size(); column++) {
             g2.drawString(graph.columns().get(column).toUpperCase(),
                     MARGIN + column * (NODE_WIDTH + COLUMN_GAP), MARGIN + 12);
         }
@@ -470,7 +508,9 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         g2.drawString(fit(node.label(), g2.getFontMetrics(), textWidth), textX, (int) bounds.getY() + 22);
         g2.setFont(Theme.mono(11f));
         g2.setColor(p.muted());
-        g2.drawString(fit(node.sublabel(), g2.getFontMetrics(), textWidth), textX, (int) bounds.getY() + 40);
+        // Without column headers, the events name their thread themselves.
+        final String sublabel = layeredSize == null ? node.sublabel() : graph.columns().get(node.column()) + " · " + node.sublabel();
+        g2.drawString(fit(sublabel, g2.getFontMetrics(), textWidth), textX, (int) bounds.getY() + 40);
     }
 
     private static String fit(String text, FontMetrics metrics, int width) {
@@ -492,6 +532,11 @@ public class WitnessGraphView extends JComponent implements Scrollable {
         final boolean isHighlighted = selected != null && (from.equals(selected) || to.equals(selected));
         final float width = isHighlighted ? 2.5f : 1.5f;
         final Color color = colorOf(edge.relation());
+        final LayeredLayout.Route route = routes.get(edge);
+        if (route != null) {
+            paintRoute(g2, edge, route, color, width, isHighlighted);
+            return;
+        }
 
         final Shape line;
         final Point2D tip;
@@ -560,6 +605,38 @@ public class WitnessGraphView extends JComponent implements Scrollable {
             final int labelWidth = metrics.stringWidth(edge.relation());
             final int x = (int) labelAnchor.getX() - labelWidth / 2;
             final int y = (int) labelAnchor.getY();
+            g2.setColor(Theme.p().ground());
+            g2.fillRoundRect(x - 3, y - metrics.getAscent() / 2 - 3, labelWidth + 6, metrics.getAscent() + 4, 6, 6);
+            g2.setColor(color);
+            g2.drawString(edge.relation(), x, y + metrics.getAscent() / 2 - 1);
+        }
+    }
+
+    // Connects the points of the route by curves that run vertically at every point.
+    private void paintRoute(Graphics2D g2, Edge edge, LayeredLayout.Route route, Color color, float width, boolean isHighlighted) {
+        final List<Point2D> points = route.points();
+        final Path2D.Double path = new Path2D.Double();
+        path.moveTo(points.get(0).getX(), points.get(0).getY());
+        Point2D beforeTip = points.get(0);
+        for (int i = 1; i < points.size(); i++) {
+            final Point2D from = points.get(i - 1);
+            final Point2D to = points.get(i);
+            final double bend = (to.getY() - from.getY()) / 2;
+            beforeTip = new Point2D.Double(to.getX(), to.getY() - bend);
+            path.curveTo(from.getX(), from.getY() + bend, beforeTip.getX(), beforeTip.getY(), to.getX(), to.getY());
+        }
+        g2.setColor(color);
+        g2.setStroke(strokeOf(edge.relation(), width));
+        g2.draw(path);
+        g2.setStroke(new BasicStroke(width));
+        g2.fill(arrowHead(beforeTip, points.get(points.size() - 1), isHighlighted ? 10 : 8));
+
+        if (!edge.relation().equals(PO)) {
+            g2.setFont(Theme.mono(11f));
+            final FontMetrics metrics = g2.getFontMetrics();
+            final int labelWidth = metrics.stringWidth(edge.relation());
+            final int x = (int) route.labelAnchor().getX() - labelWidth / 2;
+            final int y = (int) route.labelAnchor().getY();
             g2.setColor(Theme.p().ground());
             g2.fillRoundRect(x - 3, y - metrics.getAscent() / 2 - 3, labelWidth + 6, metrics.getAscent() + 4, 6, 6);
             g2.setColor(color);
