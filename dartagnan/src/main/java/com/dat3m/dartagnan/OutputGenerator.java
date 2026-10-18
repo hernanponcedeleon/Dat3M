@@ -169,7 +169,7 @@ public class OutputGenerator {
 
     private String enumerationToString(List<Expression> vars, List<? extends Map<Expression, Expression>> enumeratedStates) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("Variables of interest: ").append(Lists.transform(vars, this::compactExprString)).append("\n");
+        sb.append("Observables: ").append(Lists.transform(vars, this::compactExprString)).append("\n");
         sb.append("#Observed states: ").append(enumeratedStates.size()).append("\n");
         sb.append("============ Outcomes ============\n");
         for (Map<Expression, Expression> state : enumeratedStates) {
