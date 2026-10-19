@@ -24,10 +24,13 @@ public abstract class AbstractEnumerationTaskSolverTest {
         try (EnumerationTaskSolver solver = EnumerationTaskSolver.create(task)
                 .withShutdownManager(shutdownManager.get())) {
             solver.run();
+
+            final EnumerationResult result = solver.getResult();
             if (expectedNumStates == -1) {
-                assertEquals(EnumerationStatus.LIMITED, solver.getResult().getStatus());
+                assertEquals(EnumerationStatus.LIMITED, result.getStatus());
             } else {
-                assertEquals(expectedNumStates, solver.getResult().getEnumeratedStates().size());
+                assertEquals(EnumerationStatus.COMPLETE, result.getStatus());
+                assertEquals(expectedNumStates, result.getEnumeratedStates().size());
             }
         }
     }

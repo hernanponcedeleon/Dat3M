@@ -219,7 +219,7 @@ public class Dartagnan {
 
         @Option(
                 name = MODE,
-                description = "The mode of operation: verification (default) or enumeration.",
+                description = "The mode of operation: verification (default) or enumeration",
                 toUppercase = true)
         private Mode mode = Mode.getDefault();
 

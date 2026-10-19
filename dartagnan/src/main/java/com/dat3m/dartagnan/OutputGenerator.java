@@ -160,8 +160,12 @@ public class OutputGenerator {
                 : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final String filter = getFilterString(task);
         final String enumeratedStates = enumerationToString(result.getVars(), result.getEnumeratedStates());
+        final ExitCode exitCode = switch (result.getStatus()) {
+            case COMPLETE -> NORMAL_TERMINATION;
+            case LIMITED, INCOMPLETE -> BOUNDED_RESULT;
+        };
 
-        return new Output(NORMAL_TERMINATION,
+        return new Output(exitCode,
                 toEnumerationSummary(programSource, filter, enumeratedStates, result.getStatus(), solver.getRuntime())
         );
 
