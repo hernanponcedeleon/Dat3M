@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.MemoryType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -96,12 +97,6 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         final ExpressionEncoder expressionEncoder = context.getExpressionEncoder();
         final ExpressionFactory exprs = context.getExpressionFactory();
 
-        final ImmutableList<Expression> observables = getObservablesToEnumerate();
-        if (observables.isEmpty()) {
-            logger.warn("No final states to enumerate");
-            return new EnumerationResult(task, COMPLETE, ImmutableList.of(), ImmutableList.of());
-        }
-
         // ===================== Bounds check =====================
         logger.info("Starting bounds check");
         prover.push(propertyEncoder.encodeBoundEventExec());
@@ -109,16 +104,22 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         prover.pop();
 
         // ===================== Enumerate states =====================
+        final ImmutableList<Expression> observables = getObservablesToEnumerate();
+        if (observables.isEmpty()) {
+            logger.warn("No final states to enumerate");
+            return new EnumerationResult(task, status, ImmutableList.of(), ImmutableList.of());
+        }
+
         // Encode last values and enforce termination
         prover.addConstraint(wmmEncoder.encodeLastCoConstraints());
         prover.addConstraint(propertyEncoder.encodeProgramTermination());
 
         logger.info("Starting state space enumeration");
+        final boolean hasLimit = numLimitEnumeratedStates >= 0;
         final List<ImmutableMap<Expression, Expression>> visitedStates = new ArrayList<>();
         while (!prover.isUnsat()) {
-            if (numLimitEnumeratedStates != -1 && visitedStates.size() > numLimitEnumeratedStates) {
+            if (hasLimit && (visitedStates.size() + 1) > numLimitEnumeratedStates) {
                 logger.info("Enumeration limit reached.");
-                visitedStates.remove(visitedStates.size() - 1);
                 status = LIMITED;
                 break;
             }
@@ -142,18 +143,20 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         }
         // ======================================================
 
-        // TODO: Add bounds check
-
         return new EnumerationResult(task, status, observables, ImmutableList.copyOf(visitedStates));
 
     }
 
+    // FIXME: The conversion of TypedValue to re-encodable expressions should be made principled
+    //  and support all IR types.
     private Expression toExpression(TypedValue<?, ?> value, ExpressionFactory exprs) {
         if (value.type() instanceof IntegerType intType) {
             return exprs.makeValue((BigInteger) value.value(), intType);
+        } else if (value.type() instanceof BooleanType) {
+            return exprs.makeValue((boolean) value.value());
         } else if (value.type() instanceof MemoryType memType) {
             final IntegerType intType = TypeFactory.getInstance().getIntegerType(memType.getBitWidth());
-            final Expression intValue =  exprs.makeValue((BigInteger) value.value(), intType);
+            final Expression intValue = exprs.makeValue((BigInteger) value.value(), intType);
             return exprs.makeToMemoryCast(intValue);
         }
         throw new UnsupportedOperationException("Unsupported type " + value.type());
@@ -199,6 +202,8 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
     //     (1.1) Among different-thread registers, sort by thread id
     //     (1.2) Among same-thread registers, sort by name
     //  (2) The rest are sorted by name (string representation)
+    // TODO: Once the program specifies all observables explicitly, we can
+    //  just take the specified order instead (the frontend should ensure the desired order).
     private int compareExpr(Expression x, Expression y) {
         if ((x instanceof Register) != (y instanceof Register)) {
             return (x instanceof Register) ? -1 : 1;
