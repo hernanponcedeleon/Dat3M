@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.configuration;
 public class OptionNames {
 
     // Base Options
+    public static final String MODE = "mode";
     public static final String PROPERTY = "property";
     public static final String BOUND = "bound";
     public static final String BOUNDS_LOAD_PATH = "bound.load";
@@ -18,6 +19,7 @@ public class OptionNames {
     public static final String MIXED_SIZE = "mixedSize";
     public static final String ENTRY = "entry";
     public static final String COMPILATION_PIPELINE = "compilation.pipeline";
+    public static final String ENUMERATION_LIMIT = "enumeration.limit";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";

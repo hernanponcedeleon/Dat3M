@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -468,6 +469,9 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
 
+    public Expression makeNamedExpression(String name, Expression expr) {
+        return new NamedExpression(name, expr);
+    }
 
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {

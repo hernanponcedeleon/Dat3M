@@ -165,17 +165,21 @@ public final class Tearing implements ProgramProcessor {
 
     private void tearExpressions(Program program) {
         //TODO currently, FinalMemoryValue only occurs in the program's final state expressions.
-        final Expression specification = program.getSpecification();
-        final Expression filter = program.getFilterSpecification();
         final var substitution = new FinalValueTearSubstitution();
         for (Init init : program.getThreadEvents(Init.class)) {
             substitution.typesByObject.computeIfAbsent(init.getBase(), k -> new HashMap<>())
                     .put(init.getOffset(), init.getAccessType());
         }
+
+        final Expression specification = program.getSpecification();
+        final Expression filter = program.getFilterSpecification();
         final Expression updatedSpecification = specification == null ? null : specification.accept(substitution);
         final Expression updatedFilter = filter.accept(substitution);
+        final List<Expression> updatedLocations = program.getLocations().stream()
+                .map(e -> e.accept(substitution)).toList();
         program.setSpecification(program.getSpecificationType(), updatedSpecification);
         program.setFilterSpecification(updatedFilter);
+        program.setLocations(updatedLocations);
     }
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
@@ -320,7 +324,7 @@ public final class Tearing implements ProgramProcessor {
             final List<Expression> result = new ArrayList<>();
             for (int offset = begin; offset < end;) {
                 final Type t = typesByOffset.get(offset);
-                result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
+                result.add(new FinalMemoryValue(t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);
             }
             final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeMemoryConcat(result);
