@@ -121,7 +121,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: Litmus tests
-        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/litmus/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/litmus/**/*,!com/dat3m/dartagnan/litmus/**/*ExplorationTest" -f dartagnan/pom.xml
 
   litmus-exploration-tests:
     name: Litmus exploration tests
