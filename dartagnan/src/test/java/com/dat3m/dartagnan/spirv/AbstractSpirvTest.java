@@ -40,7 +40,8 @@ public abstract class AbstractSpirvTest extends AbstractVerificationTaskSolverTe
                 .withBound(bound)
                 .withTarget(target)
                 .withProgressModel(getProgressModel())
-                .withOption(OptionNames.PHANTOM_REFERENCES, "true");
+                .withOption(OptionNames.PHANTOM_REFERENCES, "true")
+                .withOption(OptionNames.BOUND_CAP, String.valueOf(bound));
     }
 
     @Override

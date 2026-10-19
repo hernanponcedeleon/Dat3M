@@ -60,7 +60,7 @@ public class LibvsyncTest extends AbstractCTest {
                 {"ttaslock", C11, UNKNOWN},
                 {"bounded_mpmc_check_empty", C11, UNKNOWN},
                 {"bounded_mpmc_check_full", C11, UNKNOWN},
-                {"bounded_spsc", C11, UNKNOWN},
+                {"bounded_spsc", C11, PASS},
         });
     }
 }

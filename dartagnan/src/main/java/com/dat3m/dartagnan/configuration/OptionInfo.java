@@ -40,6 +40,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
 
     static Stream<Class<?>> classes() {
         return Stream.of(
+                ScalarEvolution.class,
                 EnumerationSolver.class,
                 VerificationTaskSolver.class,
                 TaskSolverBase.class,
