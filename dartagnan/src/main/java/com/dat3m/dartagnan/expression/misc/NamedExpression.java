@@ -28,7 +28,9 @@ public class NamedExpression extends UnaryExpressionBase<Type, ExpressionKind.Ot
 
     @Override
     public boolean equals(Object obj) {
-        return super.equals(obj) && obj instanceof NamedExpression namedExpr && name.equals(namedExpr.getName());
+        return obj instanceof NamedExpression namedExpr
+                && operand.equals(namedExpr.operand)
+                && name.equals(namedExpr.name);
     }
 
     @Override
