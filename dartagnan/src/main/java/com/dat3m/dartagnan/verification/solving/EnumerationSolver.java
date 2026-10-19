@@ -45,7 +45,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
             description="Sets a limit for number of enumerated states. The value -1 means no limit.",
             secure=true,
             toUppercase=true)
-    private int numLimitEnumeratedStates = -1;
+    private int numLimitEnumeratedStates = 5000;
 
     // ================================================================================================================
 
