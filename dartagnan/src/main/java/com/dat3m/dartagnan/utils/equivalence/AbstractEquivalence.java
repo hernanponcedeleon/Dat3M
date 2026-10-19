@@ -1,13 +1,17 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
-import com.google.common.collect.Sets;
-
 import java.util.*;
 
+/*
+    NOTE: All iteration orders are deterministic: classes are ordered by creation and elements by insertion.
+    In particular, the order does not depend on identity hash codes, which change between runs.
+ */
 public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
     protected Map<T, EqClass> classMap;
+    // Classes are compared by identity (via their creation index), because EqClass has set semantics.
     protected Set<EqClass> classes;
+    private int numCreatedClasses = 0;
 
     @Override
     public EquivalenceClass<T> getEquivalenceClass(T x) {
@@ -19,15 +23,26 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         return Collections.unmodifiableSet(classes);
     }
 
+    @Override
+    public Set<? extends EquivalenceClass<T>> getNonTrivialClasses() {
+        final Set<EqClass> nonTrivialClasses = newClassSet();
+        classes.stream().filter(c -> c.size() > 1).forEach(nonTrivialClasses::add);
+        return nonTrivialClasses;
+    }
+
     public AbstractEquivalence() {
         classMap = new HashMap<>();
-        classes = Sets.newIdentityHashSet();
+        classes = newClassSet();
     }
 
     protected AbstractEquivalence(int estimatedDataSize, int estimatedNumOfClasses) {
         // We make classMap larger by factor 4/3 to avoid resizing due to HashMap's LoadFactor
         classMap = new HashMap<>((4 * estimatedDataSize) / 3);
-        classes = Collections.newSetFromMap(new IdentityHashMap<>(estimatedNumOfClasses));
+        classes = newClassSet();
+    }
+
+    private Set<EqClass> newClassSet() {
+        return new TreeSet<>(Comparator.comparingInt(c -> c.creationIndex));
     }
 
     @SuppressWarnings("unchecked")
@@ -63,6 +78,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
     }
 
     protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
+        private final int creationIndex = numCreatedClasses++;
         public T representative;
         public Set<T> internalSet;
 
@@ -71,7 +87,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         }
 
         protected EqClass(int initialCapacity) {
-            internalSet = initialCapacity < 1 ? new HashSet<>() : new HashSet<>(initialCapacity);
+            internalSet = initialCapacity < 1 ? new LinkedHashSet<>() : new LinkedHashSet<>(initialCapacity);
             classes.add(this);
         }
 
