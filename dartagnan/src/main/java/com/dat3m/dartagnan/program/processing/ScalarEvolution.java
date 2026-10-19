@@ -85,7 +85,7 @@ public class ScalarEvolution implements FunctionProcessor {
     @Option(name = BOUND_CAP,
             description = "Caps the loop bounds that get computed automatically: " +
                     "loops with a larger bound get unrolled at least this many times (or more if the bound is larger)." +
-                    " The value 0 disables the cap. Defaults to 0.",
+                    " The value 0 (default) disables the cap.",
             secure = true)
     @IntegerOption(min = 0)
     private int boundCap = 0;
