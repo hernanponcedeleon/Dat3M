@@ -33,7 +33,7 @@ let rs_prime = int | (_ * (R & W))
 let rs = [Rel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))?
 *)
 
-let rs_prime = int | (_ * RMW)
+let rs_prime = int | (_ * (RMW & W))
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
 
 (* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [Acq]) *)
