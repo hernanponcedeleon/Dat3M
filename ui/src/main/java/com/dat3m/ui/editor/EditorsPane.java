@@ -1,100 +1,67 @@
 package com.dat3m.ui.editor;
 
-import com.google.common.collect.ImmutableMap;
-import com.dat3m.ui.log.LogPane;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.ui.components.Surface;
+
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
 
+// The program and the memory model, side by side.
 public class EditorsPane {
 
-    private static final int EDITOR_DIVIDER_SIZE = 12;
-    private static final int LOG_HEIGHT = 240;
+    // Store buffering under TSO, relative to the home directory of Dat3M and its directory of memory models.
+    private static final Path DEFAULT_PROGRAM = Path.of("litmus", "X86", "SB.litmus");
+    private static final String DEFAULT_MODEL = "tso.cat";
 
-    private final ImmutableMap<EditorCode, Editor> editors;
-
-    private final JSplitPane editorsPane;
+    private final Editor programEditor;
+    private final Editor modelEditor;
     private final JSplitPane mainPane;
-    private final LogPane logPane = new LogPane();
-    private final JMenu menuImporter;
-    private final JMenu menuExporter;
 
     public EditorsPane(Set<String> programExtensions) {
-        editors = ImmutableMap.of(
-                EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), programExtensions, true),
-                EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), Set.of(".cat"), false)
-        );
-        editors.get(EditorCode.PROGRAM).getFormatSelector().setSelectedItem(EXTENSION_LITMUS);
-        menuImporter = new JMenu("Import");
-        menuImporter.add(editors.get(EditorCode.PROGRAM).getImporterItem());
-        menuImporter.add(editors.get(EditorCode.TARGET_MM).getImporterItem());
+        CatTokenMaker.register();
+        programEditor = new Editor("Program", programExtensions, true, SyntaxConstants.SYNTAX_STYLE_C);
+        modelEditor = new Editor("Memory model", Set.of(".cat"), false, CatTokenMaker.SYNTAX_STYLE_CAT);
+        programEditor.getFormatSelector().setSelectedItem(EXTENSION_LITMUS);
 
-        menuExporter = new JMenu("Export");
-        menuExporter.add(editors.get(EditorCode.PROGRAM).getExporterItem());
-        menuExporter.add(editors.get(EditorCode.TARGET_MM).getExporterItem());
+        // The memory models that ship with Dat3M are the most likely ones to be opened.
+        final Path catDirectory = GlobalSettings.getCatDirectory().toAbsolutePath();
+        modelEditor.setInitialDirectory(catDirectory.toFile());
+        // Start with a small example, so that the tool can be tried right away.
+        loadIfPresent(programEditor, GlobalSettings.getHomeDirectory().toAbsolutePath().resolve(DEFAULT_PROGRAM));
+        loadIfPresent(modelEditor, catDirectory.resolve(DEFAULT_MODEL));
 
-        Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension editorsDimension = new Dimension((int) (screenDimension.getWidth() * 1 / 3), (int) screenDimension.getHeight());
-        editors.get(EditorCode.PROGRAM).setPreferredSize(editorsDimension);
-        editors.get(EditorCode.TARGET_MM).setPreferredSize(editorsDimension);
-
-        final JPanel programPane = new JPanel(new BorderLayout());
-        final JPanel formatPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        formatPane.add(new JLabel("Program format:"));
-        formatPane.add(editors.get(EditorCode.PROGRAM).getFormatSelector());
-        programPane.add(formatPane, BorderLayout.NORTH);
-        programPane.add(editors.get(EditorCode.PROGRAM), BorderLayout.CENTER);
-
-        editorsPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                programPane, editors.get(EditorCode.TARGET_MM));
-        editorsPane.setOneTouchExpandable(true);
-        editorsPane.setDividerSize(EDITOR_DIVIDER_SIZE);
-        editorsPane.setDividerLocation(0.5);
-        editorsPane.setBorder(new TitledBorder(""));
-        editorsPane.setMinimumSize(new Dimension(0, 120));
-
-        mainPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorsPane, logPane);
-        mainPane.setResizeWeight(0.75);
-        mainPane.setDividerSize(0);
-        mainPane.setBorder(new TitledBorder(""));
-        setLogVisible(false);
+        final Surface programFrame = Surface.panel(new BorderLayout()).lines(0, 0, 0, 1);
+        programFrame.add(programEditor, BorderLayout.CENTER);
+        final Surface modelFrame = Surface.panel(new BorderLayout()).lines(0, 1, 0, 0);
+        modelFrame.add(modelEditor, BorderLayout.CENTER);
+        mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programFrame, modelFrame);
+        mainPane.setResizeWeight(0.5);
+        mainPane.setDividerSize(5);
+        mainPane.setBorder(BorderFactory.createEmptyBorder());
     }
 
-    public JMenu getMenuImporter() {
-        return menuImporter;
-    }
-
-    public JMenu getMenuExporter() {
-        return menuExporter;
+    private static void loadIfPresent(Editor editor, Path file) {
+        if (Files.isReadable(file)) {
+            editor.load(file.toFile());
+        }
     }
 
     public JSplitPane getMainPane() {
         return mainPane;
     }
 
-    public Editor getEditor(EditorCode code) {
-        return editors.get(code);
+    public Editor getProgramEditor() {
+        return programEditor;
     }
 
-    public LogPane getLogPane() {
-        return logPane;
-    }
-
-    public void setLogVisible(boolean visible) {
-        logPane.setVisible(visible);
-        mainPane.setDividerSize(visible ? 2 : 0);
-        if (visible) {
-            SwingUtilities.invokeLater(() -> mainPane.setDividerLocation(Math.max(
-                    mainPane.getMinimumDividerLocation(),
-                    Math.min(mainPane.getHeight() - LOG_HEIGHT, mainPane.getMaximumDividerLocation())
-            )));
-        }
-        mainPane.revalidate();
-        mainPane.repaint();
+    public Editor getModelEditor() {
+        return modelEditor;
     }
 }
