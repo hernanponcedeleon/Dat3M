@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.solving.EnumerationSolver;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 
 @Options
 public final class EnumerationTaskSolver extends TaskSolverBase<EnumerationTaskSolver, EnumerationTask, EnumerationResult> implements AutoCloseable {
@@ -22,8 +24,9 @@ public final class EnumerationTaskSolver extends TaskSolverBase<EnumerationTaskS
     }
 
     private void checkSupport(EnumerationTask task) {
-        if (task.getProgram().getFormat() != LITMUS) {
-            throw new UnsupportedOperationException("Enumeration task is only supported for Litmus programs.");
+        final Program.SourceLanguage format = task.getProgram().getFormat();
+        if (format != LITMUS && format != LLVM) {
+            throw new UnsupportedOperationException("Enumeration task is only supported for Litmus and LLVM programs.");
         }
     }
 

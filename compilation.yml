@@ -32,7 +32,7 @@ x-common_commands:
 
   annotation_cmd: &annotation_cmd
     name: "Annotate inputs, outputs and program_spec"
-    tool: "$DAT3M_HOME/scripts/copy_spv_header_annotations.bash"
+    tool: "$DAT3M_HOME/scripts/copy_header_annotations.bash"
     input: "{pipeline_input}"
     output: "{basename}.spvasm"
     options: []
@@ -49,6 +49,13 @@ pipelines:
         output: "{basename}.ll"
         options: ["-I", "$DAT3M_HOME/include", "-Xclang", "-disable-O0-optnone", "-S", "-emit-llvm", "-g", "-gcolumn-info", "$DAT3M_COMPILER_OPTIONS"]
         args: ["{cmd_input}", "-o", "{cmd_output}"]
+      - name: "Copy LLVM header annotations"
+        tool: "$DAT3M_HOME/scripts/copy_header_annotations.bash"
+        input: "{pipeline_input}"
+        output: "{basename}.ll"
+        options: []
+        # Only @Locations annotations are supported in LLVM.
+        args: ["{cmd_input}", "{cmd_output}", "@Locations"]
 
   - pipeline: ".slang"
     output: "{basename}.spvasm"

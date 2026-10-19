@@ -20,8 +20,30 @@
 
 grammar LLVMIR;
 
+@lexer::members {
+    // The header is the comment lines at the top of the file. It ends with the first token outside an annotation.
+    private boolean inHeader = true;
+    private int lastHeaderCommentLine = -1;
 
-compilationUnit: topLevelEntity* EOF;
+    @Override
+    public Token nextToken() {
+        final Token token = super.nextToken();
+        if (token.getType() == HeaderComment) {
+            lastHeaderCommentLine = token.getLine();
+        } else if (token.getChannel() == DEFAULT_TOKEN_CHANNEL && token.getLine() != lastHeaderCommentLine) {
+            inHeader = false;
+        }
+        return token;
+    }
+}
+
+compilationUnit: locationsAnnotation* topLevelEntity* EOF;
+
+// Annotations in comments like "; @Locations: [x, y]", which lists the globals whose final values are observed.
+locationsAnnotation: '@Locations' ':' '[' (observable (',' observable)*)? ']';
+// The name of a global. A name that is also an LLVM keyword (e.g. "x", as in "<4 x i32>") is lexed as that
+// keyword rather than as AnnotationName, so any token is accepted here and the visitor checks that the global exists.
+observable: ~(',' | ']');
 
 targetDef: targetDataLayout | targetTriple;
 sourceFilename: 'source_filename' '=' StringLit;
@@ -1377,7 +1399,9 @@ fragment LocalId: '%' Id;
 fragment QuotedString: '"' (~["\r\n])* '"';
 
 
-Comment: ';' .*? '\r'? '\n' -> channel(HIDDEN);
+// A comment in the header ends at '@', which starts a Dartagnan annotation (see locationsAnnotation).
+HeaderComment: {inHeader}? ';' ~[@\r\n]* -> channel(HIDDEN);
+Comment: {!inHeader}? ';' ~[\r\n]* -> channel(HIDDEN);
 WhiteSpace: [ \t\n\r]+ -> skip;
 IntLit: '-'? DecimalDigit+ | IntHexLit;
 FloatLit: FracLit | SciLit | FloatHexLit;
@@ -1402,3 +1426,6 @@ DwarfVirtuality:
 	'DW_VIRTUALITY_' (AsciiLetter | DecimalDigit | '_')*;
 DwarfMacinfo: 'DW_MACINFO_' (AsciiLetter | DecimalDigit | '_')*;
 DwarfOp: 'DW_OP_' (AsciiLetter | DecimalDigit | '_')*;
+
+// Names in header annotations. Defined last, so keywords and all other tokens take precedence.
+AnnotationName: [A-Za-z_] [A-Za-z0-9_]*;

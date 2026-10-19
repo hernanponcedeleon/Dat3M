@@ -111,7 +111,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
         }
 
         // Encode last values and enforce termination
-        prover.addConstraint(wmmEncoder.encodeLastCoConstraints());
+        prover.addConstraint(wmmEncoder.encodeLastCoConstraints(true));
         prover.addConstraint(propertyEncoder.encodeProgramTermination());
 
         logger.info("Starting state space enumeration");

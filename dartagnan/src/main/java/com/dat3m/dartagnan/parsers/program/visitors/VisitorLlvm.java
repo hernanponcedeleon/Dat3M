@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -114,6 +115,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
         }
 
+        // Header annotations refer to globals, so they are parsed after the global definitions.
+        ctx.locationsAnnotation().forEach(this::visitLocationsAnnotation);
+
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
@@ -128,6 +132,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Top Level Entities
+
+    @Override
+    public Expression visitLocationsAnnotation(LocationsAnnotationContext ctx) {
+        final Set<Expression> locations = new LinkedHashSet<>(program.getLocations());
+        for (ObservableContext observable : ctx.observable()) {
+            final String name = observable.getText();
+            final int line = observable.getStart().getLine();
+            if (!(constantMap.get(name) instanceof MemoryObject object)) {
+                throw new ParsingException("Undefined global '%s' in annotation at line %d", name, line);
+            }
+            final Type type = object.getInitialValue(0).getType();
+            if (!(type instanceof IntegerType)) {
+                throw new ParsingException("Global '%s' in annotation at line %d has unsupported type %s", name, line, type);
+            }
+            locations.add(expressions.makeNamedExpression(name, new FinalMemoryValue(type, object, 0)));
+        }
+        program.setLocations(new ArrayList<>(locations));
+        return null;
+    }
 
     @Override
     public Expression visitTypeDef(TypeDefContext ctx) {

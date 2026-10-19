@@ -39,7 +39,6 @@ import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
-import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -125,11 +124,11 @@ public class WmmEncoder {
         return axiom.accept(axiomEncoder);
     }
 
-    public BooleanFormula encodeLastCoConstraints() {
+    // Final values of addresses are only needed when something reads them, e.g., litmus specifications or enumeration mode.
+    public BooleanFormula encodeLastCoConstraints(boolean doEncodeFinalAddressValues) {
         final Program program = context.getTask().getProgram();
         final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Relation co = memoryModel.getRelation(CO);

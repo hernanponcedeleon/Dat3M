@@ -127,7 +127,7 @@ public class PropertyEncoder {
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
             //  that are relevant for the specification (e.g., only variables that are used in loops).
-            encoding = bmgr.and(encoding, wmmEncoder.encodeLastCoConstraints());
+            encoding = bmgr.and(encoding, wmmEncoder.encodeLastCoConstraints(!program.getFormat().equals(LLVM)));
         }
         return encoding;
     }
