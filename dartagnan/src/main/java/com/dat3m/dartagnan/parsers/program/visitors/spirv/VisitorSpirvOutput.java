@@ -148,10 +148,10 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         if ((target instanceof FinalMemoryValue || target instanceof NamedExpression) && other.getKind() == Other.LITERAL) {
             return target;
         }
-        if (target instanceof IntLiteral iValue /* && other instanceof FinalMemoryValue*/) {
+        if (target instanceof IntLiteral iValue) {
             int size = types.getMemorySizeInBits(otherType);
             IntegerType newType = types.getIntegerType(size);
-            return new IntLiteral(newType, iValue.getValue());
+            return expressions.makeValue(iValue.getValue(), newType);
         }
         throw new ParsingException("Mismatching type assertions are not supported for %s and %s",
                 target.getClass().getSimpleName(), other.getClass().getSimpleName());
