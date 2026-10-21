@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.PriorityQueue;
 
 /// Describes the abstract domain used in an Andersen-style Pointer Analysis.
 /// The expressiveness of the domain usually impacts both precision and computation time.
@@ -202,42 +203,54 @@ public interface ModifierTrait <Modifier> {
             if (b) {
                 return true;
             }
-            // Inclusion between linear sets is decidable, but complex.
-            // Instead, consider the weaker condition:
-            // If `larger.alignment` contains `offset` and all of `smaller.alignment`,
-            // then `larger` includes `smaller`.
-            // The weaker condition fails for e.g. `Md[offset=0, alignment=[3,4,5]], Md[offset=3, alignment=[2]]`.
-            final int gcd = IntMath.gcd(reduceGCD(larger.alignment),
-                    IntMath.gcd(reduceGCD(smaller.alignment), offset));
-            assert gcd != 0;
-            // Dynamic programming:
-            // Mark all integers that are linear combinations of `larger.alignment`
-            // and are not greater than `offset` and all of `smaller.alignment`.
-            int bound = offset;
-            for (final int a : smaller.alignment) {
-                bound = Math.max(bound, a);
-            }
-            if (bound / gcd >= 1 << 16) {
-                // Give up before the task gets too expensive.
-                // Also avoid integer overflow.
+            // At this point, both `smaller` and `larger` describe numerical semigroups.
+            final int gcd = reduceGCD(larger.alignment);
+            assert gcd > 0;
+            if (IntMath.gcd(offset, reduceGCD(smaller.alignment)) % gcd != 0) {
+                // Here, `smaller` is "denser" than `larger`.
                 return false;
             }
-            final var contained = new boolean[bound / gcd + 1];
-            contained[0] = true;
-            for (int j = 1; j < contained.length; j++) {
-                for (final int a : larger.alignment) {
-                    if (j - a / gcd >= 0 && contained[j - a / gcd]) {
-                        contained[j] = true;
-                        break;
-                    }
+            final int remainders = larger.alignment.stream().mapToInt(i -> i).min().orElseThrow() / gcd;
+            final int[] largerAperySet = aperySet(larger.alignment, gcd, remainders);
+            final int[] smallerAperySet = aperySet(smaller.alignment, gcd, remainders);
+            for (int remainder = 0; remainder < remainders; remainder++) {
+                if (smallerAperySet[remainder] == -1) {
+                    continue;
                 }
-            }
-            for (final int a : smaller.alignment) {
-                if (!contained[a / gcd]) {
+                final int smallerValueUnchecked = smallerAperySet[remainder] + offset / gcd;
+                // This addition may overflow.
+                if (smallerValueUnchecked < 0 || smallerValueUnchecked == Integer.MAX_VALUE
+                        || largerAperySet[smallerValueUnchecked % remainders] == Integer.MAX_VALUE
+                        || smallerValueUnchecked < largerAperySet[smallerValueUnchecked % remainders]) {
                     return false;
                 }
             }
-            return contained[offset / gcd];
+            return true;
+        }
+        // For each remainder modulo `remainders`, return the smallest generatable.
+        // `-1` means no value has this remainder.
+        // `Integer.MAX_VALUE` means the smallest value is at least as high as the maximal value.
+        private int[] aperySet(List<Integer> alignment, int divisor, int remainders) {
+            final int[] aperySet = new int[remainders];
+            aperySet[0] = 0;
+            for (int i = 1; i < remainders; i++) {
+                aperySet[i] = -1;
+            }
+            final var queue = new PriorityQueue<Integer>();
+            queue.add(0);
+            while (!queue.isEmpty()) {
+                final int current = queue.remove();
+                for (int a : alignment) {
+                    final int generatedUnchecked = aperySet[current] + a / divisor;
+                    final int generated = generatedUnchecked < 0 ? Integer.MAX_VALUE : generatedUnchecked;
+                    final int remainder = generated % remainders;
+                    if (aperySet[remainder] == -1 || generated < aperySet[remainder]) {
+                        aperySet[remainder] = generated;
+                        queue.add(remainder);
+                    }
+                }
+            }
+            return aperySet;
         }
         @Override
         public Md constantModifier(BigInteger offset) {
