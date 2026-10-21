@@ -186,17 +186,22 @@ public interface ModifierTrait <Modifier> {
             if (alignmentSmaller < 0 || offset < 0) {
                 return false;
             }
-            // Fast path where `larger` has only one dynamic index.
-            if (alignmentLarger > 0) {
-                for (final int a : smaller.alignment) {
-                    if (a % alignmentLarger != 0) {
-                        return false;
-                    }
-                }
-                return offset % alignmentLarger == 0;
+            // Sufficient condition: `offset` and all of `smaller.alignment` are contained.
+            // This also covers `larger.equals(smaller)`.
+            boolean b = false;
+            for (int d : larger.alignment) {
+                b |= (offset % d) == 0;
             }
-            // Slow path.
-            // Case where `larger` has multiple periods.
+            for (int a : smaller.alignment) {
+                boolean c = false;
+                for (int d : larger.alignment) {
+                    c |= (a % d) == 0;
+                }
+                b &= c;
+            }
+            if (b) {
+                return true;
+            }
             // Inclusion between linear sets is decidable, but complex.
             // Instead, consider the weaker condition:
             // If `larger.alignment` contains `offset` and all of `smaller.alignment`,
