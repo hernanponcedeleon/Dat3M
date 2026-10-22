@@ -116,7 +116,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
     // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable<Modifier>> registerVariables = new HashMap<>();
-    private final Map<Thread, DerivedVariable<Modifier>> threadReturnVariables = new HashMap<>();
+    private final Map<Thread, Variable<Modifier>> threadReturnVariables = new HashMap<>();
 
     // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
     private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
@@ -316,6 +316,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
         }
+        for (final ThreadReturn ret : program.getThreadEvents(ThreadReturn.class)) {
+            processThreadReturn(ret);
+        }
         while (!queue.isEmpty()) {
             eliminateCycles();
             final var current = List.copyOf(queue.entrySet());
@@ -349,6 +352,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 }
             }
         }
+        for (final Thread thread : program.getThreads()) {
+            if (thread.getEntry().isSpawned()) {
+                threadReturnVariables.put(thread, newVariable("threadReturn%d".formatted(thread.getId())));
+            }
+        }
         totalVariables = 1 + objectVariables.size() + nonDetVariables.size();
         totalIncludeEdges = nonDetVariables.size() * (configuration.nondetAddresses ? 1 + objectVariables.size() : 1);
     }
@@ -368,7 +376,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 return;
             }
         } else if (event instanceof ThreadJoin join) {
-            value = threadReturnVariables.computeIfAbsent(join.getJoinThread(), this::newThreadReturnVariable);
+            value = derive(threadReturnVariables.get(join.getJoinThread()));
         } else if (event instanceof Load load) {
             final DerivedVariable<Modifier> address = getResultVariable(load.getAddress(), load);
             if (address == null) {
@@ -389,17 +397,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             assert trait.isIdentity(old.modifier);
             replace(old.base, value);
         }
-    }
-
-    private DerivedVariable<Modifier> newThreadReturnVariable(Thread thread) {
-        if (types.getVoidType().equals(thread.getFunctionType().getReturnType())) {
-            return derive(nullVariable);
-        }
-        final List<IncludeEdge<Modifier>> result = thread.getEvents(ThreadReturn.class).stream()
-                .map(r -> getResultVariable(r.getValue().orElseThrow(), r))
-                .map(v -> new IncludeEdge<>(v.base, v.modifier))
-                .toList();
-        return getOrNewVariable(result, "return%d".formatted(thread.getId()));
     }
 
     // Declares the "res" variables of the address of 'event', if needed, and inserts 'stores' relationships.
@@ -438,6 +435,14 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 }
                 processCommunication(List.of(edge), loads);
             }
+        }
+    }
+
+    private void processThreadReturn(ThreadReturn ret) {
+        final Variable<Modifier> threadReturnVariable = threadReturnVariables.get(ret.getThread());
+        if (threadReturnVariable != null) {
+            final DerivedVariable<Modifier> value = getResultVariable(ret.getValue().orElseThrow(), ret);
+            addInclude(threadReturnVariable, new IncludeEdge<>(value.base, value.modifier));
         }
     }
 
