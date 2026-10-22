@@ -7,13 +7,10 @@ import java.util.Objects;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-/** Data model for an SV-COMP 2.2 violation witness, independent of its YAML serialization. */
-public record SvcompWitness(Metadata metadata, List<Segment> segments) {
+/** Data model for SV-COMP 2.2 witnesses, independent of their YAML serialization. */
+public sealed interface SvcompWitness permits SvcompViolationWitness, SvcompCorrectnessWitness {
 
-    public SvcompWitness {
-        metadata = Objects.requireNonNull(metadata);
-        segments = List.copyOf(segments);
-    }
+    Metadata metadata();
 
     public record Metadata(String formatVersion, String uuid, Instant creationTime, Producer producer, Task task) {
         public Metadata {

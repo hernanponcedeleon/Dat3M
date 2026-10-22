@@ -79,6 +79,7 @@ public class OptionNames {
     public static final String WITNESS_SHOW = "witness.show";
     public static final String WITNESS_FILENAME = "witness.filename";
     public static final String WITNESS_UNKNOWN = "witness.unknown";
+    public static final String WITNESS_PROPERTY = "witness.svcomp.property";
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";

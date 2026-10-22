@@ -16,7 +16,7 @@ public class SvcompWitnessYamlWriterTest {
     public void serializesSemanticWitness() {
         final Path inputFile = Path.of("example.c");
         final Location location = new Location(inputFile, 7);
-        final SvcompWitness witness = new SvcompWitness(
+        final SvcompWitness witness = new SvcompViolationWitness(
                 new Metadata("2.2", "test-uuid", Instant.parse("2026-01-01T00:00:00Z"),
                         new Producer("Dartagnan", "test-version"),
                         new Task(inputFile, "deadbeef", "CHECK( init(main()), LTL(G ! data-race) )",

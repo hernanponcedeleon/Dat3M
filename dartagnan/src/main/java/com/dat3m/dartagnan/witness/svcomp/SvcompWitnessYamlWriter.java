@@ -23,11 +23,20 @@ public final class SvcompWitnessYamlWriter {
     }
 
     static String render(SvcompWitness witness) {
-        final Metadata metadata = witness.metadata();
+        if (witness instanceof SvcompViolationWitness violation) {
+            return header("violation_sequence", violation.metadata()) + "  content:\n" + violation.segments().stream()
+                    .map(SvcompWitnessYamlWriter::formatSegment)
+                    .collect(Collectors.joining());
+        }
+        // For now we build correctness witnesses with an empty set of invariants.
+        return header("invariant_set", witness.metadata()) + "  content: []\n";
+    }
+
+    private static String header(String entryType, Metadata metadata) {
         final Producer producer = metadata.producer();
         final Task task = metadata.task();
-        final String header = """
-                - entry_type: violation_sequence
+        return """
+                - entry_type: %s
                   metadata:
                     format_version: \"%s\"
                     uuid: \"%s\"
@@ -43,13 +52,9 @@ public final class SvcompWitnessYamlWriter {
                       specification: %s
                       data_model: %s
                       language: %s
-                  content:
-                """.formatted(metadata.formatVersion(), metadata.uuid(), metadata.creationTime(), yaml(producer.name()),
+                """.formatted(entryType, metadata.formatVersion(), metadata.uuid(), metadata.creationTime(), yaml(producer.name()),
                 yaml(producer.version()), yaml(task.inputFile()), yaml(task.inputFile()), task.inputFileHash(),
                 yaml(task.specification()), task.dataModel(), task.language());
-        return header + witness.segments().stream()
-                .map(SvcompWitnessYamlWriter::formatSegment)
-                .collect(Collectors.joining());
     }
 
     private static String formatSegment(Segment segment) {

@@ -10,7 +10,8 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.VALID_DEREF;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.VALID_FREE;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedCorrectnessProperties;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedViolationProperties;
 import static org.junit.Assert.assertEquals;
 
 public class SvcompPropertyTest {
@@ -42,6 +43,7 @@ public class SvcompPropertyTest {
     @Test
     public void listsSupportedPropertyNames() {
         assertEquals(List.of("unreach-call", "no-overflow", "valid-deref", "valid-free", "no-data-race"),
-                supportedPropertyNames());
+                supportedViolationProperties());
+        assertEquals(List.of("unreach-call", "no-overflow"), supportedCorrectnessProperties());
     }
 }
