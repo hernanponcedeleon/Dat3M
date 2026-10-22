@@ -112,8 +112,6 @@ public final class SvcompWitnessExtractor {
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
         final List<EventModel> linearized = linearize(model);
-        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile);
-        final Map<SourcePoint, AssumptionExpression> assumptions = assumptionWaypoints(linearized, model, sourcePoints);
         final Map<Event, ThreadModel> spawnedThreads = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
             final ThreadStart start = thread.getThread().getEntry();
@@ -121,9 +119,11 @@ public final class SvcompWitnessExtractor {
                 spawnedThreads.put(start.getCreator(), thread);
             }
         }
+        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile, spawnedThreads.keySet());
+        final Map<SourcePoint, AssumptionExpression> assumptions = assumptionWaypoints(model, sourcePoints);
         final Set<SourcePoint> creationPoints = linearized.stream()
                 .filter(event -> spawnedThreads.containsKey(event.getEvent()))
-                .map(sourcePoints::get).filter(Objects::nonNull).collect(Collectors.toSet());
+                .map(sourcePoints::get).collect(Collectors.toSet());
         final Set<SourcePoint> visited = new HashSet<>();
         for (EventModel event : linearized) {
             // Keep both race targets in the final segment.
@@ -135,8 +135,8 @@ public final class SvcompWitnessExtractor {
                 registerThread(segments, spawned, threadIds, model, programFile);
             }
             final SourcePoint point = sourcePoints.get(event);
-            if (!(event instanceof MemoryEventModel) || event.getEvent() instanceof Init
-                    || point == null || creationPoints.contains(point) || !visited.add(point)) {
+            // A source point may span several events; emit its waypoint only at the first one.
+            if (point == null || creationPoints.contains(point) || !visited.add(point)) {
                 continue;
             }
             final ThreadModel thread = event.getThreadModel();
@@ -174,40 +174,45 @@ public final class SvcompWitnessExtractor {
      * ordered sequence of thread-tagged memory-access waypoints. Value constraints describe reads from other
      * threads; other accesses use a true assumption to record their place in the interleaving.
      */
-    private static Map<SourcePoint, AssumptionExpression> assumptionWaypoints(List<EventModel> linearized,
-            ExecutionModelNext model, Map<EventModel, SourcePoint> sourcePoints) {
-        final Set<EventModel> crossThreadReads = relationEdges(model, RF).stream()
+    private static Map<SourcePoint, AssumptionExpression> assumptionWaypoints(ExecutionModelNext model,
+            Map<EventModel, SourcePoint> sourcePoints) {
+        // Sorted, so that the order of conjuncts is deterministic.
+        final List<LoadModel> crossThreadReads = relationEdges(model, RF).stream()
                 .filter(edge -> edge.to() instanceof LoadModel)
                 .filter(edge -> !(edge.from().getEvent() instanceof Init))
                 .filter(edge -> !edge.from().getThreadModel().equals(edge.to().getThreadModel()))
-                .map(EdgeModel::to)
-                .collect(Collectors.toSet());
-
-        final Map<SourcePoint, Set<AssumptionExpression>> constraints = new HashMap<>();
-        for (EventModel event : linearized) {
-            final SourcePoint point = sourcePoints.get(event);
-            if (!(event instanceof LoadModel load) || !crossThreadReads.contains(event)
-                    || point == null) {
-                continue;
-            }
-            final Optional<VariableEquality> constraint = readValueAssumption(load, model);
-            constraint.ifPresent(equality -> constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(equality));
-        }
+                .map(edge -> (LoadModel) edge.to())
+                .filter(sourcePoints::containsKey)
+                .distinct()
+                .sorted(Comparator.comparingInt(LoadModel::getId))
+                .toList();
 
         final Map<SourcePoint, AssumptionExpression> result = new HashMap<>();
-        constraints.forEach((point, values) ->
-                result.put(point, values.stream().reduce(Conjunction::new).orElseThrow()));
+        for (LoadModel load : crossThreadReads) {
+            readValueAssumption(load, model)
+                    .ifPresent(equality -> result.merge(sourcePoints.get(load), equality, Conjunction::new));
+        }
         return result;
     }
 
-    private static Map<EventModel, SourcePoint> sourcePoints(ExecutionModelNext model, Path programFile) {
+    // Only non-init memory accesses and thread creations get source points; they are the events that matter for waypoints.
+    private static Map<EventModel, SourcePoint> sourcePoints(ExecutionModelNext model, Path programFile,
+            Set<Event> creators) {
         final Map<EventModel, SourcePoint> result = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
             Location previous = null;
             int occurrence = 0;
             for (EventModel event : thread.getEventModels()) {
+                final boolean isAccess = event instanceof MemoryEventModel && !(event.getEvent() instanceof Init);
+                if (!isAccess && !creators.contains(event.getEvent())) {
+                    continue;
+                }
                 final Location location = inputLocation(event, programFile);
                 if (location == null) {
+                    // Accesses outside the input program, e.g., in headers, do not become waypoints.
+                    if (creators.contains(event.getEvent())) {
+                        throw new IllegalArgumentException("Thread creation has no source location in the input program");
+                    }
                     continue;
                 }
                 if (!location.equals(previous)) {
@@ -376,12 +381,12 @@ public final class SvcompWitnessExtractor {
     }
 
     private static Location inputLocation(Event event, Path programFile) {
-        final SourceLocation location = event.getMetadata(SourceLocation.class);
-        if (!(location instanceof SourceLocation.Generic generic) || generic.lineNumber() < 1
-                || !generic.sourcePath().getFileName().equals(programFile.getFileName())) {
+        if (!(event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic)
+                || generic.lineNumber() < 1) {
             return null;
         }
-        return new Location(programFile, generic.lineNumber());
+        final Location location = new Location(programFile, generic.lineNumber());
+        return location.matches(event) ? location : null;
     }
 
     // The targets identify the event(s) constituting the violation and become the final target waypoints.
