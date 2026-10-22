@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.EventDomainRepository;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -440,6 +441,75 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         AliasAnalysis analysis = analyze(program);
 
         assertContains(analysis.addressableObjects(indirect), x);
+    }
+
+    @Test
+    public void mutuallyExclusiveJoinsRetainLoadedReturnPointer() throws Exception {
+        /*
+         * Initially: slot = &x
+         * P0: create(P1); create(P2, P1); if (!choice) { pointer = join(P1); *pointer = 0; }
+         * P1: return *slot;
+         * P2: if (choice) { pointer = join(P1); *pointer = 0; *x = 0; }
+         * choice is one shared nondeterministic Boolean expression, so the joins and writes to x
+         * are mutually exclusive. slot is initialized before use and never modified.
+         * Exactly one thread joins P1 per execution. The analysis visits P0's join before
+         * P1's load, and P2's join afterwards, so cached return values must survive replacement.
+         */
+        IntegerType type = types.getArchType();
+        FunctionType p1Type = types.getFunctionType(type, List.of());
+        FunctionType p2Type = types.getFunctionType(type, List.of(type));
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = builder.newMemoryObject("x", 8);
+        x.setInitialValue(0, expressions.makeZero(type));
+        MemoryObject slot = builder.newMemoryObject("slot", 8);
+        slot.setInitialValue(0, x);
+        Function p0 = builder.newFunction("P0", 0, p1Type, List.of());
+        Function p1 = builder.newFunction("P1", 1, p1Type, List.of());
+        Function p2 = builder.newFunction("P2", 2, p2Type, List.of("p1Id"));
+
+        Expression choice = builder.newConstant(types.getBooleanType());
+        Register p1Id = builder.getOrNewRegister(0, "p1Id");
+        Register p2Id = builder.getOrNewRegister(0, "p2Id");
+        Register p0Result = builder.getOrNewRegister(0, "p0Result", types.getAggregateType(List.of(type, type)));
+        Register p1Result = builder.getOrNewRegister(1, "p1Result", type);
+        Register p2Result = builder.getOrNewRegister(2, "p2Result", types.getAggregateType(List.of(type, type)));
+        Label p0End = EventFactory.newLabel("p0End");
+        Label p2End = EventFactory.newLabel("p2End");
+        Store p0Indirect = EventFactory.newStore(expressions.makeExtract(p0Result, 1), expressions.makeZero(type));
+        Store p2Indirect = EventFactory.newStore(expressions.makeExtract(p2Result, 1), expressions.makeZero(type));
+        Store direct = EventFactory.newStore(x, expressions.makeZero(type));
+
+        p0.append(List.of(
+                EventFactory.newDynamicThreadCreate(p1Id, p1Type, p1, List.of()),
+                EventFactory.newDynamicThreadCreate(p2Id, p2Type, p2, List.of(p1Id)),
+                EventFactory.newJump(choice, p0End),
+                EventFactory.newDynamicThreadJoin(p0Result, p1Id),
+                EventFactory.newAssume(expressions.makeEQ(expressions.makeExtract(p0Result, 0), expressions.makeZero(type))),
+                p0Indirect, p0End));
+        p1.append(List.of(EventFactory.newLoad(p1Result, slot), EventFactory.newThreadReturn(p1Result)));
+        p2.append(List.of(EventFactory.newJump(expressions.makeNot(choice), p2End),
+                EventFactory.newDynamicThreadJoin(p2Result, p2.getParameterRegisters().get(0)),
+                EventFactory.newAssume(expressions.makeEQ(expressions.makeExtract(p2Result, 0), expressions.makeZero(type))),
+                p2Indirect, direct, p2End));
+
+        Program program = builder.build();
+        program.addInit(x, 0);
+        program.addInit(slot, 0);
+        program.setEntrypoint(new Entrypoint.Simple(p0));
+        ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
+        p0Indirect = findProcessedStore(program, p0Indirect);
+        p2Indirect = findProcessedStore(program, p2Indirect);
+        direct = findProcessedStore(program, direct);
+        AliasAnalysis analysis = analyze(program);
+        assertTrue("P0's join lost P1's return pointer", analysis.addressableObjects(p0Indirect).contains(x));
+        assertTrue("P2's join lost P1's return pointer", analysis.addressableObjects(p2Indirect).contains(x));
+        assertMayAlias(analysis, p2Indirect, direct);
+    }
+
+    private Store findProcessedStore(Program program, Store original) {
+        return (Store) program.getThreadEvents().stream()
+                .filter(event -> event.hasEqualMetadata(original, Event.OriginalId.class))
+                .findFirst().orElseThrow();
     }
 
     private Register addCast(ProgramBuilder builder, String name, Expression operand,
