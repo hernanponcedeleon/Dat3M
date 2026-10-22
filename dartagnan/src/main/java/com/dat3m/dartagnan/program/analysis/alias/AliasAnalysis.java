@@ -103,6 +103,10 @@ public interface AliasAnalysis {
                         " Defaults to 'false'.", secure = true)
         boolean graphvizInternal;
 
+        @Option(name = ALIAS_NONDET_ADDRESSES,
+                description = "If 'true', allow non-deterministic values to guess valid addresses.")
+        boolean nondetAddresses;
+
         final boolean detectMixedSizeAccesses;
 
         private Config(Configuration config, boolean msa) throws InvalidConfigurationException {
