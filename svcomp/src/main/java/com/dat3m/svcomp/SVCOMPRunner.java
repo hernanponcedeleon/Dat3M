@@ -31,8 +31,7 @@ public class SVCOMPRunner {
     @Options
     public static class SVCOMPOptions {
 
-        private EnumSet<Property> verificationProperties;
-        private EnumSet<Property> validationProperties;
+        private EnumSet<Property> property;
         private String witnessProperty;
 
         @Option(
@@ -41,25 +40,19 @@ public class SVCOMPRunner {
                 description="The path to the property to be checked.")
         private void property(String p) {
             // TODO process the property file instead of assuming its contents based of its name
-            // We always enable PROGRAM_SPEC for verification to detect calls to unknown functions.
+            // We always enable PROGRAM_SPEC to detect calls to unknown functions.
             // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
-            // TODO: should we get rid of this detection and simply the code here?
             if(p.contains("no-data-race")) {
-                verificationProperties = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
-                validationProperties = EnumSet.of(Property.CAT_SPEC);
+                property = EnumSet.of(Property.CAT_SPEC);
             } else if(p.contains("termination")) {
-                verificationProperties = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
-                validationProperties = EnumSet.of(Property.TERMINATION);
+                property = EnumSet.of(Property.TERMINATION);
             } else if(p.contains("valid-memsafety")) {
-                verificationProperties = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
-                validationProperties = EnumSet.of(Property.TRACKABILITY);
+                property = EnumSet.of(Property.TRACKABILITY);
             } else if(p.contains("unreach-call")) {
-                verificationProperties = EnumSet.of(Property.PROGRAM_SPEC);
-                validationProperties = EnumSet.of(Property.PROGRAM_SPEC);
+                property = EnumSet.of(Property.PROGRAM_SPEC);
                 witnessProperty = "unreach-call";
             } else if(p.contains("no-overflow")) {
-                verificationProperties = EnumSet.of(Property.PROGRAM_SPEC);
-                validationProperties = EnumSet.of(Property.PROGRAM_SPEC);
+                property = EnumSet.of(Property.PROGRAM_SPEC);
                 witnessProperty = "no-overflow";
             } else {
                 throw new IllegalArgumentException("Unrecognized property " + p);
@@ -73,6 +66,15 @@ public class SVCOMPRunner {
 
         public boolean isWitnessValidation() {
             return validationWitnessPath != null;
+        }
+
+        // Verification additionally enables PROGRAM_SPEC; validation checks only the property of the witness.
+        public EnumSet<Property> getProperties() {
+            final EnumSet<Property> properties = EnumSet.copyOf(property);
+            if (!isWitnessValidation()) {
+                properties.add(Property.PROGRAM_SPEC);
+            }
+            return properties;
         }
 
         @Option(
@@ -114,7 +116,7 @@ public class SVCOMPRunner {
         Configuration config = Configuration.fromCmdLineArguments(argKeyword);
         SVCOMPOptions o = new SVCOMPOptions(config);
 
-        if(o.verificationProperties == null) {
+        if(o.property == null) {
             System.out.println("UNKNOWN");
             return;
         }
@@ -139,11 +141,8 @@ public class SVCOMPRunner {
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
-            final EnumSet<Property> properties = o.isWitnessValidation()
-                    ? o.validationProperties
-                    : o.verificationProperties;
             cmd.add(String.format("--%s=%s", PROPERTY,
-                    properties.stream().map(Enum::name).collect(Collectors.joining(","))));
+                    o.getProperties().stream().map(Enum::name).collect(Collectors.joining(","))));
             if (o.witnessProperty != null) {
                 cmd.add(String.format("--%s=%s", WITNESS_PROPERTY, o.witnessProperty));
             }

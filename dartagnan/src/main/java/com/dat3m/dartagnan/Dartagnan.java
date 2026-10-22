@@ -73,14 +73,7 @@ public class Dartagnan {
         if (isBatchMode && o.getValidationWitnessPath().isPresent()) {
             throw new IllegalArgumentException("Cannot validate a witness in batch mode");
         }
-        final Optional<SvcompViolationWitness> witness = o.getValidationWitnessPath()
-                .map(path -> {
-                    try {
-                        return SvcompWitnessYamlParser.parse(path);
-                    } catch (IOException exception) {
-                        throw new IllegalArgumentException("Cannot parse witness '%s'".formatted(path), exception);
-                    }
-                });
+        final Optional<SvcompViolationWitness> witness = o.getValidationWitnessPath().map(Dartagnan::parseWitness);
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
         final Set<String> neededTools = progFiles.stream()
@@ -185,6 +178,14 @@ public class Dartagnan {
                 .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
                 .loadFromSource(source, ".", ".")
                 .build();
+    }
+
+    private static SvcompViolationWitness parseWitness(Path path) {
+        try {
+            return SvcompWitnessYamlParser.parse(path);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Cannot parse witness '%s'".formatted(path), exception);
+        }
     }
 
     private static Path getCatFileFromArgs(String[] args) throws IOException {
