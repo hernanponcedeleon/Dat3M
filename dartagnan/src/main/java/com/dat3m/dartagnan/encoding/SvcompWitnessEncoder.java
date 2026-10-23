@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.Candidate;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedVariable;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedSegment;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
 import org.slf4j.Logger;
@@ -64,8 +63,11 @@ public final class SvcompWitnessEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(SvcompWitnessEncoder.class);
 
-    /** The condition under which a candidate event satisfies its waypoint, and the literal selecting it. */
-    private record CandidateEncoding(BooleanFormula condition, BooleanFormula selector) { }
+    /**
+     * The condition under which a candidate event satisfies its waypoint, and the literal selecting it.
+     * The candidate also carries the accesses of its statement instance that the ordering constrains.
+     */
+    private record CandidateEncoding(Candidate candidate, BooleanFormula condition, BooleanFormula selector) { }
 
     /** A waypoint with the encodings of all events that may satisfy it. */
     private record WaypointEncoding(Waypoint waypoint, Map<Event, CandidateEncoding> candidates) {
@@ -114,18 +116,8 @@ public final class SvcompWitnessEncoder {
         // which lets the solver check reachable bounds and retry.
         constraints.add(encodeThreadBindings(resolvedWitness.threads()));
         final List<SegmentEncoding> segments = encodeSegments(resolvedWitness);
-        final Map<Event, Set<Event>> statementAccesses = new HashMap<>();
-        for (ResolvedSegment segment : resolvedWitness.segments()) {
-            for (ResolvedWaypoint waypoint : segment.waypoints()) {
-                if (waypoint.waypoint() instanceof Assumption) {
-                    waypoint.candidates().forEach(candidate -> statementAccesses
-                            .computeIfAbsent(candidate.event(), _ -> new LinkedHashSet<>())
-                            .addAll(candidate.constrainedAccesses()));
-                }
-            }
-        }
         // Every waypoint must be satisfied, even if there is nothing to order.
-        constraints.add(encodeSegmentOrder(segments, statementAccesses));
+        constraints.add(encodeSegmentOrder(segments));
         if (property == Property.CAT_SPEC) {
             constraints.add(targets.encode(segments.stream()
                     .flatMap(segment -> segment.waypoints().stream())
@@ -162,7 +154,7 @@ public final class SvcompWitnessEncoder {
                             encodeWaypoint(waypoint, candidate, resolvedWitness.variables()));
                     final BooleanFormula selector = bmgr.makeVariable("witness-segment " + segmentIndex + " "
                             + waypointIndex + " " + event.getGlobalId());
-                    candidates.put(event, new CandidateEncoding(condition, selector));
+                    candidates.put(event, new CandidateEncoding(candidate, condition, selector));
                 }
                 segment.add(new WaypointEncoding(waypoint.waypoint(), candidates));
             }
@@ -215,43 +207,46 @@ public final class SvcompWitnessEncoder {
      * Besides, the accesses to the constrained variables in the selected statement instance of an assumption
      * lie after the previous segment's events and before the next segment's events.
      */
-    private BooleanFormula encodeSegmentOrder(List<SegmentEncoding> segments,
-            Map<Event, Set<Event>> statementAccesses) {
+    private BooleanFormula encodeSegmentOrder(List<SegmentEncoding> segments) {
         final List<BooleanFormula> constraints = new ArrayList<>();
-        Map<Event, List<BooleanFormula>> previousSelectors = Map.of();
+        SegmentEncoding previousSegment = null;
         for (SegmentEncoding segment : segments) {
-            final Map<Event, List<BooleanFormula>> selectors = new LinkedHashMap<>();
             for (WaypointEncoding waypoint : segment.waypoints()) {
-                final List<BooleanFormula> waypointSelectors = new ArrayList<>();
-                for (var entry : waypoint.candidates().entrySet()) {
-                    final Event event = entry.getKey();
-                    final BooleanFormula selector = entry.getValue().selector();
-                    waypointSelectors.add(selector);
-                    selectors.computeIfAbsent(event, _ -> new ArrayList<>()).add(selector);
-                    constraints.add(bmgr.implication(selector, entry.getValue().condition()));
-                    for (var previous : previousSelectors.entrySet()) {
-                        final Event previousEvent = previous.getKey();
-                        final BooleanFormula both = bmgr.and(bmgr.or(previous.getValue()), selector);
-                        constraints.add(bmgr.implication(both, order.before(previousEvent, event)));
-                        for (Event access : statementAccesses.getOrDefault(event, Set.of())) {
-                            if (access != previousEvent) {
-                                constraints.add(bmgr.implication(bmgr.and(both, context.execution(access)),
-                                        order.before(previousEvent, access)));
-                            }
-                        }
-                        for (Event access : statementAccesses.getOrDefault(previousEvent, Set.of())) {
-                            if (access != event) {
-                                constraints.add(bmgr.implication(bmgr.and(both, context.execution(access)),
-                                        order.before(access, event)));
+                for (CandidateEncoding candidate : waypoint.candidates().values()) {
+                    constraints.add(bmgr.implication(candidate.selector(), candidate.condition()));
+                    if (previousSegment != null) {
+                        for (WaypointEncoding previousWaypoint : previousSegment.waypoints()) {
+                            for (CandidateEncoding previous : previousWaypoint.candidates().values()) {
+                                constraints.add(encodeOrder(previous, candidate));
                             }
                         }
                     }
                 }
-                constraints.add(bmgr.or(waypointSelectors));
+                constraints.add(bmgr.or(waypoint.selectors().values().stream().toList()));
             }
-            previousSelectors = selectors;
+            previousSegment = segment;
         }
         return bmgr.and(constraints);
+    }
+
+    // If both candidates are selected, the first precedes the second, and so do the accesses of their statements.
+    private BooleanFormula encodeOrder(CandidateEncoding first, CandidateEncoding second) {
+        final Event firstEvent = first.candidate().event();
+        final Event secondEvent = second.candidate().event();
+        final BooleanFormula both = bmgr.and(first.selector(), second.selector());
+        final List<BooleanFormula> constraints = new ArrayList<>();
+        constraints.add(order.before(firstEvent, secondEvent));
+        for (Event access : second.candidate().constrainedAccesses()) {
+            if (access != firstEvent) {
+                constraints.add(bmgr.implication(context.execution(access), order.before(firstEvent, access)));
+            }
+        }
+        for (Event access : first.candidate().constrainedAccesses()) {
+            if (access != secondEvent) {
+                constraints.add(bmgr.implication(context.execution(access), order.before(access, secondEvent)));
+            }
+        }
+        return bmgr.implication(both, bmgr.and(constraints));
     }
 
     private BooleanFormula encodeWaypoint(ResolvedWaypoint waypoint, Candidate candidate,

@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -307,15 +304,8 @@ public final class SvcompWitnessResolver {
     }
 
     private List<Store> writesForObject(MemoryObject object) {
-        if (!object.isStaticallyAllocated() || !object.hasKnownSize()
-                || !object.getInitializedFields().equals(Set.of(0))) {
-            throw new IllegalArgumentException("Witness variable is not an initialized scalar: " + object);
-        }
-        final var type = object.getInitialValue(0).getType();
-        if (!(type instanceof IntegerType || type instanceof BooleanType)
-                || TypeFactory.getInstance().getMemorySizeInBytes(type) != object.getKnownSize()) {
-            throw new IllegalArgumentException("Witness variable is not an integral scalar: " + object);
-        }
+        final var type = SvcompVariables.scalarType(object).orElseThrow(() -> new IllegalArgumentException(
+                "Witness variable is not an initialized integral scalar: " + object));
         final List<Store> writes = program.getThreadEvents(Store.class).stream()
                 .filter(write -> alias.addressableObjects(write).contains(object)).toList();
         for (Store write : writes) {

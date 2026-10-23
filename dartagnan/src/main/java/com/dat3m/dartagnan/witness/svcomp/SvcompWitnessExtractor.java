@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.witness.svcomp;
 
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.program.Program;
@@ -31,7 +30,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
@@ -51,7 +49,6 @@ import static java.nio.file.Files.readAllBytes;
  */
 public final class SvcompWitnessExtractor {
 
-    private static final Pattern C_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
     private SvcompWitnessExtractor() { }
 
@@ -226,12 +223,10 @@ public final class SvcompWitnessExtractor {
         if (!(event.getAccessType() instanceof IntegerType) && !(event.getAccessType() instanceof BooleanType)) {
             return Optional.empty();
         }
-        final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
         final Optional<MemoryObjectModel> object = model.getMemoryLayoutMap().values().stream()
-                .filter(memory -> memory.object().isStaticallyAllocated() && memory.object().hasName())
-                .filter(memory -> C_IDENTIFIER.matcher(memory.object().getName()).matches())
+                .filter(memory -> SvcompVariables.isVariable(memory.object()))
                 .filter(memory -> memory.address().equals(load.getAccessedAddress()))
-                .filter(memory -> memory.size().equals(BigInteger.valueOf(accessSize)))
+                .filter(memory -> SvcompVariables.scalarType(memory.object()).equals(Optional.of(event.getAccessType())))
                 .findFirst();
         if (object.isEmpty()) {
             return Optional.empty();
