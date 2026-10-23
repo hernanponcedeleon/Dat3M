@@ -90,13 +90,13 @@ public class OutputGenerator {
     private final boolean isBatchMode;
     private int batchIndex = -1;
     private Path witnessFile = null;
-    // Only present when generating SV-COMP witnesses.
-    private final Optional<SvcompOutputGenerator> svcompOutput;
+    // Null unless generating SV-COMP witnesses.
+    private final SvcompOutputGenerator svcompOutput;
 
     private OutputGenerator(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
         this.isBatchMode = isBatchMode;
         config.inject(this);
-        svcompOutput = witnessType == WitnessType.SV ? Optional.of(new SvcompOutputGenerator(config)) : Optional.empty();
+        svcompOutput = witnessType == WitnessType.SV ? new SvcompOutputGenerator(config) : null;
     }
 
     public static OutputGenerator create(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
@@ -342,7 +342,7 @@ public class OutputGenerator {
                 );
             }
             case SV -> {
-                return svcompOutput.orElseThrow().generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
+                return svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
             }
         }
 
