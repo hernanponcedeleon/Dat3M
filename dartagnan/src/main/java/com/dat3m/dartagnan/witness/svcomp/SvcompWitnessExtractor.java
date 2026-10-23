@@ -201,16 +201,12 @@ public final class SvcompWitnessExtractor {
         if (object.isEmpty()) {
             return Optional.empty();
         }
-        final Object value = load.getValue().value();
-        final String literal;
-        switch (value) {
-            case Boolean booleanValue -> literal = booleanValue ? "1" : "0";
-            case Number _ -> literal = value.toString();
-            case null, default -> {
-                return Optional.empty();
-            }
-        }
-        return Optional.of(String.format("(%s == %s)", object.get().object().getName(), literal));
+        final Optional<String> literal = switch (load.getValue().value()) {
+            case Boolean booleanValue -> Optional.of(booleanValue ? "1" : "0");
+            case Number number -> Optional.of(number.toString());
+            case null, default -> Optional.empty();
+        };
+        return literal.map(l -> String.format("(%s == %s)", object.get().object().getName(), l));
     }
 
     private static Set<EdgeModel> relationEdges(ExecutionModelNext model, String name) {

@@ -171,12 +171,12 @@ public class ProgramEncoder {
         for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
             final Event pred = cur.getPredecessor();
             // Immediate control flow
-            BooleanFormula cfCond = context.controlFlow(pred);
-            switch (pred) {
-                case CondJump jump -> cfCond = bmgr.and(cfCond, bmgr.not(context.jumpTaken(jump)));
-                case BlockingEvent barrier -> cfCond = bmgr.and(cfCond, context.unblocked(barrier));
-                default -> { }
-            }
+            final BooleanFormula predCf = context.controlFlow(pred);
+            BooleanFormula cfCond = switch (pred) {
+                case CondJump jump -> bmgr.and(predCf, bmgr.not(context.jumpTaken(jump)));
+                case BlockingEvent barrier -> bmgr.and(predCf, context.unblocked(barrier));
+                default -> predCf;
+            };
 
             if (cur instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
