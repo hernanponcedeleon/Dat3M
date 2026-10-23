@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
+import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
@@ -55,9 +56,6 @@ import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedPropertyNames;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor.forViolation;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter.write;
 
 @Options
 public class OutputGenerator {
@@ -74,7 +72,7 @@ public class OutputGenerator {
 
     @Option(
             name = WITNESS,
-            description = "Type of violation witness to generate in the output directory.")
+            description = "Type of witness to generate in the output directory.")
     private WitnessType witnessType = WitnessType.getDefault();
 
     @Option(name=WITNESS_FILENAME,
@@ -92,10 +90,13 @@ public class OutputGenerator {
     private final boolean isBatchMode;
     private int batchIndex = -1;
     private Path witnessFile = null;
+    // Null unless generating SV-COMP witnesses.
+    private final SvcompOutputGenerator svcompOutput;
 
     private OutputGenerator(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
         this.isBatchMode = isBatchMode;
         config.inject(this);
+        svcompOutput = witnessType == WitnessType.SV ? new SvcompOutputGenerator(config) : null;
     }
 
     public static OutputGenerator create(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
@@ -318,16 +319,18 @@ public class OutputGenerator {
     }
 
     private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
-        if (!result.hasModel()
-                || (result.getStatus() == UNKNOWN && !generateWitnessForUnknown)
-                || witnessType == WitnessType.NONE) {
+        final VerificationStatus status = result.getStatus();
+        if (witnessType == WitnessType.NONE || (status == UNKNOWN && !generateWitnessForUnknown)) {
             return null;
         }
 
-        final VerificationTask task = result.getTask();
-        final ExecutionModelNext model = fromIREvaluator(result.getModel());
         switch (witnessType) {
             case DOT, PNG -> {
+                if (!result.hasModel()) {
+                    return null;
+                }
+                final VerificationTask task = result.getTask();
+                final ExecutionModelNext model = fromIREvaluator(result.getModel());
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
@@ -339,15 +342,7 @@ public class OutputGenerator {
                 );
             }
             case SV -> {
-                final var witness = forViolation(model, task.getProgram());
-                if (witness.isEmpty()) {
-                    logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
-                            String.join(", ", supportedPropertyNames()));
-                    return null;
-                }
-                final Path witnessFile = getOrCreateOutputDirectory().resolve(filename + ".yml");
-                write(witness.get(), witnessFile);
-                return witnessFile;
+                return svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
             }
         }
 

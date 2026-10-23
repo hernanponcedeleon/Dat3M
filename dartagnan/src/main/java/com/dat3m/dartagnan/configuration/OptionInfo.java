@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.verification.solving.EnumerationSolver;
 import com.dat3m.dartagnan.verification.solving.SMTModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
+import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import org.sosy_lab.common.configuration.Option;
@@ -67,6 +68,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 RelationAnalysis.Config.class,
                 WmmAnalysis.class,
                 ExecutionGraphVisualizer.class,
+                SvcompOutputGenerator.class,
                 Program.SemanticConfig.class,
                 AbstractLibrary.class,
                 PthreadLibrary.class

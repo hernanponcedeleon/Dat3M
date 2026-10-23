@@ -81,8 +81,7 @@ public class OptionNames {
     public static final String WITNESS_UNKNOWN = "witness.unknown";
 
     // SVCOMP Options
-    public static final String PROPERTYPATH = "svcomp.property";
-    public static final String NATIVE = "svcomp.native";
+    public static final String WITNESS_PROPERTY = "svcomp.witness.property";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";

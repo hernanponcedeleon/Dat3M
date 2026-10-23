@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.svcomp.OptionNames.*;
 import static com.dat3m.dartagnan.GlobalSettings.*;
 
 public class SVCOMPRunner {
@@ -31,6 +32,7 @@ public class SVCOMPRunner {
     public static class SVCOMPOptions {
 
         private EnumSet<Property> property;
+        private String witnessProperty;
 
         @Option(
                 name= PROPERTYPATH,
@@ -46,8 +48,12 @@ public class SVCOMPRunner {
                 property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
             } else if(p.contains("valid-memsafety")) {
                 property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
-            } else if(p.contains("unreach-call") || p.contains("no-overflow")) {
+            } else if(p.contains("unreach-call")) {
                 property = EnumSet.of(Property.PROGRAM_SPEC);
+                witnessProperty = "unreach-call";
+            } else if(p.contains("no-overflow")) {
+                property = EnumSet.of(Property.PROGRAM_SPEC);
+                witnessProperty = "no-overflow";
             } else {
                 throw new IllegalArgumentException("Unrecognized property " + p);
             }
@@ -118,6 +124,9 @@ public class SVCOMPRunner {
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
             cmd.add(String.format("--%s=%s", PROPERTY, o.property.stream().map(Enum::name).collect(Collectors.joining(","))));
+            if (o.witnessProperty != null) {
+                cmd.add(String.format("--%s=%s", WITNESS_PROPERTY, o.witnessProperty));
+            }
             cmd.addAll(filterOptions(config));
 
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);

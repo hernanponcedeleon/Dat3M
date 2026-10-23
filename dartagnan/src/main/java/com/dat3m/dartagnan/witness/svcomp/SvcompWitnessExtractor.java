@@ -44,7 +44,10 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static java.nio.file.Files.readAllBytes;
 
-/** Projects an {@link ExecutionModelNext} into an SV-COMP witness. */
+/**
+ * Generates SV-COMP witnesses: violation witnesses by projecting an {@link ExecutionModelNext},
+ * correctness witnesses from a task whose properties hold.
+ */
 public final class SvcompWitnessExtractor {
 
     private static final String DATA_RACE_AXIOM = "data-race";
@@ -53,7 +56,15 @@ public final class SvcompWitnessExtractor {
 
     private SvcompWitnessExtractor() { }
 
-    public static Optional<SvcompWitness> forViolation(ExecutionModelNext model, Program program)
+    public static Optional<SvcompCorrectnessWitness> forCorrectness(Program program, SvcompProperty property)
+            throws IOException {
+        if (!property.supportsCorrectnessWitness()) {
+            return Optional.empty();
+        }
+        return Optional.of(new SvcompCorrectnessWitness(metadata(programFile(program), property.specification())));
+    }
+
+    public static Optional<SvcompViolationWitness> forViolation(ExecutionModelNext model, Program program)
             throws IOException {
         final Map<SvcompProperty, SvcompViolation> violations = new EnumMap<>(SvcompProperty.class);
         if (model.isViolated(PROGRAM_SPEC)) {
@@ -90,12 +101,9 @@ public final class SvcompWitnessExtractor {
                 .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
-    private static SvcompWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
+    private static SvcompViolationWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
             throws IOException {
-        if (!program.hasMetadata(SourcePath.class)) {
-            throw new IOException("Cannot generate an SV-COMP witness without program source metadata");
-        }
-        final Path programFile = program.getMetadata(SourcePath.class).sourcePath();
+        final Path programFile = programFile(program);
         final SyntacticContextAnalysis context = SyntacticContextAnalysis.newInstance(program);
 
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
@@ -125,9 +133,20 @@ public final class SvcompWitnessExtractor {
                 .toList();
         segments.add(new Segment(targetWaypoints));
 
-        return new SvcompWitness(new Metadata("2.2", UUID.randomUUID().toString(), Instant.now(),
+        return new SvcompViolationWitness(metadata(programFile, violation.property().specification()), segments);
+    }
+
+    private static Path programFile(Program program) throws IOException {
+        if (!program.hasMetadata(SourcePath.class)) {
+            throw new IOException("Cannot generate an SV-COMP witness without program source metadata");
+        }
+        return program.getMetadata(SourcePath.class).sourcePath();
+    }
+
+    private static Metadata metadata(Path programFile, String specification) throws IOException {
+        return new Metadata("2.2", UUID.randomUUID().toString(), Instant.now(),
                 new Producer("Dartagnan", EnvironmentInfo.getVersion()),
-                new Task(programFile, sha256(programFile), violation.property().specification(), "ILP32", "C")), segments);
+                new Task(programFile, sha256(programFile), specification, "ILP32", "C"));
     }
 
     /*

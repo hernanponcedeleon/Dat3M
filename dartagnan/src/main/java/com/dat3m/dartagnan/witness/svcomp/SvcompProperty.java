@@ -1,23 +1,29 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Arrays.stream;
 
-/** Properties for which version 2.2 of the SV witness format defines a violation sequence. */
+/**
+ * Properties for which version 2.2 of the SV witness format defines violation witnesses.
+ * Correctness witnesses are only supported for some of them.
+ */
 public enum SvcompProperty {
-    UNREACH_CALL("unreach-call", "CHECK( init(main()), LTL(G ! call(reach_error())) )"),
-    NO_OVERFLOW("no-overflow", "CHECK( init(main()), LTL(G ! overflow) )"),
-    VALID_DEREF("valid-deref", "CHECK( init(main()), LTL(G valid-deref) )"),
-    VALID_FREE("valid-free", "CHECK( init(main()), LTL(G valid-free) )"),
-    DATA_RACE("no-data-race", "CHECK( init(main()), LTL(G ! data-race) )");
+    UNREACH_CALL("unreach-call", "CHECK( init(main()), LTL(G ! call(reach_error())) )", true),
+    NO_OVERFLOW("no-overflow", "CHECK( init(main()), LTL(G ! overflow) )", true),
+    VALID_DEREF("valid-deref", "CHECK( init(main()), LTL(G valid-deref) )", false),
+    VALID_FREE("valid-free", "CHECK( init(main()), LTL(G valid-free) )", false),
+    DATA_RACE("no-data-race", "CHECK( init(main()), LTL(G ! data-race) )", false);
 
     private final String propertyName;
     private final String specification;
+    private final boolean supportsCorrectnessWitness;
 
-    SvcompProperty(String propertyName, String specification) {
+    SvcompProperty(String propertyName, String specification, boolean supportsCorrectnessWitness) {
         this.propertyName = propertyName;
         this.specification = specification;
+        this.supportsCorrectnessWitness = supportsCorrectnessWitness;
     }
 
     String propertyName() {
@@ -28,8 +34,21 @@ public enum SvcompProperty {
         return specification;
     }
 
-    public static List<String> supportedPropertyNames() {
+    public static Optional<SvcompProperty> fromPropertyName(String name) {
+        return stream(values()).filter(property -> property.propertyName.equals(name)).findFirst();
+    }
+
+    boolean supportsCorrectnessWitness() {
+        return supportsCorrectnessWitness;
+    }
+
+    public static List<String> supportedViolationProperties() {
         return stream(values()).map(SvcompProperty::propertyName).toList();
+    }
+
+    public static List<String> supportedCorrectnessProperties() {
+        return stream(values()).filter(SvcompProperty::supportsCorrectnessWitness)
+                .map(SvcompProperty::propertyName).toList();
     }
 
     static SvcompProperty fromAssertionError(String errorMessage) {
