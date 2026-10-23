@@ -33,6 +33,11 @@ public final class WitnessValidationTask extends VerificationTask {
         return witness;
     }
 
+    /** The single property whose violation the witness describes. */
+    public Property getProperty() {
+        return getProperties().iterator().next();
+    }
+
     public static final class WitnessValidationTaskBuilder extends TaskBuilder {
 
         private final SvcompViolationWitness witness;

@@ -3,11 +3,15 @@ package com.dat3m.dartagnan.witness.svcomp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.CallContext;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -20,6 +24,7 @@ import com.google.common.collect.Maps;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 
@@ -36,6 +41,13 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
  * Locations: events are matched by source line and file name, ignoring directories.
  * Multiple events can match a location, for example after loop unrolling.
  * Every waypoint must match at least one event; unmatched waypoints are rejected.
+ *
+ * Targets: a target denotes the event at which the property is violated. For assertion-based
+ * properties, its candidates are the assertions whose violation sites include the target location:
+ * the assertion itself and every call site on its (inlined) call stack. Hence, a target may point to
+ * the failing assertion or to any call leading to it, e.g., a call to a function wrapping the
+ * assertion. A target matching only other events has no candidates and cannot be satisfied.
+ * For other properties, the candidates are all events at the target location.
  *
  * Variables: each variable of an assumption must be a bare identifier naming a unique,
  * statically allocated, initialized scalar memory object of integral type, all of whose
@@ -69,9 +81,12 @@ public final class SvcompWitnessResolver {
 
     /**
      * The candidates of a waypoint run in a program thread bound to witness thread {@code threadId}. For a
-     * function_enter waypoint, this is the ID of the entered thread, not of its parent.
+     * function_enter waypoint, this is the ID of the entered thread, not of its parent. For a target,
+     * {@code assertionViolation} tells whether its candidates are assertions that must be violated,
+     * rather than events that must execute.
      */
-    public record ResolvedWaypoint(Waypoint waypoint, int threadId, List<Candidate> candidates) {
+    public record ResolvedWaypoint(Waypoint waypoint, int threadId, boolean assertionViolation,
+            List<Candidate> candidates) {
         public ResolvedWaypoint {
             Objects.requireNonNull(waypoint);
             candidates = List.copyOf(candidates);
@@ -103,16 +118,22 @@ public final class SvcompWitnessResolver {
 
     private final Program program;
     private final AliasAnalysis alias;
+    private final boolean assertionTargets;
+    private SyntacticContextAnalysis callStacks;
 
-    private SvcompWitnessResolver(Program program, AliasAnalysis alias) {
+    private SvcompWitnessResolver(Program program, AliasAnalysis alias, Property property) {
         this.program = program;
         this.alias = alias;
+        this.assertionTargets = property == Property.PROGRAM_SPEC;
     }
 
-    /** Throws {@link IllegalArgumentException} if the witness does not fit the program for any bound. */
+    /**
+     * Resolves {@code witness} for the validation of {@code property}.
+     * Throws {@link IllegalArgumentException} if the witness does not fit the program for any bound.
+     */
     public static ResolvedWitness resolve(SvcompViolationWitness witness, Program program,
-            AliasAnalysis alias) {
-        return new SvcompWitnessResolver(program, alias).resolve(witness);
+            AliasAnalysis alias, Property property) {
+        return new SvcompWitnessResolver(program, alias, property).resolve(witness);
     }
 
     /** Events are matched by source line and file name, ignoring directories. */
@@ -142,7 +163,8 @@ public final class SvcompWitnessResolver {
                 final int threadId = waypoint instanceof FunctionEnter enter
                         ? threads.entered().get(enter)
                         : waypoint.threadId();
-                waypoints.add(new ResolvedWaypoint(waypoint, threadId, candidates));
+                final boolean assertionViolation = waypoint instanceof Target && assertionTargets;
+                waypoints.add(new ResolvedWaypoint(waypoint, threadId, assertionViolation, candidates));
             }
             if (!waypoints.isEmpty()) {
                 segments.add(new ResolvedSegment(waypoints));
@@ -209,7 +231,23 @@ public final class SvcompWitnessResolver {
             throw new IllegalArgumentException("Witness %s at %s:%d matches no event"
                     .formatted(type, waypoint.location().fileName(), waypoint.location().line()));
         }
+        if (waypoint instanceof Target && assertionTargets) {
+            return compatible.stream()
+                    .flatMap(thread -> thread.getEvents(Assert.class).stream())
+                    .filter(assertion -> violationSites(assertion).anyMatch(site -> matches(waypoint.location(), site)))
+                    .map(Event.class::cast)
+                    .toList();
+        }
         return candidates;
+    }
+
+    // The assertion and the call sites on its call stack, from the innermost to the outermost.
+    private Stream<Event> violationSites(Assert assertion) {
+        if (callStacks == null) {
+            callStacks = SyntacticContextAnalysis.newInstance(program);
+        }
+        final List<CallContext> calls = callStacks.getContextInfo(assertion).getContextOfType(CallContext.class);
+        return Stream.concat(Stream.of(assertion), calls.reversed().stream().map(CallContext::funCallMarker));
     }
 
     private Candidate candidate(Waypoint waypoint, Event event, Map<String, ResolvedVariable> variables) {

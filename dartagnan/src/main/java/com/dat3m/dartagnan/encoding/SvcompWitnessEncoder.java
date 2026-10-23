@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -7,6 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
@@ -48,11 +50,12 @@ import java.util.*;
  * initialization, in the SV-COMP execution order. All equalities in a conjunction refer
  * to the same position.
  *
- * Targets: at least one event in the specified thread at the
- * target source location must execute.
+ * Targets: for assertion-based properties, at least one assertion resolved for the target must
+ * be violated, i.e., executed with a false condition. For other properties, at least one event in
+ * the specified thread at the target source location must execute.
  *
  * Every waypoint must satisfy the requirement for its type: the child thread starts
- * executing, the assumption holds, or an event at the target executes.
+ * executing, the assumption holds, or the target is reached.
  *
  * Segment order: to order segments, at least one executed candidate event is selected
  * per segment. A selected assumption event must also satisfy its value constraints.
@@ -72,15 +75,17 @@ public final class SvcompWitnessEncoder {
 
     private final EncodingContext context;
     private final SvcompViolationWitness witness;
+    private final Property property;
     private final Program program;
     private final BooleanFormulaManager bmgr;
     private final BitvectorFormulaManager bvmgr;
     private final int rankWidth;
     private final String clockPrefix;
 
-    private SvcompWitnessEncoder(EncodingContext context, SvcompViolationWitness witness) {
+    private SvcompWitnessEncoder(EncodingContext context, SvcompViolationWitness witness, Property property) {
         this.context = context;
         this.witness = witness;
+        this.property = property;
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();
         this.bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
@@ -95,13 +100,13 @@ public final class SvcompWitnessEncoder {
         if (!(context.getTask() instanceof WitnessValidationTask task)) {
             throw new IllegalArgumentException("Witness encoding requires a witness validation task");
         }
-        return new SvcompWitnessEncoder(context, task.getWitness());
+        return new SvcompWitnessEncoder(context, task.getWitness(), task.getProperty());
     }
 
     public BooleanFormula encode() {
         logger.info("Encoding witness");
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        final ResolvedWitness resolvedWitness = SvcompWitnessResolver.resolve(witness, program, alias);
+        final ResolvedWitness resolvedWitness = SvcompWitnessResolver.resolve(witness, program, alias, property);
         final Map<String, ResolvedVariable> variables = resolvedWitness.variables();
         final List<BooleanFormula> constraints = new ArrayList<>();
         // If the witness needs more threads than this bounded program contains, the bindings are unsatisfiable,
@@ -116,7 +121,7 @@ public final class SvcompWitnessEncoder {
                 final Map<Event, BooleanFormula> waypointEnc = new LinkedHashMap<>();
                 for (Candidate candidate : waypoint.candidates()) {
                     waypointEnc.put(candidate.event(), bmgr.and(encodeBinding(waypoint, candidate.event()),
-                            encodeWaypoint(waypoint.waypoint(), candidate, variables)));
+                            encodeWaypoint(waypoint, candidate, variables)));
                     if (waypoint.waypoint() instanceof Assumption) {
                         statementAccesses.computeIfAbsent(candidate.event(), _ -> new LinkedHashSet<>())
                                 .addAll(candidate.constrainedAccesses());
@@ -314,9 +319,14 @@ public final class SvcompWitnessEncoder {
                 bvmgr.makeVariable(rankWidth, clockPrefix + second.getGlobalId()), false);
     }
 
-    private BooleanFormula encodeWaypoint(Waypoint waypoint, Candidate candidate,
+    private BooleanFormula encodeWaypoint(ResolvedWaypoint waypoint, Candidate candidate,
             Map<String, ResolvedVariable> variables) {
-        if (!(waypoint instanceof Assumption assumption)) {
+        if (waypoint.assertionViolation()) {
+            final Assert assertion = (Assert) candidate.event();
+            return bmgr.and(context.execution(assertion), bmgr.not(context.getExpressionEncoder()
+                    .encodeBooleanAt(assertion.getExpression(), assertion).formula()));
+        }
+        if (!(waypoint.waypoint() instanceof Assumption assumption)) {
             return context.execution(candidate.event());
         }
         final List<BooleanFormula> constraints = new ArrayList<>();
