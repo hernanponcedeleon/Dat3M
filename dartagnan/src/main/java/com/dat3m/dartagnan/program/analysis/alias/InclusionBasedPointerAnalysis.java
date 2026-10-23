@@ -333,9 +333,12 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     // Also declares "res" and "phi" variables, if needed.
     private void processWriter(RegWriter event) {
         logger.trace("{}", event);
-        final Expression expr = event instanceof Local local ? local.getExpr() :
-                        event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
-                        event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
+        final Expression expr = switch (event) {
+            case Local local -> local.getExpr();
+            case ThreadArgument arg -> arg.getCreator().getArguments().get(arg.getIndex());
+            case Alloc alloc -> alloc.getAllocatedObject();
+            default -> null;
+        };
         final DerivedVariable<Modifier> value;
         if (expr != null) {
             final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;
@@ -502,7 +505,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         if (address.base.includes.size() != 1) {
             return;
         }
-        final IncludeEdge<Modifier> includeEdge = address.base.includes.get(0);
+        final IncludeEdge<Modifier> includeEdge = address.base.includes.getFirst();
         final Modifier modifier = compose(includeEdge.modifier, address.modifier);
         assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
@@ -576,8 +579,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         edge.source.seeAlso.add(variable);
         final int level = trait.level(edge.modifier);
         // enqueue the new edge
-        final List<IncludeEdge<Modifier>> edges = queue.computeIfAbsent(level, k -> new LinkedHashMap<>())
-                .computeIfAbsent(variable, k -> new ArrayList<>());
+        final List<IncludeEdge<Modifier>> edges = queue.computeIfAbsent(level, _ -> new LinkedHashMap<>())
+                .computeIfAbsent(variable, _ -> new ArrayList<>());
         if (edges.isEmpty()) {
             logger.trace("enqueue level={} variable={}", level, variable);
         }
@@ -670,7 +673,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                     if (edge.source != i.source && includerSet.contains(i.source)) {
                         final IncludeEdge<Modifier> joinedEdge = compose(i, current.modifier);
                         if (set.add(joinedEdge) &&
-                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
+                                addInto(edges.computeIfAbsent(i.source, _ -> new ArrayList<>()), joinedEdge, false)) {
                             next.add(joinedEdge);
                         }
                     }
@@ -832,7 +835,7 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             return null;
         }
         if (edges.size() == 1) {
-            return new DerivedVariable<>(edges.get(0).source, edges.get(0).modifier);
+            return new DerivedVariable<>(edges.getFirst().source, edges.getFirst().modifier);
         }
         final Variable<Modifier> base = newVariable(name);
         for (IncludeEdge<Modifier> edge : edges) {
@@ -1026,15 +1029,15 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
             }
             for (final IncludeEdge<Modifier> i : v.includes) {
                 verify(i.source.seeAlso.contains(v));
-                map.computeIfAbsent("\"" + i.source.name + "\"", k -> new HashSet<>()).add("\"" + v.name + "\"");
+                map.computeIfAbsent("\"" + i.source.name + "\"", _ -> new HashSet<>()).add("\"" + v.name + "\"");
             }
             for (final LoadEdge<Modifier> i : v.loads) {
                 verify(i.result.seeAlso.contains(v));
-                loads.computeIfAbsent("\"" + v.name + "\"", k -> new HashSet<>()).add("\"" + i.result.name + "\"");
+                loads.computeIfAbsent("\"" + v.name + "\"", _ -> new HashSet<>()).add("\"" + i.result.name + "\"");
             }
             for (final StoreEdge<Modifier> i : v.stores) {
                 verify(i.value.base.seeAlso.contains(v));
-                stores.computeIfAbsent("\"" + v.name + "\"", k -> new HashSet<>()).add("\"" + i.value.base.name + "\"");
+                stores.computeIfAbsent("\"" + v.name + "\"", _ -> new HashSet<>()).add("\"" + i.value.base.name + "\"");
             }
         }
         final Set<String> problematic = new HashSet<>();

@@ -106,7 +106,7 @@ public class PipelinesTest {
 
         final Pipelines pipelines = Pipelines.loadConfiguration(yaml,
                 Map.of("DAT3M_HOME", home, "DAT3M_OUTPUT", output));
-        final Pipelines.Pipeline.Command command = pipelines.pipelines().get(0).commands().get(0);
+        final Pipelines.Pipeline.Command command = pipelines.pipelines().getFirst().commands().getFirst();
         assertEquals(Path.of(output).toAbsolutePath().normalize().toString(), pipelines.workdir());
         assertEquals(home + "/clang", command.tool());
         assertEquals(List.of("-I" + home + "/include"), command.options());

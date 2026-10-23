@@ -286,7 +286,7 @@ public class PropertyEncoder {
                     .filter(Store.class::isInstance).map(Store.class::cast)
                     .toList();
             if (!instruction.isEmpty()) {
-                instructions.put(instruction.get(0), instruction);
+                instructions.put(instruction.getFirst(), instruction);
             }
         }
         // Object A is reachable from another object B, if a co-maximal store writes an address pointing to A into B.
@@ -331,7 +331,7 @@ public class PropertyEncoder {
     private boolean mayBePointerValue(List<Store> stores) {
         final TypeFactory types = TypeFactory.getInstance();
         if (stores.size() == 1) {
-            return stores.get(0).getAccessType() instanceof IntegerType intType
+            return stores.getFirst().getAccessType() instanceof IntegerType intType
                     && intType.getBitWidth() == types.getMemorySizeInBits(types.getPointerType());
         } else {
             final boolean allMemoryTypes = stores.stream().allMatch(o -> o.getAccessType() instanceof MemoryType);
@@ -344,7 +344,7 @@ public class PropertyEncoder {
 
     private Expression toPointerValue(List<Store> stores) {
         if (stores.size() == 1) {
-            return stores.get(0).getMemValue();
+            return stores.getFirst().getMemValue();
         }
         final ExpressionFactory exprs = context.getExpressionFactory();
         return exprs.makeFromMemoryCast(
@@ -359,7 +359,7 @@ public class PropertyEncoder {
         final ExpressionFactory expressions = context.getExpressionFactory();
         final Expression pointer = isValue
                 ? toPointerValue(stores)
-                : stores.get(0).getAddress();
+                : stores.getFirst().getAddress();
         if (object.equals(pointer)) {
             return bmgr.makeTrue();
         }
@@ -367,7 +367,7 @@ public class PropertyEncoder {
         final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
         final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
         final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
-        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.get(0)).formula();
+        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.getFirst()).formula();
     }
 
     // ======================================================================

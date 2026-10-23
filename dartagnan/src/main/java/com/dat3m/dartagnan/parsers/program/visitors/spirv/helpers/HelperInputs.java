@@ -52,7 +52,7 @@ public class HelperInputs {
                 long distinctTypeCount = elements.stream().map(Expression::getType).distinct().count();
                 if (distinctTypeCount <= 1) {
                     if (!elements.isEmpty()) {
-                        elType = elements.get(0).getType();
+                        elType = elements.getFirst().getType();
                         if (type.getStride() != null && type.getStride() < types.getMemorySizeInBytes(elType)) {
                             throw new ParsingException("Mismatching value type for variable '%s', " +
                                     "element size %d is greater than array stride %d", id,

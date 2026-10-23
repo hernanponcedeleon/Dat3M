@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions;
 public class AtomicFetchOp extends RMWOpResultBase {
 
     public AtomicFetchOp(Register register, Expression address, IntBinaryOp operator, Expression operand, String mo) {
-        super(register, address, operator, operand, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super(register, address, operator, operand, mo);
     }
 
     private AtomicFetchOp(AtomicFetchOp other) {

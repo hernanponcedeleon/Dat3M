@@ -112,7 +112,7 @@ public class AnalysisTest {
         final Configuration config = Configuration.defaultConfiguration();
         final Program program = b.build();
         MemoryAllocation.newInstance().run(program);
-        final Event init = program.getThreadEvents(Init.class).get(0);
+        final Event init = program.getThreadEvents(Init.class).getFirst();
         // Required by BranchEquivalence.
         LoopUnrolling.fromConfig(config).run(program);
 
@@ -267,7 +267,7 @@ public class AnalysisTest {
                 .setOption(REACHING_DEFINITIONS_METHOD, ReachingDefinitionsAnalysis.Method.BACKWARD.name())
                 .build();
         final ReachingDefinitionsAnalysis dep = ReachingDefinitionsAnalysis.configure(config)
-                .forFunction(program.getFunctions().get(0));
+                .forFunction(program.getFunctions().getFirst());
         assertFalse(dep.getWriters(r00).ofRegister(r0).mustBeInitialized());
         assertList(dep.getWriters(r00).ofRegister(r0).getMayWriters());
         assertFalse(dep.getWriters(r10).ofRegister(r0).mustBeInitialized());

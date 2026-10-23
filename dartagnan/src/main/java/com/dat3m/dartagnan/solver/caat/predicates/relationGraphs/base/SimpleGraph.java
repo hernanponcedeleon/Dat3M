@@ -271,7 +271,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
                     DataItem item = outgoing[index];
                     if (item != null && !item.isEmpty()) {
                         innerList = item.edgeList;
-                        edge = innerList.get(0);
+                        edge = innerList.getFirst();
                         return;
                     }
                 }

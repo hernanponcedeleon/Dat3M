@@ -35,7 +35,7 @@ public class EnvironmentInfo {
                 properties.load(is);
                 return;
             }
-        } catch (IOException e) {
+        } catch (IOException _) {
             logger.warn("Failed to load git.properties");
         }
     }
@@ -111,9 +111,9 @@ public class EnvironmentInfo {
                     }
                 }
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
-        } catch (IOException e) {
+        } catch (IOException _) {
             // Tool not available.
         }
         return Optional.empty();

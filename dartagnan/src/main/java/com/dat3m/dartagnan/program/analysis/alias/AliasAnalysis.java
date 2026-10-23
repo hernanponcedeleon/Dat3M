@@ -193,8 +193,8 @@ public interface AliasAnalysis {
             if (node1 == null) {
                 continue;
             }
-            final Set<String> maySet = mayGraph.computeIfAbsent(node1, k -> new HashSet<>());
-            final Set<String> mustSet = mustGraph.computeIfAbsent(node1, k -> new HashSet<>());
+            final Set<String> maySet = mayGraph.computeIfAbsent(node1, _ -> new HashSet<>());
+            final Set<String> mustSet = mustGraph.computeIfAbsent(node1, _ -> new HashSet<>());
             for (final MemoryCoreEvent event2 : events) {
                 final String node2 = repr(event2, configuration);
                 if (node2 != null && node1.compareTo(node2) < 0 && mayAlias(event1, event2)) {

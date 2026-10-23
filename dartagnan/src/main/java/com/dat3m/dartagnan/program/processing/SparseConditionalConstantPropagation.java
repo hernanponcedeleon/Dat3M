@@ -85,7 +85,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
         final List<LoopAnalysis.LoopIterationInfo> loops = LoopAnalysis.onFunction(func).getLoopsOfFunction(func)
                 .stream().filter(info -> !info.isUnrolled())
-                .map(info -> info.iterations().get(0)).toList();
+                .map(info -> info.iterations().getFirst()).toList();
 
         final ConstantPropagator propagator = new ConstantPropagator();
         for (Event cur : func.getEvents()) {
@@ -132,15 +132,19 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             }
 
             // Add new propagation data
-            if (cur instanceof Local local) {
-                final Expression expr = local.getExpr();
-                final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
-                propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-            } else if (cur instanceof ThreadArgument arg) {
-                // Propagate constant arguments passed across threads
-                final Expression expr = arg.getCreator().getArguments().get(arg.getIndex());
-                final Expression valueToPropagate = expr.getRegs().isEmpty() ? expr : null;
-                propagationMap.compute(arg.getResultRegister(), (k, v) -> valueToPropagate);
+            switch (cur) {
+                case Local local -> {
+                    final Expression expr = local.getExpr();
+                    final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
+                    propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
+                }
+                case ThreadArgument arg -> {
+                    // Propagate constant arguments passed across threads
+                    final Expression expr = arg.getCreator().getArguments().get(arg.getIndex());
+                    final Expression valueToPropagate = expr.getRegs().isEmpty() ? expr : null;
+                    propagationMap.compute(arg.getResultRegister(), (k, v) -> valueToPropagate);
+                }
+                default -> { }
             }
 
             if (cur instanceof CondJump jump) {

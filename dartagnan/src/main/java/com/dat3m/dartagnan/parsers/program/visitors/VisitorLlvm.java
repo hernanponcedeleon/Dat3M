@@ -195,7 +195,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             parseBlockInstructionWithMetadata(basicBlockContext.terminator(), basicBlockContext.terminator().metadataAttachment());
             // We copy the source information of the first block event to the block label.
             // This might give slightly wrong source information for labels.
-            block.label.copyMetadataFrom(block.events.get(0), SourceLocation.class);
+            block.label.copyMetadataFrom(block.events.getFirst(), SourceLocation.class);
             block = null;
         }
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
@@ -206,7 +206,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 function.append(event);
             }
 
-            final Event terminator = block.events.get(block.events.size() - 1);
+            final Event terminator = block.events.getLast();
             for (final Map.Entry<String, List<Event>> phiNode : phiNodes.getOrDefault(block.name, Map.of()).entrySet()) {
                 for (Event event : phiNode.getValue()) {
                     event.copyAllMetadataFrom(terminator);
@@ -459,13 +459,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private Label getJumpLabel(LabelContext context) {
         final Block target = getBlock(localIdent(context.LocalIdent()));
-        final Event label = getPhiNode(block, target).get(0);
+        final Event label = getPhiNode(block, target).getFirst();
         verify(label instanceof Label);
         return (Label) label;
     }
 
     private List<Event> getPhiNode(Block from, Block to) {
-        final Map<String, List<Event>> phiNodesFrom = phiNodes.computeIfAbsent(from.name, k -> new HashMap<>());
+        final Map<String, List<Event>> phiNodesFrom = phiNodes.computeIfAbsent(from.name, _ -> new HashMap<>());
         final List<Event> find = phiNodesFrom.get(to.name);
         if (find != null) {
             return find;
@@ -790,7 +790,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
         assert !operands.isEmpty();
         return assignToRegister(
-                expressions.makeGetElementPointer(type, operands.get(0), operands.subList(1, operands.size())));
+                expressions.makeGetElementPointer(type, operands.getFirst(), operands.subList(1, operands.size())));
     }
 
     @Override
@@ -1661,7 +1661,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         try{
             List<Event> events = parser.parse(asmCode);
             return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException ignored) {
+        } catch (ParsingException _) {
             return Optional.empty();
         }
     }

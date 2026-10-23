@@ -10,9 +10,9 @@ import com.google.common.base.Preconditions;
 public final class AggregateCmpExpr extends BinaryExpressionBase<BooleanType, AggregateCmpOp> {
 
     public AggregateCmpExpr(BooleanType type, Expression left, AggregateCmpOp kind, Expression right) {
-        super(type, kind, left, right);
         Preconditions.checkArgument(ExpressionHelper.isAggregateLike(left));
         ExpressionHelper.checkSameType(left, right);
+        super(type, kind, left, right);
     }
 
     @Override

@@ -37,7 +37,6 @@ import java.util.function.BiFunction;
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.CAST;
-import static com.google.common.collect.Lists.reverse;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
@@ -172,12 +171,12 @@ public class ProgramEncoder {
         for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
             final Event pred = cur.getPredecessor();
             // Immediate control flow
-            BooleanFormula cfCond = context.controlFlow(pred);
-            if (pred instanceof CondJump jump) {
-                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpTaken(jump)));
-            } else if (pred instanceof BlockingEvent barrier) {
-                cfCond = bmgr.and(cfCond, context.unblocked(barrier));
-            }
+            final BooleanFormula predCf = context.controlFlow(pred);
+            BooleanFormula cfCond = switch (pred) {
+                case CondJump jump -> bmgr.and(predCf, bmgr.not(context.jumpTaken(jump)));
+                case BlockingEvent barrier -> bmgr.and(predCf, context.unblocked(barrier));
+                default -> predCf;
+            };
 
             if (cur instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
@@ -235,8 +234,8 @@ public class ProgramEncoder {
             // NOTE: No ThreadReturn is currently allowed, if the ThreadReturn event is unreachable and thus is deletable.
             // In this case, the thread never terminates properly, so we do not encode anything.
             // TODO: We might want to make ThreadReturn non-deletable, at least the one we generate in ThreadCreation?
-            if (returns.size() == 1 && returns.get(0).hasValue()) {
-                final ThreadReturn ret = returns.get(0);
+            if (returns.size() == 1 && returns.getFirst().hasValue()) {
+                final ThreadReturn ret = returns.getFirst();
                 enc.add(bmgr.implication(
                         joinExec,
                         exprEnc.assignEqualAt(context.result(join), join, ret.getValue().get(), ret)
@@ -460,7 +459,7 @@ public class ProgramEncoder {
             for (Register register : writers.getUsedRegisters()) {
                 final List<BooleanFormula> overwrite = new ArrayList<>();
                 final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
-                for (RegWriter writer : reverse(reg.getMayWriters())) {
+                for (RegWriter writer : reg.getMayWriters().reversed()) {
                     BooleanFormula edge;
                     if (reg.getMustWriters().contains(writer)) {
                         if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {

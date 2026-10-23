@@ -326,7 +326,7 @@ public class HelperInputsTest {
 
         for (Expression input : iValues) {
             for (ArrayType type : iTypes) {
-                doTestInvalidType(type, input, "test[0]", type.getElementType(), input.getOperands().get(0).getType());
+                doTestInvalidType(type, input, "test[0]", type.getElementType(), input.getOperands().getFirst().getType());
             }
         }
     }
@@ -396,7 +396,7 @@ public class HelperInputsTest {
         for (Expression input : iValues) {
             for (ArrayType type : iTypes) {
                 doTestInvalidType(type, input, "test[0]", type.getElementType(),
-                        input.getOperands().get(0).getType());
+                        input.getOperands().getFirst().getType());
             }
         }
     }
@@ -423,7 +423,7 @@ public class HelperInputsTest {
         for (Expression input : iValues) {
             for (ArrayType type : iTypes) {
                 doTestInvalidType(type, input, "test[0]", type.getElementType(),
-                        input.getOperands().get(0).getType());
+                        input.getOperands().getFirst().getType());
             }
         }
     }
@@ -509,7 +509,7 @@ public class HelperInputsTest {
                     castInput("test", type, input);
                     fail("Should throw exception");
                 } catch (ParsingException e) {
-                    Expression elValue = castInput("element", type.getElementType(), input.getOperands().get(0));
+                    Expression elValue = castInput("element", type.getElementType(), input.getOperands().getFirst());
                     assertEquals(String.format("Mismatching value type for variable 'test', " +
                                             "element size %d is greater than array stride %d",
                                     types.getMemorySizeInBytes(elValue.getType()), type.getStride()),
@@ -561,8 +561,8 @@ public class HelperInputsTest {
 
         for (Expression input : iValues) {
             for (AggregateType type : iTypes) {
-                doTestInvalidType(type, input, "test[0]", type.getFields().get(0).type(),
-                        input.getOperands().get(0).getType());
+                doTestInvalidType(type, input, "test[0]", type.getFields().getFirst().type(),
+                        input.getOperands().getFirst().getType());
             }
         }
     }
@@ -589,8 +589,8 @@ public class HelperInputsTest {
         for (Expression input : iValues) {
             for (AggregateType type : iTypes) {
                 doTestInvalidType(type, input, "test[0]",
-                        type.getFields().get(0).type(),
-                        input.getOperands().get(0).getType());
+                        type.getFields().getFirst().type(),
+                        input.getOperands().getFirst().getType());
             }
         }
     }

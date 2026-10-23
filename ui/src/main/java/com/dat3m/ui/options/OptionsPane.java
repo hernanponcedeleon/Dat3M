@@ -298,7 +298,7 @@ public class OptionsPane extends JPanel {
         }
         try {
             methodPane.setSelectedItem(Method.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        } catch (IllegalArgumentException _) {
         }
     }
 
@@ -308,7 +308,7 @@ public class OptionsPane extends JPanel {
         }
         try {
             solverPane.setSelectedItem(Solvers.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        } catch (IllegalArgumentException _) {
         }
     }
 
@@ -330,7 +330,7 @@ public class OptionsPane extends JPanel {
         for (String property : value.split(",")) {
             try {
                 properties.add(Property.valueOf(property.strip().toUpperCase()));
-            } catch (IllegalArgumentException ignore) {
+            } catch (IllegalArgumentException _) {
             }
         }
         for (Map.Entry<Property, JCheckBox> entry : propertyFields.entrySet()) {
@@ -344,7 +344,7 @@ public class OptionsPane extends JPanel {
         }
         try {
             targetPane.setSelectedItem(Arch.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        } catch (IllegalArgumentException _) {
         }
     }
 
@@ -354,7 +354,7 @@ public class OptionsPane extends JPanel {
         }
         try {
             progressPane.setSelectedItem(ProgressModel.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException ignore) {
+        } catch (IllegalArgumentException _) {
         }
     }
 
@@ -368,7 +368,7 @@ public class OptionsPane extends JPanel {
         }
         try {
             spinner.setValue(Integer.parseInt(value));
-        } catch (IllegalArgumentException ignore) {
+        } catch (IllegalArgumentException _) {
         }
     }
 
@@ -443,13 +443,14 @@ public class OptionsPane extends JPanel {
     private void updateExtraOptionsFields() {
         for (Map.Entry<String, JComponent> entry : extraOptionsComponents.entrySet()) {
             String value = extraOptionsMap.get(entry.getKey());
-            if (entry.getValue() instanceof JCheckBox field) {
-                field.setSelected("true".equalsIgnoreCase(value));
-            } else if (entry.getValue() instanceof JComboBox<?> field) {
-                field.setSelectedItem("");
-                field.setSelectedItem(value == null ? "" : value.toUpperCase());
-            } else if (entry.getValue() instanceof JTextField field) {
-                field.setText(value == null ? "" : value);
+            switch (entry.getValue()) {
+                case JCheckBox field -> field.setSelected("true".equalsIgnoreCase(value));
+                case JComboBox<?> field -> {
+                    field.setSelectedItem("");
+                    field.setSelectedItem(value == null ? "" : value.toUpperCase());
+                }
+                case JTextField field -> field.setText(value == null ? "" : value);
+                default -> { }
             }
         }
     }

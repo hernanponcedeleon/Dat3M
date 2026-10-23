@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.Lists;
 
 import java.util.Objects;
 import java.util.Set;
@@ -72,7 +71,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitIntConcat(IntConcat expr) {
-        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
+        return expr.getOperands().reversed().stream().map(this::visit).collect(Collectors.joining("::"));
     }
 
     @Override
@@ -139,7 +138,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitMemoryConcatExpression(MemoryConcat expr) {
-        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
+        return expr.getOperands().reversed().stream().map(this::visit).collect(Collectors.joining("::"));
     }
 
     @Override

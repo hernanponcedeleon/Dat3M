@@ -59,29 +59,25 @@ public final class SvcompWitnessYamlWriter {
     }
 
     private static String formatWaypoint(Waypoint waypoint) {
-        if (waypoint instanceof Assumption assumption) {
-            return """
-                            - waypoint:
-                                type: assumption
-                                action: follow
-                                thread_id: %d
-                                constraint:
-                                  value: %s
-                                  format: %s
-                                location:
-                                  file_name: %s
-                                  line: %d
-                    """.formatted(assumption.threadId(), yaml(assumption.value()), assumption.format(),
-                    yaml(assumption.location().fileName()), assumption.location().line());
-        }
-
         final String type;
-        if (waypoint instanceof FunctionEnter) {
-            type = "function_enter";
-        } else if (waypoint instanceof Target) {
-            type = "target";
-        } else {
-            throw new AssertionError("Unsupported waypoint: " + waypoint);
+        switch (waypoint) {
+            case Assumption assumption -> {
+                return """
+                                - waypoint:
+                                    type: assumption
+                                    action: follow
+                                    thread_id: %d
+                                    constraint:
+                                      value: %s
+                                      format: %s
+                                    location:
+                                      file_name: %s
+                                      line: %d
+                        """.formatted(assumption.threadId(), yaml(assumption.value()), assumption.format(),
+                        yaml(assumption.location().fileName()), assumption.location().line());
+            }
+            case FunctionEnter _ -> type = "function_enter";
+            case Target _ -> type = "target";
         }
         return """
                         - waypoint:

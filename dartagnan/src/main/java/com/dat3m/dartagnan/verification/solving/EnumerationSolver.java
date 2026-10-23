@@ -150,16 +150,16 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
     // FIXME: The conversion of TypedValue to re-encodable expressions should be made principled
     //  and support all IR types.
     private Expression toExpression(TypedValue<?, ?> value, ExpressionFactory exprs) {
-        if (value.type() instanceof IntegerType intType) {
-            return exprs.makeValue((BigInteger) value.value(), intType);
-        } else if (value.type() instanceof BooleanType) {
-            return exprs.makeValue((boolean) value.value());
-        } else if (value.type() instanceof MemoryType memType) {
-            final IntegerType intType = TypeFactory.getInstance().getIntegerType(memType.getBitWidth());
-            final Expression intValue = exprs.makeValue((BigInteger) value.value(), intType);
-            return exprs.makeToMemoryCast(intValue);
-        }
-        throw new UnsupportedOperationException("Unsupported type " + value.type());
+        return switch (value.type()) {
+            case IntegerType intType -> exprs.makeValue((BigInteger) value.value(), intType);
+            case BooleanType _ -> exprs.makeValue((boolean) value.value());
+            case MemoryType memType -> {
+                final IntegerType intType = TypeFactory.getInstance().getIntegerType(memType.getBitWidth());
+                final Expression intValue = exprs.makeValue((BigInteger) value.value(), intType);
+                yield exprs.makeToMemoryCast(intValue);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported type " + value.type());
+        };
     }
 
     // We collect the expression values to enumerate from the spec and the explicitly specified locations

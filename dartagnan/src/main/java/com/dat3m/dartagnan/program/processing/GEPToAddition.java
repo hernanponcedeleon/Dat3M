@@ -67,12 +67,12 @@ public class GEPToAddition implements ProgramProcessor {
         @Override
         public Expression visitGEPExpression(GEPExpr gep) {
             final List<Expression> indices = gep.getOffsets();
-            final IntegerType offsetType = (IntegerType) indices.get(0).getType();
+            final IntegerType offsetType = (IntegerType) indices.getFirst().getType();
             final Integer baseStride = gep.getStride();
             Type indexingType = gep.getIndexingType();
 
             final int baseSize = baseStride != null ? baseStride : types.getMemorySizeInBytes(indexingType);
-            Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.get(0).accept(this));
+            Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.getFirst().accept(this));
 
             for (Expression index : indices.subList(1, indices.size())) {
                 index = index.accept(this);    

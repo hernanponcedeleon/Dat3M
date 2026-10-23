@@ -138,13 +138,10 @@ public class OutputGenerator {
 
 
     public Output getOutputFromSolver(TaskSolver solver) {
-        if (solver instanceof VerificationTaskSolver verificationTaskSolver) {
-            return getOutputFromSolver(verificationTaskSolver);
-        } else if (solver instanceof EnumerationTaskSolver enumerationTaskSolver) {
-            return getOutputFromSolver(enumerationTaskSolver);
-        }
-
-        throw new UnsupportedOperationException("Task solver " + solver.getClass().getSimpleName() + " is unsupported.");
+        return switch (solver) {
+            case VerificationTaskSolver verificationTaskSolver -> getOutputFromSolver(verificationTaskSolver);
+            case EnumerationTaskSolver enumerationTaskSolver -> getOutputFromSolver(enumerationTaskSolver);
+        };
     }
 
     // ------------------------------------------------------------------------------
@@ -187,14 +184,14 @@ public class OutputGenerator {
     }
 
     private String compactExprString(Expression expr) {
-        if (expr instanceof Register reg) {
-            return reg.getThread().getName() + ":" + reg.getName();
-        } else if (expr instanceof IntLiteral intLiteral) {
-            final BigInteger signedVal = IntegerHelper.normalizeSigned(intLiteral.getValue(), intLiteral.getType().getBitWidth());
-            return signedVal.toString();
-        } else {
-            return expr.toString();
-        }
+        return switch (expr) {
+            case Register reg -> reg.getThread().getName() + ":" + reg.getName();
+            case IntLiteral intLiteral -> {
+                final BigInteger signedVal = IntegerHelper.normalizeSigned(intLiteral.getValue(), intLiteral.getType().getBitWidth());
+                yield signedVal.toString();
+            }
+            default -> expr.toString();
+        };
     }
 
     private static String toEnumerationSummary(String test, String filter, String enumerationOutput, EnumerationStatus status, long time) {

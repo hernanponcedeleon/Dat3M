@@ -79,7 +79,7 @@ public class LiveRegistersAnalysis {
             updateLiveRegs(cur, liveRegs);
 
             if (cur instanceof CondJump jump) {
-                final Set<Register> liveRegsAtJump = liveRegsAtJumpMap.computeIfAbsent(jump, key -> new HashSet<>());
+                final Set<Register> liveRegsAtJump = liveRegsAtJumpMap.computeIfAbsent(jump, _ -> new HashSet<>());
                 if (!IRHelper.isAlwaysBranching(jump)) {
                     liveRegsAtJump.addAll(liveRegs);
                 }
@@ -95,7 +95,7 @@ public class LiveRegistersAnalysis {
                         continue;
                     }
 
-                    final Set<Register> liveRegsAtJump = liveRegsAtJumpMap.computeIfAbsent(jump, key -> new HashSet<>());
+                    final Set<Register> liveRegsAtJump = liveRegsAtJumpMap.computeIfAbsent(jump, _ -> new HashSet<>());
                     if (liveRegsAtJump.addAll(liveRegs) && jump.getGlobalId() > label.getGlobalId()) {
                         if (latestUpdatedBackjump == null || jump.getGlobalId() > latestUpdatedBackjump.getGlobalId()) {
                             latestUpdatedBackjump = jump;

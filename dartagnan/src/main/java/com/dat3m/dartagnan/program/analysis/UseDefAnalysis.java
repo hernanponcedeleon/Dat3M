@@ -132,7 +132,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
             updateReachingDefinitions(cur, reachingDefinitions);
 
             if (cur instanceof CondJump jump && !jump.isDead()) {
-                final Map<Register, Set<RegWriter>> reachDefAtLabel = reachingDefinitionsMap.computeIfAbsent(jump.getLabel(), k -> new HashMap<>());
+                final Map<Register, Set<RegWriter>> reachDefAtLabel = reachingDefinitionsMap.computeIfAbsent(jump.getLabel(), _ -> new HashMap<>());
                 final boolean wasUpdated = joinInto(reachDefAtLabel, reachingDefinitions);
                 final boolean isBackJump = jump.getLabel().getGlobalId() < jump.getGlobalId();
                 if (wasUpdated && isBackJump) {
@@ -142,7 +142,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
             }
 
             if (cur instanceof Label label) {
-                final Map<Register, Set<RegWriter>> reachDefAtLabel = reachingDefinitionsMap.computeIfAbsent(label, k -> new HashMap<>());
+                final Map<Register, Set<RegWriter>> reachDefAtLabel = reachingDefinitionsMap.computeIfAbsent(label, _ -> new HashMap<>());
                 if (!IRHelper.isAlwaysBranching(label.getPredecessor())) {
                     joinInto(reachDefAtLabel, reachingDefinitions);
                 }
@@ -160,7 +160,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
             if (writer.cfImpliesExec()) {
                 reachingDefinitions.put(writer.getResultRegister(), new HashSet<>(Set.of(writer)));
             } else {
-                reachingDefinitions.computeIfAbsent(writer.getResultRegister(), k -> new HashSet<>()).add(writer);
+                reachingDefinitions.computeIfAbsent(writer.getResultRegister(), _ -> new HashSet<>()).add(writer);
             }
         }
     }
@@ -171,7 +171,7 @@ public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
             if (!base.containsKey(entry.getKey())) {
                 changed = true;
             }
-            changed |= base.computeIfAbsent(entry.getKey(), k -> new HashSet<>()).addAll(entry.getValue());
+            changed |= base.computeIfAbsent(entry.getKey(), _ -> new HashSet<>()).addAll(entry.getValue());
         }
 
         return changed;

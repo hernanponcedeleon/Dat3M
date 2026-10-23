@@ -137,7 +137,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Expression
                     .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getScopeId()))
                     .toList();
             if (variables.size() == 1) {
-                pushConstant = variables.get(0);
+                pushConstant = variables.getFirst();
                 Type type = pushConstant.getInnerType();
                 if (type instanceof AggregateType agType) {
                     pushConstantType = agType;

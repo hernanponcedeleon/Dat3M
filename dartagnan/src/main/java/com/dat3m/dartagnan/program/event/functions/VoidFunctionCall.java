@@ -11,8 +11,8 @@ import java.util.List;
 public class VoidFunctionCall extends FunctionCall {
 
     public VoidFunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
-        super(funcType, funcPtr, arguments);
         Preconditions.checkArgument(funcType.getReturnType().equals(TypeFactory.getInstance().getVoidType()));
+        super(funcType, funcPtr, arguments);
     }
 
     protected VoidFunctionCall(VoidFunctionCall other) {

@@ -161,9 +161,9 @@ public class Intrinsics {
         final List<Event> replacement = replacer.replace(this, call);
         if (replacement.isEmpty()) {
             call.tryDelete();
-        } else if (replacement.get(0) != call) {
+        } else if (replacement.getFirst() != call) {
             if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
-                final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
+                final Map<Event, Event> updateMapping = Map.of(call, replacement.getFirst());
                 ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
             }
             // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between

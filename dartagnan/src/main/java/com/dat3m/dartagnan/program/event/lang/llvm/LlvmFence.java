@@ -7,8 +7,8 @@ import com.google.common.base.Preconditions;
 public class LlvmFence extends FenceBase {
 
     public LlvmFence(String mo) {
-        super("llvm_fence", mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        super("llvm_fence", mo);
     }
 
     private LlvmFence(LlvmFence other) {

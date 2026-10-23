@@ -111,7 +111,7 @@ public abstract sealed class TaskSolverBase<TSolver, TTask extends Task, TResult
                 Thread.sleep(timeoutInMillis);
                 final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
                 shutdownManager.requestShutdown(error);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 // Verification ended, nothing to be done.
             }
         });

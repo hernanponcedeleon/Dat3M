@@ -118,7 +118,7 @@ public class Dartagnan {
 
         printOutputs(outputs, catFile, config);
         // Running batch mode results in normal termination independent of the individual results
-        final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.get(0).exitCode();
+        final ExitCode exitCode = isBatchMode ? NORMAL_TERMINATION : outputs.getFirst().exitCode();
         exit(exitCode);
     }
 
@@ -142,7 +142,7 @@ public class Dartagnan {
         }
 
         if (outputs.size() == 1) {
-            System.out.println(outputs.get(0));
+            System.out.println(outputs.getFirst());
         } else {
             System.out.println("================ Configuration ==================");
             System.out.println("cat = " + catFile);
@@ -202,7 +202,7 @@ public class Dartagnan {
                     .filter(isSupportedFile)
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
-        } catch (IOException e) {
+        } catch (IOException _) {
             logger.error("There was an I/O error when accessing path {}", path);
             return List.of();
         }

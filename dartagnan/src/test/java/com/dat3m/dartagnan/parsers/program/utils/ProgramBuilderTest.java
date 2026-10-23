@@ -25,9 +25,9 @@ public class ProgramBuilderTest {
                     .forEach(f -> {
                                 try {
                                     parseProgram(f);
-                                } catch (ParsingException e) {
+                                } catch (ParsingException _) {
                                     // Test succeeded
-                                } catch (Exception e) {
+                                } catch (Exception _) {
                                     fail("Missing resource file");
                                 }
                             }

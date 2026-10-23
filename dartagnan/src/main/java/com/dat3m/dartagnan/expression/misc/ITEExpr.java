@@ -17,11 +17,11 @@ public final class ITEExpr extends ExpressionBase<Type> {
     private final Expression falseCase;
 
     public ITEExpr(Expression condition, Expression trueCase, Expression falseCase) {
-        super(trueCase.getType());
         checkArgument(condition.getType() instanceof BooleanType,
                 "ITE with non-boolean condition %s.", condition);
         checkArgument(trueCase.getType().equals(falseCase.getType()),
                 "ITE with mismatching cases %s and %s.", trueCase, falseCase);
+        super(trueCase.getType());
         this.condition = condition;
         this.trueCase = trueCase;
         this.falseCase = falseCase;

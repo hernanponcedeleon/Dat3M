@@ -158,7 +158,7 @@ public class ActiveSetAnalysis {
         final Map<Relation, List<EventGraph>> propagationQueue = new HashMap<>();
         axioms.forEach(a -> {
             final EventGraph relevant = filterUnknowns(axiom2RelevantSets.get(a), a.getRelation());
-            propagationQueue.computeIfAbsent(a.getRelation(), k -> new ArrayList<>()).add(
+            propagationQueue.computeIfAbsent(a.getRelation(), _ -> new ArrayList<>()).add(
                     MutableEventGraph.from(relevant));
         });
         // FIXME: This method is the most expensive one to compute (40% of runtime)
@@ -289,7 +289,7 @@ public class ActiveSetAnalysis {
 
             this.news = update;
             def.accept(this).forEach((rel, value) ->
-                    propagationQueue.computeIfAbsent(rel, k -> new ArrayList<>()).add(value)
+                    propagationQueue.computeIfAbsent(rel, _ -> new ArrayList<>()).add(value)
             );
             this.news = null;
         }

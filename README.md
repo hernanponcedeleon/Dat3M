@@ -10,8 +10,8 @@
 Requirements
 ======
 * [Maven](https://maven.apache.org/) version 3.8 or above
-* [Java](https://openjdk.java.net/projects/jdk/17/) version 17 or above
-* [GraalVM](https://www.graalvm.org/) version 22 or above for optimal performance (only if you run in native mode; recommended!)
+* [Java](https://openjdk.org/projects/jdk/25/) version 25 or above
+* [GraalVM](https://www.graalvm.org/) version 25 or above (only if you run in native mode; recommended!)
 * A compiler capable of generating a natively supported Dartagnan input format for each source language you want to verify
 * [SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools) when verifying a SPIR-V target
 * [Graphviz](https://graphviz.org)

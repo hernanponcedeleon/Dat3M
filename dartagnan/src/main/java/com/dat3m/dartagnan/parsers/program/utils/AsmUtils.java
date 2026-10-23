@@ -28,15 +28,12 @@ public class AsmUtils {
             return 0;
         }
         Type returnType = returnRegister.getType();
-        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
-            return 1;
-        } else if (isReturnRegisterAggregate(returnRegister)) {
-            return ((AggregateType) returnType).getFields().size();
-        } else if (returnType instanceof VoidType) {
-            return 0;
-        } else {
-            throw new ParsingException("Unknown inline asm return type " + returnType);
-        }
+        return switch (returnType) {
+            case IntegerType _, BooleanType _ -> 1;
+            case AggregateType aggregateType -> aggregateType.getFields().size();
+            case VoidType _ -> 0;
+            default -> throw new ParsingException("Unknown inline asm return type " + returnType);
+        };
     }
 
     // Tells if the returnRegister is an AggregateType

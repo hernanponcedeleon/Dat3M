@@ -143,37 +143,38 @@ public class ExecutionModelManager {
     }
 
     private void extractEvent(Event e, ThreadModel tm, int id) {
-        EventModel em;
-        if (e instanceof MemoryCoreEvent memEvent) {
-            ValueModel address = new ValueModel(model.address(memEvent).value());
-            ValueModel value = new ValueModel(model.value(memEvent).value());
+        final EventModel em = switch (e) {
+            case MemoryCoreEvent memEvent -> {
+                ValueModel address = new ValueModel(model.address(memEvent).value());
+                ValueModel value = new ValueModel(model.value(memEvent).value());
 
-            if (memEvent instanceof Load load) {
-                em = new LoadModel(load, tm, id, address, value);
-                executionModel.addAddressRead(address, (LoadModel) em);
-            } else if (memEvent instanceof Store store) {
-                em = new StoreModel(store, tm, id, address, value);
-                executionModel.addAddressWrite(address, (StoreModel) em);
-            } else {
-                // Should never happen.
-                throw new IllegalArgumentException(String.format(
-                    "Event %s is memory event but neither read nor write", memEvent
-                ));
+                yield switch (memEvent) {
+                    case Load load -> {
+                        final LoadModel loadModel = new LoadModel(load, tm, id, address, value);
+                        executionModel.addAddressRead(address, loadModel);
+                        yield loadModel;
+                    }
+                    case Store store -> {
+                        final StoreModel storeModel = new StoreModel(store, tm, id, address, value);
+                        executionModel.addAddressWrite(address, storeModel);
+                        yield storeModel;
+                    }
+                    // Should never happen.
+                    default -> throw new IllegalArgumentException(String.format(
+                        "Event %s is memory event but neither read nor write", memEvent
+                    ));
+                };
             }
-
-        } else if (e instanceof GenericVisibleEvent visible) {
-            em = new GenericVisibleEventModel(visible, tm, id);
-        } else if (e instanceof Assert assrt) {
-            em = new AssertModel(assrt, tm, id, !model.assertionViolated(assrt));
-        } else if (e instanceof Local local) {
-            ValueModel value = new ValueModel(model.result(local).value());
-            em = new LocalModel(local, tm, id, value);
-        } else if (e instanceof CondJump cj) {
-            em = new CondJumpModel(cj, tm, id);
-        } else {
+            case GenericVisibleEvent visible -> new GenericVisibleEventModel(visible, tm, id);
+            case Assert assrt -> new AssertModel(assrt, tm, id, !model.assertionViolated(assrt));
+            case Local local -> {
+                ValueModel value = new ValueModel(model.result(local).value());
+                yield new LocalModel(local, tm, id, value);
+            }
+            case CondJump cj -> new CondJumpModel(cj, tm, id);
             // Should never happen.
-            throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));
-        }
+            default -> throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));
+        };
 
         executionModel.addEvent(e, em);
     }

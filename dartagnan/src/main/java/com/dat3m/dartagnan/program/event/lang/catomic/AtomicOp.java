@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions;
 public class AtomicOp extends RMWOpBase {
 
     public AtomicOp(Expression address, IntBinaryOp operator, Expression operand, String mo) {
-        super(address, operator, operand, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super(address, operator, operand, mo);
         addTags(Tag.C11.NORETURN);
     }
 

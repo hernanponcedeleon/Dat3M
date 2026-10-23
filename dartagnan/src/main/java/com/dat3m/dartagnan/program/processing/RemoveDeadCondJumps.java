@@ -51,10 +51,10 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                 if (jump.isDead()) {
                     toBeRemoved.add(jump);
                 } else {
-                    immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
+                    immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), _ -> new ArrayList<>()).add(jump);
                 }
             } else if (current instanceof Label label && pred != null && !(pred instanceof CondJump jump && jump.isGoto())) {
-                immediateLabelPredecessors.computeIfAbsent(label, key -> new ArrayList<>()).add(pred);
+                immediateLabelPredecessors.computeIfAbsent(label, _ -> new ArrayList<>()).add(pred);
             }
             current = current.getSuccessor();
         }
@@ -71,8 +71,8 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                 toBeRemoved.add(next);
             }
             // If a label is only accessible from its predecessor, it can be removed as well.
-            if (preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
-                if (preds.get(0) instanceof CondJump jump && jump.getLabel().equals(label)) {
+            if (preds.size() == 1 && preds.getFirst().getSuccessor().equals(label)) {
+                if (preds.getFirst() instanceof CondJump jump && jump.getLabel().equals(label)) {
                     assert jump.isDead() || jump.isGoto();
                     toBeRemoved.add(jump);
                 }

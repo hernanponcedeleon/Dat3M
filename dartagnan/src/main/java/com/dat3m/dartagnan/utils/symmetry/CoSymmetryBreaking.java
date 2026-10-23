@@ -109,7 +109,7 @@ public class CoSymmetryBreaking {
         info.threads = symmThreads;
 
         // Get stores of first thread
-        List<Store> writes = symmThreads.get(0).getEvents().stream()
+        List<Store> writes = symmThreads.getFirst().getEvents().stream()
                 .filter(Store.class::isInstance).map(Store.class::cast)
                 .collect(Collectors.toList());
 
@@ -167,7 +167,7 @@ public class CoSymmetryBreaking {
                 continue;
             }
 
-            Store w = info.writes.get(0);
+            Store w = info.writes.getFirst();
             final int numThreads = info.threads.size();
             for (int i = 0; i < numThreads; i++) {
                 for (int j = i + 1; j < numThreads; j++) {
@@ -206,7 +206,7 @@ public class CoSymmetryBreaking {
         EncodingContext.EdgeEncoder edge = context.edge(co);
 
         // ============= Construct rows =============
-        Thread t1 = symmThreads.get(0);
+        Thread t1 = symmThreads.getFirst();
         List<Thread> otherThreads = symmThreads.subList(1, symmThreads.size());
 
         List<Tuple> r1Tuples = new ArrayList<>();
@@ -218,7 +218,7 @@ public class CoSymmetryBreaking {
         // Starting row
         List<BooleanFormula> r1 = new ArrayList<>(r1Tuples.size() + 1);
         if (info.hasMustEdges) {
-            r1.add(context.execution(info.writes.get(0)));
+            r1.add(context.execution(info.writes.getFirst()));
         }
         for (Tuple t : r1Tuples) {
             r1.add(edge.encode(t.first(), t.second()));
@@ -233,7 +233,7 @@ public class CoSymmetryBreaking {
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {
-                r2.add(context.execution(symm.map(info.writes.get(0), t2)));
+                r2.add(context.execution(symm.map(info.writes.getFirst(), t2)));
             }
             for (Tuple t : r2Tuples) {
                 r2.add(edge.encode(t.first(), t.second()));

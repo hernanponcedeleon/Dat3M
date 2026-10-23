@@ -2,7 +2,7 @@
 FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG JAVA_VERSION=21
+ARG JAVA_VERSION=25
 ARG TARGETARCH
 
 # Install system dependencies

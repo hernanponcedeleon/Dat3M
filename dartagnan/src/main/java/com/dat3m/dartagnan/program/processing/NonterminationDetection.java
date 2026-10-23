@@ -103,7 +103,7 @@ public class NonterminationDetection implements ProgramProcessor {
         final Program program = loop.function().getProgram();
         final BooleanType boolType = TypeFactory.getInstance().getBooleanType();
         final Label endOfT = (Label) loop.function().getExit();
-        final Event loopHeader = loop.iterations().get(0).getIterationStart();
+        final Event loopHeader = loop.iterations().getFirst().getIterationStart();
 
         for (LoopAnalysis.LoopIterationInfo iter : iters) {
             final Expression guess = program.newConstant(boolType);
@@ -117,7 +117,7 @@ public class NonterminationDetection implements ProgramProcessor {
     }
 
     private boolean isPossiblyNonterminating(LoopAnalysis.LoopInfo loop) {
-        final LoopAnalysis.LoopIterationInfo lastIter = loop.iterations().get(loop.iterations().size() - 1);
+        final LoopAnalysis.LoopIterationInfo lastIter = loop.iterations().getLast();
         final Event lastEvent = lastIter.getIterationEnd();
 
         // TODO: This is a naive check: we assume the bound event is two events after the last loop event.

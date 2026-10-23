@@ -47,15 +47,12 @@ public class Simplifier implements FunctionProcessor {
         if (next.hasTag(Tag.NOOPT)) {
             return false;
         }
-        boolean changed = false;
-        if (next instanceof CondJump jump) {
-            changed = simplifyJump(jump);
-        } else if (next instanceof Label label) {
-            changed = simplifyLabel(label);
-        } else if (next instanceof FunCallMarker fc) {
-            changed = simplifyFunCallMarkers(fc);
-        }
-        return changed;
+        return switch (next) {
+            case CondJump jump -> simplifyJump(jump);
+            case Label label -> simplifyLabel(label);
+            case FunCallMarker fc -> simplifyFunCallMarkers(fc);
+            default -> false;
+        };
     }
 
     private boolean simplifyJump(CondJump jump) {

@@ -86,7 +86,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
     private void liveFunctions(Function function, FunctionCollector liveFunctions) {
         final var liveRegisters = new HashSet<Register>();
         final List<Event> events = function.getEvents();
-        final List<HashSet<Register>> jumps = events.stream().map(e -> new HashSet<Register>()).toList();
+        final List<HashSet<Register>> jumps = events.stream().map(_ -> new HashSet<Register>()).toList();
         for (int i = events.size() - 1; i >= 0; i--) {
             Event event = events.get(i);
             if (IRHelper.isAlwaysBranching(event)) { liveRegisters.clear(); }

@@ -66,12 +66,10 @@ public class EventFactory {
             if (obj == null) {
                 continue;
             }
-            if (obj instanceof Event) {
-                collector.add((Event) obj);
-            } else if (obj instanceof Iterable<?> iter) {
-                eventSequenceInternal(iter, collector);
-            } else {
-                throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
+            switch (obj) {
+                case Event event -> collector.add(event);
+                case Iterable<?> iter -> eventSequenceInternal(iter, collector);
+                default -> throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
             }
         }
     }

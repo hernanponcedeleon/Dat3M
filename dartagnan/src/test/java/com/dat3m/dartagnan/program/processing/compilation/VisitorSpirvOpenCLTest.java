@@ -64,7 +64,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        Load load = (Load) seq.get(0);
+        Load load = (Load) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ);
         assertEquals(Sets.union(baseTags, vulTags), load.getTags());
     }
@@ -101,7 +101,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        Store load = (Store) seq.get(0);
+        Store load = (Store) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE);
         assertEquals(Sets.union(baseTags, vulTags), load.getTags());
     }
@@ -143,7 +143,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        Load load = (Load) seq.get(0);
+        Load load = (Load) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.C11.ATOMIC);
         assertEquals(Sets.union(baseTags, vulTags), load.getTags());
     }
@@ -185,7 +185,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        Store store = (Store) seq.get(0);
+        Store store = (Store) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.C11.ATOMIC);
         assertEquals(Sets.union(baseTags, vulTags), store.getTags());
     }
@@ -443,7 +443,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        GenericVisibleEvent barrier = (GenericVisibleEvent) seq.get(0);
+        GenericVisibleEvent barrier = (GenericVisibleEvent) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.FENCE);
         assertEquals(Sets.union(baseTags, expected), barrier.getTags());
     }
@@ -475,7 +475,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        ControlBarrier controlBarrier = (ControlBarrier) seq.get(0);
+        ControlBarrier controlBarrier = (ControlBarrier) seq.getFirst();
         Set<String> baseTags = Set.of(Tag.VISIBLE);
         assertEquals(Sets.union(baseTags, expectedTags), controlBarrier.getTags());
     }
@@ -491,7 +491,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(1, seq.size());
-        ControlBarrier barrier = (ControlBarrier) seq.get(0);
+        ControlBarrier barrier = (ControlBarrier) seq.getFirst();
         assertEquals(Tag.OpenCL.WORK_GROUP, barrier.getExecScope());
     }
 }

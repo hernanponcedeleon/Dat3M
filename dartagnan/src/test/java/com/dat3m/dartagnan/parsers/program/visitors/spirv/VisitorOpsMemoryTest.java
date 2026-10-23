@@ -118,7 +118,7 @@ public class VisitorOpsMemoryTest {
         ConstructExpr pointerVariable = (ConstructExpr) builder.getExpression("%result");
         assertNotNull(pointerVariable);
         assertEquals(4, pointerVariable.getOperands().size());
-        assertEquals(integerType, pointerVariable.getOperands().get(0).getType());
+        assertEquals(integerType, pointerVariable.getOperands().getFirst().getType());
     }
 
     @Test
@@ -978,7 +978,7 @@ public class VisitorOpsMemoryTest {
     private Event getLastEvent() {
         List<Event> events = builder.getCurrentFunction().getEvents();
         if (!events.isEmpty()) {
-            return events.get(events.size() - 1);
+            return events.getLast();
         }
         return null;
     }

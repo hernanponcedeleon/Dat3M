@@ -159,7 +159,7 @@ public class ExecutionModel {
         Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
         for (Thread thread : threadList) {
-            List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
+            List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, _ -> new ArrayList<>());
             Event e = thread.getEntry();
             int atomicBegin = -1;
             int localId = 0;
@@ -174,12 +174,14 @@ public class ExecutionModel {
                 }
 
                 // ===== Atomic blocks =====
-                if (e instanceof BeginAtomic) {
-                    atomicBegin = id;
-                } else if (e instanceof EndAtomic) {
-                    Preconditions.checkState(atomicBegin != -1, "EndAtomic without matching BeginAtomic in model");
-                    atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
-                    atomicBegin = -1;
+                switch (e) {
+                    case BeginAtomic _ -> atomicBegin = id;
+                    case EndAtomic _ -> {
+                        Preconditions.checkState(atomicBegin != -1, "EndAtomic without matching BeginAtomic in model");
+                        atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
+                        atomicBegin = -1;
+                    }
+                    default -> { }
                 }
                 // =========================
 

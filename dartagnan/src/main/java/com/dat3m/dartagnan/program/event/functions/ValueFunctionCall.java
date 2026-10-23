@@ -14,8 +14,8 @@ public class ValueFunctionCall extends FunctionCall implements RegWriter {
     protected Register resultRegister;
 
     public ValueFunctionCall(Register resultRegister, FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
-        super(funcType, funcPtr, arguments);
         Preconditions.checkArgument(resultRegister.getType().equals(funcType.getReturnType()));
+        super(funcType, funcPtr, arguments);
         this.resultRegister = resultRegister;
     }
 

@@ -37,7 +37,7 @@ public class DependencyGraph<T> {
     }
 
     public Node getRootNode() {
-        return nodeList.get(0);
+        return nodeList.getFirst();
     }
 
     public T getRootContent() {

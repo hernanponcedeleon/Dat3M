@@ -13,8 +13,8 @@ public final class InsertExpr extends BinaryExpressionBase<Type, ExpressionKind.
     private final ImmutableList<Integer> indices;
 
     public InsertExpr(Expression aggregate, Iterable<Integer> indices, Expression value) {
-        super(aggregate.getType(), ExpressionKind.Other.INSERT, aggregate, value);
         ExpressionHelper.checkSameType(ExpressionHelper.extractType(aggregate.getType(), indices), value.getType());
+        super(aggregate.getType(), ExpressionKind.Other.INSERT, aggregate, value);
         this.indices = ImmutableList.copyOf(indices);
     }
 

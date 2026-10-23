@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 public final class IntCmpExpr extends BinaryExpressionBase<BooleanType, IntCmpOp> {
 
     public IntCmpExpr(BooleanType type, Expression left, IntCmpOp kind, Expression right) {
-        super(type, kind, left, right);
         ExpressionHelper.checkSameExpectedType(left, right, IntegerType.class);
+        super(type, kind, left, right);
     }
 
     @Override

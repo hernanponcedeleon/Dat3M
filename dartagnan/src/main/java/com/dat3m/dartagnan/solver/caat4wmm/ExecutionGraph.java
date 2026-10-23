@@ -177,20 +177,16 @@ public class ExecutionGraph {
             return constraintMap.get(axiom);
         }
 
-        Constraint constraint;
         Relation inner = axiom.getRelation();
         CAATPredicate innerPred = inner.isSet() ?
             getOrCreateSetFromRelation(inner) :
             getOrCreateGraphFromRelation(inner);
-        if (axiom instanceof Acyclicity) {
-            constraint = new AcyclicityConstraint((RelationGraph) innerPred);
-        } else if (axiom instanceof Emptiness) {
-            constraint = new EmptinessConstraint(innerPred);
-        } else if (axiom instanceof Irreflexivity) {
-            constraint = new IrreflexivityConstraint((RelationGraph) innerPred);
-        } else {
-            throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
-        }
+        Constraint constraint = switch (axiom) {
+            case Acyclicity _ -> new AcyclicityConstraint((RelationGraph) innerPred);
+            case Emptiness _ -> new EmptinessConstraint(innerPred);
+            case Irreflexivity _ -> new IrreflexivityConstraint((RelationGraph) innerPred);
+            default -> throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
+        };
 
         constraintMap.put(axiom, constraint);
         return constraint;

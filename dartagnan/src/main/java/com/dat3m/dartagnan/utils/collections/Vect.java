@@ -56,15 +56,6 @@ public final class Vect<T> extends AbstractList<T> {
         return array[0];
     }
 
-    public T getFirst() {
-        checkGetRange(0);
-        return getFirstUnsafe();
-    }
-
-    public T getLast() {
-        return array[numElements - 1];
-    }
-
     public T getUnsafe(int index) {
         return array[index];
     }

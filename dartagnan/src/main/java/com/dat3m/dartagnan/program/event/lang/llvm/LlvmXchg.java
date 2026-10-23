@@ -9,8 +9,8 @@ import com.google.common.base.Preconditions;
 public class LlvmXchg extends RMWXchgBase {
 
     public LlvmXchg(Register register, Expression address, Expression value, String mo) {
-        super(register, address, value, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        super(register, address, value, mo);
     }
 
     private LlvmXchg(LlvmXchg other) {

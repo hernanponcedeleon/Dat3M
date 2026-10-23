@@ -24,7 +24,7 @@ public class HelperTypes {
 
     public static Type getMemberType(String id, Type type, List<Integer> indexes) {
         if (!indexes.isEmpty()) {
-            id += "[" + indexes.get(0) + "]";
+            id += "[" + indexes.getFirst() + "]";
             if (type instanceof ArrayType aType) {
                 return getArrayMemberType(id, aType, indexes);
             }
@@ -38,7 +38,7 @@ public class HelperTypes {
 
     public static int getMemberOffset(String id, int offset, Type type, List<Integer> indexes) {
         if (!indexes.isEmpty()) {
-            id += "[" + indexes.get(0) + "]";
+            id += "[" + indexes.getFirst() + "]";
             if (type instanceof ArrayType aType) {
                 return getArrayMemberOffset(id, offset, aType, indexes);
             }
@@ -82,7 +82,7 @@ public class HelperTypes {
     }
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {
-        int index = indexes.get(0);
+        int index = indexes.getFirst();
         if (!type.hasKnownNumElements() || index < type.getNumElements()) {
             return getMemberType(id, type.getElementType(), indexes.subList(1, indexes.size()));
         }
@@ -90,7 +90,7 @@ public class HelperTypes {
     }
 
     private static Type getStructMemberType(String id, AggregateType type, List<Integer> indexes) {
-        int index = indexes.get(0);
+        int index = indexes.getFirst();
         if (index >= 0) {
             if (index < type.getFields().size()) {
                 return getMemberType(id, type.getFields().get(index).type(), indexes.subList(1, indexes.size()));
@@ -101,7 +101,7 @@ public class HelperTypes {
     }
 
     private static int getArrayMemberOffset(String id, int offset, ArrayType type, List<Integer> indexes) {
-        int index = indexes.get(0);
+        int index = indexes.getFirst();
         if (index >= 0) {
             if (type.getNumElements() < 0 || index < type.getNumElements()) {
                 Type elType = type.getElementType();
@@ -118,7 +118,7 @@ public class HelperTypes {
     }
 
     private static int getStructMemberOffset(String id, int offset, AggregateType type, List<Integer> indexes) {
-        int index = indexes.get(0);
+        int index = indexes.getFirst();
         if (index >= 0) {
             if (index < type.getFields().size()) {
                 offset += type.getFields().get(index).offset();

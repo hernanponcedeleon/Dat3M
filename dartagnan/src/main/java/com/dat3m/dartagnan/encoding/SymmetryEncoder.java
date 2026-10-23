@@ -126,7 +126,7 @@ public class SymmetryEncoder {
         // ===== Construct row =====
         // IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped.
-        Thread t1 = symmThreads.get(0);
+        Thread t1 = symmThreads.getFirst();
         List<Tuple> t1Tuples = computeThreadTuples(maySet, symmClass, t1);
 
         // Construct symmetric rows

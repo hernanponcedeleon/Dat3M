@@ -67,7 +67,7 @@ public class LoopFormVerification implements ProgramProcessor {
             loopBegin.setName(String.format("%s%s", loopBegin.getName(), LoopUnrolling.LOOP_LABEL_IDENTIFIER));
             loopBegin.addTags(Tag.NOOPT);
 
-            final CondJump uniqueBackJump = backJumps.get(0);
+            final CondJump uniqueBackJump = backJumps.getFirst();
             if (!uniqueBackJump.isGoto()) {
                 final String error = String.format("Loop back jump %s is conditional.", uniqueBackJump);
                 throw new MalformedProgramException(error);

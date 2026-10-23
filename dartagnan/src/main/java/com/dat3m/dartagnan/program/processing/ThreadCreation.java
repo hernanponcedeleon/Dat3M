@@ -89,20 +89,19 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        if (program.getEntrypoint() instanceof Entrypoint.None) {
-            throw new MalformedProgramException("Program has no entry point.");
-        }
-
-        if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
-            final List<ThreadData> threads = createThreads(ep);
-            resolvePthreadSelf(program);
-            resolveDynamicThreadLocals(program, threads);
-            resolveDynamicThreadJoin(program, threads);
-            resolveDynamicThreadDetach(program, threads);
-            IdReassignment.newInstance().run(program);
-            resolveTidExpressions(program);
-        } else if (program.getEntrypoint() instanceof Entrypoint.Grid ep) {
-            createSPVThreads(program, ep);
+        switch (program.getEntrypoint()) {
+            case Entrypoint.None _ -> throw new MalformedProgramException("Program has no entry point.");
+            case Entrypoint.Simple ep -> {
+                final List<ThreadData> threads = createThreads(ep);
+                resolvePthreadSelf(program);
+                resolveDynamicThreadLocals(program, threads);
+                resolveDynamicThreadJoin(program, threads);
+                resolveDynamicThreadDetach(program, threads);
+                IdReassignment.newInstance().run(program);
+                resolveTidExpressions(program);
+            }
+            case Entrypoint.Grid ep -> createSPVThreads(program, ep);
+            case Entrypoint.Resolved _ -> { }
         }
 
         logger.info("Number of threads (including main): {}", program.getThreads().size());
@@ -243,7 +242,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2joinCases.keySet()) {
                 switchJumpTable.add(EventFactory.newJump(
-                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
+                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).getFirst())
                 );
             }
             // In the case where no tid matches, we return an error status.
@@ -307,7 +306,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2detachCases.keySet()) {
                 final Expression eqTid = expressions.makeEQ(tidExpr, tid);
-                final var label = (Label) tid2detachCases.get(tid).get(0);
+                final var label = (Label) tid2detachCases.get(tid).getFirst();
                 switchJumpTable.add(EventFactory.newJump(eqTid, label));
             }
             // In the case where no tid matches, we return an error status.

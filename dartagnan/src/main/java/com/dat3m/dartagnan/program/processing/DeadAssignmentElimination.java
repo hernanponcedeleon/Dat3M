@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -52,7 +51,7 @@ public class DeadAssignmentElimination implements FunctionProcessor {
         // Compute events to be removed (removal is delayed)
         final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
-        for(Event e : Lists.reverse(funcEvents)) {
+        for(Event e : funcEvents.reversed()) {
             if (e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister()) &&
                     !e.hasTag(NOOPT) && isSideEffectFree(regWriter)) {
                 // Unused RegWriters that have no side effects are removable.

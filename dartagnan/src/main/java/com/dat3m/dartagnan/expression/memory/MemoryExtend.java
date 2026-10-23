@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions;
 public final class MemoryExtend extends CastExpressionBase<MemoryType, MemoryType> {
 
     public MemoryExtend(MemoryType targetType, Expression operand) {
-        super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, MemoryType.class);
+        super(targetType, operand);
         Preconditions.checkArgument(isExtension(getSourceType(), targetType));
     }
 

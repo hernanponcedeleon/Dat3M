@@ -47,7 +47,6 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
-import static com.google.common.collect.Lists.reverse;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.IntStream.iterate;
@@ -158,7 +157,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             may.removeAll(getKnowledge(r).getMaySet());
             final IndexedEventGraph mayDiff = may;
             final IndexedEventGraph mustDiff = IndexedEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            discrepancies.computeIfAbsent(r, k -> new ArrayList<>()).add(IndexedEventGraph.union(mayDiff, mustDiff));
+            discrepancies.computeIfAbsent(r, _ -> new ArrayList<>()).add(IndexedEventGraph.union(mayDiff, mustDiff));
         }
     }
 
@@ -170,7 +169,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
-                dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
+                dependents.computeIfAbsent(d, _ -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
@@ -199,7 +198,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         logger.trace("Regular analysis for component {}", scc);
         Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
         // the algorithm has deterministic order, only if all components are deterministically-ordered
-        Map<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
+        SequencedMap<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
         // move from global queue
         for (Relation r : stratum) {
             List<Delta> d = qGlobal.remove(r);
@@ -209,7 +208,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
         // repeat until convergence
         while (!qLocal.isEmpty()) {
-            Relation relation = qLocal.keySet().iterator().next();
+            final Map.Entry<Relation, List<Delta>> next = qLocal.pollFirstEntry();
+            Relation relation = next.getKey();
             logger.trace("Regular knowledge update for '{}'", relation);
 
             //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
@@ -224,7 +224,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
             // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
             //  We should reconsider our algorithm.
-            final var ddd = qLocal.remove(relation);
+            final var ddd = next.getValue();
             Delta toAdd = combine(ddd);
             if (relation.getDefinition() instanceof Difference difference) {
                 // Our propagated update may be "too large" so we reduce it.
@@ -246,7 +246,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 Relation r = c.getDefinedRelation();
                 Delta d = c.accept(propagator);
                 (stratum.contains(r) ? qLocal : qGlobal)
-                        .computeIfAbsent(r, k -> new ArrayList<>())
+                        .computeIfAbsent(r, _ -> new ArrayList<>())
                         .add(d);
             }
         }
@@ -254,7 +254,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private Delta combine(List<Delta> deltas) {
         if (deltas.size() == 1) {
-            return deltas.get(0);
+            return deltas.getFirst();
         }
         final var mayDelta = new EventGraph[deltas.size()];
         final var mustDelta = new EventGraph[deltas.size()];
@@ -270,25 +270,26 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         logger.trace("Start");
         Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
-        Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
+        SequencedMap<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
         for (Constraint c : memoryModel.getConstraints()) {
             if (c instanceof Axiom axiom && axiom.isFlagged()) {
                 continue;
             }
             for (Relation r : c.getConstrainedRelations()) {
-                dependents.computeIfAbsent(r, k -> new ArrayList<>()).add(c);
+                dependents.computeIfAbsent(r, _ -> new ArrayList<>()).add(c);
             }
             for (Map.Entry<Relation, ExtendedDelta> e :
                     c.accept(new InitialKnowledgeCloser()).entrySet()) {
-                q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                q.computeIfAbsent(e.getKey(), _ -> new ArrayList<>()).add(e.getValue());
             }
         }
         // repeat until convergence
         while (!q.isEmpty()) {
-            Relation relation = q.keySet().iterator().next();
+            final Map.Entry<Relation, List<ExtendedDelta>> next = q.pollFirstEntry();
+            Relation relation = next.getKey();
             logger.trace("Extended knowledge update for '{}'", relation);
             MutableKnowledge knowledge = knowledgeMap.get(relation);
-            ExtendedDelta delta = join(knowledge, q.remove(relation));
+            ExtendedDelta delta = join(knowledge, next.getValue());
             if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
                 continue;
             }
@@ -298,14 +299,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 logger.trace("Extended propagation from '{}' to '{}'", relation, c);
                 for (Map.Entry<Relation, ExtendedDelta> e :
                         c.accept(new IncrementalKnowledgeCloser(relation, delta.enabled)).entrySet()) {
-                    q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                    q.computeIfAbsent(e.getKey(), _ -> new ArrayList<>()).add(e.getValue());
                 }
                 if (!(c instanceof Definition)) {
                     continue;
                 }
                 for (Map.Entry<Relation, ExtendedDelta> e :
                         c.accept(new ExtendedPropagator(relation, delta.disabled, delta.enabled)).entrySet()) {
-                    q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                    q.computeIfAbsent(e.getKey(), _ -> new ArrayList<>()).add(e.getValue());
                 }
             }
         }
@@ -641,7 +642,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             Map<Event, Set<Event>> mayMap = new HashMap<>();
             Map<Event, Set<Event>> mustMap = new HashMap<>();
             for (Thread thread : program.getThreads()) {
-                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
+                List<Event> locks = thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()).reversed();
                 for (Event unlock : thread.getEvents()) {
                     if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
                         continue;
@@ -661,12 +662,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                                 lockMutex.containsAll(mayMap.getOrDefault(unlock, Set.of())) &&
                                         unlockMutex.containsAll(mayMap.getOrDefault(lock, Set.of()));
                         may.add(lock, unlock);
-                        mayMap.computeIfAbsent(lock, x -> new HashSet<>()).add(unlock);
-                        mayMap.computeIfAbsent(unlock, x -> new HashSet<>()).add(lock);
+                        mayMap.computeIfAbsent(lock, _ -> new HashSet<>()).add(unlock);
+                        mayMap.computeIfAbsent(unlock, _ -> new HashSet<>()).add(lock);
                         if (noIntermediary) {
                             must.add(lock, unlock);
-                            mustMap.computeIfAbsent(lock, x -> new HashSet<>()).add(unlock);
-                            mustMap.computeIfAbsent(unlock, x -> new HashSet<>()).add(lock);
+                            mustMap.computeIfAbsent(lock, _ -> new HashSet<>()).add(unlock);
+                            mustMap.computeIfAbsent(unlock, _ -> new HashSet<>()).add(lock);
                         }
                     }
                 }
@@ -723,7 +724,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                     final List<Event> stores = transactionMap.getOrDefault(store, List.of(store));
                     // If Tearing was performed, only iterate the last load and the first store of an instruction.
-                    if (!stores.get(0).equals(store)) {
+                    if (!stores.getFirst().equals(store)) {
                         continue;
                     }
                     final boolean requiresMatchingAddresses = store.doesRequireMatchingAddresses();
@@ -742,7 +743,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         }
                         final List<Event> loads = transactionMap.getOrDefault(load, List.of(load));
                         // Only match with the last load of an instruction.
-                        if (loads.get(loads.size() - 1).equals(load)) {
+                        if (loads.getLast().equals(load)) {
                             final Set<Event> loadMutex = execExcluding(load);
                             final boolean noIntermediaries = loadMutex.containsAll(intermediaries);
                             addLXSX(may, must, loads, stores, noIntermediaries, requiresMatchingAddresses);
@@ -860,7 +861,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 // Remove past reads
                 final IndexedEventGraph deletedEdges = newGraphWithDomain(may);
                 Map<Event, List<Event>> writesByRead = new HashMap<>();
-                may.apply((e1, e2) -> writesByRead.computeIfAbsent(e2, x -> new ArrayList<>()).add(e1));
+                may.apply((e1, e2) -> writesByRead.computeIfAbsent(e2, _ -> new ArrayList<>()).add(e1));
                 for (Load read : program.getThreadEvents(Load.class)) {
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
@@ -908,10 +909,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     List<Store> writes = new ArrayList<>();
                     List<Load> reads = new ArrayList<>();
                     for (Event b : endAtomic.getBlock()) {
-                        if (b instanceof Load load) {
-                            reads.add(load);
-                        } else if (b instanceof Store store) {
-                            writes.add(store);
+                        switch (b) {
+                            case Load load -> reads.add(load);
+                            case Store store -> writes.add(store);
+                            default -> { }
                         }
                     }
                     for (Load r : reads) {

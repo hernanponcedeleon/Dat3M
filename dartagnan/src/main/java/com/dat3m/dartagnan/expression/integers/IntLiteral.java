@@ -18,8 +18,8 @@ public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
     private final BigInteger value;
 
     public IntLiteral(IntegerType type, BigInteger value) {
-        super(type);
         Preconditions.checkArgument(type.canContain(value));
+        super(type);
         this.value = value;
     }
 

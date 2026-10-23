@@ -13,8 +13,8 @@ public class LlvmLoad extends LoadBase {
 
 
     public LlvmLoad(Register register, Expression address, String mo) {
-        super(register, address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        super(register, address, mo);
         Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
                 getClass().getName() + " cannot have memory order: " + mo);
     }

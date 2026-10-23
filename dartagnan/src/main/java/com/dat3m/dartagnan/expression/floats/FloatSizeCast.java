@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 public final class FloatSizeCast extends CastExpressionBase<FloatType, FloatType> {
 
     public FloatSizeCast(FloatType targetType, Expression operand) {
-        super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, FloatType.class);
+        super(targetType, operand);
     }
 
     public boolean isTruncation() {

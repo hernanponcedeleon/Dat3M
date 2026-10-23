@@ -83,22 +83,27 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     public Expression mockConstant(String id, String typeId, Object value) {
         Type type = getType(typeId);
-        if (type instanceof BooleanType) {
-            BoolLiteral bConst = exprFactory.makeValue((boolean) value);
-            return addExpression(id, bConst);
-        } else if (type instanceof IntegerType iType) {
-            IntLiteral iValue = exprFactory.makeValue((int) value, iType);
-            return addExpression(id, iValue);
-        } else if (type instanceof ArrayType aType) {
-            List<Expression> elements = mockConstantArrayElements(aType.getElementType(), value);
-            Expression construction = exprFactory.makeArray(aType, elements);
-            return addExpression(id, construction);
-        } else if (type instanceof AggregateType) {
-            List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
-            Expression construction = exprFactory.makeConstruct(type, members);
-            return addExpression(id, construction);
-        }
-        throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);
+        return switch (type) {
+            case BooleanType _ -> {
+                BoolLiteral bConst = exprFactory.makeValue((boolean) value);
+                yield addExpression(id, bConst);
+            }
+            case IntegerType iType -> {
+                IntLiteral iValue = exprFactory.makeValue((int) value, iType);
+                yield addExpression(id, iValue);
+            }
+            case ArrayType aType -> {
+                List<Expression> elements = mockConstantArrayElements(aType.getElementType(), value);
+                Expression construction = exprFactory.makeArray(aType, elements);
+                yield addExpression(id, construction);
+            }
+            case AggregateType _ -> {
+                List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
+                Expression construction = exprFactory.makeConstruct(type, members);
+                yield addExpression(id, construction);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);
+        };
     }
 
     private List<Expression> mockConstantArrayElements(Type elementType, Object value) {
@@ -106,28 +111,23 @@ public class MockProgramBuilder extends ProgramBuilder {
         if (lValue.isEmpty()) {
             return List.of();
         }
-        Object element = lValue.get(0);
-        if (element instanceof Expression) {
-            return lValue.stream()
+        Object element = lValue.getFirst();
+        return switch (element) {
+            case Expression _ -> lValue.stream()
                     .map(v -> (Expression) v)
                     .collect(Collectors.toList());
-        }
-        if (element instanceof String) {
-            return lValue.stream()
+            case String _ -> lValue.stream()
                     .map(v -> getExpression((String) v))
                     .collect(Collectors.toList());
-        }
-        if (element instanceof Boolean) {
-            return lValue.stream()
+            case Boolean _ -> lValue.stream()
                     .map(v -> exprFactory.makeValue((boolean) v))
                     .collect(Collectors.toList());
-        }
-        if (element instanceof Integer && elementType instanceof IntegerType iType) {
-            return lValue.stream()
+            case Integer _ when elementType instanceof IntegerType iType -> lValue.stream()
                     .map(v -> exprFactory.makeValue((int) v, iType))
                     .collect(Collectors.toList());
-        }
-        throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
+            default ->
+                    throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
+        };
     }
 
     public Expression mockUndefinedValue(String id, String typeId) {

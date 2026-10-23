@@ -97,11 +97,11 @@ public class AcyclicityConstraint extends AbstractConstraint {
                 return;
             }
             prog = false;
-            Edge in = cycle.get(cycle.size() - 1);
-            Edge out = cycle.get(0);
+            Edge in = cycle.getLast();
+            Edge out = cycle.getFirst();
             Edge chord = constrainedGraph.get(new Edge(in.getFirst(), out.getSecond()));
             if (chord != null) {
-                cycle.remove(cycle.size() - 1);
+                cycle.removeLast();
                 cycle.set(0, chord);
                 prog = true;
             }

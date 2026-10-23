@@ -278,16 +278,16 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                     if (usageTypes.contains(read.usageType())) {
                         Register register = read.register();
                         state.ofRegister(register).getMayWriters()
-                                .forEach(writer -> may.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                                .forEach(writer -> may.computeIfAbsent(writer, _ -> new HashSet<>()).add(reader));
                         state.ofRegister(register).getMustWriters()
-                                .forEach(writer -> must.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                                .forEach(writer -> must.computeIfAbsent(writer, _ -> new HashSet<>()).add(reader));
                     }
                 });
             });
             if (usageTypes.contains(DATA)) {
                 program.getThreadEvents(ExecutionStatus.class).forEach(execStatus -> {
                     if (execStatus.doesTrackDep()) {
-                        may.computeIfAbsent(execStatus.getStatusEvent(), x -> new HashSet<>()).add(execStatus);
+                        may.computeIfAbsent(execStatus.getStatusEvent(), _ -> new HashSet<>()).add(execStatus);
                     }
                 });
             }
@@ -369,11 +369,11 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                 for (int j = i; j < memoryEvents.size(); j++) {
                     MemoryCoreEvent e2 = memoryEvents.get(j);
                     if (!exec.areMutuallyExclusive(e1, e2) && alias.mayAlias(e1, e2)) {
-                        mayData.computeIfAbsent(e1, x -> new HashSet<>()).add(e2);
-                        mayData.computeIfAbsent(e2, x -> new HashSet<>()).add(e1);
+                        mayData.computeIfAbsent(e1, _ -> new HashSet<>()).add(e2);
+                        mayData.computeIfAbsent(e2, _ -> new HashSet<>()).add(e1);
                         if (alias.mustAlias(e1, e2)) {
-                            mustData.computeIfAbsent(e1, x -> new HashSet<>()).add(e2);
-                            mustData.computeIfAbsent(e2, x -> new HashSet<>()).add(e1);
+                            mustData.computeIfAbsent(e1, _ -> new HashSet<>()).add(e2);
+                            mustData.computeIfAbsent(e2, _ -> new HashSet<>()).add(e1);
                         }
                     }
                 }

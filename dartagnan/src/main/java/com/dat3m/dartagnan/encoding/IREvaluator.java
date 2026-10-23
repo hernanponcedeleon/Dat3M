@@ -189,23 +189,21 @@ public class IREvaluator implements AutoCloseable {
     // Internal
 
     private Object getDummyModelOfType(Type type) {
-        if (type instanceof BooleanType) {
-            return Boolean.FALSE;
-        } else if (type instanceof IntegerType) {
-            return BigInteger.ZERO;
-        } else if (type instanceof ArrayType arrayType) {
-            Preconditions.checkArgument(arrayType.hasKnownNumElements());
-            final Object innerDummy = getDummyModelOfType(arrayType.getElementType());
-            final List<Object> dummies = IntStream.range(0, arrayType.getNumElements()).mapToObj(i -> innerDummy).toList();
-            return new TupleValue(dummies);
-        } else if (type instanceof AggregateType aggType) {
-            return new TupleValue(
+        return switch (type) {
+            case BooleanType _ -> Boolean.FALSE;
+            case IntegerType _ -> BigInteger.ZERO;
+            case ArrayType arrayType -> {
+                Preconditions.checkArgument(arrayType.hasKnownNumElements());
+                final Object innerDummy = getDummyModelOfType(arrayType.getElementType());
+                final List<Object> dummies = IntStream.range(0, arrayType.getNumElements()).mapToObj(i -> innerDummy).toList();
+                yield new TupleValue(dummies);
+            }
+            case AggregateType aggType -> new TupleValue(
                     aggType.getFields().stream()
                     .map(field -> getDummyModelOfType(field.type()))
                     .toList()
             );
-        } else {
-            throw new UnsupportedOperationException("Dummy model for type " + type + " is not implemented");
-        }
+            default -> throw new UnsupportedOperationException("Dummy model for type " + type + " is not implemented");
+        };
     }
 }

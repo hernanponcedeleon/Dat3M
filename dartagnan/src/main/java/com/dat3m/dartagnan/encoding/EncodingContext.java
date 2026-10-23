@@ -253,7 +253,7 @@ public final class EncodingContext {
 
         default EdgeEncoder withCache() {
             final Map<Event, Map<Event, BooleanFormula>> cache = new HashMap<>();
-            return (x, y) -> cache.computeIfAbsent(x, k -> new HashMap<>()).computeIfAbsent(y, k2 -> encode(x, y));
+            return (x, y) -> cache.computeIfAbsent(x, _ -> new HashMap<>()).computeIfAbsent(y, k2 -> encode(x, y));
         }
     }
 
@@ -344,10 +344,10 @@ public final class EncodingContext {
             }
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
-                if (e instanceof Load) {
-                    values.put(e, results.get(e));
-                } else if (e instanceof Store store) {
-                    values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
+                switch (e) {
+                    case Load _ -> values.put(e, results.get(e));
+                    case Store store -> values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
+                    default -> { }
                 }
             }
         }

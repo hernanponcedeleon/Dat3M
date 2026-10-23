@@ -20,8 +20,8 @@ public class DynamicThreadCreate extends CallBase implements RegWriter {
     protected Register tidRegister;
 
     public DynamicThreadCreate(Register tidRegister, FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
-        super(funcType, funcPtr, arguments);
         Preconditions.checkArgument(tidRegister.getType() instanceof IntegerType);
+        super(funcType, funcPtr, arguments);
         this.tidRegister = Preconditions.checkNotNull(tidRegister);
     }
 

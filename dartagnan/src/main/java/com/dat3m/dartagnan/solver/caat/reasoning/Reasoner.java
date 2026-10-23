@@ -215,7 +215,7 @@ public class Reasoner {
         public Conjunction<CAATLiteral> visitSetIdentity(RelationGraph graph, Edge edge, Void unused) {
             assert edge.isLoop();
 
-            SetPredicate inner = (SetPredicate) graph.getDependencies().get(0);
+            SetPredicate inner = (SetPredicate) graph.getDependencies().getFirst();
             Element e = inner.getById(edge.getFirst());
             return computeReason(inner, e);
         }
@@ -225,7 +225,7 @@ public class Reasoner {
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
             } else {
-                Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge);
+                Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().getFirst(), edge);
                 assert !reason.isFalse();
                 return reason;
             }
@@ -233,7 +233,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Void unused) {
-            RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
+            RelationGraph inner = (RelationGraph) graph.getDependencies().getFirst();
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
@@ -245,7 +245,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitRecursiveGraph(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge);
+            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().getFirst(), edge);
             assert !reason.isFalse();
             return reason;
         }

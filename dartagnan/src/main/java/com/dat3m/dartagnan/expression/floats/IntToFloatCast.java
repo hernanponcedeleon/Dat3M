@@ -12,8 +12,8 @@ public final class IntToFloatCast extends CastExpressionBase<FloatType, IntegerT
     private final boolean isSigned;
 
     public IntToFloatCast(FloatType targetType, Expression operand, boolean isSigned) {
-        super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, IntegerType.class);
+        super(targetType, operand);
         this.isSigned = isSigned;
     }
 

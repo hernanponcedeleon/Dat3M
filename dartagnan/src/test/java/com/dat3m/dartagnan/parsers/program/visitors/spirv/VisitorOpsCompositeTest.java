@@ -1033,6 +1033,6 @@ public class VisitorOpsCompositeTest {
 
     private Local getLastLocal() {
         List<Event> events = builder.getCurrentFunction().getEvents();
-        return (Local) events.get(events.size() - 1);
+        return (Local) events.getLast();
     }
 }

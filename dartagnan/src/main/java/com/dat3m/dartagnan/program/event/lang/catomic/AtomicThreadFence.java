@@ -7,8 +7,8 @@ import com.google.common.base.Preconditions;
 public class AtomicThreadFence extends FenceBase {
 
     public AtomicThreadFence(String mo) {
-        super("atomic_thread_fence", mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super("atomic_thread_fence", mo);
     }
 
     private AtomicThreadFence(AtomicThreadFence other){

@@ -11,11 +11,11 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
 
     public LlvmCmpXchg(Register oldValueAndSuccessRegister, Expression address, Expression expectedValue,
             Expression value, String mo, boolean isStrong) {
-        super(oldValueAndSuccessRegister, address, expectedValue, value, isStrong, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         Preconditions.checkArgument(oldValueAndSuccessRegister.getType() instanceof AggregateType t
                         && t.getFields().size() == 2,
                 "Non-aggregate result register of LlvmCmpXchg.");
+        super(oldValueAndSuccessRegister, address, expectedValue, value, isStrong, mo);
     }
 
     private LlvmCmpXchg(LlvmCmpXchg other) {

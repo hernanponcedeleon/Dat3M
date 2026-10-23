@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions;
 public final class FromMemoryCast extends CastExpressionBase<Type, MemoryType> {
 
     public FromMemoryCast(Type type, Expression operand) {
-        super(type, operand);
         Preconditions.checkArgument(operand.getType() instanceof MemoryType);
+        super(type, operand);
     }
 
     @Override

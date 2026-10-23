@@ -66,7 +66,7 @@ public final class Tearing implements ProgramProcessor {
             analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                     analysisContext, configuration));
             alias = AliasAnalysis.fromConfig(program, analysisContext, configuration, true);
-        } catch (InvalidConfigurationException ignore) {
+        } catch (InvalidConfigurationException _) {
             return;
         }
         final boolean bigEndian = program.getMemory().isBigEndian();
@@ -136,8 +136,8 @@ public final class Tearing implements ProgramProcessor {
             final int initOffset = init.getOffset();
             final Expression value = expressions.makeToMemoryCast(init.getValue());
             // Tear initial values
-            final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
-            final int frontEnd = bigEndian ? bytes : offsets.get(0);
+            final int frontBegin = bigEndian ? bytes - offsets.getFirst() : 0;
+            final int frontEnd = bigEndian ? bytes : offsets.getFirst();
 
             final Expression frontValue = expressions.makeMemoryExtract(value, 8 * frontBegin, 8 * frontEnd - 1)
                     .accept(simplifier);
@@ -167,7 +167,7 @@ public final class Tearing implements ProgramProcessor {
         //TODO currently, FinalMemoryValue only occurs in the program's final state expressions.
         final var substitution = new FinalValueTearSubstitution();
         for (Init init : program.getThreadEvents(Init.class)) {
-            substitution.typesByObject.computeIfAbsent(init.getBase(), k -> new HashMap<>())
+            substitution.typesByObject.computeIfAbsent(init.getBase(), _ -> new HashMap<>())
                     .put(init.getOffset(), init.getAccessType());
         }
 
@@ -327,7 +327,7 @@ public final class Tearing implements ProgramProcessor {
                 result.add(new FinalMemoryValue(t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);
             }
-            final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeMemoryConcat(result);
+            final Expression combined = result.size() == 1 ? result.getFirst() : expressions.makeMemoryConcat(result);
             return expressions.makeFromMemoryCast(combined, value.getType());
         }
     }

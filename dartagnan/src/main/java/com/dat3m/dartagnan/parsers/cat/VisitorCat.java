@@ -391,7 +391,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
                 toCut.setMetadata(Wmm.CutAnnotation.get());
                 return null;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception _) {}
 
         // Failed to annotate relation, try to annotate axiom.
         final Axiom axiom = wmm.getAxioms().stream()
