@@ -211,7 +211,7 @@ public class ExecutionModel {
 
                 atomicBlocksMap.put(thread, new ArrayList<>());
                 for (List<Integer> aRange : atomicBlockRangesMap.get(thread)) {
-                    atomicBlocksMap.get(thread).add(eventList.subList(aRange.getFirst(), aRange.get(1)));
+                    atomicBlocksMap.get(thread).add(eventList.subList(aRange.get(0), aRange.get(1)));
                 }
             }
             start = end;

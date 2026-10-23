@@ -761,12 +761,12 @@ public class MutableEventGraphTest {
         final IndexedEventGraph eventGraph = new IndexedEventGraph(larger, smaller);
 
         // when
-        eventGraph.add(events.get(65), events.getFirst());
+        eventGraph.add(events.get(65), events.get(0));
 
         // then
-        assertTrue(eventGraph.contains(events.get(65), events.getFirst()));
-        assertEquals(eventGraph.getRange(events.get(65)), Set.of(events.getFirst()));
-        assertEquals(eventGraph.getRange(), Set.of(events.getFirst()));
+        assertTrue(eventGraph.contains(events.get(65), events.get(0)));
+        assertEquals(eventGraph.getRange(events.get(65)), Set.of(events.get(0)));
+        assertEquals(eventGraph.getRange(), Set.of(events.get(0)));
     }
 
     private MutableEventGraph makeEventGraph(Class<?> cls, Map<Event, Set<Event>> data) {

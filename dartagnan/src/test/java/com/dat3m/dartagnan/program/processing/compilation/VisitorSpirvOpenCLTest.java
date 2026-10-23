@@ -239,7 +239,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(2, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.C11.ATOMIC);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(1);
@@ -296,7 +296,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(3, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.C11.ATOMIC);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Local local = (Local) seq.get(1);
@@ -361,7 +361,7 @@ public class VisitorSpirvOpenCLTest {
 
         // then
         assertEquals(5, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.C11.ATOMIC);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(3);

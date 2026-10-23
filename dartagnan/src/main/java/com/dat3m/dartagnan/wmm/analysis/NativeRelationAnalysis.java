@@ -846,7 +846,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
                 if (spawned.size() == 2) {
-                    MemoryCoreEvent startLoad = spawned.getFirst();
+                    MemoryCoreEvent startLoad = spawned.get(0);
                     MemoryCoreEvent startStore = spawned.get(1);
                     must.add(startStore, startLoad);
                     if (eq.isImplied(startLoad, startStore)) {
@@ -1264,7 +1264,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final IndexedEventGraph mayOut2 = k2.getMaySet();
                 final IndexedEventGraph mustOut2 = k2.getMustSet();
                 List<EventGraph> result = handleCompositionEnabledSet(enabled, mayOut2, mustOut2, mayOut0);
-                e0.addAll(result.getFirst());
+                e0.addAll(result.get(0));
                 d2.addAll(result.get(1));
             }
 
@@ -1273,7 +1273,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final IndexedEventGraph mayIn1 = k1.getMaySet().inverse();
                 final IndexedEventGraph mustIn1 = k1.getMustSet().inverse();
                 List<EventGraph> result = handleCompositionEnabledSet(enabled.inverse(), mayIn1, mustIn1, mayIn0);
-                e0.addAll(result.getFirst().inverse());
+                e0.addAll(result.get(0).inverse());
                 d1.addAll(result.get(1).inverse());
             }
 

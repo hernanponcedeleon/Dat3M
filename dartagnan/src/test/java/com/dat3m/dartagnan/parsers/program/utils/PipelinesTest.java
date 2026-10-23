@@ -62,7 +62,7 @@ public class PipelinesTest {
         final Pipelines pipelines = Pipelines.load(yaml);
         final Pipelines.Pipeline pipeline = pipelines.getPipeline(".cl", Path.of("sources", "example.cl"), "example");
         final Pipelines.Pipeline aliasPipeline = pipelines.getPipeline(".i", Path.of("sources", "example.i"), "example");
-        final Pipelines.Pipeline.Command compile = pipeline.commands().getFirst(); // clspv
+        final Pipelines.Pipeline.Command compile = pipeline.commands().get(0); // clspv
         final Pipelines.Pipeline.Command upgradeMemoryModel = pipeline.commands().get(1); // spirv-opt
         final Pipelines.Pipeline.Command disassemble = pipeline.commands().get(2); // spirv-dis
 
@@ -78,11 +78,11 @@ public class PipelinesTest {
         assertEquals(TEST_WORKDIR.resolve("example.ll").toString(), aliasPipeline.output());
         assertEquals(Path.of("sources", "example.cl").toString(), compile.input());
         assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.input());
-        assertEquals(Path.of("sources", "example.cl").toString(), compile.args().getFirst()); // {cmd_input}
+        assertEquals(Path.of("sources", "example.cl").toString(), compile.args().get(0)); // {cmd_input}
         assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), compile.args().get(2)); // {cmd_output}
-        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.args().getFirst()); // {cmd_input}
+        assertEquals(TEST_WORKDIR.resolve("example.spv").toString(), upgradeMemoryModel.args().get(0)); // {cmd_input}
         assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), upgradeMemoryModel.args().get(2)); // {cmd_output}
-        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), disassemble.args().getFirst()); // {cmd_input}
+        assertEquals(TEST_WORKDIR.resolve("example-vulkan.spv").toString(), disassemble.args().get(0)); // {cmd_input}
         assertEquals(TEST_WORKDIR.resolve("example.spvasm").toString(), disassemble.args().get(2)); // {cmd_output}
     }
 

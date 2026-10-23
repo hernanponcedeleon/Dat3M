@@ -436,7 +436,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
-        assertEquals(builder.getExpression("%shuffle_0"), shuffle.getOperands().getFirst());
+        assertEquals(builder.getExpression("%shuffle_0"), shuffle.getOperands().get(0));
         assertEquals(builder.getExpression("%shuffle_1"), shuffle.getOperands().get(1));
         assertEquals(builder.getExpression("%shuffle_2"), shuffle.getOperands().get(2));
         assertEquals(builder.getExpression("%shuffle_3"), shuffle.getOperands().get(3));
@@ -596,7 +596,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
-        assertEquals(builder.getExpression("%true"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%true"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%bv32(2)"), composite.getOperands().get(1));
     }
 
@@ -616,7 +616,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
-        assertEquals(builder.getExpression("%bv32(1)"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%bv32(1)"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%bv32(2)"), composite.getOperands().get(1));
     }
 
@@ -636,7 +636,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -656,7 +656,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -676,7 +676,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -696,7 +696,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -717,7 +717,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
         assertEquals(builder.getExpression("%inner3"), composite.getOperands().get(2));
     }
@@ -738,7 +738,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -758,7 +758,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
     }
 
@@ -779,7 +779,7 @@ public class VisitorOpsCompositeTest {
         // then
         ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
         // check there is no flattening
-        assertEquals(builder.getExpression("%inner1"), composite.getOperands().getFirst());
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
         assertEquals(builder.getExpression("%inner3"), composite.getOperands().get(2));
     }

@@ -181,7 +181,7 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression tidExpr = join.getTid();
 
             final Register joinRegister = join.getResultRegister();
-            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().getFirst().type();
+            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
             final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
 
             final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);

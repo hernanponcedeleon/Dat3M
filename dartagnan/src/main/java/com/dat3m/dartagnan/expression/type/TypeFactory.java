@@ -183,54 +183,40 @@ public final class TypeFactory {
     }
 
     private int getMemorySizeInBytes(Type type, boolean padded) {
-        switch (type) {
-            case BooleanType _ -> {
-                return 1;
-            }
-            case MemoryType memType -> {
-                return IntMath.divide(memType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
-            case IntegerType integerType -> {
-                return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
-            case FloatType floatType -> {
-                return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
+        return switch (type) {
+            case BooleanType _ -> 1;
+            case MemoryType memType -> IntMath.divide(memType.getBitWidth(), 8, RoundingMode.CEILING);
+            case IntegerType integerType -> IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+            case FloatType floatType -> IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
             case ArrayType arrayType -> {
                 if (!arrayType.hasKnownNumElements()) {
-                    return -1;
+                    yield -1;
                 }
                 Integer stride = arrayType.getStride();
                 if (stride != null) {
-                    return stride * arrayType.getNumElements();
+                    yield stride * arrayType.getNumElements();
                 }
                 int elSize = getMemorySizeInBytes(arrayType.getElementType());
-                if (elSize >= 0) {
-                    int size = elSize * arrayType.getNumElements();
-                    if (arrayType.getAlignment() != null) {
-                        return paddedSize(size, arrayType.getAlignment());
-                    }
-                    return size;
+                if (elSize < 0) {
+                    throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
                 }
+                int size = elSize * arrayType.getNumElements();
+                yield arrayType.getAlignment() != null ? paddedSize(size, arrayType.getAlignment()) : size;
             }
             case AggregateType aType -> {
                 List<TypeOffset> typeOffsets = aType.getFields();
                 if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
-                    return -1;
+                    yield -1;
                 }
                 if (typeOffsets.isEmpty()) {
-                    return 0;
+                    yield 0;
                 }
                 TypeOffset lastTypeOffset = typeOffsets.getLast();
                 int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
-                if (padded) {
-                    return paddedSize(baseSize, getAlignment(type));
-                }
-                return baseSize;
+                yield padded ? paddedSize(baseSize, getAlignment(type)) : baseSize;
             }
-            case null, default -> { }
-        }
-        throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
+            default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
+        };
     }
 
     private int getAlignment(Type type) {
@@ -244,7 +230,7 @@ public final class TypeFactory {
                 yield getAlignment(arrayType.getElementType());
             }
             case AggregateType aType -> aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
-            case null, default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
+            default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
         };
     }
 
@@ -260,7 +246,7 @@ public final class TypeFactory {
             case BooleanType _, IntegerType _, FloatType _ -> true;
             case ArrayType aType -> aType.hasKnownNumElements() && isStaticType(aType.getElementType());
             case AggregateType aType -> aType.getFields().stream().allMatch(o -> isStaticType(o.type()));
-            case null, default -> throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
+            default -> throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
         };
     }
 

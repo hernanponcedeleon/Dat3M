@@ -45,7 +45,7 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
     }
 
     private void resolveObjectSizeCall(ValueFunctionCall call) {
-        //final Expression ptr = call.getArguments().getFirst();
+        //final Expression ptr = call.getArguments().get(0);
         final IntLiteral zeroIfUnknown = (IntLiteral)call.getArguments().get(1); // else -1 if unknown
         //final IntLiteral nullIsUnknown = (IntLiteral)call.getArguments().get(2);
         //final IntLiteral isDynamic = (IntLiteral) call.getArguments().get(3); // Meaning of this is unclear

@@ -86,7 +86,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     private List<Event> inlineMalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
         final Type allocType = types.getByteType();
-        final Expression totalSize = call.getArguments().getFirst();
+        final Expression totalSize = call.getArguments().get(0);
         return List.of(
                 EventFactory.newAlloc(resultRegister, allocType, totalSize, true, false)
         );
@@ -95,7 +95,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     private List<Event> inlineCalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Type allocType = types.getByteType();
-        final Expression elementCount = call.getArguments().getFirst();
+        final Expression elementCount = call.getArguments().get(0);
         final Expression elementSize = call.getArguments().get(1);
         final Expression totalSize = expressions.makeMul(elementCount, elementSize);
         return List.of(
@@ -106,7 +106,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     private List<Event> inlineAlignedAlloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Type allocType = types.getByteType();
-        final Expression alignment = call.getArguments().getFirst();
+        final Expression alignment = call.getArguments().get(0);
         final Expression totalSize = call.getArguments().get(1);
         return List.of(
                 EventFactory.newAlignedAlloc(resultRegister, allocType, totalSize, alignment, true, false)
@@ -114,7 +114,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     }
 
     private List<Event> inlineFree(FunctionCall call) {
-        final Expression address = call.getArguments().getFirst();
+        final Expression address = call.getArguments().get(0);
         return List.of(newDealloc(address));
     }
 
@@ -133,7 +133,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
         final String name = call.getCalledFunction().getName();
         checkArgument(call.getArguments().size() == 1,
                 "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
-        final Expression input = call.getArguments().getFirst();
+        final Expression input = call.getArguments().get(0);
         final Register resultReg = getResultRegister(call);
         final Type outputType = resultReg.getType();
         checkArgument(outputType instanceof IntegerType,

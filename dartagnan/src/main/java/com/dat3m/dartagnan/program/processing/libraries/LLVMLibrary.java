@@ -121,7 +121,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
         //see https://llvm.org/docs/LangRef.html#llvm-ctlz-intrinsic
         checkArgument(call.getArguments().size() == 2,
                 "Expected 2 parameters for \"llvm.ctlz\", got %s.", call.getArguments().size());
-        final Expression input = call.getArguments().getFirst();
+        final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
         final Type type = resultReg.getType();
@@ -138,7 +138,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
         //see https://llvm.org/docs/LangRef.html#llvm-cttz-intrinsic
         checkArgument(call.getArguments().size() == 2,
                 "Expected 2 parameters for \"llvm.cttz\", got %s.", call.getArguments().size());
-        final Expression input = call.getArguments().getFirst();
+        final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
         final Type type = resultReg.getType();
@@ -153,7 +153,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
 
     private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-ctpop-intrinsic
-        final Expression input = call.getArguments().getFirst();
+        final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
         final IntegerType type = (IntegerType) resultReg.getType();
@@ -180,7 +180,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
     private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
         final List<Expression> arguments = call.getArguments();
-        final Expression left = arguments.getFirst();
+        final Expression left = arguments.get(0);
         final Expression right = arguments.get(1);
         final String name = call.getCalledFunction().getName();
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
@@ -198,7 +198,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
     private List<Event> inlineLLVMFAbs(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
         final List<Expression> arguments = call.getArguments();
-        final Expression operand = arguments.getFirst();
+        final Expression operand = arguments.get(0);
 
         return List.of(EventFactory.newLocal(call.getResultRegister(), expressions.makeFAbs(operand)));
     }
@@ -217,7 +217,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
          */
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
-        final Expression x = arguments.getFirst();
+        final Expression x = arguments.get(0);
         final Expression y = arguments.get(1);
         final String name = call.getCalledFunction().getName();
         final boolean isSigned = name.startsWith("llvm.s");
@@ -259,7 +259,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
          */
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
-        final Expression x = arguments.getFirst();
+        final Expression x = arguments.get(0);
         final Expression y = arguments.get(1);
         final String name = call.getCalledFunction().getName();
         final boolean isSigned = name.startsWith("llvm.s");
@@ -299,7 +299,7 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
     private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IntBinaryOp op) {
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
-        final Expression x = arguments.getFirst();
+        final Expression x = arguments.get(0);
         final Expression y = arguments.get(1);
         assert x.getType() == y.getType();
 
@@ -344,19 +344,19 @@ public class LLVMLibrary extends AbstractLibrary<LLVMLibrary> {
 
     private List<Event> inlineLLVMAssume(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-assume-intrinsic
-        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(call.getArguments().getFirst())));
+        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(call.getArguments().get(0))));
     }
 
     private List<Event> inlineLLVMExpect(FunctionCall call) {
         assert call instanceof ValueFunctionCall;
         final Register retReg = ((ValueFunctionCall) call).getResultRegister();
-        final Expression value = call.getArguments().getFirst();
+        final Expression value = call.getArguments().get(0);
         return List.of(EventFactory.newLocal(retReg, value));
     }
 
     private List<Event> inlineLLVMThreadLocal(FunctionCall call) {
         final Register resultReg = getResultRegisterAndCheckArguments(1, call);
-        final Expression exp = call.getArguments().getFirst();
+        final Expression exp = call.getArguments().get(0);
         checkArgument(exp instanceof MemoryObject object && object.isThreadLocal(), "Calling thread-local intrinsic on a non-thread-local object \"%s\"", call);
         return List.of(
                 EventFactory.newLocal(resultReg, exp)

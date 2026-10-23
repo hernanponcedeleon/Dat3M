@@ -165,7 +165,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump trueJump = (CondJump) events.get(1);
         CondJump falseJump = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -207,7 +207,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump trueJump = (CondJump) events.get(1);
         CondJump falseJump = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -255,7 +255,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump trueJump = (CondJump) events.get(1);
         CondJump falseJump = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -323,7 +323,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump trueJump = (CondJump) events.get(1);
         CondJump falseJump = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -389,7 +389,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump jump1 = (CondJump) events.get(1);
         CondJump jump2 = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -433,7 +433,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump jump1 = (CondJump) events.get(1);
         CondJump jump2 = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
@@ -543,7 +543,7 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        Label label0 = (Label) events.getFirst();
+        Label label0 = (Label) events.get(0);
         CondJump jump1 = (CondJump) events.get(1);
         CondJump jump2 = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);

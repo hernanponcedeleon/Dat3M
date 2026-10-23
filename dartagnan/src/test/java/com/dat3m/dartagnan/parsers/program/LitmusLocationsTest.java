@@ -58,7 +58,7 @@ public class LitmusLocationsTest {
         final List<Expression> locations = program.getLocations();
 
         assertEquals(3, locations.size());
-        assertEquals("y", getName(locations.getFirst()));
+        assertEquals("y", getName(locations.get(0)));
         assertEquals(regWithTid, getName(locations.get(1)));
         assertSame(program.getThreads().getFirst(), getThread(locations.get(1)));
         assertEquals("x", getName(locations.get(2)));

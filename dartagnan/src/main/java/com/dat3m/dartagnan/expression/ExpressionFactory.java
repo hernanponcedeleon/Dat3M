@@ -488,7 +488,7 @@ public final class ExpressionFactory {
             case BooleanType _ -> makeFalse();
             case FloatType floatType -> makePlusZero(floatType);
             case MemoryType memoryType -> makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
-            case null, default -> throw new UnsupportedOperationException("Cannot create zero of type " + type);
+            default -> throw new UnsupportedOperationException("Cannot create zero of type " + type);
         };
     }
 
@@ -501,7 +501,7 @@ public final class ExpressionFactory {
             case BooleanType _ -> makeBooleanCast(expression);
             case IntegerType integerType -> makeIntegerCast(expression, integerType, signed);
             case FloatType floatType -> makeFloatCast(expression, floatType, signed);
-            case null, default -> throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
+            default -> throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
         };
     }
 
@@ -553,7 +553,7 @@ public final class ExpressionFactory {
             case BoolUnaryOp boolOp -> makeBoolUnary(boolOp, expr);
             case IntUnaryOp intOp -> makeIntUnary(intOp, expr);
             case FloatUnaryOp floatOp -> makeFloatUnary(floatOp, expr);
-            case null, default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
+            default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
         };
     }
 
@@ -563,7 +563,7 @@ public final class ExpressionFactory {
             case IntBinaryOp intOp -> makeIntBinary(x, intOp, y);
             case FloatBinaryOp floatOp -> makeFloatBinary(x, floatOp, y);
             case IntCmpOp cmpOp -> makeCompare(x, cmpOp, y);
-            case null, default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
+            default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
         };
     }
 
@@ -572,7 +572,7 @@ public final class ExpressionFactory {
             case IntCmpOp intCmpOp -> makeIntCmp(x, intCmpOp, y);
             case FloatCmpOp floatOp -> makeFloatCmp(x, floatOp, y);
             case AggregateCmpOp aggrCmpOp -> makeAggregateCmp(x, aggrCmpOp, y);
-            case null, default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
+            default -> throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
         };
     }
 

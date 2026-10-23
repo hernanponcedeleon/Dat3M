@@ -141,7 +141,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitGraphComposition(RelationGraph graph, Edge edge, Void unused) {
-            RelationGraph first = (RelationGraph) graph.getDependencies().getFirst();
+            RelationGraph first = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph second = (RelationGraph) graph.getDependencies().get(1);
 
             // We use the first composition that we find
@@ -177,7 +177,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitCartesian(RelationGraph graph, Edge edge, Void unused) {
-            SetPredicate lhs = (SetPredicate) graph.getDependencies().getFirst();
+            SetPredicate lhs = (SetPredicate) graph.getDependencies().get(0);
             SetPredicate rhs = (SetPredicate) graph.getDependencies().get(1);
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, lhs.getById(edge.getFirst()))
@@ -188,7 +188,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitGraphDifference(RelationGraph graph, Edge edge, Void unused) {
-            RelationGraph lhs = (RelationGraph) graph.getDependencies().getFirst();
+            RelationGraph lhs = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph rhs = (RelationGraph) graph.getDependencies().get(1);
 
             if (!rhs.getDependencies().isEmpty()) {
@@ -205,7 +205,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitInverse(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().getFirst(),
+            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0),
                     edge.inverse().withDerivationLength(edge.getDerivationLength() - 1));
             assert !reason.isFalse();
             return reason;
@@ -293,7 +293,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitSetDifference(SetPredicate set, Element ele, Void unused) {
-            SetPredicate lhs = (SetPredicate) set.getDependencies().getFirst();
+            SetPredicate lhs = (SetPredicate) set.getDependencies().get(0);
             SetPredicate rhs = (SetPredicate) set.getDependencies().get(1);
 
             if (!rhs.getDependencies().isEmpty()) {
@@ -314,7 +314,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitProjection(SetPredicate set, Element ele, Void unused) {
-            RelationGraph inner = (RelationGraph) set.getDependencies().getFirst();
+            RelationGraph inner = (RelationGraph) set.getDependencies().get(0);
             ProjectionSet.Dimension dim = ((ProjectionSet)set).getProjectionDimension();
             Iterable<Edge> edges = switch (dim) {
                 case RANGE -> inner.inEdges(ele.getId());

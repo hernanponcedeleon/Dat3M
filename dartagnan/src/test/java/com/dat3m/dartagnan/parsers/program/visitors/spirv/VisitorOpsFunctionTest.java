@@ -83,8 +83,8 @@ public class VisitorOpsFunctionTest {
 
         List<Register> registers = function.getParameterRegisters();
         assertEquals(3, registers.size());
-        assertEquals("%param_bool", registers.getFirst().getName());
-        assertEquals(builder.getType("%bool_ptr"), registers.getFirst().getType());
+        assertEquals("%param_bool", registers.get(0).getName());
+        assertEquals(builder.getType("%bool_ptr"), registers.get(0).getType());
         assertEquals("%param_int", registers.get(1).getName());
         assertEquals(builder.getType("%int_ptr"), registers.get(1).getType());
         assertEquals("%param_arr", registers.get(2).getName());
@@ -251,7 +251,7 @@ public class VisitorOpsFunctionTest {
         assertEquals(main.getRegister("%ret"), call.getResultRegister());
 
         assertEquals(2, call.getArguments().size());
-        assertEquals(arg1, call.getArguments().getFirst());
+        assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
         assertTrue(visitor.getForwardFunctions().isEmpty());
@@ -284,7 +284,7 @@ public class VisitorOpsFunctionTest {
         assertEquals(func.getRegister("%ret"), call.getResultRegister());
 
         assertEquals(2, call.getArguments().size());
-        assertEquals(arg1, call.getArguments().getFirst());
+        assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
         assertTrue(visitor.getForwardFunctions().isEmpty());
@@ -322,11 +322,11 @@ public class VisitorOpsFunctionTest {
         assertEquals(main.getRegister("%ret"), call.getResultRegister());
 
         assertEquals(2, func.getParameterRegisters().size());
-        assertEquals("%param1", func.getParameterRegisters().getFirst().getName());
+        assertEquals("%param1", func.getParameterRegisters().get(0).getName());
         assertEquals("%param2", func.getParameterRegisters().get(1).getName());
 
         assertEquals(2, call.getArguments().size());
-        assertEquals(arg1, call.getArguments().getFirst());
+        assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
         assertTrue(visitor.getForwardFunctions().isEmpty());
@@ -453,10 +453,10 @@ public class VisitorOpsFunctionTest {
         Function f2 = (Function) builder.getExpression("%f2");
         Function f3 = (Function) builder.getExpression("%f3");
 
-        VoidFunctionCall c11 = (VoidFunctionCall) f1.getEvents().getFirst();
+        VoidFunctionCall c11 = (VoidFunctionCall) f1.getEvents().get(0);
         ValueFunctionCall c12 = (ValueFunctionCall) f1.getEvents().get(1);
         ValueFunctionCall c13 = (ValueFunctionCall) f1.getEvents().get(2);
-        VoidFunctionCall c21 = (VoidFunctionCall) f2.getEvents().getFirst();
+        VoidFunctionCall c21 = (VoidFunctionCall) f2.getEvents().get(0);
         ValueFunctionCall c22 = (ValueFunctionCall) f2.getEvents().get(1);
         ValueFunctionCall c23 = (ValueFunctionCall) f2.getEvents().get(2);
 
@@ -574,7 +574,7 @@ public class VisitorOpsFunctionTest {
         assertEquals("%param", function.getParameterRegisters().getFirst().getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().getFirst().getType());
         assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
-        assertEquals(value.getOperands().getFirst(), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
+        assertEquals(value.getOperands().get(0), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
         assertEquals(value.getOperands().get(1), ((VirtualMemoryObject) local.getExpr()).getInitialValue(8));
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
     }

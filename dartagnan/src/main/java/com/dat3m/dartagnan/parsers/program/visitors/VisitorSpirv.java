@@ -75,7 +75,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 }
                 hasConfig = true;
                 List<SpirvParser.LiteralHeaderUnsignedIntegerContext> literals = cfgCtx.literalHeaderUnsignedInteger();
-                int threadCount = Integer.parseInt(literals.getFirst().getText());
+                int threadCount = Integer.parseInt(literals.get(0).getText());
                 int subgroupCount = Integer.parseInt(literals.get(1).getText());
                 int workgroupCount = Integer.parseInt(literals.get(2).getText());
                 grid = new ThreadGrid(threadCount, subgroupCount, workgroupCount, 1, 1);

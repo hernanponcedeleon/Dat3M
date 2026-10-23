@@ -217,7 +217,7 @@ public class VisitorSpirvVulkanTest {
 
         // then
         assertEquals(3, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
                 Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
@@ -268,7 +268,7 @@ public class VisitorSpirvVulkanTest {
 
         // then
         assertEquals(3, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
                 Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
@@ -323,7 +323,7 @@ public class VisitorSpirvVulkanTest {
 
         // then
         assertEquals(5, seq.size());
-        Load load = (Load) seq.getFirst();
+        Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW,
                 Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());

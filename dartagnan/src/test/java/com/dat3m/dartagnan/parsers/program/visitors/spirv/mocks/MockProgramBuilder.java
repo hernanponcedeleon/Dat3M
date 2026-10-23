@@ -125,7 +125,7 @@ public class MockProgramBuilder extends ProgramBuilder {
             case Integer _ when elementType instanceof IntegerType iType -> lValue.stream()
                     .map(v -> exprFactory.makeValue((int) v, iType))
                     .collect(Collectors.toList());
-            case null, default ->
+            default ->
                     throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
         };
     }
