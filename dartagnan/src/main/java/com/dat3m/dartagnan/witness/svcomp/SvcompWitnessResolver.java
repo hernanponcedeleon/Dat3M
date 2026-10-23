@@ -16,12 +16,10 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Maps;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 
@@ -30,8 +28,10 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
  *
  * Threads: witness ID 0 identifies the main thread. A function_enter waypoint gives the
  * parent's witness ID and the thread-creation location. The thread created there
- * receives the next witness ID (1, 2, ...). Each witness ID identifies one program thread,
- * and each program thread receives at most one witness ID.
+ * receives the next witness ID (1, 2, ...). Several program threads may be created at that
+ * location, e.g., one per loop iteration, so each witness ID keeps every program thread
+ * compatible with it: a thread created at the location by a thread compatible with the parent.
+ * Choosing one of them is left to the encoding.
  *
  * Locations: events are matched by source line and file name, ignoring directories.
  * Multiple events can match a location, for example after loop unrolling.
@@ -44,13 +44,16 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
  */
 public final class SvcompWitnessResolver {
 
-    private static final Logger logger = LoggerFactory.getLogger(SvcompWitnessResolver.class);
-
-    /** The resolved non-empty segments, and the variables of all assumptions. */
-    public record ResolvedWitness(List<ResolvedSegment> segments, Map<String, ResolvedVariable> variables) {
+    /**
+     * The resolved non-empty segments, the variables of all assumptions, and, for each witness thread ID,
+     * the program threads it may be bound to.
+     */
+    public record ResolvedWitness(List<ResolvedSegment> segments, Map<String, ResolvedVariable> variables,
+            Map<Integer, List<Thread>> threads) {
         public ResolvedWitness {
             segments = List.copyOf(segments);
             variables = ImmutableMap.copyOf(variables);
+            threads = ImmutableMap.copyOf(Maps.transformValues(threads, List::copyOf));
         }
 
         public boolean hasValueConstraints() {
@@ -64,7 +67,11 @@ public final class SvcompWitnessResolver {
         }
     }
 
-    public record ResolvedWaypoint(Waypoint waypoint, List<Candidate> candidates) {
+    /**
+     * The candidates of a waypoint run in a program thread bound to witness thread {@code threadId}. For a
+     * function_enter waypoint, this is the ID of the entered thread, not of its parent.
+     */
+    public record ResolvedWaypoint(Waypoint waypoint, int threadId, List<Candidate> candidates) {
         public ResolvedWaypoint {
             Objects.requireNonNull(waypoint);
             candidates = List.copyOf(candidates);
@@ -102,11 +109,8 @@ public final class SvcompWitnessResolver {
         this.alias = alias;
     }
 
-    /**
-     * Returns empty if the witness creates more threads at some location than the bounded program contains.
-     * Throws {@link IllegalArgumentException} if the witness does not fit the program for any bound.
-     */
-    public static Optional<ResolvedWitness> resolve(SvcompViolationWitness witness, Program program,
+    /** Throws {@link IllegalArgumentException} if the witness does not fit the program for any bound. */
+    public static ResolvedWitness resolve(SvcompViolationWitness witness, Program program,
             AliasAnalysis alias) {
         return new SvcompWitnessResolver(program, alias).resolve(witness);
     }
@@ -118,12 +122,8 @@ public final class SvcompWitnessResolver {
                 && generic.sourcePath().getFileName().equals(location.fileName().getFileName());
     }
 
-    private Optional<ResolvedWitness> resolve(SvcompViolationWitness witness) {
-        final Optional<ResolvedThreads> resolvedThreads = resolveThreads(witness);
-        if (resolvedThreads.isEmpty()) {
-            return Optional.empty();
-        }
-        final ResolvedThreads threads = resolvedThreads.get();
+    private ResolvedWitness resolve(SvcompViolationWitness witness) {
+        final ResolvedThreads threads = resolveThreads(witness);
         final Map<String, ResolvedVariable> variables = new LinkedHashMap<>();
         for (Segment segment : witness.segments()) {
             for (Waypoint waypoint : segment.waypoints()) {
@@ -139,57 +139,55 @@ public final class SvcompWitnessResolver {
                 final List<Candidate> candidates = eventsForWaypoint(waypoint, threads).stream()
                         .map(event -> candidate(waypoint, event, variables))
                         .toList();
-                waypoints.add(new ResolvedWaypoint(waypoint, candidates));
+                final int threadId = waypoint instanceof FunctionEnter enter
+                        ? threads.entered().get(enter)
+                        : waypoint.threadId();
+                waypoints.add(new ResolvedWaypoint(waypoint, threadId, candidates));
             }
             if (!waypoints.isEmpty()) {
                 segments.add(new ResolvedSegment(waypoints));
             }
         }
-        return Optional.of(new ResolvedWitness(segments, variables));
+        return new ResolvedWitness(segments, variables, threads.byId());
     }
 
     // ------------------------------------------------------------------------------------------------------
     // Threads
 
-    // Witness thread IDs and the program threads entered by function_enter waypoints.
-    private record ResolvedThreads(Map<Integer, Thread> byId, Map<FunctionEnter, Thread> entered) { }
+    // The compatible program threads of each witness thread ID, and the ID entered by each function_enter waypoint.
+    private record ResolvedThreads(Map<Integer, List<Thread>> byId, Map<FunctionEnter, Integer> entered) { }
 
-    private Optional<ResolvedThreads> resolveThreads(SvcompViolationWitness witness) {
-        final Map<Integer, Thread> result = new HashMap<>();
-        final Map<FunctionEnter, Thread> entered = new IdentityHashMap<>();
-        result.put(0, program.getMainThread().orElseThrow(
-                () -> new IllegalArgumentException("Witness validation requires a designated main thread")));
+    private ResolvedThreads resolveThreads(SvcompViolationWitness witness) {
+        final Map<Integer, List<Thread>> result = new LinkedHashMap<>();
+        final Map<FunctionEnter, Integer> entered = new IdentityHashMap<>();
+        result.put(0, List.of(program.getMainThread().orElseThrow(
+                () -> new IllegalArgumentException("Witness validation requires a designated main thread"))));
         final List<Thread> spawnedThreads = program.getThreads().stream()
                 .filter(thread -> thread.getEntry().isSpawned()).toList();
-        final List<Thread> remainingThreads = new ArrayList<>(spawnedThreads);
         final List<FunctionEnter> entries = witness.segments().stream()
                 .flatMap(segment -> segment.waypoints().stream())
                 .filter(FunctionEnter.class::isInstance)
                 .map(FunctionEnter.class::cast)
                 .toList();
         for (FunctionEnter enter : entries) {
-            final Thread parent = Optional.ofNullable(result.get(enter.threadId()))
+            final List<Thread> parents = Optional.ofNullable(result.get(enter.threadId()))
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Witness creates a thread from unknown thread " + enter.threadId()));
-            final Predicate<Thread> matchesCreation = thread -> {
-                final ThreadCreate createEvent = thread.getEntry().getCreator();
-                return createEvent.getThread().equals(parent) && matches(enter.location(), createEvent);
-            };
-            final Optional<Thread> availableChild = remainingThreads.stream().filter(matchesCreation).findFirst();
-            if (availableChild.isEmpty() && spawnedThreads.stream().anyMatch(matchesCreation)) {
-                logger.info("Witness requires another child of thread {} at {}:{} absent from the bounded program",
-                        enter.threadId(), enter.location().fileName(), enter.location().line());
-                return Optional.empty();
+            final List<Thread> children = spawnedThreads.stream()
+                    .filter(thread -> {
+                        final ThreadCreate createEvent = thread.getEntry().getCreator();
+                        return parents.contains(createEvent.getThread()) && matches(enter.location(), createEvent);
+                    })
+                    .toList();
+            if (children.isEmpty()) {
+                throw new IllegalArgumentException("Witness function entry at %s:%d matches no thread creation"
+                        .formatted(enter.location().fileName(), enter.location().line()));
             }
-            final Thread child = availableChild
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Witness function entry at %s:%d matches no thread creation"
-                                    .formatted(enter.location().fileName(), enter.location().line())));
-            result.put(result.size(), child);
-            entered.put(enter, child);
-            remainingThreads.remove(child);
+            final int id = result.size();
+            result.put(id, children);
+            entered.put(enter, id);
         }
-        return Optional.of(new ResolvedThreads(result, entered));
+        return new ResolvedThreads(result, entered);
     }
 
     // ------------------------------------------------------------------------------------------------------
@@ -197,12 +195,13 @@ public final class SvcompWitnessResolver {
 
     private List<Event> eventsForWaypoint(Waypoint waypoint, ResolvedThreads threads) {
         if (waypoint instanceof FunctionEnter enter) {
-            return List.of(threads.entered().get(enter).getEntry());
+            return threads.byId().get(threads.entered().get(enter)).stream().<Event>map(Thread::getEntry).toList();
         }
-        final Thread thread = Optional.ofNullable(threads.byId().get(waypoint.threadId()))
+        final List<Thread> compatible = Optional.ofNullable(threads.byId().get(waypoint.threadId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Witness refers to unknown thread " + waypoint.threadId()));
-        final List<Event> candidates = thread.getEvents().stream()
+        final List<Event> candidates = compatible.stream()
+                .flatMap(thread -> thread.getEvents().stream())
                 .filter(event -> !(waypoint instanceof Assumption) || !(event instanceof FunReturnMarker))
                 .filter(event -> matches(waypoint.location(), event)).toList();
         if (candidates.isEmpty()) {
