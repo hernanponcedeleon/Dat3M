@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.witness.svcomp;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -21,6 +22,7 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.verification.Context;
@@ -53,6 +55,8 @@ public class SvcompWitnessResolverTest {
     private static final int CREATE_LINE = 3;
     private static final int READ_LINE = 4;
     private static final int WRITE_LINE = 5;
+    private static final int CHECK_CALL_LINE = 6;
+    private static final int ASSERT_LINE = 7;
     private static final int WORKER_LINE = 9;
 
     /**
@@ -61,9 +65,11 @@ public class SvcompWitnessResolverTest {
      * 3: create(worker);
      * 4: y = x;
      * 5: x = 2;
+     * 6: check(y);
+     * 7: check(c) { assert(c != 1); }
      * 9: worker() { x = 1; }
      * </pre>
-     * where line 4 consists of a load of x followed by a store to y.
+     * where line 4 consists of a load of x followed by a store to y, and the call on line 6 is inlined.
      * Creating the worker {@code workers} times on line 3 models a loop unrolled to that bound.
      */
     private record TestProgram(Program program, AliasAnalysis alias, MemoryObject x) {
@@ -84,6 +90,10 @@ public class SvcompWitnessResolverTest {
             add(builder, 0, READ_LINE, EventFactory.newLoad(value, x));
             add(builder, 0, READ_LINE, EventFactory.newStore(y, value));
             add(builder, 0, WRITE_LINE, EventFactory.newStore(x, expressions.makeValue(2, INT)));
+            add(builder, 0, CHECK_CALL_LINE, EventFactory.newFunctionCallMarker("check"));
+            add(builder, 0, ASSERT_LINE, EventFactory.newAssert(
+                    expressions.makeNEQ(value, expressions.makeValue(1, INT)), "assertion"));
+            add(builder, 0, CHECK_CALL_LINE, EventFactory.newFunctionReturnMarker("check"));
             add(builder, 1, WORKER_LINE, EventFactory.newStore(x, expressions.makeValue(1, INT)));
             final Program program = builder.build();
             program.setEntrypoint(new Entrypoint.Simple(main));
@@ -126,9 +136,18 @@ public class SvcompWitnessResolverTest {
         }
 
         ResolvedWitness resolve(Waypoint... segments) {
+            return resolve(Property.CAT_SPEC, segments);
+        }
+
+        ResolvedWitness resolve(Property property, Waypoint... segments) {
             final List<Segment> content = Arrays.stream(segments)
                     .map(waypoint -> new Segment(List.of(waypoint))).toList();
-            return SvcompWitnessResolver.resolve(new SvcompViolationWitness(METADATA, content), program, alias);
+            return SvcompWitnessResolver.resolve(new SvcompViolationWitness(METADATA, content), program, alias,
+                    property);
+        }
+
+        Assert assertion() {
+            return main().getEvents(Assert.class).getFirst();
         }
     }
 
@@ -230,6 +249,7 @@ public class SvcompWitnessResolverTest {
         assertEquals(test.mainEventsAt(READ_LINE), events(target));
         assertTrue(target.candidates().stream().allMatch(candidate -> candidate.earlierInStatementInstance().isEmpty()
                 && candidate.constrainedAccesses().isEmpty()));
+        assertFalse(target.assertionViolation());
         assertFalse(witness.hasValueConstraints());
     }
 
@@ -266,6 +286,26 @@ public class SvcompWitnessResolverTest {
                 .filter(write -> write.hasMetadata(SourceLocation.class))
                 .map(write -> ((SourceLocation.Generic) write.getMetadata(SourceLocation.class)).lineNumber())
                 .collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void assertionTargetResolvesThroughItsCallSites() throws Exception {
+        final TestProgram test = TestProgram.build(1);
+        for (int line : List.of(ASSERT_LINE, CHECK_CALL_LINE)) {
+            final ResolvedWaypoint target = test.resolve(Property.PROGRAM_SPEC, new Target(0, at(line)))
+                    .segments().getFirst().waypoints().getFirst();
+            assertTrue(target.assertionViolation());
+            assertEquals(List.of(test.assertion()), events(target));
+        }
+    }
+
+    @Test
+    public void assertionTargetAtOrdinaryStatementHasNoCandidates() throws Exception {
+        final TestProgram test = TestProgram.build(1);
+        final ResolvedWaypoint target = test.resolve(Property.PROGRAM_SPEC, new Target(0, at(WRITE_LINE)))
+                .segments().getFirst().waypoints().getFirst();
+        assertTrue(target.assertionViolation());
+        assertEquals(List.of(), target.candidates());
     }
 
     @Test
