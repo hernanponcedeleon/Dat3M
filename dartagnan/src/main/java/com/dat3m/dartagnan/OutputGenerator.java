@@ -328,14 +328,15 @@ public class OutputGenerator {
 
     private Optional<Path> generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
         final VerificationStatus status = result.getStatus();
-        if (witnessType == WitnessType.NONE || (status == UNKNOWN && !generateWitnessForUnknown)) {
+        if (status == UNKNOWN && !generateWitnessForUnknown) {
             return Optional.empty();
         }
 
-        switch (witnessType) {
+        return switch (witnessType) {
+            case NONE -> Optional.empty();
             case DOT, PNG -> {
                 if (!result.hasModel()) {
-                    return Optional.empty();
+                    yield Optional.empty();
                 }
                 final VerificationTask task = result.getTask();
                 final ExecutionModelNext model = fromIREvaluator(result.getModel());
@@ -343,18 +344,14 @@ public class OutputGenerator {
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                return Optional.ofNullable(generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
+                yield Optional.ofNullable(generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 ));
             }
-            case SV -> {
-                return Optional.ofNullable(svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml")));
-            }
-        }
-
-        return Optional.empty();
+            case SV -> Optional.ofNullable(svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml")));
+        };
     }
 
     // =========================================== Utility =================================================

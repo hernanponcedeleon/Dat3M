@@ -124,7 +124,7 @@ public final class SvcompWitnessEncoder {
                 for (Event event : eventsForWaypoint(waypoint, threads)) {
                     waypointEnc.put(event, encodeWaypoint(waypoint, event));
                     if (waypoint instanceof Assumption assumption) {
-                        statementAccesses.computeIfAbsent(event, ignored -> new LinkedHashSet<>())
+                        statementAccesses.computeIfAbsent(event, _ -> new LinkedHashSet<>())
                                 .addAll(accessesOfConstrainedVariables(assumption, event));
                     }
                 }
@@ -152,9 +152,12 @@ public final class SvcompWitnessEncoder {
     }
 
     private static boolean hasValueConstraint(AssumptionExpression expression) {
-        return expression instanceof VariableEquality
-                || expression instanceof Conjunction conjunction
-                && (hasValueConstraint(conjunction.left()) || hasValueConstraint(conjunction.right()));
+        return switch (expression) {
+            case BooleanConstant _ -> false;
+            case VariableEquality _ -> true;
+            case Conjunction(AssumptionExpression left, AssumptionExpression right) ->
+                    hasValueConstraint(left) || hasValueConstraint(right);
+        };
     }
 
     private BooleanFormula encodeExecutionOrder(Set<Event> segmentCandidates, boolean hasValues) {
@@ -249,7 +252,7 @@ public final class SvcompWitnessEncoder {
                     final BooleanFormula selector = bmgr.makeVariable("witness-segment " + segmentIndex + " "
                             + waypointIndex + " " + event.getGlobalId());
                     waypointSelectors.add(selector);
-                    selectors.computeIfAbsent(event, ignored -> new ArrayList<>()).add(selector);
+                    selectors.computeIfAbsent(event, _ -> new ArrayList<>()).add(selector);
                     constraints.add(bmgr.implication(selector, candidate.getValue()));
                     for (var previous : previousSelectors.entrySet()) {
                         final Event previousEvent = previous.getKey();
@@ -345,11 +348,13 @@ public final class SvcompWitnessEncoder {
     }
 
     private void collectObjects(AssumptionExpression expression, Set<MemoryObject> objects) {
-        if (expression instanceof Conjunction conjunction) {
-            collectObjects(conjunction.left(), objects);
-            collectObjects(conjunction.right(), objects);
-        } else if (expression instanceof VariableEquality equality) {
-            objects.add(namedObject(equality.variable()));
+        switch (expression) {
+            case BooleanConstant _ -> { }
+            case VariableEquality equality -> objects.add(namedObject(equality.variable()));
+            case Conjunction(AssumptionExpression left, AssumptionExpression right) -> {
+                collectObjects(left, objects);
+                collectObjects(right, objects);
+            }
         }
     }
 
@@ -360,7 +365,7 @@ public final class SvcompWitnessEncoder {
             throw new IllegalArgumentException("Witness variable '%s' does not identify a unique memory object"
                     .formatted(variable));
         }
-        return objects.get(0);
+        return objects.getFirst();
     }
 
     // Witness thread IDs and the program threads entered by function_enter waypoints.
@@ -405,19 +410,18 @@ public final class SvcompWitnessEncoder {
     }
 
     private BooleanFormula resolveAssumption(AssumptionExpression assumption, Event position) {
-        if (assumption instanceof BooleanConstant constant) {
-            return bmgr.makeBoolean(constant.value());
-        }
-        if (assumption instanceof Conjunction conjunction) {
-            return bmgr.and(resolveAssumption(conjunction.left(), position),
-                    resolveAssumption(conjunction.right(), position));
-        }
-        final VariableEquality equality = (VariableEquality) assumption;
-        final MemoryObject object = namedObject(equality.variable());
-        final List<Store> writes = writesByObject.computeIfAbsent(object, this::writesForObject);
-        return bmgr.or(writes.stream().map(write -> bmgr.and(
-                encodeLastWrite(write, object, position, writes),
-                context.getExpressionEncoder().equal(context.value(write), literal(write, equality.value())))).toList());
+        return switch (assumption) {
+            case BooleanConstant(boolean value) -> bmgr.makeBoolean(value);
+            case Conjunction(AssumptionExpression left, AssumptionExpression right) ->
+                    bmgr.and(resolveAssumption(left, position), resolveAssumption(right, position));
+            case VariableEquality(String variable, BigInteger value) -> {
+                final MemoryObject object = namedObject(variable);
+                final List<Store> writes = writesByObject.computeIfAbsent(object, this::writesForObject);
+                yield bmgr.or(writes.stream().map(write -> bmgr.and(
+                        encodeLastWrite(write, object, position, writes),
+                        context.getExpressionEncoder().equal(context.value(write), literal(write, value)))).toList());
+            }
+        };
     }
 
     private BooleanFormula encodeLastWrite(Store write, MemoryObject object, Event position, List<Store> writes) {
@@ -462,12 +466,10 @@ public final class SvcompWitnessEncoder {
 
     private Expression literal(Store write, BigInteger value) {
         final var expressions = context.getExpressionFactory();
-        if (write.getAccessType() instanceof IntegerType type) {
-            return expressions.makeValue(value, type);
-        }
-        if (write.getAccessType() instanceof BooleanType) {
-            return expressions.makeValue(value.signum() != 0);
-        }
-        throw new IllegalArgumentException("Witness constrains a non-integral write at " + write);
+        return switch (write.getAccessType()) {
+            case IntegerType type -> expressions.makeValue(value, type);
+            case BooleanType _ -> expressions.makeValue(value.signum() != 0);
+            default -> throw new IllegalArgumentException("Witness constrains a non-integral write at " + write);
+        };
     }
 }

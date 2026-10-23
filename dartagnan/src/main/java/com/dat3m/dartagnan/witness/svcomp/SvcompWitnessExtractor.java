@@ -276,7 +276,7 @@ public final class SvcompWitnessExtractor {
             if (start.isSpawned() && !threadEvents.isEmpty()) {
                 final EventModel createEvent = model.getEventModelByEvent(start.getCreator());
                 Verify.verify(createEvent != null, "Thread creator is not part of the execution model");
-                predecessors.computeIfAbsent(threadEvents.get(0), _ -> new HashSet<>()).add(createEvent);
+                predecessors.computeIfAbsent(threadEvents.getFirst(), _ -> new HashSet<>()).add(createEvent);
             }
         }
 

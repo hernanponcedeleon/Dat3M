@@ -152,10 +152,7 @@ public class SVCOMPRunner {
             try {
                 Process proc = processBuilder.start();
                 try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-                    String line;
-                    while ((line = read.readLine()) != null) {
-                        System.out.println(line);
-                    }
+                    read.lines().forEach(System.out::println);
                 }
                 exitCode = proc.waitFor();
                 if (exitCode == ExitCode.UNKNOWN_ERROR.asInt()) {

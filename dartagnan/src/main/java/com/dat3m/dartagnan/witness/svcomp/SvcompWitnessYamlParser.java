@@ -44,7 +44,7 @@ public final class SvcompWitnessYamlParser {
         if (inputFiles.size() != 1) {
             throw new IOException("Witness must specify exactly one input file");
         }
-        final String inputFile = asString(inputFiles.get(0), "input file");
+        final String inputFile = asString(inputFiles.getFirst(), "input file");
         final String hash = resolveInputFileHash(getMapping(task, "input_file_hashes"), inputFile);
 
         final Metadata parsedMetadata = new Metadata(
@@ -115,7 +115,7 @@ public final class SvcompWitnessYamlParser {
         if (matches.size() > 1) {
             throw new IllegalArgumentException("Multiple input file hashes match '" + inputFile + "'");
         }
-        return asString(matches.get(0).getValue(), "input file hash");
+        return asString(matches.getFirst().getValue(), "input file hash");
     }
 
     /** Parses the supported Boolean constants, integer equalities, and conjunctions. */
