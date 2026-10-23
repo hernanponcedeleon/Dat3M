@@ -16,6 +16,10 @@
         "allDeclaredFields": true
     },
     {
+        "name":"com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator",
+        "allDeclaredFields": true
+    },
+    {
         "name":"com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer",
         "allDeclaredFields": true,
         "queryAllDeclaredMethods": true

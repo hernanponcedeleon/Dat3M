@@ -79,11 +79,11 @@ public class OptionNames {
     public static final String WITNESS_SHOW = "witness.show";
     public static final String WITNESS_FILENAME = "witness.filename";
     public static final String WITNESS_UNKNOWN = "witness.unknown";
-    public static final String WITNESS_PROPERTY = "witness.svcomp.property";
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";
     public static final String NATIVE = "svcomp.native";
+    public static final String WITNESS_PROPERTY = "svcomp.witness.property";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";

@@ -23,10 +23,7 @@ import com.dat3m.dartagnan.verification.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
-import com.dat3m.dartagnan.witness.svcomp.SvcompCorrectnessWitness;
-import com.dat3m.dartagnan.witness.svcomp.SvcompProperty;
-import com.dat3m.dartagnan.witness.svcomp.SvcompViolationWitness;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitness;
+import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
@@ -59,11 +56,6 @@ import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedCorrectnessProperties;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedViolationProperties;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor.forCorrectness;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessExtractor.forViolation;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter.write;
 
 @Options
 public class OutputGenerator {
@@ -93,25 +85,18 @@ public class OutputGenerator {
             secure=true)
     private boolean generateWitnessForUnknown = false;
 
-    @Option(name=WITNESS_PROPERTY,
-            description="SV-COMP property the task is checked against.",
-            secure=true)
-    private String witnessPropertyName = "";
-
     // ====================================================================================
 
     private final boolean isBatchMode;
     private int batchIndex = -1;
     private Path witnessFile = null;
-    private final Optional<SvcompProperty> witnessProperty;
+    // Only present when generating SV-COMP witnesses.
+    private final Optional<SvcompOutputGenerator> svcompOutput;
 
     private OutputGenerator(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
         this.isBatchMode = isBatchMode;
         config.inject(this);
-        witnessProperty = SvcompProperty.fromPropertyName(witnessPropertyName);
-        if (witnessProperty.isEmpty() && !witnessPropertyName.isBlank()) {
-            throw new InvalidConfigurationException("Unknown SV-COMP property " + witnessPropertyName);
-        }
+        svcompOutput = witnessType == WitnessType.SV ? Optional.of(new SvcompOutputGenerator(config)) : Optional.empty();
     }
 
     public static OutputGenerator create(boolean isBatchMode, Configuration config) throws InvalidConfigurationException {
@@ -339,12 +324,12 @@ public class OutputGenerator {
             return null;
         }
 
-        final VerificationTask task = result.getTask();
         switch (witnessType) {
             case DOT, PNG -> {
                 if (!result.hasModel()) {
                     return null;
                 }
+                final VerificationTask task = result.getTask();
                 final ExecutionModelNext model = fromIREvaluator(result.getModel());
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
@@ -357,35 +342,7 @@ public class OutputGenerator {
                 );
             }
             case SV -> {
-                final SvcompWitness witness;
-                if (status == PASS) {
-                    if (witnessProperty.isEmpty()) {
-                        logger.warn("SV-COMP correctness witnesses require option {}.", WITNESS_PROPERTY);
-                        return null;
-                    }
-                    final Optional<SvcompCorrectnessWitness> correctness =
-                            forCorrectness(task.getProgram(), witnessProperty.get());
-                    if (correctness.isEmpty()) {
-                        logger.warn("SV-COMP correctness witnesses are supported only for the following properties: {}.",
-                                String.join(", ", supportedCorrectnessProperties()));
-                        return null;
-                    }
-                    witness = correctness.get();
-                } else if (result.hasModel()) {
-                    final Optional<SvcompViolationWitness> violation =
-                            forViolation(fromIREvaluator(result.getModel()), task.getProgram());
-                    if (violation.isEmpty()) {
-                        logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
-                                String.join(", ", supportedViolationProperties()));
-                        return null;
-                    }
-                    witness = violation.get();
-                } else {
-                    return null;
-                }
-                final Path witnessFile = getOrCreateOutputDirectory().resolve(filename + ".yml");
-                write(witness, witnessFile);
-                return witnessFile;
+                return svcompOutput.orElseThrow().generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
             }
         }
 
