@@ -3,22 +3,24 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.witness.svcomp.SvcompViolationWitness;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.Candidate;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedVariable;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedSegment;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint;
+import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.slf4j.Logger;
@@ -29,35 +31,24 @@ import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
- * Witness data is interpreted as follows:
+ * Encodes a violation witness resolved by {@link SvcompWitnessResolver} as follows:
  *
- * Threads: witness ID 0 identifies the main thread. A function_enter waypoint gives the
- * parent's witness ID and the thread-creation location. The thread created there
- * receives the next witness ID (1, 2, ...) and must start executing. Each witness ID
- * identifies one program thread, and each program thread receives at most one witness ID.
- *
- * Locations: events are matched by source line and file name, ignoring directories.
- * Multiple events can match a location, for example after loop unrolling.
+ * Threads: the thread entered by a function_enter waypoint must start executing.
  *
  * Assumptions: supported constraints are Boolean constants, expressions of the form
  * variable == integer_literal, or conjunctions of these. Floating-point assumptions are
- * currently unsupported. Variables must be bare identifiers; array indexing such as
- * v[0], member access, and pointer dereferences are currently unsupported. Each
- * equality constrains the value of a uniquely named, statically allocated scalar memory
- * object immediately before the source statement. Its value comes from the last executed
- * write, including initialization, in the SV-COMP execution order. All equalities in a
- * conjunction refer to the same position. Register-only variables and partial writes
- * are currently unsupported.
+ * currently unsupported. Each equality constrains the value of its variable immediately
+ * before the source statement. Its value comes from the last executed write, including
+ * initialization, in the SV-COMP execution order. All equalities in a conjunction refer
+ * to the same position.
  *
  * Targets: at least one event in the specified thread at the
  * target source location must execute.
  *
  * Every waypoint must satisfy the requirement for its type: the child thread starts
  * executing, the assumption holds, or an event at the target executes.
- * This encoder rejects unmatched waypoints.
  *
  * Segment order: to order segments, at least one executed candidate event is selected
  * per segment. A selected assumption event must also satisfy its value constraints.
@@ -65,7 +56,7 @@ import java.util.function.Predicate;
  * strictly increasing order. Ranks also respect every encoded hb-consistency edge and
  * program order between executed candidate events in the same thread. Thus, the witness
  * order must be compatible with the memory model, while unrelated events may also be ordered.
- * The accesses to the variables of a selected assumption, within the same statement occurrence,
+ * The accesses to the variables of a selected assumption, within the same statement instance,
  * are also placed after the previous segment's events and before the next segment's events,
  * without ordering them among each other.
  */
@@ -81,7 +72,6 @@ public final class SvcompWitnessEncoder {
     private final BooleanFormulaManager bmgr;
     private final BitvectorFormulaManager bvmgr;
     private final int rankWidth;
-    private final Map<MemoryObject, List<Store>> writesByObject = new HashMap<>();
     private final String clockPrefix;
 
     private SvcompWitnessEncoder(EncodingContext context, SvcompViolationWitness witness) {
@@ -106,61 +96,49 @@ public final class SvcompWitnessEncoder {
 
     public BooleanFormula encode() {
         logger.info("Encoding witness");
-        final Optional<ResolvedThreads> resolvedThreads = resolveThreads();
-        if (resolvedThreads.isEmpty()) {
+        final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+        final Optional<ResolvedWitness> resolved = SvcompWitnessResolver.resolve(witness, program, alias);
+        if (resolved.isEmpty()) {
             // The witness needs more children than this bounded program contains.
             // An unsatisfiable witness lets the solver check reachable bounds and retry.
             return bmgr.makeFalse();
         }
-        final ResolvedThreads threads = resolvedThreads.orElseThrow();
+        final ResolvedWitness resolvedWitness = resolved.get();
+        final Map<String, ResolvedVariable> variables = resolvedWitness.variables();
         final List<BooleanFormula> constraints = new ArrayList<>();
         // For each non-empty segment and each of its waypoints, the encoding of every candidate event.
         final List<List<Map<Event, BooleanFormula>>> segmentsEnc = new ArrayList<>();
         final Map<Event, Set<Event>> statementAccesses = new HashMap<>();
-        for (Segment segment : witness.segments()) {
+        for (ResolvedSegment segment : resolvedWitness.segments()) {
             final List<Map<Event, BooleanFormula>> segmentEnc = new ArrayList<>();
-            for (Waypoint waypoint : segment.waypoints()) {
+            for (ResolvedWaypoint waypoint : segment.waypoints()) {
                 final Map<Event, BooleanFormula> waypointEnc = new LinkedHashMap<>();
-                for (Event event : eventsForWaypoint(waypoint, threads)) {
-                    waypointEnc.put(event, encodeWaypoint(waypoint, event));
-                    if (waypoint instanceof Assumption assumption) {
-                        statementAccesses.computeIfAbsent(event, _ -> new LinkedHashSet<>())
-                                .addAll(accessesOfConstrainedVariables(assumption, event));
+                for (Candidate candidate : waypoint.candidates()) {
+                    waypointEnc.put(candidate.event(), encodeWaypoint(waypoint.waypoint(), candidate, variables));
+                    if (waypoint.waypoint() instanceof Assumption) {
+                        statementAccesses.computeIfAbsent(candidate.event(), _ -> new LinkedHashSet<>())
+                                .addAll(candidate.constrainedAccesses());
                     }
                 }
                 segmentEnc.add(waypointEnc);
             }
-            if (!segmentEnc.isEmpty()) {
-                segmentsEnc.add(segmentEnc);
-            }
+            segmentsEnc.add(segmentEnc);
         }
-        final boolean hasValues = hasValueConstraints();
+        final boolean hasValues = resolvedWitness.hasValueConstraints();
         if (segmentsEnc.size() > 1 || hasValues) {
             final Set<Event> segmentCandidates = new LinkedHashSet<>();
             segmentsEnc.forEach(segment -> segment.forEach(waypoint -> segmentCandidates.addAll(waypoint.keySet())));
-            constraints.add(encodeExecutionOrder(segmentCandidates, hasValues));
+            final List<Init> inits = variables.values().stream()
+                    .flatMap(variable -> variable.writes().stream())
+                    .filter(Init.class::isInstance).map(Init.class::cast).distinct().toList();
+            constraints.add(encodeExecutionOrder(segmentCandidates, inits, hasValues));
             constraints.add(encodeSegmentOrder(segmentsEnc, statementAccesses));
         }
         return bmgr.and(constraints);
     }
 
-    private boolean hasValueConstraints() {
-        return witness.segments().stream()
-                .flatMap(segment -> segment.waypoints().stream())
-                .anyMatch(waypoint -> waypoint instanceof Assumption assumption
-                        && hasValueConstraint(assumption.expression()));
-    }
-
-    private static boolean hasValueConstraint(AssumptionExpression expression) {
-        return switch (expression) {
-            case BooleanConstant _ -> false;
-            case VariableEquality _ -> true;
-            case Conjunction(AssumptionExpression left, AssumptionExpression right) ->
-                    hasValueConstraint(left) || hasValueConstraint(right);
-        };
-    }
-
-    private BooleanFormula encodeExecutionOrder(Set<Event> segmentCandidates, boolean hasValues) {
+    private BooleanFormula encodeExecutionOrder(Set<Event> segmentCandidates, List<Init> inits,
+            boolean hasValues) {
         final List<BooleanFormula> constraints = new ArrayList<>();
         constraints.add(encodeRelationOrder(HB_RELATION));
         if (hasValues) {
@@ -186,8 +164,7 @@ public final class SvcompWitnessEncoder {
             for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
                 constraints.add(encodeAtomicInterval(store.getLoadEvent(), store, orderedEvents));
             }
-            for (Init init : writesByObject.values().stream().flatMap(Collection::stream)
-                    .filter(Init.class::isInstance).map(Init.class::cast).distinct().toList()) {
+            for (Init init : inits) {
                 for (Event event : orderedEvents) {
                     if (!(event instanceof Init)) {
                         constraints.add(bmgr.implication(context.execution(event), before(init, event)));
@@ -235,7 +212,7 @@ public final class SvcompWitnessEncoder {
      * Each waypoint selects one executed candidate event satisfying it. Every selected event of a segment is ordered
      * after every selected event of the previous segment, so all waypoints of a segment (e.g., both race targets)
      * follow the previous segment. The order among the events of one segment is left open.
-     * Besides, the accesses to the constrained variables in the selected statement occurrence of an assumption
+     * Besides, the accesses to the constrained variables in the selected statement instance of an assumption
      * lie after the previous segment's events and before the next segment's events.
      */
     private BooleanFormula encodeSegmentOrder(List<List<Map<Event, BooleanFormula>>> segmentsEnc,
@@ -296,127 +273,31 @@ public final class SvcompWitnessEncoder {
                 bvmgr.makeVariable(rankWidth, clockPrefix + second.getGlobalId()), false);
     }
 
-    private List<Event> eventsForWaypoint(Waypoint waypoint, ResolvedThreads threads) {
-        if (waypoint instanceof FunctionEnter enter) {
-            return List.of(threads.entered().get(enter).getEntry());
-        }
-        final Thread thread = Optional.ofNullable(threads.byId().get(waypoint.threadId()))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Witness refers to unknown thread " + waypoint.threadId()));
-        final List<Event> candidates = thread.getEvents().stream()
-                .filter(event -> !(waypoint instanceof Assumption) || !(event instanceof FunReturnMarker))
-                .filter(event -> waypoint.location().matches(event)).toList();
-        if (candidates.isEmpty()) {
-            final String type = waypoint instanceof Assumption ? "assumption" : "target";
-            throw new IllegalArgumentException("Witness %s at %s:%d matches no event"
-                    .formatted(type, waypoint.location().fileName(), waypoint.location().line()));
-        }
-        return candidates;
-    }
-
-    private BooleanFormula encodeWaypoint(Waypoint waypoint, Event event) {
+    private BooleanFormula encodeWaypoint(Waypoint waypoint, Candidate candidate,
+            Map<String, ResolvedVariable> variables) {
         if (!(waypoint instanceof Assumption assumption)) {
-            return context.execution(event);
+            return context.execution(candidate.event());
         }
         final List<BooleanFormula> constraints = new ArrayList<>();
-        constraints.add(context.execution(event));
-        // Use the first executed event of this occurrence of the source statement.
-        for (Event previous = event.getPredecessor(); previous != null
-                && assumption.location().matches(previous); previous = previous.getPredecessor()) {
+        constraints.add(context.execution(candidate.event()));
+        // Use the first executed event of this statement instance.
+        for (Event previous : candidate.earlierInStatementInstance()) {
             constraints.add(bmgr.not(context.execution(previous)));
         }
-        constraints.add(resolveAssumption(assumption.expression(), event));
+        constraints.add(encodeAssumption(assumption.expression(), candidate.event(), variables));
         return bmgr.and(constraints);
     }
 
-    // Memory accesses to the variables named in the constraint, within the occurrence of the statement starting at 'first'.
-    private Set<Event> accessesOfConstrainedVariables(Assumption assumption, Event first) {
-        final Set<MemoryObject> objects = new HashSet<>();
-        collectObjects(assumption.expression(), objects);
-        final Set<Event> accesses = new LinkedHashSet<>();
-        if (objects.isEmpty()) {
-            return accesses;
-        }
-        final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        for (Event event = first; event != null && assumption.location().matches(event); event = event.getSuccessor()) {
-            if (event instanceof MemoryCoreEvent access && !(event instanceof Init)
-                    && !Collections.disjoint(alias.addressableObjects(access), objects)) {
-                accesses.add(event);
-            }
-        }
-        return accesses;
-    }
-
-    private void collectObjects(AssumptionExpression expression, Set<MemoryObject> objects) {
-        switch (expression) {
-            case BooleanConstant _ -> { }
-            case VariableEquality equality -> objects.add(namedObject(equality.variable()));
-            case Conjunction(AssumptionExpression left, AssumptionExpression right) -> {
-                collectObjects(left, objects);
-                collectObjects(right, objects);
-            }
-        }
-    }
-
-    private MemoryObject namedObject(String variable) {
-        final List<MemoryObject> objects = program.getMemory().getObjects().stream()
-                .filter(object -> object.hasName() && object.getName().equals(variable)).toList();
-        if (objects.size() != 1) {
-            throw new IllegalArgumentException("Witness variable '%s' does not identify a unique memory object"
-                    .formatted(variable));
-        }
-        return objects.getFirst();
-    }
-
-    // Witness thread IDs and the program threads entered by function_enter waypoints.
-    private record ResolvedThreads(Map<Integer, Thread> byId, Map<FunctionEnter, Thread> entered) { }
-
-    private Optional<ResolvedThreads> resolveThreads() {
-        final Map<Integer, Thread> result = new HashMap<>();
-        final Map<FunctionEnter, Thread> entered = new IdentityHashMap<>();
-        result.put(0, program.getMainThread().orElseThrow(
-                () -> new IllegalArgumentException("Witness validation requires a designated main thread")));
-        final List<Thread> spawnedThreads = program.getThreads().stream()
-                .filter(thread -> thread.getEntry().isSpawned()).toList();
-        final List<Thread> remainingThreads = new ArrayList<>(spawnedThreads);
-        final List<FunctionEnter> entries = witness.segments().stream()
-                .flatMap(segment -> segment.waypoints().stream())
-                .filter(FunctionEnter.class::isInstance)
-                .map(FunctionEnter.class::cast)
-                .toList();
-        for (FunctionEnter enter : entries) {
-            final Thread parent = Optional.ofNullable(result.get(enter.threadId()))
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Witness creates a thread from unknown thread " + enter.threadId()));
-            final Predicate<Thread> matchesCreation = thread -> {
-                final ThreadCreate createEvent = thread.getEntry().getCreator();
-                return createEvent.getThread().equals(parent) && enter.location().matches(createEvent);
-            };
-            final Optional<Thread> availableChild = remainingThreads.stream().filter(matchesCreation).findFirst();
-            if (availableChild.isEmpty() && spawnedThreads.stream().anyMatch(matchesCreation)) {
-                logger.info("Witness requires another child of thread {} at {}:{} absent from the bounded program",
-                        enter.threadId(), enter.location().fileName(), enter.location().line());
-                return Optional.empty();
-            }
-            final Thread child = availableChild
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Witness function entry at %s:%d matches no thread creation"
-                                    .formatted(enter.location().fileName(), enter.location().line())));
-            result.put(result.size(), child);
-            entered.put(enter, child);
-            remainingThreads.remove(child);
-        }
-        return Optional.of(new ResolvedThreads(result, entered));
-    }
-
-    private BooleanFormula resolveAssumption(AssumptionExpression assumption, Event position) {
+    private BooleanFormula encodeAssumption(AssumptionExpression assumption, Event position,
+            Map<String, ResolvedVariable> variables) {
         return switch (assumption) {
             case BooleanConstant(boolean value) -> bmgr.makeBoolean(value);
             case Conjunction(AssumptionExpression left, AssumptionExpression right) ->
-                    bmgr.and(resolveAssumption(left, position), resolveAssumption(right, position));
-            case VariableEquality(String variable, BigInteger value) -> {
-                final MemoryObject object = namedObject(variable);
-                final List<Store> writes = writesByObject.computeIfAbsent(object, this::writesForObject);
+                    bmgr.and(encodeAssumption(left, position, variables), encodeAssumption(right, position, variables));
+            case VariableEquality(String name, BigInteger value) -> {
+                final ResolvedVariable variable = variables.get(name);
+                final MemoryObject object = variable.object();
+                final List<Store> writes = variable.writes();
                 yield bmgr.or(writes.stream().map(write -> bmgr.and(
                         encodeLastWrite(write, object, position, writes),
                         context.getExpressionEncoder().equal(context.value(write), literal(write, value)))).toList());
@@ -437,27 +318,6 @@ public final class SvcompWitnessEncoder {
             }
         }
         return bmgr.and(constraints);
-    }
-
-    private List<Store> writesForObject(MemoryObject object) {
-        if (!object.isStaticallyAllocated() || !object.hasKnownSize()
-                || !object.getInitializedFields().equals(Set.of(0))) {
-            throw new IllegalArgumentException("Witness variable is not an initialized scalar: " + object);
-        }
-        final var type = object.getInitialValue(0).getType();
-        if (!(type instanceof IntegerType || type instanceof BooleanType)
-                || TypeFactory.getInstance().getMemorySizeInBytes(type) != object.getKnownSize()) {
-            throw new IllegalArgumentException("Witness variable is not an integral scalar: " + object);
-        }
-        final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        final List<Store> writes = program.getThreadEvents(Store.class).stream()
-                .filter(write -> alias.addressableObjects(write).contains(object)).toList();
-        for (Store write : writes) {
-            if (!write.getAccessType().equals(type)) {
-                throw new IllegalArgumentException("Witness variable has unsupported partial or differently typed writes: " + object);
-            }
-        }
-        return writes;
     }
 
     private BooleanFormula writesTo(Store write, MemoryObject object) {

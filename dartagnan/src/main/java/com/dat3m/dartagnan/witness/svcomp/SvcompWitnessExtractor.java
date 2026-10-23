@@ -386,7 +386,7 @@ public final class SvcompWitnessExtractor {
             return null;
         }
         final Location location = new Location(programFile, generic.lineNumber());
-        return location.matches(event) ? location : null;
+        return SvcompWitnessResolver.matches(location, event) ? location : null;
     }
 
     // The targets identify the event(s) constituting the violation and become the final target waypoints.

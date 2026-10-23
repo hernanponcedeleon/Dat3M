@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.event.Event;
-
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -100,13 +97,6 @@ public sealed interface SvcompWitness permits SvcompViolationWitness, SvcompCorr
         public Location {
             Objects.requireNonNull(fileName);
             checkArgument(line > 0, "Source location line must be positive");
-        }
-
-        /** Events are matched by source line and file name, ignoring directories. */
-        public boolean matches(Event event) {
-            return event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic
-                    && generic.lineNumber() == line
-                    && generic.sourcePath().getFileName().equals(fileName.getFileName());
         }
     }
 }
