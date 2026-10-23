@@ -121,7 +121,7 @@ public final class SvcompWitnessYamlParser {
     /** Parses the supported Boolean constants, integer equalities, and conjunctions. */
     private static final class AssumptionParser {
 
-        private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_$]*");
+        private static final Pattern IDENTIFIER = SvcompVariables.NAME;
         private static final Pattern INTEGER = Pattern.compile("-?[0-9]+");
 
         private final String source;

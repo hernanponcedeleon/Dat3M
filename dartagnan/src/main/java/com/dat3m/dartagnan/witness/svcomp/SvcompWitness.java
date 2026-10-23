@@ -74,7 +74,7 @@ public sealed interface SvcompWitness permits SvcompViolationWitness, SvcompCorr
     public record VariableEquality(String variable, BigInteger value) implements AssumptionExpression {
         public VariableEquality {
             Objects.requireNonNull(variable);
-            checkArgument(variable.matches("[A-Za-z_][A-Za-z0-9_$]*"), "Invalid assumption variable: %s", variable);
+            checkArgument(SvcompVariables.NAME.matcher(variable).matches(), "Invalid assumption variable: %s", variable);
             Objects.requireNonNull(value);
         }
     }
