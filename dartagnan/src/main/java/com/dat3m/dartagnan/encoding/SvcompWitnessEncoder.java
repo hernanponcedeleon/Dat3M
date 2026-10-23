@@ -26,6 +26,9 @@ import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -52,7 +55,10 @@ import java.util.*;
  *
  * Targets: for assertion-based properties, at least one assertion resolved for the target must
  * be violated, i.e., executed with a false condition. For other properties, at least one event in
- * the specified thread at the target source location must execute.
+ * the specified thread at the target source location must execute. For CAT specifications, the
+ * selected target events must also constitute the violation: they must form an edge, in either
+ * direction, of the relation of a flagged non-emptiness axiom (e.g., the data-race relation).
+ * A single target must be an endpoint of such an edge.
  *
  * Every waypoint must satisfy the requirement for its type: the child thread starts
  * executing, the assumption holds, or the target is reached.
@@ -132,7 +138,11 @@ public final class SvcompWitnessEncoder {
             segmentsEnc.add(segmentEnc);
         }
         // Every waypoint must be satisfied, even if there is nothing to order.
-        constraints.add(encodeSegmentOrder(segmentsEnc, statementAccesses));
+        final List<List<Map<Event, BooleanFormula>>> selectors = new ArrayList<>();
+        constraints.add(encodeSegmentOrder(segmentsEnc, statementAccesses, selectors));
+        if (property == Property.CAT_SPEC) {
+            constraints.add(encodeFlaggedEdgeTargets(targetSelectors(resolvedWitness, selectors)));
+        }
         final boolean hasValues = resolvedWitness.hasValueConstraints();
         if (segmentsEnc.size() > 1 || hasValues) {
             // Ranks are only compared for ordering segments and for reading values.
@@ -261,20 +271,24 @@ public final class SvcompWitnessEncoder {
      * Besides, the accesses to the constrained variables in the selected statement instance of an assumption
      * lie after the previous segment's events and before the next segment's events.
      */
+    // Fills 'selectorsOut' with the selector of each candidate, per segment and waypoint.
     private BooleanFormula encodeSegmentOrder(List<List<Map<Event, BooleanFormula>>> segmentsEnc,
-            Map<Event, Set<Event>> statementAccesses) {
+            Map<Event, Set<Event>> statementAccesses, List<List<Map<Event, BooleanFormula>>> selectorsOut) {
         final List<BooleanFormula> constraints = new ArrayList<>();
         Map<Event, List<BooleanFormula>> previousSelectors = Map.of();
         for (int segmentIndex = 0; segmentIndex < segmentsEnc.size(); segmentIndex++) {
             final Map<Event, List<BooleanFormula>> selectors = new LinkedHashMap<>();
             final List<Map<Event, BooleanFormula>> waypoints = segmentsEnc.get(segmentIndex);
+            final List<Map<Event, BooleanFormula>> segmentSelectors = new ArrayList<>();
             for (int waypointIndex = 0; waypointIndex < waypoints.size(); waypointIndex++) {
                 final List<BooleanFormula> waypointSelectors = new ArrayList<>();
+                final Map<Event, BooleanFormula> selectorOfCandidate = new LinkedHashMap<>();
                 for (var candidate : waypoints.get(waypointIndex).entrySet()) {
                     final Event event = candidate.getKey();
                     final BooleanFormula selector = bmgr.makeVariable("witness-segment " + segmentIndex + " "
                             + waypointIndex + " " + event.getGlobalId());
                     waypointSelectors.add(selector);
+                    selectorOfCandidate.put(event, selector);
                     selectors.computeIfAbsent(event, _ -> new ArrayList<>()).add(selector);
                     constraints.add(bmgr.implication(selector, candidate.getValue()));
                     for (var previous : previousSelectors.entrySet()) {
@@ -296,10 +310,85 @@ public final class SvcompWitnessEncoder {
                     }
                 }
                 constraints.add(bmgr.or(waypointSelectors));
+                segmentSelectors.add(selectorOfCandidate);
             }
+            selectorsOut.add(segmentSelectors);
             previousSelectors = selectors;
         }
         return bmgr.and(constraints);
+    }
+
+    private static List<Map<Event, BooleanFormula>> targetSelectors(ResolvedWitness witness,
+            List<List<Map<Event, BooleanFormula>>> selectors) {
+        final List<Map<Event, BooleanFormula>> result = new ArrayList<>();
+        for (int segmentIndex = 0; segmentIndex < witness.segments().size(); segmentIndex++) {
+            final List<ResolvedWaypoint> waypoints = witness.segments().get(segmentIndex).waypoints();
+            for (int waypointIndex = 0; waypointIndex < waypoints.size(); waypointIndex++) {
+                if (waypoints.get(waypointIndex).waypoint() instanceof Target) {
+                    result.add(selectors.get(segmentIndex).get(waypointIndex));
+                }
+            }
+        }
+        return result;
+    }
+
+    // The selected target events form an edge of a flagged relation that must be empty for the specification to hold.
+    private BooleanFormula encodeFlaggedEdgeTargets(List<Map<Event, BooleanFormula>> targets) {
+        if (targets.isEmpty()) {
+            return bmgr.makeTrue();
+        }
+        if (targets.size() > 2) {
+            throw new IllegalArgumentException("Witness for a CAT specification has more than two targets");
+        }
+        final List<Relation> relations = context.getTask().getMemoryModel().getAxioms().stream()
+                .filter(axiom -> axiom.isFlagged() && axiom.isNegated() && axiom instanceof Emptiness)
+                .map(Axiom::getRelation)
+                .toList();
+        if (relations.isEmpty()) {
+            throw new IllegalArgumentException("Witness targets require a flagged non-emptiness axiom");
+        }
+        final List<BooleanFormula> constraints = new ArrayList<>();
+        if (targets.size() == 2) {
+            for (var first : targets.getFirst().entrySet()) {
+                for (var second : targets.getLast().entrySet()) {
+                    final Event e1 = first.getKey();
+                    final Event e2 = second.getKey();
+                    final List<BooleanFormula> edges = new ArrayList<>();
+                    for (Relation relation : relations) {
+                        final EncodingContext.EdgeEncoder edge = edgeEncoder(relation);
+                        edges.add(edge.encode(e1, e2));
+                        edges.add(edge.encode(e2, e1));
+                    }
+                    constraints.add(bmgr.implication(bmgr.and(first.getValue(), second.getValue()), bmgr.or(edges)));
+                }
+            }
+        } else {
+            for (var target : targets.getFirst().entrySet()) {
+                final Event event = target.getKey();
+                final List<BooleanFormula> edges = new ArrayList<>();
+                for (Relation relation : relations) {
+                    final EncodingContext.EdgeEncoder edge = edgeEncoder(relation);
+                    mayGraph(relation).apply((e1, e2) -> {
+                        if (e1 == event || e2 == event) {
+                            edges.add(edge.encode(e1, e2));
+                        }
+                    });
+                }
+                constraints.add(bmgr.implication(target.getValue(), bmgr.or(edges)));
+            }
+        }
+        return bmgr.and(constraints);
+    }
+
+    private EncodingContext.EdgeEncoder edgeEncoder(Relation relation) {
+        if (!context.isEncoded(relation.getDefinition())) {
+            throw new IllegalStateException("Flagged relation is not encoded: " + relation.getNameOrTerm());
+        }
+        return context.edge(relation);
+    }
+
+    private EventGraph mayGraph(Relation relation) {
+        return context.getAnalysisContext().requires(RelationAnalysis.class).getKnowledge(relation).getMaySet();
     }
 
     private BooleanFormula encodeAtomicInterval(Event begin, Event end, Collection<Event> events) {
