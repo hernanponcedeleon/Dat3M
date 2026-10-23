@@ -174,9 +174,9 @@ public class SvcompWitnessResolverTest {
     public void matchesIgnoreDirectories() throws Exception {
         final TestProgram test = TestProgram.build(1);
         final Event write = test.mainEventsAt(WRITE_LINE).getFirst();
-        assertTrue(SvcompWitnessResolver.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
-        assertFalse(SvcompWitnessResolver.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
-        assertFalse(SvcompWitnessResolver.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
+        assertTrue(SvcompSourceMatching.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
+        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
+        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
     }
 
     @Test

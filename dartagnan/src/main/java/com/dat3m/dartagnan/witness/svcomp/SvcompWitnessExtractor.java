@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
@@ -25,7 +22,6 @@ import com.dat3m.dartagnan.verification.model.event.AssertModel;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.LoadModel;
 import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
-import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
 
 import java.io.IOException;
@@ -111,7 +107,10 @@ public final class SvcompWitnessExtractor {
 
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
-        final List<EventModel> linearized = linearize(model);
+        final RelationModel hb = findRelationModel(model, HB_RELATION)
+                .orElseThrow(() -> new VerifyException(
+                        "Execution model does not contain relation '%s'".formatted(HB_RELATION)));
+        final List<EventModel> linearized = ExecutionLinearizer.linearize(model, hb);
         final Map<Event, ThreadModel> spawnedThreads = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
             final ThreadStart start = thread.getThread().getEntry();
@@ -214,7 +213,7 @@ public final class SvcompWitnessExtractor {
                     continue;
                 }
                 // Events of the same statement instance, as defined for validation, share a source point.
-                final List<Event> earlier = SvcompWitnessResolver.earlierInStatementInstance(location, event.getEvent());
+                final List<Event> earlier = SvcompSourceMatching.earlierInStatementInstance(location, event.getEvent());
                 final Event start = earlier.isEmpty() ? event.getEvent() : earlier.getFirst();
                 result.put(event, new SourcePoint(thread, start, location));
             }
@@ -249,68 +248,6 @@ public final class SvcompWitnessExtractor {
         return findRelationModel(model, name)
                 .map(RelationModel::getEdgeModels)
                 .orElse(Set.of());
-    }
-
-    private static List<EventModel> linearize(ExecutionModelNext model) {
-        final RelationModel hb = findRelationModel(model, HB_RELATION)
-                .orElseThrow(() -> new VerifyException(
-                        "Execution model does not contain relation '%s'".formatted(HB_RELATION)));
-
-        final List<EventModel> events = model.getEventModels();
-        final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
-        for (EdgeModel edge : hb.getEdgeModels()) {
-            Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
-            predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
-        }
-
-        for (ThreadModel thread : model.getThreadModels()) {
-            final List<EventModel> threadEvents = thread.getEventModels();
-            for (int i = 1; i < threadEvents.size(); i++) {
-                predecessors.computeIfAbsent(threadEvents.get(i), _ -> new HashSet<>())
-                        .add(threadEvents.get(i - 1));
-            }
-            final ThreadStart start = thread.getThread().getEntry();
-            if (start.isSpawned() && !threadEvents.isEmpty()) {
-                final EventModel createEvent = model.getEventModelByEvent(start.getCreator());
-                Verify.verify(createEvent != null, "Thread creator is not part of the execution model");
-                predecessors.computeIfAbsent(threadEvents.getFirst(), _ -> new HashSet<>()).add(createEvent);
-            }
-        }
-
-        final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);
-        Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
-                "svcomp.cat produced a non-SC execution");
-
-        final Map<EventModel, EventModel> groupForEvent = new HashMap<>();
-        final Map<EventModel, List<EventModel>> groups = new LinkedHashMap<>();
-        for (ThreadModel thread : model.getThreadModels()) {
-            EventModel atomicBegin = null;
-            for (EventModel event : thread.getEventModels()) {
-                if (event.getEvent() instanceof BeginAtomic) {
-                    atomicBegin = event;
-                }
-                final EventModel group = atomicBegin != null ? atomicBegin : event;
-                groupForEvent.put(event, group);
-                groups.computeIfAbsent(group, _ -> new ArrayList<>()).add(event);
-                if (event.getEvent() instanceof EndAtomic) {
-                    atomicBegin = null;
-                }
-            }
-        }
-        final Map<EventModel, Set<EventModel>> groupPredecessors = new HashMap<>();
-        predecessors.forEach((event, dependencies) -> {
-            final EventModel group = groupForEvent.get(event);
-            for (EventModel dependency : dependencies) {
-                final EventModel predecessor = groupForEvent.get(dependency);
-                if (group != predecessor) {
-                    groupPredecessors.computeIfAbsent(group, _ -> new HashSet<>()).add(predecessor);
-                }
-            }
-        });
-        final DependencyGraph<EventModel> groupGraph = DependencyGraph.from(groups.keySet(), groupPredecessors);
-        Verify.verify(groupGraph.getSCCs().size() == groups.size(),
-                "svcomp.cat produced an execution with incompatible atomic sections");
-        return groupGraph.getNodeContents().stream().flatMap(group -> groups.get(group).stream()).toList();
     }
 
     private static Optional<RelationModel> findRelationModel(ExecutionModelNext model, String name) {
@@ -384,7 +321,7 @@ public final class SvcompWitnessExtractor {
             return null;
         }
         final Location location = new Location(programFile, generic.lineNumber());
-        return SvcompWitnessResolver.matches(location, event) ? location : null;
+        return SvcompSourceMatching.matches(location, event) ? location : null;
     }
 
     // The targets identify the event(s) constituting the violation and become the final target waypoints.
