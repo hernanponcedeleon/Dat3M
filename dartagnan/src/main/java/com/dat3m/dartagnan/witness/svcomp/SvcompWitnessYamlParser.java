@@ -29,20 +29,20 @@ public final class SvcompWitnessYamlParser {
                     .map(value -> asMapping(value, "witness entry"))
                     .filter(value -> "violation_sequence".equals(value.get("entry_type")))
                     .findFirst()
-                    .orElseThrow(() -> new IOException("Witness contains no violation sequence"));
+                    .orElseThrow(() -> new IllegalArgumentException("Witness contains no violation sequence"));
             return parseEntry(entry);
         } catch (IllegalArgumentException | DateTimeParseException exception) {
             throw new IOException("Malformed witness: " + exception.getMessage(), exception);
         }
     }
 
-    private static SvcompViolationWitness parseEntry(Map<?, ?> entry) throws IOException {
+    private static SvcompViolationWitness parseEntry(Map<?, ?> entry) {
         final Map<?, ?> metadata = getMapping(entry, "metadata");
         final Map<?, ?> producer = getMapping(metadata, "producer");
         final Map<?, ?> task = getMapping(metadata, "task");
         final List<?> inputFiles = getList(task, "input_files");
         if (inputFiles.size() != 1) {
-            throw new IOException("Witness must specify exactly one input file");
+            throw new IllegalArgumentException("Witness must specify exactly one input file");
         }
         final String inputFile = asString(inputFiles.getFirst(), "input file");
         final String hash = resolveInputFileHash(getMapping(task, "input_file_hashes"), inputFile);
@@ -71,7 +71,7 @@ public final class SvcompWitnessYamlParser {
                 }
                 final String action = getString(body, "action", "waypoint action");
                 if (!"follow".equals(action)) {
-                    throw new IOException("Unsupported waypoint action '%s' for type '%s'"
+                    throw new IllegalArgumentException("Unsupported waypoint action '%s' for type '%s'"
                             .formatted(action, type));
                 }
                 final int threadId = body.containsKey("thread_id") ? getInteger(body, "thread_id") : 0;
@@ -85,13 +85,13 @@ public final class SvcompWitnessYamlParser {
                         final Map<?, ?> constraint = getMapping(body, "constraint");
                         final String format = getString(constraint, "format", "constraint format");
                         if (!"c_expression".equals(format)) {
-                            throw new IOException("Unsupported witness constraint format '" + format + "'");
+                            throw new IllegalArgumentException("Unsupported witness constraint format '" + format + "'");
                         }
                         waypoints.add(new Assumption(threadId, AssumptionParser.parse(
                                 getString(constraint, "value", "constraint value")), parsedLocation));
                     }
                     case "target" -> waypoints.add(new Target(threadId, parsedLocation));
-                    default -> throw new IOException("Unsupported waypoint type '%s'".formatted(type));
+                    default -> throw new IllegalArgumentException("Unsupported waypoint type '%s'".formatted(type));
                 }
             }
             if (!waypoints.isEmpty()) {

@@ -16,6 +16,11 @@ public enum SvcompProperty {
     VALID_FREE("valid-free", "CHECK( init(main()), LTL(G valid-free) )", false),
     DATA_RACE("no-data-race", "CHECK( init(main()), LTL(G ! data-race) )", false);
 
+    /** Name of the relation in {@code cat/svcomp.cat} that orders the events of an SV-COMP execution. */
+    public static final String HB_RELATION = "hb-consistency";
+    /** Name of the flagged axiom in {@code cat/svcomp.cat} that reports data races. */
+    public static final String DATA_RACE_AXIOM = "data-race";
+
     private final String propertyName;
     private final String specification;
     private final boolean supportsCorrectnessWitness;

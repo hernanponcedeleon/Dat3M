@@ -371,7 +371,7 @@ public class OutputGenerator {
                         synContext, witnessType.convertToPng(), task.getConfig()
                 ));
             }
-            case SV -> Optional.ofNullable(svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml")));
+            case SV -> svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
         };
     }
 
