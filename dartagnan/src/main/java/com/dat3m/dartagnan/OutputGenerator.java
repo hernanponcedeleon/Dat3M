@@ -210,6 +210,23 @@ public class OutputGenerator {
     // Verification
 
     public Output getOutputFromSolver(VerificationTaskSolver solver) {
+        final Output output = getVerificationOutput(solver);
+        if (!(solver.getTask() instanceof WitnessValidationTask)) {
+            return output;
+        }
+        return new Output(toValidationExitCode(output.exitCode(), solver.getResult().getStatus()), output.summary());
+    }
+
+    // A validator confirms the witness by finding the violation it describes.
+    private static ExitCode toValidationExitCode(ExitCode verificationCode, VerificationStatus status) {
+        return switch (status) {
+            case FAIL -> NORMAL_TERMINATION;
+            case UNKNOWN -> verificationCode == BOUNDED_RESULT ? BOUNDED_RESULT : WITNESS_NOT_VALIDATED;
+            case PASS -> WITNESS_NOT_VALIDATED;
+        };
+    }
+
+    private Output getVerificationOutput(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final VerificationStatus status = result.getStatus();
@@ -221,13 +238,12 @@ public class OutputGenerator {
         final IREvaluator model = result.hasModel() ? result.getModel() : null;
         final boolean hasViolationsWithModel = status == FAIL && model != null;
         final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
-        final boolean isWitnessValidation = task instanceof WitnessValidationTask;
         final long time = solver.getRuntime();
 
         // ----------------- Generate optional witness -----------------
         batchIndex++;
         witnessFile = Optional.empty();
-        if (!isWitnessValidation) {
+        if (!(task instanceof WitnessValidationTask)) {
             try {
                 witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
             } catch (IOException ex) {
@@ -249,8 +265,7 @@ public class OutputGenerator {
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
                 }
-                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : PROGRAM_SPEC_VIOLATION;
-                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
+                return new Output(PROGRAM_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
@@ -266,8 +281,7 @@ public class OutputGenerator {
                         appendTo(details, e, synContext);
                     }
                 }
-                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : TERMINATION_VIOLATION;
-                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
+                return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
@@ -277,8 +291,7 @@ public class OutputGenerator {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : MEMORY_TRACKABILITY_VIOLATION;
-                return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
+                return new Output(MEMORY_TRACKABILITY_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
@@ -288,8 +301,7 @@ public class OutputGenerator {
                         .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
-                    final ExitCode exitCode = isWitnessValidation ? NORMAL_TERMINATION : CAT_SPEC_VIOLATION;
-                    return new Output(exitCode, toVerificationSummary(programSource, filter, FAIL,
+                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                             "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
                 }
             }
@@ -321,8 +333,7 @@ public class OutputGenerator {
 
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        final ExitCode exitCode = isWitnessValidation ? WITNESS_NOT_VALIDATED : NORMAL_TERMINATION;
-        return new Output(exitCode, toVerificationSummary(programSource, filter, status,
+        return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                 "", "", details.toString(), time, witnessFile));
     }
 
