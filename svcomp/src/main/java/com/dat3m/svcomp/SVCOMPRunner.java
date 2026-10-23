@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.svcomp.OptionNames.*;
 import static com.dat3m.dartagnan.GlobalSettings.*;
 
 public class SVCOMPRunner {
