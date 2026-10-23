@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -126,7 +125,7 @@ public class SvcompWitnessResolverTest {
             return main().getEvents().stream().filter(event -> isAt(event, line)).toList();
         }
 
-        Optional<ResolvedWitness> resolve(Waypoint... segments) {
+        ResolvedWitness resolve(Waypoint... segments) {
             final List<Segment> content = Arrays.stream(segments)
                     .map(waypoint -> new Segment(List.of(waypoint))).toList();
             return SvcompWitnessResolver.resolve(new SvcompViolationWitness(METADATA, content), program, alias);
@@ -163,26 +162,46 @@ public class SvcompWitnessResolverTest {
     @Test
     public void functionEnterResolvesToEntryOfCreatedThread() throws Exception {
         final TestProgram test = TestProgram.build(1);
-        final ResolvedWitness witness = test.resolve(new FunctionEnter(0, at(CREATE_LINE))).orElseThrow();
-        assertEquals(List.of(test.workers().getFirst().getEntry()), events(witness.segments().getFirst().waypoints().getFirst()));
+        final ResolvedWitness witness = test.resolve(new FunctionEnter(0, at(CREATE_LINE)));
+        final ResolvedWaypoint enter = witness.segments().getFirst().waypoints().getFirst();
+        assertEquals(1, enter.threadId());
+        assertEquals(List.of(test.workers().getFirst().getEntry()), events(enter));
+        assertEquals(List.of(test.main()), witness.threads().get(0));
+        assertEquals(test.workers(), witness.threads().get(1));
+    }
+
+    @Test
+    public void functionEnterKeepsEveryThreadCreatedAtTheLocation() throws Exception {
+        // E.g., a loop whose first iteration skips the creation: the binding is left to the encoding.
+        final TestProgram test = TestProgram.build(2);
+        final ResolvedWitness witness = test.resolve(new FunctionEnter(0, at(CREATE_LINE)));
+        assertEquals(2, test.workers().size());
+        assertEquals(test.workers(), witness.threads().get(1));
+        assertEquals(test.workers().stream().map(Thread::getEntry).toList(),
+                events(witness.segments().getFirst().waypoints().getFirst()));
     }
 
     @Test
     public void createdThreadReceivesNextWitnessId() throws Exception {
         final TestProgram test = TestProgram.build(1);
         final ResolvedWitness witness = test.resolve(
-                new FunctionEnter(0, at(CREATE_LINE)), new Target(1, at(WORKER_LINE))).orElseThrow();
-        final List<Event> targets = events(witness.segments().get(1).waypoints().getFirst());
+                new FunctionEnter(0, at(CREATE_LINE)), new Target(1, at(WORKER_LINE)));
+        final ResolvedWaypoint target = witness.segments().get(1).waypoints().getFirst();
+        assertEquals(1, target.threadId());
+        final List<Event> targets = events(target);
         assertFalse(targets.isEmpty());
         assertTrue(targets.stream().allMatch(event -> event.getThread() == test.workers().getFirst()));
     }
 
     @Test
-    public void witnessNeedingMoreThreadsThanTheBoundIsUnresolved() throws Exception {
+    public void threadsCreatedAtTheSameLocationShareCandidates() throws Exception {
+        // With a single creation, both IDs can only bind the same thread; the encoding rejects this,
+        // which lets the solver retry with higher bounds.
         final TestProgram test = TestProgram.build(1);
-        assertTrue(test.resolve(new FunctionEnter(0, at(CREATE_LINE)), new FunctionEnter(0, at(CREATE_LINE))).isEmpty());
-        final TestProgram unrolled = TestProgram.build(2);
-        assertTrue(unrolled.resolve(new FunctionEnter(0, at(CREATE_LINE)), new FunctionEnter(0, at(CREATE_LINE))).isPresent());
+        final ResolvedWitness witness = test.resolve(
+                new FunctionEnter(0, at(CREATE_LINE)), new FunctionEnter(0, at(CREATE_LINE)));
+        assertEquals(test.workers(), witness.threads().get(1));
+        assertEquals(test.workers(), witness.threads().get(2));
     }
 
     @Test
@@ -206,7 +225,7 @@ public class SvcompWitnessResolverTest {
     @Test
     public void targetCandidatesAreAllEventsAtTheLocation() throws Exception {
         final TestProgram test = TestProgram.build(1);
-        final ResolvedWitness witness = test.resolve(new Target(0, at(READ_LINE))).orElseThrow();
+        final ResolvedWitness witness = test.resolve(new Target(0, at(READ_LINE)));
         final ResolvedWaypoint target = witness.segments().getFirst().waypoints().getFirst();
         assertEquals(test.mainEventsAt(READ_LINE), events(target));
         assertTrue(target.candidates().stream().allMatch(candidate -> candidate.earlierInStatementInstance().isEmpty()
@@ -218,7 +237,7 @@ public class SvcompWitnessResolverTest {
     public void assumptionCandidatesKnowTheirStatementInstance() throws Exception {
         final TestProgram test = TestProgram.build(1);
         final AssumptionExpression xIsOne = new VariableEquality("x", BigInteger.ONE);
-        final ResolvedWitness witness = test.resolve(new Assumption(0, xIsOne, at(READ_LINE))).orElseThrow();
+        final ResolvedWitness witness = test.resolve(new Assumption(0, xIsOne, at(READ_LINE)));
         final List<Event> statement = test.mainEventsAt(READ_LINE);
         final Event load = statement.getFirst();
         final List<Candidate> candidates = witness.segments().getFirst().waypoints().getFirst().candidates();
@@ -237,7 +256,7 @@ public class SvcompWitnessResolverTest {
         final TestProgram test = TestProgram.build(1);
         final AssumptionExpression expression = new Conjunction(
                 new VariableEquality("x", BigInteger.ONE), new BooleanConstant(true));
-        final ResolvedWitness witness = test.resolve(new Assumption(0, expression, at(READ_LINE))).orElseThrow();
+        final ResolvedWitness witness = test.resolve(new Assumption(0, expression, at(READ_LINE)));
 
         assertTrue(witness.hasValueConstraints());
         assertEquals(Set.of("x"), witness.variables().keySet());

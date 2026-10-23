@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
@@ -35,7 +36,10 @@ import java.util.*;
 /**
  * Encodes a violation witness resolved by {@link SvcompWitnessResolver} as follows:
  *
- * Threads: the thread entered by a function_enter waypoint must start executing.
+ * Threads: each witness thread ID is bound to exactly one of its compatible program threads,
+ * and distinct IDs are bound to distinct threads. Every selected candidate event runs in the thread
+ * bound to the ID of its waypoint. The thread entered by a function_enter waypoint must start
+ * executing, and its creator must run in the thread bound to the parent's ID.
  *
  * Assumptions: supported constraints are Boolean constants, expressions of the form
  * variable == integer_literal, or conjunctions of these. Floating-point assumptions are
@@ -97,15 +101,12 @@ public final class SvcompWitnessEncoder {
     public BooleanFormula encode() {
         logger.info("Encoding witness");
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        final Optional<ResolvedWitness> resolved = SvcompWitnessResolver.resolve(witness, program, alias);
-        if (resolved.isEmpty()) {
-            // The witness needs more children than this bounded program contains.
-            // An unsatisfiable witness lets the solver check reachable bounds and retry.
-            return bmgr.makeFalse();
-        }
-        final ResolvedWitness resolvedWitness = resolved.get();
+        final ResolvedWitness resolvedWitness = SvcompWitnessResolver.resolve(witness, program, alias);
         final Map<String, ResolvedVariable> variables = resolvedWitness.variables();
         final List<BooleanFormula> constraints = new ArrayList<>();
+        // If the witness needs more threads than this bounded program contains, the bindings are unsatisfiable,
+        // which lets the solver check reachable bounds and retry.
+        constraints.add(encodeThreadBindings(resolvedWitness.threads()));
         // For each non-empty segment and each of its waypoints, the encoding of every candidate event.
         final List<List<Map<Event, BooleanFormula>>> segmentsEnc = new ArrayList<>();
         final Map<Event, Set<Event>> statementAccesses = new HashMap<>();
@@ -114,7 +115,8 @@ public final class SvcompWitnessEncoder {
             for (ResolvedWaypoint waypoint : segment.waypoints()) {
                 final Map<Event, BooleanFormula> waypointEnc = new LinkedHashMap<>();
                 for (Candidate candidate : waypoint.candidates()) {
-                    waypointEnc.put(candidate.event(), encodeWaypoint(waypoint.waypoint(), candidate, variables));
+                    waypointEnc.put(candidate.event(), bmgr.and(encodeBinding(waypoint, candidate.event()),
+                            encodeWaypoint(waypoint.waypoint(), candidate, variables)));
                     if (waypoint.waypoint() instanceof Assumption) {
                         statementAccesses.computeIfAbsent(candidate.event(), _ -> new LinkedHashSet<>())
                                 .addAll(candidate.constrainedAccesses());
@@ -124,17 +126,56 @@ public final class SvcompWitnessEncoder {
             }
             segmentsEnc.add(segmentEnc);
         }
+        // Every waypoint must be satisfied, even if there is nothing to order.
+        constraints.add(encodeSegmentOrder(segmentsEnc, statementAccesses));
         final boolean hasValues = resolvedWitness.hasValueConstraints();
         if (segmentsEnc.size() > 1 || hasValues) {
+            // Ranks are only compared for ordering segments and for reading values.
             final Set<Event> segmentCandidates = new LinkedHashSet<>();
             segmentsEnc.forEach(segment -> segment.forEach(waypoint -> segmentCandidates.addAll(waypoint.keySet())));
             final List<Init> inits = variables.values().stream()
                     .flatMap(variable -> variable.writes().stream())
                     .filter(Init.class::isInstance).map(Init.class::cast).distinct().toList();
             constraints.add(encodeExecutionOrder(segmentCandidates, inits, hasValues));
-            constraints.add(encodeSegmentOrder(segmentsEnc, statementAccesses));
         }
         return bmgr.and(constraints);
+    }
+
+    private BooleanFormula encodeThreadBindings(Map<Integer, List<Thread>> threads) {
+        final List<BooleanFormula> constraints = new ArrayList<>();
+        final Map<Thread, List<BooleanFormula>> bindingsOfThread = new HashMap<>();
+        threads.forEach((id, candidates) -> {
+            final List<BooleanFormula> bindings = candidates.stream().map(thread -> bound(id, thread)).toList();
+            constraints.add(bmgr.or(bindings));
+            constraints.add(atMostOne(bindings));
+            candidates.forEach(thread -> bindingsOfThread.computeIfAbsent(thread, _ -> new ArrayList<>())
+                    .add(bound(id, thread)));
+        });
+        bindingsOfThread.values().forEach(bindings -> constraints.add(atMostOne(bindings)));
+        return bmgr.and(constraints);
+    }
+
+    private BooleanFormula encodeBinding(ResolvedWaypoint waypoint, Event event) {
+        final Thread thread = event.getThread();
+        final BooleanFormula binding = bound(waypoint.threadId(), thread);
+        if (!(waypoint.waypoint() instanceof FunctionEnter enter)) {
+            return binding;
+        }
+        return bmgr.and(binding, bound(enter.threadId(), thread.getEntry().getCreator().getThread()));
+    }
+
+    private BooleanFormula atMostOne(List<BooleanFormula> formulas) {
+        final List<BooleanFormula> constraints = new ArrayList<>();
+        for (int i = 0; i < formulas.size(); i++) {
+            for (int j = i + 1; j < formulas.size(); j++) {
+                constraints.add(bmgr.not(bmgr.and(formulas.get(i), formulas.get(j))));
+            }
+        }
+        return bmgr.and(constraints);
+    }
+
+    private BooleanFormula bound(int id, Thread thread) {
+        return bmgr.makeVariable("witness-thread " + id + " " + thread.getId());
     }
 
     private BooleanFormula encodeExecutionOrder(Set<Event> segmentCandidates, List<Init> inits,
