@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -26,6 +25,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.witness.svcomp.SvcompSourceMatching.earlierInStatementInstance;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompSourceMatching.matches;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
 
 /**
@@ -139,23 +140,6 @@ public final class SvcompWitnessResolver {
     public static ResolvedWitness resolve(SvcompViolationWitness witness, Program program,
             AliasAnalysis alias, Property property) {
         return new SvcompWitnessResolver(program, alias, property).resolve(witness);
-    }
-
-    /** Events are matched by source line and file name, ignoring directories. */
-    public static boolean matches(Location location, Event event) {
-        return event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic
-                && generic.lineNumber() == location.line()
-                && generic.sourcePath().getFileName().equals(location.fileName().getFileName());
-    }
-
-    /** The events before {@code event} in its statement instance at {@code location}, in program order. */
-    public static List<Event> earlierInStatementInstance(Location location, Event event) {
-        final List<Event> earlier = new ArrayList<>();
-        for (Event previous = event.getPredecessor(); previous != null && matches(location, previous);
-                previous = previous.getPredecessor()) {
-            earlier.addFirst(previous);
-        }
-        return earlier;
     }
 
     private ResolvedWitness resolve(SvcompViolationWitness witness) {

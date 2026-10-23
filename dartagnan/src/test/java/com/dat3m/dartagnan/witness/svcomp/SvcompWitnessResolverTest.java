@@ -25,7 +25,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.Candidate;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedVariable;
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint;
@@ -174,9 +174,9 @@ public class SvcompWitnessResolverTest {
     public void matchesIgnoreDirectories() throws Exception {
         final TestProgram test = TestProgram.build(1);
         final Event write = test.mainEventsAt(WRITE_LINE).getFirst();
-        assertTrue(SvcompWitnessResolver.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
-        assertFalse(SvcompWitnessResolver.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
-        assertFalse(SvcompWitnessResolver.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
+        assertTrue(SvcompSourceMatching.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
+        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
+        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
     }
 
     @Test
