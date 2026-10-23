@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE_AXIOM;
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.HB_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
@@ -53,8 +55,6 @@ import static java.nio.file.Files.readAllBytes;
  */
 public final class SvcompWitnessExtractor {
 
-    private static final String DATA_RACE_AXIOM = "data-race";
-    private static final String HB = "hb-consistency";
     private static final Pattern C_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
     private SvcompWitnessExtractor() { }
@@ -252,9 +252,9 @@ public final class SvcompWitnessExtractor {
     }
 
     private static List<EventModel> linearize(ExecutionModelNext model) {
-        final RelationModel hb = findRelationModel(model, HB)
+        final RelationModel hb = findRelationModel(model, HB_RELATION)
                 .orElseThrow(() -> new VerifyException(
-                        "Execution model does not contain relation '%s'".formatted(HB)));
+                        "Execution model does not contain relation '%s'".formatted(HB_RELATION)));
 
         final List<EventModel> events = model.getEventModels();
         final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();

@@ -38,6 +38,8 @@ import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.HB_RELATION;
+
 /**
  * Encodes a violation witness resolved by {@link SvcompWitnessResolver} as follows:
  *
@@ -77,7 +79,6 @@ import java.util.*;
 public final class SvcompWitnessEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(SvcompWitnessEncoder.class);
-    private static final String HB_RELATION = "hb-consistency";
     private static final String WITNESS_CLOCK = "witness-hb";
 
     private final EncodingContext context;
@@ -265,13 +266,14 @@ public final class SvcompWitnessEncoder {
     }
 
     /*
+     * Fills 'selectorsOut' with the selector of each candidate, per segment and waypoint.
+     *
      * Each waypoint selects one executed candidate event satisfying it. Every selected event of a segment is ordered
      * after every selected event of the previous segment, so all waypoints of a segment (e.g., both race targets)
      * follow the previous segment. The order among the events of one segment is left open.
      * Besides, the accesses to the constrained variables in the selected statement instance of an assumption
      * lie after the previous segment's events and before the next segment's events.
      */
-    // Fills 'selectorsOut' with the selector of each candidate, per segment and waypoint.
     private BooleanFormula encodeSegmentOrder(List<List<Map<Event, BooleanFormula>>> segmentsEnc,
             Map<Event, Set<Event>> statementAccesses, List<List<Map<Event, BooleanFormula>>> selectorsOut) {
         final List<BooleanFormula> constraints = new ArrayList<>();
