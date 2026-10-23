@@ -23,13 +23,15 @@ public final class SvcompWitnessYamlWriter {
     }
 
     static String render(SvcompWitness witness) {
-        if (witness instanceof SvcompViolationWitness violation) {
-            return header("violation_sequence", violation.metadata()) + "  content:\n" + violation.segments().stream()
+        return switch (witness) {
+            case SvcompViolationWitness violation -> header("violation_sequence", violation.metadata())
+                    + "  content:\n" + violation.segments().stream()
                     .map(SvcompWitnessYamlWriter::formatSegment)
                     .collect(Collectors.joining());
-        }
-        // For now we build correctness witnesses with an empty set of invariants.
-        return header("invariant_set", witness.metadata()) + "  content: []\n";
+            // For now, we build correctness witnesses with an empty set of invariants.
+            case SvcompCorrectnessWitness correctness -> header("invariant_set", correctness.metadata())
+                    + "  content: []\n";
+        };
     }
 
     private static String header(String entryType, Metadata metadata) {
