@@ -347,6 +347,10 @@ public final class SvcompWitnessEncoder {
                     bmgr.and(encodeAssumption(left, position, variables), encodeAssumption(right, position, variables));
             case VariableEquality(String name, BigInteger value) -> {
                 final ResolvedVariable variable = variables.get(name);
+                if (variable == null) {
+                    // The variable does not exist in this bounded program.
+                    yield bmgr.makeFalse();
+                }
                 final MemoryObject object = variable.object();
                 final List<Store> writes = variable.writes();
                 yield bmgr.or(writes.stream().map(write -> bmgr.and(
