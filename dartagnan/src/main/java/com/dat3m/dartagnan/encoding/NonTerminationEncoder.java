@@ -166,7 +166,7 @@ public class NonTerminationEncoder {
 
             final Iteration iteration = new Iteration(loop, iter, body);
             iterInfo2Iter.put(iter, iteration);
-            body.forEach(e -> event2Iterations.computeIfAbsent(e, key -> new ArrayList<>()).add(iteration));
+            body.forEach(e -> event2Iterations.computeIfAbsent(e, _ -> new ArrayList<>()).add(iteration));
 
             // NOTE: If a non-termination event is inside nested loops, we only want to associate
             //  it to the innermost loop it is contained within. To achieve this,
@@ -434,7 +434,7 @@ public class NonTerminationEncoder {
                 totalEnc.add(bmgr.not(bmgr.and(isInSuffixVar(iter), isInInfixVar(iter))));
             }
 
-            final Iteration last = iters.get(iters.size() - 1);
+            final Iteration last = iters.getLast();
             final BooleanFormula loopIsNonterminating = loop.nontermCases.stream()
                     .map(this::isNonterminating)
                     .reduce(bmgr.makeFalse(), bmgr::or);
@@ -747,7 +747,7 @@ public class NonTerminationEncoder {
         @Override
         public String toString() {
             return String.format("%s:%s#L%s@E%s", loopInfo.function().getId(), loopInfo.function().getName(),
-                    loopInfo.loopNumber(), loopInfo.iterations().get(0).getIterationStart().getGlobalId());
+                    loopInfo.loopNumber(), loopInfo.iterations().getFirst().getIterationStart().getGlobalId());
         }
     }
 

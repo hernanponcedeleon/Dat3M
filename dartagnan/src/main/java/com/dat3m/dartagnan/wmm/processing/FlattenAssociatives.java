@@ -41,7 +41,7 @@ public class FlattenAssociatives implements WmmProcessor {
                 continue;
             }
             final List<Relation> dependents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
-            final Relation p = (dependents.size() == 1 ? dependents.get(0) : null);
+            final Relation p = (dependents.size() == 1 ? dependents.getFirst() : null);
             if (p != null && cls.isInstance(p.getDefinition())) {
                 final Relation[] o = Stream.of(r, p)
                         .flatMap(x -> x.getDependencies().stream())

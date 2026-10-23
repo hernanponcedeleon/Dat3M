@@ -17,7 +17,7 @@ public class Offset implements Decoration {
         }
         int index = Integer.parseInt(params[0]);
         int offset = Integer.parseInt(params[1]);
-        Map<Integer, Integer> typeOffsets = mapping.computeIfAbsent(id, x -> new HashMap<>());
+        Map<Integer, Integer> typeOffsets = mapping.computeIfAbsent(id, _ -> new HashMap<>());
         if (typeOffsets.containsKey(index)) {
             throw new ParsingException("Duplicated '%s' decoration for '%s' index '%s'",
                     getClass().getSimpleName(), id, index);

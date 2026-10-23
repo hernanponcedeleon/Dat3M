@@ -148,7 +148,7 @@ public class Compilation implements ProgramProcessor {
             return; // We do not compile the entry event.
         }
         final List<Event> compiledEvents = toBeCompiled.accept(compiler);
-        if (compiledEvents.size() == 1 && compiledEvents.get(0) == toBeCompiled) {
+        if (compiledEvents.size() == 1 && compiledEvents.getFirst() == toBeCompiled) {
             // In the special case where the compilation does nothing, we keep the event as is.
             return;
         }

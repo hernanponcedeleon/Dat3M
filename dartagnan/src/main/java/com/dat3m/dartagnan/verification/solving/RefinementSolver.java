@@ -104,7 +104,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     }
 
     private record RefinementTrace(List<RefinementIteration> iterations) {
-        public RefinementIteration getFinalIteration() { return iterations.get(iterations.size() - 1); }
+        public RefinementIteration getFinalIteration() { return iterations.getLast(); }
 
         public SMTStatus getFinalResult() {
             final RefinementIteration finalIteration = getFinalIteration();
@@ -305,8 +305,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         }
 
         final Map<Object, Set<EventData>> addr2Events = new HashMap<>();
-        model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
-        model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
+        model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, _ -> new HashSet<>()).addAll(reads));
+        model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, _ -> new HashSet<>()).addAll(writes));
 
         for (Set<EventData> sameLocEvents : addr2Events.values()) {
             final List<EventData> events = sameLocEvents.stream().sorted().toList();
@@ -388,10 +388,10 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     }
 
     private boolean checkProgress(List<RefinementIteration> trace) {
-        if (trace.size() < 2 || trace.get(trace.size() - 1).isConclusive()) {
+        if (trace.size() < 2 || trace.getLast().isConclusive()) {
             return true;
         }
-        final RefinementIteration last = trace.get(trace.size() - 1);
+        final RefinementIteration last = trace.getLast();
         final RefinementIteration prev = trace.get(trace.size() - 2);
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
@@ -473,22 +473,26 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
                 continue;
             }
 
-            if (c instanceof Axiom ax && ax.isNegated()) {
-                // (i) Negated axioms
-                constraintsToCut.add(ax);
-            } else if (c instanceof Difference diff) {
-                // (ii) Negated relations (if derived)
-                final Relation sub = diff.getSubtrahend();
-                final Definition subDef = sub.getDefinition();
-                if (!sub.getDependencies().isEmpty()) {
-                    constraintsToCut.add(subDef);
+            switch (c) {
+                case Axiom ax when ax.isNegated() ->
+                    // (i) Negated axioms
+                    constraintsToCut.add(ax);
+                case Difference diff -> {
+                    // (ii) Negated relations (if derived)
+                    final Relation sub = diff.getSubtrahend();
+                    final Definition subDef = sub.getDefinition();
+                    if (!sub.getDependencies().isEmpty()) {
+                        constraintsToCut.add(subDef);
+                    }
                 }
-            } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
-                // (iii) Special relations
-                final String name = def.getDefinedRelation().getName().get();
-                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || isUnknownDefinitionForCAAT(def)) {
-                    constraintsToCut.add(c);
+                case Definition def when def.getDefinedRelation().hasName() -> {
+                    // (iii) Special relations
+                    final String name = def.getDefinedRelation().getName().get();
+                    if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || isUnknownDefinitionForCAAT(def)) {
+                        constraintsToCut.add(c);
+                    }
                 }
+                default -> { }
             }
         }
         return constraintsToCut;

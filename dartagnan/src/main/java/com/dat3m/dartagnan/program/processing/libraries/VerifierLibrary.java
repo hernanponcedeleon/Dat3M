@@ -84,12 +84,12 @@ public class VerifierLibrary extends AbstractLibrary<VerifierLibrary> {
     private BeginAtomic currentAtomicBegin;
 
     private List<Event> inlineLoopBound(FunctionCall call) {
-        final Expression boundExpression = call.getArguments().get(0);
+        final Expression boundExpression = call.getArguments().getFirst();
         return List.of(EventFactory.newLoopBound(boundExpression));
     }
 
     private List<Event> inlineAssume(FunctionCall call) {
-        final Expression assumption = call.getArguments().get(0);
+        final Expression assumption = call.getArguments().getFirst();
         return List.of(EventFactory.newAssume(expressions.makeBooleanCast(assumption)));
     }
 
@@ -103,7 +103,7 @@ public class VerifierLibrary extends AbstractLibrary<VerifierLibrary> {
 
     private List<Event> inlineVerifierAssert(FunctionCall call) {
         assert call.getArguments().size() == 1;
-        final Expression condition = call.getArguments().get(0);
+        final Expression condition = call.getArguments().getFirst();
         return inlineAssert(expressions.makeBooleanCast(condition), false,
                 AssertionType.USER, "user assertion");
     }

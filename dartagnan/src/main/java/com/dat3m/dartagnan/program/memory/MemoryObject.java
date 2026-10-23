@@ -95,30 +95,30 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     public void setInitialValue(int offset, Expression value) {
         checkState(hasKnownSize());
         final TypeFactory types = TypeFactory.getInstance();
-        if (value.getType() instanceof ArrayType arrayType) {
-            checkArgument(value instanceof ConstructExpr);
-            final ConstructExpr constArray = (ConstructExpr) value;
-            final List<Expression> arrayElements = constArray.getOperands();
-            for (int i = 0; i < arrayElements.size(); i++) {
-                final int innerOffset = types.getOffsetInBytes(arrayType, i);
-                setInitialValue(offset + innerOffset, arrayElements.get(i));
+        switch (value.getType()) {
+            case ArrayType arrayType -> {
+                checkArgument(value instanceof ConstructExpr);
+                final ConstructExpr constArray = (ConstructExpr) value;
+                final List<Expression> arrayElements = constArray.getOperands();
+                for (int i = 0; i < arrayElements.size(); i++) {
+                    final int innerOffset = types.getOffsetInBytes(arrayType, i);
+                    setInitialValue(offset + innerOffset, arrayElements.get(i));
+                }
             }
-        } else if (value.getType() instanceof AggregateType aggregateType) {
-            checkArgument(value instanceof ConstructExpr);
-            final ConstructExpr constStruct = (ConstructExpr) value;
-            final List<Expression> structElements = constStruct.getOperands();
-            for (int i = 0; i < structElements.size(); i++) {
-                int innerOffset = aggregateType.getFields().get(i).offset();
-                setInitialValue(offset + innerOffset, structElements.get(i));
+            case AggregateType aggregateType -> {
+                checkArgument(value instanceof ConstructExpr);
+                final ConstructExpr constStruct = (ConstructExpr) value;
+                final List<Expression> structElements = constStruct.getOperands();
+                for (int i = 0; i < structElements.size(); i++) {
+                    int innerOffset = aggregateType.getFields().get(i).offset();
+                    setInitialValue(offset + innerOffset, structElements.get(i));
+                }
             }
-        } else if (value.getType() instanceof IntegerType
-                || value.getType() instanceof FloatType
-                || value.getType() instanceof BooleanType
-                || value.getType() instanceof MemoryType) {
-            checkArgument(isInRange(offset), "array index out of bounds");
-            initialValues.put(offset, value);
-        } else {
-            throw new UnsupportedOperationException("Unrecognized constant value: " + value);
+            case IntegerType _, FloatType _, BooleanType _, MemoryType _ -> {
+                checkArgument(isInRange(offset), "array index out of bounds");
+                initialValues.put(offset, value);
+            }
+            default -> throw new UnsupportedOperationException("Unrecognized constant value: " + value);
         }
     }
 

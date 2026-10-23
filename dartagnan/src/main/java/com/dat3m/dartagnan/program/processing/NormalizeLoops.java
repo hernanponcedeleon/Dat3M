@@ -101,11 +101,11 @@ public class NormalizeLoops implements FunctionProcessor {
                     .toList();
 
             // LoopFormVerification requires a unique and unconditional backjump
-            if (backJumps.isEmpty() || (backJumps.size() == 1 && backJumps.get(0).isGoto())) {
+            if (backJumps.isEmpty() || (backJumps.size() == 1 && backJumps.getFirst().isGoto())) {
                 continue;
             }
 
-            final CondJump last = backJumps.get(backJumps.size() - 1);
+            final CondJump last = backJumps.getLast();
 
             final Label forwardLabel = EventFactory.newLabel("__repeatLoop_#" + counter);
             final CondJump gotoRepeat = EventFactory.newGoto(label);
@@ -134,7 +134,7 @@ public class NormalizeLoops implements FunctionProcessor {
                 continue;
             }
 
-            final CondJump loopEnd = backJumps.get(backJumps.size() - 1);
+            final CondJump loopEnd = backJumps.getLast();
             final List<Label> loopIrregularEntryPoints = loopBegin.getSuccessor().getSuccessors().stream()
                     .takeWhile(ev -> ev != loopEnd)
                     .filter(Label.class::isInstance).map(Label.class::cast)

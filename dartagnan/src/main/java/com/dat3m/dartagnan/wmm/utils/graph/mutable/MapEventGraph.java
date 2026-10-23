@@ -49,7 +49,7 @@ public class MapEventGraph extends AbstractEventGraph implements MutableEventGra
 
     @Override
     public boolean add(Event e1, Event e2) {
-        return data.computeIfAbsent(e1, e -> new HashSet<>()).add(e2);
+        return data.computeIfAbsent(e1, _ -> new HashSet<>()).add(e2);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class MapEventGraph extends AbstractEventGraph implements MutableEventGra
         boolean modified = false;
         Map<Event, Set<Event>> copy = other instanceof MapEventGraph mOther ? mOther.data : other.getOutMap();
         for (Map.Entry<Event, Set<Event>> entry : copy.entrySet()) {
-            modified |= data.computeIfAbsent(entry.getKey(), x -> new HashSet<>()).addAll(entry.getValue());
+            modified |= data.computeIfAbsent(entry.getKey(), _ -> new HashSet<>()).addAll(entry.getValue());
         }
         return modified;
     }
@@ -119,7 +119,7 @@ public class MapEventGraph extends AbstractEventGraph implements MutableEventGra
         MapEventGraph inverse = new MapEventGraph();
         data.forEach((e1, value)
                 -> value.forEach(e2
-                -> inverse.data.computeIfAbsent(e2, x -> new HashSet<>()).add(e1)));
+                -> inverse.data.computeIfAbsent(e2, _ -> new HashSet<>()).add(e1)));
         return inverse;
     }
 
@@ -167,7 +167,7 @@ public class MapEventGraph extends AbstractEventGraph implements MutableEventGra
     @Override
     public boolean addRange(Event e, Set<Event> range) {
         if (!range.isEmpty()) {
-            return data.computeIfAbsent(e, x -> new HashSet<>()).addAll(range);
+            return data.computeIfAbsent(e, _ -> new HashSet<>()).addAll(range);
         }
         return false;
     }
@@ -267,7 +267,7 @@ public class MapEventGraph extends AbstractEventGraph implements MutableEventGra
 
     private static Set<Event> setIntersection(Collection<Set<Event>> data) {
         List<Set<Event>> sorted = data.stream().sorted(Comparator.comparing(Set::size)).toList();
-        Set<Event> result = new HashSet<>(sorted.get(0));
+        Set<Event> result = new HashSet<>(sorted.getFirst());
         for (int i = 1; i < sorted.size(); i++) {
             result.retainAll(sorted.get(i));
         }

@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 public final class BoolBinaryExpr extends BinaryExpressionBase<BooleanType, BoolBinaryOp> {
 
     public BoolBinaryExpr(Expression lhs, BoolBinaryOp op, Expression rhs) {
-        super((BooleanType) lhs.getType(), op, lhs, rhs);
         ExpressionHelper.checkSameType(lhs, rhs);
+        super((BooleanType) lhs.getType(), op, lhs, rhs);
     }
 
     @Override

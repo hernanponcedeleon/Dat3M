@@ -134,28 +134,32 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         branches.add(branch);
         Event succ = root;
         while (true) {
-            if (succ instanceof CondJump jump) {
-                if (jump.isGoto()) {
-                    // There is only one branch we can proceed on, so we don't need to split the current branch
-                    succ = jump.getLabel();
-                } else {
-                    // Split into two branches...
-                    final Branch b1 = computeBranchDecomposition(jump.getSuccessor(), event2BranchMap, branches);
-                    final Branch b2 = computeBranchDecomposition(jump.getLabel(), event2BranchMap, branches);
-                    branch.children.add(b1);
-                    branch.children.add(b2);
-                    b1.parents.add(branch);
-                    b2.parents.add(branch);
+            switch (succ) {
+                case CondJump jump -> {
+                    if (jump.isGoto()) {
+                        // There is only one branch we can proceed on, so we don't need to split the current branch
+                        succ = jump.getLabel();
+                    } else {
+                        // Split into two branches...
+                        final Branch b1 = computeBranchDecomposition(jump.getSuccessor(), event2BranchMap, branches);
+                        final Branch b2 = computeBranchDecomposition(jump.getLabel(), event2BranchMap, branches);
+                        branch.children.add(b1);
+                        branch.children.add(b2);
+                        b1.parents.add(branch);
+                        b2.parents.add(branch);
+                        return branch;
+                    }
+                }
+                case BlockingEvent barrier -> {
+                    final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
+                    branch.children.add(succBranch);
+                    succBranch.parents.add(branch);
                     return branch;
                 }
-            } else if (succ instanceof BlockingEvent barrier) {
-                final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
-                branch.children.add(succBranch);
-                succBranch.parents.add(branch);
-                return branch;
-            } else {
-                // No branching happened, thus we stay on the current branch
-                succ = succ.getSuccessor();
+                default -> {
+                    // No branching happened, thus we stay on the current branch
+                    succ = succ.getSuccessor();
+                }
             }
 
             if (succ == null) {
@@ -404,7 +408,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             events.add(root);
         }
 
-        public Event getRoot() { return events.get(0); }
+        public Event getRoot() { return events.getFirst(); }
 
         public Collection<Branch> getImpliedBranches() { return Sets.union(mustSucc, mustPred);}
 

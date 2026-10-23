@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 public class MemoryEqualExpr extends BinaryExpressionBase<BooleanType, ExpressionKind> {
 
     public MemoryEqualExpr(BooleanType type, Expression left, Expression right) {
-        super(type, () -> "EQ", left, right);
         ExpressionHelper.checkSameExpectedType(left, right, MemoryType.class);
+        super(type, () -> "EQ", left, right);
     }
 
     @Override

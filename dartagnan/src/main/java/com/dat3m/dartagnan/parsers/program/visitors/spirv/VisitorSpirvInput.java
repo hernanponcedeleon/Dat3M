@@ -45,7 +45,7 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
         IntegerType mockType = types.getArchType();
         try {
             return expressions.makeValue(Long.parseLong(ctx.getText()), mockType);
-        } catch (ParsingException e) {
+        } catch (ParsingException _) {
             throw new ParsingException("Unsupported value " + ctx.getText());
         }
     }

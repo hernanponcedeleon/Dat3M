@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SameInstruction;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -151,7 +150,7 @@ public class ExecutionGraphVisualizer {
         try {
             int n = Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
             return Optional.of(n);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return Optional.empty();
         }
     }
@@ -257,7 +256,7 @@ public class ExecutionGraphVisualizer {
                 }
             }
             DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
-            coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            coSortedWrites = new ArrayList<>(depGraph.getNodeContents().reversed());
 
             for (int i = 0; i < coSortedWrites.size(); i++) {
                 if (i >= 1) {
@@ -289,7 +288,7 @@ public class ExecutionGraphVisualizer {
 
     private String getAddressString(ValueModel address) {
         final BigInteger addrValue = (BigInteger) address.value();
-        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
+        final MemoryObjectModel accObj = sortedMemoryObjects.reversed().stream()
                 .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
                 .findFirst().orElse(null);
 
@@ -314,24 +313,24 @@ public class ExecutionGraphVisualizer {
 
     private String nodeLabel(EventModel e) {
         // We have MemEvent + Fence + Local + Assert
-        String tag = e.getEvent().toString();
-        if (e instanceof MemoryEventModel mem) {
-            String address = getAddressString(mem.getAccessedAddress());
-            ValueModel value = mem.getValue();
-            MemoryCoreEvent.MemoryOrder mo = mem.getEvent().getMetadata(MemoryCoreEvent.MemoryOrder.class);
-            String moString = mo == null ? "" : ", " + mo.value();
-            tag = mem instanceof StoreModel ?
-                    String.format("W(%s, %s%s)", address, value, moString) :
-                    String.format("%s = R(%s%s)", value, address, moString);
-        } else if (e instanceof LocalModel lm) {
-            tag = String.format("%s(%s) <- %s",
+        final String tag = switch (e) {
+            case MemoryEventModel mem -> {
+                String address = getAddressString(mem.getAccessedAddress());
+                ValueModel value = mem.getValue();
+                MemoryCoreEvent.MemoryOrder mo = mem.getEvent().getMetadata(MemoryCoreEvent.MemoryOrder.class);
+                String moString = mo == null ? "" : ", " + mo.value();
+                yield mem instanceof StoreModel ?
+                        String.format("W(%s, %s%s)", address, value, moString) :
+                        String.format("%s = R(%s%s)", value, address, moString);
+            }
+            case LocalModel lm -> String.format("%s(%s) <- %s",
                 lm.getEvent().getResultRegister(),
                 lm.getValue(),
                 lm.getEvent().getExpr()
             );
-        } else if (e instanceof AssertModel am) {
-            tag = String.format("Assertion(%s)", am.getResult());
-        }
+            case AssertModel am -> String.format("Assertion(%s)", am.getResult());
+            default -> e.getEvent().toString();
+        };
         final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

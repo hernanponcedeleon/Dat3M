@@ -79,7 +79,7 @@ public class LKMMLibrary extends AbstractLibrary<LKMMLibrary> {
         final Register reg = (call instanceof ValueFunctionCall valueCall) ? valueCall.getResultRegister() : null;
         final List<Expression> args = call.getArguments();
 
-        final Expression p0 = args.get(0);
+        final Expression p0 = args.getFirst();
         final Expression p1 = args.size() > 1 ? args.get(1) : null;
         final Expression p2 = args.size() > 2 ? args.get(2) : null;
         final Expression p3 = args.size() > 3 ? args.get(3) : null;

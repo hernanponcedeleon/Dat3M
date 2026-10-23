@@ -66,21 +66,19 @@ public class FormulaManagerExt {
     public BooleanFormula equal(Formula left, Formula right) {
         Preconditions.checkArgument(hasSameType(left, right));
 
-        if (left instanceof NumeralFormula.IntegerFormula l) {
-            return getIntegerFormulaManager().equal(l, (NumeralFormula.IntegerFormula) right);
-        } else if (left instanceof BitvectorFormula l) {
-            return getBitvectorFormulaManager().equal(l, (BitvectorFormula) right);
-        } else if (left instanceof BooleanFormula l) {
-            return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);
-        } else if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-            Preconditions.checkArgument(l.elements.size() == r.elements.size());
-            final BooleanFormulaManager bmgr = getBooleanFormulaManager();
-            return IntStream.range(0, l.elements.size())
-                    .mapToObj(i -> equal(l.elements.get(i), r.elements.get(i)))
-                    .reduce(bmgr.makeTrue(), bmgr::and);
-        }
-
-        throw new UnsupportedOperationException(String.format("Unknown types for equal(%s, %s)", left, right));
+        return switch (left) {
+            case NumeralFormula.IntegerFormula l -> getIntegerFormulaManager().equal(l, (NumeralFormula.IntegerFormula) right);
+            case BitvectorFormula l -> getBitvectorFormulaManager().equal(l, (BitvectorFormula) right);
+            case BooleanFormula l -> getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);
+            case TupleFormula l when right instanceof TupleFormula r -> {
+                Preconditions.checkArgument(l.elements.size() == r.elements.size());
+                final BooleanFormulaManager bmgr = getBooleanFormulaManager();
+                yield IntStream.range(0, l.elements.size())
+                        .mapToObj(i -> equal(l.elements.get(i), r.elements.get(i)))
+                        .reduce(bmgr.makeTrue(), bmgr::and);
+            }
+            default -> throw new UnsupportedOperationException(String.format("Unknown types for equal(%s, %s)", left, right));
+        };
     }
 
     @SuppressWarnings("unchecked")

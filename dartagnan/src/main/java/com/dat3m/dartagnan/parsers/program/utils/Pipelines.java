@@ -122,7 +122,7 @@ public record Pipelines(String workdir, List<Pipeline> pipelines) {
                 throw new IllegalArgumentException("Compilation pipeline for '%s' generates '%s', which is not a natively supported format"
                         .formatted(pipeline.pipeline(), pipeline.output()));
             }
-            if (!pipeline.commands().get(pipeline.commands().size() - 1).output().equals(pipeline.output())) {
+            if (!pipeline.commands().getLast().output().equals(pipeline.output())) {
                 throw new IllegalArgumentException("Final command of compilation pipeline for '%s' does not generate its declared output '%s'"
                         .formatted(pipeline.pipeline(), pipeline.output()));
             }

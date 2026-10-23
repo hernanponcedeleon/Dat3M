@@ -68,9 +68,9 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
 
         for (LoopAnalysis.LoopInfo loop : loops) {
-            final List<Event> loopBody = loop.iterations().get(0).computeBody();
-            final Label label = (Label) loopBody.get(0);
-            final Event backJump = loopBody.get(loopBody.size() - 1);
+            final List<Event> loopBody = loop.iterations().getFirst().computeBody();
+            final Label label = (Label) loopBody.getFirst();
+            final Event backJump = loopBody.getLast();
 
             // Find candidate for loop counter register. We check for the shape:
             //      loopCounter <- constant
@@ -180,7 +180,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                 .filter(e -> e instanceof RegWriter writer && writer.getResultRegister().equals(register))
                 .map(RegWriter.class::cast).toList();
 
-        if (writers.size() != 1 || !(writers.get(0) instanceof Local assignment)) {
+        if (writers.size() != 1 || !(writers.getFirst() instanceof Local assignment)) {
             // There is no unique writer, or the unique writer is not a simple assignment.
             return null;
         }
@@ -202,7 +202,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                 // Multiple assignments (or none): too complex so give up.
                 return null;
             }
-            final RegWriter def = defs.iterator().next();
+            final RegWriter def = defs.getFirst();
             if (!preDominatorTree.isDominatedBy(cur, def)) {
                 // Sanity check that the only def is also dominating its use.
                 // This might not be true if there are accesses to uninitialized registers.

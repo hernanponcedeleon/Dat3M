@@ -134,24 +134,28 @@ public class LoopUnrolling implements ProgramProcessor {
         LoopBound curBoundAnnotation = null;
         final Map<CondJump, Integer> loopBoundsMap = new HashMap<>();
         for (Event event : func.getEvents()) {
-            if (event instanceof LoopBound boundAnnotation) {
-                // Track LoopBound annotation
-                if (curBoundAnnotation != null) {
-                    logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
+            switch (event) {
+                case LoopBound boundAnnotation -> {
+                    // Track LoopBound annotation
+                    if (curBoundAnnotation != null) {
+                        logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
+                    }
+                    curBoundAnnotation = boundAnnotation;
                 }
-                curBoundAnnotation = boundAnnotation;
-            } else if (event instanceof Label label) {
-                final Optional<CondJump> backjump = label.getJumpSet().stream()
-                        .filter(IRHelper::isBackJump).findFirst();
-                final boolean isLoop = backjump.isPresent();
+                case Label label -> {
+                    final Optional<CondJump> backjump = label.getJumpSet().stream()
+                            .filter(IRHelper::isBackJump).findFirst();
+                    final boolean isLoop = backjump.isPresent();
 
-                if (isLoop) {
-                    // Bound annotation > Spin loop tag > default bound
-                    final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
-                            : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
-                    loopBoundsMap.put(backjump.get(), bound);
-                    curBoundAnnotation = null;
+                    if (isLoop) {
+                        // Bound annotation > Spin loop tag > default bound
+                        final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
+                                : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
+                        loopBoundsMap.put(backjump.get(), bound);
+                        curBoundAnnotation = null;
+                    }
                 }
+                default -> { }
             }
         }
 
@@ -261,7 +265,7 @@ public class LoopUnrolling implements ProgramProcessor {
                     break;
                 }
                 loopBoundsMapPerFunction
-                        .computeIfAbsent(loopJump.getFunction(), key -> new HashMap<>())
+                        .computeIfAbsent(loopJump.getFunction(), _ -> new HashMap<>())
                         .put(loopJump, bound);
             }
         } catch (IOException e) {

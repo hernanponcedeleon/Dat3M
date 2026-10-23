@@ -61,7 +61,7 @@ public class ImmutableMapEventGraph extends AbstractEventGraph implements Immuta
     public ImmutableMapEventGraph inverse() {
         if (inverse == null) {
             Map<Event, Set<Event>> invData = new HashMap<>();
-            data.forEach((e1, value) -> value.forEach(e2 -> invData.computeIfAbsent(e2, x -> new HashSet<>()).add(e1)));
+            data.forEach((e1, value) -> value.forEach(e2 -> invData.computeIfAbsent(e2, _ -> new HashSet<>()).add(e1)));
             inverse = new ImmutableMapEventGraph(invData, size);
             inverse.inverse = this;
         }

@@ -69,22 +69,20 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             Type regType = type;
             if (i != -1) {
                 regId += "_" + i;
-                if (type instanceof AggregateType aggregateType) {
-                    regType = aggregateType.getFields().get(i).type();
-                }
-                if (type instanceof ArrayType arrayType) {
-                    regType = arrayType.getElementType();
-                }
+                regType = switch (type) {
+                    case AggregateType aggregateType -> aggregateType.getFields().get(i).type();
+                    case ArrayType arrayType -> arrayType.getElementType();
+                    default -> type;
+                };
             }
             Register register = builder.addRegister(regId, regType);
             return EventFactory.newLoad(register, exp);
             });
         List<Expression> registers = events.stream().map(Load.class::cast).map(Load::getResultRegister).collect(Collectors.toList());
-        if (type instanceof AggregateType) {
-            builder.addExpression(resultId, expressions.makeConstruct(type, registers));
-        }
-        if (type instanceof ArrayType arrayType) {
-            builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
+        switch (type) {
+            case AggregateType _ -> builder.addExpression(resultId, expressions.makeConstruct(type, registers));
+            case ArrayType arrayType -> builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
+            default -> { }
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
@@ -93,30 +91,32 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private List<Event> visitMemoryAccess(String id, Type type, Expression pointer, BiFunction<Integer, Expression, Event> f) {
         List<Event> events = new ArrayList<>();
-        if (type instanceof ArrayType arrayType) {
-            Type elType = arrayType.getElementType();
-            if(!isScalar(elType)) {
-                throw new ParsingException("Unsupported type of memory access to '%s', " +
-                        "expected an array of scalars but received %s", id, type);
+        switch (type) {
+            case ArrayType arrayType -> {
+                Type elType = arrayType.getElementType();
+                if(!isScalar(elType)) {
+                    throw new ParsingException("Unsupported type of memory access to '%s', " +
+                            "expected an array of scalars but received %s", id, type);
+                }
+                for (int i = 0; i < arrayType.getNumElements(); i++) {
+                    List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                    Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index, arrayType.getStride());
+                    events.add(f.apply(i, address));
+                }
             }
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index, arrayType.getStride());
-                events.add(f.apply(i, address));
+            case AggregateType aggregateType -> {
+                if(aggregateType.getFields().stream().map(TypeOffset::type)
+                        .anyMatch(t -> !isScalar(t))) {
+                    throw new ParsingException("Unsupported type of memory access to '%s', " +
+                            "expected an struct of scalars but received %s", id, type);
+                }
+                for (int i = 0; i < aggregateType.getFields().size(); i++) {
+                    List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                    Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
+                    events.add(f.apply(i, address));
+                }
             }
-        } else if (type instanceof AggregateType aggregateType) {
-            if(aggregateType.getFields().stream().map(TypeOffset::type)
-                    .anyMatch(t -> !isScalar(t))) {
-                throw new ParsingException("Unsupported type of memory access to '%s', " +
-                        "expected an struct of scalars but received %s", id, type);
-            }
-            for (int i = 0; i < aggregateType.getFields().size(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
-                events.add(f.apply(i, address));
-            }
-        } else {
-            events.add(f.apply(-1, pointer));
+            default -> events.add(f.apply(-1, pointer));
         }
         return events;
     }
@@ -253,7 +253,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                     "expected '%s' but received '%s'", idCtx.getText(), resultType, memberType);
         }
         if (elCtx == null) {
-            exprIndexes.addFirst(expressions.makeZero((IntegerType) exprIndexes.get(0).getType()));
+            exprIndexes.addFirst(expressions.makeZero((IntegerType) exprIndexes.getFirst().getType()));
         } else {
             exprIndexes.addFirst(builder.getExpression(elCtx.getText()));
         }

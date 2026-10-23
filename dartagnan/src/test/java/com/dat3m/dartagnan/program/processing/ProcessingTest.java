@@ -43,7 +43,7 @@ public class ProcessingTest {
         MemToReg.fromConfig(config).run(f);
         final List<Event> events = f.getEvents();
         assertEquals(5, events.size());
-        assertLocal(events.get(0));
+        assertLocal(events.getFirst());
         assertLocal(events.get(1));
         assertLocal(events.get(2));
         assertLocal(events.get(3));
@@ -75,7 +75,7 @@ public class ProcessingTest {
         MemToReg.fromConfig(config).run(f);
         final List<Event> events = f.getEvents();
         assertEquals(6, events.size());
-        assertComparable(allocX, events.get(0));
+        assertComparable(allocX, events.getFirst());
         assertLocal(events.get(1));
         assertLocal(events.get(2));
         assertComparable(storeTrue, events.get(3));
@@ -111,7 +111,7 @@ public class ProcessingTest {
         MemToReg.fromConfig(config).run(f);
         final List<Event> events = f.getEvents();
         assertEquals(11, events.size());
-        assertComparable(allocX, events.get(0));
+        assertComparable(allocX, events.getFirst());
         assertComparable(jumpNondet, events.get(1));
         assertLocal(events.get(2));
         assertComparable(gotoEndIf, events.get(3));
@@ -152,7 +152,7 @@ public class ProcessingTest {
         MemToReg.fromConfig(config).run(f);
         final List<Event> events = f.getEvents();
         assertEquals(11, events.size());
-        assertComparable(allocX, events.get(0));
+        assertComparable(allocX, events.getFirst());
         assertComparable(jumpNondet, events.get(1));
         assertLocal(events.get(2));
         assertComparable(gotoEndIf, events.get(3));

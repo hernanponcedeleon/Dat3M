@@ -39,16 +39,13 @@ public class LogThreadStatistics implements ProgramProcessor {
         for (Thread thread : threads) {
             for (Event e : thread.getEvents()) {
                 totalEventCount++;
-                if (e instanceof Init) {
-                    initCount++;
-                } else if (e instanceof Store) {
-                    storeCount++;
-                } else if (e instanceof Load) {
-                    loadCount++;
-                } else if (e instanceof GenericVisibleEvent) {
-                    otherVisibleCount++;
-                } else if (e instanceof CodeAnnotation) {
-                    annotationCount++;
+                switch (e) {
+                    case Init _ -> initCount++;
+                    case Store _ -> storeCount++;
+                    case Load _ -> loadCount++;
+                    case GenericVisibleEvent _ -> otherVisibleCount++;
+                    case CodeAnnotation _ -> annotationCount++;
+                    default -> { }
                 }
             }
         }

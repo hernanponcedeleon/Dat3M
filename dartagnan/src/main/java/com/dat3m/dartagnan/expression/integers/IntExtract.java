@@ -15,12 +15,12 @@ public class IntExtract extends UnaryExpressionBase<IntegerType, ExpressionKind.
     private final int highBit;
 
     public IntExtract(Expression operand, int lowBit, int highBit) {
-        super(TypeFactory.getInstance().getIntegerType(highBit - lowBit + 1),
-                ExpressionKind.Other.BV_EXTRACT,
-                operand);
         ExpressionHelper.checkExpectedType(operand, IntegerType.class);
         int originalWidth = ((IntegerType)operand.getType()).getBitWidth();
         Preconditions.checkArgument(0 <= lowBit && lowBit <= highBit && highBit < originalWidth);
+        super(TypeFactory.getInstance().getIntegerType(highBit - lowBit + 1),
+                ExpressionKind.Other.BV_EXTRACT,
+                operand);
         this.lowBit = lowBit;
         this.highBit = highBit;
     }

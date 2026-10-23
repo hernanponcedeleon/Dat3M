@@ -121,25 +121,27 @@ public interface IntervalAnalysis {
         BigDecimal totalReducedIntervalSize = BigDecimal.ZERO;
 
         for (Event e : program.getThreadEvents()) {
-            if (e instanceof RegReader rr) {
-                if (e instanceof RegWriter) {
-                    totalRegWrites++;
-                }
-                Set<Register.Read> regReads = rr.getRegisterReads();
-                for (Register.Read read : regReads) {
-                    Register r = read.register();
-                    if (r.getType() instanceof IntegerType) {
-                        Interval computedInterval = getIntervalAt(e, r);
-                        if (computedInterval.isTop()) {
-                            totalIntervalsTop++;
-                        } else {
-                            totalIntervalsReduced++;
-                            totalReducedIntervalSize = totalReducedIntervalSize.add(new BigDecimal(computedInterval.size()));
+            switch (e) {
+                case RegReader rr -> {
+                    if (e instanceof RegWriter) {
+                        totalRegWrites++;
+                    }
+                    Set<Register.Read> regReads = rr.getRegisterReads();
+                    for (Register.Read read : regReads) {
+                        Register r = read.register();
+                        if (r.getType() instanceof IntegerType) {
+                            Interval computedInterval = getIntervalAt(e, r);
+                            if (computedInterval.isTop()) {
+                                totalIntervalsTop++;
+                            } else {
+                                totalIntervalsReduced++;
+                                totalReducedIntervalSize = totalReducedIntervalSize.add(new BigDecimal(computedInterval.size()));
+                            }
                         }
                     }
                 }
-            } else if (e instanceof RegWriter) {
-                totalRegWrites++;
+                case RegWriter _ -> totalRegWrites++;
+                default -> { }
             }
         }
         DecimalFormat df = new DecimalFormat("#.##");

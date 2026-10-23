@@ -18,7 +18,7 @@ public class SMTHelper {
         // not supported: see https://github.com/hernanponcedeleon/Dat3M/pull/835
         try {
             NativeLibraries.loadLibrary(libName);
-        } catch (Exception e) {
+        } catch (Exception _) {
             System.loadLibrary(libName);
         }
     }

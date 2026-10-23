@@ -70,27 +70,30 @@ public class SROA implements FunctionProcessor {
     private void decomposeLocal(Local orig, AnnotatedRegister reg, Expression expr) {
         Preconditions.checkArgument(reg.getType().equals(expr.getType()));
 
-        if (reg instanceof SimpleReg simpleReg) {
-            final Local local = EventFactory.newLocal(simpleReg.reg, expr);
-            local.copyAllMetadataFrom(orig);
-            orig.insertAfter(local);
-        } else if (reg instanceof AggregateReg aggReg) {
-            assert expr instanceof ConstructExpr;
-            for (int i = aggReg.regs.size() - 1; i >= 0; i--) {
-                decomposeLocal(orig, aggReg.regs.get(i), expr.getOperands().get(i));
+        switch (reg) {
+            case SimpleReg simpleReg -> {
+                final Local local = EventFactory.newLocal(simpleReg.reg, expr);
+                local.copyAllMetadataFrom(orig);
+                orig.insertAfter(local);
+            }
+            case AggregateReg aggReg -> {
+                assert expr instanceof ConstructExpr;
+                for (int i = aggReg.regs.size() - 1; i >= 0; i--) {
+                    decomposeLocal(orig, aggReg.regs.get(i), expr.getOperands().get(i));
+                }
             }
         }
     }
 
 
     private Expression toExpression(AnnotatedRegister annotatedRegister) {
-        if (annotatedRegister instanceof SimpleReg reg) {
-            return reg.reg;
-        } else if (annotatedRegister instanceof AggregateReg aggReg) {
-            final List<Expression> exprs = aggReg.regs.stream().map(this::toExpression).collect(Collectors.toList());
-            return ExpressionFactory.getInstance().makeConstruct(aggReg.getType(), exprs);
-        }
-        return null;
+        return switch (annotatedRegister) {
+            case SimpleReg reg -> reg.reg;
+            case AggregateReg aggReg -> {
+                final List<Expression> exprs = aggReg.regs.stream().map(this::toExpression).collect(Collectors.toList());
+                yield ExpressionFactory.getInstance().makeConstruct(aggReg.getType(), exprs);
+            }
+        };
     }
 
     private AnnotatedRegister decomposeType(Function func, Type type, String regName) {

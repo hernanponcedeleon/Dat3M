@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import java.util.*;
 import java.util.function.Function;
@@ -36,7 +35,7 @@ public final class DominatorTree<TNode> {
     private final Map<TNode, TNode> immDominator;
 
     public DominatorTree(TNode root, Function<TNode, ? extends Iterable<? extends TNode>> successors) {
-        final List<TNode> reversePostOrderNodes = Lists.reverse(computePostOrder(root, successors));
+        final List<TNode> reversePostOrderNodes = computePostOrder(root, successors).reversed();
         final Map<TNode, List<TNode>> predecessorMap = computePredecessorMap(root, successors);
 
         this.root = root;
@@ -106,7 +105,7 @@ public final class DominatorTree<TNode> {
             }
         }
 
-        assert order.get(order.size() - 1) == root;
+        assert order.getLast() == root;
         return order;
     }
 
@@ -168,7 +167,7 @@ public final class DominatorTree<TNode> {
         while (!workqueue.isEmpty()) {
             final TNode cur = workqueue.remove();
             for (TNode succ : successors.apply(cur)) {
-                predecessorMap.computeIfAbsent(succ, key -> new ArrayList<>()).add(cur);
+                predecessorMap.computeIfAbsent(succ, _ -> new ArrayList<>()).add(cur);
                 if (processedOrProcessing.add(succ)) {
                     workqueue.add(succ);
                 }

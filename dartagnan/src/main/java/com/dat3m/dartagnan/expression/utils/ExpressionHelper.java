@@ -36,14 +36,14 @@ public class ExpressionHelper {
     public static void checkInbounds(Type aggregateType, int index) {
         Preconditions.checkArgument(isAggregateLike(aggregateType), "Non-aggregate type %s.", aggregateType);
         Preconditions.checkArgument(index >= 0, "Negative index: %s.", index);
-        if (aggregateType instanceof AggregateType aggType) {
-            checkArgument(index < aggType.getFields().size(),
+        switch (aggregateType) {
+            case AggregateType aggType -> checkArgument(index < aggType.getFields().size(),
                     "Index %s out of bounds for type %s.",
                     index, aggregateType);
-        } else if (aggregateType instanceof ArrayType arrayType) {
-            checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
+            case ArrayType arrayType -> checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
                     "Index %s out of bounds for type %s.",
                     index, arrayType);
+            default -> { }
         }
     }
 
@@ -62,14 +62,12 @@ public class ExpressionHelper {
     public static Type extractType(Type type, Iterable<Integer> indices) {
         for (int index : indices) {
             checkInbounds(type, index);
-            if (type instanceof AggregateType aggregateType) {
-                type = aggregateType.getFields().get(index).type();
-            } else if (type instanceof ArrayType arrayType) {
-                type = arrayType.getElementType();
-            } else {
+            type = switch (type) {
+                case AggregateType aggregateType -> aggregateType.getFields().get(index).type();
+                case ArrayType arrayType -> arrayType.getElementType();
                 // Actually unreachable, because checkInbounds does this already.
-                throw new IllegalArgumentException("Cannot extract from non-aggregate type " + type);
-            }
+                default -> throw new IllegalArgumentException("Cannot extract from non-aggregate type " + type);
+            };
         }
         return type;
     }

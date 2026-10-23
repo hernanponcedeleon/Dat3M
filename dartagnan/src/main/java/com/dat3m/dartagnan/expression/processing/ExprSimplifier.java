@@ -141,18 +141,16 @@ public class ExprSimplifier extends ExprTransformer {
         assert expr.getKind() == BoolUnaryOp.NOT;
         final Expression operand = expr.getOperand().accept(this);
 
-        // Constant negation
-        if (operand instanceof BoolLiteral lit) {
-            return expressions.makeValue(!lit.getValue());
-        }
-
-        // Double negation
-        if (operand instanceof BoolUnaryExpr negation) {
-            assert negation.getKind() == BoolUnaryOp.NOT;
-            return negation.getOperand();
-        }
-
-        return expressions.makeBoolUnary(expr.getKind(), operand);
+        return switch (operand) {
+            // Constant negation
+            case BoolLiteral lit -> expressions.makeValue(!lit.getValue());
+            // Double negation
+            case BoolUnaryExpr negation -> {
+                assert negation.getKind() == BoolUnaryOp.NOT;
+                yield negation.getOperand();
+            }
+            default -> expressions.makeBoolUnary(expr.getKind(), operand);
+        };
     }
 
     @Override

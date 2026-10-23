@@ -135,7 +135,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
             }
             //copy state, if branching
             if (event instanceof CondJump jump) {
-                jumps.computeIfAbsent(jump.getLabel(), k -> new HashSet<>()).addAll(state);
+                jumps.computeIfAbsent(jump.getLabel(), _ -> new HashSet<>()).addAll(state);
                 if (jump.isGoto()) {
                     state.clear();
                 }
@@ -221,7 +221,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
 
         private State(boolean initialized, List<RegWriter> may, List<RegWriter> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
-            verify(may.isEmpty() || must.contains(may.get(may.size() - 1)), "The last may-writer must also be a must-writer.");
+            verify(may.isEmpty() || must.contains(may.getLast()), "The last may-writer must also be a must-writer.");
             this.initialized = initialized;
             this.may = may;
             this.must = must;

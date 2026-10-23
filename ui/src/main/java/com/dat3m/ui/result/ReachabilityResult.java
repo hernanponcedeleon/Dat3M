@@ -78,7 +78,7 @@ public class ReachabilityResult {
                 verdict = outputGenerator.getOutputFromSolver(solver).summary();
                 witnessFile = outputGenerator.getWitnessFile().orElse(null);
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             verdict = "TIMEOUT";
         } catch (Exception e) {
             verdict = "ERROR: " + e;

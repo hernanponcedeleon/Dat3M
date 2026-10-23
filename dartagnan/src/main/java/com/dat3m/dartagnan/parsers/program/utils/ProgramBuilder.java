@@ -304,7 +304,7 @@ public class ProgramBuilder {
 
     public Label getOrCreateLabel(int funcId, String name){
         return fid2LabelsMap
-                .computeIfAbsent(funcId, k -> new HashMap<>())
+                .computeIfAbsent(funcId, _ -> new HashMap<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
     }
 

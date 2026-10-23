@@ -46,7 +46,7 @@ public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegRe
     public DynamicThreadJoin(Register resultRegister, Expression tid) {
         Preconditions.checkArgument(resultRegister.getType() instanceof AggregateType aggType
                 && aggType.getFields().size() == 2
-                && aggType.getFields().get(0).type() instanceof IntegerType intType
+                && aggType.getFields().getFirst().type() instanceof IntegerType intType
                 && IntegerHelper.isRepresentable(BigInteger.valueOf(Status.values().length - 1), intType.getBitWidth())
         );
         this.resultRegister = resultRegister;

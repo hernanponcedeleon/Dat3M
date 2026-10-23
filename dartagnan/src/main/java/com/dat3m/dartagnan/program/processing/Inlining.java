@@ -83,7 +83,7 @@ public class Inlining implements ProgramProcessor {
             }
             // Check whether recursion bound was reached.
             final Function callTarget = call.getCalledFunction();
-            exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
+            exitToCallMap.computeIfAbsent(call.getSuccessor(), _ -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
                 final Event boundEvent = EventFactory.newTerminator(function, Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
@@ -106,7 +106,7 @@ public class Inlining implements ProgramProcessor {
             if (i == -1) { continue; }
             try {
                 scope = Integer.max(scope, Integer.parseInt(r.getName().substring(0, i)));
-            } catch (NumberFormatException ignore) {}
+            } catch (NumberFormatException _) {}
         }
         return scope;
     }

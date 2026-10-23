@@ -161,9 +161,9 @@ public class Intrinsics {
         final List<Event> replacement = replacer.replace(this, call);
         if (replacement.isEmpty()) {
             call.tryDelete();
-        } else if (replacement.get(0) != call) {
+        } else if (replacement.getFirst() != call) {
             if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
-                final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
+                final Map<Event, Event> updateMapping = Map.of(call, replacement.getFirst());
                 ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
             }
             // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
@@ -215,7 +215,7 @@ public class Intrinsics {
     // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpy(FunctionCall call) {
         final Function caller = call.getFunction();
-        final Expression dest = call.getArguments().get(0);
+        final Expression dest = call.getArguments().getFirst();
         final Expression src = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
@@ -235,7 +235,7 @@ public class Intrinsics {
         // Cast guaranteed to success by the return type of memcpy_s
         final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
         final Function caller = call.getFunction();
-        final Expression dest = call.getArguments().get(0);
+        final Expression dest = call.getArguments().getFirst();
         final Expression destszExpr = call.getArguments().get(1);
         final Expression src = call.getArguments().get(2);
         final Expression countExpr = call.getArguments().get(3);
@@ -338,7 +338,7 @@ public class Intrinsics {
     // https://en.cppreference.com/w/c/string/byte/memcmp
     private List<Event> inlineMemCmp(FunctionCall call) {
         final Function caller = call.getFunction();
-        final Expression src1 = call.getArguments().get(0);
+        final Expression src1 = call.getArguments().getFirst();
         final Expression src2 = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
@@ -378,7 +378,7 @@ public class Intrinsics {
 
     // Handles, std.memset, llvm.memset and __memset_chk (checked memset)
     private List<Event> inlineMemSet(FunctionCall call) {
-        final Expression dest = call.getArguments().get(0);
+        final Expression dest = call.getArguments().getFirst();
         final Expression fillExpr = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memset has an extra argument

@@ -23,6 +23,6 @@ public class MockControlFlowBuilder extends ControlFlowBuilder {
     }
 
     public Map<Register, String> getPhiDefinitions(String blockId) {
-        return Map.copyOf(phiDefinitions.computeIfAbsent(blockId, k -> new HashMap<>()));
+        return Map.copyOf(phiDefinitions.computeIfAbsent(blockId, _ -> new HashMap<>()));
     }
 }

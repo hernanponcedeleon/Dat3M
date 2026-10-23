@@ -64,11 +64,11 @@ public class ExecutionModelNext {
     }
 
     public void addAddressRead(ValueModel address, LoadModel read) {
-        addressReadsMap.computeIfAbsent(address, k -> new HashSet<>()).add(read);
+        addressReadsMap.computeIfAbsent(address, _ -> new HashSet<>()).add(read);
     }
 
     public void addAddressWrite(ValueModel address, StoreModel write) {
-        addressWritesMap.computeIfAbsent(address, k -> new HashSet<>()).add(write);
+        addressWritesMap.computeIfAbsent(address, _ -> new HashSet<>()).add(write);
     }
 
     public List<ThreadModel> getThreadModels() {

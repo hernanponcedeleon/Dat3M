@@ -141,15 +141,19 @@ public class CoreReasoner {
         final List<CoreLiteral> permuted = new ArrayList<>(reason.size());
 
         for (CoreLiteral lit : reason) {
-            if (lit instanceof ExecLiteral execLiteral) {
-                final Event e = perm.apply(execLiteral.getEvent());
-                permuted.add(new ExecLiteral(e, execLiteral.isPositive()));
-            } else if (lit instanceof RelLiteral relLiteral) {
-                final Event e1 = perm.apply(relLiteral.getSource());
-                final Event e2 = perm.apply(relLiteral.getTarget());
-                permuted.add(new RelLiteral(relLiteral.getRelation(), e1, e2, relLiteral.isPositive()));
-            } else {
-                assert false : "Unexpected core literal type: violated invariant.";
+            switch (lit) {
+                case ExecLiteral execLiteral -> {
+                    final Event e = perm.apply(execLiteral.getEvent());
+                    permuted.add(new ExecLiteral(e, execLiteral.isPositive()));
+                }
+                case RelLiteral relLiteral -> {
+                    final Event e1 = perm.apply(relLiteral.getSource());
+                    final Event e2 = perm.apply(relLiteral.getTarget());
+                    permuted.add(new RelLiteral(relLiteral.getRelation(), e1, e2, relLiteral.isPositive()));
+                }
+                default -> {
+                    assert false : "Unexpected core literal type: violated invariant.";
+                }
             }
         }
         return permuted;
@@ -160,19 +164,23 @@ public class CoreReasoner {
         final List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
         for (CAATLiteral lit : baseReason.getLiterals()) {
             final Relation rel = executionGraph.getRelation(lit.getPredicate());
-            if (lit instanceof ElementLiteral eleLit) {
-                final Event e = domain.getObjectById(eleLit.getData().getId()).getEvent();
-                final CoreLiteral coreLiteral;
-                if (rel.getDefinition() instanceof TagSet) {
-                    coreLiteral = new ExecLiteral(e, true);
-                } else {
-                    coreLiteral = new RelLiteral(rel, e, e, eleLit.isPositive());
+            switch (lit) {
+                case ElementLiteral eleLit -> {
+                    final Event e = domain.getObjectById(eleLit.getData().getId()).getEvent();
+                    final CoreLiteral coreLiteral;
+                    if (rel.getDefinition() instanceof TagSet) {
+                        coreLiteral = new ExecLiteral(e, true);
+                    } else {
+                        coreLiteral = new RelLiteral(rel, e, e, eleLit.isPositive());
+                    }
+                    coreReason.add(coreLiteral);
                 }
-                coreReason.add(coreLiteral);
-            } else if (lit instanceof EdgeLiteral edgeLit) {
-                final Event e1 = domain.getObjectById(edgeLit.getData().getFirst()).getEvent();
-                final Event e2 = domain.getObjectById(edgeLit.getData().getSecond()).getEvent();
-                coreReason.add(new RelLiteral(rel, e1, e2, edgeLit.isPositive()));
+                case EdgeLiteral edgeLit -> {
+                    final Event e1 = domain.getObjectById(edgeLit.getData().getFirst()).getEvent();
+                    final Event e2 = domain.getObjectById(edgeLit.getData().getSecond()).getEvent();
+                    coreReason.add(new RelLiteral(rel, e1, e2, edgeLit.isPositive()));
+                }
+                default -> { }
             }
         }
         return coreReason;
@@ -184,35 +192,37 @@ public class CoreReasoner {
     private List<CoreLiteral> reduce(List<CoreLiteral> reason) {
         final List<CoreLiteral> simplified = new ArrayList<>();
         for (CoreLiteral lit : reason) {
-            if (lit instanceof ExecLiteral execLiteral) {
-                simplified.add(execLiteral);
-            } else if (lit instanceof RelLiteral relLiteral) {
-                final Event e1 = relLiteral.getSource();
-                final Event e2 = relLiteral.getTarget();
-                final Relation rel = relLiteral.getRelation();
-                final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+            switch (lit) {
+                case ExecLiteral execLiteral -> simplified.add(execLiteral);
+                case RelLiteral relLiteral -> {
+                    final Event e1 = relLiteral.getSource();
+                    final Event e2 = relLiteral.getTarget();
+                    final Relation rel = relLiteral.getRelation();
+                    final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
 
-                if (relLiteral.isPositive() && k.getMustSet().contains(e1, e2)) {
-                    addExecReason(e1, e2, simplified);
-                } else if (!k.getMaySet().contains(e1, e2)) {
-                    if (lit.isPositive()) {
-                        // Positive literal is never true, so the whole reason is impossible.
-                        // We return NULL to indicate this.
-                        return null;
+                    if (relLiteral.isPositive() && k.getMustSet().contains(e1, e2)) {
+                        addExecReason(e1, e2, simplified);
+                    } else if (!k.getMaySet().contains(e1, e2)) {
+                        if (lit.isPositive()) {
+                            // Positive literal is never true, so the whole reason is impossible.
+                            // We return NULL to indicate this.
+                            return null;
+                        } else {
+                            // Negated literal is always true, no need to remember it / do anything.
+                        }
                     } else {
-                        // Negated literal is always true, no need to remember it / do anything.
-                    }
-                } else {
-                    final String name = rel.getName().orElse(null);
-                    if (RF.equals(name) || CO.equals(name) || executionGraph.isEncoded(rel)) {
-                        simplified.add(lit);
-                    } else if (LOC.equals(name)) {
-                        simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));
-                    } else {
-                        final String errorMsg = String.format("Literals of type %s are not supported.", rel);
-                        throw new UnsupportedOperationException(errorMsg);
+                        final String name = rel.getName().orElse(null);
+                        if (RF.equals(name) || CO.equals(name) || executionGraph.isEncoded(rel)) {
+                            simplified.add(lit);
+                        } else if (LOC.equals(name)) {
+                            simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));
+                        } else {
+                            final String errorMsg = String.format("Literals of type %s are not supported.", rel);
+                            throw new UnsupportedOperationException(errorMsg);
+                        }
                     }
                 }
+                default -> { }
             }
         }
         removeDominatedLiterals(simplified);

@@ -158,14 +158,18 @@ public class MemToReg implements FunctionProcessor {
             return null;
         }
         final List<Event> replacement = new ArrayList<>();
-        if (event instanceof Load load) {
-            final Register reg = load.getResultRegister();
-            assert load.getUsers().isEmpty();
-            replacement.add(EventFactory.newLocal(reg, expressions.makeCastOverMemory(memreg, reg.getType(), true)));
-        } else if (event instanceof Store store) {
-            assert store.getUsers().isEmpty();
-            replacement.add(EventFactory.newLocal(memreg, expressions.makeCastOverMemory(store.getMemValue(), accessType, true)));
-            updateMixedRegisters(memreg, field, object, replacement);
+        switch (event) {
+            case Load load -> {
+                final Register reg = load.getResultRegister();
+                assert load.getUsers().isEmpty();
+                replacement.add(EventFactory.newLocal(reg, expressions.makeCastOverMemory(memreg, reg.getType(), true)));
+            }
+            case Store store -> {
+                assert store.getUsers().isEmpty();
+                replacement.add(EventFactory.newLocal(memreg, expressions.makeCastOverMemory(store.getMemValue(), accessType, true)));
+                updateMixedRegisters(memreg, field, object, replacement);
+            }
+            default -> { }
         }
         return replacement;
     }
@@ -402,11 +406,10 @@ public class MemToReg implements FunctionProcessor {
             final var queue = new ArrayDeque<RegWriter>();
             for (final Register register : registers) {
                 final AddressOffsets element = state.remove(register);
-                if (element instanceof AddressOffset value) {
-                    queue.add(value.base);
-                }
-                if (element instanceof AddressOffsetSet hint) {
-                    queue.addAll(hint.hint);
+                switch (element) {
+                    case AddressOffset value -> queue.add(value.base);
+                    case AddressOffsetSet hint -> queue.addAll(hint.hint);
+                    case null -> { }
                 }
             }
             while (!queue.isEmpty()) {

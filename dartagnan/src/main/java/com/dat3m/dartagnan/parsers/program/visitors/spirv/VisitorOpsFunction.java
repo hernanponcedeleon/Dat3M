@@ -123,7 +123,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
             event = newValueFunctionCall(register, function, args);
         }
         if (!builder.hasDefinition(functionId)) {
-            forwardCalls.computeIfAbsent(functionId, x -> new HashSet<>()).add(event);
+            forwardCalls.computeIfAbsent(functionId, _ -> new HashSet<>()).add(event);
         }
         builder.addEvent(event);
         return null;

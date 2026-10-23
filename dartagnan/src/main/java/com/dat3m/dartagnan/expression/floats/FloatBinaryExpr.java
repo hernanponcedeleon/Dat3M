@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 public final class FloatBinaryExpr extends BinaryExpressionBase<FloatType, FloatBinaryOp> {
 
     public FloatBinaryExpr(Expression left, FloatBinaryOp op, Expression right) {
-        super((FloatType) left.getType(), op, left, right);
         ExpressionHelper.checkSameType(left, right);
+        super((FloatType) left.getType(), op, left, right);
     }
 
     @Override

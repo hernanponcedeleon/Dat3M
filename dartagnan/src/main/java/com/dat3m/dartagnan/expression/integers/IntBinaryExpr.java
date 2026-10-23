@@ -11,8 +11,8 @@ import java.math.BigInteger;
 public final class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBinaryOp> {
 
     public IntBinaryExpr(Expression left, IntBinaryOp op, Expression right) {
-        super((IntegerType) left.getType(), op, left, right);
         ExpressionHelper.checkSameType(left, right);
+        super((IntegerType) left.getType(), op, left, right);
     }
 
     @Override

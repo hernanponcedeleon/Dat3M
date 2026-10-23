@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions;
 public class LlvmRMW extends RMWOpResultBase {
 
     public LlvmRMW(Register register, Expression address, IntBinaryOp op, Expression operand, String mo) {
-        super(register, address, op, operand, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        super(register, address, op, operand, mo);
     }
 
     private LlvmRMW(LlvmRMW other) {

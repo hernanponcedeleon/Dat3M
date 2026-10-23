@@ -20,8 +20,8 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
     private final Integer stride;
 
     public GEPExpr(Type indexType, Expression base, List<? extends Expression> offsets, Integer stride) {
-        super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
         ExpressionHelper.checkExpectedType(base, IntegerType.class);
+        super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
         if (offsets.size() > 1) {
             Preconditions.checkArgument(isAggregateLike(indexType), "Indexing with multiple indices into non-aggregate type.");
         }
@@ -41,7 +41,7 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
     }
 
     public Expression getBase() {
-        return operands.get(0);
+        return operands.getFirst();
     }
 
     public ImmutableList<Expression> getOffsets() {

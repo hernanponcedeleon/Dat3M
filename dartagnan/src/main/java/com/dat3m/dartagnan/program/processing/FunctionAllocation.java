@@ -41,12 +41,14 @@ public class FunctionAllocation implements ProgramProcessor {
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
-        if (e instanceof CallEvent call) {
-            // IMPORTANT: For call events we do not want to replace the call target here.
-            // This is why we do not treat them the same as RegReaders
-            call.getArguments().replaceAll(arg -> arg.accept(transformer));
-        } else if (e instanceof RegReader reader) {
-            reader.transformExpressions(transformer);
+        switch (e) {
+            case CallEvent call -> {
+                // IMPORTANT: For call events we do not want to replace the call target here.
+                // This is why we do not treat them the same as RegReaders
+                call.getArguments().replaceAll(arg -> arg.accept(transformer));
+            }
+            case RegReader reader -> reader.transformExpressions(transformer);
+            default -> { }
         }
     }
 

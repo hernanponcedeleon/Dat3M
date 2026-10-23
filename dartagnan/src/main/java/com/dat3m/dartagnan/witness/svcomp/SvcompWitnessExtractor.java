@@ -156,7 +156,7 @@ public final class SvcompWitnessExtractor {
             final Optional<String> constraint = readValueAssumption(load, model);
             if (constraint.isPresent()) {
                 representatives.putIfAbsent(point, event);
-                constraints.computeIfAbsent(point, ignored -> new LinkedHashSet<>()).add(constraint.get());
+                constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(constraint.get());
             }
         }
 
@@ -203,12 +203,12 @@ public final class SvcompWitnessExtractor {
         }
         final Object value = load.getValue().value();
         final String literal;
-        if (value instanceof Boolean booleanValue) {
-            literal = booleanValue ? "1" : "0";
-        } else if (value instanceof Number) {
-            literal = value.toString();
-        } else {
-            return Optional.empty();
+        switch (value) {
+            case Boolean booleanValue -> literal = booleanValue ? "1" : "0";
+            case Number _ -> literal = value.toString();
+            case null, default -> {
+                return Optional.empty();
+            }
         }
         return Optional.of(String.format("(%s == %s)", object.get().object().getName(), literal));
     }
@@ -228,7 +228,7 @@ public final class SvcompWitnessExtractor {
         final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
         for (EdgeModel edge : hb.getEdgeModels()) {
             Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
-            predecessors.computeIfAbsent(edge.to(), ignored -> new HashSet<>()).add(edge.from());
+            predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
         }
 
         final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);

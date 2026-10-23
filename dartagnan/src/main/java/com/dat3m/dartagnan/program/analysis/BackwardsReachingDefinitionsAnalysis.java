@@ -274,7 +274,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
                 if (jump.isDead()) {
                     continue;
                 }
-                final boolean change = merge(trueStates.computeIfAbsent(jump, k -> new State()), currentState);
+                final boolean change = merge(trueStates.computeIfAbsent(jump, _ -> new State()), currentState);
                 if (change && (latest == null || latest.getGlobalId() < jump.getGlobalId())) {
                     latest = jump;
                 }
@@ -289,7 +289,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
             if (jump.isGoto()) {
                 currentState.clear();
             } else {
-                merge(falseStates.computeIfAbsent(jump, k -> new State()), currentState);
+                merge(falseStates.computeIfAbsent(jump, _ -> new State()), currentState);
             }
             merge(currentState, trueStates.getOrDefault(jump, new State()));
         }
@@ -308,7 +308,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
 
     private static void update(State states, RegReader reader) {
         for (Register register : reader.getRegisterReads().stream().map(Register.Read::register).distinct().toList()) {
-            final StateInfo state = states.computeIfAbsent(register, k -> new StateInfo());
+            final StateInfo state = states.computeIfAbsent(register, _ -> new StateInfo());
             state.mayReaders = state.copyOnWrite ? new HashSet<>(state.mayReaders) : state.mayReaders;
             state.copyOnWrite = false;
             state.mayReaders.add(reader);
@@ -318,7 +318,7 @@ class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysi
     private static boolean merge(State target, State source) {
         boolean change = false;
         for (Map.Entry<Register, StateInfo> entry : source.entrySet()) {
-            change |= merge(target.computeIfAbsent(entry.getKey(), k -> new StateInfo()), entry.getValue());
+            change |= merge(target.computeIfAbsent(entry.getKey(), _ -> new StateInfo()), entry.getValue());
         }
         return change;
     }

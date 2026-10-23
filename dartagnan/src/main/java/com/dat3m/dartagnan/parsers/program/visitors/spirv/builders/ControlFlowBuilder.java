@@ -66,7 +66,7 @@ public class ControlFlowBuilder {
     }
 
     public void addPhiDefinition(String blockId, Register register, String expressionId) {
-        phiDefinitions.computeIfAbsent(blockId, k -> new HashMap<>()).put(register, expressionId);
+        phiDefinitions.computeIfAbsent(blockId, _ -> new HashMap<>()).put(register, expressionId);
     }
 
     public SourceLocation getCurrentLocation() {
@@ -96,7 +96,7 @@ public class ControlFlowBuilder {
     }
 
     public void setPhiId(String blockId, Register register, String id) {
-        String phiId = phiDefinitionIds.computeIfAbsent(blockId, k -> new HashMap<>()).get(register);
+        String phiId = phiDefinitionIds.computeIfAbsent(blockId, _ -> new HashMap<>()).get(register);
         if (phiId != null) {
             throw new ParsingException(
                 "Already set id %s for the Phi definition in the block %s", phiId, blockId);

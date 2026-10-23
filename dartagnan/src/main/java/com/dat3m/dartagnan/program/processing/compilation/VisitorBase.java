@@ -98,7 +98,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         final AggregateType type = (AggregateType) resultType;
         final Register oldValue = e.getFunction().newUniqueRegister("LlvmCmpXchg.oldValue", e.getExpectedValue().getType());
         final Register success = e.getFunction().newUniqueRegister("LlvmCmpXchg.success", types.getBooleanType());
-        final Expression r0 = expressions.makeCast(oldValue, type.getFields().get(0).type());
+        final Expression r0 = expressions.makeCast(oldValue, type.getFields().getFirst().type());
         final Expression r1 = expressions.makeCast(success, type.getFields().get(1).type());
         final Expression expected = e.getExpectedValue();
         final Expression newValue = e.getStoreValue();

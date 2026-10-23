@@ -44,7 +44,7 @@ public class EncodingUtils {
 
         final String seqVarName = "seqVar_" + uniqueIdent + "#";
         final List<BooleanFormula> enc = new ArrayList<>(2*formulas.size() - 1);
-        BooleanFormula lastSeqVar = formulas.get(0);
+        BooleanFormula lastSeqVar = formulas.getFirst();
         for (int i = 1; i < formulas.size(); i++) {
             final BooleanFormula newSeqVar = bmgr.makeVariable(seqVarName + i);
             enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, formulas.get(i))));

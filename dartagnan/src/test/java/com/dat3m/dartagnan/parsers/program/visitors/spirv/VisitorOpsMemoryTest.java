@@ -118,7 +118,7 @@ public class VisitorOpsMemoryTest {
         ConstructExpr pointerVariable = (ConstructExpr) builder.getExpression("%result");
         assertNotNull(pointerVariable);
         assertEquals(4, pointerVariable.getOperands().size());
-        assertEquals(integerType, pointerVariable.getOperands().get(0).getType());
+        assertEquals(integerType, pointerVariable.getOperands().getFirst().getType());
     }
 
     @Test
@@ -309,7 +309,7 @@ public class VisitorOpsMemoryTest {
         assertNotNull(v3);
         assertEquals(types.getMemorySizeInBytes(builder.getType("%v3int")), v3.getAddress().getKnownSize());
         List<Expression> arrElements = o3.getOperands();
-        assertEquals(arrElements.get(0), v3.getAddress().getInitialValue(0));
+        assertEquals(arrElements.getFirst(), v3.getAddress().getInitialValue(0));
         assertEquals(arrElements.get(1), v3.getAddress().getInitialValue(4));
         assertEquals(arrElements.get(2), v3.getAddress().getInitialValue(8));
 
@@ -317,9 +317,9 @@ public class VisitorOpsMemoryTest {
         assertNotNull(v4);
         assertEquals(types.getMemorySizeInBytes(builder.getType("%struct")), v4.getAddress().getKnownSize());
         List<Expression> structElements = o4.getOperands();
-        assertEquals(structElements.get(0), v4.getAddress().getInitialValue(0));
+        assertEquals(structElements.getFirst(), v4.getAddress().getInitialValue(0));
         assertEquals(structElements.get(1), v4.getAddress().getInitialValue(4));
-        assertEquals(arrElements.get(0), v4.getAddress().getInitialValue(8));
+        assertEquals(arrElements.getFirst(), v4.getAddress().getInitialValue(8));
         assertEquals(arrElements.get(1), v4.getAddress().getInitialValue(12));
         assertEquals(arrElements.get(2), v4.getAddress().getInitialValue(16));
     }
@@ -421,7 +421,7 @@ public class VisitorOpsMemoryTest {
         ScopedPointerVariable v = (ScopedPointerVariable) builder.getExpression("%v");
         assertNotNull(v);
         assertEquals(types.getMemorySizeInBytes(arr.getType()), v.getAddress().getKnownSize());
-        assertEquals(arr.getOperands().get(0), v.getAddress().getInitialValue(0));
+        assertEquals(arr.getOperands().getFirst(), v.getAddress().getInitialValue(0));
         assertEquals(arr.getOperands().get(1), v.getAddress().getInitialValue(4));
     }
 
@@ -978,7 +978,7 @@ public class VisitorOpsMemoryTest {
     private Event getLastEvent() {
         List<Event> events = builder.getCurrentFunction().getEvents();
         if (!events.isEmpty()) {
-            return events.get(events.size() - 1);
+            return events.getLast();
         }
         return null;
     }

@@ -215,8 +215,8 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             this.loopInfo = loopInfo;
         }
 
-        private Event getStart() { return loopInfo.iterations().get(0).getIterationStart(); }
-        private Event getEnd() { return loopInfo.iterations().get(0).getIterationEnd(); }
+        private Event getStart() { return loopInfo.iterations().getFirst().getIterationStart(); }
+        private Event getEnd() { return loopInfo.iterations().getFirst().getIterationEnd(); }
 
         @Override
         public String toString() {

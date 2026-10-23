@@ -9,8 +9,8 @@ import com.google.common.base.Preconditions;
 public class AtomicXchg extends RMWXchgBase {
 
     public AtomicXchg(Register register, Expression address, Expression value, String mo) {
-        super(register, address, value, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super(register, address, value, mo);
     }
 
     private AtomicXchg(AtomicXchg other) {

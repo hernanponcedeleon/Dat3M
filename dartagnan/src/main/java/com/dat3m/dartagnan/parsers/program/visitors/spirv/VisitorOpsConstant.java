@@ -122,28 +122,26 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression getConstantNullExpression(String typeId, Type type) {
-        if (type instanceof ArrayType arrayType) {
-            if (!arrayType.hasKnownNumElements()) {
-                throw new ParsingException("Cannot create NULL constant for '%s' with unknown size array type", typeId);
+        return switch (type) {
+            case ArrayType arrayType -> {
+                if (!arrayType.hasKnownNumElements()) {
+                    throw new ParsingException("Cannot create NULL constant for '%s' with unknown size array type", typeId);
+                }
+                Expression exp = getConstantNullExpression(typeId, arrayType.getElementType());
+                List<Expression> elements = Collections.nCopies(arrayType.getNumElements(), exp);
+                yield expressions.makeArray(arrayType, elements);
             }
-            Expression exp = getConstantNullExpression(typeId, arrayType.getElementType());
-            List<Expression> elements = Collections.nCopies(arrayType.getNumElements(), exp);
-            return expressions.makeArray(arrayType, elements);
-        }
-        if (type instanceof AggregateType aggregateType) {
-            List<Expression> elements = new ArrayList<>();
-            for (TypeOffset field : aggregateType.getFields()) {
-                elements.add(getConstantNullExpression(typeId, field.type()));
+            case AggregateType aggregateType -> {
+                List<Expression> elements = new ArrayList<>();
+                for (TypeOffset field : aggregateType.getFields()) {
+                    elements.add(getConstantNullExpression(typeId, field.type()));
+                }
+                yield expressions.makeConstruct(aggregateType, elements);
             }
-            return expressions.makeConstruct(aggregateType, elements);
-        }
-        if (type instanceof BooleanType) {
-            return expressions.makeFalse();
-        }
-        if (type instanceof IntegerType iType) {
-            return expressions.makeZero(iType);
-        }
-        throw new ParsingException("Unsupported NULL constant type '%s'", typeId);
+            case BooleanType _ -> expressions.makeFalse();
+            case IntegerType iType -> expressions.makeZero(iType);
+            default -> throw new ParsingException("Unsupported NULL constant type '%s'", typeId);
+        };
     }
 
     public void visitOpSpecConstantOp(Register register) {
@@ -172,13 +170,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression makeConstantComposite(String id, Type type, List<String> elementIds) {
-        if (type instanceof AggregateType aType) {
-            return makeConstantStruct(id, aType, elementIds);
-        } else if (type instanceof ArrayType aType) {
-            return makeConstantArray(id, aType, elementIds);
-        } else {
-            throw new ParsingException("Illegal type '%s' for composite constant '%s'", type, id);
-        }
+        return switch (type) {
+            case AggregateType aType -> makeConstantStruct(id, aType, elementIds);
+            case ArrayType aType -> makeConstantArray(id, aType, elementIds);
+            default -> throw new ParsingException("Illegal type '%s' for composite constant '%s'", type, id);
+        };
     }
 
     private Expression makeConstantStruct(String id, AggregateType type, List<String> elementIds) {

@@ -177,20 +177,16 @@ public class ExecutionGraph {
             return constraintMap.get(axiom);
         }
 
-        Constraint constraint;
         Relation inner = axiom.getRelation();
         CAATPredicate innerPred = inner.isSet() ?
             getOrCreateSetFromRelation(inner) :
             getOrCreateGraphFromRelation(inner);
-        if (axiom instanceof Acyclicity) {
-            constraint = new AcyclicityConstraint((RelationGraph) innerPred);
-        } else if (axiom instanceof Emptiness) {
-            constraint = new EmptinessConstraint(innerPred);
-        } else if (axiom instanceof Irreflexivity) {
-            constraint = new IrreflexivityConstraint((RelationGraph) innerPred);
-        } else {
-            throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
-        }
+        Constraint constraint = switch (axiom) {
+            case Acyclicity _ -> new AcyclicityConstraint((RelationGraph) innerPred);
+            case Emptiness _ -> new EmptinessConstraint(innerPred);
+            case Irreflexivity _ -> new IrreflexivityConstraint((RelationGraph) innerPred);
+            default -> throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
+        };
 
         constraintMap.put(axiom, constraint);
         return constraint;
@@ -225,7 +221,7 @@ public class ExecutionGraph {
         } else if (relClass == SameInstruction.class) {
             graph = new SameInstructionGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class) {
-            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            RelationGraph g = getOrCreateGraphFromRelation(dependencies.getFirst());
             graph = relClass == Inverse.class ? new InverseGraph(g) : new TransitiveGraph(g);
         } else if (relClass == Union.class || relClass == Intersection.class) {
             RelationGraph[] graphs = new RelationGraph[dependencies.size()];
@@ -234,7 +230,7 @@ public class ExecutionGraph {
             }
             graph = relClass == Union.class ? new UnionGraph(graphs) : new IntersectionGraph(graphs);
         } else if (relClass == Composition.class || relClass == Difference.class) {
-            RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
+            RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.getFirst());
             RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
             graph = relClass == Composition.class ? new CompositionGraph(g1, g2) : new DifferenceGraph(g1, g2);
         } else if (relClass == CartesianProduct.class) {
@@ -275,7 +271,7 @@ public class ExecutionGraph {
         } else if (relClass == TagSet.class) {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
         } else if (relClass == Projection.class) {
-            final RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            final RelationGraph g = getOrCreateGraphFromRelation(dependencies.getFirst());
             final boolean dom = ((Projection) relation.getDefinition()).getDimension() == Dimension.DOMAIN;
             final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
             set = new ProjectionSet(g, dim);
@@ -286,7 +282,7 @@ public class ExecutionGraph {
             }
             set = relClass == Union.class ? new UnionSet(graphs) : new IntersectionSet(graphs);
         } else if (relClass == Difference.class) {
-            SetPredicate s1 = getOrCreateSetFromRelation(dependencies.get(0));
+            SetPredicate s1 = getOrCreateSetFromRelation(dependencies.getFirst());
             SetPredicate s2 = getOrCreateSetFromRelation(dependencies.get(1));
             set = new DifferenceSet(s1, s2);
         } else {

@@ -11,8 +11,8 @@ public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerTy
     private final boolean preserveSign;
 
     public IntSizeCast(IntegerType targetType, Expression operand, boolean preserveSign) {
-        super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, IntegerType.class);
+        super(targetType, operand);
         this.preserveSign = (preserveSign && isExtension()) || isNoop();
     }
 

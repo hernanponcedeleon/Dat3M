@@ -160,21 +160,23 @@ public class SyntacticContextAnalysis {
             infoMap.put(ev, new Info(ev, copyOfCurContextStack));
             // TODO: The above could be made more efficient by sharing unchanged context
 
-            if (ev instanceof FunCallMarker fc) {
-                curContextStack.push(new CallContext(fc));
-            } else if (ev instanceof FunReturnMarker retMarker) {
-                CallContext topCallCtx;
-                do {
-                    // FIXME: DCE can sometimes delete the end marker of functions if those never return
-                    //  (e.g., "reach_error() { abort(0); }").
-                    //  Here we try to also pop those calls that have missing markers.
-                    if(curContextStack.peek() instanceof CallContext) {
-                        topCallCtx = (CallContext) curContextStack.pop();
-                    } else {
-                        logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");
-                        break;
-                    }
-                } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
+            switch (ev) {
+                case FunCallMarker fc -> curContextStack.push(new CallContext(fc));
+                case FunReturnMarker retMarker -> {
+                    CallContext topCallCtx;
+                    do {
+                        // FIXME: DCE can sometimes delete the end marker of functions if those never return
+                        //  (e.g., "reach_error() { abort(0); }").
+                        //  Here we try to also pop those calls that have missing markers.
+                        if(curContextStack.peek() instanceof CallContext) {
+                            topCallCtx = (CallContext) curContextStack.pop();
+                        } else {
+                            logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");
+                            break;
+                        }
+                    } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
+                }
+                default -> { }
             }
 
             final LoopAnalysis.LoopIterationInfo iteration = loopMarkerTypesMap.get(ev);

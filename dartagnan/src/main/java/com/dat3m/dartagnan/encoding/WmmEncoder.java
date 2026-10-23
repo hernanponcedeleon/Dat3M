@@ -640,7 +640,7 @@ public class WmmEncoder {
             for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
                 final List<Event> events = end.getInstructionEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 for (Event event : events) {
-                    siMap.put(event, events.get(0));
+                    siMap.put(event, events.getFirst());
                 }
             }
 
@@ -753,7 +753,7 @@ public class WmmEncoder {
                 final BooleanFormula sameAddress = context.sameAddress(w, r);
                 final BooleanFormula sameValue = context.assignValue(r, w);
                 enc.add(bmgr.implication(rfEdge, bmgr.and(execution(w, r), sameAddress, sameValue)));
-                read2RfEdges.computeIfAbsent(r, key -> new ArrayList<>()).add(rfEdge);
+                read2RfEdges.computeIfAbsent(r, _ -> new ArrayList<>()).add(rfEdge);
             });
 
             // Encode the existence of rf-edges (+ semantics of uninit reads)
@@ -1007,8 +1007,8 @@ public class WmmEncoder {
             Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
             relevantEdges.apply((e1, e2) -> {
                 BooleanFormula cycleVar = getSMTCycleVar(rel, e1, e2);
-                inMap.computeIfAbsent(e2, k -> new ArrayList<>()).add(cycleVar);
-                outMap.computeIfAbsent(e1, k -> new ArrayList<>()).add(cycleVar);
+                inMap.computeIfAbsent(e2, _ -> new ArrayList<>()).add(cycleVar);
+                outMap.computeIfAbsent(e1, _ -> new ArrayList<>()).add(cycleVar);
             });
             // We use Boolean variables, which guess the edges and nodes constituting the cycle.
             final EncodingContext.EdgeEncoder edge = context.edge(rel);
@@ -1066,8 +1066,8 @@ public class WmmEncoder {
                 } else {
                     nodes.add(e1);
                     nodes.add(e2);
-                    outEdges.computeIfAbsent(e1, key -> new LinkedHashSet<>()).add(e2);
-                    inEdges.computeIfAbsent(e2, key -> new LinkedHashSet<>()).add(e1);
+                    outEdges.computeIfAbsent(e1, _ -> new LinkedHashSet<>()).add(e2);
+                    inEdges.computeIfAbsent(e2, _ -> new LinkedHashSet<>()).add(e1);
                 }
             });
 

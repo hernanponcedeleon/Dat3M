@@ -48,16 +48,12 @@ public class Refiner {
 
     private BooleanFormula encode(CoreLiteral literal, EncodingContext encoder) {
         final BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
-        final BooleanFormula enc;
-        if (literal instanceof ExecLiteral lit) {
-            enc = encoder.execution(lit.getEvent());
-        } else if (literal instanceof AddressLiteral loc) {
-            enc = encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
-        } else if (literal instanceof RelLiteral lit) {
-            enc = encoder.edge(lit.getRelation(), lit.getSource(), lit.getTarget());
-        } else {
-            throw new IllegalArgumentException("CoreLiteral " + literal + " is not supported");
-        }
+        final BooleanFormula enc = switch (literal) {
+            case ExecLiteral lit -> encoder.execution(lit.getEvent());
+            case AddressLiteral loc -> encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
+            case RelLiteral lit -> encoder.edge(lit.getRelation(), lit.getSource(), lit.getTarget());
+            default -> throw new IllegalArgumentException("CoreLiteral " + literal + " is not supported");
+        };
 
         return literal.isNegative() ? bmgr.not(enc) : enc;
     }

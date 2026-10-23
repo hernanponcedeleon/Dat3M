@@ -27,8 +27,8 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
     private boolean isStrong;
 
     public AtomicCmpXchg(Register register, Expression address, Expression expectedAddr, Expression value, String mo, boolean isStrong) {
-        super(address, register.getType(), mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super(address, register.getType(), mo);
         this.resultRegister = register;
         this.expectedAddr = expectedAddr;
         this.storeValue = value;

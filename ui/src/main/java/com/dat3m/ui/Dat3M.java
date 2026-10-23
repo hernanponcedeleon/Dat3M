@@ -221,7 +221,7 @@ public class Dat3M extends JFrame implements ActionListener {
                     if (options.showWitness() && testResult.hasWitness()) {
                         showViolation(testResult);
                     }
-                } catch (InterruptedException e) {
+                } catch (InterruptedException _) {
                     Thread.currentThread().interrupt();
                     optionsPane.getConsolePane().setText("");
                     showError("Verification was interrupted", "Verification error");

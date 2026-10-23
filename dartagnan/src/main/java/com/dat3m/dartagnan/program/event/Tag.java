@@ -499,7 +499,7 @@ public final class Tag {
             if (filtered.size() > 1) {
                 throw new IllegalArgumentException("Multiple tags for " + type);
             }
-            return filtered.get(0);
+            return filtered.getFirst();
         }
 
         public static String toOpenCLTag(String tag) {

@@ -34,7 +34,7 @@ public class VisitorOpsSettingTest {
         // then
         assertEquals(type, function.getFunctionType());
         assertEquals(1, program.getFunctions().size());
-        assertEquals(function, program.getFunctions().get(0));
+        assertEquals(function, program.getFunctions().getFirst());
     }
 
     @Test

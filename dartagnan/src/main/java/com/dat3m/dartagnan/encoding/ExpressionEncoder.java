@@ -91,31 +91,28 @@ public class ExpressionEncoder {
     }
 
     public <TType extends Type> TypedFormula<TType, ?> makeVariable(String name, TType type) {
-        final Formula variable;
-        if (type instanceof BooleanType) {
-            variable = bmgr.makeVariable(name);
-        } else if (type instanceof IntegerType integerType) {
-            variable = bvmgr.makeVariable(integerType.getBitWidth(), name);
-        } else if (type instanceof MemoryType memoryType) {
-            variable = bvmgr.makeVariable(memoryType.getBitWidth(), name);
-        } else if (type instanceof FloatType floatType) {
-            variable = floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
-        } else if (type instanceof AggregateType aggType) {
-            final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
-            for (TypeOffset field : aggType.getFields()) {
-                fields.add(makeVariable(name + "@" + field.offset(), field.type()).formula());
+        final Formula variable = switch (type) {
+            case BooleanType _ -> bmgr.makeVariable(name);
+            case IntegerType integerType -> bvmgr.makeVariable(integerType.getBitWidth(), name);
+            case MemoryType memoryType -> bvmgr.makeVariable(memoryType.getBitWidth(), name);
+            case FloatType floatType -> floatingPointFormulaManager().makeVariable(name, getFloatFormulaType(floatType));
+            case AggregateType aggType -> {
+                final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
+                for (TypeOffset field : aggType.getFields()) {
+                    fields.add(makeVariable(name + "@" + field.offset(), field.type()).formula());
+                }
+                yield fmgr.getTupleFormulaManager().makeTuple(fields);
             }
-            variable = fmgr.getTupleFormulaManager().makeTuple(fields);
-        } else if (type instanceof ArrayType arrType) {
-            Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
-            final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
-            for (int i = 0; i < arrType.getNumElements(); i++) {
-                elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()).formula());
+            case ArrayType arrType -> {
+                Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
+                final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
+                for (int i = 0; i < arrType.getNumElements(); i++) {
+                    elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()).formula());
+                }
+                yield fmgr.getTupleFormulaManager().makeTuple(elements);
             }
-            variable = fmgr.getTupleFormulaManager().makeTuple(elements);
-        } else {
-            throw new UnsupportedOperationException(String.format("Cannot make variable of type %s.", type));
-        }
+            default -> throw new UnsupportedOperationException(String.format("Cannot make variable of type %s.", type));
+        };
 
         return new TypedFormula<>(type, variable);
     }
@@ -381,7 +378,7 @@ public class ExpressionEncoder {
             final List<BitvectorFormula> operands = expr.getOperands().stream()
                     .map(this::encodeIntegerExpr)
                     .toList();
-            BitvectorFormula enc = operands.get(0);
+            BitvectorFormula enc = operands.getFirst();
             for (final BitvectorFormula op : operands.subList(1, operands.size())) {
                 enc = bvmgr.concat(op, enc);
             }
@@ -557,20 +554,18 @@ public class ExpressionEncoder {
             final Type type = expr.getOperand().getType();
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
 
-            if (type instanceof IntegerType iType) {
-                final int extBits =  targetType.getBitWidth() - iType.getBitWidth();
-                if (extBits > 0) {
-                    return bvmgr.extend((BitvectorFormula) inner, extBits, false);
-                } else {
-                    return inner;
+            return switch (type) {
+                case IntegerType iType -> {
+                    final int extBits = targetType.getBitWidth() - iType.getBitWidth();
+                    yield extBits > 0 ? bvmgr.extend((BitvectorFormula) inner, extBits, false) : inner;
                 }
-            } else if (type instanceof FloatType fType) {
-                assert targetType.getBitWidth() == fType.getBitWidth();
-                final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
-                return fpmgr.toIeeeBitvector((FloatingPointFormula) inner);
-            } else {
-                throw new UnsupportedOperationException("unreachable");
-            }
+                case FloatType fType -> {
+                    assert targetType.getBitWidth() == fType.getBitWidth();
+                    final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+                    yield fpmgr.toIeeeBitvector((FloatingPointFormula) inner);
+                }
+                default -> throw new UnsupportedOperationException("unreachable");
+            };
         }
 
         @Override
@@ -580,19 +575,17 @@ public class ExpressionEncoder {
             final BitvectorFormula inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
 
-            if (targetType instanceof IntegerType bvType) {
-                final int targetSize = bvType.getBitWidth();
-                if (targetSize < expr.getSourceType().getBitWidth()) {
-                    return bvmgr.extract(inner, targetSize - 1, 0);
-                } else {
-                    return inner;
+            return switch (targetType) {
+                case IntegerType bvType -> {
+                    final int targetSize = bvType.getBitWidth();
+                    yield targetSize < expr.getSourceType().getBitWidth() ? bvmgr.extract(inner, targetSize - 1, 0) : inner;
                 }
-            } else if (targetType instanceof FloatType fType) {
-                assert fType.getBitWidth() == expr.getSourceType().getBitWidth();
-                return floatingPointFormulaManager().fromIeeeBitvector(inner, getFloatFormulaType(fType));
-            } else {
-                throw new UnsupportedOperationException("unreachable");
-            }
+                case FloatType fType -> {
+                    assert fType.getBitWidth() == expr.getSourceType().getBitWidth();
+                    yield floatingPointFormulaManager().fromIeeeBitvector(inner, getFloatFormulaType(fType));
+                }
+                default -> throw new UnsupportedOperationException("unreachable");
+            };
         }
 
         @Override
@@ -602,7 +595,7 @@ public class ExpressionEncoder {
             final List<? extends Formula> operands = expr.getOperands().stream()
                     .map(this::encodeMemoryExpr)
                     .toList();
-            BitvectorFormula enc = (BitvectorFormula) operands.get(0);
+            BitvectorFormula enc = (BitvectorFormula) operands.getFirst();
             for (final Formula op : operands.subList(1, operands.size())) {
                 enc = bvmgr.concat((BitvectorFormula) op, enc);
             }

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
@@ -109,7 +108,7 @@ public class BranchReordering implements FunctionProcessor {
             if (movables.size() < 3) {
                 return new ArrayList<>(movables);
             }
-            final MovableBranch startBranch = movables.get(0);
+            final MovableBranch startBranch = movables.getFirst();
             final Map<Event, MovableBranch> eventBranchMap = this.eventBranchMap;
 
             // Construct successor map of branches
@@ -130,7 +129,7 @@ public class BranchReordering implements FunctionProcessor {
 
             // Compute the actual reordering of the branches
             final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
-            final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
+            final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = depGraph.getSCCs().reversed();
 
             final List<MovableBranch> reorderedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
@@ -149,14 +148,14 @@ public class BranchReordering implements FunctionProcessor {
             if (this.function instanceof Thread) {
                 // Reorder branches but keep the last branch fixed for threads.
                 reordering = computeReordering(branches.subList(0, branches.size() - 1));
-                reordering.add(branches.get(branches.size() - 1));
+                reordering.add(branches.getLast());
             } else {
                 reordering = computeReordering(branches);
             }
             final List<Event> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream()).toList();
-            assert reorderedEvents.get(0) == function.getEntry();
+            assert reorderedEvents.getFirst() == function.getEntry();
             if (this.function instanceof Thread) {
-                assert function.getExit() == reorderedEvents.get(reorderedEvents.size() - 1);
+                assert function.getExit() == reorderedEvents.getLast();
             }
 
             Event pred = null;

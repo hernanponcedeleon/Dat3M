@@ -43,15 +43,15 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         // We put two threads into the same class only if their names and sizes match.
         final Map<String, Map<Integer, EqClass>> nameSizeMap = new HashMap<>();
         for (Thread thread : program.getThreads()) {
-            nameSizeMap.computeIfAbsent(thread.getName(), key -> new HashMap<>())
-                    .computeIfAbsent(thread.getEvents().size(), key -> new EqClass()).addInternal(thread);
+            nameSizeMap.computeIfAbsent(thread.getName(), _ -> new HashMap<>())
+                    .computeIfAbsent(thread.getEvents().size(), _ -> new EqClass()).addInternal(thread);
         }
     }
 
     private void createSymmetryMappings() {
         for (Thread thread : program.getThreads()) {
             final List<Event> threadEvents = thread.getEvents();
-            final Map<Integer, Event> id2EventMap = thread2id2EventMap.computeIfAbsent(thread, key -> new HashMap<>());
+            final Map<Integer, Event> id2EventMap = thread2id2EventMap.computeIfAbsent(thread, _ -> new HashMap<>());
             for (int i = 0; i < threadEvents.size(); i++) {
                 id2EventMap.put(i, threadEvents.get(i));
                 event2IdMap.put(threadEvents.get(i), i);

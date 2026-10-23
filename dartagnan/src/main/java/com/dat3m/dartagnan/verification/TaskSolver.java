@@ -11,12 +11,9 @@ public sealed interface TaskSolver extends AutoCloseable permits TaskSolverBase 
 
 
     static TaskSolver create(Task task) throws InvalidConfigurationException {
-        if (task instanceof VerificationTask veriTask) {
-            return VerificationTaskSolver.create(veriTask);
-        } else if (task instanceof EnumerationTask enumTask) {
-            return EnumerationTaskSolver.create(enumTask);
-        }
-
-        throw new UnsupportedOperationException("Cannot create task solver for task " + task.getClass().getSimpleName());
+        return switch (task) {
+            case VerificationTask veriTask -> VerificationTaskSolver.create(veriTask);
+            case EnumerationTask enumTask -> EnumerationTaskSolver.create(enumTask);
+        };
     }
 }

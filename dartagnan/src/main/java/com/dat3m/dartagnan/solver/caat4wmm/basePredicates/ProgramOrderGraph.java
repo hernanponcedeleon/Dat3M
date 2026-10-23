@@ -78,12 +78,12 @@ public class ProgramOrderGraph extends StaticWMMGraph {
         final List<Integer> transaction = transactions.get(id);
         final List<EventData> threadEvents = threadEventsMap.get(e.getThread());
         if (dir == EdgeDirection.OUTGOING) {
-            final int lastIndex = transaction == null ? -1 : transaction.get(transaction.size() - 1);
+            final int lastIndex = transaction == null ? -1 : transaction.getLast();
             final EventData last = transaction == null ? e : model.getEventList().get(lastIndex);
             return threadEvents.subList(last.getLocalId() + 1, threadEvents.size())
                     .stream().map(x -> new Edge(id, x.getId()));
         } else {
-            final int firstIndex = transaction == null ? -1 : transaction.get(0);
+            final int firstIndex = transaction == null ? -1 : transaction.getFirst();
             final EventData first = transaction == null ? e : model.getEventList().get(firstIndex);
             return threadEvents.subList(0, first.getLocalId())
                     .stream().map(x -> new Edge(x.getId(), id));

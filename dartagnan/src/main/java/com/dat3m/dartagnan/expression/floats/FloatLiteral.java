@@ -19,7 +19,6 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
     private final boolean isInf;
 
     public FloatLiteral(FloatType type, BigDecimal absValue, boolean isNegative, boolean isNaN, boolean isInf) {
-        super(type);
         Preconditions.checkArgument(!(isNaN && isInf), "Cannot create NaN and Inf literal at the same time");
         Preconditions.checkArgument(!(isNaN && isNegative), "Cannot create NaN literal with negative sign");
         Preconditions.checkArgument(
@@ -27,6 +26,7 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
                         && !(absValue != null && (isNaN || isInf)), // If it has value, then it is neither NaN nor Inf
                 "Invalid float literal"
         );
+        super(type);
 
         if (absValue != null) {
             absValue = absValue.abs();

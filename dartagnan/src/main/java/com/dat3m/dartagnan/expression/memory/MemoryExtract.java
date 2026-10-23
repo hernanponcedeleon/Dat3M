@@ -15,12 +15,12 @@ public class MemoryExtract extends UnaryExpressionBase<MemoryType, ExpressionKin
     private final int highBit;
 
     public MemoryExtract(Expression operand, int lowBit, int highBit) {
-        super(TypeFactory.getInstance().getMemoryType(highBit - lowBit + 1),
-                () -> "MEM_EXTRACT",
-                operand);
         ExpressionHelper.checkExpectedType(operand, MemoryType.class);
         int originalWidth = ((MemoryType) operand.getType()).getBitWidth();
         Preconditions.checkArgument(0 <= lowBit && lowBit <= highBit && highBit < originalWidth);
+        super(TypeFactory.getInstance().getMemoryType(highBit - lowBit + 1),
+                () -> "MEM_EXTRACT",
+                operand);
         this.lowBit = lowBit;
         this.highBit = highBit;
     }

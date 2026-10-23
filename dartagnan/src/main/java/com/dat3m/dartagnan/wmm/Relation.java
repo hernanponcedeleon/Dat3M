@@ -73,7 +73,7 @@ public final class Relation extends MetadataCarrierBase<Relation> implements Dep
     public List<String> getNames() { return names; }
 
     public Optional<String> getName() {
-        return names.isEmpty() ? Optional.empty() : Optional.of(names.get(0));
+        return names.isEmpty() ? Optional.empty() : Optional.of(names.getFirst());
     }
 
     public boolean hasName() { return !names.isEmpty(); }
@@ -83,7 +83,7 @@ public final class Relation extends MetadataCarrierBase<Relation> implements Dep
     }
 
     public String getNameOrTerm() {
-        return names.isEmpty() ? getDefinition().getTerm() : names.get(0);
+        return names.isEmpty() ? getDefinition().getTerm() : names.getFirst();
     }
 
     @Override

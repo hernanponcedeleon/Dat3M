@@ -40,7 +40,7 @@ public class LoopAnalysis {
         public Event getIterationEnd() { return iterEnd; }
         public int getIterationNumber() { return iterNumber; }
         public boolean isLast() {
-            return this == containingLoop.iterations().get(containingLoop.iterations().size() - 1);
+            return this == containingLoop.iterations().getLast();
         }
 
         public List<Event> computeBody() {
@@ -123,7 +123,7 @@ public class LoopAnalysis {
 
             final LoopInfo loopInfo = loopName2InfoMap.get(loopName);
             if (labelInfo.isBound) {
-                final LoopIterationInfo lastIter = loopInfo.iterations.get(loopInfo.iterations.size() - 1);
+                final LoopIterationInfo lastIter = loopInfo.iterations.getLast();
                 // We assume the bound marker to be directly before the loop bounding event.
                 // NOTE: We consider neither the bound marker nor the bounding event to be part of this iteration.
                 lastIter.iterEnd = e.getPredecessor();

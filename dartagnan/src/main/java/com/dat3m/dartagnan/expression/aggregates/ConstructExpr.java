@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
 
     public ConstructExpr(Type type, List<? extends Expression> arguments) {
-        super(type, ExpressionKind.Other.CONSTRUCT, ImmutableList.copyOf(arguments));
         checkArgument(ExpressionHelper.isAggregateLike(type),
                 "Non-constructible type %s.", type);
         checkArgument(!(type instanceof AggregateType a) ||
@@ -30,6 +29,7 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
                 !a.hasKnownNumElements() ||
                 arguments.size() <= a.getNumElements(),
                 "Initializing a shorter array from given items.");
+        super(type, ExpressionKind.Other.CONSTRUCT, ImmutableList.copyOf(arguments));
     }
 
     @Override

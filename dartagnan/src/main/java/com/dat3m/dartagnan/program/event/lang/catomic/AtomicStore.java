@@ -11,8 +11,8 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
 public class AtomicStore extends StoreBase {
 
     public AtomicStore(Expression address, Expression value, String mo){
-        super(address, value, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        super(address, value, mo);
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
                 getClass().getSimpleName() + " cannot have memory order: " + mo);
     }

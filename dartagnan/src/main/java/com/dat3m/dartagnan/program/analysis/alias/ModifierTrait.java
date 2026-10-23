@@ -240,14 +240,14 @@ public interface ModifierTrait <Modifier> {
             return constantModifier(modifier.offset);
         }
         private static int singleAlignment(List<Integer> alignment) {
-            return alignment.size() != 1 ? 0 : alignment.get(0);
+            return alignment.size() != 1 ? 0 : alignment.getFirst();
         }
         // Computes the greatest common divisor of the operands.
         private static int reduceGCD(List<Integer> alignment) {
             if (alignment.isEmpty()) {
                 return 0;
             }
-            int result = alignment.get(0);
+            int result = alignment.getFirst();
             for (final Integer a : alignment.subList(1, alignment.size())) {
                 result = IntMath.gcd(result, a);
             }
