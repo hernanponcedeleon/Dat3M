@@ -200,8 +200,6 @@ public final class SvcompWitnessExtractor {
             Set<Event> creators) {
         final Map<EventModel, SourcePoint> result = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
-            Location previous = null;
-            int occurrence = 0;
             for (EventModel event : thread.getEventModels()) {
                 final boolean isAccess = event instanceof MemoryEventModel && !(event.getEvent() instanceof Init);
                 if (!isAccess && !creators.contains(event.getEvent())) {
@@ -215,11 +213,10 @@ public final class SvcompWitnessExtractor {
                     }
                     continue;
                 }
-                if (!location.equals(previous)) {
-                    occurrence++;
-                    previous = location;
-                }
-                result.put(event, new SourcePoint(thread, occurrence, location));
+                // Events of the same statement instance, as defined for validation, share a source point.
+                final List<Event> earlier = SvcompWitnessResolver.earlierInStatementInstance(location, event.getEvent());
+                final Event start = earlier.isEmpty() ? event.getEvent() : earlier.getFirst();
+                result.put(event, new SourcePoint(thread, start, location));
             }
         }
         return result;
@@ -340,7 +337,8 @@ public final class SvcompWitnessExtractor {
         return requireInputLocation(target, programFile);
     }
 
-    private record SourcePoint(ThreadModel thread, int occurrence, Location location) { }
+    // A statement instance, identified by its first event; each event executes at most once after unrolling.
+    private record SourcePoint(ThreadModel thread, Event start, Location location) { }
 
     private static void registerThread(List<Segment> segments, ThreadModel thread,
             Map<ThreadModel, Integer> threadIds, ExecutionModelNext model, Path programFile) {

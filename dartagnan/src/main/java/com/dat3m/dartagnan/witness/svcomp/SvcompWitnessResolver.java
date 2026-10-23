@@ -148,6 +148,16 @@ public final class SvcompWitnessResolver {
                 && generic.sourcePath().getFileName().equals(location.fileName().getFileName());
     }
 
+    /** The events before {@code event} in its statement instance at {@code location}, in program order. */
+    public static List<Event> earlierInStatementInstance(Location location, Event event) {
+        final List<Event> earlier = new ArrayList<>();
+        for (Event previous = event.getPredecessor(); previous != null && matches(location, previous);
+                previous = previous.getPredecessor()) {
+            earlier.addFirst(previous);
+        }
+        return earlier;
+    }
+
     private ResolvedWitness resolve(SvcompViolationWitness witness) {
         final ResolvedThreads threads = resolveThreads(witness);
         final Map<String, ResolvedVariable> variables = new LinkedHashMap<>();
@@ -250,12 +260,8 @@ public final class SvcompWitnessResolver {
         if (!(waypoint instanceof Assumption assumption)) {
             return new Candidate(event, List.of(), Set.of());
         }
-        final List<Event> earlier = new ArrayList<>();
-        for (Event previous = event.getPredecessor(); previous != null
-                && matches(assumption.location(), previous); previous = previous.getPredecessor()) {
-            earlier.addFirst(previous);
-        }
-        return new Candidate(event, earlier, accessesOfConstrainedVariables(assumption, event, variables));
+        return new Candidate(event, earlierInStatementInstance(assumption.location(), event),
+                accessesOfConstrainedVariables(assumption, event, variables));
     }
 
     // Memory accesses to the variables named in the constraint, within the statement instance starting at 'first'.
