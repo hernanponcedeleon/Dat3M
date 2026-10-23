@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -224,9 +225,13 @@ public class SvcompWitnessResolverTest {
     }
 
     @Test
-    public void functionEnterWithoutThreadCreationIsRejected() throws Exception {
+    public void functionEnterWithoutThreadCreationHasNoCandidates() throws Exception {
+        // The creation may exist only beyond the current bounds.
         final TestProgram test = TestProgram.build(1);
-        assertThrows(IllegalArgumentException.class, () -> test.resolve(new FunctionEnter(0, at(WRITE_LINE))));
+        final ResolvedWitness witness = test.resolve(new FunctionEnter(0, at(WRITE_LINE)), new Target(1, at(WORKER_LINE)));
+        assertEquals(List.of(), witness.threads().get(1));
+        assertEquals(List.of(), witness.segments().getFirst().waypoints().getFirst().candidates());
+        assertEquals(List.of(), witness.segments().get(1).waypoints().getFirst().candidates());
     }
 
     @Test
@@ -236,9 +241,11 @@ public class SvcompWitnessResolverTest {
     }
 
     @Test
-    public void waypointWithoutMatchingEventIsRejected() throws Exception {
+    public void waypointWithoutMatchingEventHasNoCandidates() throws Exception {
+        // The location may be reached only beyond the current bounds.
         final TestProgram test = TestProgram.build(1);
-        assertThrows(IllegalArgumentException.class, () -> test.resolve(new Target(0, at(WORKER_LINE))));
+        final ResolvedWitness witness = test.resolve(new Target(0, at(WORKER_LINE)));
+        assertEquals(List.of(), witness.segments().getFirst().waypoints().getFirst().candidates());
     }
 
     @Test
@@ -309,9 +316,13 @@ public class SvcompWitnessResolverTest {
     }
 
     @Test
-    public void unknownVariableIsRejected() throws Exception {
+    public void unknownVariableIsLeftUnresolved() throws Exception {
+        // Unused objects are removed from the program, e.g., if all their accesses lie beyond the bounds.
         final TestProgram test = TestProgram.build(1);
         final AssumptionExpression zIsOne = new VariableEquality("z", BigInteger.ONE);
-        assertThrows(IllegalArgumentException.class, () -> test.resolve(new Assumption(0, zIsOne, at(READ_LINE))));
+        final ResolvedWitness witness = test.resolve(new Assumption(0, zIsOne, at(READ_LINE)));
+        assertEquals(Map.of(), witness.variables());
+        assertTrue(witness.segments().getFirst().waypoints().getFirst().candidates().stream()
+                .allMatch(candidate -> candidate.constrainedAccesses().isEmpty()));
     }
 }

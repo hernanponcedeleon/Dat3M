@@ -39,19 +39,24 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
  * Choosing one of them is left to the encoding.
  *
  * Locations: events are matched by source line and file name, ignoring directories.
- * Multiple events can match a location, for example after loop unrolling.
- * Every waypoint must match at least one event; unmatched waypoints are rejected.
+ * Multiple events can match a location, for example after loop unrolling. Conversely, a location
+ * may match no event, e.g., code reached only beyond the unrolling or recursion bound. Then the
+ * waypoint (or witness thread ID) has no candidates and cannot be satisfied, which lets the solver
+ * decide whether higher bounds are needed. Only witnesses that are malformed or unsupported for every
+ * bound, e.g., referring to undeclared thread IDs, are rejected with an exception.
  *
  * Targets: a target denotes the event at which the property is violated. For assertion-based
  * properties, its candidates are the assertions whose violation sites include the target location:
  * the assertion itself and every call site on its (inlined) call stack. Hence, a target may point to
  * the failing assertion or to any call leading to it, e.g., a call to a function wrapping the
- * assertion. A target matching only other events has no candidates and cannot be satisfied.
+ * assertion. A target matching only other events has no candidates.
  * For other properties, the candidates are all events at the target location.
  *
  * Variables: each variable of an assumption must be a bare identifier naming a unique,
  * statically allocated, initialized scalar memory object of integral type, all of whose
- * writes have the type of the object. Array indexing, member access, pointer dereferences,
+ * writes have the type of the object. A variable naming no memory object is left unresolved,
+ * and equalities on it cannot be satisfied: unused objects are removed from the program, e.g.,
+ * when all their accesses lie beyond the current bounds. Array indexing, member access, pointer dereferences,
  * register-only variables, and partial writes are currently unsupported.
  */
 public final class SvcompWitnessResolver {
@@ -201,10 +206,6 @@ public final class SvcompWitnessResolver {
                         return parents.contains(createEvent.getThread()) && matches(enter.location(), createEvent);
                     })
                     .toList();
-            if (children.isEmpty()) {
-                throw new IllegalArgumentException("Witness function entry at %s:%d matches no thread creation"
-                        .formatted(enter.location().fileName(), enter.location().line()));
-            }
             final int id = result.size();
             result.put(id, children);
             entered.put(enter, id);
@@ -222,15 +223,6 @@ public final class SvcompWitnessResolver {
         final List<Thread> compatible = Optional.ofNullable(threads.byId().get(waypoint.threadId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Witness refers to unknown thread " + waypoint.threadId()));
-        final List<Event> candidates = compatible.stream()
-                .flatMap(thread -> thread.getEvents().stream())
-                .filter(event -> !(waypoint instanceof Assumption) || !(event instanceof FunReturnMarker))
-                .filter(event -> matches(waypoint.location(), event)).toList();
-        if (candidates.isEmpty()) {
-            final String type = waypoint instanceof Assumption ? "assumption" : "target";
-            throw new IllegalArgumentException("Witness %s at %s:%d matches no event"
-                    .formatted(type, waypoint.location().fileName(), waypoint.location().line()));
-        }
         if (waypoint instanceof Target && assertionTargets) {
             return compatible.stream()
                     .flatMap(thread -> thread.getEvents(Assert.class).stream())
@@ -238,7 +230,11 @@ public final class SvcompWitnessResolver {
                     .map(Event.class::cast)
                     .toList();
         }
-        return candidates;
+        return compatible.stream()
+                .flatMap(thread -> thread.getEvents().stream())
+                .filter(event -> !(waypoint instanceof Assumption) || !(event instanceof FunReturnMarker))
+                .filter(event -> matches(waypoint.location(), event))
+                .toList();
     }
 
     // The assertion and the call sites on its call stack, from the innermost to the outermost.
@@ -266,7 +262,11 @@ public final class SvcompWitnessResolver {
     private Set<Event> accessesOfConstrainedVariables(Assumption assumption, Event first,
             Map<String, ResolvedVariable> variables) {
         final Set<MemoryObject> objects = new HashSet<>();
-        variableNames(assumption.expression(), name -> objects.add(variables.get(name).object()));
+        variableNames(assumption.expression(), name -> {
+            if (variables.containsKey(name)) {
+                objects.add(variables.get(name).object());
+            }
+        });
         final Set<Event> accesses = new LinkedHashSet<>();
         if (objects.isEmpty()) {
             return accesses;
@@ -284,7 +284,11 @@ public final class SvcompWitnessResolver {
     // Variables
 
     private void collectVariables(AssumptionExpression expression, Map<String, ResolvedVariable> variables) {
-        variableNames(expression, name -> variables.computeIfAbsent(name, this::resolveVariable));
+        variableNames(expression, name -> {
+            if (!variables.containsKey(name)) {
+                namedObject(name).ifPresent(object -> variables.put(name, resolveVariable(object)));
+            }
+        });
     }
 
     private static void variableNames(AssumptionExpression expression, Consumer<String> action) {
@@ -298,19 +302,18 @@ public final class SvcompWitnessResolver {
         }
     }
 
-    private ResolvedVariable resolveVariable(String variable) {
-        final MemoryObject object = namedObject(variable);
+    private ResolvedVariable resolveVariable(MemoryObject object) {
         return new ResolvedVariable(object, writesForObject(object));
     }
 
-    private MemoryObject namedObject(String variable) {
+    private Optional<MemoryObject> namedObject(String variable) {
         final List<MemoryObject> objects = program.getMemory().getObjects().stream()
                 .filter(object -> object.hasName() && object.getName().equals(variable)).toList();
-        if (objects.size() != 1) {
+        if (objects.size() > 1) {
             throw new IllegalArgumentException("Witness variable '%s' does not identify a unique memory object"
                     .formatted(variable));
         }
-        return objects.getFirst();
+        return objects.stream().findFirst();
     }
 
     private List<Store> writesForObject(MemoryObject object) {
