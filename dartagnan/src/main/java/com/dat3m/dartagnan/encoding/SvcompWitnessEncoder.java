@@ -67,7 +67,8 @@ import java.util.*;
  * per segment. A selected assumption event must also satisfy its value constraints.
  * Bitvector ranks place selected events from consecutive segments in
  * strictly increasing order. Ranks also respect every encoded hb-consistency edge and
- * program order between executed candidate events in the same thread. Thus, the witness
+ * program order between executed candidate events in the same thread, and no event of another
+ * thread is ranked inside an executed atomic section or read-modify-write pair. Thus, the witness
  * order must be compatible with the memory model, while unrelated events may also be ordered.
  * The accesses to the variables of a selected assumption, within the same statement instance,
  * are also placed after the previous segment's events and before the next segment's events,
@@ -202,24 +203,23 @@ public final class SvcompWitnessEncoder {
             constraints.add(encodeRelationOrder("com"));
         }
 
+        // Atomic sections restrict the interleaving, independently of whether assumptions constrain values.
         final Set<Event> waypointEvents = new LinkedHashSet<>(segmentCandidates);
-        if (hasValues) {
-            for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
-                waypointEvents.add(end.getBegin());
-                waypointEvents.add(end);
-            }
+        for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
+            waypointEvents.add(end.getBegin());
+            waypointEvents.add(end);
         }
         final Set<Event> orderedEvents = new LinkedHashSet<>(program.getThreadEvents(MemoryCoreEvent.class));
         orderedEvents.addAll(waypointEvents);
         constraints.add(encodeProgramOrder(waypointEvents, orderedEvents));
+        for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
+            constraints.add(encodeAtomicInterval(end.getBegin(), end, orderedEvents));
+        }
+        for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
+            constraints.add(encodeAtomicInterval(store.getLoadEvent(), store, orderedEvents));
+        }
 
         if (hasValues) {
-            for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
-                constraints.add(encodeAtomicInterval(end.getBegin(), end, orderedEvents));
-            }
-            for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
-                constraints.add(encodeAtomicInterval(store.getLoadEvent(), store, orderedEvents));
-            }
             for (Init init : inits) {
                 for (Event event : orderedEvents) {
                     if (!(event instanceof Init)) {
