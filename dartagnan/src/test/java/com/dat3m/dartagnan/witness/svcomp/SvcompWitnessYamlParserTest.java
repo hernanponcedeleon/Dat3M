@@ -124,13 +124,13 @@ public class SvcompWitnessYamlParserTest {
                 """.formatted(threadId, threadId, threadId));
         assertEquals(3, witness.segments().size());
         for (Segment segment : witness.segments()) {
-            assertEquals(expected, segment.waypoints().get(0).threadId());
+            assertEquals(expected, segment.waypoints().getFirst().threadId());
         }
     }
 
     private AssumptionExpression parse(String source, String format) throws IOException {
         final SvcompViolationWitness witness = parseWitness(source, format, "{example.c: deadbeef}");
-        return ((Assumption) witness.segments().get(0).waypoints().get(0)).expression();
+        return ((Assumption) witness.segments().getFirst().waypoints().getFirst()).expression();
     }
 
     private SvcompViolationWitness parseWitness(String source, String format, String hashes) throws IOException {
