@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.task;
 
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.dat3m.dartagnan.task.enumeration.EnumerationTaskSolver;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.utils.Utils;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.ShutdownManager;
