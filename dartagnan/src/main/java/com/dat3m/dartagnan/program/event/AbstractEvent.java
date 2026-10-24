@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.google.common.base.Preconditions;
 
 import java.util.*;

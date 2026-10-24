@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.utils.ExitCode;
-
-public record Output(ExitCode exitCode, String summary) {
+public record Output(Dartagnan.ExitCode exitCode, String summary) {
 
     @Override
     public String toString() {

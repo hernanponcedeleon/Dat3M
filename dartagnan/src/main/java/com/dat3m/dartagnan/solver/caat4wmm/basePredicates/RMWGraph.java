@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.model.EventData;
 
 import java.util.Collection;
 import java.util.List;

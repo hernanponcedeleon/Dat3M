@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.verification.VerificationResult;
+import com.dat3m.dartagnan.task.verification.VerificationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -13,8 +13,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_PROPERTY;
-import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
-import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
+import static com.dat3m.dartagnan.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedCorrectnessProperties;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.supportedViolationProperties;
 

@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.spirv.opencl;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.VerificationStatus.*;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class BenchmarksRacesTest extends AbstractSpirvOpenclTest {

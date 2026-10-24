@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.spirv.opencl;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.spirv.AbstractSpirvTest;
-import com.dat3m.dartagnan.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 
 abstract class AbstractSpirvOpenclTest extends AbstractSpirvTest {
 

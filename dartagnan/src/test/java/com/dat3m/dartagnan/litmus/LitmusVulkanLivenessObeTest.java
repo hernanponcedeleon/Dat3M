@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.litmus;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

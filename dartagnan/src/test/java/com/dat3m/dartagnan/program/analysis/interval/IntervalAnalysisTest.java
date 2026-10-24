@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.Context;
+import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
-import static com.dat3m.dartagnan.verification.solving.SMTModelChecker.*;
+import static com.dat3m.dartagnan.task.SMTModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
 

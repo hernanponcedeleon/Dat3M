@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.TagSet;

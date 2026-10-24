@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
