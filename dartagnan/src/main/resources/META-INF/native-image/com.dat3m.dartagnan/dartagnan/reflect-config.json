@@ -1,6 +1,6 @@
 [
     {
-        "name":"com.dat3m.dartagnan.verification.solving.EnumerationSolver",
+        "name":"com.dat3m.dartagnan.task.enumeration.EnumerationSolver",
         "allDeclaredFields": true
     },
     {
@@ -25,12 +25,12 @@
         "queryAllDeclaredMethods": true
     },
     {
-        "name":"com.dat3m.dartagnan.verification.TaskSolverBase",
+        "name":"com.dat3m.dartagnan.task.TaskSolverBase",
         "allDeclaredFields": true,
         "queryAllDeclaredMethods": true
     },
     {
-        "name":"com.dat3m.dartagnan.verification.VerificationTaskSolver",
+        "name":"com.dat3m.dartagnan.task.verification.VerificationTaskSolver",
         "allDeclaredFields": true,
         "queryAllDeclaredMethods": true
     },
@@ -155,17 +155,17 @@
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.utils.printer.Printer",
+        "name":"com.dat3m.dartagnan.program.ProgramPrinter",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.verification.solving.SMTModelChecker$SMTConfig",
+        "name":"com.dat3m.dartagnan.task.SMTModelChecker$SMTConfig",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.verification.solving.RefinementSolver",
+        "name":"com.dat3m.dartagnan.task.verification.RefinementSolver",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },
