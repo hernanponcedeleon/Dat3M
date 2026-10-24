@@ -22,11 +22,13 @@ import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint
 import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Encodes a violation witness resolved by {@link SvcompWitnessResolver} as follows:
@@ -54,7 +56,8 @@ import java.util.*;
  * Segment order: to order segments, at least one executed candidate event is selected
  * per segment. A selected assumption event must also satisfy its value constraints.
  * Bitvector ranks, provided by {@link WitnessOrderEncoder}, place selected events from consecutive segments in
- * strictly increasing order. Thus, the witness order must be compatible with the memory model.
+ * strictly increasing order, using a separator rank between each pair of consecutive segments.
+ * Thus, the witness order must be compatible with the memory model.
  * The accesses to the variables of a selected assumption, within the same statement instance,
  * are also placed after the previous segment's events and before the next segment's events,
  * without ordering them among each other.
@@ -209,44 +212,76 @@ public final class SvcompWitnessEncoder {
      */
     private BooleanFormula encodeSegmentOrder(List<SegmentEncoding> segments) {
         final List<BooleanFormula> constraints = new ArrayList<>();
-        SegmentEncoding previousSegment = null;
-        for (SegmentEncoding segment : segments) {
-            for (WaypointEncoding waypoint : segment.waypoints()) {
+        for (int index = 0; index < segments.size(); index++) {
+            for (WaypointEncoding waypoint : segments.get(index).waypoints()) {
                 for (CandidateEncoding candidate : waypoint.candidates().values()) {
                     constraints.add(bmgr.implication(candidate.selector(), candidate.condition()));
-                    if (previousSegment != null) {
-                        for (WaypointEncoding previousWaypoint : previousSegment.waypoints()) {
-                            for (CandidateEncoding previous : previousWaypoint.candidates().values()) {
-                                constraints.add(encodeOrder(previous, candidate));
-                            }
-                        }
-                    }
                 }
                 constraints.add(bmgr.or(waypoint.selectors().values().stream().toList()));
             }
-            previousSegment = segment;
+            if (index > 0) {
+                constraints.add(encodeBoundary(segments.get(index - 1), segments.get(index), order.separator(index)));
+            }
         }
         return bmgr.and(constraints);
     }
 
-    // If both candidates are selected, the first precedes the second, and so do the accesses of their statements.
-    private BooleanFormula encodeOrder(CandidateEncoding first, CandidateEncoding second) {
-        final Event firstEvent = first.candidate().event();
-        final Event secondEvent = second.candidate().event();
-        final BooleanFormula both = bmgr.and(first.selector(), second.selector());
+    /*
+     * If candidates are selected, every one of the previous segment precedes every one of the next segment,
+     * and so do the accesses of their statements. A separator rank between both segments expresses this
+     * with one comparison per candidate, instead of one per pair of candidates.
+     * An access that is itself a candidate of the neighboring segment may only be ordered relative to the other
+     * selected candidates, so these accesses are compared with each of them.
+     */
+    private BooleanFormula encodeBoundary(SegmentEncoding previous, SegmentEncoding next, BitvectorFormula separator) {
+        final List<CandidateEncoding> previousCandidates = candidatesOf(previous);
+        final List<CandidateEncoding> nextCandidates = candidatesOf(next);
+        final Set<Event> previousEvents = eventsOf(previousCandidates);
+        final Set<Event> nextEvents = eventsOf(nextCandidates);
         final List<BooleanFormula> constraints = new ArrayList<>();
-        constraints.add(order.before(firstEvent, secondEvent));
-        for (Event access : second.candidate().constrainedAccesses()) {
-            if (access != firstEvent) {
-                constraints.add(bmgr.implication(context.execution(access), order.before(firstEvent, access)));
+        for (CandidateEncoding first : previousCandidates) {
+            constraints.add(bmgr.implication(first.selector(), order.atMost(first.candidate().event(), separator)));
+            for (Event access : first.candidate().constrainedAccesses()) {
+                if (nextEvents.contains(access)) {
+                    for (CandidateEncoding second : nextCandidates) {
+                        if (second.candidate().event() != access) {
+                            constraints.add(bmgr.implication(
+                                    bmgr.and(first.selector(), second.selector(), context.execution(access)),
+                                    order.before(access, second.candidate().event())));
+                        }
+                    }
+                } else {
+                    constraints.add(bmgr.implication(bmgr.and(first.selector(), context.execution(access)),
+                            order.atMost(access, separator)));
+                }
             }
         }
-        for (Event access : first.candidate().constrainedAccesses()) {
-            if (access != secondEvent) {
-                constraints.add(bmgr.implication(context.execution(access), order.before(access, secondEvent)));
+        for (CandidateEncoding second : nextCandidates) {
+            constraints.add(bmgr.implication(second.selector(), order.above(second.candidate().event(), separator)));
+            for (Event access : second.candidate().constrainedAccesses()) {
+                if (previousEvents.contains(access)) {
+                    for (CandidateEncoding first : previousCandidates) {
+                        if (first.candidate().event() != access) {
+                            constraints.add(bmgr.implication(
+                                    bmgr.and(first.selector(), second.selector(), context.execution(access)),
+                                    order.before(first.candidate().event(), access)));
+                        }
+                    }
+                } else {
+                    constraints.add(bmgr.implication(bmgr.and(second.selector(), context.execution(access)),
+                            order.above(access, separator)));
+                }
             }
         }
-        return bmgr.implication(both, bmgr.and(constraints));
+        return bmgr.and(constraints);
+    }
+
+    private static List<CandidateEncoding> candidatesOf(SegmentEncoding segment) {
+        return segment.waypoints().stream().flatMap(waypoint -> waypoint.candidates().values().stream()).toList();
+    }
+
+    private static Set<Event> eventsOf(List<CandidateEncoding> candidates) {
+        return candidates.stream().map(candidate -> candidate.candidate().event()).collect(Collectors.toSet());
     }
 
     private BooleanFormula encodeWaypoint(ResolvedWaypoint waypoint, Candidate candidate,

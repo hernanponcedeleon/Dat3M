@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -47,8 +48,26 @@ final class WitnessOrderEncoder {
 
     /** The rank of {@code first} is strictly smaller than the rank of {@code second}. */
     BooleanFormula before(Event first, Event second) {
-        return bvmgr.lessThan(bvmgr.makeVariable(rankWidth, clockPrefix + first.getGlobalId()),
-                bvmgr.makeVariable(rankWidth, clockPrefix + second.getGlobalId()), false);
+        return bvmgr.lessThan(rank(first), rank(second), false);
+    }
+
+    /** A rank that separates the events of two consecutive segments; {@code index} identifies the boundary. */
+    BitvectorFormula separator(int index) {
+        return bvmgr.makeVariable(rankWidth, clockPrefix + "separator " + index);
+    }
+
+    /** The rank of {@code event} does not exceed the separator. */
+    BooleanFormula atMost(Event event, BitvectorFormula separator) {
+        return bvmgr.lessOrEquals(rank(event), separator, false);
+    }
+
+    /** The rank of {@code event} is strictly above the separator. */
+    BooleanFormula above(Event event, BitvectorFormula separator) {
+        return bvmgr.lessThan(separator, rank(event), false);
+    }
+
+    private BitvectorFormula rank(Event event) {
+        return bvmgr.makeVariable(rankWidth, clockPrefix + event.getGlobalId());
     }
 
     /**
