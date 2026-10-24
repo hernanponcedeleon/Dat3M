@@ -1,10 +1,8 @@
-package com.dat3m.dartagnan.utils.printer;
+package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.program.*;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -20,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Options
-public class Printer {
+public class ProgramPrinter {
 
     // =========================== Configurables ===========================
     public enum Mode {
@@ -33,7 +31,7 @@ public class Printer {
     }
 
     private Mode mode = Mode.ALL;
-    public Printer setMode(Mode mode) {
+    public ProgramPrinter setMode(Mode mode) {
         this.mode = mode;
         return this;
     }
@@ -65,18 +63,18 @@ public class Printer {
 
     // =================================================================================
 
-    private Printer() { }
+    private ProgramPrinter() { }
 
-    private Printer(Configuration configuration) throws InvalidConfigurationException {
+    private ProgramPrinter(Configuration configuration) throws InvalidConfigurationException {
         configuration.inject(this);
     }
 
-    public static Printer newInstance() {
-        return new Printer();
+    public static ProgramPrinter newInstance() {
+        return new ProgramPrinter();
     }
 
-    public static Printer fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new Printer(config);
+    public static ProgramPrinter fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new ProgramPrinter(config);
     }
 
     // =================================================================================

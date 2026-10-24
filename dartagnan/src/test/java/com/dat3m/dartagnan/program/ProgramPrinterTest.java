@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.utils.printer;
+package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -12,58 +11,58 @@ import static com.dat3m.dartagnan.test.TestHelper.parseProgram;
 import static com.dat3m.dartagnan.test.TestHelper.parseWmm;
 import static org.junit.Assert.assertNotNull;
 
-public class PrinterTest {
+public class ProgramPrinterTest {
 
     // Test to call toString() of most events
 
     @Test()
     public void Printll() throws Exception {
         Program p = parseProgram(getTestResourcePath("locks/linuxrwlock.ll"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         Compilation.newInstance().run(p);
         LoopUnrolling.newInstance().run(p);
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
     }
 
     @Test()
     public void PrintX86() throws Exception {
         Program p = parseProgram(getTestResourcePath("litmus/MP+mfence-rmw+rmw-mfence.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintPPC() throws Exception {
         Program p = parseProgram(getTestResourcePath("litmus/MP+lwsync+data-wsi-rfi-ctrlisync.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintAARCH64() throws Exception {
         Program p = parseProgram(getTestResourcePath("litmus/MP+popl+poap.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux() throws Exception {
         Program p = parseProgram(getTestResourcePath("litmus/C-rcu-link-after.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux2() throws Exception {
         Program p = parseProgram(getRootPath("litmus/LKMM/dart/C-atomic-fetch-simple-01.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux3() throws Exception {
         Program p = parseProgram(getRootPath("litmus/LKMM/manual/atomic/C-atomic-01.litmus"));
-        assertNotNull(Printer.newInstance().print(p));
+        assertNotNull(ProgramPrinter.newInstance().print(p));
         assertNotNull(p.getSpecification().toString());
     }
 
