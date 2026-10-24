@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -12,7 +12,7 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.verification.VerificationStatus.*;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class VMMLFDSTest extends AbstractCTest {

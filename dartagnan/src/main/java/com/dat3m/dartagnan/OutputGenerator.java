@@ -18,10 +18,18 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.task.enumeration.EnumerationResult;
+import com.dat3m.dartagnan.task.enumeration.EnumerationStatus;
+import com.dat3m.dartagnan.task.enumeration.EnumerationTask;
+import com.dat3m.dartagnan.task.enumeration.EnumerationTaskSolver;
+import com.dat3m.dartagnan.task.verification.VerificationResult;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationTask;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.utils.ExitCode;
-import com.dat3m.dartagnan.verification.*;
+import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
+import com.dat3m.dartagnan.model.ExecutionModelNext;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -53,8 +61,8 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
-import static com.dat3m.dartagnan.verification.VerificationStatus.*;
-import static com.dat3m.dartagnan.verification.model.ExecutionModelManager.fromIREvaluator;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
+import static com.dat3m.dartagnan.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -142,6 +150,7 @@ public class OutputGenerator {
         return switch (solver) {
             case VerificationTaskSolver verificationTaskSolver -> getOutputFromSolver(verificationTaskSolver);
             case EnumerationTaskSolver enumerationTaskSolver -> getOutputFromSolver(enumerationTaskSolver);
+            default -> throw new UnsupportedOperationException("Unsupported task solver: " + solver.getClass().getSimpleName());
         };
     }
 

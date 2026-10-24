@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
 import com.dat3m.dartagnan.solver.caat.domain.Domain;
-import com.dat3m.dartagnan.verification.model.event.EventModel;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
+import com.dat3m.dartagnan.model.event.EventModel;
+import com.dat3m.dartagnan.model.ExecutionModelNext;
 
 import java.util.Collection;
 import java.util.List;

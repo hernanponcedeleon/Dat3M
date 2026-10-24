@@ -7,10 +7,10 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.VerificationStatus;
-import com.dat3m.dartagnan.verification.Task;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.task.verification.VerificationTask;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 import java.io.IOException;

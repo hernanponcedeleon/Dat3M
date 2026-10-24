@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.collections.IndexedDomain;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;

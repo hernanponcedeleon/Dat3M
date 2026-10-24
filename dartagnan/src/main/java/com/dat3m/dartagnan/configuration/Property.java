@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.configuration;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;

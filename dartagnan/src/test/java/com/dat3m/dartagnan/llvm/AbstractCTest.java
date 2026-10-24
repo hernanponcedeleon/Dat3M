@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.*;
 import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.VerificationStatus;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.Task;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.nio.file.Path;

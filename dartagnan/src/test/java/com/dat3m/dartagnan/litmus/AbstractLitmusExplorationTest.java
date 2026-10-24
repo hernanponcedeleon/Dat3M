@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.test.AbstractEnumerationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.test.TestHelper;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.Task;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;

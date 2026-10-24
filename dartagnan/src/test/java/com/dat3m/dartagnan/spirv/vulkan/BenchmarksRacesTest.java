@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.spirv.vulkan;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.verification.VerificationStatus.FAIL;
-import static com.dat3m.dartagnan.verification.VerificationStatus.PASS;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class BenchmarksRacesTest extends AbstractSpirvVulkanTest {
