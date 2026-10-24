@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.UnionSet;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;

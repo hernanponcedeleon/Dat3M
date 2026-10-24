@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.model.EventData;
 
 import java.util.ArrayList;
 import java.util.HashMap;

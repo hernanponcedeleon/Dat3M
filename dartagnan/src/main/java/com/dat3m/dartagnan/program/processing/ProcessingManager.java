@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.dat3m.dartagnan.utils.printer.Printer;
+import com.dat3m.dartagnan.program.ProgramPrinter;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -98,7 +98,7 @@ public class ProcessingManager implements ProgramProcessor {
                 simplifyFunction, Target.THREADS, true
         );
         programProcessors.addAll(Arrays.asList(
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", ProgramPrinter.Mode.ALL, config) : null,
                 intrinsics.markIntrinsicsPass(),
                 LibraryLinker.fromConfig(config),
                 GEPToAddition.newInstance(),
@@ -114,17 +114,17 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RemoveDeadFunctions.newInstance(),
-                printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL, config) : null,
+                printAfterSimplification ? DebugPrint.withHeader("After simplification", ProgramPrinter.Mode.ALL, config) : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),
-                printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL, config) : null,
+                printAfterCompilation ? DebugPrint.withHeader("After compilation", ProgramPrinter.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(JumpForwarding.newInstance(), Target.FUNCTIONS, false),
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
-                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL, config) : null,
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", ProgramPrinter.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
@@ -154,7 +154,7 @@ public class ProcessingManager implements ProgramProcessor {
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
-                printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
+                printAfterProcessing ? DebugPrint.withHeader("After processing", ProgramPrinter.Mode.THREADS, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false

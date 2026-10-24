@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
-import com.dat3m.dartagnan.verification.VerificationStatus;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.Task;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.nio.file.Path;

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

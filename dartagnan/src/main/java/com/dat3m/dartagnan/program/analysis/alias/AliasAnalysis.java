@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.collect.Collections2;
 import org.slf4j.Logger;

@@ -12,12 +12,12 @@ import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.program.processing.libraries.AbstractLibrary;
 import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
-import com.dat3m.dartagnan.utils.printer.Printer;
-import com.dat3m.dartagnan.verification.TaskSolverBase;
-import com.dat3m.dartagnan.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.verification.solving.EnumerationSolver;
-import com.dat3m.dartagnan.verification.solving.SMTModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.program.ProgramPrinter;
+import com.dat3m.dartagnan.task.TaskSolverBase;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.task.enumeration.EnumerationSolver;
+import com.dat3m.dartagnan.task.SMTModelChecker;
+import com.dat3m.dartagnan.task.verification.RefinementSolver;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -62,7 +62,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 Compilation.class,
                 CoreReasoner.class,
                 Dartagnan.DartagnanOptions.class,
-                Printer.class,
+                ProgramPrinter.class,
                 SMTModelChecker.SMTConfig.class,
                 RefinementSolver.class,
                 RelationAnalysis.Config.class,

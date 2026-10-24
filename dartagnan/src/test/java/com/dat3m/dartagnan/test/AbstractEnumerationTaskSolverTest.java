@@ -1,7 +1,11 @@
 package com.dat3m.dartagnan.test;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.*;
+import com.dat3m.dartagnan.task.*;
+import com.dat3m.dartagnan.task.enumeration.EnumerationResult;
+import com.dat3m.dartagnan.task.enumeration.EnumerationStatus;
+import com.dat3m.dartagnan.task.enumeration.EnumerationTask;
+import com.dat3m.dartagnan.task.enumeration.EnumerationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;

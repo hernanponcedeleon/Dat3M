@@ -2,7 +2,6 @@ package com.dat3m.svcomp;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.ExitCode;
 
 import com.dat3m.dartagnan.utils.Utils;
 import com.google.common.collect.ImmutableSet;
@@ -103,8 +102,8 @@ public class SVCOMPRunner {
             return;
         }
 
-        int exitCode = ExitCode.BOUNDED_RESULT.asInt();
-        while(exitCode == ExitCode.BOUNDED_RESULT.asInt()) {
+        int exitCode = Dartagnan.ExitCode.BOUNDED_RESULT.asInt();
+        while(exitCode == Dartagnan.ExitCode.BOUNDED_RESULT.asInt()) {
             ArrayList<String> cmd = new ArrayList<>();
             if (o.nativeExecution) {
                 cmd.add(getExecutablePath(false).toString());
@@ -134,7 +133,7 @@ public class SVCOMPRunner {
                 Process proc = processBuilder.start();
                 BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
                 exitCode = proc.waitFor();
-                if (exitCode == ExitCode.UNKNOWN_ERROR.asInt()) {
+                if (exitCode == Dartagnan.ExitCode.UNKNOWN_ERROR.asInt()) {
                     System.out.println("Unknown error in dartagnan");
                     System.exit(0);
                 }
@@ -153,8 +152,8 @@ public class SVCOMPRunner {
     }
     
     private static boolean isExternalError(int exitCode) {
-        return Arrays.stream(ExitCode.values())
-                    .mapToInt(ExitCode::asInt)
+        return Arrays.stream(Dartagnan.ExitCode.values())
+                    .mapToInt(Dartagnan.ExitCode::asInt)
                     .noneMatch(code -> code == exitCode);
     }
 

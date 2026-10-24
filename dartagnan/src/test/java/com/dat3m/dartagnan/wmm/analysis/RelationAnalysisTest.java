@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.Task;
+import com.dat3m.dartagnan.task.Context;
+import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.test.TestHelper.*;
-import static com.dat3m.dartagnan.verification.solving.SMTModelChecker.*;
+import static com.dat3m.dartagnan.task.SMTModelChecker.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
