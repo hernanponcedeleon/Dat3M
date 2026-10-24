@@ -26,7 +26,6 @@ import com.dat3m.dartagnan.task.verification.VerificationResult;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
-import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.model.ExecutionModelNext;
@@ -60,7 +59,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.ExitCode.*;
+import static com.dat3m.dartagnan.Dartagnan.ExitCode.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
@@ -126,7 +125,7 @@ public class OutputGenerator {
         final String details = "\t" + message;
 
         if (exception instanceof InterruptedException) {
-            final ExitCode exitCode =
+            final Dartagnan.ExitCode exitCode =
                     message.contains("Timeout") ? TIMEOUT_ELAPSED
                             : message.contains("canceled") ? CANCELED
                             : UNKNOWN_ERROR;
@@ -167,7 +166,7 @@ public class OutputGenerator {
                 : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final String filter = getFilterString(task);
         final String enumeratedStates = enumerationToString(result.getVars(), result.getEnumeratedStates());
-        final ExitCode exitCode = switch (result.getStatus()) {
+        final Dartagnan.ExitCode exitCode = switch (result.getStatus()) {
             case COMPLETE -> NORMAL_TERMINATION;
             case LIMITED, INCOMPLETE -> BOUNDED_RESULT;
         };
