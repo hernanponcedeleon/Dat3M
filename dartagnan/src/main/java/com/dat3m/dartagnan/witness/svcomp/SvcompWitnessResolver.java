@@ -153,6 +153,10 @@ public final class SvcompWitnessResolver {
         for (Segment segment : witness.segments()) {
             final List<ResolvedWaypoint> waypoints = new ArrayList<>();
             for (Waypoint waypoint : segment.waypoints()) {
+                if (waypoint instanceof Assumption(_, BooleanConstant(boolean value), _) && value) {
+                    // An assumption that always holds constrains nothing.
+                    continue;
+                }
                 final List<Candidate> candidates = eventsForWaypoint(waypoint, threads).stream()
                         .map(event -> candidate(waypoint, event, variables))
                         .toList();
