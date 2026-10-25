@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.frontend.ParserInterface;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
 
-public class ParserLitmusX86 implements ParserInterface {
+public class ParserLitmusX86 implements ParserInterface<Program> {
 
     @Override
     public Program parse(CharStream charStream) {

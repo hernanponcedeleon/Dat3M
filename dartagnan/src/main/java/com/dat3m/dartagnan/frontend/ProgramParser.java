@@ -104,7 +104,7 @@ public class ProgramParser {
 
     // =========================== Private Utility =====================================
 
-    private ParserInterface getParser(String extension) {
+    private ParserInterface<Program> getParser(String extension) {
         return switch (extension) {
             case EXTENSION_LL -> new ParserLlvm();
             case EXTENSION_SPV_DIS -> {
