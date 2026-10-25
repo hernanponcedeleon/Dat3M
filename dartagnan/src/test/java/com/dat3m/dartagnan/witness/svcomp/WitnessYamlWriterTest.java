@@ -9,12 +9,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlWriter.render;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
+import static com.dat3m.dartagnan.witness.svcomp.WitnessYamlWriter.render;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class SvcompWitnessYamlWriterTest {
+public class WitnessYamlWriterTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -23,7 +23,7 @@ public class SvcompWitnessYamlWriterTest {
     public void serializesSemanticWitness() {
         final Path inputFile = Path.of("example.c");
         final Location location = new Location(inputFile, 7);
-        final SvcompWitness witness = new SvcompViolationWitness(
+        final Witness witness = new ViolationWitness(
                 new Metadata("2.2", "test-uuid", Instant.parse("2026-01-01T00:00:00Z"),
                         new Producer("Dartagnan", "test-version"),
                         new Task(inputFile, "deadbeef", "CHECK( init(main()), LTL(G ! data-race) )",
@@ -54,7 +54,7 @@ public class SvcompWitnessYamlWriterTest {
         final AssumptionExpression expression = new Conjunction(new BooleanConstant(true),
                 new Conjunction(new VariableEquality("x", new BigInteger("-123456789012345678901234567890")),
                         new BooleanConstant(false)));
-        final SvcompWitness witness = new SvcompViolationWitness(
+        final Witness witness = new ViolationWitness(
                 new Metadata("2.2", "test-uuid", Instant.parse("2026-01-01T00:00:00Z"),
                         new Producer("Dartagnan", "test-version"),
                         new Task(inputFile, "deadbeef", "CHECK( init(main()), LTL(G ! data-race) )",
@@ -63,8 +63,8 @@ public class SvcompWitnessYamlWriterTest {
                         new Segment(List.of(new Target(0, location)))));
         final Path file = temporaryFolder.newFile("witness.yml").toPath();
 
-        SvcompWitnessYamlWriter.write(witness, file);
+        WitnessYamlWriter.write(witness, file);
 
-        assertEquals(witness, SvcompWitnessYamlParser.parse(file));
+        assertEquals(witness, WitnessYamlParser.parse(file));
     }
 }

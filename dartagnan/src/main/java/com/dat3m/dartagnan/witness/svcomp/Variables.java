@@ -15,14 +15,14 @@ import java.util.regex.Pattern;
  * Witness extraction and validation share these rules, so that every assumption we generate is one we can validate.
  * A variable is a bare identifier naming a statically allocated, initialized scalar memory object of integral type.
  * Validation additionally requires all writes to the object to have its type.
- * Writes are only known after alias analysis, so this last rule is checked by {@link SvcompWitnessResolver} alone.
+ * Writes are only known after alias analysis, so this last rule is checked by {@link WitnessResolver} alone.
  */
-public final class SvcompVariables {
+public final class Variables {
 
     /** The syntax of a variable name in an assumption. */
     public static final Pattern NAME = Pattern.compile("[A-Za-z_][A-Za-z0-9_$]*");
 
-    private SvcompVariables() { }
+    private Variables() { }
 
     /** Whether {@code object} may be named by a witness variable. */
     public static boolean isVariable(MemoryObject object) {

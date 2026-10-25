@@ -5,17 +5,17 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.writeString;
 
-/** Serializes {@link SvcompWitness} instances to SV-COMP's YAML representation. */
-public final class SvcompWitnessYamlWriter {
+/** Serializes {@link Witness} instances to SV-COMP's YAML representation. */
+public final class WitnessYamlWriter {
 
-    private SvcompWitnessYamlWriter() { }
+    private WitnessYamlWriter() { }
 
-    public static void write(SvcompWitness witness, Path file) throws IOException {
+    public static void write(Witness witness, Path file) throws IOException {
         final Path parent = file.getParent();
         if (parent != null) {
             createDirectories(parent);
@@ -23,14 +23,14 @@ public final class SvcompWitnessYamlWriter {
         writeString(file, render(witness), UTF_8);
     }
 
-    static String render(SvcompWitness witness) {
+    static String render(Witness witness) {
         return switch (witness) {
-            case SvcompViolationWitness violation -> header("violation_sequence", violation.metadata())
+            case ViolationWitness violation -> header("violation_sequence", violation.metadata())
                     + "  content:\n" + violation.segments().stream()
-                    .map(SvcompWitnessYamlWriter::formatSegment)
+                    .map(WitnessYamlWriter::formatSegment)
                     .collect(Collectors.joining());
             // For now, we build correctness witnesses with an empty set of invariants.
-            case SvcompCorrectnessWitness correctness -> header("invariant_set", correctness.metadata())
+            case CorrectnessWitness correctness -> header("invariant_set", correctness.metadata())
                     + "  content: []\n";
         };
     }
@@ -62,7 +62,7 @@ public final class SvcompWitnessYamlWriter {
 
     private static String formatSegment(Segment segment) {
         return "    - segment:\n" + segment.waypoints().stream()
-                .map(SvcompWitnessYamlWriter::formatWaypoint)
+                .map(WitnessYamlWriter::formatWaypoint)
                 .collect(Collectors.joining());
     }
 

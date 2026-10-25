@@ -39,7 +39,7 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE_AXIOM;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.HB_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static java.nio.file.Files.readAllBytes;
 
@@ -47,20 +47,20 @@ import static java.nio.file.Files.readAllBytes;
  * Generates SV-COMP witnesses: violation witnesses by projecting an {@link ExecutionModelNext},
  * correctness witnesses from a task whose properties hold.
  */
-public final class SvcompWitnessExtractor {
+public final class WitnessExtractor {
 
 
-    private SvcompWitnessExtractor() { }
+    private WitnessExtractor() { }
 
-    public static Optional<SvcompCorrectnessWitness> forCorrectness(Program program, SvcompProperty property)
+    public static Optional<CorrectnessWitness> forCorrectness(Program program, SvcompProperty property)
             throws IOException {
         if (!property.supportsCorrectnessWitness()) {
             return Optional.empty();
         }
-        return Optional.of(new SvcompCorrectnessWitness(metadata(programFile(program), property.specification())));
+        return Optional.of(new CorrectnessWitness(metadata(programFile(program), property.specification())));
     }
 
-    public static Optional<SvcompViolationWitness> forViolation(ExecutionModelNext model, Program program)
+    public static Optional<ViolationWitness> forViolation(ExecutionModelNext model, Program program)
             throws IOException {
         final Map<SvcompProperty, SvcompViolation> violations = new EnumMap<>(SvcompProperty.class);
         if (model.isViolated(PROGRAM_SPEC)) {
@@ -97,7 +97,7 @@ public final class SvcompWitnessExtractor {
                 .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
-    private static SvcompViolationWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
+    private static ViolationWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
             throws IOException {
         final Path programFile = programFile(program);
         final SyntacticContextAnalysis context = SyntacticContextAnalysis.newInstance(program);
@@ -149,7 +149,7 @@ public final class SvcompWitnessExtractor {
                 .toList();
         segments.add(new Segment(targetWaypoints));
 
-        return new SvcompViolationWitness(metadata(programFile, violation.property().specification()), segments);
+        return new ViolationWitness(metadata(programFile, violation.property().specification()), segments);
     }
 
     private static Path programFile(Program program) throws IOException {
@@ -210,7 +210,7 @@ public final class SvcompWitnessExtractor {
                     continue;
                 }
                 // Events of the same statement instance, as defined for validation, share a source point.
-                final List<Event> earlier = SvcompSourceMatching.earlierInStatementInstance(location, event.getEvent());
+                final List<Event> earlier = SourceMatching.earlierInStatementInstance(location, event.getEvent());
                 final Event start = earlier.isEmpty() ? event.getEvent() : earlier.getFirst();
                 result.put(event, new SourcePoint(thread, start, location));
             }
@@ -224,9 +224,9 @@ public final class SvcompWitnessExtractor {
             return Optional.empty();
         }
         final Optional<MemoryObjectModel> object = model.getMemoryLayoutMap().values().stream()
-                .filter(memory -> SvcompVariables.isVariable(memory.object()))
+                .filter(memory -> Variables.isVariable(memory.object()))
                 .filter(memory -> memory.address().equals(load.getAccessedAddress()))
-                .filter(memory -> SvcompVariables.scalarType(memory.object()).equals(Optional.of(event.getAccessType())))
+                .filter(memory -> Variables.scalarType(memory.object()).equals(Optional.of(event.getAccessType())))
                 .findFirst();
         if (object.isEmpty()) {
             return Optional.empty();
@@ -316,7 +316,7 @@ public final class SvcompWitnessExtractor {
             return null;
         }
         final Location location = new Location(programFile, generic.lineNumber());
-        return SvcompSourceMatching.matches(location, event) ? location : null;
+        return SourceMatching.matches(location, event) ? location : null;
     }
 
     // The targets identify the event(s) constituting the violation and become the final target waypoints.

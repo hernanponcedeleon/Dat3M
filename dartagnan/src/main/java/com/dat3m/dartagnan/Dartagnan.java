@@ -15,8 +15,8 @@ import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.task.Task.TaskBuilder;
 import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.witness.svcomp.SvcompViolationWitness;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessYamlParser;
+import com.dat3m.dartagnan.witness.svcomp.ViolationWitness;
+import com.dat3m.dartagnan.witness.svcomp.WitnessYamlParser;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +72,7 @@ public class Dartagnan {
         if (isBatchMode && o.getValidationWitnessPath().isPresent()) {
             throw new IllegalArgumentException("Cannot validate a witness in batch mode");
         }
-        final Optional<SvcompViolationWitness> witness = o.getValidationWitnessPath().map(Dartagnan::parseWitness);
+        final Optional<ViolationWitness> witness = o.getValidationWitnessPath().map(Dartagnan::parseWitness);
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
         final Set<String> neededTools = progFiles.stream()
@@ -179,9 +179,9 @@ public class Dartagnan {
                 .build();
     }
 
-    private static SvcompViolationWitness parseWitness(Path path) {
+    private static ViolationWitness parseWitness(Path path) {
         try {
-            return SvcompWitnessYamlParser.parse(path);
+            return WitnessYamlParser.parse(path);
         } catch (IOException exception) {
             throw new IllegalArgumentException("Cannot parse witness '%s'".formatted(path), exception);
         }

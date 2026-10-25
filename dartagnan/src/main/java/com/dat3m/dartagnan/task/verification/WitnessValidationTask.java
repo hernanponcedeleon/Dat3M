@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.task.verification;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.witness.svcomp.SvcompViolationWitness;
+import com.dat3m.dartagnan.witness.svcomp.ViolationWitness;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -16,20 +16,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class WitnessValidationTask extends VerificationTask {
 
-    private final SvcompViolationWitness witness;
+    private final ViolationWitness witness;
 
-    public static WitnessValidationTaskBuilder builder(SvcompViolationWitness witness) {
+    public static WitnessValidationTaskBuilder builder(ViolationWitness witness) {
         return new WitnessValidationTaskBuilder(witness);
     }
 
     WitnessValidationTask(Program program, Wmm memoryModel, Configuration config,
-                          Property property, SvcompViolationWitness witness)
+                          Property property, ViolationWitness witness)
             throws InvalidConfigurationException {
         super(program, memoryModel, uniform(FAIR), config, EnumSet.of(property));
         this.witness = checkNotNull(witness);
     }
 
-    public SvcompViolationWitness getWitness() {
+    public ViolationWitness getWitness() {
         return witness;
     }
 
@@ -40,9 +40,9 @@ public final class WitnessValidationTask extends VerificationTask {
 
     public static final class WitnessValidationTaskBuilder extends TaskBuilder {
 
-        private final SvcompViolationWitness witness;
+        private final ViolationWitness witness;
 
-        private WitnessValidationTaskBuilder(SvcompViolationWitness witness) {
+        private WitnessValidationTaskBuilder(ViolationWitness witness) {
             this.witness = checkNotNull(witness);
         }
 

@@ -23,7 +23,7 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.HB_RELATION;
  * and no event of another thread is ranked inside an executed atomic section or read-modify-write pair.
  * Thus, the order is compatible with the memory model, while unrelated events may also be ordered.
  */
-final class WitnessOrderEncoder {
+final class SvcompWitnessOrderEncoder {
 
     private static final String WITNESS_CLOCK = "witness-hb";
 
@@ -34,7 +34,7 @@ final class WitnessOrderEncoder {
     private final int rankWidth;
     private final String clockPrefix;
 
-    WitnessOrderEncoder(EncodingContext context) {
+    SvcompWitnessOrderEncoder(EncodingContext context) {
         this.context = context;
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();

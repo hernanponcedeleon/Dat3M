@@ -9,7 +9,7 @@ import java.util.Objects;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /** Data model for SV-COMP 2.2 witnesses, independent of their YAML serialization. */
-public sealed interface SvcompWitness permits SvcompViolationWitness, SvcompCorrectnessWitness {
+public sealed interface Witness permits ViolationWitness, CorrectnessWitness {
 
     Metadata metadata();
 
@@ -74,7 +74,7 @@ public sealed interface SvcompWitness permits SvcompViolationWitness, SvcompCorr
     public record VariableEquality(String variable, BigInteger value) implements AssumptionExpression {
         public VariableEquality {
             Objects.requireNonNull(variable);
-            checkArgument(SvcompVariables.NAME.matcher(variable).matches(), "Invalid assumption variable: %s", variable);
+            checkArgument(Variables.NAME.matcher(variable).matches(), "Invalid assumption variable: %s", variable);
             Objects.requireNonNull(value);
         }
     }

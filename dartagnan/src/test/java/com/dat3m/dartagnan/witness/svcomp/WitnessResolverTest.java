@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.metadata.SourceLocation;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -26,10 +26,10 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.task.Context;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.Candidate;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedVariable;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.Candidate;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedVariable;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedWaypoint;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedWitness;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -43,10 +43,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 import static org.junit.Assert.*;
 
-public class SvcompWitnessResolverTest {
+public class WitnessResolverTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -143,7 +143,7 @@ public class SvcompWitnessResolverTest {
         ResolvedWitness resolve(Property property, Waypoint... segments) {
             final List<Segment> content = Arrays.stream(segments)
                     .map(waypoint -> new Segment(List.of(waypoint))).toList();
-            return SvcompWitnessResolver.resolve(new SvcompViolationWitness(METADATA, content), program, alias,
+            return WitnessResolver.resolve(new ViolationWitness(METADATA, content), program, alias,
                     property);
         }
 
@@ -174,9 +174,9 @@ public class SvcompWitnessResolverTest {
     public void matchesIgnoreDirectories() throws Exception {
         final TestProgram test = TestProgram.build(1);
         final Event write = test.mainEventsAt(WRITE_LINE).getFirst();
-        assertTrue(SvcompSourceMatching.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
-        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
-        assertFalse(SvcompSourceMatching.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
+        assertTrue(SourceMatching.matches(new Location(Path.of("other/test.c"), WRITE_LINE), write));
+        assertFalse(SourceMatching.matches(new Location(Path.of("other.c"), WRITE_LINE), write));
+        assertFalse(SourceMatching.matches(new Location(Path.of("test.c"), WRITE_LINE + 1), write));
     }
 
     @Test

@@ -9,12 +9,12 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-public class SvcompWitnessYamlParserTest {
+public class WitnessYamlParserTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -53,14 +53,14 @@ public class SvcompWitnessYamlParserTest {
 
     @Test
     public void prefersExactHashKeyOverBasenameMatches() throws Exception {
-        final SvcompViolationWitness witness = parseWitness("true", "c_expression",
+        final ViolationWitness witness = parseWitness("true", "c_expression",
                 "{example.c: exact, dir/example.c: other}");
         assertEquals("exact", witness.metadata().task().inputFileHash());
     }
 
     @Test
     public void acceptsUniqueBasenameHashKey() throws Exception {
-        final SvcompViolationWitness witness = parseWitness("true", "c_expression",
+        final ViolationWitness witness = parseWitness("true", "c_expression",
                 "{../dir/example.c: matching, other.c: unrelated}");
         assertEquals(Path.of("example.c"), witness.metadata().task().inputFile());
         assertEquals("matching", witness.metadata().task().inputFileHash());
@@ -101,7 +101,7 @@ public class SvcompWitnessYamlParserTest {
     }
 
     private void assertThreadIds(String threadId, int expected) throws IOException {
-        final SvcompViolationWitness witness = parseWitness("{example.c: deadbeef}", """
+        final ViolationWitness witness = parseWitness("{example.c: deadbeef}", """
                 - segment:
                     - waypoint:
                         type: function_enter
@@ -129,11 +129,11 @@ public class SvcompWitnessYamlParserTest {
     }
 
     private AssumptionExpression parse(String source, String format) throws IOException {
-        final SvcompViolationWitness witness = parseWitness(source, format, "{example.c: deadbeef}");
+        final ViolationWitness witness = parseWitness(source, format, "{example.c: deadbeef}");
         return ((Assumption) witness.segments().getFirst().waypoints().getFirst()).expression();
     }
 
-    private SvcompViolationWitness parseWitness(String source, String format, String hashes) throws IOException {
+    private ViolationWitness parseWitness(String source, String format, String hashes) throws IOException {
         return parseWitness(hashes, """
                 - segment:
                     - waypoint:
@@ -149,7 +149,7 @@ public class SvcompWitnessYamlParserTest {
                 """.formatted(source, format));
     }
 
-    private SvcompViolationWitness parseWitness(String hashes, String content) throws IOException {
+    private ViolationWitness parseWitness(String hashes, String content) throws IOException {
         final Path file = temporaryFolder.newFile().toPath();
         Files.writeString(file, """
                 - entry_type: violation_sequence
@@ -169,6 +169,6 @@ public class SvcompWitnessYamlParserTest {
                   content:
                 %s
                 """.formatted(hashes, content.indent(4)));
-        return SvcompWitnessYamlParser.parse(file);
+        return WitnessYamlParser.parse(file);
     }
 }

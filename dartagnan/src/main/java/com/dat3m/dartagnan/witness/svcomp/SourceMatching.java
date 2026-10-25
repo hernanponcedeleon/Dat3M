@@ -6,15 +6,15 @@ import com.dat3m.dartagnan.program.event.Event;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.Location;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.Location;
 
 /**
  * Relates the events of a program to the source locations of witnesses.
  * Witness extraction and validation share these definitions, so that they agree on what a waypoint denotes.
  */
-public final class SvcompSourceMatching {
+public final class SourceMatching {
 
-    private SvcompSourceMatching() { }
+    private SourceMatching() { }
 
     /** Events are matched by source line and file name, ignoring directories. */
     public static boolean matches(Location location, Event event) {

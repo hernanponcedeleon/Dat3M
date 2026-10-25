@@ -13,13 +13,13 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
-import com.dat3m.dartagnan.witness.svcomp.SvcompViolationWitness;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.Candidate;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedVariable;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWaypoint;
-import com.dat3m.dartagnan.witness.svcomp.SvcompWitnessResolver.ResolvedWitness;
+import com.dat3m.dartagnan.witness.svcomp.ViolationWitness;
+import com.dat3m.dartagnan.witness.svcomp.Witness.*;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.Candidate;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedVariable;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedWaypoint;
+import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedWitness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.java_smt.api.BitvectorFormula;
@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Encodes a violation witness resolved by {@link SvcompWitnessResolver} as follows:
+ * Encodes a violation witness resolved by {@link WitnessResolver} as follows:
  *
  * Threads: each witness thread ID is bound to exactly one of its compatible program threads,
  * and distinct IDs are bound to distinct threads. Every selected candidate event runs in the thread
@@ -48,14 +48,14 @@ import java.util.stream.Collectors;
  * Targets: for assertion-based properties, at least one assertion resolved for the target must
  * be violated, i.e., executed with a false condition. For other properties, at least one event in
  * the specified thread at the target source location must execute. For CAT specifications, the
- * selected target events must also constitute the violation, as encoded by {@link WitnessTargetEncoder}.
+ * selected target events must also constitute the violation, as encoded by {@link SvcompWitnessTargetEncoder}.
  *
  * Every waypoint must satisfy the requirement for its type: the child thread starts
  * executing, the assumption holds, or the target is reached.
  *
  * Segment order: to order segments, at least one executed candidate event is selected
  * per segment. A selected assumption event must also satisfy its value constraints.
- * Bitvector ranks, provided by {@link WitnessOrderEncoder}, place selected events from consecutive segments in
+ * Bitvector ranks, provided by {@link SvcompWitnessOrderEncoder}, place selected events from consecutive segments in
  * strictly increasing order, using a separator rank between each pair of consecutive segments.
  * Thus, the witness order must be compatible with the memory model.
  * The accesses to the variables of a selected assumption, within the same statement instance,
@@ -85,21 +85,21 @@ public final class SvcompWitnessEncoder {
     private record SegmentEncoding(List<WaypointEncoding> waypoints) { }
 
     private final EncodingContext context;
-    private final SvcompViolationWitness witness;
+    private final ViolationWitness witness;
     private final Property property;
     private final Program program;
     private final BooleanFormulaManager bmgr;
-    private final WitnessOrderEncoder order;
-    private final WitnessTargetEncoder targets;
+    private final SvcompWitnessOrderEncoder order;
+    private final SvcompWitnessTargetEncoder targets;
 
-    private SvcompWitnessEncoder(EncodingContext context, SvcompViolationWitness witness, Property property) {
+    private SvcompWitnessEncoder(EncodingContext context, ViolationWitness witness, Property property) {
         this.context = context;
         this.witness = witness;
         this.property = property;
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();
-        this.order = new WitnessOrderEncoder(context);
-        this.targets = new WitnessTargetEncoder(context);
+        this.order = new SvcompWitnessOrderEncoder(context);
+        this.targets = new SvcompWitnessTargetEncoder(context);
     }
 
     public static SvcompWitnessEncoder withContext(EncodingContext context) {
@@ -112,7 +112,7 @@ public final class SvcompWitnessEncoder {
     public BooleanFormula encode() {
         logger.info("Encoding witness");
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
-        final ResolvedWitness resolvedWitness = SvcompWitnessResolver.resolve(witness, program, alias, property);
+        final ResolvedWitness resolvedWitness = WitnessResolver.resolve(witness, program, alias, property);
         final Map<String, ResolvedVariable> variables = resolvedWitness.variables();
         final List<BooleanFormula> constraints = new ArrayList<>();
         // If the witness needs more threads than this bounded program contains, the bindings are unsatisfiable,

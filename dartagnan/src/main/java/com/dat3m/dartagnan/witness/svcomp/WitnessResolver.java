@@ -22,9 +22,9 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompSourceMatching.earlierInStatementInstance;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompSourceMatching.matches;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.SourceMatching.earlierInStatementInstance;
+import static com.dat3m.dartagnan.witness.svcomp.SourceMatching.matches;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 
 /**
  * Resolves the waypoints of a violation witness to the events of a bounded program.
@@ -57,7 +57,7 @@ import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
  * when all their accesses lie beyond the current bounds. Array indexing, member access, pointer dereferences,
  * register-only variables, and partial writes are currently unsupported.
  */
-public final class SvcompWitnessResolver {
+public final class WitnessResolver {
 
     /**
      * The resolved non-empty segments, the variables of all assumptions, and, for each witness thread ID,
@@ -124,7 +124,7 @@ public final class SvcompWitnessResolver {
     private final boolean assertionTargets;
     private SyntacticContextAnalysis callStacks;
 
-    private SvcompWitnessResolver(Program program, AliasAnalysis alias, Property property) {
+    private WitnessResolver(Program program, AliasAnalysis alias, Property property) {
         this.program = program;
         this.alias = alias;
         this.assertionTargets = property == Property.PROGRAM_SPEC;
@@ -134,12 +134,12 @@ public final class SvcompWitnessResolver {
      * Resolves {@code witness} for the validation of {@code property}.
      * Throws {@link IllegalArgumentException} if the witness does not fit the program for any bound.
      */
-    public static ResolvedWitness resolve(SvcompViolationWitness witness, Program program,
+    public static ResolvedWitness resolve(ViolationWitness witness, Program program,
             AliasAnalysis alias, Property property) {
-        return new SvcompWitnessResolver(program, alias, property).resolve(witness);
+        return new WitnessResolver(program, alias, property).resolve(witness);
     }
 
-    private ResolvedWitness resolve(SvcompViolationWitness witness) {
+    private ResolvedWitness resolve(ViolationWitness witness) {
         final ResolvedThreads threads = resolveThreads(witness);
         final Map<String, ResolvedVariable> variables = new LinkedHashMap<>();
         for (Segment segment : witness.segments()) {
@@ -179,7 +179,7 @@ public final class SvcompWitnessResolver {
     // The compatible program threads of each witness thread ID, and the ID entered by each function_enter waypoint.
     private record ResolvedThreads(Map<Integer, List<Thread>> byId, Map<FunctionEnter, Integer> entered) { }
 
-    private ResolvedThreads resolveThreads(SvcompViolationWitness witness) {
+    private ResolvedThreads resolveThreads(ViolationWitness witness) {
         final Map<Integer, List<Thread>> result = new LinkedHashMap<>();
         final Map<FunctionEnter, Integer> entered = new IdentityHashMap<>();
         result.put(0, List.of(program.getMainThread().orElseThrow(
@@ -308,7 +308,7 @@ public final class SvcompWitnessResolver {
     }
 
     private List<Store> writesForObject(MemoryObject object) {
-        final var type = SvcompVariables.scalarType(object).orElseThrow(() -> new IllegalArgumentException(
+        final var type = Variables.scalarType(object).orElseThrow(() -> new IllegalArgumentException(
                 "Witness variable is not an initialized integral scalar: " + object));
         final List<Store> writes = program.getThreadEvents(Store.class).stream()
                 .filter(write -> alias.addressableObjects(write).contains(object)).toList();

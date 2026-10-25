@@ -15,13 +15,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 
-public final class SvcompWitnessYamlParser {
+public final class WitnessYamlParser {
 
-    private SvcompWitnessYamlParser() { }
+    private WitnessYamlParser() { }
 
-    public static SvcompViolationWitness parse(Path path) throws IOException {
+    public static ViolationWitness parse(Path path) throws IOException {
         try (InputStream input = Files.newInputStream(path)) {
             final Object yaml = new Yaml().load(input);
             final List<?> entries = asList(yaml, "witness entries");
@@ -36,7 +36,7 @@ public final class SvcompWitnessYamlParser {
         }
     }
 
-    private static SvcompViolationWitness parseEntry(Map<?, ?> entry) {
+    private static ViolationWitness parseEntry(Map<?, ?> entry) {
         final Map<?, ?> metadata = getMapping(entry, "metadata");
         final Map<?, ?> producer = getMapping(metadata, "producer");
         final Map<?, ?> task = getMapping(metadata, "task");
@@ -98,7 +98,7 @@ public final class SvcompWitnessYamlParser {
                 segments.add(new Segment(waypoints));
             }
         }
-        return new SvcompViolationWitness(parsedMetadata, segments);
+        return new ViolationWitness(parsedMetadata, segments);
     }
 
     private static String resolveInputFileHash(Map<?, ?> hashes, String inputFile) {
@@ -121,7 +121,7 @@ public final class SvcompWitnessYamlParser {
     /** Parses the supported Boolean constants, integer equalities, and conjunctions. */
     private static final class AssumptionParser {
 
-        private static final Pattern IDENTIFIER = SvcompVariables.NAME;
+        private static final Pattern IDENTIFIER = Variables.NAME;
         private static final Pattern INTEGER = Pattern.compile("-?[0-9]+");
 
         private final String source;

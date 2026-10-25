@@ -18,12 +18,12 @@ import java.util.Map;
  * they must form an edge, in either direction, of the relation of a flagged non-emptiness axiom
  * (e.g., the data-race relation). A single target must be an endpoint of such an edge.
  */
-final class WitnessTargetEncoder {
+final class SvcompWitnessTargetEncoder {
 
     private final EncodingContext context;
     private final BooleanFormulaManager bmgr;
 
-    WitnessTargetEncoder(EncodingContext context) {
+    SvcompWitnessTargetEncoder(EncodingContext context) {
         this.context = context;
         this.bmgr = context.getBooleanFormulaManager();
     }
