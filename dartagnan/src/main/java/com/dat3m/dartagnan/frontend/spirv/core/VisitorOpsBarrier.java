@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 
 import java.util.Set;
 
-public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
+public class VisitorOpsBarrier extends VisitorOps<Event> {
 
     private final ProgramBuilder builder;
     private int nextBarrierId = 0;
@@ -58,6 +58,7 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         return HelperTags.parseMemorySemanticsTags(semanticsId, builder.getExpression(semanticsId));
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpControlBarrier",

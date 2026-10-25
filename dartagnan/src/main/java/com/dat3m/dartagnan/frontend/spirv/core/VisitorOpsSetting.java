@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder;
 
 import java.util.Set;
 
-public class VisitorOpsSetting extends SpirvBaseVisitor<Void> {
+public class VisitorOpsSetting extends VisitorOps<Void> {
 
     private final ProgramBuilder builder;
 
@@ -37,6 +37,7 @@ public class VisitorOpsSetting extends SpirvBaseVisitor<Void> {
         };
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpCapability",

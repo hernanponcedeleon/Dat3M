@@ -19,7 +19,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
-public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
+public class VisitorOpsBits extends VisitorOps<Event> {
 
     private final ProgramBuilder builder;
 
@@ -112,6 +112,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return builder.addEvent(event);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpShiftLeftLogical",

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
@@ -89,26 +90,13 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     private void initializeVisitors() {
-        for (Class<?> cls : getChildVisitors()) {
-            try {
-                Constructor<?> constructor = cls.getDeclaredConstructor(ProgramBuilder.class);
-                SpirvBaseVisitor<?> visitor = (SpirvBaseVisitor<?>) constructor.newInstance(builder);
-                Method method = cls.getDeclaredMethod("getSupportedOps");
-                Object object = method.invoke(visitor);
-                if (object instanceof Set<?> ops) {
-                    ops.forEach(op -> {
-                        if (visitors.put(op.toString(), visitor) != null) {
-                            throw new IllegalArgumentException("Attempt to redefine visitor for " + op);
-                        }
-                    });
-                } else {
-                    throw new IllegalArgumentException("Illegal supported Ops in " + cls.getName());
+        for (var constructor : getChildVisitors()) {
+            VisitorOps<?> visitor = constructor.apply(builder);
+            visitor.getSupportedOps().forEach(op -> {
+                if (visitors.put(op, visitor) != null) {
+                    throw new IllegalArgumentException("Attempt to redefine visitor for " + op);
                 }
-            } catch (NoSuchMethodException | SecurityException |
-                     InstantiationException | IllegalAccessException |
-                     IllegalArgumentException | InvocationTargetException e) {
-                throw new IllegalArgumentException("Failed to initialize visitor " + cls.getName(), e);
-            }
+            });
         }
     }
 
@@ -140,25 +128,26 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                         "Missing visitor " + VisitorOpsConstant.class.getSimpleName()));
     }
 
-    private Set<Class<?>> getChildVisitors() {
+    private Set<Function<ProgramBuilder, VisitorOps<?>>> getChildVisitors() {
         return Set.of(
-                VisitorOpsAnnotation.class,
-                VisitorOpsArithmetic.class,
-                VisitorOpsAtomic.class,
-                VisitorOpsBarrier.class,
-                VisitorOpsBits.class,
-                VisitorOpsComposite.class,
-                VisitorOpsConstant.class,
-                VisitorOpsControlFlow.class,
-                VisitorOpsConversion.class,
-                VisitorOpsDebug.class,
-                VisitorOpsExtension.class,
-                VisitorOpsFunction.class,
-                VisitorOpsLogical.class,
-                VisitorOpsMemory.class,
-                VisitorOpsMisc.class,
-                VisitorOpsSetting.class,
-                VisitorOpsType.class
+                VisitorOpsAnnotation::new,
+                VisitorOpsArithmetic::new,
+                VisitorOpsAtomic::new,
+                VisitorOpsBarrier::new,
+                VisitorOpsBits::new,
+                VisitorOpsComposite::new,
+                VisitorOpsConstant::new,
+                VisitorOpsControlFlow::new,
+                VisitorOpsConversion::new,
+                VisitorOpsDebug::new,
+                VisitorOpsExtension::new,
+                VisitorOpsFunction::new,
+                VisitorOpsLogical::new,
+                VisitorOpsMemory::new,
+                VisitorOpsMisc::new,
+                VisitorOpsSetting::new,
+                VisitorOpsType::new
         );
     }
+
 }

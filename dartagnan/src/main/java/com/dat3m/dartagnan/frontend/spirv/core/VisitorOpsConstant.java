@@ -17,7 +17,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.frontend.spirv.decorations.DecorationType.BUILT_IN;
 
-public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsConstant extends VisitorOps<Expression> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
@@ -227,6 +227,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return null;
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpConstantTrue",

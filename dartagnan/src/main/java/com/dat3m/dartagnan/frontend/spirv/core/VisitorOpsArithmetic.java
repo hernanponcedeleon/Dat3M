@@ -23,7 +23,7 @@ import java.util.function.Function;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 
-public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
+public class VisitorOpsArithmetic extends VisitorOps<Event> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
@@ -132,6 +132,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
         throw new ParsingException("Illegal result type for '%s'", id);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpSNegate",

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 import static com.dat3m.dartagnan.frontend.spirv.decorations.DecorationType.BUILT_IN;
 
-public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
+public class VisitorOpsMemory extends VisitorOps<Event> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -263,6 +263,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpVariable",

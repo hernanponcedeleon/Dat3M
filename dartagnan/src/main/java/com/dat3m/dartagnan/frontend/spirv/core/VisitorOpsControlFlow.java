@@ -19,7 +19,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.newFunctionReturn;
 
-public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
+public class VisitorOpsControlFlow extends VisitorOps<Event> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private final ProgramBuilder builder;
@@ -211,6 +211,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         return cfBuilder.endBlock(event);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpPhi",

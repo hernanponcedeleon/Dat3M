@@ -20,7 +20,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 
-public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
+public class VisitorOpsComposite extends VisitorOps<Void> {
 
     private final ProgramBuilder builder;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -160,6 +160,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpCompositeExtract",
