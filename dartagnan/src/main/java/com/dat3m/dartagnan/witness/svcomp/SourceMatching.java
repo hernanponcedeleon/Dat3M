@@ -9,7 +9,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.witness.svcomp.Witness.Location;
 
 /**
- * Relates the events of a program to the source locations of witnesses.
+ * Relates the events of a program to the source locations of a witness.
  * Witness extraction and validation share these definitions, so that they agree on what a waypoint denotes.
  */
 public final class SourceMatching {
@@ -18,15 +18,18 @@ public final class SourceMatching {
 
     /** Events are matched by source line and file name, ignoring directories. */
     public static boolean matches(Location location, Event event) {
-        return event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic
-                && generic.lineNumber() == location.line()
-                && generic.sourcePath().getFileName().equals(location.fileName().getFileName());
+        return switch (event.getMetadata(SourceLocation.class)) {
+            case SourceLocation.Generic(var path, int line) ->
+                    line == location.line() && path.getFileName().equals(location.fileName().getFileName());
+            case null, default -> false;
+        };
     }
 
     /**
-     * The events before {@code event} in its statement instance at {@code location}, in program order.
-     * A statement instance is a maximal run of consecutive events in program order at the same location,
-     * e.g., one loop iteration of the statement.
+     * One C source line may compile into several events, all carrying {@code SourceLocation.Generic(X.c, N)}.
+     * After loop unrolling or function inlining, every copy repeats that group.
+     * Returns the events at {@code location} that come before {@code event} in that one occurrence of
+     * the line, in program order. It does not include {@code event} itself.
      */
     public static List<Event> earlierInStatementInstance(Location location, Event event) {
         final List<Event> earlier = new ArrayList<>();

@@ -160,8 +160,8 @@ public class WitnessResolverTest {
     }
 
     private static boolean isAt(Event event, int line) {
-        return event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic
-                && generic.lineNumber() == line;
+        return event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic(var _, int l)
+                && l == line;
     }
 
     private static List<Event> events(ResolvedWaypoint waypoint) {
@@ -256,7 +256,6 @@ public class WitnessResolverTest {
         assertEquals(test.mainEventsAt(READ_LINE), events(target));
         assertTrue(target.candidates().stream().allMatch(candidate -> candidate.earlierInStatementInstance().isEmpty()
                 && candidate.constrainedAccesses().isEmpty()));
-        assertFalse(target.assertionViolation());
         assertFalse(witness.hasValueConstraints());
     }
 
@@ -301,7 +300,6 @@ public class WitnessResolverTest {
         for (int line : List.of(ASSERT_LINE, CHECK_CALL_LINE)) {
             final ResolvedWaypoint target = test.resolve(Property.PROGRAM_SPEC, new Target(0, at(line)))
                     .segments().getFirst().waypoints().getFirst();
-            assertTrue(target.assertionViolation());
             assertEquals(List.of(test.assertion()), events(target));
         }
     }
@@ -311,7 +309,6 @@ public class WitnessResolverTest {
         final TestProgram test = TestProgram.build(1);
         final ResolvedWaypoint target = test.resolve(Property.PROGRAM_SPEC, new Target(0, at(WRITE_LINE)))
                 .segments().getFirst().waypoints().getFirst();
-        assertTrue(target.assertionViolation());
         assertEquals(List.of(), target.candidates());
     }
 

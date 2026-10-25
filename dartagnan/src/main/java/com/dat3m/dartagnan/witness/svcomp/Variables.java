@@ -10,11 +10,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Verify.verify;
+
 /**
  * Defines which program variables witnesses may constrain.
  * Witness extraction and validation share these rules, so that every assumption we generate is one we can validate.
- * A variable is a bare identifier naming a statically allocated, initialized scalar memory object of integral type.
- * Validation additionally requires all writes to the object to have its type.
+ * A variable is a bare identifier naming a statically allocated, initialized scalar memory object of integral scalar type.
  * Writes are only known after alias analysis, so this last rule is checked by {@link WitnessResolver} alone.
  */
 public final class Variables {
@@ -24,14 +25,12 @@ public final class Variables {
 
     private Variables() { }
 
-    /** Whether {@code object} may be named by a witness variable. */
     public static boolean isVariable(MemoryObject object) {
         return object.hasName() && NAME.matcher(object.getName()).matches() && scalarType(object).isPresent();
     }
 
     /**
-     * The type of the only field of {@code object}, if it is a statically allocated, initialized integral scalar
-     * whose size is that of its type.
+     * The type of the only field of {@code object}, if it is a statically allocated, initialized integral scalar.
      */
     public static Optional<Type> scalarType(MemoryObject object) {
         if (!object.isStaticallyAllocated() || !object.hasKnownSize()
@@ -39,8 +38,12 @@ public final class Variables {
             return Optional.empty();
         }
         final Type type = object.getInitialValue(0).getType();
-        final boolean integral = type instanceof IntegerType || type instanceof BooleanType;
-        return integral && TypeFactory.getInstance().getMemorySizeInBytes(type) == object.getKnownSize()
-                ? Optional.of(type) : Optional.empty();
+        if (!(type instanceof IntegerType || type instanceof BooleanType)) {
+            return Optional.empty();
+        }
+        // Frontends store the initializer of the whole object at offset 0.
+        verify(TypeFactory.getInstance().getMemorySizeInBytes(type) == object.getKnownSize(),
+                "Initial value of %s does not span the object", object);
+        return Optional.of(type);
     }
 }

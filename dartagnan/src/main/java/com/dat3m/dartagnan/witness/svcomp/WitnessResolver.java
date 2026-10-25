@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.SvcompWitnessEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -27,35 +29,43 @@ import static com.dat3m.dartagnan.witness.svcomp.SourceMatching.matches;
 import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 
 /**
- * Resolves the waypoints of a violation witness to the events of a bounded program.
+ * Step 2 of witness validation (see {@link WitnessValidationTask}):
+ * maps the waypoints of a parsed witness to the events of the bounded program, i.e., after loop unrolling
+ * and function inlining. For each waypoint, it collects the candidates, the events that may satisfy it.
+ * Choosing among them is left to the encoding ({@link SvcompWitnessEncoder}).
  *
  * Threads: witness ID 0 identifies the main thread. A function_enter waypoint gives the
  * parent's witness ID and the thread-creation location. The thread created there
  * receives the next witness ID (1, 2, ...). Several program threads may be created at that
  * location, e.g., one per loop iteration, so each witness ID keeps every program thread
  * compatible with it: a thread created at the location by a thread compatible with the parent.
- * Choosing one of them is left to the encoding.
  *
- * Locations: events are matched by source line and file name, ignoring directories.
- * Multiple events can match a location, for example after loop unrolling. Conversely, a location
- * may match no event, e.g., code reached only beyond the unrolling or recursion bound. Then the
- * waypoint (or witness thread ID) has no candidates and cannot be satisfied, which lets the solver
- * decide whether higher bounds are needed. Only witnesses that are malformed or unsupported for every
- * bound, e.g., referring to undeclared thread IDs, are rejected with an exception.
+ * Locations: events are matched by source line and file name, ignoring directories (see {@link SourceMatching}).
+ * Multiple events can match a location, for example after loop unrolling.
  *
- * Targets: a target denotes the event at which the property is violated. For assertion-based
- * properties, its candidates are the assertions whose violation sites include the target location:
- * the assertion itself and every call site on its (inlined) call stack. Hence, a target may point to
- * the failing assertion or to any call leading to it, e.g., a call to a function wrapping the
- * assertion. A target matching only other events has no candidates.
- * For other properties, the candidates are all events at the target location.
+ * Candidates: for a function_enter waypoint, the candidates are the entry events of the compatible child threads.
+ * A target denotes the event at which the property is violated. For assertion-based properties, its candidates
+ * are the assertions whose violation sites include the target location: the assertion itself and every call site
+ * on its (inlined) call stack. Hence, a target may point to the failing assertion or to any call leading to it,
+ * e.g., a call to a function wrapping the assertion. A target matching only other events has no candidates.
+ * For other properties, the candidates of a target are all events at the location in a compatible thread.
+ * The same holds for assumptions, except that function return markers are excluded. An assumption candidate
+ * also records the earlier events of its statement instance, i.e., of the run of consecutive events at the
+ * location it belongs to (e.g., one loop iteration), and the accesses to the constrained variables within it.
  *
  * Variables: each variable of an assumption must be a bare identifier naming a unique,
  * statically allocated, initialized scalar memory object of integral type, all of whose
- * writes have the type of the object. A variable naming no memory object is left unresolved,
- * and equalities on it cannot be satisfied: unused objects are removed from the program, e.g.,
+ * writes have the type of the object (see {@link Variables}). A variable naming no memory object is left
+ * unresolved, and equalities on it cannot be satisfied: unused objects are removed from the program, e.g.,
  * when all their accesses lie beyond the current bounds. Array indexing, member access, pointer dereferences,
- * register-only variables, and partial writes are currently unsupported.
+ * register-only variables, and partial writes are currently unsupported. Assumptions that are the constant
+ * true constrain nothing and are dropped.
+ *
+ * Missing candidates: a waypoint, or a witness thread ID, may have no candidates, e.g., when its code is only
+ * reached beyond the unrolling or recursion bound. This is not an error: the waypoint cannot be satisfied,
+ * which lets the solver decide whether higher bounds are needed. Only witnesses that do not fit the program
+ * for any bound are rejected with an exception, e.g., when they refer to undeclared thread IDs or constrain
+ * unsupported variables.
  */
 public final class WitnessResolver {
 
@@ -84,12 +94,9 @@ public final class WitnessResolver {
 
     /**
      * The candidates of a waypoint run in a program thread bound to witness thread {@code threadId}. For a
-     * function_enter waypoint, this is the ID of the entered thread, not of its parent. For a target,
-     * {@code assertionViolation} tells whether its candidates are assertions that must be violated,
-     * rather than events that must execute.
+     * function_enter waypoint, this is the ID of the entered thread, not of its parent.
      */
-    public record ResolvedWaypoint(Waypoint waypoint, int threadId, boolean assertionViolation,
-            List<Candidate> candidates) {
+    public record ResolvedWaypoint(Waypoint waypoint, int threadId, List<Candidate> candidates) {
         public ResolvedWaypoint {
             Objects.requireNonNull(waypoint);
             candidates = List.copyOf(candidates);
@@ -163,8 +170,7 @@ public final class WitnessResolver {
                 final int threadId = waypoint instanceof FunctionEnter enter
                         ? threads.entered().get(enter)
                         : waypoint.threadId();
-                final boolean assertionViolation = waypoint instanceof Target && assertionTargets;
-                waypoints.add(new ResolvedWaypoint(waypoint, threadId, assertionViolation, candidates));
+                waypoints.add(new ResolvedWaypoint(waypoint, threadId, candidates));
             }
             if (!waypoints.isEmpty()) {
                 segments.add(new ResolvedSegment(waypoints));

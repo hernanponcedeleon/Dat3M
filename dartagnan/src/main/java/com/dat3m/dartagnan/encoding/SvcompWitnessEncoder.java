@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -31,36 +30,40 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Encodes a violation witness resolved by {@link WitnessResolver} as follows:
+ * Step 3 of witness validation (see {@link WitnessValidationTask}): encodes a witness resolved by
+ * {@link WitnessResolver} as constraints that restrict the encoded executions to those that follow the witness.
  *
  * Threads: each witness thread ID is bound to exactly one of its compatible program threads,
- * and distinct IDs are bound to distinct threads. Every selected candidate event runs in the thread
- * bound to the ID of its waypoint. The thread entered by a function_enter waypoint must start
- * executing, and its creator must run in the thread bound to the parent's ID.
+ * and distinct IDs are bound to distinct threads.
+ *
+ * Selection: each candidate event gets a selector (implemented as a BooleanFormula), and each waypoint
+ * must select at least one of its candidates.
+ * A selected candidate runs in the thread bound to the ID of its waypoint and satisfies the waypoint:
+ * the thread entered by a function_enter waypoint starts executing, and its creator runs in the thread bound
+ * to the parent's ID; a target is reached, i.e., its event executes; an assumption holds at the first executed
+ * event of its statement instance.
  *
  * Assumptions: supported constraints are Boolean constants, expressions of the form
  * variable == integer_literal, or conjunctions of these. Floating-point assumptions are
  * currently unsupported. Each equality constrains the value of its variable immediately
  * before the source statement. Its value comes from the last executed write, including
- * initialization, in the SV-COMP execution order. All equalities in a conjunction refer
- * to the same position.
+ * initialization, before that position in the witness clock. All equalities in a conjunction
+ * refer to the same position.
  *
- * Targets: for assertion-based properties, at least one assertion resolved for the target must
- * be violated, i.e., executed with a false condition. For other properties, at least one event in
- * the specified thread at the target source location must execute. For CAT specifications, the
- * selected target events must also constitute the violation, as encoded by {@link SvcompWitnessTargetEncoder}.
+ * Witness clock: {@link SvcompWitnessOrderEncoder} ranks the events in a total order that is compatible
+ * with the memory model: it follows the hb-consistency, rf, co, and fr edges and program order between the
+ * waypoints and the memory events of their threads, and it does not interleave atomic sections or
+ * read-modify-write pairs with other threads.
  *
- * Every waypoint must satisfy the requirement for its type: the child thread starts
- * executing, the assumption holds, or the target is reached.
+ * Segment order: selected events from consecutive segments are ranked in strictly increasing order, using a
+ * separator rank between each pair of consecutive segments. The accesses to the variables of a selected
+ * assumption, within the same statement instance, are also placed after the previous segment's events and
+ * before the next segment's events. Events within one segment are not ordered among each other, e.g., the
+ * two accesses of a data race.
  *
- * Segment order: to order segments, at least one executed candidate event is selected
- * per segment. A selected assumption event must also satisfy its value constraints.
- * Bitvector ranks, provided by {@link SvcompWitnessOrderEncoder}, place selected events from consecutive segments in
- * strictly increasing order, using a separator rank between each pair of consecutive segments.
- * Thus, the witness order must be compatible with the memory model.
- * The accesses to the variables of a selected assumption, within the same statement instance,
- * are also placed after the previous segment's events and before the next segment's events,
- * without ordering them among each other.
+ * Targets: the selected targets must also constitute the violation of the property, as encoded by
+ * {@link SvcompWitnessTargetEncoder}, e.g., a violated assertion for unreach-call, or the two accesses
+ * of a data race for no-data-race.
  */
 public final class SvcompWitnessEncoder {
 
@@ -99,7 +102,7 @@ public final class SvcompWitnessEncoder {
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();
         this.order = new SvcompWitnessOrderEncoder(context);
-        this.targets = new SvcompWitnessTargetEncoder(context);
+        this.targets = new SvcompWitnessTargetEncoder(context, property);
     }
 
     public static SvcompWitnessEncoder withContext(EncodingContext context) {
@@ -121,13 +124,11 @@ public final class SvcompWitnessEncoder {
         final List<SegmentEncoding> segments = encodeSegments(resolvedWitness);
         // Every waypoint must be satisfied, even if there is nothing to order.
         constraints.add(encodeSegmentOrder(segments));
-        if (property == Property.CAT_SPEC) {
-            constraints.add(targets.encode(segments.stream()
-                    .flatMap(segment -> segment.waypoints().stream())
-                    .filter(waypoint -> waypoint.waypoint() instanceof Target)
-                    .map(WaypointEncoding::selectors)
-                    .toList()));
-        }
+        constraints.add(targets.encode(segments.stream()
+                .flatMap(segment -> segment.waypoints().stream())
+                .filter(waypoint -> waypoint.waypoint() instanceof Target)
+                .map(WaypointEncoding::selectors)
+                .toList()));
         final boolean hasValues = resolvedWitness.hasValueConstraints();
         if (segments.size() > 1 || hasValues) {
             // Ranks are only compared for ordering segments and for reading values.
@@ -137,7 +138,7 @@ public final class SvcompWitnessEncoder {
             final List<Init> inits = variables.values().stream()
                     .flatMap(variable -> variable.writes().stream())
                     .filter(Init.class::isInstance).map(Init.class::cast).distinct().toList();
-            constraints.add(order.encode(segmentCandidates, inits, hasValues));
+            constraints.add(order.encode(segmentCandidates, inits));
         }
         return bmgr.and(constraints);
     }
@@ -240,7 +241,7 @@ public final class SvcompWitnessEncoder {
         final Set<Event> nextEvents = eventsOf(nextCandidates);
         final List<BooleanFormula> constraints = new ArrayList<>();
         for (CandidateEncoding first : previousCandidates) {
-            constraints.add(bmgr.implication(first.selector(), order.atMost(first.candidate().event(), separator)));
+            constraints.add(bmgr.implication(first.selector(), order.upperBound(first.candidate().event(), separator)));
             for (Event access : first.candidate().constrainedAccesses()) {
                 if (nextEvents.contains(access)) {
                     for (CandidateEncoding second : nextCandidates) {
@@ -252,12 +253,13 @@ public final class SvcompWitnessEncoder {
                     }
                 } else {
                     constraints.add(bmgr.implication(bmgr.and(first.selector(), context.execution(access)),
-                            order.atMost(access, separator)));
+                            order.upperBound(access, separator)));
                 }
             }
         }
         for (CandidateEncoding second : nextCandidates) {
-            constraints.add(bmgr.implication(second.selector(), order.above(second.candidate().event(), separator)));
+            constraints.add(bmgr.implication(second.selector(),
+                    order.lowerBound(second.candidate().event(), separator)));
             for (Event access : second.candidate().constrainedAccesses()) {
                 if (previousEvents.contains(access)) {
                     for (CandidateEncoding first : previousCandidates) {
@@ -269,7 +271,7 @@ public final class SvcompWitnessEncoder {
                     }
                 } else {
                     constraints.add(bmgr.implication(bmgr.and(second.selector(), context.execution(access)),
-                            order.above(access, separator)));
+                            order.lowerBound(access, separator)));
                 }
             }
         }
@@ -286,12 +288,8 @@ public final class SvcompWitnessEncoder {
 
     private BooleanFormula encodeWaypoint(ResolvedWaypoint waypoint, Candidate candidate,
             Map<String, ResolvedVariable> variables) {
-        if (waypoint.assertionViolation()) {
-            final Assert assertion = (Assert) candidate.event();
-            return bmgr.and(context.execution(assertion), bmgr.not(context.getExpressionEncoder()
-                    .encodeBooleanAt(assertion.getExpression(), assertion).formula()));
-        }
         if (!(waypoint.waypoint() instanceof Assumption assumption)) {
+            // For targets, SvcompWitnessTargetEncoder encodes what else makes them a violation.
             return context.execution(candidate.event());
         }
         final List<BooleanFormula> constraints = new ArrayList<>();

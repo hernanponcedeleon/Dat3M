@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
+import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -17,6 +18,25 @@ import java.util.regex.Pattern;
 
 import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 
+/**
+ * Step 1 of witness validation (see {@link WitnessValidationTask}):
+ * reads an SV-COMP witness file into a {@link ViolationWitness}, independently of the program.
+ *
+ * Entries: the first entry of type violation_sequence is read. Its metadata must name exactly one input file.
+ *
+ * Segments: each item of its content is a segment, i.e., a list of waypoints. Segments left without
+ * waypoints, e.g., because they only contain branching waypoints, are dropped.
+ *
+ * Waypoints: function_enter, assumption, and target waypoints are supported. Each has a location
+ * (file name and line) and a thread ID, which is 0 if absent. Branching waypoints are ignored, because
+ * a branch in the C source may have no corresponding branch after compilation to LLVM.
+ * Only the follow action is supported.
+ *
+ * Assumptions: constraints must be C expressions built from Boolean constants (true, false, 0, 1),
+ * equalities of the form {@code variable == integer_literal}, conjunctions ({@code &&}), and parentheses.
+ *
+ * Missing fields and unsupported content are reported as an {@link IOException}.
+ */
 public final class WitnessYamlParser {
 
     private WitnessYamlParser() { }

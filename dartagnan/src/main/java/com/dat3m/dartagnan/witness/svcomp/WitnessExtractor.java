@@ -34,9 +34,9 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.DATA_RACE_AXIOM;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.HB_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE_AXIOM;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.HB_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
 import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
@@ -311,11 +311,11 @@ public final class WitnessExtractor {
     }
 
     private static Location inputLocation(Event event, Path programFile) {
-        if (!(event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic generic)
-                || generic.lineNumber() < 1) {
+        if (!(event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic(var _, int line))
+                || line < 1) {
             return null;
         }
-        final Location location = new Location(programFile, generic.lineNumber());
+        final Location location = new Location(programFile, line);
         return SourceMatching.matches(location, event) ? location : null;
     }
 
