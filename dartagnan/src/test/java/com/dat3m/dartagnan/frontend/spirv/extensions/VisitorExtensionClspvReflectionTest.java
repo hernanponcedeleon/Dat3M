@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.frontend.spirv.extensions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsExtension;
+import com.dat3m.dartagnan.frontend.spirv.ops.VisitorOpsExtension;
 import com.dat3m.dartagnan.frontend.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.frontend.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.ThreadGrid;
