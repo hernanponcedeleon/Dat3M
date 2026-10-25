@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.configuration.IntervalAnalysisMethod;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.*;
