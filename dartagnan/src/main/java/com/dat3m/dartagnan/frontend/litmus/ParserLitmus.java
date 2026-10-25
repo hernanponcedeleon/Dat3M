@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.IntStream;
 
-public class ParserLitmus implements ParserInterface {
+public class ParserLitmus implements ParserInterface<Program> {
 
     private static final String TYPE_AARCH64 = "AARCH64";
     private static final String TYPE_PPC = "PPC";
@@ -31,7 +31,7 @@ public class ParserLitmus implements ParserInterface {
         return getParser(getFirstWord(peekFirstLine(charStream))).parse(charStream);
     }
 
-    private static ParserInterface getParser(String type) {
+    private static ParserInterface<Program> getParser(String type) {
         return switch (type.toUpperCase()) {
             case TYPE_AARCH64 -> new ParserLitmusAArch64();
             case TYPE_PPC -> new ParserLitmusPPC();

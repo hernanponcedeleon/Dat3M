@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.frontend.llvm.asm;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dat3m.dartagnan.frontend.llvm.ParserAsm;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -17,7 +16,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserAsmX86 extends ParserAsm {
+public class ParserAsmX86 implements ParserAsm {
 
     private final VisitorAsmX86 visitor;
 

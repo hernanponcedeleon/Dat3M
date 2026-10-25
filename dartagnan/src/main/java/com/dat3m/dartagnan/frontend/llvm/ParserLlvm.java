@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Memory;
 import org.antlr.v4.runtime.*;
 
-public class ParserLlvm implements ParserInterface {
+public class ParserLlvm implements ParserInterface<Program> {
 
     @Override
     public Program parse(CharStream charStream) {
