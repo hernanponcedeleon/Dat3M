@@ -98,7 +98,7 @@ public class OutputGenerator {
 
     private final boolean isBatchMode;
     private int batchIndex = -1;
-    private Optional<Path> witnessFile = Optional.empty();
+    private Path witnessFile = null;
     // Null unless generating SV-COMP witnesses.
     private final SvcompOutputGenerator svcompOutput;
 
@@ -113,7 +113,7 @@ public class OutputGenerator {
     }
 
     public Optional<Path> getWitnessFile() {
-        return witnessFile;
+        return Optional.ofNullable(witnessFile);
     }
 
     // ====================================================================================
@@ -252,7 +252,7 @@ public class OutputGenerator {
 
         // ----------------- Generate optional witness -----------------
         batchIndex++;
-        witnessFile = Optional.empty();
+        witnessFile = null;
         if (!(task instanceof WitnessValidationTask)) {
             try {
                 witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
@@ -347,17 +347,16 @@ public class OutputGenerator {
                 "", "", details.toString(), time, witnessFile));
     }
 
-    private Optional<Path> generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
+    private Path generateWitnessIfAble(VerificationResult result, String filename) throws IOException {
         final VerificationStatus status = result.getStatus();
-        if (status == UNKNOWN && !generateWitnessForUnknown) {
-            return Optional.empty();
+        if (witnessType == WitnessType.NONE || (status == UNKNOWN && !generateWitnessForUnknown)) {
+            return null;
         }
 
-        return switch (witnessType) {
-            case NONE -> Optional.empty();
+        switch (witnessType) {
             case DOT, PNG -> {
                 if (!result.hasModel()) {
-                    yield Optional.empty();
+                    return null;
                 }
                 final VerificationTask task = result.getTask();
                 final ExecutionModelNext model = fromIREvaluator(result.getModel());
@@ -365,14 +364,18 @@ public class OutputGenerator {
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                yield Optional.ofNullable(generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
+                return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
                         (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
-                ));
+                );
             }
-            case SV -> svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
-        };
+            case SV -> {
+                return svcompOutput.generate(result, getOrCreateOutputDirectory().resolve(filename + ".yml"));
+            }
+        }
+
+        return null;
     }
 
     // =========================================== Utility =================================================
@@ -490,14 +493,14 @@ public class OutputGenerator {
     }
 
     private static String toVerificationSummary(String programSource, String filter, VerificationStatus status, String condition,
-                                                String reason, String details, long time, Optional<Path> witness) {
+                                                String reason, String details, long time, Path witness) {
 
         final String shownTest = formatOptional("Test: %s%n", programSource);
         final String shownFilter = formatOptional("Filter: %s%n", filter);
         final String shownCondition = formatOptional("Condition: %s", condition);
         final String shownReason = status != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
         final String shownDetails = formatOptional("Details:%n%s", details);
-        final String shownWitness = witness.map(path -> String.format("Witness: %s%n", path)).orElse("");
+        final String shownWitness = formatOptional("Witness: %s%n", witness);
         final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
 
         return String.format("%s%sResult: %s%n%s%s%s%s%s",

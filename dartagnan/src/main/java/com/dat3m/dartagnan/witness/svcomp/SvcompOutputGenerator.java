@@ -39,16 +39,16 @@ public final class SvcompOutputGenerator {
         }
     }
 
-    /** Writes the witness for {@code result} to {@code file}. Returns empty if no witness was generated. */
-    public Optional<Path> generate(VerificationResult result, Path file) throws IOException {
+    /** Writes the witness for {@code result} to {@code file}. Returns {@code null} if no witness was generated. */
+    public Path generate(VerificationResult result, Path file) throws IOException {
         final Optional<? extends SvcompWitness> witness = result.getStatus() == PASS
                 ? correctnessWitness(result)
                 : violationWitness(result);
         if (witness.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
         SvcompWitnessYamlWriter.write(witness.get(), file);
-        return Optional.of(file);
+        return file;
     }
 
     private Optional<SvcompCorrectnessWitness> correctnessWitness(VerificationResult result) throws IOException {
