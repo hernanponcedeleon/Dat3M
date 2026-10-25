@@ -41,20 +41,16 @@ public class SVCOMPRunner {
             // TODO process the property file instead of assuming its contents based of its name
             // Verification also enables PROGRAM_SPEC (see getProperties) to detect calls to unknown functions.
             // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
-            if(p.contains("no-data-race")) {
-                property = EnumSet.of(Property.CAT_SPEC);
-            } else if(p.contains("termination")) {
-                property = EnumSet.of(Property.TERMINATION);
-            } else if(p.contains("valid-memsafety")) {
-                property = EnumSet.of(Property.TRACKABILITY);
-            } else if(p.contains("unreach-call")) {
-                property = EnumSet.of(Property.PROGRAM_SPEC);
-                witnessProperty = "unreach-call";
-            } else if(p.contains("no-overflow")) {
-                property = EnumSet.of(Property.PROGRAM_SPEC);
-                witnessProperty = "no-overflow";
-            } else {
-                throw new IllegalArgumentException("Unrecognized property " + p);
+            final String name = Path.of(p).getFileName().toString().replaceFirst("\\.prp$", "");
+            switch (name) {
+                case "no-data-race" -> property = EnumSet.of(Property.CAT_SPEC);
+                case "termination" -> property = EnumSet.of(Property.TERMINATION);
+                case "valid-memsafety" -> property = EnumSet.of(Property.TRACKABILITY);
+                case "unreach-call", "no-overflow" -> {
+                    property = EnumSet.of(Property.PROGRAM_SPEC);
+                    witnessProperty = name;
+                }
+                default -> throw new IllegalArgumentException("Unrecognized property " + p);
             }
         }
 
