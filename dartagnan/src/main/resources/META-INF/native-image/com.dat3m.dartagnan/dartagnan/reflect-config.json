@@ -208,33 +208,33 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines$Pipeline",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline$Command",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines$Pipeline$Command",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsAnnotation",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsAnnotation",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -244,12 +244,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsArithmetic",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsArithmetic",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -259,12 +259,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsAtomic",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsAtomic",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -274,12 +274,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsBarrier",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsBarrier",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -289,12 +289,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsBits",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsBits",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -304,12 +304,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsComposite",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsComposite",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -319,12 +319,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsConstant",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsConstant",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -334,12 +334,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsControlFlow",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsControlFlow",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -349,12 +349,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsConversion",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsConversion",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -364,12 +364,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsDebug",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsDebug",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -379,12 +379,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsExtension",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsExtension",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -394,12 +394,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsFunction",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsFunction",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -409,12 +409,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsLogical",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsLogical",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -424,12 +424,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsMemory",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsMemory",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -439,12 +439,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsMisc",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsMisc",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -454,12 +454,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsSetting",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsSetting",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
@@ -469,12 +469,12 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsType",
+        "name": "com.dat3m.dartagnan.frontend.spirv.core.VisitorOpsType",
         "methods": [
           {
             "name": "<init>",
             "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
+              "com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder"
             ]
           },
           {
