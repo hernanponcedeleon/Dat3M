@@ -18,10 +18,6 @@ final class ExecutionLinearizer {
 
     private ExecutionLinearizer() { }
 
-    /**
-     * Orders all events consistently with {@code hb}, program order and thread creation.
-     * The events of an atomic section stay contiguous.
-     */
     static List<EventModel> linearize(ExecutionModelNext model, RelationModel hb) {
         final List<EventModel> events = model.getEventModels();
         final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
@@ -32,6 +28,7 @@ final class ExecutionLinearizer {
 
         for (ThreadModel thread : model.getThreadModels()) {
             final List<EventModel> threadEvents = thread.getEventModels();
+            // hb only relates visible events, so asserts, thread creations, and atomic markers need these edges.
             for (int i = 1; i < threadEvents.size(); i++) {
                 predecessors.computeIfAbsent(threadEvents.get(i), _ -> new HashSet<>())
                         .add(threadEvents.get(i - 1));
