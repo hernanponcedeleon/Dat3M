@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.frontend.spirv.extenstions;
+package com.dat3m.dartagnan.frontend.spirv.extensions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;

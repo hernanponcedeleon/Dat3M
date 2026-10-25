@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.frontend.spirv.extensions;
 
-import com.dat3m.dartagnan.frontend.spirv.extenstions.VisitorExtensionDebugInfo;
 import com.dat3m.dartagnan.frontend.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.frontend.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.metadata.SourceLocation;
