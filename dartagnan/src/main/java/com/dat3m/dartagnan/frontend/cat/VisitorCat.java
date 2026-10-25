@@ -12,7 +12,10 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 
 import com.dat3m.dartagnan.wmm.utils.Dimension;
@@ -22,8 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -130,22 +131,33 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Void visitAxiomDefinition(AxiomDefinitionContext ctx) {
         currentInstructionContext = ctx;
-        try {
-            Relation r = parseAsRelation(ctx.e);
-            Constructor<?> constructor = ctx.cls.getConstructor(Relation.class, boolean.class, boolean.class);
-            boolean negate = ctx.negate != null ^ ctx.undef != null;
-            boolean flag = ctx.flag != null || ctx.undef != null;
-            Axiom axiom = (Axiom) constructor.newInstance(r, negate, flag);
-            String name = ctx.NAME() != null ? ctx.NAME().toString() : "";
-            name += ctx.undef != null ? " (*undef*)" : "";
-            if (!name.isEmpty()) {
-                axiom.setName(name);
-            }
-            wmm.addConstraint(axiom);
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
-                 InvocationTargetException e) {
-            throw parsingException(e, ctx);
+        Relation r = parseAsRelation(ctx.e);
+        boolean negate = ctx.negate != null ^ ctx.undef != null;
+        boolean flag = ctx.flag != null || ctx.undef != null;
+        Axiom axiom = constructAxiom(ctx.cls, r, negate, flag);
+
+        if (axiom == null) {
+            throw parsingException(ctx, "Unknown axiom type.");
         }
+
+        String name = ctx.NAME() != null ? ctx.NAME().toString() : "";
+        name += ctx.undef != null ? " (*undef*)" : "";
+        if (!name.isEmpty()) {
+            axiom.setName(name);
+        }
+        wmm.addConstraint(axiom);
+        return null;
+    }
+
+    private Axiom constructAxiom(Class<?> clazz, Relation r, boolean negate, boolean flag) {
+        if (clazz == Acyclicity.class) {
+            return new Acyclicity(r, negate, flag);
+        } else if (clazz == Emptiness.class) {
+            return new Emptiness(r, negate, flag);
+        } else if (clazz == Irreflexivity.class) {
+            return new Irreflexivity(r, negate, flag);
+        }
+
         return null;
     }
 
@@ -155,7 +167,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             nameOccurrenceCounter.putIfAbsent(name, 1);
         }
 
-        final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
+        final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (_, v) -> v == null ? 1 : v + 1);
         // If it is the first time we encounter this name, we return it as is.
         return occurrenceNumber == 1 ? name : name + "#" + occurrenceNumber;
     }

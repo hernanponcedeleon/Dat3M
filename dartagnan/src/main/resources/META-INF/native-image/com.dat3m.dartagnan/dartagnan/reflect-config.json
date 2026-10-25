@@ -44,18 +44,6 @@
         "allDeclaredFields": true
     },
     {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Acyclicity",
-        "allDeclaredConstructors": true
-    },
-    {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Emptiness",
-        "allDeclaredConstructors": true
-    },
-    {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
-        "allDeclaredConstructors": true
-    },
-    {
         "name":"com.dat3m.dartagnan.Dartagnan$DartagnanOptions",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
