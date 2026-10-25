@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 
 import java.util.Set;
 
-public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
+public class VisitorOpsConversion extends VisitorOps<Event> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ProgramBuilder builder;
@@ -138,6 +138,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
         return builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpBitcast",

@@ -11,7 +11,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.frontend.spirv.decorations.DecorationType.*;
 
-public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
+public class VisitorOpsAnnotation extends VisitorOps<Void> {
 
     private final Decoration arrayStride;
     private final Decoration builtIn;
@@ -72,6 +72,7 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpDecorate",

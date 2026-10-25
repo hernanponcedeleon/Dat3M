@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
-public class VisitorOpsType extends SpirvBaseVisitor<Type> {
+public class VisitorOpsType extends VisitorOps<Type> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -164,6 +164,7 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         }
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpTypeVoid",

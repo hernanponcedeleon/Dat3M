@@ -17,7 +17,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.Spirv.*;
 
-public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
+public class VisitorOpsAtomic extends VisitorOps<Event> {
 
     private final ProgramBuilder builder;
 
@@ -214,6 +214,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         return HelperTags.parseMemorySemanticsTags(semanticsId, builder.getExpression(semanticsId));
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpAtomicLoad",

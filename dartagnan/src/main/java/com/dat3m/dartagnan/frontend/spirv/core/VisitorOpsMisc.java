@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.frontend.spirv.builders.ProgramBuilder;
 
 import java.util.Set;
 
-public class VisitorOpsMisc extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsMisc extends VisitorOps<Expression> {
 
     private final ProgramBuilder builder;
 
@@ -30,6 +30,7 @@ public class VisitorOpsMisc extends SpirvBaseVisitor<Expression> {
                 "OpUndef cannot have void type", id);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpUndef"

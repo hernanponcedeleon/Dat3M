@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.frontend.spirv.builders.ControlFlowBuilder;
 
 import java.util.Set;
 
-public class VisitorOpsDebug extends SpirvBaseVisitor<Void> {
+public class VisitorOpsDebug extends VisitorOps<Void> {
 
     private final ProgramBuilder builder;
     private final ControlFlowBuilder cfBuilder;
@@ -39,6 +39,7 @@ public class VisitorOpsDebug extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpSource",

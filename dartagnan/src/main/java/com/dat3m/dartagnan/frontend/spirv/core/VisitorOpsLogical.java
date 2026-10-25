@@ -21,7 +21,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import java.util.Set;
 import java.util.function.Function;
 
-public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
+public class VisitorOpsLogical extends VisitorOps<Event> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
@@ -193,6 +193,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                 "operand '%s' must be an integer", id, opId);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpLogicalOr",

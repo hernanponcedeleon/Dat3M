@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class VisitorOpsExtension extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsExtension extends VisitorOps<Expression> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<String, VisitorExtension<Expression>> availableVisitors = new HashMap<>();
@@ -93,6 +93,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Expression> {
         return ctx.getText();
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpExtension",

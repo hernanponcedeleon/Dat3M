@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import static com.dat3m.dartagnan.program.event.EventFactory.newValueFunctionCall;
 import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall;
 
-public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
+public class VisitorOpsFunction extends VisitorOps<Void> {
 
     private static final int DEFAULT_INPUT_SIZE = 10;
     private static final TypeFactory types = TypeFactory.getInstance();
@@ -213,6 +213,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         return Collections.unmodifiableMap(forwardFunctions);
     }
 
+    @Override
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpFunction",
