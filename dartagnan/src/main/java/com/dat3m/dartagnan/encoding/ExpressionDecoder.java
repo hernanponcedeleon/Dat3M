@@ -1,11 +1,8 @@
-package com.dat3m.dartagnan.model;
+package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.floats.FloatLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
@@ -21,80 +18,59 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
-    Converts values obtained from an SMT model into constant IR expressions (literals).
+    Decodes values from an SMT model into constant IR expressions (literals).
+    This is the inverse of the type mapping in ExpressionEncoder.makeVariable and must be kept in sync with it:
+    booleans <-> boolean formulas, integers and memory <-> bit-vectors, floats <-> floating-point formulas,
+    aggregates and arrays <-> tuple formulas.
     Integers are normalized to their unsigned representation.
  */
-final class ValueConverter {
+final class ExpressionDecoder {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private ValueConverter() {}
+    private ExpressionDecoder() {}
 
-    static Expression toExpression(TypedValue<?, ?> value) {
-        return toExpression(value.type(), value.value());
-    }
-
-    static Expression toExpression(Type type, Object value) {
+    static Expression decode(Type type, Object value) {
         return switch (type) {
             case BooleanType _ -> expressions.makeValue((Boolean) value);
-            case IntegerType intType -> toIntLiteral((BigInteger) value, intType);
+            case IntegerType intType -> decodeInteger((BigInteger) value, intType);
             case MemoryType memType ->
-                    new ToMemoryCast(memType, toIntLiteral((BigInteger) value, types.getIntegerType(memType.getBitWidth())));
-            case FloatType floatType -> toFloatLiteral(value, floatType);
+                    new ToMemoryCast(memType, decodeInteger((BigInteger) value, types.getIntegerType(memType.getBitWidth())));
+            case FloatType floatType -> decodeFloat(value, floatType);
             case ArrayType arrayType -> {
                 final List<?> elements = ((TupleValue) value).values();
                 Preconditions.checkArgument(elements.size() == arrayType.getNumElements());
                 yield expressions.makeArray(arrayType,
-                        elements.stream().map(v -> toExpression(arrayType.getElementType(), v)).toList());
+                        elements.stream().map(v -> decode(arrayType.getElementType(), v)).toList());
             }
             case AggregateType aggType -> {
                 final List<?> fields = ((TupleValue) value).values();
                 Preconditions.checkArgument(fields.size() == aggType.getFields().size());
                 final List<Expression> args = new ArrayList<>(fields.size());
                 for (int i = 0; i < fields.size(); i++) {
-                    args.add(toExpression(aggType.getFields().get(i).type(), fields.get(i)));
+                    args.add(decode(aggType.getFields().get(i).type(), fields.get(i)));
                 }
                 yield expressions.makeConstruct(aggType, args);
             }
             default -> throw new UnsupportedOperationException(
-                    String.format("Cannot convert model value %s of type %s", value, type));
+                    String.format("Cannot decode model value %s of type %s", value, type));
         };
-    }
-
-    static boolean isConstant(Expression expr) {
-        return switch (expr) {
-            case IntLiteral _, BoolLiteral _, FloatLiteral _ -> true;
-            case ToMemoryCast cast -> isConstant(cast.getOperand());
-            case ConstructExpr construct -> construct.getOperands().stream().allMatch(ValueConverter::isConstant);
-            default -> false;
-        };
-    }
-
-    // Unsigned value of an integer-like constant (IntLiteral or memory cast of one).
-    static BigInteger toUnsigned(Expression expr) {
-        final IntLiteral lit = switch (expr) {
-            case IntLiteral l -> l;
-            case ToMemoryCast cast when cast.getOperand() instanceof IntLiteral l -> l;
-            default -> throw new IllegalArgumentException("Not an integer constant: " + expr);
-        };
-        return IntegerHelper.normalizeUnsigned(lit.getValue(), lit.getType().getBitWidth());
     }
 
     // ======================================================================================================
 
-    private static IntLiteral toIntLiteral(BigInteger value, IntegerType type) {
-        // Solvers with integer (rather than bit-vector) encoding may return values outside the type's range.
+    private static IntLiteral decodeInteger(BigInteger value, IntegerType type) {
         return expressions.makeValue(IntegerHelper.normalizeUnsigned(value, type.getBitWidth()), type);
     }
 
-    private static FloatLiteral toFloatLiteral(Object value, FloatType type) {
+    private static FloatLiteral decodeFloat(Object value, FloatType type) {
         return switch (value) {
             case FloatingPointNumber fp -> fromFloatingPointNumber(fp, type);
             case Double d -> fromDouble(d, type);
             case Float f -> fromDouble(f.doubleValue(), type);
             default -> throw new UnsupportedOperationException(
-                    String.format("Cannot convert floating-point model value %s (%s)", value, value.getClass()));
+                    String.format("Cannot decode floating-point model value %s (%s)", value, value.getClass()));
         };
     }
 

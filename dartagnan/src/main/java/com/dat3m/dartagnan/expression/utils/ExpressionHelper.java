@@ -2,8 +2,15 @@ package com.dat3m.dartagnan.expression.utils;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.floats.FloatLiteral;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
+
+import java.math.BigInteger;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -57,6 +64,26 @@ public class ExpressionHelper {
 
     public static boolean isAggregateLike(Expression expr) {
         return isAggregateLike(expr.getType());
+    }
+
+    // Whether the expression is a fully evaluated constant (literals, possibly inside aggregates or memory casts).
+    public static boolean isConstant(Expression expr) {
+        return switch (expr) {
+            case IntLiteral _, BoolLiteral _, FloatLiteral _ -> true;
+            case ToMemoryCast cast -> isConstant(cast.getOperand());
+            case ConstructExpr construct -> construct.getOperands().stream().allMatch(ExpressionHelper::isConstant);
+            default -> false;
+        };
+    }
+
+    // Unsigned value of an integer-like constant (IntLiteral or memory cast of one).
+    public static BigInteger toUnsignedValue(Expression expr) {
+        final IntLiteral lit = switch (expr) {
+            case IntLiteral l -> l;
+            case ToMemoryCast cast when cast.getOperand() instanceof IntLiteral l -> l;
+            default -> throw new IllegalArgumentException("Not an integer constant: " + expr);
+        };
+        return IntegerHelper.normalizeUnsigned(lit.getValue(), lit.getType().getBitWidth());
     }
 
     public static Type extractType(Type type, Iterable<Integer> indices) {

@@ -27,6 +27,8 @@ import com.google.common.base.Preconditions;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isConstant;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.toUnsignedValue;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 /*
@@ -98,7 +100,7 @@ public final class Execution {
         final Map<BigInteger, List<MemoryCoreEvent>> accessesByAddress = new HashMap<>();
         for (Event e : events) {
             if (e instanceof MemoryCoreEvent memEvent) {
-                accessesByAddress.computeIfAbsent(ValueConverter.toUnsigned(this.addresses.get(memEvent)),
+                accessesByAddress.computeIfAbsent(toUnsignedValue(this.addresses.get(memEvent)),
                         _ -> new ArrayList<>()).add(memEvent);
             }
         }
@@ -199,7 +201,7 @@ public final class Execution {
 
     // The accessed address of the event as an unsigned number.
     public BigInteger addressValue(MemoryCoreEvent e) {
-        return ValueConverter.toUnsigned(address(e));
+        return toUnsignedValue(address(e));
     }
 
     // The accessed memory location of the event, if it lies within an allocated object.
@@ -307,7 +309,7 @@ public final class Execution {
             return Optional.empty();
         }
         final Expression simplified = substituted.accept(new ExprSimplifier(true));
-        return ValueConverter.isConstant(simplified) ? Optional.of(simplified) : Optional.empty();
+        return isConstant(simplified) ? Optional.of(simplified) : Optional.empty();
     }
 
     private <T extends Event> T checkExecuted(T e) {

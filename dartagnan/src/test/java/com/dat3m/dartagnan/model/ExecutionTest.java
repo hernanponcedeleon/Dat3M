@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
@@ -220,7 +221,7 @@ public class ExecutionTest {
         }
         if (isIntegerConstant(expected) && isIntegerConstant(actual.get())) {
             assertEquals(what, expected.getType(), actual.get().getType());
-            assertEquals(what, ValueConverter.toUnsigned(expected), ValueConverter.toUnsigned(actual.get()));
+            assertEquals(what, ExpressionHelper.toUnsignedValue(expected), ExpressionHelper.toUnsignedValue(actual.get()));
         } else {
             assertEquals(what, expected, actual.get());
         }
