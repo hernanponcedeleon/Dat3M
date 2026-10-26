@@ -80,7 +80,7 @@ final class ExpressionDecoder {
         } else if (Double.isInfinite(d)) {
             return d > 0 ? expressions.makePlusInf(type) : expressions.makeMinusInf(type);
         }
-        final boolean negative = d < 0 || (d == 0 && 1 / d < 0);
+        final boolean negative = Double.compare(d, 0.0) < 0;
         return expressions.makeValue(new BigDecimal(Math.abs(d)), negative, type);
     }
 

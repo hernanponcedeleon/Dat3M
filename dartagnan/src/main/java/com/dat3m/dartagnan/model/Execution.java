@@ -319,14 +319,14 @@ public final class Execution {
     }
 
     private Optional<Expression> evaluate(Expression expression, Substitution substitution) {
-        final Expression substituted;
         try {
-            substituted = expression.accept(substitution);
+            final Expression value = expression
+                    .accept(substitution)
+                    .accept(new ExprSimplifier(true));
+            return isConstant(value) ? Optional.of(value) : Optional.empty();
         } catch (NotEvaluableException _) {
             return Optional.empty();
         }
-        final Expression simplified = substituted.accept(new ExprSimplifier(true));
-        return isConstant(simplified) ? Optional.of(simplified) : Optional.empty();
     }
 
     private <T extends Event> T checkExecuted(T e) {

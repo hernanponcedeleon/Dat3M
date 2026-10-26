@@ -93,37 +93,12 @@ final class RelationEvaluator {
     }
 
     private static boolean isAcyclic(EventGraph graph) {
-        // Iterative DFS with three colors: absent = unvisited, FALSE = on stack, TRUE = finished.
-        final Map<Event, Set<Event>> out = graph.getOutMap();
-        final Map<Event, Boolean> state = new HashMap<>();
-        for (Event root : out.keySet()) {
-            if (state.containsKey(root)) {
-                continue;
-            }
-            final Deque<Event> nodes = new ArrayDeque<>();
-            final Deque<Iterator<Event>> iterators = new ArrayDeque<>();
-            nodes.push(root);
-            iterators.push(out.getOrDefault(root, Set.of()).iterator());
-            state.put(root, false);
-            while (!nodes.isEmpty()) {
-                final Iterator<Event> it = iterators.peek();
-                if (!it.hasNext()) {
-                    state.put(nodes.pop(), true);
-                    iterators.pop();
-                    continue;
-                }
-                final Event next = it.next();
-                final Boolean s = state.get(next);
-                if (s == null) {
-                    state.put(next, false);
-                    nodes.push(next);
-                    iterators.push(out.getOrDefault(next, Set.of()).iterator());
-                } else if (!s) {
-                    return false;
-                }
-            }
+        final boolean isIrreflexive = graph.getDomain().stream().noneMatch(e -> graph.contains(e, e));
+        if (!isIrreflexive) {
+            return false;
         }
-        return true;
+        return DependencyGraph.from(graph.getDomain(), graph.getInMap())
+                .getSCCs().stream().allMatch(scc -> scc.size() == 1);
     }
 
     private static final class Evaluator implements Constraint.Visitor<EventGraph> {
