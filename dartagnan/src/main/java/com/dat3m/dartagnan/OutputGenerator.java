@@ -28,7 +28,7 @@ import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.model.ExecutionModelNext;
+import com.dat3m.dartagnan.model.execution.Execution;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -61,7 +61,6 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.Dartagnan.ExitCode.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
-import static com.dat3m.dartagnan.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -338,13 +337,13 @@ public class OutputGenerator {
                     return null;
                 }
                 final VerificationTask task = result.getTask();
-                final ExecutionModelNext model = fromIREvaluator(result.getModel());
+                final Execution execution = Execution.fromModel(result.getModel());
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
-                        (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                return generateGraphvizFile(execution, task.getProgram().getName(), (x, y) -> true,
+                        (x, y) -> !x.getThread().equals(y.getThread()),
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 );
