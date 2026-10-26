@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.toUnsignedValue;
+
 /*
     Extracts an Execution from an SMT model. This is the only place where the SMT model is accessed;
     the resulting Execution does not keep any reference to it.
@@ -92,14 +94,14 @@ public final class ExecutionBuilder {
 
     private void extractEventData(Event e) {
         if (e instanceof MemoryCoreEvent memEvent) {
-            addresses.put(memEvent, ValueConverter.toExpression(model.address(memEvent)));
+            addresses.put(memEvent, model.address(memEvent));
             if (memEvent instanceof Load || memEvent instanceof Store) {
-                values.put(memEvent, ValueConverter.toExpression(model.value(memEvent)));
+                values.put(memEvent, model.value(memEvent));
             }
         }
         if (e instanceof RegWriter writer) {
             try {
-                results.put(writer, ValueConverter.toExpression(model.result(writer)));
+                results.put(writer, model.result(writer));
             } catch (UnsupportedOperationException ex) {
                 logger.warn("Could not extract result of {}: {}", writer, ex.getMessage());
             }
@@ -116,7 +118,7 @@ public final class ExecutionBuilder {
         final Map<NonDetValue, Expression> nondetValues = new HashMap<>();
         for (NonDetValue nonDet : program.getConstants()) {
             try {
-                nondetValues.put(nonDet, ValueConverter.toExpression(model.evaluateFinal(nonDet)));
+                nondetValues.put(nonDet, model.evaluateFinal(nonDet));
             } catch (UnsupportedOperationException ex) {
                 logger.warn("Could not extract value of {}: {}", nonDet, ex.getMessage());
             }
@@ -128,8 +130,8 @@ public final class ExecutionBuilder {
         final List<MemoryLayout.AllocatedObject> objects = new ArrayList<>();
         for (MemoryObject obj : program.getMemory().getObjects()) {
             if (model.isAllocated(obj)) {
-                final BigInteger address = ValueConverter.toUnsigned(ValueConverter.toExpression(model.address(obj)));
-                objects.add(new MemoryLayout.AllocatedObject(obj, address, model.size(obj).value()));
+                final BigInteger address = toUnsignedValue(model.address(obj));
+                objects.add(new MemoryLayout.AllocatedObject(obj, address, model.size(obj)));
             }
         }
         return new MemoryLayout(objects);
@@ -165,7 +167,7 @@ public final class ExecutionBuilder {
     private EventGraph computeSameLocation() {
         final Map<BigInteger, Set<Event>> byAddress = new HashMap<>();
         addresses.forEach((e, addr) ->
-                byAddress.computeIfAbsent(ValueConverter.toUnsigned(addr), _ -> new HashSet<>()).add(e));
+                byAddress.computeIfAbsent(toUnsignedValue(addr), _ -> new HashSet<>()).add(e));
         final MapEventGraph graph = new MapEventGraph();
         for (Set<Event> events : byAddress.values()) {
             events.forEach(e -> graph.addRange(e, events));

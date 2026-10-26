@@ -227,7 +227,7 @@ public class ExecutionModel {
 
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e).value());
+            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e));
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());

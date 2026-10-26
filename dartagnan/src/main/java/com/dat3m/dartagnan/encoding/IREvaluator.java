@@ -2,11 +2,10 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
@@ -16,18 +15,14 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
-import com.dat3m.dartagnan.smt.TupleValue;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.Evaluator;
-import org.sosy_lab.java_smt.api.Formula;
 
 import java.math.BigInteger;
-import java.util.List;
-import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static java.lang.Boolean.FALSE;
@@ -52,25 +47,25 @@ public class IREvaluator implements AutoCloseable {
     // ====================================================================================
     // General
 
-    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula) {
-        Object smtValue = smtModel.evaluate(typedFormula.formula());
-        if (smtValue == null) {
-            smtValue = getDummyModelOfType(typedFormula.getType());
-        }
-        return new TypedValue<>(typedFormula.getType(), smtValue);
+    // Returns the value of the formula as a constant IR expression (IntLiteral, BoolLiteral, ...).
+    // Values left unconstrained by the model are reported as zero.
+    public Expression evaluate(TypedFormula<?, ?> typedFormula) {
+        final Object smtValue = smtModel.evaluate(typedFormula.formula());
+        return smtValue == null
+                ? ExpressionFactory.getInstance().makeGeneralZero(typedFormula.getType())
+                : ExpressionDecoder.decode(typedFormula.getType(), smtValue);
     }
 
-    @SuppressWarnings("unchecked")
-    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at) {
+    public boolean evaluateBooleanAt(Expression expression, Event at) {
         Preconditions.checkArgument(expression.getType() instanceof BooleanType);
-        return (TypedValue<BooleanType, Boolean>) evaluateAt(expression, at);
+        return ((BoolLiteral) evaluateAt(expression, at)).getValue();
     }
 
-    public TypedValue<?, ?> evaluateAt(Expression expression, Event at) {
+    public Expression evaluateAt(Expression expression, Event at) {
         return evaluate(exprEnc.encodeAt(expression, at));
     }
 
-    public TypedValue<?, ?> evaluateFinal(Expression expression) {
+    public Expression evaluateFinal(Expression expression) {
         return evaluate(exprEnc.encodeFinal(expression));
     }
 
@@ -97,25 +92,24 @@ public class IREvaluator implements AutoCloseable {
         return memObj.isStaticallyAllocated() || isExecuted(memObj.getAllocationSite());
     }
 
-    public TypedValue<?, ?> value(MemoryCoreEvent e) {
+    public Expression value(MemoryCoreEvent e) {
         return evaluateAt(ctx.value(e), e);
     }
 
-    public TypedValue<?, ?> address(MemoryCoreEvent e) {
+    public Expression address(MemoryCoreEvent e) {
         return evaluateAt(ctx.address(e), e);
     }
 
-    public TypedValue<?, ?> address(MemoryObject e) {
+    public Expression address(MemoryObject e) {
         return evaluate(ctx.address(e));
     }
 
-    public TypedValue<?, ?> result(RegWriter writer) {
+    public Expression result(RegWriter writer) {
         return evaluate(ctx.result(writer));
     }
 
-    @SuppressWarnings("unchecked")
-    public TypedValue<IntegerType, BigInteger> size(MemoryObject memoryObject) {
-        return (TypedValue<IntegerType, BigInteger>) evaluate(ctx.size(memoryObject));
+    public BigInteger size(MemoryObject memoryObject) {
+        return ((IntLiteral) evaluate(ctx.size(memoryObject))).getValue();
     }
 
     public boolean isLeaked(MemoryObject object) {
@@ -174,7 +168,7 @@ public class IREvaluator implements AutoCloseable {
     }
 
     public boolean assertionViolated(Assert event) {
-        return isExecuted(event) && FALSE.equals(evaluateBooleanAt(event.getExpression(), event).value());
+        return isExecuted(event) && !evaluateBooleanAt(event.getExpression(), event);
     }
 
     // ====================================================================================
@@ -183,27 +177,5 @@ public class IREvaluator implements AutoCloseable {
     @Override
     public void close() {
         smtModel.close();
-    }
-
-    // ====================================================================================
-    // Internal
-
-    private Object getDummyModelOfType(Type type) {
-        return switch (type) {
-            case BooleanType _ -> Boolean.FALSE;
-            case IntegerType _ -> BigInteger.ZERO;
-            case ArrayType arrayType -> {
-                Preconditions.checkArgument(arrayType.hasKnownNumElements());
-                final Object innerDummy = getDummyModelOfType(arrayType.getElementType());
-                final List<Object> dummies = IntStream.range(0, arrayType.getNumElements()).mapToObj(i -> innerDummy).toList();
-                yield new TupleValue(dummies);
-            }
-            case AggregateType aggType -> new TupleValue(
-                    aggType.getFields().stream()
-                    .map(field -> getDummyModelOfType(field.type()))
-                    .toList()
-            );
-            default -> throw new UnsupportedOperationException("Dummy model for type " + type + " is not implemented");
-        };
     }
 }
