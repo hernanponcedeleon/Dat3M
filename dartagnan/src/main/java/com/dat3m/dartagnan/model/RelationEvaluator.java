@@ -48,9 +48,9 @@ final class RelationEvaluator {
                 continue;
             }
             Preconditions.checkState(derived.size() == scc.size(), "Base relation in recursive SCC: %s", scc);
-            final boolean recursive = derived.size() > 1 || derived.get(0).getDependencies().contains(derived.get(0));
+            final boolean recursive = derived.size() > 1 || derived.getFirst().getDependencies().contains(derived.getFirst());
             if (!recursive) {
-                final Relation r = derived.get(0);
+                final Relation r = derived.getFirst();
                 values.put(r, freeze(r.getDefinition().accept(evaluator)));
                 continue;
             }

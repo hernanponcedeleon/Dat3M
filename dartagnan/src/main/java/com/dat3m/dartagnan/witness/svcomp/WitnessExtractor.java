@@ -109,8 +109,8 @@ public final class WitnessExtractor {
             }
         });
         return pairs.stream()
-                .min(Comparator.<List<Event>>comparingInt(p -> rank.get(p.get(1)))
-                        .thenComparingInt(p -> rank.get(p.get(0))))
+                .min(Comparator.<List<Event>>comparingInt(p -> rank.get(p.getLast()))
+                        .thenComparingInt(p -> rank.get(p.getFirst())))
                 .map(pair -> new SvcompViolation(DATA_RACE, pair));
     }
 
@@ -236,8 +236,9 @@ public final class WitnessExtractor {
     }
 
     private static Optional<VariableEquality> readValueAssumption(Load load, Execution execution) {
-        if (!(load.getAccessType() instanceof IntegerType) && !(load.getAccessType() instanceof BooleanType)) {
-            return Optional.empty();
+        switch (load.getAccessType()) {
+            case IntegerType _, BooleanType _ -> { }
+            default -> { return Optional.empty(); }
         }
         final Optional<MemoryObject> object = execution.location(load)
                 .filter(location -> location.offset().signum() == 0)
@@ -267,8 +268,7 @@ public final class WitnessExtractor {
         if (property == UNREACH_CALL) {
             final List<SyntacticContextAnalysis.CallContext> calls = context.getContextInfo(target)
                     .getContextOfType(SyntacticContextAnalysis.CallContext.class);
-            for (int i = calls.size() - 1; i >= 0; i--) {
-                final SyntacticContextAnalysis.CallContext call = calls.get(i);
+            for (SyntacticContextAnalysis.CallContext call : calls.reversed()) {
                 if ("reach_error".equals(call.funCallMarker().getFunctionName())) {
                     final Location location = inputLocation(call.funCallMarker(), programFile);
                     if (location != null) {
