@@ -34,15 +34,17 @@ final class RelationEvaluator {
         return relation.getDependencies().isEmpty();
     }
 
-    static Map<Relation, EventGraph> computeDerived(Collection<Relation> relations, Map<Relation, EventGraph> base) {
-        final Map<Relation, EventGraph> values = new HashMap<>(base);
+    // Computes the given relations (and their dependencies) that are not yet contained in "known".
+    // Returns "known" extended by all newly computed relations.
+    static Map<Relation, EventGraph> computeDerived(Collection<Relation> relations, Map<Relation, EventGraph> known) {
+        final Map<Relation, EventGraph> values = new HashMap<>(known);
         final Evaluator evaluator = new Evaluator(values);
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(relations).getSCCs()) {
             final List<Relation> derived = scc.stream()
                     .map(DependencyGraph.Node::getContent)
                     .filter(r -> !isBase(r))
                     .toList();
-            if (derived.isEmpty()) {
+            if (derived.isEmpty() || derived.stream().allMatch(values::containsKey)) {
                 continue;
             }
             Preconditions.checkState(derived.size() == scc.size(), "Base relation in recursive SCC: %s", scc);

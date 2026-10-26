@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.model.execution.Execution;
 import com.dat3m.dartagnan.task.verification.VerificationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,11 +65,11 @@ public final class SvcompOutputGenerator {
     }
 
     private Optional<ViolationWitness> violationWitness(VerificationResult result) throws IOException {
-        if (!result.hasModel()) {
+        if (!result.hasExecution()) {
             return Optional.empty();
         }
         final Optional<ViolationWitness> witness = WitnessExtractor.forViolation(
-                Execution.fromModel(result.getModel()), result.getTask().getProperties());
+                result.getExecution(), result.getViolatedProperties());
         if (witness.isEmpty()) {
             logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
                     String.join(", ", supportedViolationProperties()));
