@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Verify;
 
@@ -39,8 +38,7 @@ final class ExecutionLinearizer {
             }
         }
 
-        final DependencyGraph<Event> dependencyGraph = DependencyGraph.from(events, predecessors);
-        Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
+        Verify.verify(topologicalOrder(events, predecessors, execution).size() == events.size(),
                 "svcomp.cat produced a non-SC execution");
 
         final Map<Event, Event> groupForEvent = new HashMap<>();
@@ -69,9 +67,38 @@ final class ExecutionLinearizer {
                 }
             }
         });
-        final DependencyGraph<Event> groupGraph = DependencyGraph.from(groups.keySet(), groupPredecessors);
-        Verify.verify(groupGraph.getSCCs().size() == groups.size(),
+        final List<Event> groupOrder = topologicalOrder(groups.keySet(), groupPredecessors, execution);
+        Verify.verify(groupOrder.size() == groups.size(),
                 "svcomp.cat produced an execution with incompatible atomic sections");
-        return groupGraph.getNodeContents().stream().flatMap(group -> groups.get(group).stream()).toList();
+        return groupOrder.stream().flatMap(group -> groups.get(group).stream()).toList();
+    }
+
+    // Ties are broken by event id, so the result is deterministic. Nodes on cycles are not part of the result.
+    private static List<Event> topologicalOrder(Collection<Event> nodes, Map<Event, Set<Event>> predecessors,
+            Execution execution) {
+        final Map<Event, Integer> inDegree = new HashMap<>();
+        final Map<Event, List<Event>> successors = new HashMap<>();
+        for (Event node : nodes) {
+            final Set<Event> dependencies = predecessors.getOrDefault(node, Set.of());
+            inDegree.put(node, dependencies.size());
+            dependencies.forEach(dependency -> successors.computeIfAbsent(dependency, _ -> new ArrayList<>()).add(node));
+        }
+        final PriorityQueue<Event> ready = new PriorityQueue<>(Comparator.comparingInt(execution::getId));
+        inDegree.forEach((node, degree) -> {
+            if (degree == 0) {
+                ready.add(node);
+            }
+        });
+        final List<Event> order = new ArrayList<>(nodes.size());
+        while (!ready.isEmpty()) {
+            final Event node = ready.poll();
+            order.add(node);
+            for (Event next : successors.getOrDefault(node, List.of())) {
+                if (inDegree.merge(next, -1, Integer::sum) == 0) {
+                    ready.add(next);
+                }
+            }
+        }
+        return order;
     }
 }

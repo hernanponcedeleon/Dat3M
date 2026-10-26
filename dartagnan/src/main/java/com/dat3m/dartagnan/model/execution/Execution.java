@@ -37,7 +37,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
     All values are represented as constant IR expressions (IntLiteral, BoolLiteral, ...).
 
     Since programs are unrolled, every event is executed at most once, so IR events identify executed events.
-    Instances are immutable.
+    Instances are immutable (derived relations are computed lazily from the base relations, which is thread-safe).
  */
 public final class Execution {
 
@@ -58,6 +58,7 @@ public final class Execution {
     private final Map<NonDetValue, Expression> nondetValues;
 
     private final MemoryLayout memoryLayout;
+    // Contains all base relations; derived relations are computed on demand and cached.
     private final Map<Relation, EventGraph> relations;
 
     // Derived lookup structures
@@ -67,7 +68,7 @@ public final class Execution {
               Map<MemoryCoreEvent, Expression> addresses, Map<MemoryCoreEvent, Expression> values,
               Map<RegWriter, Expression> results, Set<CondJump> takenJumps, Set<Assert> violatedAssertions,
               Map<NonDetValue, Expression> nondetValues, MemoryLayout memoryLayout,
-              Map<Relation, EventGraph> relations) {
+              Map<Relation, EventGraph> baseRelations) {
         this.program = program;
         this.memoryModel = memoryModel;
         this.threads = List.copyOf(threads);
@@ -78,7 +79,7 @@ public final class Execution {
         this.violatedAssertions = Set.copyOf(violatedAssertions);
         this.nondetValues = Map.copyOf(nondetValues);
         this.memoryLayout = memoryLayout;
-        this.relations = Map.copyOf(relations);
+        this.relations = new HashMap<>(baseRelations);
 
         final Map<Thread, ThreadExecution> threadMap = new LinkedHashMap<>();
         final List<Event> events = new ArrayList<>();
@@ -239,14 +240,16 @@ public final class Execution {
     // ======================================================================================================
     // Memory model
 
-    public EventGraph getRelation(Relation relation) {
-        final EventGraph graph = relations.get(relation);
-        Preconditions.checkArgument(graph != null, "Unknown relation %s", relation);
-        return graph;
+    public synchronized EventGraph getRelation(Relation relation) {
+        Preconditions.checkArgument(memoryModel.getRelations().contains(relation), "Unknown relation %s", relation);
+        if (!relations.containsKey(relation)) {
+            relations.putAll(RelationEvaluator.computeDerived(List.of(relation), relations));
+        }
+        return relations.get(relation);
     }
 
     public Optional<EventGraph> getRelation(String name) {
-        return Optional.ofNullable(memoryModel.getRelation(name)).map(relations::get);
+        return Optional.ofNullable(memoryModel.getRelation(name)).map(this::getRelation);
     }
 
     public boolean hasEdge(Relation relation, Event a, Event b) {

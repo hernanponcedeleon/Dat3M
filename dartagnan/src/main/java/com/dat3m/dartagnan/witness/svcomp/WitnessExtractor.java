@@ -59,7 +59,7 @@ public final class WitnessExtractor {
     }
 
     /**
-     * @param properties The properties checked by the task. Only violations of these properties are reported.
+     * @param properties The properties the solver reports as violated. Only violations of these are reported.
      */
     public static Optional<ViolationWitness> forViolation(Execution execution, Set<Property> properties)
             throws IOException {

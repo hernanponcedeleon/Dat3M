@@ -273,8 +273,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), task.getProgram(), analysisContext));
         }
 
-        final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;
-        if (model != null) {
+        final boolean hasModel = smtStatus == SMTStatus.SAT;
+        if (hasModel) {
             validateModel(solver.getExecution());
         }
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
@@ -282,7 +282,12 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
 
         logger.info("Verification finished with result {}", res);
-        return new VerificationResult(this.task, res, model);
+        if (!hasModel) {
+            return VerificationResult.withoutExecution(this.task, res);
+        }
+        try (IREvaluator model = context.newEvaluator(prover)) {
+            return VerificationResult.fromModel(this.task, res, model);
+        }
     }
 
     private void validateModel(ExecutionModel model) {
