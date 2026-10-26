@@ -2,15 +2,11 @@ package com.dat3m.dartagnan.utils.equivalence;
 
 import java.util.*;
 
-/*
-    NOTE: All iteration orders are deterministic: classes are ordered by creation and elements by insertion.
-    In particular, the order does not depend on identity hash codes, which change between runs.
- */
 public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
     protected Map<T, EqClass> classMap;
-    // Classes are compared by identity (via their creation index), because EqClass has set semantics.
-    protected Set<EqClass> classes;
+    // Classes are ordered by creation time.
+    protected SequencedSet<EqClass> classes;
     private int numCreatedClasses = 0;
 
     @Override
@@ -35,13 +31,13 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         classes = newClassSet();
     }
 
-    protected AbstractEquivalence(int estimatedDataSize, int estimatedNumOfClasses) {
+    protected AbstractEquivalence(int estimatedDataSize) {
         // We make classMap larger by factor 4/3 to avoid resizing due to HashMap's LoadFactor
         classMap = new HashMap<>((4 * estimatedDataSize) / 3);
         classes = newClassSet();
     }
 
-    private Set<EqClass> newClassSet() {
+    private SequencedSet<EqClass> newClassSet() {
         return new TreeSet<>(Comparator.comparingInt(c -> c.creationIndex));
     }
 
@@ -80,7 +76,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
     protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
         private final int creationIndex = numCreatedClasses++;
         public T representative;
-        public Set<T> internalSet;
+        public SequencedSet<T> internalSet;
 
         public EqClass() {
             this(-1);
@@ -109,7 +105,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
             if (internalSet.remove(x)) {
                 classMap.remove(x);
                 if (x.equals(representative)) {
-                    representative = internalSet.isEmpty() ? null : internalSet.stream().findFirst().get();
+                    representative = internalSet.isEmpty() ? null : internalSet.getFirst();
                 }
                 return true;
             }
@@ -151,7 +147,6 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
 
         //====================== Set =============================
-
 
         @Override
         public boolean isEmpty() {

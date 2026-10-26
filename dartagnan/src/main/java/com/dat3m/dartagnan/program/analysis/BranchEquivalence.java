@@ -293,8 +293,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private boolean isEndingWithBlockingEvent(Branch branch) {
         if (!branch.events.isEmpty()) {
-            int last = branch.events.size() - 1;
-            return branch.events.get(last) instanceof BlockingEvent;
+            return branch.events.getLast() instanceof BlockingEvent;
         }
         return false;
     }
@@ -308,7 +307,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         final Comparator<Branch> branchOrder = Comparator.comparingInt(b -> b.getRoot().getGlobalId());
         final List<List<Branch>> branchSCCs = depGraph.getSCCs().stream()
                 .map(scc -> scc.stream().map(DependencyGraph.Node::getContent).sorted(branchOrder).toList())
-                .sorted(Comparator.comparing(scc -> scc.get(0), branchOrder))
+                .sorted(Comparator.comparing(List::getFirst, branchOrder))
                 .toList();
         final Map<Branch, BranchClass> branch2ClassMap = Maps.newIdentityHashMap();
         for (List<Branch> branchesInClass : branchSCCs) {
@@ -318,7 +317,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         // -------------------------- Populate branch classes --------------------------
         for (List<Branch> branchesInClass : branchSCCs) {
-            final BranchClass branchClass = branch2ClassMap.get(branchesInClass.get(0));
+            final BranchClass branchClass = branch2ClassMap.get(branchesInClass.getFirst());
             for (Branch branch : branchesInClass) {
                 branchClass.addAllInternal(branch.events);
                 branch.getImpliedBranches().stream().map(branch2ClassMap::get).forEach(branchClass.impliedClasses::add);
