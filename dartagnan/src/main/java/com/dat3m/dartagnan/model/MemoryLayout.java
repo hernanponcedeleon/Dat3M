@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.model.execution;
+package com.dat3m.dartagnan.model;
 
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;

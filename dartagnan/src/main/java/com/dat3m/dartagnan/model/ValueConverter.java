@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.model.execution;
+package com.dat3m.dartagnan.model;
 
 import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;

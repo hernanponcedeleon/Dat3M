@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.AbstractPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
-import com.dat3m.dartagnan.model.EventData;
-import com.dat3m.dartagnan.model.ExecutionModel;
+import com.dat3m.dartagnan.solver.EventData;
+import com.dat3m.dartagnan.solver.ExecutionModel;
 import com.google.common.base.Preconditions;
 
 

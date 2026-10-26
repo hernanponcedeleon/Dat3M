@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.task.verification;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.model.execution.Execution;
+import com.dat3m.dartagnan.model.Execution;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.task.TaskResult;
 import com.google.common.base.Preconditions;
