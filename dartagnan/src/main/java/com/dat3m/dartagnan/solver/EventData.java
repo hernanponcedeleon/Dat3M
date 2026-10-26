@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.model;
+package com.dat3m.dartagnan.solver;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
