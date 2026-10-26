@@ -89,8 +89,7 @@ public class ExecutionTest {
         final Set<Path> skip = ResourceHelper.getSkipSet();
         ResourceHelper.parseExpectedResults(ResourceHelper.getTestResourcePath(csv + "-expected.csv"),
                         ResourceHelper::getRootPath)
-                .entrySet().stream()
-                .map(Map.Entry::getKey)
+                .keySet().stream()
                 .filter(p -> !skip.contains(p))
                 .sorted()
                 .limit(TESTS_PER_SUITE)
@@ -123,7 +122,6 @@ public class ExecutionTest {
                 .build(TestHelper.parseProgram(programPath),
                         TestHelper.parseWmm(ResourceHelper.getCatPath(arch, wmmName)),
                         EnumSet.of(property));
-        final Program program = task.getProgram();
 
         final VerificationResult result;
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, method)) {
@@ -138,6 +136,8 @@ public class ExecutionTest {
         checkAgainstVerdict(execution, result);
         checkConsistency(execution);
         checkGraphvizWitness(execution);
+
+        final Program program = task.getProgram();
         if (property == Property.PROGRAM_SPEC && program.getFormat() == Program.SourceLanguage.LITMUS) {
             final Optional<Boolean> expected = expectedSpecValue(program.getSpecificationType(), result.getStatus());
             if (expected.isPresent()) {

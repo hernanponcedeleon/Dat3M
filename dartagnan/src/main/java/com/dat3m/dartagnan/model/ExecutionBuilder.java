@@ -26,8 +26,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.toUnsignedValue;
 
 /*
-    Extracts an Execution from an SMT model. This is the only place where the SMT model is accessed;
-    the resulting Execution does not keep any reference to it.
+    Extracts an Execution from an SMT model.
 
     Relations:
       - Base relations are read from the SMT model, except for "loc" which is computed from the concrete addresses.
@@ -131,7 +130,7 @@ final class ExecutionBuilder {
         for (MemoryObject obj : program.getMemory().getObjects()) {
             if (model.isAllocated(obj)) {
                 final BigInteger address = toUnsignedValue(model.address(obj));
-                objects.add(new MemoryLayout.AllocatedObject(obj, address, model.size(obj)));
+                objects.add(new MemoryLayout.AllocatedObject(obj, address, model.size(obj).getValue()));
             }
         }
         return new MemoryLayout(objects);

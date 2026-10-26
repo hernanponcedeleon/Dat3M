@@ -47,8 +47,7 @@ public class IREvaluator implements AutoCloseable {
     // ====================================================================================
     // General
 
-    // Returns the value of the formula as a constant IR expression (IntLiteral, BoolLiteral, ...).
-    // Values left unconstrained by the model are reported as zero.
+    // NOTE: Values left unconstrained by the model are reported as zero.
     public Expression evaluate(TypedFormula<?, ?> typedFormula) {
         final Object smtValue = smtModel.evaluate(typedFormula.formula());
         return smtValue == null
@@ -108,8 +107,8 @@ public class IREvaluator implements AutoCloseable {
         return evaluate(ctx.result(writer));
     }
 
-    public BigInteger size(MemoryObject memoryObject) {
-        return ((IntLiteral) evaluate(ctx.size(memoryObject))).getValue();
+    public IntLiteral size(MemoryObject memoryObject) {
+        return ((IntLiteral) evaluate(ctx.size(memoryObject)));
     }
 
     public boolean isLeaked(MemoryObject object) {
