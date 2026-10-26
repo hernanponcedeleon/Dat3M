@@ -128,10 +128,10 @@ public class ExecutionGraphVisualizer {
     }
 
     private boolean isShown(Event e) {
-        return e instanceof MemoryCoreEvent
-                || e instanceof GenericVisibleEvent
-                || e instanceof Local
-                || e instanceof Assert;
+        return switch (e) {
+            case MemoryCoreEvent _, GenericVisibleEvent _, Local _, Assert _ -> true;
+            default -> false;
+        };
     }
 
     private void addEvents() {

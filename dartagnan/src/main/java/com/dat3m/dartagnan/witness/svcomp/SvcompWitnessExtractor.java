@@ -112,8 +112,8 @@ public final class SvcompWitnessExtractor {
             }
         });
         return pairs.stream()
-                .min(Comparator.<List<Event>>comparingInt(p -> rank.get(p.get(1)))
-                        .thenComparingInt(p -> rank.get(p.get(0))))
+                .min(Comparator.<List<Event>>comparingInt(p -> rank.get(p.getLast()))
+                        .thenComparingInt(p -> rank.get(p.getFirst())))
                 .map(pair -> new SvcompViolation(DATA_RACE, pair));
     }
 
@@ -224,8 +224,10 @@ public final class SvcompWitnessExtractor {
 
     // The events relevant for the witness: memory accesses and events that carry control/data flow.
     private static boolean isTraced(Event e) {
-        return e instanceof Load || e instanceof Store || e instanceof GenericVisibleEvent
-                || e instanceof Local || e instanceof Assert || e instanceof CondJump;
+        return switch (e) {
+            case Load _, Store _, GenericVisibleEvent _, Local _, Assert _, CondJump _ -> true;
+            default -> false;
+        };
     }
 
     private static List<Event> tracedEvents(ThreadExecution thread) {
@@ -233,8 +235,9 @@ public final class SvcompWitnessExtractor {
     }
 
     private static Optional<String> readValueAssumption(Load load, Execution execution) {
-        if (!(load.getAccessType() instanceof IntegerType) && !(load.getAccessType() instanceof BooleanType)) {
-            return Optional.empty();
+        switch (load.getAccessType()) {
+            case IntegerType _, BooleanType _ -> { }
+            default -> { return Optional.empty(); }
         }
         final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(load.getAccessType());
         final Optional<MemoryObject> object = execution.location(load)
@@ -298,8 +301,7 @@ public final class SvcompWitnessExtractor {
         if (property == UNREACH_CALL) {
             final List<SyntacticContextAnalysis.CallContext> calls = context.getContextInfo(target)
                     .getContextOfType(SyntacticContextAnalysis.CallContext.class);
-            for (int i = calls.size() - 1; i >= 0; i--) {
-                final SyntacticContextAnalysis.CallContext call = calls.get(i);
+            for (SyntacticContextAnalysis.CallContext call : calls.reversed()) {
                 if ("reach_error".equals(call.funCallMarker().getFunctionName())) {
                     final Location location = inputLocation(call.funCallMarker(), programFile);
                     if (location != null) {
