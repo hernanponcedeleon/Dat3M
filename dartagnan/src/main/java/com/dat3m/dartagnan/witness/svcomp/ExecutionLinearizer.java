@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
-import com.dat3m.dartagnan.model.execution.Execution;
-import com.dat3m.dartagnan.model.execution.ThreadExecution;
+import com.dat3m.dartagnan.model.Execution;
+import com.dat3m.dartagnan.model.ThreadExecution;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;

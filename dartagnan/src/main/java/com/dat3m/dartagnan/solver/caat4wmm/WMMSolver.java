@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.model.ExecutionModel;
+import com.dat3m.dartagnan.solver.ExecutionModel;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Set;
