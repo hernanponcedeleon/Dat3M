@@ -18,7 +18,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 /* Procedure:
@@ -294,8 +293,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private boolean isEndingWithBlockingEvent(Branch branch) {
         if (!branch.events.isEmpty()) {
-            int last = branch.events.size() - 1;
-            return branch.events.get(last) instanceof BlockingEvent;
+            return branch.events.getLast() instanceof BlockingEvent;
         }
         return false;
     }
@@ -305,18 +303,22 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private void createBranchClasses(BranchDecomposition decomposition) {
         // -------------------------- Create branch classes --------------------------
         final DependencyGraph<Branch> depGraph = DependencyGraph.from(decomposition.branches, Branch::getImpliedBranches);
+        // The order of the SCCs depends on hash codes. We sort them to create the classes deterministically.
+        final Comparator<Branch> branchOrder = Comparator.comparingInt(b -> b.getRoot().getGlobalId());
+        final List<List<Branch>> branchSCCs = depGraph.getSCCs().stream()
+                .map(scc -> scc.stream().map(DependencyGraph.Node::getContent).sorted(branchOrder).toList())
+                .sorted(Comparator.comparing(List::getFirst, branchOrder))
+                .toList();
         final Map<Branch, BranchClass> branch2ClassMap = Maps.newIdentityHashMap();
-        final Map<BranchClass, Set<Branch>> class2BranchesMap = Maps.newIdentityHashMap();
-        for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
+        for (List<Branch> branchesInClass : branchSCCs) {
             final BranchClass branchClass = new BranchClass();
-            final Set<Branch> branchesInClass = scc.stream().map(DependencyGraph.Node::getContent).collect(Collectors.toSet());
             branchesInClass.forEach(b -> branch2ClassMap.put(b, branchClass));
-            class2BranchesMap.put(branchClass, branchesInClass);
         }
 
         // -------------------------- Populate branch classes --------------------------
-        for (BranchClass branchClass : class2BranchesMap.keySet()) {
-            for (Branch branch : class2BranchesMap.get(branchClass)) {
+        for (List<Branch> branchesInClass : branchSCCs) {
+            final BranchClass branchClass = branch2ClassMap.get(branchesInClass.getFirst());
+            for (Branch branch : branchesInClass) {
                 branchClass.addAllInternal(branch.events);
                 branch.getImpliedBranches().stream().map(branch2ClassMap::get).forEach(branchClass.impliedClasses::add);
                 branch.exclusiveBranches.stream().map(branch2ClassMap::get).forEach(branchClass.exclusiveClasses::add);

@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
-import com.google.common.collect.Sets;
-
 import java.util.*;
 
 public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
     protected Map<T, EqClass> classMap;
-    protected Set<EqClass> classes;
+    // Classes are ordered by creation time.
+    protected SequencedSet<EqClass> classes;
+    private int numCreatedClasses = 0;
 
     @Override
     public EquivalenceClass<T> getEquivalenceClass(T x) {
@@ -19,15 +19,26 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         return Collections.unmodifiableSet(classes);
     }
 
-    public AbstractEquivalence() {
-        classMap = new HashMap<>();
-        classes = Sets.newIdentityHashSet();
+    @Override
+    public Set<? extends EquivalenceClass<T>> getNonTrivialClasses() {
+        final Set<EqClass> nonTrivialClasses = newClassSet();
+        classes.stream().filter(c -> c.size() > 1).forEach(nonTrivialClasses::add);
+        return nonTrivialClasses;
     }
 
-    protected AbstractEquivalence(int estimatedDataSize, int estimatedNumOfClasses) {
+    public AbstractEquivalence() {
+        classMap = new HashMap<>();
+        classes = newClassSet();
+    }
+
+    protected AbstractEquivalence(int estimatedDataSize) {
         // We make classMap larger by factor 4/3 to avoid resizing due to HashMap's LoadFactor
         classMap = new HashMap<>((4 * estimatedDataSize) / 3);
-        classes = Collections.newSetFromMap(new IdentityHashMap<>(estimatedNumOfClasses));
+        classes = newClassSet();
+    }
+
+    private SequencedSet<EqClass> newClassSet() {
+        return new TreeSet<>(Comparator.comparingInt(c -> c.creationIndex));
     }
 
     @SuppressWarnings("unchecked")
@@ -63,15 +74,16 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
     }
 
     protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
+        private final int creationIndex = numCreatedClasses++;
         public T representative;
-        public Set<T> internalSet;
+        public SequencedSet<T> internalSet;
 
         public EqClass() {
             this(-1);
         }
 
         protected EqClass(int initialCapacity) {
-            internalSet = initialCapacity < 1 ? new HashSet<>() : new HashSet<>(initialCapacity);
+            internalSet = initialCapacity < 1 ? new LinkedHashSet<>() : new LinkedHashSet<>(initialCapacity);
             classes.add(this);
         }
 
@@ -93,7 +105,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
             if (internalSet.remove(x)) {
                 classMap.remove(x);
                 if (x.equals(representative)) {
-                    representative = internalSet.isEmpty() ? null : internalSet.stream().findFirst().get();
+                    representative = internalSet.isEmpty() ? null : internalSet.getFirst();
                 }
                 return true;
             }
@@ -135,7 +147,6 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
 
         //====================== Set =============================
-
 
         @Override
         public boolean isEmpty() {
