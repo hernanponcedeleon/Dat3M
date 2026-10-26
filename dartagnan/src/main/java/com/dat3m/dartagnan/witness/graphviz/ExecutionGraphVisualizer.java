@@ -46,7 +46,6 @@ public class ExecutionGraphVisualizer {
     private final ColorMap colorMap;
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     private final Map<String, BiPredicate<Event, Event>> filter = new HashMap<>();
-    private final List<MemoryLayout.AllocatedObject> sortedMemoryObjects = new ArrayList<>();
     private static final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
     private Set<String> relsToShow;
     private Execution execution;
@@ -75,7 +74,6 @@ public class ExecutionGraphVisualizer {
 
     public void generateGraphOfExecution(Writer writer, String graphName, Execution execution) throws IOException {
         this.execution = execution;
-        computeAddressMap();
         graphviz.beginDigraph(graphName);
         graphviz.appendLine(String.format("label=\"%s\"", graphName));
         addEvents();
@@ -91,13 +89,6 @@ public class ExecutionGraphVisualizer {
 
     private BiPredicate<Event, Event> getFilter(String relationName) {
         return filter.getOrDefault(relationName, (x, y) -> true);
-    }
-
-    private void computeAddressMap() {
-        sortedMemoryObjects.clear();
-        execution.getMemoryLayout().getAllocatedObjects().stream()
-                .sorted(Comparator.comparing(MemoryLayout.AllocatedObject::address))
-                .forEach(sortedMemoryObjects::add);
     }
 
     private List<List<Event>> getEventsToShow(ThreadExecution thread) {
@@ -285,9 +276,7 @@ public class ExecutionGraphVisualizer {
 
     private String getAddressString(MemoryCoreEvent e) {
         final BigInteger addrValue = execution.addressValue(e);
-        final MemoryLayout.AllocatedObject accObj = sortedMemoryObjects.reversed().stream()
-                .filter(o -> o.address().compareTo(addrValue) <= 0)
-                .findFirst().orElse(null);
+        final MemoryLayout.AllocatedObject accObj = execution.getMemoryLayout().floor(addrValue).orElse(null);
 
         if (accObj == null) {
             return addrValue + " [OOB]";

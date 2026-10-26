@@ -59,10 +59,14 @@ public final class MemoryLayout {
 
     // Returns the allocated object (and offset) that contains the given address, if any.
     public Optional<Location> resolve(BigInteger address) {
-        final Map.Entry<BigInteger, AllocatedObject> entry = objectsByAddress.floorEntry(address);
-        if (entry == null || !entry.getValue().contains(address)) {
-            return Optional.empty();
-        }
-        return Optional.of(new Location(entry.getValue(), address.subtract(entry.getKey())));
+        return floor(address)
+                .filter(obj -> obj.contains(address))
+                .map(obj -> new Location(obj, address.subtract(obj.address())));
+    }
+
+    // Returns the (non-empty) object with the greatest start address at or below the given address, if any.
+    // Unlike resolve, the address may lie beyond the end of the object (e.g. for out-of-bounds accesses).
+    public Optional<AllocatedObject> floor(BigInteger address) {
+        return Optional.ofNullable(objectsByAddress.floorEntry(address)).map(Map.Entry::getValue);
     }
 }

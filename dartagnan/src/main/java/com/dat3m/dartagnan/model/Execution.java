@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -35,7 +36,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
     A concrete execution of a program under a memory model, expressed purely in terms of Dartagnan's IR.
 
     In contrast to IREvaluator, this class does not depend on an SMT model: once constructed (e.g. via
-    ExecutionBuilder.fromModel), it stays valid even after the solver and its model are closed.
+    Execution.fromModel), it stays valid even after the solver and its model are closed.
     All values are represented as constant IR expressions (IntLiteral, BoolLiteral, ...).
 
     Since programs are unrolled, every event is executed at most once, so IR events identify executed events.
@@ -178,6 +179,26 @@ public final class Execution {
         return Optional.ofNullable(nondetValues.get(nonDet));
     }
 
+    public record RegisterRead(Register register, Event reader) { }
+
+    // Register reads that happen before any write to that register in the same thread.
+    public List<RegisterRead> getUninitializedRegisterReads() {
+        final List<RegisterRead> reads = new ArrayList<>();
+        for (ThreadExecution thread : threads) {
+            final List<Event> trace = thread.getTrace();
+            for (int i = 0; i < trace.size(); i++) {
+                if (trace.get(i) instanceof RegReader reader) {
+                    for (Register.Read read : reader.getRegisterReads()) {
+                        if (thread.getLastWriterBefore(read.register(), i).isEmpty()) {
+                            reads.add(new RegisterRead(read.register(), reader));
+                        }
+                    }
+                }
+            }
+        }
+        return reads;
+    }
+
     public Expression result(RegWriter writer) {
         final Expression result = results.get(checkExecuted(writer));
         Preconditions.checkState(result != null, "No result for %s", writer);
@@ -189,10 +210,6 @@ public final class Execution {
 
     public MemoryLayout getMemoryLayout() {
         return memoryLayout;
-    }
-
-    public boolean isAllocated(MemoryObject object) {
-        return memoryLayout.isAllocated(object);
     }
 
     public Expression address(MemoryCoreEvent e) {

@@ -274,9 +274,6 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         }
 
         final boolean hasModel = smtStatus == SMTStatus.SAT;
-        if (hasModel) {
-            validateModel(solver.getExecution());
-        }
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
@@ -288,16 +285,6 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         try (IREvaluator model = context.newEvaluator(prover)) {
             return VerificationResult.fromModel(this.task, res, model);
         }
-    }
-
-    private void validateModel(ExecutionModel model) {
-        // Check if there are accesses to uninitialized registers
-        for (ExecutionModel.UninitRegRead uninitRegRead : model.getUninitRegReads()) {
-            logger.warn("Encountered uninitialized register {} read by {}: {}.",
-                    uninitRegRead.register(), uninitRegRead.at().getGlobalId(), uninitRegRead.at());
-        }
-
-        // TODO: Check if there is OOB or any aliasing violation
     }
 
     private void analyzeInconclusiveness(Task task, Context analysisContext, ExecutionModel model) {

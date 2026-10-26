@@ -35,7 +35,7 @@ import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.toUnsignedVa
       - Derived relations are computed on demand by the Execution from the base relations (see RelationEvaluator),
         because the SMT encoding only constrains derived edges that are relevant to the axioms (active sets).
  */
-public final class ExecutionBuilder {
+final class ExecutionBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionBuilder.class);
 
@@ -58,7 +58,7 @@ public final class ExecutionBuilder {
         this.memoryModel = context.getTask().getMemoryModel();
     }
 
-    public static Execution fromModel(IREvaluator model) {
+    static Execution fromModel(IREvaluator model) {
         return new ExecutionBuilder(model).build();
     }
 
