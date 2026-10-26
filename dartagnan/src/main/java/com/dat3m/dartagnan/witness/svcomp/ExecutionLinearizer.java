@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.witness.svcomp;
 
+import com.dat3m.dartagnan.model.execution.Execution;
+import com.dat3m.dartagnan.model.execution.ThreadExecution;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.model.ExecutionModelNext;
-import com.dat3m.dartagnan.model.RelationModel;
-import com.dat3m.dartagnan.model.RelationModel.EdgeModel;
-import com.dat3m.dartagnan.model.ThreadModel;
-import com.dat3m.dartagnan.model.event.EventModel;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Verify;
 
 import java.util.*;
@@ -18,16 +17,16 @@ final class ExecutionLinearizer {
 
     private ExecutionLinearizer() { }
 
-    static List<EventModel> linearize(ExecutionModelNext model, RelationModel hb) {
-        final List<EventModel> events = model.getEventModels();
-        final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
-        for (EdgeModel edge : hb.getEdgeModels()) {
-            Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
-            predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
-        }
+    static List<Event> linearize(Execution execution, EventGraph hb) {
+        final List<Event> events = execution.getEvents();
+        final Map<Event, Set<Event>> predecessors = new HashMap<>();
+        hb.apply((from, to) -> {
+            Verify.verify(from != to, "svcomp.cat produced a non-SC execution");
+            predecessors.computeIfAbsent(to, _ -> new HashSet<>()).add(from);
+        });
 
-        for (ThreadModel thread : model.getThreadModels()) {
-            final List<EventModel> threadEvents = thread.getEventModels();
+        for (ThreadExecution thread : execution.getThreads()) {
+            final List<Event> threadEvents = thread.getTrace();
             // hb only relates visible events, so asserts, thread creations, and atomic markers need these edges.
             for (int i = 1; i < threadEvents.size(); i++) {
                 predecessors.computeIfAbsent(threadEvents.get(i), _ -> new HashSet<>())
@@ -35,43 +34,42 @@ final class ExecutionLinearizer {
             }
             final ThreadStart start = thread.getThread().getEntry();
             if (start.isSpawned() && !threadEvents.isEmpty()) {
-                final EventModel createEvent = model.getEventModelByEvent(start.getCreator());
-                Verify.verify(createEvent != null, "Thread creator is not part of the execution model");
-                predecessors.computeIfAbsent(threadEvents.getFirst(), _ -> new HashSet<>()).add(createEvent);
+                Verify.verify(execution.isExecuted(start.getCreator()), "Thread creator is not part of the execution");
+                predecessors.computeIfAbsent(threadEvents.getFirst(), _ -> new HashSet<>()).add(start.getCreator());
             }
         }
 
-        final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);
+        final DependencyGraph<Event> dependencyGraph = DependencyGraph.from(events, predecessors);
         Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
                 "svcomp.cat produced a non-SC execution");
 
-        final Map<EventModel, EventModel> groupForEvent = new HashMap<>();
-        final Map<EventModel, List<EventModel>> groups = new LinkedHashMap<>();
-        for (ThreadModel thread : model.getThreadModels()) {
-            EventModel atomicBegin = null;
-            for (EventModel event : thread.getEventModels()) {
-                if (event.getEvent() instanceof BeginAtomic) {
+        final Map<Event, Event> groupForEvent = new HashMap<>();
+        final Map<Event, List<Event>> groups = new LinkedHashMap<>();
+        for (ThreadExecution thread : execution.getThreads()) {
+            Event atomicBegin = null;
+            for (Event event : thread.getTrace()) {
+                if (event instanceof BeginAtomic) {
                     atomicBegin = event;
                 }
-                final EventModel group = atomicBegin != null ? atomicBegin : event;
+                final Event group = atomicBegin != null ? atomicBegin : event;
                 groupForEvent.put(event, group);
                 groups.computeIfAbsent(group, _ -> new ArrayList<>()).add(event);
-                if (event.getEvent() instanceof EndAtomic) {
+                if (event instanceof EndAtomic) {
                     atomicBegin = null;
                 }
             }
         }
-        final Map<EventModel, Set<EventModel>> groupPredecessors = new HashMap<>();
+        final Map<Event, Set<Event>> groupPredecessors = new HashMap<>();
         predecessors.forEach((event, dependencies) -> {
-            final EventModel group = groupForEvent.get(event);
-            for (EventModel dependency : dependencies) {
-                final EventModel predecessor = groupForEvent.get(dependency);
+            final Event group = groupForEvent.get(event);
+            for (Event dependency : dependencies) {
+                final Event predecessor = groupForEvent.get(dependency);
                 if (group != predecessor) {
                     groupPredecessors.computeIfAbsent(group, _ -> new HashSet<>()).add(predecessor);
                 }
             }
         });
-        final DependencyGraph<EventModel> groupGraph = DependencyGraph.from(groups.keySet(), groupPredecessors);
+        final DependencyGraph<Event> groupGraph = DependencyGraph.from(groups.keySet(), groupPredecessors);
         Verify.verify(groupGraph.getSCCs().size() == groups.size(),
                 "svcomp.cat produced an execution with incompatible atomic sections");
         return groupGraph.getNodeContents().stream().flatMap(group -> groups.get(group).stream()).toList();
