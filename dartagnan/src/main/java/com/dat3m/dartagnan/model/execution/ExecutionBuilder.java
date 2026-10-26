@@ -29,8 +29,9 @@ import java.util.*;
 
     Relations:
       - Base relations are read from the SMT model, except for "loc" which is computed from the concrete addresses.
-      - Derived relations are recomputed from the base relations (see RelationEvaluator), because the SMT encoding
-        only constrains derived edges that are relevant to the axioms (active sets).
+        Edges in the must-set are present iff both events are executed, so only may-but-not-must edges are queried.
+      - Derived relations are computed on demand by the Execution from the base relations (see RelationEvaluator),
+        because the SMT encoding only constrains derived edges that are relevant to the axioms (active sets).
  */
 public final class ExecutionBuilder {
 
@@ -63,7 +64,7 @@ public final class ExecutionBuilder {
         final List<ThreadExecution> threads = program.getThreads().stream().map(this::extractThread).toList();
         final Map<NonDetValue, Expression> nondetValues = extractNondetValues();
         final MemoryLayout layout = extractMemoryLayout();
-        final Map<Relation, EventGraph> relations = extractRelations();
+        final Map<Relation, EventGraph> relations = extractBaseRelations();
         return new Execution(program, memoryModel, threads, addresses, values, results, takenJumps,
                 violatedAssertions, nondetValues, layout, relations);
     }
@@ -137,22 +138,24 @@ public final class ExecutionBuilder {
     // ======================================================================================================
     // Memory model
 
-    private Map<Relation, EventGraph> extractRelations() {
+    private Map<Relation, EventGraph> extractBaseRelations() {
         final Map<Relation, EventGraph> base = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             if (RelationEvaluator.isBase(r)) {
                 base.put(r, r.getDefinition() instanceof SameLocation ? computeSameLocation() : extractFromModel(r));
             }
         }
-        return RelationEvaluator.computeDerived(memoryModel.getRelations(), base);
+        return base;
     }
 
     private EventGraph extractFromModel(Relation relation) {
-        final EventGraph may = context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMaySet();
+        final RelationAnalysis.Knowledge knowledge = context.getAnalysisContext().get(RelationAnalysis.class)
+                .getKnowledge(relation);
+        final EventGraph must = knowledge.getMustSet();
         final EncodingContext.EdgeEncoder edge = context.edge(relation);
         final MapEventGraph graph = new MapEventGraph();
-        may.apply((e1, e2) -> {
-            if (executed.contains(e1) && executed.contains(e2) && model.hasEdge(edge, e1, e2)) {
+        knowledge.getMaySet().apply((e1, e2) -> {
+            if (executed.contains(e1) && executed.contains(e2) && (must.contains(e1, e2) || model.hasEdge(edge, e1, e2))) {
                 graph.add(e1, e2);
             }
         });

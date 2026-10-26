@@ -75,11 +75,6 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     @Override
     public void close() {
-        // VERY IMPORTANT: Close model before closing model checker!
-        if (result != null && result.hasModel()) {
-            result.getModel().close();
-        }
-
         if (verifier != null) {
             verifier.close();
         }

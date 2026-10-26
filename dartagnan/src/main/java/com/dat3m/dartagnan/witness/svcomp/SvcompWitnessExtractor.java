@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
@@ -63,7 +62,7 @@ public final class SvcompWitnessExtractor {
     }
 
     /**
-     * @param properties The properties checked by the task. Only violations of these properties are reported.
+     * @param properties The properties the solver reports as violated. Only violations of these are reported.
      */
     public static Optional<SvcompViolationWitness> forViolation(Execution execution, Set<Property> properties)
             throws IOException {
@@ -256,22 +255,42 @@ public final class SvcompWitnessExtractor {
         return literal.map(l -> String.format("(%s == %s)", object.get().getName(), l));
     }
 
+    // Topological order of the traced events along hb. Ties are broken by event id, so the result is deterministic.
     private static List<Event> linearize(Execution execution) {
         final EventGraph hb = execution.getRelation(HB)
                 .orElseThrow(() -> new VerifyException(
                         "Execution does not contain relation '%s'".formatted(HB)));
 
-        final List<Event> events = execution.getEvents().stream().filter(SvcompWitnessExtractor::isTraced).toList();
-        final Map<Event, Set<Event>> predecessors = new HashMap<>();
+        // We sort all events that are traced or ordered by hb, so that orderings via untraced events are preserved.
+        final Set<Event> events = new HashSet<>(hb.getDomain());
+        events.addAll(hb.getRange());
+        execution.getEvents().stream().filter(SvcompWitnessExtractor::isTraced).forEach(events::add);
+        final Map<Event, Integer> inDegree = new HashMap<>();
+        events.forEach(e -> inDegree.put(e, 0));
         hb.apply((from, to) -> {
             Verify.verify(from != to, "svcomp.cat produced a non-SC execution");
-            predecessors.computeIfAbsent(to, _ -> new HashSet<>()).add(from);
+            inDegree.merge(to, 1, Integer::sum);
         });
 
-        final DependencyGraph<Event> dependencyGraph = DependencyGraph.from(events, predecessors);
-        Verify.verify(dependencyGraph.getSCCs().size() == dependencyGraph.getNodes().size(),
-                "svcomp.cat produced a non-SC execution");
-        return dependencyGraph.getNodeContents();
+        final PriorityQueue<Event> ready = new PriorityQueue<>(Comparator.comparingInt(execution::getId));
+        inDegree.forEach((e, degree) -> {
+            if (degree == 0) {
+                ready.add(e);
+            }
+        });
+        final List<Event> order = new ArrayList<>(events.size());
+        final Map<Event, Set<Event>> successors = hb.getOutMap();
+        while (!ready.isEmpty()) {
+            final Event e = ready.poll();
+            order.add(e);
+            for (Event next : successors.getOrDefault(e, Set.of())) {
+                if (inDegree.merge(next, -1, Integer::sum) == 0) {
+                    ready.add(next);
+                }
+            }
+        }
+        Verify.verify(order.size() == events.size(), "svcomp.cat produced a non-SC execution");
+        return order.stream().filter(SvcompWitnessExtractor::isTraced).toList();
     }
 
     private static Location targetLocation(Event target, SvcompProperty property, Path programFile,

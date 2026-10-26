@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.model.execution;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.FloatType;
@@ -103,7 +102,16 @@ public class ExecutionTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void testEager() throws Exception {
+        test(Method.EAGER);
+    }
+
+    @Test
+    public void testLazy() throws Exception {
+        test(Method.LAZY);
+    }
+
+    private void test(Method method) throws Exception {
         final VerificationTask task = Task.builder()
                 .withSolver(SolverContextFactory.Solvers.Z3)
                 .withBound(bound)
@@ -116,43 +124,48 @@ public class ExecutionTest {
                         EnumSet.of(property));
         final Program program = task.getProgram();
 
-        final Execution execution;
-        final Optional<Expression> expectedSpecValue;
-        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, Method.EAGER)) {
+        final VerificationResult result;
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, method)) {
             solver.run();
-            final VerificationResult result = solver.getResult();
-            // Reachability specs report satisfiable encodings as PASS, so we only require a conclusive model.
-            assumeTrue(result.getStatus() != VerificationStatus.UNKNOWN && result.hasModel());
-            final IREvaluator model = result.getModel();
-
-            execution = Execution.fromModel(model);
-            checkAgainstModel(execution, model);
-            expectedSpecValue = property == Property.PROGRAM_SPEC && program.getFormat() == Program.SourceLanguage.LITMUS
-                    ? Optional.of(ValueConverter.toExpression(model.evaluateFinal(program.getSpecification())))
-                    : Optional.empty();
+            result = solver.getResult();
         }
+        // Reachability specs report satisfiable encodings as PASS, so we only require a conclusive execution.
+        assumeTrue(result.getStatus() != VerificationStatus.UNKNOWN && result.hasExecution());
 
-        // The model is closed now, the execution must still work.
+        // The solver is closed now, the execution must still work.
+        final Execution execution = result.getExecution();
+        checkAgainstVerdict(execution, result);
         checkConsistency(execution);
         checkGraphvizWitness(execution);
-        if (expectedSpecValue.isPresent()) {
-            final Optional<Expression> specValue = execution.evaluateFinal(program.getSpecification());
-            assertTrue("Specification not evaluable: " + program.getSpecification(), specValue.isPresent());
-            assertEquals(expectedSpecValue.get(), specValue.get());
-            final Optional<Boolean> filter = execution.evaluateBooleanFinal(program.getFilterSpecification());
-            assertEquals(Optional.of(true), filter);
+        if (property == Property.PROGRAM_SPEC && program.getFormat() == Program.SourceLanguage.LITMUS) {
+            final Optional<Boolean> expected = expectedSpecValue(program.getSpecificationType(), result.getStatus());
+            if (expected.isPresent()) {
+                assertEquals("Specification " + program.getSpecification(), expected,
+                        execution.evaluateBooleanFinal(program.getSpecification()));
+            }
+            assertEquals(Optional.of(true), execution.evaluateBooleanFinal(program.getFilterSpecification()));
         }
     }
 
-    private void checkAgainstModel(Execution execution, IREvaluator model) {
-        for (Axiom axiom : execution.getMemoryModel().getAxioms()) {
-            // With weak property tracking, the model's flag only implies the axiom's condition, not vice versa.
-            if (axiom.isFlagged() && property == Property.CAT_SPEC && model.isFlaggedAxiomViolated(axiom)) {
-                assertTrue("Flag not raised: " + axiom, execution.getRaisedFlags().contains(axiom));
-            }
+    // The value the litmus specification must have in an execution that leads to the given verdict.
+    private static Optional<Boolean> expectedSpecValue(Program.SpecificationType type, VerificationStatus status) {
+        return switch (type) {
+            case EXISTS -> Optional.of(status == VerificationStatus.PASS);
+            case NOT_EXISTS -> Optional.of(status == VerificationStatus.FAIL);
+            case FORALL -> Optional.of(status != VerificationStatus.FAIL);
+            case ASSERT -> Optional.empty();
+        };
+    }
+
+    // The violations reported by the solver must be visible in the execution.
+    private static void checkAgainstVerdict(Execution execution, VerificationResult result) {
+        if (result.isViolated(Property.CAT_SPEC)) {
+            assertFalse("No flag raised", execution.getRaisedFlags().isEmpty());
         }
-        for (var thread : execution.getThreads()) {
-            assertEquals(model.threadHasStarted(thread.getThread()), thread.hasStarted());
+        if (result.isViolated(Property.PROGRAM_SPEC)
+                && execution.getProgram().getFormat() == Program.SourceLanguage.LLVM) {
+            assertTrue("No assertion violated",
+                    execution.getEvents(Assert.class).stream().anyMatch(execution::assertionViolated));
         }
     }
 
