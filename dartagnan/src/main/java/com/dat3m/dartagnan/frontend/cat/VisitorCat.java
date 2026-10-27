@@ -131,12 +131,19 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Void visitAxiomDefinition(AxiomDefinitionContext ctx) {
         currentInstructionContext = ctx;
-        Relation r = parseAsRelation(ctx.e);
-        boolean negate = ctx.negate != null ^ ctx.undef != null;
-        boolean flag = ctx.flag != null || ctx.undef != null;
-        Axiom axiom = constructAxiom(ctx.cls, r, negate, flag);
 
-        if (axiom == null) {
+        final Relation r = parseAsRelation(ctx.e);
+        final boolean negate = ctx.negate != null ^ ctx.undef != null;
+        final boolean flag = ctx.flag != null || ctx.undef != null;
+
+        final Axiom axiom;
+        if (ctx.cls == Acyclicity.class) {
+            axiom = new Acyclicity(r, negate, flag);
+        } else if (ctx.cls == Emptiness.class) {
+            axiom = new Emptiness(r, negate, flag);
+        } else if (ctx.cls == Irreflexivity.class) {
+            axiom = new Irreflexivity(r, negate, flag);
+        } else {
             throw parsingException(ctx, "Unknown axiom type.");
         }
 
@@ -146,18 +153,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
             axiom.setName(name);
         }
         wmm.addConstraint(axiom);
-        return null;
-    }
-
-    private Axiom constructAxiom(Class<?> clazz, Relation r, boolean negate, boolean flag) {
-        if (clazz == Acyclicity.class) {
-            return new Acyclicity(r, negate, flag);
-        } else if (clazz == Emptiness.class) {
-            return new Emptiness(r, negate, flag);
-        } else if (clazz == Irreflexivity.class) {
-            return new Irreflexivity(r, negate, flag);
-        }
-
         return null;
     }
 
