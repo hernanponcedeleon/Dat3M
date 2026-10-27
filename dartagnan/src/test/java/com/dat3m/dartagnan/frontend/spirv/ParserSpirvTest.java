@@ -45,7 +45,7 @@ public class ParserSpirvTest {
     }
 
     private void doTestParsingValidProgram(String file) throws IOException {
-        Path path = getTestResourcePath("parsers/program/spirv/valid/" + file);
+        Path path = getTestResourcePath("frontend/spirv/valid/" + file);
         try (var stream = Files.newInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();
@@ -55,7 +55,7 @@ public class ParserSpirvTest {
     }
 
     private void doTestParsingInvalidProgram(String file, String error) throws IOException {
-        Path path = getTestResourcePath("parsers/program/spirv/invalid/" + file);
+        Path path = getTestResourcePath("frontend/spirv/invalid/" + file);
         try (var stream = Files.newInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();

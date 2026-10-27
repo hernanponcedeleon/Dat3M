@@ -18,7 +18,7 @@ public class ProgramBuilderTest {
 
     @Test
     public void testLabelsValidation() throws IOException {
-        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("parsers/program/utils/programBuilder/labels/aarch64"))) {
+        try (Stream<Path> fileStream = Files.walk(getTestResourcePath("frontend/utils/programBuilder/labels/aarch64"))) {
             fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> hasExtension(f, EXTENSION_LITMUS))
