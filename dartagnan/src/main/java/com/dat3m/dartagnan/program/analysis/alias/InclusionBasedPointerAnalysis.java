@@ -443,8 +443,9 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
 
     private void processThreadReturn(ThreadReturn ret) {
         final Variable<Modifier> threadReturnVariable = threadReturnVariables.get(ret.getThread());
-        if (threadReturnVariable != null) {
-            final DerivedVariable<Modifier> value = getResultVariable(ret.getValue().orElseThrow(), ret);
+        final Expression valueExpression = ret.getValue().orElse(null);
+        if (threadReturnVariable != null && valueExpression != null) {
+            final DerivedVariable<Modifier> value = getResultVariable(valueExpression, ret);
             addInclude(threadReturnVariable, new IncludeEdge<>(value.base, value.modifier));
         }
     }

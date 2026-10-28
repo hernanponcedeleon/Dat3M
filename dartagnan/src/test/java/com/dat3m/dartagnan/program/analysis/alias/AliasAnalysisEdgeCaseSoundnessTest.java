@@ -506,6 +506,36 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         assertMayAlias(analysis, p2Indirect, direct);
     }
 
+    @Test
+    public void spawnedThreadWithoutReturnValue() throws Exception {
+        /*
+         * P0:
+         *   thread_create(P1)
+         * P1 (returns void):
+         *   *x = 0;
+         * ThreadCreation ends P1 with a ThreadReturn that has no value.
+         */
+        FunctionType mainType = types.getFunctionType(types.getArchType(), List.of());
+        FunctionType workerType = types.getFunctionType(types.getVoidType(), List.of());
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = builder.newMemoryObject("x", 8);
+        Function main = builder.newFunction("main", 0, mainType, List.of());
+        Expression worker = builder.newFunction("worker", 1, workerType, List.of());
+
+        Register workerId = builder.getOrNewRegister(0, "workerId");
+        builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadCreate(workerId, workerType, worker, List.of()));
+        Store store = EventFactory.newStore(x, expressions.makeZero(types.getArchType()));
+        builder.addChildWithoutSourceLoc(1, store);
+
+        Program program = builder.build();
+        program.setEntrypoint(new Entrypoint.Simple(main));
+        ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
+        store = findProcessedStore(program, store);
+        AliasAnalysis analysis = analyze(program);
+
+        assertContains(analysis.addressableObjects(store), x);
+    }
+
     private Store findProcessedStore(Program program, Store original) {
         return (Store) program.getThreadEvents().stream()
                 .filter(event -> event.hasEqualMetadata(original, Event.OriginalId.class))
