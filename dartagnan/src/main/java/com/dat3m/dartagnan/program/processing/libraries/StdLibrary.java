@@ -123,9 +123,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        final Event exit = EventFactory.newAbortIf(expressions.makeTrue());
-        exit.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(exit);
+        return List.of(EventFactory.newAbort(Tag.EXCEPTIONAL_TERMINATION));
     }
 
     private List<Event> inlineFfs(FunctionCall call) {

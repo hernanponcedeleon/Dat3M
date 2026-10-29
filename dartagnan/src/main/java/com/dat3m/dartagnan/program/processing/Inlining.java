@@ -86,7 +86,7 @@ public class Inlining implements ProgramProcessor {
             exitToCallMap.computeIfAbsent(call.getSuccessor(), _ -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                final Event boundEvent = EventFactory.newTerminator(function, Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                final Event boundEvent = EventFactory.newAbort(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
                 event = IRHelper.replaceWithMetadata(call, boundEvent);
             } else {
                 if (callTarget instanceof Thread) {

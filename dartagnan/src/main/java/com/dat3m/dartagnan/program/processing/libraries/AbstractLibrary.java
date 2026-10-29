@@ -142,8 +142,7 @@ public abstract class AbstractLibrary<TSelf extends Library> implements Library 
         final Event assertion = notToInline.contains(type) ? null : EventFactory.newAssert(condition, errorMsg);
         Event abort = null;
         if (abortOnFailure) {
-            abort = EventFactory.newAbortIf(expressions.makeNot(condition));
-            abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
+            abort = EventFactory.newAbortIf(expressions.makeNot(condition), Tag.EXCEPTIONAL_TERMINATION);
         }
         return eventSequence(assertion, abort);
     }
