@@ -109,7 +109,9 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"floats_16_f", IMM, FAIL, 1},
                 {"floats_17", IMM, PASS, 1},
                 {"alias-shrinkToBounds", IMM, FAIL, 1},
-                {"zext", IMM, PASS, 1}
+                {"zext", IMM, PASS, 1},
+                {"fallThroughCondJump", IMM, PASS, 1},
+                {"fallThroughCondJump_f", IMM, FAIL, 1}
         });
     }
 }
