@@ -453,7 +453,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitUnreachableTerm(UnreachableTermContext ctx) {
-        block.events.add(newAbortIf(expressions.makeTrue()));
+        block.events.add(newAbort());
         return null;
     }
 

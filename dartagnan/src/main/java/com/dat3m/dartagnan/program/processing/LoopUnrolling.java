@@ -186,7 +186,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
-                final Event boundEvent = EventFactory.newTerminator(loopBackJump.getFunction(), Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                final Event boundEvent = EventFactory.newAbort(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
                 IRHelper.replaceWithMetadata(loopBackJump, boundEvent);
                 boundEvent.setMetadata(new Event.UnrollingBound(bound));
 

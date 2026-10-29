@@ -74,18 +74,6 @@ public class EventFactory {
         }
     }
 
-    public static Event newTerminator(Function function, Expression guard, String... tags) {
-        final Event terminator = function instanceof Thread thread ?
-                EventFactory.newJump(guard, (Label) thread.getExit()) :
-                EventFactory.newAbortIf(guard);
-        terminator.addTags(tags);
-        return terminator;
-    }
-
-    public static Event newTerminator(Function function, String... tags) {
-        return newTerminator(function, ExpressionFactory.getInstance().makeTrue(), tags);
-    }
-
 
     // =============================================================================================
     // ======================================= DAT3m events ========================================
@@ -173,8 +161,14 @@ public class EventFactory {
         return new Return(returnExpression);
     }
 
-    public static AbortIf newAbortIf(Expression condition) {
-        return new AbortIf(condition);
+    public static AbortIf newAbort(String... tags) {
+        return newAbortIf(expressions.makeTrue(), tags);
+    }
+
+    public static AbortIf newAbortIf(Expression condition, String... tags) {
+        final var event = new AbortIf(condition);
+        event.addTags(tags);
+        return event;
     }
 
     public static GenericVisibleEvent newUnreachable() {
