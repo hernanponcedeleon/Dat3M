@@ -5,7 +5,9 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.collect.ImmutableList;
 
@@ -19,9 +21,9 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
     public ConstructExpr(Type type, List<? extends Expression> arguments) {
         checkArgument(ExpressionHelper.isAggregateLike(type),
                 "Non-constructible type %s.", type);
-        checkArgument(!ExpressionHelper.isAggregate(type) ||
+        checkArgument(!(type instanceof AggregateType a) ||
                 arguments.stream().map(Expression::getType).toList()
-                        .equals(ExpressionHelper.getFieldTypes(type)),
+                        .equals(a.getFields().stream().map(TypeOffset::type).toList()),
                 "Arguments do not match the constructor signature.");
         checkArgument(!(type instanceof ArrayType a) ||
                 !a.hasKnownNumElements() ||

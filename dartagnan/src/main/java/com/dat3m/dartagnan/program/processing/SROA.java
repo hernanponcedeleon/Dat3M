@@ -5,7 +5,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -31,7 +32,7 @@ public class SROA implements FunctionProcessor {
     public void run(Function function) {
         // Compute decomposable aggregate registers
         final Set<Register> decomposableAggRegs = function.getRegisters().stream()
-                .filter(r -> ExpressionHelper.isAggregate(r.getType()))
+                .filter(r -> r.getType() instanceof AggregateType)
                 .collect(Collectors.toSet());
         for (RegWriter writer : function.getEvents(RegWriter.class)) {
             if (decomposableAggRegs.contains(writer.getResultRegister()) && !(writer instanceof Local)) {
@@ -96,14 +97,14 @@ public class SROA implements FunctionProcessor {
     }
 
     private AnnotatedRegister decomposeType(Function func, Type type, String regName) {
-        if (!ExpressionHelper.isAggregate(type)) {
+        if (!(type instanceof AggregateType aggType)) {
             return new SimpleReg(func.newRegister(regName + "__sroa", type));
         }
 
-        final List<Type> fields = ExpressionHelper.getFieldTypes(type);
+        final List<TypeOffset> fields = aggType.getFields();
         List<AnnotatedRegister> regs = new ArrayList<>(fields.size());
         for (int i = 0; i < fields.size(); i++) {
-            regs.add(decomposeType(func, fields.get(i), regName + "@" + i));
+            regs.add(decomposeType(func, fields.get(i).type(), regName + "@" + i));
         }
         return new AggregateReg(type, regs);
     }

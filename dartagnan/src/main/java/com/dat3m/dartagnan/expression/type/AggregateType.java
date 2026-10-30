@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.expression.type;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/** A memory aggregate with field offsets, alignment, and size fixed by its frontend. */
-public final class AggregateType implements Type {
+import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.ImmutableList;
+
+public class AggregateType implements Type {
 
     private final ImmutableList<TypeOffset> fields;
     private final int alignment;

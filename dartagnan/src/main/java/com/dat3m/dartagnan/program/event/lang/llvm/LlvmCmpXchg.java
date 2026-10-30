@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.RMWCmpXchgBase;
@@ -12,8 +12,8 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
     public LlvmCmpXchg(Register oldValueAndSuccessRegister, Expression address, Expression expectedValue,
             Expression value, String mo, boolean isStrong) {
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
-        Preconditions.checkArgument(ExpressionHelper.isAggregate(oldValueAndSuccessRegister.getType())
-                        && ExpressionHelper.getFieldTypes(oldValueAndSuccessRegister.getType()).size() == 2,
+        Preconditions.checkArgument(oldValueAndSuccessRegister.getType() instanceof AggregateType t
+                        && t.getFields().size() == 2,
                 "Non-aggregate result register of LlvmCmpXchg.");
         super(oldValueAndSuccessRegister, address, expectedValue, value, isStrong, mo);
     }
