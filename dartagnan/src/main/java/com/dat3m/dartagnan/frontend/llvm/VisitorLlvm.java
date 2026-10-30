@@ -1826,8 +1826,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 offset = Math.addExact(offset, field.allocationSize());
             }
             final Type type = TypeFactory.getInstance().getAggregateType(
-                    fields.stream().map(ParsedType::type).toList(), offsets, abi,
-                    fields.stream().anyMatch(f -> f.allocationSize() < 0) ? -1 : alignTo(offset, abi));
+                    fields.stream().map(ParsedType::type).toList(), offsets);
             return new ParsedType(type, new Alignment(abi, Math.max(abi, aggregateAlignment.preferred())));
         }
 

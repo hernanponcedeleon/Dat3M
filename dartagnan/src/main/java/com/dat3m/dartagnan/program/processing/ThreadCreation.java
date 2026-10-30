@@ -431,9 +431,14 @@ public class ThreadCreation implements ProgramProcessor {
             }
             Preconditions.checkState(memoryObject.hasKnownSize());
 
-            // Preserve the source allocation's exact size, including ABI padding.
-            // Reconstructing a struct from its initial values would apply natural alignment again.
-            final Type memoryType = types.getArrayType(types.getByteType(), Math.toIntExact(memoryObject.getKnownSize()));
+            // Compute type of memory object based on initial values
+            final List<Type> contentTypes = new ArrayList<>();
+            final List<Integer> offsets = new ArrayList<>();
+            for (Integer initOffset : memoryObject.getInitializedFields()) {
+                contentTypes.add(memoryObject.getInitialValue(initOffset).getType());
+                offsets.add(initOffset);
+            }
+            final Type memoryType = types.getAggregateType(contentTypes, offsets);
 
             // Allocate single object of memory type
             final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, pointerType);
