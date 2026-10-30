@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -230,8 +229,11 @@ public class Program extends MetadataCarrierBase<Program> {
             }
             return expressions.makeArray(arrayType, entries);
         }
-        if (ExpressionHelper.isAggregate(type)) {
-            final List<Expression> elements = ExpressionHelper.getFieldTypes(type).stream().map(this::newConstant).toList();
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (TypeOffset typeOffset : aggregateType.getFields()) {
+                elements.add(newConstant(typeOffset.type()));
+            }
             return expressions.makeConstruct(type, elements);
         }
         var expression = new NonDetValue(type, nextConstantId++);

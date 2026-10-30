@@ -475,7 +475,13 @@ public final class ExpressionFactory {
                 }
                 yield makeArray(arrayType, zeroes);
             }
-            case AggregateType _, TupleType _ -> makeConstruct(type, ExpressionHelper.getFieldTypes(type).stream().map(this::makeGeneralZero).toList());
+            case AggregateType structType -> {
+                List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
+                for (TypeOffset typeOffset : structType.getFields()) {
+                    zeroes.add(makeGeneralZero(typeOffset.type()));
+                }
+                yield makeConstruct(structType, zeroes);
+            }
             case IntegerType intType -> makeZero(intType);
             case BooleanType _ -> makeFalse();
             case FloatType floatType -> makePlusZero(floatType);
@@ -531,7 +537,7 @@ public final class ExpressionFactory {
             case BooleanType _ -> makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
             case IntegerType _ -> makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
             case FloatType _ -> makeFloatCmp(leftOperand, FloatCmpOp.NEQ, rightOperand);
-            case AggregateType _, TupleType _ -> makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
+            case AggregateType _ -> makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
             default -> throw new UnsupportedOperationException("Disequality not supported on type: " + type);
         };
     }

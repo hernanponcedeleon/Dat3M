@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.NaturalMemoryLayout;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,19 +42,6 @@ public class HelperInputsTest {
         i64 = IntStream.range(0, 4).boxed()
                 .map(i -> expressions.makeValue(i, int64))
                 .toArray(Expression[]::new);
-    }
-
-    @Test
-    public void castingInputPreservesExplicitAggregateLayout() {
-        final var array = types.getArrayType(int32, 2, 8);
-        final var type = types.getAggregateType(List.of(int32, array), List.of(0, 16), 16, 48);
-        final var arrayInput = expressions.makeConstruct(types.getTupleType(List.of(int64, int64)), List.of(i64[1], i64[2]));
-        final var input = expressions.makeConstruct(types.getTupleType(List.of(int64, arrayInput.getType())),
-                List.of(i64[0], arrayInput));
-        final var cast = castInput("test", type, input);
-        assertEquals(type, cast.getType());
-        assertEquals(48, types.getMemorySizeInBytes(cast.getType()));
-        assertEquals(array, cast.getOperands().get(1).getType());
     }
 
     @Test
@@ -132,9 +118,9 @@ public class HelperInputsTest {
     @Test
     public void testAggregate() {
         Type[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64, int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int64, int32))
+                types.getAggregateType(List.of(int32, int32, int32)),
+                types.getAggregateType(List.of(int64, int64, int64)),
+                types.getAggregateType(List.of(int32, int64, int32))
         };
 
         Expression[] iValues = {
@@ -195,8 +181,8 @@ public class HelperInputsTest {
     @Test
     public void testNestedArray2() {
         Type[] iSubTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64))
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
         };
 
         Type[] iTypes = {
@@ -226,17 +212,17 @@ public class HelperInputsTest {
     @Test
     public void testNestedAggregate1() {
         Type[] iSubTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64, int64))
+                types.getAggregateType(List.of(int32)),
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int32, int32, int32)),
+                types.getAggregateType(List.of(int64)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int64, int64, int64))
         };
 
         Type[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[0], iSubTypes[1], iSubTypes[2])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[3], iSubTypes[4], iSubTypes[5]))
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[1], iSubTypes[2])),
+                types.getAggregateType(List.of(iSubTypes[3], iSubTypes[4], iSubTypes[5]))
         };
 
         Expression[] iValues = {
@@ -255,18 +241,18 @@ public class HelperInputsTest {
     @Test
     public void testNestedAggregate2() {
         Type[] iSubTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int32))
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int32, int64)),
+                types.getAggregateType(List.of(int64, int32))
         };
 
         Type[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[1], iSubTypes[1])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[0], iSubTypes[1])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[2], iSubTypes[3])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[3], iSubTypes[2]))
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
+                types.getAggregateType(List.of(iSubTypes[1], iSubTypes[1])),
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[1])),
+                types.getAggregateType(List.of(iSubTypes[2], iSubTypes[3])),
+                types.getAggregateType(List.of(iSubTypes[3], iSubTypes[2]))
         };
 
         Expression[] iValues = {
@@ -536,9 +522,9 @@ public class HelperInputsTest {
     @Test
     public void testInvalidTypeToAggregate() {
         AggregateType[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64)),
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int64))
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int32, int64))
         };
 
         Expression[] iValues = {
@@ -562,8 +548,8 @@ public class HelperInputsTest {
     @Test
     public void testInvalidTypeToAggregate2() {
         AggregateType[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64))
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
         };
 
         Expression[] iValues = {
@@ -584,13 +570,13 @@ public class HelperInputsTest {
     @Test
     public void testInvalidTypeToAggregate3() {
         Type[] iSubTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(int32, int32)),
-                NaturalMemoryLayout.getAggregateType(List.of(int64, int64))
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
         };
 
         AggregateType[] iTypes = {
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
-                NaturalMemoryLayout.getAggregateType(List.of(iSubTypes[1], iSubTypes[1]))
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
+                types.getAggregateType(List.of(iSubTypes[1], iSubTypes[1]))
         };
 
         Expression[] iValues = {
@@ -620,7 +606,7 @@ public class HelperInputsTest {
     }
 
     private ConstructExpr makeConstruct(Expression... elements) {
-        Type type = NaturalMemoryLayout.getAggregateType(Stream.of(elements).map(Expression::getType).toList());
+        Type type = types.getAggregateType(Stream.of(elements).map(Expression::getType).toList());
         return (ConstructExpr) expressions.makeConstruct(type, Arrays.asList(elements));
     }
 

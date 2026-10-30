@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.TupleType;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -126,7 +127,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final Function func = loop.loopInfo.function();
         final int loopNum = loop.loopInfo.loopNumber();
 
-        final TupleType liveRegsType = types.getTupleType(Lists.transform(loop.writtenLiveRegisters, Register::getType));
+        final AggregateType liveRegsType = types.getAggregateType(Lists.transform(loop.writtenLiveRegisters, Register::getType));
         final Expression liveRegistersVector = expressions.makeConstruct(liveRegsType, loop.writtenLiveRegisters);
         final Register entryLiveStateRegister = func.newRegister("__localLiveSnapshot#" + loopNum, liveRegsType);
         final Register tempReg = func.newRegister("__possiblySideEffectless#" + loopNum, types.getBooleanType());
