@@ -90,8 +90,11 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
         for (var constructor : getChildVisitors()) {
             VisitorOps<?> visitor = constructor.apply(builder);
             visitor.getSupportedOps().forEach(op -> {
-                if (visitors.put(op, visitor) != null) {
-                    throw new IllegalArgumentException("Attempt to redefine visitor for " + op);
+                var oldVisitor = visitors.put(op, visitor);
+                if (oldVisitor != null) {
+                    final String msg = "Duplicated visitor for %s: defined at %s and %s."
+                            .formatted(op, oldVisitor.getClass().getSimpleName(), visitor.getClass().getSimpleName());
+                    throw new IllegalArgumentException(msg);
                 }
             });
         }
