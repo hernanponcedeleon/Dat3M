@@ -428,7 +428,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         Function main = builder.newFunction("main", 0, workerType, List.of());
         Expression worker = builder.newFunction("worker", 1, workerType, List.of());
 
-        Register r0 = builder.getOrNewRegister(0, "r0", types.getTupleType(List.of(type, type)));
+        Register r0 = builder.getOrNewRegister(0, "r0", types.getAggregateType(List.of(type, type)));
         Register workerId = builder.getOrNewRegister(0, "workerId");
         builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadCreate(workerId, workerType, worker, List.of()));
         builder.addChildWithoutSourceLoc(0, EventFactory.newDynamicThreadJoin(r0, workerId));
@@ -470,9 +470,9 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
         Expression choice = builder.newConstant(types.getBooleanType());
         Register p1Id = builder.getOrNewRegister(0, "p1Id");
         Register p2Id = builder.getOrNewRegister(0, "p2Id");
-        Register p0Result = builder.getOrNewRegister(0, "p0Result", types.getTupleType(List.of(type, type)));
+        Register p0Result = builder.getOrNewRegister(0, "p0Result", types.getAggregateType(List.of(type, type)));
         Register p1Result = builder.getOrNewRegister(1, "p1Result", type);
-        Register p2Result = builder.getOrNewRegister(2, "p2Result", types.getTupleType(List.of(type, type)));
+        Register p2Result = builder.getOrNewRegister(2, "p2Result", types.getAggregateType(List.of(type, type)));
         Label p0End = EventFactory.newLabel("p0End");
         Label p2End = EventFactory.newLabel("p2End");
         Store p0Indirect = EventFactory.newStore(expressions.makeExtract(p0Result, 1), expressions.makeZero(type));
