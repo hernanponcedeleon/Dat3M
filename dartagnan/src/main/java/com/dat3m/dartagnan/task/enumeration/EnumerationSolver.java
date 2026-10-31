@@ -2,13 +2,8 @@ package com.dat3m.dartagnan.task.enumeration;
 
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.misc.NamedExpression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.MemoryType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -28,7 +23,6 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENUMERATION_LIMIT;
@@ -96,7 +90,6 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ExpressionEncoder expressionEncoder = context.getExpressionEncoder();
-        final ExpressionFactory exprs = context.getExpressionFactory();
 
         // ===================== Bounds check =====================
         logger.info("Starting bounds check");
@@ -132,7 +125,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
                 final List<BooleanFormula> stateCube = new ArrayList<>(observables.size());
                 for (Expression finalExpr : observables) {
-                    final Expression val = toExpression(evaluator.evaluateFinal(finalExpr), exprs);
+                    final Expression val = evaluator.evaluateFinal(finalExpr);
                     state.put(finalExpr, val);
                     stateCube.add(expressionEncoder.equal(finalExpr, val));
                 }
@@ -146,21 +139,6 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         return new EnumerationResult(task, status, observables, ImmutableList.copyOf(visitedStates));
 
-    }
-
-    // FIXME: The conversion of TypedValue to re-encodable expressions should be made principled
-    //  and support all IR types.
-    private Expression toExpression(TypedValue<?, ?> value, ExpressionFactory exprs) {
-        return switch (value.type()) {
-            case IntegerType intType -> exprs.makeValue((BigInteger) value.value(), intType);
-            case BooleanType _ -> exprs.makeValue((boolean) value.value());
-            case MemoryType memType -> {
-                final IntegerType intType = TypeFactory.getInstance().getIntegerType(memType.getBitWidth());
-                final Expression intValue = exprs.makeValue((BigInteger) value.value(), intType);
-                yield exprs.makeToMemoryCast(intValue);
-            }
-            default -> throw new UnsupportedOperationException("Unsupported type " + value.type());
-        };
     }
 
     // We collect the expression values to enumerate from the spec and the explicitly specified locations

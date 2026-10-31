@@ -63,7 +63,7 @@ public abstract class AbstractCompilationTest extends AbstractLitmusTest {
         try (VerificationTaskSolver sourceSolver = VerificationTaskSolver.createWithMethod(task, Method.EAGER)
                 .withShutdownManager(shutdownManager.get())) {
             sourceSolver.run();
-            if (sourceSolver.getResult().hasModel()) {
+            if (sourceSolver.getResult().hasExecution()) {
                 return null;
             }
             // We found no model showing a specific behaviour (either positively or negatively),

@@ -225,8 +225,8 @@ public final class ExpressionFactory {
         return new FloatLiteral(type, null, false, true, false);
     }
 
-    public FloatLiteral makeValue(BigDecimal absValue, boolean sign, FloatType type) {
-        return new FloatLiteral(type, absValue.abs(), sign, false, false);
+    public FloatLiteral makeValue(BigDecimal absValue, boolean isNegative, FloatType type) {
+        return new FloatLiteral(type, absValue.abs(), isNegative, false, false);
     }
 
     public Expression makeOLT(Expression leftOperand, Expression rightOperand) {

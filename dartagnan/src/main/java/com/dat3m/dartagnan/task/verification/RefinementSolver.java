@@ -23,8 +23,8 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.task.Context;
-import com.dat3m.dartagnan.model.EventData;
-import com.dat3m.dartagnan.model.ExecutionModel;
+import com.dat3m.dartagnan.solver.EventData;
+import com.dat3m.dartagnan.solver.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -273,26 +273,18 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), task.getProgram(), analysisContext));
         }
 
-        final IREvaluator model = smtStatus == SMTStatus.SAT ? context.newEvaluator(prover) : null;
-        if (model != null) {
-            validateModel(solver.getExecution());
-        }
+        final boolean hasModel = smtStatus == SMTStatus.SAT;
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
 
         logger.info("Verification finished with result {}", res);
-        return new VerificationResult(this.task, res, model);
-    }
-
-    private void validateModel(ExecutionModel model) {
-        // Check if there are accesses to uninitialized registers
-        for (ExecutionModel.UninitRegRead uninitRegRead : model.getUninitRegReads()) {
-            logger.warn("Encountered uninitialized register {} read by {}: {}.",
-                    uninitRegRead.register(), uninitRegRead.at().getGlobalId(), uninitRegRead.at());
+        if (!hasModel) {
+            return VerificationResult.withoutExecution(this.task, res);
         }
-
-        // TODO: Check if there is OOB or any aliasing violation
+        try (IREvaluator model = context.newEvaluator(prover)) {
+            return VerificationResult.fromModel(this.task, res, model);
+        }
     }
 
     private void analyzeInconclusiveness(Task task, Context analysisContext, ExecutionModel model) {

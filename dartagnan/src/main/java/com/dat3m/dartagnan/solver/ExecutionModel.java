@@ -1,13 +1,10 @@
-package com.dat3m.dartagnan.model;
+package com.dat3m.dartagnan.solver;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Dealloc;
@@ -151,8 +148,6 @@ public class ExecutionModel {
         addressWritesMap.clear();
         addressReadsMap.clear();
         eventMap.clear();
-        uninitRegReads.clear();
-        initializedRegisters.clear();
 
         List<Thread> threadList = new ArrayList<>(getProgram().getThreads());
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
@@ -168,7 +163,6 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                trackRegisterAccesses(e);
                 if (e.hasTag(Tag.VISIBLE)) {
                     addEvent(e, id++, localId++);
                 }
@@ -227,7 +221,7 @@ public class ExecutionModel {
 
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e).value());
+            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e));
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -246,30 +240,6 @@ public class ExecutionModel {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
             // having any data extracted
-        }
-    }
-
-    // =============== Register tracking ===============
-    //NOTE: The following code is only used to check for reads from uninitialized registers
-    public record UninitRegRead(Register register, Event at) {}
-
-    private final List<UninitRegRead> uninitRegReads = new ArrayList<>();
-    private final Set<Register> initializedRegisters = new HashSet<>();
-
-    public List<UninitRegRead> getUninitRegReads() { return uninitRegReads; }
-
-    //------------------------
-    private void trackRegisterAccesses(Event e) {
-        if (e instanceof RegReader regReader) {
-            for (Register.Read regRead : regReader.getRegisterReads()) {
-                final Register reg = regRead.register();
-                if (!initializedRegisters.contains(reg)) {
-                    uninitRegReads.add(new UninitRegRead(reg, e));
-                }
-            }
-        }
-        if (e instanceof RegWriter writer) {
-            initializedRegisters.add(writer.getResultRegister());
         }
     }
 

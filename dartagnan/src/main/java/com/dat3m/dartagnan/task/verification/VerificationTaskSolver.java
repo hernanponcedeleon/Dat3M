@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.task.verification;
 
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.model.Execution;
 import com.dat3m.dartagnan.task.TaskSolverBase;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -12,6 +15,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.METHOD;
 
 @Options
 public final class VerificationTaskSolver extends TaskSolverBase<VerificationTaskSolver, VerificationTask, VerificationResult> implements AutoCloseable {
+
+    private static final Logger logger = LoggerFactory.getLogger(VerificationTaskSolver.class);
 
     // ================================== Configurables ==================================
 
@@ -64,6 +69,17 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
         } finally {
             endRun();
         }
+        if (result.hasExecution()) {
+            validateExecution(result.getExecution());
+        }
+    }
+
+    private static void validateExecution(Execution execution) {
+        for (Execution.RegisterRead read : execution.getUninitializedRegisterReads()) {
+            logger.warn("Encountered uninitialized register {} read by {}: {}.",
+                    read.register(), read.reader().getGlobalId(), read.reader());
+        }
+        // TODO: Check if there is OOB or any aliasing violation
     }
 
     // ===================================== Misc =====================================
@@ -75,11 +91,6 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     @Override
     public void close() {
-        // VERY IMPORTANT: Close model before closing model checker!
-        if (result != null && result.hasModel()) {
-            result.getModel().close();
-        }
-
         if (verifier != null) {
             verifier.close();
         }

@@ -91,12 +91,17 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         logProverStatistics(logger, prover);
         checkForInterrupts();
 
-        final IREvaluator model = (res != PASS) ? context.newEvaluator(prover) : null;
+        final boolean hasModel = res != PASS;
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
 
         logger.info("Verification finished with result {}", res);
-        return new VerificationResult(task, res, model);
+        if (!hasModel) {
+            return VerificationResult.withoutExecution(task, res);
+        }
+        try (IREvaluator model = context.newEvaluator(prover)) {
+            return VerificationResult.fromModel(task, res, model);
+        }
     }
 
 }
