@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.program.Function;
@@ -42,6 +43,8 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
 
         List<Event> toBeRemoved = new ArrayList<>();
         Map<Label, List<Event>> immediateLabelPredecessors = new HashMap<>();
+        // For each label, what is known about some guard when control reaches it (one entry per incoming edge)
+        Map<Label, List<EntryCondition>> entryConditions = new HashMap<>();
         // We fill the map of predecessors
         Event current = function.getEntry();
         while (current != null) {
@@ -52,9 +55,15 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                     toBeRemoved.add(jump);
                 } else {
                     immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), _ -> new ArrayList<>()).add(jump);
+                    // Taking the jump means that its guard holds
+                    entryConditions.computeIfAbsent(jump.getLabel(), _ -> new ArrayList<>())
+                            .add(new EntryCondition(jump.getGuard(), true));
                 }
             } else if (current instanceof Label label && pred != null && !(pred instanceof CondJump jump && jump.isGoto())) {
                 immediateLabelPredecessors.computeIfAbsent(label, _ -> new ArrayList<>()).add(pred);
+                // Falling through a jump means that its guard does not hold, other events tell us nothing
+                entryConditions.computeIfAbsent(label, _ -> new ArrayList<>())
+                        .add(pred instanceof CondJump predJump ? new EntryCondition(predJump.getGuard(), false) : EntryCondition.UNKNOWN);
             }
             current = current.getSuccessor();
         }
@@ -67,7 +76,7 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                 continue;
             }
             // If a jump is only reachable, when its guard is false, it is dead.
-            if (next instanceof CondJump jump && preds.stream().allMatch(e -> mutuallyExclusiveIfs(jump, e))) {
+            if (next instanceof CondJump jump && entryConditions.get(label).stream().allMatch(c -> c.impliesNot(jump.getGuard()))) {
                 toBeRemoved.add(next);
             }
             // If a label is only accessible from its predecessor, it can be removed as well.
@@ -116,15 +125,26 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
         }
     }
 
-    private boolean mutuallyExclusiveIfs(CondJump jump, Event e) {
-        if (!(e instanceof CondJump other)) {
-            return false;
+    // What is known when control reaches a label through one incoming edge: "guard" evaluates to "holds".
+    // A null guard means that nothing is known.
+    private record EntryCondition(Expression guard, boolean holds) {
+
+        private static final EntryCondition UNKNOWN = new EntryCondition(null, false);
+
+        private boolean impliesNot(Expression other) {
+            if (guard == null) {
+                return false;
+            }
+            return holds ? isNegation(guard, other) : guard.equals(other);
         }
-        if (jump.getGuard() instanceof BoolUnaryExpr jumpGuard && jumpGuard.getOperand().equals(other.getGuard())
-                || other.getGuard() instanceof BoolUnaryExpr otherGuard && otherGuard.getOperand().equals(jump.getGuard())) {
+    }
+
+    private static boolean isNegation(Expression a, Expression b) {
+        if (a instanceof BoolUnaryExpr notA && notA.getOperand().equals(b)
+                || b instanceof BoolUnaryExpr notB && notB.getOperand().equals(a)) {
             return true;
         }
-        if (jump.getGuard() instanceof IntCmpExpr a1 && other.getGuard() instanceof IntCmpExpr a2) {
+        if (a instanceof IntCmpExpr a1 && b instanceof IntCmpExpr a2) {
             return a1.getKind().inverted() == a2.getKind() && a1.getLeft().equals(a2.getLeft()) && a1.getRight().equals(a2.getRight());
         }
         return false;
