@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -18,6 +19,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ProcessingTest {
@@ -163,6 +165,96 @@ public class ProcessingTest {
         assertComparable(storeTrue, events.get(8));
         assertComparable(loadTrue, events.get(9));
         assertComparable(assertTrue, events.get(10));
+    }
+
+    @Test
+    public void removeDeadCondJumpsKeepsJumpAfterFallThrough() {
+        // if (c) goto skip; L: if (!c) goto then; goto end; then: r = 1; skip: end:
+        // L is only reached by falling through, i.e. when c is false, so "if (!c)" is live.
+        final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+        final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
+        program.addFunction(f);
+        final Expression c = program.newConstant(types.getBooleanType());
+        final Register r = f.newRegister("r", types.getArchType());
+        final Label labelL = EventFactory.newLabel("L");
+        final Label labelThen = EventFactory.newLabel("then");
+        final Label labelSkip = EventFactory.newLabel("skip");
+        final Label labelEnd = EventFactory.newLabel("end");
+        final Event jumpC = EventFactory.newJump(c, labelSkip);
+        final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
+        final Event gotoEnd = EventFactory.newGoto(labelEnd);
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        f.append(List.of(jumpC, labelL, jumpNotC, gotoEnd, labelThen, local, labelSkip, labelEnd));
+        RemoveDeadCondJumps.newInstance().run(f);
+        assertTrue(f.getEvents().contains(jumpNotC));
+        assertTrue(f.getEvents().contains(local));
+    }
+
+    @Test
+    public void removeDeadCondJumpsKeepsJumpAfterJumpToNextLabel() {
+        // if (c) goto L; L: if (!c) goto then; goto end; then: r = 1; end:
+        // L is reached both by the jump (c holds) and by falling through (c does not hold).
+        final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+        final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
+        program.addFunction(f);
+        final Expression c = program.newConstant(types.getBooleanType());
+        final Register r = f.newRegister("r", types.getArchType());
+        final Label labelL = EventFactory.newLabel("L");
+        final Label labelThen = EventFactory.newLabel("then");
+        final Label labelEnd = EventFactory.newLabel("end");
+        final Event jumpC = EventFactory.newJump(c, labelL);
+        final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
+        final Event gotoEnd = EventFactory.newGoto(labelEnd);
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        f.append(List.of(jumpC, labelL, jumpNotC, gotoEnd, labelThen, local, labelEnd));
+        RemoveDeadCondJumps.newInstance().run(f);
+        assertTrue(f.getEvents().contains(jumpNotC));
+        assertTrue(f.getEvents().contains(local));
+    }
+
+    @Test
+    public void removeDeadCondJumpsRemovesJumpOnlyReachedWhenGuardIsFalse() {
+        // if (c) goto L; goto end; L: if (!c) goto then; goto end; then: r = 1; end:
+        // L is only reached by the jump, i.e. when c holds, so "if (!c)" is dead.
+        final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+        final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
+        program.addFunction(f);
+        final Expression c = program.newConstant(types.getBooleanType());
+        final Register r = f.newRegister("r", types.getArchType());
+        final Label labelL = EventFactory.newLabel("L");
+        final Label labelThen = EventFactory.newLabel("then");
+        final Label labelEnd = EventFactory.newLabel("end");
+        final Event jumpC = EventFactory.newJump(c, labelL);
+        final Event gotoEnd0 = EventFactory.newGoto(labelEnd);
+        final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
+        final Event gotoEnd1 = EventFactory.newGoto(labelEnd);
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        f.append(List.of(jumpC, gotoEnd0, labelL, jumpNotC, gotoEnd1, labelThen, local, labelEnd));
+        RemoveDeadCondJumps.newInstance().run(f);
+        assertFalse(f.getEvents().contains(jumpNotC));
+    }
+
+    @Test
+    public void removeDeadCondJumpsRemovesJumpOnlyReachedByFallThroughWithSameGuard() {
+        // if (c) goto skip; L: if (c) goto then; goto end; then: r = 1; skip: end:
+        // L is only reached by falling through, i.e. when c is false, so the second "if (c)" is dead.
+        final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+        final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
+        program.addFunction(f);
+        final Expression c = program.newConstant(types.getBooleanType());
+        final Register r = f.newRegister("r", types.getArchType());
+        final Label labelL = EventFactory.newLabel("L");
+        final Label labelThen = EventFactory.newLabel("then");
+        final Label labelSkip = EventFactory.newLabel("skip");
+        final Label labelEnd = EventFactory.newLabel("end");
+        final Event jumpC0 = EventFactory.newJump(c, labelSkip);
+        final Event jumpC1 = EventFactory.newJump(c, labelThen);
+        final Event gotoEnd = EventFactory.newGoto(labelEnd);
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        f.append(List.of(jumpC0, labelL, jumpC1, gotoEnd, labelThen, local, labelSkip, labelEnd));
+        RemoveDeadCondJumps.newInstance().run(f);
+        assertTrue(f.getEvents().contains(jumpC0));
+        assertFalse(f.getEvents().contains(jumpC1));
     }
 
     private Event newAlloc(Register address, Type type, int count) {
