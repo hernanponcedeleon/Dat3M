@@ -132,18 +132,14 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Void visitAxiomDefinition(AxiomDefinitionContext ctx) {
         currentInstructionContext = ctx;
 
-        final String ACYCLIC = "acyclic";
-        final String EMPTY = "empty";
-        final String IRREFLEXIVE = "irreflexive";
-
         final Relation r = parseAsRelation(ctx.e);
         final boolean negate = ctx.negate != null ^ ctx.undef != null;
         final boolean flag = ctx.flag != null || ctx.undef != null;
 
-        final Axiom axiom = switch (ctx.kind.getText()) {
-            case ACYCLIC -> new Acyclicity(r, negate, flag);
-            case EMPTY -> new Emptiness(r, negate, flag);
-            case IRREFLEXIVE ->  new Irreflexivity(r, negate, flag);
+        final Axiom axiom = switch (ctx.kind.getType()) {
+            case CatParser.ACYCLIC -> new Acyclicity(r, negate, flag);
+            case CatParser.EMPTY -> new Emptiness(r, negate, flag);
+            case CatParser.IRREFLEXIVE ->  new Irreflexivity(r, negate, flag);
             default -> throw parsingException(ctx, "Unknown axiom type.");
         };
 
