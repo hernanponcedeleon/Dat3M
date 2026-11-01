@@ -54,8 +54,20 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpinLoopDetection.class);
 
+    // If set, the tracked live registers are zero-initialized instead of being initialized nondeterministically.
+    // Concrete interpreters (e.g. the exploration) need a defined value; any value is a valid choice.
+    private final boolean zeroInitializeTrackedRegisters;
+
+    private DynamicSpinLoopDetection(boolean zeroInitializeTrackedRegisters) {
+        this.zeroInitializeTrackedRegisters = zeroInitializeTrackedRegisters;
+    }
+
     public static DynamicSpinLoopDetection fromConfig(Configuration config) {
-        return new DynamicSpinLoopDetection();
+        return new DynamicSpinLoopDetection(false);
+    }
+
+    public static DynamicSpinLoopDetection withZeroInitializedTracking() {
+        return new DynamicSpinLoopDetection(true);
     }
 
     @Override
@@ -136,7 +148,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         // ---------------- Instrumentation ----------------
         // Init tracking registers
         for (Register liveReg : loop.writtenLiveRegisters) {
-            final Event initReg = func.getProgram().registersAreZeroInitialized()
+            final Event initReg = zeroInitializeTrackedRegisters || func.getProgram().registersAreZeroInitialized()
                     ? EventFactory.newLocal(liveReg, expressions.makeGeneralZero(liveReg.getType()))
                     : EventFactory.newNonDetChoice(liveReg);
             loop.getStart().getFunction().getEntry().insertAfter(initReg);

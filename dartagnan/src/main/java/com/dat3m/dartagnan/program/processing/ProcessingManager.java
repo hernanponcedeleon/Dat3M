@@ -82,6 +82,17 @@ public class ProcessingManager implements ProgramProcessor {
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
+        this(config, true, 0);
+    }
+
+    /*
+        If "unroll" is false, loops are kept in the program (e.g. for stateless model checking).
+        In that case, all passes that rely on bounded loops (unrolling, non-termination instrumentation) are skipped.
+        Only loops that create threads are unrolled (up to "threadCreationBound"), because the program representation
+        requires a static set of threads.
+     */
+    private ProcessingManager(Configuration config, boolean unroll, int threadCreationBound)
+            throws InvalidConfigurationException {
         config.inject(this);
         final Intrinsics intrinsics = Intrinsics.newInstance(detectMixedSizeAccesses);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
@@ -121,9 +132,12 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(JumpForwarding.newInstance(), Target.FUNCTIONS, false),
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
-                dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
-                ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
-                LoopUnrolling.fromConfig(config), // We keep unrolling global for now
+                dynamicSpinLoopDetection
+                        ? (unroll ? DynamicSpinLoopDetection.fromConfig(config) : DynamicSpinLoopDetection.withZeroInitializedTracking())
+                        : null,
+                unroll ? ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true) : null,
+                unroll ? LoopUnrolling.fromConfig(config) // We keep unrolling global for now
+                        : LoopUnrolling.forThreadCreatingLoops(threadCreationBound),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", ProgramPrinter.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
@@ -151,7 +165,7 @@ public class ProcessingManager implements ProgramProcessor {
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
-                NonterminationDetection.fromConfig(config),
+                unroll ? NonterminationDetection.fromConfig(config) : null,
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", ProgramPrinter.Mode.THREADS, config) : null,
@@ -166,6 +180,11 @@ public class ProcessingManager implements ProgramProcessor {
 
     public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
         return new ProcessingManager(config);
+    }
+
+    public static ProcessingManager forExploration(Configuration config, int threadCreationBound)
+            throws InvalidConfigurationException {
+        return new ProcessingManager(config, false, threadCreationBound);
     }
 
     // ==================================================

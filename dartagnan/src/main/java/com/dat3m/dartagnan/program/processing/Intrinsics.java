@@ -125,7 +125,10 @@ public class Intrinsics {
             return alwaysReturns;
         }
 
-        private boolean matches(String funcName) {
+        private boolean matches(String rawFuncName) {
+            // On Darwin, some symbols carry a "\01" prefix (e.g. "\01_pthread_join") to suppress further mangling.
+            final String funcName = rawFuncName.startsWith("\u0001") ? rawFuncName.substring(1)
+                    : rawFuncName.startsWith("\\01") ? rawFuncName.substring(3) : rawFuncName;
             boolean isPrefix = switch(this) {
                 case  LLVM_MEMCPY, LLVM_MEMSET, LLVM_OBJECTSIZE -> true;
                 default -> false;

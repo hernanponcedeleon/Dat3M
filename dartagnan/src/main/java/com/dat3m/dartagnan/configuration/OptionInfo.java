@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.program.ProgramPrinter;
 import com.dat3m.dartagnan.task.TaskSolverBase;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.task.exploration.ExplorationTaskSolver;
 import com.dat3m.dartagnan.task.enumeration.EnumerationSolver;
 import com.dat3m.dartagnan.task.SMTModelChecker;
 import com.dat3m.dartagnan.task.verification.RefinementSolver;
@@ -43,6 +44,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
         return Stream.of(
                 EnumerationSolver.class,
                 VerificationTaskSolver.class,
+                ExplorationTaskSolver.class,
                 TaskSolverBase.class,
                 OutputGenerator.class,
                 ActiveSetAnalysis.class,

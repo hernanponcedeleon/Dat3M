@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.task;
 
 import com.dat3m.dartagnan.task.enumeration.EnumerationTask;
 import com.dat3m.dartagnan.task.enumeration.EnumerationTaskSolver;
+import com.dat3m.dartagnan.task.exploration.ExplorationTask;
+import com.dat3m.dartagnan.task.exploration.ExplorationTaskSolver;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -18,6 +20,7 @@ public interface TaskSolver extends AutoCloseable {
         return switch (task) {
             case VerificationTask veriTask -> VerificationTaskSolver.create(veriTask);
             case EnumerationTask enumTask -> EnumerationTaskSolver.create(enumTask);
+            case ExplorationTask explorationTask -> ExplorationTaskSolver.create(explorationTask);
             default -> throw new UnsupportedOperationException("Unsupported task: " + task);
         };
     }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.task.enumeration.EnumerationTask;
+import com.dat3m.dartagnan.task.exploration.ExplorationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
@@ -103,6 +104,10 @@ public abstract class Task {
 
         public EnumerationTask buildEnumerationTask(Program program, Wmm memoryModel) throws InvalidConfigurationException {
             return new EnumerationTask(program, memoryModel, progressModel, config.build());
+        }
+
+        public ExplorationTask buildExplorationTask(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new ExplorationTask(program, memoryModel, progressModel, config.build(), property);
         }
     }
 }

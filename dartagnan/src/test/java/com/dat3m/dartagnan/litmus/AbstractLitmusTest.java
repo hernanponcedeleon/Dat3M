@@ -7,6 +7,13 @@ import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.test.TestHelper;
+import com.dat3m.dartagnan.task.exploration.ExplorationOrder;
+import com.dat3m.dartagnan.task.exploration.ExplorationTask;
+import com.dat3m.dartagnan.task.exploration.ExplorationTaskSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
+import org.junit.Test;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.IOException;
@@ -22,6 +29,9 @@ import static com.dat3m.dartagnan.utils.Utils.hasExtension;
 import static com.dat3m.dartagnan.test.TestHelper.EXTENSION_LITMUS;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverTest {
 
@@ -92,6 +102,46 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
 
     @Override
     protected VerificationStatus getExpected() throws Exception { return expected; }
+
+    // ======================== Exploration (stateless model checking) ========================
+
+    // Only enabled if a test provides an exploration order.
+    protected ExplorationOrder getExplorationOrder() { return null; }
+
+    @Test
+    public void testExploration() throws Exception {
+        final ExplorationOrder order = getExplorationOrder();
+        assumeNotNull(order);
+        assumeTrue(isExplorationEnabled());
+        assumeNotNull(expected);
+        final Program program = TestHelper.parseProgram(getProgramPath());
+        final Wmm targetModel = TestHelper.parseWmm(getTargetWmmPath());
+        final ExplorationTask task = getTaskBuilder()
+                .withOption(EXPLORATION_ORDER, order.name())
+                .buildExplorationTask(program, targetModel, getTestedProperties());
+        try (ExplorationTaskSolver solver = ExplorationTaskSolver.create(task)
+                .withShutdownManager(shutdownManager.get())) {
+            solver.run();
+            assertEquals(expected, solver.getResult().getStatus());
+        }
+    }
+
+    // Tests on which exploration is known to be incomplete (or uses unsupported features).
+    private static Set<Path> explorationSkipSet;
+
+    protected boolean isExplorationEnabled() {
+        try {
+            if (explorationSkipSet == null) {
+                explorationSkipSet = Files.readAllLines(ResourceHelper.getTestResourcePath("exploration-skip.csv")).stream()
+                        .filter(line -> !line.isBlank() && !line.startsWith("//"))
+                        .map(ResourceHelper::getRootPath)
+                        .collect(java.util.stream.Collectors.toSet());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return !explorationSkipSet.contains(programPath);
+    }
 
     @Override
     protected boolean isLazyMethodEnabled() {

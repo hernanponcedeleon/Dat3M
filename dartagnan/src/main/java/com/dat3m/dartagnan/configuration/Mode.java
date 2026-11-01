@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum Mode implements OptionInterface {
-    VERIFICATION, ENUMERATION;
+    VERIFICATION, ENUMERATION, EXPLORATION;
 
     // Used for options in the console
     @Override
@@ -11,6 +11,7 @@ public enum Mode implements OptionInterface {
         return switch (this) {
             case VERIFICATION -> "verification";
             case ENUMERATION -> "enumeration";
+            case EXPLORATION -> "exploration";
         };
     }
 
@@ -20,6 +21,7 @@ public enum Mode implements OptionInterface {
         return switch (this) {
             case VERIFICATION -> "Verification mode";
             case ENUMERATION -> "Enumeration mode";
+            case EXPLORATION -> "Exploration mode";
         };
     }
 
@@ -29,7 +31,7 @@ public enum Mode implements OptionInterface {
 
     // Used to decide the order shown by the selector in the UI
     public static Mode[] orderedValues() {
-        Mode[] order = { VERIFICATION, ENUMERATION };
+        Mode[] order = { VERIFICATION, ENUMERATION, EXPLORATION };
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;

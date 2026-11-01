@@ -108,6 +108,29 @@ while(1) {
 ```
 will unroll this loop twice and use the bound passed to the `--bound` option for all other loops.
 
+### Stateless model checking (exploration)
+
+Besides bounded model checking, Dartagnan can enumerate the consistent executions of a program using stateless
+model checking, based on the TruSt algorithm ([Kokologiannakis et al., POPL'22](https://dl.acm.org/doi/10.1145/3498711)).
+Each execution is checked against the CAT model directly, so no SMT solver is involved.
+```
+dartagnan cat/rc11.cat --target=c11 program.c --mode=exploration [options]
+```
+Loops are **not** unrolled. Loop iterations without side effects (e.g. spinning on a flag) block the thread, so programs
+with spin loops can be verified completely (`PASS`). Programs with infinite executions are explored forever,
+unless a bound is given. Loops that create threads are the only ones that get unrolled (`exploration.threadCreationBound`, default 8).
+Options:
+- `exploration.maxEventsPerThread`: maximal number of events per thread (default 0, i.e. unbounded). Executions exceeding the bound are cut off, and the result becomes `UNKNOWN` unless a violation is found.
+- `exploration.order`: `po` (default) is the original TruSt algorithm, which requires `po | rf` to be acyclic in all consistent executions (e.g. SC, TSO, RC11).
+  `dependencies` replaces `po` by (syntactic) dependencies, `po-loc`, `rmw`, and the ordering imposed by fences and acquire/release/SC accesses.
+  This allows exploring executions with `po | rf` cycles, such as load buffering in ARMv8, Power, RISC-V, LKMM or C11.
+  It requires that the memory model forbids cycles in the union of `rf` and this order.
+- `exploration.printExecutions`: prints every complete execution.
+
+The exploration supports the `program_spec`, `cat_spec` and `termination` properties. Termination violations are reported
+for executions where a thread is stuck in a side-effect-free loop that reads the latest values.
+Mixed-size accesses, GPU-specific relations, and computations on nondeterministic values are not supported.
+
 Dartagnan also comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```

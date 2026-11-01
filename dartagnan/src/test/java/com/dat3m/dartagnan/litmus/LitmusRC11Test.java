@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.exploration.ExplorationOrder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -22,4 +23,7 @@ public class LitmusRC11Test extends AbstractLitmusTest {
 
     @Override
     protected String getTargetWmmName() { return "rc11"; }
+
+    @Override
+    protected ExplorationOrder getExplorationOrder() { return ExplorationOrder.PO; }
 }

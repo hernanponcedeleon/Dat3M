@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.exploration.ExplorationOrder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,4 +20,7 @@ public class LitmusRISCVTest extends AbstractLitmusTest {
     public LitmusRISCVTest(Path path, VerificationStatus expected) {
         super(Arch.RISCV, path, expected);
     }
+
+    @Override
+    protected ExplorationOrder getExplorationOrder() { return ExplorationOrder.DEPENDENCIES; }
 }

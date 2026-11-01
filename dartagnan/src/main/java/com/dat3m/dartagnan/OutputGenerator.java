@@ -22,6 +22,10 @@ import com.dat3m.dartagnan.task.enumeration.EnumerationResult;
 import com.dat3m.dartagnan.task.enumeration.EnumerationStatus;
 import com.dat3m.dartagnan.task.enumeration.EnumerationTask;
 import com.dat3m.dartagnan.task.enumeration.EnumerationTaskSolver;
+import com.dat3m.dartagnan.task.exploration.ExplorationResult;
+import com.dat3m.dartagnan.task.exploration.ExplorationTask;
+import com.dat3m.dartagnan.task.exploration.ExplorationTaskSolver;
+import com.dat3m.dartagnan.task.exploration.TruStExplorer;
 import com.dat3m.dartagnan.task.verification.VerificationResult;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
@@ -149,8 +153,54 @@ public class OutputGenerator {
         return switch (solver) {
             case VerificationTaskSolver verificationTaskSolver -> getOutputFromSolver(verificationTaskSolver);
             case EnumerationTaskSolver enumerationTaskSolver -> getOutputFromSolver(enumerationTaskSolver);
+            case ExplorationTaskSolver explorationTaskSolver -> getOutputFromSolver(explorationTaskSolver);
             default -> throw new UnsupportedOperationException("Unsupported task solver: " + solver.getClass().getSimpleName());
         };
+    }
+
+    // ------------------------------------------------------------------------------
+    // Exploration (stateless model checking)
+
+    public Output getOutputFromSolver(ExplorationTaskSolver solver) {
+        final ExplorationTask task = solver.getTask();
+        final ExplorationResult result = solver.getResult();
+        final VerificationStatus status = result.getStatus();
+        final Program p = task.getProgram();
+        final String programSource = p.hasMetadata(SourcePath.class)
+                ? p.getMetadata(SourcePath.class).toString()
+                : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
+        final String filter = getFilterString(task);
+        final long time = solver.getRuntime();
+
+        final StringBuilder details = new StringBuilder();
+        details.append(result.getStatistics().toString().indent(1));
+        if (!result.isExhaustive()) {
+            details.append("\tSome executions exceeded the event bound (")
+                    .append(EXPLORATION_MAX_EVENTS).append("): the exploration is not exhaustive.\n");
+        }
+
+        if (result.getViolation().isPresent()) {
+            final TruStExplorer.Violation violation = result.getViolation().get();
+            details.append("\t").append(violation.description()).append("\n")
+                    .append("Violating execution:\n").append(violation.witness());
+            final Dartagnan.ExitCode exitCode;
+            final String reason;
+            switch (violation.kind()) {
+                case ASSERTION, PROGRAM_SPEC -> { exitCode = PROGRAM_SPEC_VIOLATION; reason = PROGRAM_SPEC_REASON; }
+                case CAT_SPEC -> { exitCode = CAT_SPEC_VIOLATION; reason = CAT_SPEC_REASON; }
+                case TERMINATION -> { exitCode = TERMINATION_VIOLATION; reason = TERMINATION_REASON; }
+                default -> throw new IllegalStateException();
+            }
+            return new Output(exitCode, toVerificationSummary(programSource, filter, status,
+                    getSpecificationString(p), reason, details.toString(), time, null));
+        }
+        if (result.getReachabilityWitness().isPresent()) {
+            details.append("Witness execution:\n").append(result.getReachabilityWitness().get());
+        }
+        final Dartagnan.ExitCode exitCode = result.isExhaustive() ? NORMAL_TERMINATION : BOUNDED_RESULT;
+        return new Output(exitCode, toVerificationSummary(programSource, filter, status,
+                getSpecificationString(p), status == UNKNOWN ? "Exploration bound reached" : "",
+                details.toString(), time, null));
     }
 
     // ------------------------------------------------------------------------------

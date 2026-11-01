@@ -35,6 +35,11 @@
         "queryAllDeclaredMethods": true
     },
     {
+        "name":"com.dat3m.dartagnan.task.exploration.ExplorationTaskSolver",
+        "allDeclaredFields": true,
+        "queryAllDeclaredMethods": true
+    },
+    {
         "name": "com.dat3m.dartagnan.wmm.RelationNameRepository",
         "allDeclaredFields": true,
         "allDeclaredMethods": true

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.exploration.ExplorationOrder;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.task.Task;
 import org.junit.runner.RunWith;
@@ -33,4 +34,13 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
     }
 
     private boolean isMixedSize() { return Utils.containsSubpath(programPath, Path.of("litmus", "AARCH64", "mixed")); }
+
+    @Override
+    protected ExplorationOrder getExplorationOrder() { return ExplorationOrder.DEPENDENCIES; }
+
+    @Override
+    protected boolean isExplorationEnabled() {
+        // Exploration does not support mixed-size accesses.
+        return !isMixedSize() && super.isExplorationEnabled();
+    }
 }

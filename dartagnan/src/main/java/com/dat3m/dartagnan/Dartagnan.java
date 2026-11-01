@@ -101,6 +101,7 @@ public class Dartagnan {
                 final Task task = switch (o.getMode()) {
                     case VERIFICATION -> builder.build(p, mcm, o.getProperty());
                     case ENUMERATION ->  builder.buildEnumerationTask(p, mcm);
+                    case EXPLORATION -> builder.buildExplorationTask(p, mcm, o.getProperty());
                 };
 
                 // ----------- Solve task ----------
@@ -218,7 +219,7 @@ public class Dartagnan {
 
         @Option(
                 name = MODE,
-                description = "The mode of operation: verification (default) or enumeration",
+                description = "The mode of operation: verification (default), enumeration, or exploration (stateless model checking without loop unrolling)",
                 toUppercase = true)
         private Mode mode = Mode.getDefault();
 
