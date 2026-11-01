@@ -1,14 +1,14 @@
-package com.dat3m.dartagnan.verification.solving;
+package com.dat3m.dartagnan.task.verification;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagator;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.ResultStatus;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Constraint;
+import com.dat3m.dartagnan.task.Context;
+import com.dat3m.dartagnan.task.SMTModelChecker;
+import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -21,9 +21,10 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 import static java.util.Collections.singletonList;
 
-public class PropagatorSolver extends ModelChecker {
+public class PropagatorSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
     private static final Logger logger = LoggerFactory.getLogger(PropagatorSolver.class);
 
@@ -35,8 +36,9 @@ public class PropagatorSolver extends ModelChecker {
         return new PropagatorSolver(task);
     }
 
-    protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
+    protected Context preprocessAndAnalyse(Task task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
+
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
 
@@ -48,25 +50,24 @@ public class PropagatorSolver extends ModelChecker {
     }
 
     @Override
-    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
-        final VerificationTask task = (VerificationTask) this.task;
+    public VerificationResult verify() throws InterruptedException, SolverException, InvalidConfigurationException {
         final Context analysisContext = preprocessAndAnalyse(task);
 
         initSMTSolver(task.getConfig());
         final SolverContext solverContext = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        final List<Constraint> constraintsToEncode = new ArrayList<>();
+        final List<Axiom> axiomsToEncode = new ArrayList<>();
         final List<Acyclicity> axiomsToPropagate = new ArrayList<>();
-        for (Constraint c : task.getMemoryModel().getConstraints()) {
-            if (c instanceof Acyclicity acyc) {
+        for (Axiom ax : task.getMemoryModel().getAxioms()) {
+            if (ax instanceof Acyclicity acyc) {
                 axiomsToPropagate.add(acyc);
             } else {
-                constraintsToEncode.add(c);
+                axiomsToEncode.add(ax);
             }
         }
 
-        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager(), constraintsToEncode);
+        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager(), axiomsToEncode);
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
@@ -98,24 +99,27 @@ public class PropagatorSolver extends ModelChecker {
         checkForInterrupts();
 
         logger.info("Starting first solver.check()");
+        VerificationStatus res;
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            prover.addConstraint(programEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? ResultStatus.PASS : ResultStatus.UNKNOWN;
+            res = prover.isUnsat() ? PASS : UNKNOWN;
         } else {
-            res = ResultStatus.FAIL;
+            res = FAIL;
         }
 
         propagator.printStatistics();
 
-        if (logger.isDebugEnabled()) {
-            logProverStatistics(logger, prover);
-        }
+        logProverStatistics(logger, prover);
+        checkForInterrupts();
 
+        final IREvaluator model = (res != PASS) ? context.newEvaluator(prover) : null;
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
+
         logger.info("Verification finished with result {}", res);
+        return new VerificationResult(task, res, model);
     }
 }
