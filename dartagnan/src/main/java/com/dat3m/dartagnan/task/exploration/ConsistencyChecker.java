@@ -19,8 +19,8 @@ import java.util.function.Function;
 
 /*
     Evaluates a CAT memory model on a concrete execution graph.
-    Relations are bit-matrices over the visible nodes of the graph (plus "phantom" elements, see below),
-    sets are bit-sets over the same universe.
+    Relations are bit-matrices over the universe of the graph, sets are bit-sets over the same universe.
+    The universe consists of the init nodes and visible nodes of the graph, plus "phantom" elements (see below).
  */
 final class ConsistencyChecker {
 
@@ -30,6 +30,7 @@ final class ConsistencyChecker {
     private final List<Axiom> consistencyAxioms;
     private final List<Axiom> flaggedAxioms;
     private final Map<Relation, Set<Relation>> sccOf = new HashMap<>();
+    private final Map<String, Integer> tagIndices = new HashMap<>();
 
     ConsistencyChecker(Wmm memoryModel, List<Thread> threads, Arch arch, boolean checkFlagged) {
         this.memoryModel = memoryModel;
@@ -78,41 +79,105 @@ final class ConsistencyChecker {
     private final class Evaluation implements Definition.Visitor<Object> {
 
         private final ExplorationGraph g;
-        private final List<Node> nodes = new ArrayList<>();
-        private final IdentityHashMap<Node, Integer> index = new IdentityHashMap<>();
-        private final int n;            // Size of the universe: visible nodes followed by phantom jump elements
-        private final int numVisible;
+
+        // Universe: init nodes, visible nodes, and phantom elements.
         // Phantom elements represent the (non-visible) jumps that cause control dependencies:
         // Dat3M defines ctrl := idd+;ctrlDirect, where idd reaches the jump and ctrlDirect leaves it.
-        private final List<Node> phantomOwners = new ArrayList<>();
+        private final List<Node> elements;
+        private final BitSet phantoms;
+        private final IdentityHashMap<Node, Integer> index;
+        private final IdentityHashMap<Node, Integer> phantomIndex;
+        private final int n;
+        private final int words;
+        private final int[] visibleIndices;
+
         private final Map<Relation, Object> values = new HashMap<>();
+
+        // Lazily computed masks (word arrays over the universe) used to build base relations row by row.
+        private long[] visibleMask;
+        private Map<Integer, List<Integer>> threadIndices;  // Visible non-init nodes per thread, in po order
+        private Map<Integer, long[]> threadMasks;
 
         Evaluation(ExplorationGraph g) {
             this.g = g;
+            elements = new ArrayList<>();
+            phantoms = new BitSet();
+            index = new IdentityHashMap<>();
+            phantomIndex = new IdentityHashMap<>();
             for (Node init : g.getInitNodes()) {
-                add(init);
+                addElement(init);
             }
             for (Node node : g.getNodes()) {
                 if (node.isVisible()) {
-                    add(node);
+                    addElement(node);
                 }
             }
-            this.numVisible = nodes.size();
-            for (Node node : List.copyOf(nodes)) {
-                if (!node.ctrlDeps.isEmpty()) {
-                    phantomOwners.add(node);
+            this.n = elements.size();
+            this.words = Math.max(1, (n + 63) >>> 6);
+            this.visibleIndices = new int[n - phantoms.cardinality()];
+            int k = 0;
+            for (int i = 0; i < n; i++) {
+                if (!phantoms.get(i)) {
+                    visibleIndices[k++] = i;
                 }
             }
-            this.n = numVisible + phantomOwners.size();
         }
 
-        private void add(Node node) {
-            index.put(node, nodes.size());
-            nodes.add(node);
+        private void addElement(Node node) {
+            index.put(node, elements.size());
+            elements.add(node);
+            if (!node.isInit() && !node.ctrlDeps.isEmpty()) {
+                phantomIndex.put(node, elements.size());
+                phantoms.set(elements.size());
+                elements.add(node);
+            }
+        }
+
+        private long[] newMask() {
+            return new long[words];
+        }
+
+        private long[] visibleMask() {
+            if (visibleMask == null) {
+                visibleMask = newMask();
+                for (int i : visibleIndices) {
+                    BitMatrix.setBit(visibleMask, i);
+                }
+            }
+            return visibleMask;
+        }
+
+        private void computeThreadInfo() {
+            if (threadIndices != null) {
+                return;
+            }
+            threadIndices = new HashMap<>();
+            threadMasks = new HashMap<>();
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
+                if (!a.isInit()) {
+                    threadIndices.computeIfAbsent(a.thread, k -> new ArrayList<>()).add(i);
+                    BitMatrix.setBit(threadMasks.computeIfAbsent(a.thread, k -> newMask()), i);
+                }
+            }
+            threadIndices.values().forEach(list -> list.sort(Comparator.comparingInt(i -> elements.get(i).poIndex)));
+        }
+
+        // ------------------------------------------------------------------------------------------
+        // Axioms
+
+        // acyclic(r+) iff acyclic(r): avoid computing closures.
+        private Relation acyclicityTarget(Axiom axiom) {
+            Relation relation = axiom.getRelation();
+            while (relation.getDefinition() instanceof TransitiveClosure closure) {
+                relation = closure.getOperand();
+            }
+            return relation;
         }
 
         boolean holds(Axiom axiom) {
-            final Object value = get(axiom.getRelation());
+            final Relation relation = axiom instanceof Acyclicity ? acyclicityTarget(axiom) : axiom.getRelation();
+            final Object value = get(relation);
             final boolean base;
             if (axiom instanceof Acyclicity) {
                 base = ((BitMatrix) value).isAcyclic();
@@ -140,7 +205,12 @@ final class ConsistencyChecker {
                 values.put(rel, value);
                 return value;
             }
-            // Fixpoint computation for the recursive component (starting from empty relations).
+            computeFixpoint(scc);
+            return values.get(rel);
+        }
+
+        // Fixpoint computation for a recursive component (starting from empty relations).
+        private void computeFixpoint(Set<Relation> scc) {
             for (Relation r : scc) {
                 values.put(r, r.isSet() ? new BitSet(n) : new BitMatrix(n));
             }
@@ -155,7 +225,6 @@ final class ConsistencyChecker {
                     }
                 }
             }
-            return values.get(rel);
         }
 
         private BitSet set(Relation r) {
@@ -215,7 +284,16 @@ final class ConsistencyChecker {
 
         @Override
         public Object visitComposition(Composition def) {
-            return rel(def.getLeftOperand()).compose(rel(def.getRightOperand()));
+            // Compositions with set filters ([S];r and r;[S]) only mask rows or columns.
+            final Relation left = def.getLeftOperand();
+            final Relation right = def.getRightOperand();
+            if (left.getDefinition() instanceof SetIdentity filter) {
+                return rel(right).restrictRows(set(filter.getDomain()));
+            }
+            if (right.getDefinition() instanceof SetIdentity filter) {
+                return rel(left).restrictColumns(set(filter.getDomain()));
+            }
+            return rel(left).compose(rel(right));
         }
 
         @Override
@@ -225,7 +303,8 @@ final class ConsistencyChecker {
 
         @Override
         public Object visitTransitiveClosure(TransitiveClosure def) {
-            return rel(def.getOperand()).transitiveClosure();
+            final Relation operand = def.getOperand();
+            return rel(operand).transitiveClosure();
         }
 
         @Override
@@ -243,10 +322,14 @@ final class ConsistencyChecker {
             final BitSet dom = set(def.getDomain());
             final BitSet range = set(def.getRange());
             final BitMatrix result = new BitMatrix(n);
+            if (dom.isEmpty() || range.isEmpty()) {
+                return result;
+            }
+            final long[] rangeMask = newMask();
+            final long[] rangeWords = range.toLongArray();
+            System.arraycopy(rangeWords, 0, rangeMask, 0, Math.min(rangeWords.length, words));
             for (int i = dom.nextSetBit(0); i >= 0; i = dom.nextSetBit(i + 1)) {
-                for (int j = range.nextSetBit(0); j >= 0; j = range.nextSetBit(j + 1)) {
-                    result.set(i, j);
-                }
+                result.orRow(i, rangeMask);
             }
             return result;
         }
@@ -267,9 +350,11 @@ final class ConsistencyChecker {
 
         @Override
         public Object visitTagSet(TagSet def) {
+            final String tag = def.getTag();
+            final int tagIndex = tagIndices.computeIfAbsent(tag, k -> tagIndices.size());
             final BitSet result = new BitSet(n);
-            for (int i = 0; i < numVisible; i++) {
-                if (nodes.get(i).hasTag(def.getTag())) {
+            for (int i : visibleIndices) {
+                if (elements.get(i).hasTag(tagIndex, tag)) {
                     result.set(i);
                 }
             }
@@ -278,17 +363,15 @@ final class ConsistencyChecker {
 
         @Override
         public Object visitProgramOrder(ProgramOrder po) {
+            computeThreadInfo();
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node a = nodes.get(i);
-                if (a.isInit()) {
-                    continue;
-                }
-                for (int j = 0; j < numVisible; j++) {
-                    final Node b = nodes.get(j);
-                    if (b.thread == a.thread && !b.isInit() && a.poIndex < b.poIndex) {
-                        result.set(i, j);
-                    }
+            for (List<Integer> thread : threadIndices.values()) {
+                // Walk the thread backwards, accumulating the po-later nodes.
+                final long[] later = newMask();
+                for (int k = thread.size() - 1; k >= 0; k--) {
+                    final int i = thread.get(k);
+                    result.orRow(i, later);
+                    BitMatrix.setBit(later, i);
                 }
             }
             return result;
@@ -296,41 +379,44 @@ final class ConsistencyChecker {
 
         @Override
         public Object visitExternal(External ext) {
+            computeThreadInfo();
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                for (int j = 0; j < numVisible; j++) {
-                    if (!sameThread(nodes.get(i), nodes.get(j))) {
-                        result.set(i, j);
+            final long[] visible = visibleMask();
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
+                final long[] row = visible.clone();
+                if (a.isInit()) {
+                    row[i >>> 6] &= ~(1L << i);
+                } else {
+                    final long[] same = threadMasks.get(a.thread);
+                    for (int w = 0; w < words; w++) {
+                        row[w] &= ~same[w];
                     }
                 }
+                result.orRow(i, row);
             }
             return result;
         }
 
         @Override
         public Object visitInternal(Internal internal) {
+            computeThreadInfo();
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                for (int j = 0; j < numVisible; j++) {
-                    if (sameThread(nodes.get(i), nodes.get(j))) {
-                        result.set(i, j);
-                    }
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
+                if (a.isInit()) {
+                    result.set(i, i);
+                } else {
+                    result.orRow(i, threadMasks.get(a.thread));
                 }
             }
             return result;
         }
 
-        private boolean sameThread(Node a, Node b) {
-            if (a.isInit() || b.isInit()) {
-                return a == b;
-            }
-            return a.thread == b.thread;
-        }
-
         @Override
         public Object visitSameInstruction(SameInstruction si) {
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
+            for (int i : visibleIndices) {
                 result.set(i, i);
             }
             return result;
@@ -341,11 +427,11 @@ final class ConsistencyChecker {
             final BitMatrix result = new BitMatrix(n);
             for (var loc : g.getLocations()) {
                 final List<Node> order = g.getCo(loc);
-                for (int a = 0; a < order.size(); a++) {
+                final long[] later = newMask();
+                for (int a = order.size() - 1; a >= 0; a--) {
                     final int i = index.get(order.get(a));
-                    for (int b = a + 1; b < order.size(); b++) {
-                        result.set(i, index.get(order.get(b)));
-                    }
+                    result.orRow(i, later);
+                    BitMatrix.setBit(later, i);
                 }
             }
             return result;
@@ -361,18 +447,17 @@ final class ConsistencyChecker {
         @Override
         public Object visitSameLocation(SameLocation loc) {
             final BitMatrix result = new BitMatrix(n);
-            final Map<Object, List<Integer>> byAddress = new HashMap<>();
-            for (int i = 0; i < numVisible; i++) {
-                final Node a = nodes.get(i);
+            final Map<Object, long[]> byAddress = new HashMap<>();
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
                 if (a.address != null) {
-                    byAddress.computeIfAbsent(a.address, k -> new ArrayList<>()).add(i);
+                    BitMatrix.setBit(byAddress.computeIfAbsent(a.address, k -> newMask()), i);
                 }
             }
-            for (List<Integer> group : byAddress.values()) {
-                for (int i : group) {
-                    for (int j : group) {
-                        result.set(i, j);
-                    }
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
+                if (a.address != null) {
+                    result.orRow(i, byAddress.get(a.address));
                 }
             }
             return result;
@@ -381,8 +466,8 @@ final class ConsistencyChecker {
         @Override
         public Object visitAMOPairs(AMOPairs amo) {
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node w = nodes.get(i);
+            for (int i : visibleIndices) {
+                final Node w = elements.get(i);
                 if (w.pairedLoad != null && !w.isExclusivePair) {
                     result.set(index.get(w.pairedLoad), i);
                 }
@@ -393,8 +478,8 @@ final class ConsistencyChecker {
         @Override
         public Object visitLXSXPairs(LXSXPairs lxsx) {
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node w = nodes.get(i);
+            for (int i : visibleIndices) {
+                final Node w = elements.get(i);
                 if (w.pairedLoad != null && w.isExclusivePair) {
                     result.set(index.get(w.pairedLoad), i);
                 }
@@ -405,14 +490,14 @@ final class ConsistencyChecker {
         @Override
         public Object visitInternalDataDependency(DirectDataDependency idd) {
             final BitMatrix result = dependencies(nd -> nd.dataDeps);
-            for (int p = 0; p < phantomOwners.size(); p++) {
-                for (Node src : phantomOwners.get(p).ctrlDeps) {
+            phantomIndex.forEach((owner, p) -> {
+                for (Node src : owner.ctrlDeps) {
                     final Integer i = index.get(src);
                     if (i != null) {
-                        result.set(i, numVisible + p);
+                        result.set(i, p);
                     }
                 }
-            }
+            });
             return result;
         }
 
@@ -424,16 +509,14 @@ final class ConsistencyChecker {
         @Override
         public Object visitControlDependency(DirectControlDependency ctrlDep) {
             final BitMatrix result = new BitMatrix(n);
-            for (int p = 0; p < phantomOwners.size(); p++) {
-                result.set(numVisible + p, index.get(phantomOwners.get(p)));
-            }
+            phantomIndex.forEach((owner, p) -> result.set(p, index.get(owner)));
             return result;
         }
 
         private BitMatrix dependencies(Function<Node, Set<Node>> deps) {
             final BitMatrix result = new BitMatrix(n);
-            for (int j = 0; j < numVisible; j++) {
-                for (Node src : deps.apply(nodes.get(j))) {
+            for (int j : visibleIndices) {
+                for (Node src : deps.apply(elements.get(j))) {
                     final Integer i = index.get(src);
                     if (i != null) {
                         result.set(i, j);
@@ -446,8 +529,8 @@ final class ConsistencyChecker {
         @Override
         public Object visitCASDependency(CASDependency casDep) {
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node origin = nodes.get(i);
+            for (int i : visibleIndices) {
+                final Node origin = elements.get(i);
                 if (origin.isInit() || !origin.hasTag(Tag.IMM.CASDEPORIGIN)) {
                     continue;
                 }
@@ -485,14 +568,14 @@ final class ConsistencyChecker {
         public Object visitSameScope(SameScope sc) {
             final String specificScope = sc.getSpecificScope();
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node a = nodes.get(i);
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
                 if (a.isInit() || !threads.get(a.thread).hasScope()) {
                     continue;
                 }
                 final Thread t1 = threads.get(a.thread);
-                for (int j = 0; j < numVisible; j++) {
-                    final Node b = nodes.get(j);
+                for (int j : visibleIndices) {
+                    final Node b = elements.get(j);
                     if (b.isInit() || !threads.get(b.thread).hasScope()) {
                         continue;
                     }
@@ -518,8 +601,8 @@ final class ConsistencyChecker {
         @Override
         public Object visitSyncWith(SyncWith syncWith) {
             final BitMatrix result = new BitMatrix(n);
-            for (int i = 0; i < numVisible; i++) {
-                final Node a = nodes.get(i);
+            for (int i : visibleIndices) {
+                final Node a = elements.get(i);
                 if (a.isInit()) {
                     continue;
                 }
@@ -527,8 +610,8 @@ final class ConsistencyChecker {
                 if (!t1.hasSyncSet()) {
                     continue;
                 }
-                for (int j = 0; j < numVisible; j++) {
-                    final Node b = nodes.get(j);
+                for (int j : visibleIndices) {
+                    final Node b = elements.get(j);
                     if (!b.isInit() && b.thread != a.thread && t1.getSyncSet().contains(threads.get(b.thread))) {
                         result.set(i, j);
                     }

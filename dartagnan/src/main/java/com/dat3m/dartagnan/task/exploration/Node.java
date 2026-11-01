@@ -57,6 +57,11 @@ public final class Node {
 
     private final Set<String> syntheticTags;
 
+    // Cache for tag queries by index (see ConsistencyChecker): bit k of tagKnown says whether tag k was queried,
+    // bit k of tagValue holds the answer. Nodes are shared between graphs, so each answer is computed once.
+    private long tagKnown;
+    private long tagValue;
+
     private Node(Builder b) {
         this.kind = b.kind;
         this.thread = b.thread;
@@ -91,6 +96,21 @@ public final class Node {
     // Visible nodes are the ones the memory model reasons about.
     public boolean isVisible() {
         return kind == Kind.INIT || kind == Kind.READ || kind == Kind.WRITE || kind == Kind.OTHER;
+    }
+
+    // Tag query with caching for tag indices below 64.
+    boolean hasTag(int tagIndex, String tag) {
+        if (tagIndex >= 64) {
+            return hasTag(tag);
+        }
+        final long bit = 1L << tagIndex;
+        if ((tagKnown & bit) == 0) {
+            if (hasTag(tag)) {
+                tagValue |= bit;
+            }
+            tagKnown |= bit;
+        }
+        return (tagValue & bit) != 0;
     }
 
     public boolean hasTag(String tag) {

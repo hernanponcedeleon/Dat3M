@@ -76,6 +76,23 @@ final class BitMatrix {
         }
     }
 
+    // row(i) |= mask, where mask is a word array of length "words"
+    void orRow(int i, long[] mask) {
+        final int dst = i * words;
+        for (int w = 0; w < words; w++) {
+            bits[dst + w] |= mask[w];
+        }
+    }
+
+    // Returns an empty word array with the row layout of this matrix.
+    long[] newRowMask() {
+        return new long[words];
+    }
+
+    static void setBit(long[] mask, int j) {
+        mask[j >>> 6] |= 1L << j;
+    }
+
     // row(i) |= row(j) of other
     private void orRow(int i, BitMatrix other, int j) {
         final int dst = i * words;
@@ -101,6 +118,30 @@ final class BitMatrix {
         return result;
     }
 
+    // Keeps only the rows in the given set.
+    BitMatrix restrictRows(BitSet rows) {
+        final BitMatrix result = new BitMatrix(n);
+        for (int i = rows.nextSetBit(0); i >= 0 && i < n; i = rows.nextSetBit(i + 1)) {
+            System.arraycopy(bits, i * words, result.bits, i * words, words);
+        }
+        return result;
+    }
+
+    // Keeps only the columns in the given set.
+    BitMatrix restrictColumns(BitSet columns) {
+        final long[] mask = new long[words];
+        final long[] colWords = columns.toLongArray();
+        System.arraycopy(colWords, 0, mask, 0, Math.min(colWords.length, words));
+        final BitMatrix result = copy();
+        for (int i = 0; i < n; i++) {
+            final int base = i * words;
+            for (int w = 0; w < words; w++) {
+                result.bits[base + w] &= mask[w];
+            }
+        }
+        return result;
+    }
+
     BitMatrix inverse() {
         final BitMatrix result = new BitMatrix(n);
         forEach((i, j) -> result.set(j, i));
@@ -111,6 +152,9 @@ final class BitMatrix {
     BitMatrix transitiveClosure() {
         final BitMatrix result = copy();
         for (int k = 0; k < n; k++) {
+            if (result.isRowEmpty(k)) {
+                continue; // Nothing to propagate through k
+            }
             final int kWord = k >>> 6;
             final long kMask = 1L << k;
             for (int i = 0; i < n; i++) {
