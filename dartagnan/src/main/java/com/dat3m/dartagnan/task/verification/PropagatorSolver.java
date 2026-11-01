@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.solver.propagators.AcyclicityPropagator;
 import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.task.SMTModelChecker;
 import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -57,17 +57,19 @@ public class PropagatorSolver extends SMTModelChecker<VerificationTask> implemen
         final SolverContext solverContext = this.solverContext;
         final ProverWithTracker prover = this.prover;
 
-        final List<Axiom> axiomsToEncode = new ArrayList<>();
+        // NOTE: We must keep all definitions (not just the non-acyclicity axioms), otherwise relations that
+        //  only occur in propagated axioms are left unencoded and their edge variables are unconstrained.
+        final List<Constraint> constraintsToEncode = new ArrayList<>();
         final List<Acyclicity> axiomsToPropagate = new ArrayList<>();
-        for (Axiom ax : task.getMemoryModel().getAxioms()) {
-            if (ax instanceof Acyclicity acyc) {
+        for (Constraint c : task.getMemoryModel().getConstraints()) {
+            if (c instanceof Acyclicity acyc && !acyc.isFlagged() && !acyc.isNegated()) {
                 axiomsToPropagate.add(acyc);
             } else {
-                axiomsToEncode.add(ax);
+                constraintsToEncode.add(c);
             }
         }
 
-        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager(), axiomsToEncode);
+        EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager(), constraintsToEncode);
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);

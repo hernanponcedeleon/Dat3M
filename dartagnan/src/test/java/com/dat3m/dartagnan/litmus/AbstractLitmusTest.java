@@ -71,6 +71,9 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
     protected long getTimeoutSeconds() { return 10; }
 
     @Override
+    protected boolean isPropagatorMethodEnabled() { return true; }
+
+    @Override
     protected Task.TaskBuilder getTaskBuilder() {
         return super.getTaskBuilder()
                 .withSolver(SolverContextFactory.Solvers.Z3)
