@@ -9,7 +9,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.parsers.program.ProgramParser.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.frontend.ProgramParser.EXTENSION_LITMUS;
 
 public class EditorsPane {
 

@@ -44,18 +44,6 @@
         "allDeclaredFields": true
     },
     {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Acyclicity",
-        "allDeclaredConstructors": true
-    },
-    {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Emptiness",
-        "allDeclaredConstructors": true
-    },
-    {
-        "name": "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
-        "allDeclaredConstructors": true
-    },
-    {
         "name":"com.dat3m.dartagnan.Dartagnan$DartagnanOptions",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
@@ -208,279 +196,24 @@
         ]
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines$Pipeline",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
       },
       {
-        "name": "com.dat3m.dartagnan.parsers.program.utils.Pipelines$Pipeline$Command",
+        "name": "com.dat3m.dartagnan.frontend.utils.Pipelines$Pipeline$Command",
         "allDeclaredConstructors": true,
         "allPublicConstructors": true,
         "allDeclaredFields": true,
         "allPublicMethods": true
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsAnnotation",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsArithmetic",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsAtomic",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsBarrier",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsBits",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsComposite",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsConstant",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsControlFlow",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsConversion",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsDebug",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsExtension",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsFunction",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsLogical",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsMemory",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsMisc",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsSetting",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
-      },
-      {
-        "name": "com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsType",
-        "methods": [
-          {
-            "name": "<init>",
-            "parameterTypes": [
-              "com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder"
-            ]
-          },
-          {
-            "name": "getSupportedOps",
-            "parameterTypes": []
-          }
-        ]
       }
 ]

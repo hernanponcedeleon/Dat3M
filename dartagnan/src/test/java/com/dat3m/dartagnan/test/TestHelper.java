@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.frontend.cat.ParserCat;
+import com.dat3m.dartagnan.frontend.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.slf4j.Logger;

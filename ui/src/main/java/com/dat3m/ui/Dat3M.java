@@ -1,7 +1,7 @@
 package com.dat3m.ui;
 
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.frontend.cat.ParserCat;
+import com.dat3m.dartagnan.frontend.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.editor.Editor;

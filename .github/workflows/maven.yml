@@ -207,8 +207,8 @@ jobs:
       - name: Expression tests
         run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/expression/**/*" -f dartagnan/pom.xml
 
-      - name: Parsers tests
-        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
+      - name: Frontend tests
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/frontend/**/*" -f dartagnan/pom.xml
 
       - name: Program tests
         run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/program/**/*" -f dartagnan/pom.xml

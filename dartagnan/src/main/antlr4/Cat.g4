@@ -15,10 +15,8 @@ definition
     |   letRecDefinition
     ;
 
-axiomDefinition locals [Class<?> cls]
-    :   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
-    |   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
-    |   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
+axiomDefinition
+    :   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? kind = (ACYCLIC | IRREFLEXIVE | EMPTY) e = expression (AS NAME)?
     ;
 
 letFuncDefinition
