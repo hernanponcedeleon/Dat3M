@@ -54,6 +54,13 @@ public interface CAATPredicate extends Dependent<CAATPredicate> {
 
     // ======================================== Defaults ==============================================
 
+    /*
+        Used by the online solver: a predicate has static membership if <get>/<contains> answer membership
+        statically, i.e., independent of the current (partial) state, for all elements over executed events.
+        For such predicates, the propagated additions are only needed by dependents that enumerate the predicate.
+     */
+    default boolean hasStaticMembership() { return false; }
+
     default int size() { return (int)valueStream().count(); } // Returns the exact(!) size of this predicate
     default boolean contains(Derivable value) { return get(value) != null; }
     default boolean isEmpty() { return size() == 0; }

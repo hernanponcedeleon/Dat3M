@@ -39,6 +39,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
@@ -159,7 +160,16 @@ public abstract class ModelChecker implements AutoCloseable {
                 : null;
 
         solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
+        if (smtConfig.getSolver() == SolverContextFactory.Solvers.Z3) {
+            // NOTE: These are global parameters: they affect all Z3 solvers created afterwards.
+            getZ3Parameters().forEach(com.microsoft.z3.Native::globalParamSet);
+        }
         prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
+    }
+
+    // Z3 parameters to be set before the prover is created.
+    protected Map<String, String> getZ3Parameters() {
+        return Map.of();
     }
 
     @Override

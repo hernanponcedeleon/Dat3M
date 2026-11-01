@@ -42,7 +42,7 @@ public class UnionGraph extends MaterializedGraph {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (Stream.of(operands).anyMatch(g -> changedSource == g)) {
+        if (isOperand(changedSource)) {
             ArrayList<Edge> newlyAdded = new ArrayList<>();
             Collection<Edge> addedEdges = (Collection<Edge>)added;
             for (Edge e : addedEdges) {
@@ -63,4 +63,13 @@ public class UnionGraph extends MaterializedGraph {
     }
 
 
+
+    private boolean isOperand(CAATPredicate pred) {
+        for (RelationGraph g : operands) {
+            if (g == pred) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

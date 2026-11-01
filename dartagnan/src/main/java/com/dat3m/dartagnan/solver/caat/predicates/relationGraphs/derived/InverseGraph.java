@@ -126,4 +126,7 @@ public class InverseGraph extends AbstractPredicate implements RelationGraph {
 
     @Override
     public void backtrackTo(int time) { }
+
+    @Override
+    public boolean hasStaticMembership() { return inner.hasStaticMembership(); }
 }

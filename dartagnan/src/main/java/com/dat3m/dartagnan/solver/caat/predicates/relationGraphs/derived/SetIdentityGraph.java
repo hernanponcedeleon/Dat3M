@@ -91,4 +91,7 @@ public class SetIdentityGraph extends AbstractPredicate implements RelationGraph
         Element e = inner.getById(id);
         return e != null ? Stream.of(derive(e)) : Stream.empty();
     }
+
+    @Override
+    public boolean hasStaticMembership() { return inner.hasStaticMembership(); }
 }

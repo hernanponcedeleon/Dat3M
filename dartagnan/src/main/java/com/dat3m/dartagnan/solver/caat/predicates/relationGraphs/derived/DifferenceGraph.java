@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,7 +94,16 @@ public class DifferenceGraph extends AbstractPredicate implements RelationGraph 
         if (changedSource == first) {
             return addedEdges.stream().filter(e -> !second.contains(e)).collect(Collectors.toList());
         } else if (changedSource == second) {
-            throw new IllegalStateException("Non-static relations on the right hand side of differences are invalid.");
+            // NOTE: A right-hand side can only "change" if it is an anti-monotone view (as used by the online solver):
+            // the propagated edges are those that are known to be no longer contained in <second>.
+            List<Edge> newEdges = new ArrayList<>();
+            for (Edge e : addedEdges) {
+                Edge f = first.get(e);
+                if (f != null && !second.contains(e)) {
+                    newEdges.add(f.with(e.getTime(), f.getDerivationLength()));
+                }
+            }
+            return newEdges;
         } else {
             return Collections.emptyList();
         }

@@ -2,10 +2,16 @@ package com.dat3m.dartagnan.solver.caat.predicates;
 
 import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateListener;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.RecursiveGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.DifferenceSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.IntersectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.UnionSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -23,6 +29,36 @@ public class PredicateHierarchy {
     private final Set<CAATPredicate> basePredicates;
 
     private Domain<?> domain;
+
+    // Predicates whose changes need not be propagated (see <computeDeadPredicates>).
+    private final Set<CAATPredicate> deadPredicates = new HashSet<>();
+
+    // Caches to avoid repeated lookups during propagation and backtracking.
+    private record PredInfo(DependencyGraph<CAATPredicate>.Node node, PredicateListener[] listeners,
+                            boolean dead, boolean absorbing) { }
+    private IdentityHashMap<CAATPredicate, PredInfo> infos;
+    private PredInfo[] infoList; // In topological order
+
+    private void ensureCaches() {
+        if (infos != null) {
+            return;
+        }
+        final List<CAATPredicate> list = getPredicateList();
+        infos = new IdentityHashMap<>(list.size() * 2);
+        infoList = new PredInfo[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            final CAATPredicate pred = list.get(i);
+            final PredInfo info = new PredInfo(dependencyGraph.get(pred),
+                    listenersMap.get(pred).toArray(new PredicateListener[0]),
+                    deadPredicates.contains(pred), isAbsorbing(pred));
+            infos.put(pred, info);
+            infoList[i] = info;
+        }
+    }
+
+    private void invalidateCaches() {
+        infos = null;
+    }
 
     // ============== Construction ===============
 
@@ -52,6 +88,67 @@ public class PredicateHierarchy {
     }
 
     public Domain<?> getDomain() { return domain; }
+
+    /*
+        Used by the online solver to avoid useless propagation. A predicate is "dead" if it is not constrained and
+            (1) it is empty in every execution, or
+            (2) all its dependents are dead, or
+            (3) it has static membership (its membership queries are answered statically) and each dependent is
+                either dead or an intersection that has some operand without static membership
+                (such intersections only need to query, but not enumerate, the static operand).
+        <isEmptyBase> tells which base predicates are empty in every execution.
+        Changes are never propagated into dead predicates.
+     */
+    public Set<CAATPredicate> computeDeadPredicates(Set<CAATPredicate> constrained, Predicate<CAATPredicate> isEmptyBase) {
+        deadPredicates.clear();
+        // Predicates that are empty in every execution (dependencies first)
+        final Set<CAATPredicate> empty = new HashSet<>();
+        for (CAATPredicate pred : getPredicateList()) {
+            if (isStaticallyEmpty(pred, empty, isEmptyBase)) {
+                empty.add(pred);
+            }
+        }
+        // Dead predicates (dependents first)
+        final List<CAATPredicate> preds = new ArrayList<>(getPredicateList());
+        Collections.reverse(preds);
+        for (CAATPredicate pred : preds) {
+            if (constrained.contains(pred)) {
+                continue;
+            }
+            final List<DependencyGraph<CAATPredicate>.Node> dependents = dependencyGraph.get(pred).getDependents();
+            final boolean dead = empty.contains(pred)
+                    || (!dependents.isEmpty() && dependents.stream().allMatch(d -> deadPredicates.contains(d.getContent())))
+                    || (pred.hasStaticMembership() && dependents.stream().map(DependencyGraph.Node::getContent)
+                            .allMatch(d -> deadPredicates.contains(d) || isAbsorbing(d)));
+            if (dead) {
+                deadPredicates.add(pred);
+            }
+        }
+        invalidateCaches();
+        return Collections.unmodifiableSet(deadPredicates);
+    }
+
+    private static boolean isStaticallyEmpty(CAATPredicate pred, Set<CAATPredicate> empty, Predicate<CAATPredicate> isEmptyBase) {
+        final List<? extends CAATPredicate> deps = pred.getDependencies();
+        if (deps.isEmpty()) {
+            return pred instanceof EmptyGraph || isEmptyBase.test(pred);
+        } else if (pred instanceof CompositionGraph || pred instanceof IntersectionGraph
+                || pred instanceof CartesianGraph || pred instanceof IntersectionSet) {
+            return deps.stream().anyMatch(empty::contains);
+        } else if (pred instanceof DifferenceGraph || pred instanceof DifferenceSet) {
+            return empty.contains(deps.get(0));
+        } else if (pred instanceof UnionGraph || pred instanceof UnionSet || pred instanceof TransitiveGraph
+                || pred instanceof InverseGraph || pred instanceof SetIdentityGraph || pred instanceof ProjectionSet) {
+            return deps.stream().allMatch(empty::contains);
+        }
+        return false; // E.g. recursive graphs: be conservative
+    }
+
+    // Intersections that have an operand without static membership only query their static operands.
+    private static boolean isAbsorbing(CAATPredicate pred) {
+        return (pred instanceof IntersectionGraph || pred instanceof IntersectionSet)
+                && pred.getDependencies().stream().anyMatch(o -> !o.hasStaticMembership());
+    }
 
     // ==========================================
 
@@ -130,9 +227,13 @@ public class PredicateHierarchy {
     }
 
     public void backtrackTo(int time) {
-        for (CAATPredicate pred : getPredicateList()) {
+        ensureCaches();
+        for (PredInfo info : infoList) {
+            final CAATPredicate pred = info.node.getContent();
             pred.backtrackTo(time);
-            listenersMap.get(pred).forEach(listener -> listener.onBacktrack(pred, time));
+            for (PredicateListener listener : info.listeners) {
+                listener.onBacktrack(pred, time);
+            }
         }
     }
 
@@ -152,29 +253,30 @@ public class PredicateHierarchy {
     }
 
     private void handleTask(Task task, boolean withinRecGroup) {
-        CAATPredicate target = task.target;
-        CAATPredicate from = task.from;
-        Collection<? extends Derivable> added = task.added;
-
-        Collection<? extends Derivable> newlyAdded = target.forwardPropagate(from, added);
+        ensureCaches();
+        final CAATPredicate target = task.target;
+        final Collection<? extends Derivable> newlyAdded = target.forwardPropagate(task.from, task.added);
         if (newlyAdded.isEmpty()) {
             // Nothing has changed, so we don't create new propagation tasks
             return;
         }
 
-        for (PredicateListener listener : listenersMap.get(target)) {
+        final PredInfo targetInfo = infos.get(target);
+        final DependencyGraph<CAATPredicate>.Node targetNode = targetInfo.node;
+        for (PredicateListener listener : targetInfo.listeners) {
             listener.onChanged(target, newlyAdded);
         }
 
-        List<DependencyGraph<CAATPredicate>.Node> dependents = dependencyGraph.get(target).getDependents();
-        if (withinRecGroup) {
-            // Limits propagation to EventGraphs in the same recursive Group.
-            Set<DependencyGraph<CAATPredicate>.Node> recGroup = dependencyGraph.get(target).getSCC();
-            dependents = dependents.stream().filter(recGroup::contains).toList();
-        }
-        for (DependencyGraph<CAATPredicate>.Node dependent : dependents) {
-            Task newTask = new Task(target, dependent.getContent(), newlyAdded, dependent.getTopologicalIndex());
-            tasks.add(newTask);
+        // Within recursive groups, we limit the propagation to the same group.
+        final Set<DependencyGraph<CAATPredicate>.Node> recGroup = withinRecGroup ? targetNode.getSCC() : null;
+        final boolean isStaticSource = target.hasStaticMembership();
+        for (DependencyGraph<CAATPredicate>.Node dependent : targetNode.getDependents()) {
+            final PredInfo depInfo = infos.get(dependent.getContent());
+            if ((recGroup != null && !recGroup.contains(dependent))
+                    || depInfo.dead || (isStaticSource && depInfo.absorbing)) {
+                continue;
+            }
+            tasks.add(new Task(target, dependent.getContent(), newlyAdded, dependent.getTopologicalIndex()));
         }
     }
 
@@ -186,6 +288,7 @@ public class PredicateHierarchy {
         if (!listenersMap.containsKey(pred)) {
             return false;
         }
+        invalidateCaches();
         return listenersMap.get(pred).add(listener);
     }
 
@@ -193,10 +296,12 @@ public class PredicateHierarchy {
         if (!listenersMap.containsKey(pred)) {
             return false;
         }
+        invalidateCaches();
         return listenersMap.get(pred).remove(listener);
     }
 
     public boolean removeListener(PredicateListener listener) {
+        invalidateCaches();
         boolean changed = false;
         for (Set<PredicateListener> listeners : listenersMap.values()) {
             changed |= listeners.remove(listener);
@@ -206,6 +311,7 @@ public class PredicateHierarchy {
 
 
     public void clearListeners() {
+        invalidateCaches();
         listenersMap.values().forEach(Set::clear);
     }
 

@@ -37,6 +37,12 @@ public abstract class AbstractVerificationTaskSolverTest {
         testSolver(Method.LAZY);
     }
 
+    @Test
+    public void testOnlineRefinement() throws Exception {
+        assumeTrue(isLazyMethodEnabled());
+        testSolver(Method.ONLINE);
+    }
+
     @Rule
     public RuleChain ruleChain() {
         return RuleChain.outerRule(shutdownManager)
@@ -60,6 +66,10 @@ public abstract class AbstractVerificationTaskSolverTest {
     protected boolean isLazyMethodEnabled() { return true; }
 
     private void testSolver(Method method) throws Exception {
+        // Allows restricting the tested methods, e.g., -Ddat3m.test.methods=online
+        final String selected = System.getProperty("dat3m.test.methods");
+        assumeTrue(selected == null || selected.isBlank()
+                || java.util.Arrays.asList(selected.split(",")).contains(method.asStringOption()));
         final VerificationTask task = getTask();
         final ResultStatus expected = getExpected();
         assumeNotNull(expected);

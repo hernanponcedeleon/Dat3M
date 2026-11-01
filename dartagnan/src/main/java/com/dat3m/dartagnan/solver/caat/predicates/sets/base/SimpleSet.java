@@ -13,6 +13,10 @@ public class SimpleSet extends AbstractBaseSet {
 
     private final Map<Element, Element> elements = new HashMap<>();
     private final Set<Element> keySet = elements.keySet();
+    // See SimpleGraph: allows cheap backtracking if elements are inserted with monotone timestamps.
+    private final ArrayList<Element> trail = new ArrayList<>();
+    private boolean monotone = true;
+    private int maxTime = 0;
 
     @Override
     public int size() {
@@ -58,11 +62,29 @@ public class SimpleSet extends AbstractBaseSet {
     public void initializeToDomain(Domain<?> domain) {
         super.initializeToDomain(domain);
         elements.clear();
+        trail.clear();
+        monotone = true;
+        maxTime = 0;
     }
 
     @Override
     public void backtrackTo(int time) {
-        keySet.removeIf(e -> e.getTime() > time);
+        if (maxTime <= time) {
+            return;
+        }
+        if (monotone) {
+            int i = trail.size();
+            while (--i >= 0 && trail.get(i).getTime() > time) {
+                elements.remove(trail.get(i));
+            }
+            trail.subList(i + 1, trail.size()).clear();
+        } else {
+            keySet.removeIf(e -> e.getTime() > time);
+            trail.removeIf(e -> e.getTime() > time);
+        }
+        maxTime = trail.isEmpty() ? 0
+                : monotone ? trail.get(trail.size() - 1).getTime()
+                : trail.stream().mapToInt(Element::getTime).max().getAsInt();
     }
 
     @Override
@@ -77,7 +99,15 @@ public class SimpleSet extends AbstractBaseSet {
     }
 
     public boolean add(Element ele) {
-        return elements.putIfAbsent(ele, ele) == null;
+        if (elements.putIfAbsent(ele, ele) != null) {
+            return false;
+        }
+        if (ele.getTime() < maxTime) {
+            monotone = false;
+        }
+        maxTime = Math.max(maxTime, ele.getTime());
+        trail.add(ele);
+        return true;
     }
 
     public boolean addAll(Collection<? extends Element> elems) {

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.solver.caat.predicates.sets.derived;
 
 
+import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
@@ -22,6 +23,15 @@ public class IntersectionSet extends MaterializedSet {
 
     public IntersectionSet(SetPredicate... o) {
         operands = o;
+    }
+
+    // NOTE: Computed on initialization, because the operands may not be fully constructed yet (recursion).
+    private boolean hasNonStaticOperand;
+
+    @Override
+    public void initializeToDomain(Domain<?> domain) {
+        super.initializeToDomain(domain);
+        hasNonStaticOperand = Stream.of(operands).anyMatch(o -> !o.hasStaticMembership());
     }
 
     private Element derive(Element... elements) {
@@ -47,6 +57,10 @@ public class IntersectionSet extends MaterializedSet {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Element> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
+        if (changedSource != null && changedSource.hasStaticMembership() && hasNonStaticOperand) {
+            // Operands with static membership are queried by the propagation of the other operands.
+            return Collections.emptyList();
+        }
         if (Stream.of(operands).anyMatch(o -> changedSource == o)) {
             Collection<Element> addedElems = (Collection<Element>)added;
             List<Element> newlyAdded = new ArrayList<>();
@@ -57,8 +71,9 @@ public class IntersectionSet extends MaterializedSet {
                 }
                 if (Stream.of(elements).allMatch(Objects::nonNull)) {
                     final Element e = derive(elements);
-                    simpleSet.add(e);
-                    newlyAdded.add(e);
+                    if (simpleSet.add(e)) {
+                        newlyAdded.add(e);
+                    }
                 }
             }
             return newlyAdded;

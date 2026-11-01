@@ -23,5 +23,13 @@
           "returnType": "boolean"
         }
       ]
+    },
+    {
+      "name": "com.microsoft.z3.Native$UserPropagatorBase",
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.z3.Z3UserPropagator",
+      "allDeclaredMethods": true
     }
 ]

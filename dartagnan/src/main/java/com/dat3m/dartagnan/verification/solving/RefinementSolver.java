@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.onlinecaat.OnlineCAATPropagator;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -140,13 +141,30 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
-    private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
+    // If true, the CAAT theory is additionally integrated into the SMT solver as an online theory solver
+    // (via a user propagator) that is called on partial assignments.
+    // The offline refinement loop is kept as a safety net, i.e., to validate final models.
+    private final boolean online;
+
+    private RefinementSolver(VerificationTask task, boolean online) throws InvalidConfigurationException {
         super(task);
         task.getConfig().inject(this);
+        this.online = online;
     }
 
     public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
-        return new RefinementSolver(task);
+        return new RefinementSolver(task, false);
+    }
+
+    public static RefinementSolver createOnline(VerificationTask task) throws InvalidConfigurationException  {
+        return new RefinementSolver(task, true);
+    }
+
+    @Override
+    protected Map<String, String> getZ3Parameters() {
+        // The online theory solver adds (symmetric) lemmas via propagation without justification.
+        // By default, Z3 removes such clauses on backtracking, making them almost useless.
+        return online ? Map.of("smt.up.persist_clauses", "true") : Map.of();
     }
 
     protected void preprocess(Task task) throws InvalidConfigurationException {
@@ -202,6 +220,14 @@ public class RefinementSolver extends ModelChecker {
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
 
+        OnlineCAATPropagator propagator = null;
+        if (online) {
+            final long start = System.currentTimeMillis();
+            propagator = new OnlineCAATPropagator(context, config);
+            logger.info("Online CAAT theory solver initialized in {}.", toTimeString(System.currentTimeMillis() - start));
+            propagator = registerPropagator(prover, propagator);
+        }
+
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
 
@@ -245,6 +271,11 @@ public class RefinementSolver extends ModelChecker {
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
+            if (propagator != null) {
+                // Same for the conflicts found by the online theory solver.
+                prover.writeComment("Online refinement encoding");
+                prover.addConstraint(bmgr.and(propagator.exportLearnedClauses()));
+            }
             final RefinementTrace boundTrace = runRefinement(prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
@@ -268,6 +299,9 @@ public class RefinementSolver extends ModelChecker {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(combinedTrace, boundCheckTime));
+            if (propagator != null) {
+                logger.info(propagator.getStatistics().toString());
+            }
         }
 
         if (logger.isDebugEnabled()) {
@@ -343,6 +377,15 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
+    private OnlineCAATPropagator registerPropagator(ProverWithTracker prover, OnlineCAATPropagator propagator) {
+        if (prover.registerUserPropagator(propagator)) {
+            return propagator;
+        }
+        logger.warn("The selected SMT solver does not support user propagators (use Z3). " +
+                "Falling back to offline refinement.");
+        return null;
+    }
+
     private RefinementTrace runRefinement(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 

@@ -169,10 +169,22 @@ public class AcyclicityConstraint extends AbstractConstraint {
             node.reset();
         }
 
-        for (Node node : nodeMap) {
+        // Every cycle must contain a marked node (= a node with a newly added outgoing edge),
+        // because the graph without the newly added edges was acyclic.
+        // Hence, it suffices to start the search from marked nodes only.
+        final PrimitiveIterator.OfInt iter = markedNodes.intIterator();
+        while (iter.hasNext()) {
+            final Node node = nodeMap[iter.nextInt()];
             if (!node.wasVisited()) {
                 strongConnect(node);
             }
+        }
+    }
+
+    // Marks all nodes, so that the next check is a full (non-incremental) check.
+    public void markAllNodes() {
+        for (int i = 0; i < nodeMap.length; i++) {
+            markedNodes.add(i);
         }
     }
 

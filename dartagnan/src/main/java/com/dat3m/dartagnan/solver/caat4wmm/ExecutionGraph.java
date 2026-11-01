@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
+import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
@@ -49,17 +50,45 @@ public class ExecutionGraph {
     private final BiMap<Relation, CAATPredicate> predicateToRelationMap = HashBiMap.create();
     private final BiMap<Axiom, Constraint> constraintMap = HashBiMap.create();
 
+    private final BasePredicateFactory factory;
+
     private CAATModel caatModel;
     private EventDomain domain;
+
+    /*
+        Allows to replace the construction of base predicates (and of right-hand sides of differences).
+        Returning null falls back to the default construction.
+     */
+    public interface BasePredicateFactory {
+        default RelationGraph createBaseGraph(Relation rel, boolean isEncoded) { return null; }
+        default SetPredicate createBaseSet(Relation rel, boolean isEncoded) { return null; }
+        // Creates the predicate used on the right-hand side of a difference.
+        default RelationGraph createSubtrahendGraph(Relation rel, RelationGraph graph, Relation minuend) { return graph; }
+        default SetPredicate createSubtrahendSet(Relation rel, SetPredicate set, Relation minuend) { return set; }
+    }
+
+    private static final BasePredicateFactory DEFAULT_FACTORY = new BasePredicateFactory() { };
 
     // =================================================
 
     // ============= Construction & Init ===============
 
     public ExecutionGraph(Wmm model, Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encoded) {
+        this(model, encoded, DEFAULT_FACTORY);
+    }
+
+    public ExecutionGraph(Wmm model, Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encoded,
+                          BasePredicateFactory factory) {
         memoryModel = Preconditions.checkNotNull(model);
         encodedConstraints = Preconditions.checkNotNull(encoded);
+        this.factory = Preconditions.checkNotNull(factory);
         constructMappings();
+    }
+
+    // Initializes the CAAT model to an arbitrary domain (used by the online solver).
+    public void initializeToDomain(Domain<?> customDomain) {
+        domain = null;
+        caatModel.initializeToDomain(customDomain);
     }
 
     public void initializeFromModel(ExecutionModel executionModel) {
@@ -212,7 +241,10 @@ public class ExecutionGraph {
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
 
-        if (relClass == ReadFrom.class) {
+        final RelationGraph custom = factory.createBaseGraph(rel, encodedConstraints.test(rel.getDefinition()));
+        if (custom != null) {
+            graph = custom;
+        } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
         } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
@@ -236,7 +268,8 @@ public class ExecutionGraph {
         } else if (relClass == Composition.class || relClass == Difference.class) {
             RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
             RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
-            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) : new DifferenceGraph(g1, g2);
+            graph = relClass == Composition.class ? new CompositionGraph(g1, g2)
+                    : new DifferenceGraph(g1, factory.createSubtrahendGraph(dependencies.get(1), g2, dependencies.get(0)));
         } else if (relClass == CartesianProduct.class) {
             CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
             SetPredicate lhs = getOrCreateSetFromRelation(cartRel.getDomain());
@@ -270,7 +303,10 @@ public class ExecutionGraph {
         final Class<?> relClass = relation.getDefinition().getClass();
         final List<Relation> dependencies = relation.getDependencies();
         final SetPredicate set;
-        if (encodedConstraints.test(relation.getDefinition())) {
+        final SetPredicate custom = factory.createBaseSet(relation, encodedConstraints.test(relation.getDefinition()));
+        if (custom != null) {
+            set = custom;
+        } else if (encodedConstraints.test(relation.getDefinition())) {
             set = new DynamicDefaultWMMSet(relation);
         } else if (relClass == TagSet.class) {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
@@ -288,7 +324,7 @@ public class ExecutionGraph {
         } else if (relClass == Difference.class) {
             SetPredicate s1 = getOrCreateSetFromRelation(dependencies.get(0));
             SetPredicate s2 = getOrCreateSetFromRelation(dependencies.get(1));
-            set = new DifferenceSet(s1, s2);
+            set = new DifferenceSet(s1, factory.createSubtrahendSet(dependencies.get(1), s2, dependencies.get(0)));
         } else {
             throw new UnsupportedOperationException(String.format("Cannot handle set %s with definition of type %s", relation, relClass.getSimpleName()));
         }

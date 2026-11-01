@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived;
 
 
+import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
@@ -28,6 +29,15 @@ public class IntersectionGraph extends MaterializedGraph {
         operands = o;
     }
 
+    // NOTE: Computed on initialization, because the operands may not be fully constructed yet (recursion).
+    private boolean hasNonStaticOperand;
+
+    @Override
+    public void initializeToDomain(Domain<?> domain) {
+        super.initializeToDomain(domain);
+        hasNonStaticOperand = Stream.of(operands).anyMatch(o -> !o.hasStaticMembership());
+    }
+
     @Override
     public void repopulate() {
         RelationGraph first = Stream.of(operands).min(comparingInt(RelationGraph::getEstimatedSize)).orElseThrow();
@@ -43,14 +53,23 @@ public class IntersectionGraph extends MaterializedGraph {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (Stream.of(operands).anyMatch(g -> changedSource == g)) {
-            RelationGraph[] others = Stream.of(operands).filter(g -> g != changedSource).toArray(RelationGraph[]::new);
+        if (changedSource != null && changedSource.hasStaticMembership() && hasNonStaticOperand) {
+            // Operands with static membership are queried by the propagation of the other operands.
+            return Collections.emptyList();
+        }
+        if (isOperand(changedSource)) {
+            final RelationGraph[] others = new RelationGraph[operands.length - 1];
+            int k = 0;
+            for (RelationGraph g : operands) {
+                if (g != changedSource && k < others.length) {
+                    others[k++] = g;
+                }
+            }
             Collection<Edge> addedEdges = (Collection<Edge>)added;
             List<Edge> newlyAdded = new ArrayList<>();
             for (Edge e1 : addedEdges) {
                 Edge e = derive(e1, others);
-                if (e != null) {
-                    simpleGraph.add(e);
+                if (e != null && simpleGraph.add(e)) {
                     newlyAdded.add(e);
                 }
             }
@@ -80,5 +99,14 @@ public class IntersectionGraph extends MaterializedGraph {
             length = Math.max(length, e.getDerivationLength());
         }
         return edge.with(time, length);
+    }
+
+    private boolean isOperand(CAATPredicate pred) {
+        for (RelationGraph g : operands) {
+            if (g == pred) {
+                return true;
+            }
+        }
+        return false;
     }
 }

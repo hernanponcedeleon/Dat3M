@@ -134,4 +134,7 @@ public class CartesianGraph extends AbstractPredicate implements RelationGraph {
             return b != null ? first.elementStream().map(a -> derive(a, b)) : Stream.empty();
         }
     }
+
+    @Override
+    public boolean hasStaticMembership() { return first.hasStaticMembership() && second.hasStaticMembership(); }
 }

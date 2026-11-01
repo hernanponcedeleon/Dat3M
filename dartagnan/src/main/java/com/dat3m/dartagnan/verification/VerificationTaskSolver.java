@@ -52,6 +52,7 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
         modelChecker = switch (method) {
             case EAGER -> AssumeSolver.create(task);
             case LAZY -> RefinementSolver.create(task);
+            case ONLINE -> RefinementSolver.createOnline(task);
         };
         modelChecker.setShutdownManager(shutdownManager);
     }

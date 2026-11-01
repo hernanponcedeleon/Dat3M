@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base;
 import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeList;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeStore;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
@@ -22,7 +23,12 @@ public final class SimpleGraph extends AbstractBaseGraph {
     private int maxTime = 0;
     private int numEvents = 0;
 
-    private final HashMap<Edge, Edge> edgeMap = new HashMap<>(100);
+    private final EdgeStore edgeMap = new EdgeStore();
+
+    // Edges in insertion order. If edges are inserted with non-decreasing timestamps (=monotone),
+    // we can backtrack by popping from this trail (cost proportional to the number of removed edges).
+    private final ArrayList<Edge> trail = new ArrayList<>();
+    private boolean monotone = true;
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -46,14 +52,32 @@ public final class SimpleGraph extends AbstractBaseGraph {
         if (maxTime <= time) {
             return;
         }
+        if (monotone) {
+            int i = trail.size();
+            while (--i >= 0) {
+                final Edge e = trail.get(i);
+                if (e.getTime() <= time) {
+                    break;
+                }
+                edgeMap.remove(e.getFirst(), e.getSecond());
+                outgoing[e.getFirst()].removeLast();
+                ingoing[e.getSecond()].removeLast();
+            }
+            trail.subList(i + 1, trail.size()).clear();
+            maxTime = trail.isEmpty() ? 0 : trail.get(trail.size() - 1).getTime();
+            return;
+        }
+
         final int bound = Math.min(numEvents, outgoing.length);
+        int newMaxTime = 0;
         for (int i = 0; i < bound; i++) {
             DataItem item = outgoing[i];
             if (item != null) {
                 item.backtrackTo(time);
-                maxTime = Math.max(maxTime, item.maxTime);
+                newMaxTime = Math.max(newMaxTime, item.maxTime);
             }
         }
+        maxTime = newMaxTime;
 
         final int bound2 = Math.min(numEvents, ingoing.length);
         for (int i = 0; i < bound2; i++) {
@@ -62,7 +86,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
                 item.backtrackTo(time);
             }
         }
-
+        trail.removeIf(e -> e.getTime() > time);
     }
 
     private DataItem getItem(int e, EdgeDirection dir) {
@@ -79,7 +103,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
 
     @Override
     public Edge get(Edge edge) {
-        return edgeMap.get(edge);
+        return edgeMap.get(edge.getFirst(), edge.getSecond());
     }
 
     @Override
@@ -93,17 +117,26 @@ public final class SimpleGraph extends AbstractBaseGraph {
         return item == null ? 0 : item.size();
     }
 
+    @Override
+    public boolean containsById(int a, int b) {
+        return edgeMap.contains(a, b);
+    }
+
     @Override public boolean contains(Edge e) {
-        return edgeMap.containsKey(e);
+        return edgeMap.contains(e.getFirst(), e.getSecond());
     }
 
     public boolean add(Edge e) {
-        if (edgeMap.putIfAbsent(e, e) != null) {
+        if (!edgeMap.add(e)) {
             return false;
         }
         int firstId = e.getFirst();
         int secondId = e.getSecond();
+        if (e.getTime() < maxTime) {
+            monotone = false;
+        }
         maxTime = Math.max(maxTime, e.getTime());
+        trail.add(e);
         DataItem item1 = outgoing[firstId];
         if (item1 == null) {
             outgoing[firstId] = item1 = new DataItem(true);
@@ -130,6 +163,8 @@ public final class SimpleGraph extends AbstractBaseGraph {
     public void clear() {
         maxTime = 0;
         edgeMap.clear();
+        trail.clear();
+        monotone = true;
 
         final int bound = Math.min(numEvents, outgoing.length);
         for (int i = 0; i < bound; i++) {
@@ -178,6 +213,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
 
         clear();
         numEvents = domain.size();
+        edgeMap.initialize(numEvents);
         if (numEvents > outgoing.length) {
             final int newCapacity = numEvents + 20; // We give a buffer of 20 extra events
             outgoing = Arrays.copyOf(outgoing, newCapacity);
@@ -214,6 +250,13 @@ public final class SimpleGraph extends AbstractBaseGraph {
             return true;
         }
 
+        // Only valid if edges were inserted in monotone order.
+        void removeLast() {
+            final int last = edgeList.size() - 1;
+            edgeList.remove(last);
+            maxTime = last == 0 ? 0 : edgeList.get(last - 1).getTime();
+        }
+
 
         @Override public Iterator<Edge> iterator() {
             return edgeList.iterator();
@@ -232,14 +275,14 @@ public final class SimpleGraph extends AbstractBaseGraph {
             // should be sorted by timestamp (since edges with higher timestamp get added later)
             if (maxTime > time) {
                 final List<Edge> edgeList = this.edgeList;
-                final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;
+                final EdgeStore edgeMap = SimpleGraph.this.edgeMap;
                 int i = edgeList.size();
                 while (--i >= 0) {
                     Edge e = edgeList.get(i);
                     if (e.getTime() > time) {
                         edgeList.remove(i);
                         if (deleteFromMap) {
-                            edgeMap.remove(e);
+                            edgeMap.remove(e.getFirst(), e.getSecond());
                         }
                     } else {
                         maxTime = e.getTime();

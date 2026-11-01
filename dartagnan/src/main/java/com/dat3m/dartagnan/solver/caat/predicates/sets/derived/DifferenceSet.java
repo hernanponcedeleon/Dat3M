@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +76,15 @@ public class DifferenceSet extends AbstractPredicate implements SetPredicate {
         if (changedSource == first) {
             return addedElems.stream().filter(e -> !second.contains(e)).collect(Collectors.toList());
         } else if (changedSource == second) {
-            throw new IllegalStateException("Non-static predicates on the right hand side of differences are invalid.");
+            // See DifferenceGraph: only anti-monotone views (online solver) can propagate changes here.
+            List<Element> newElems = new ArrayList<>();
+            for (Element e : addedElems) {
+                Element f = first.get(e);
+                if (f != null && !second.contains(e)) {
+                    newElems.add(f.with(e.getTime(), f.getDerivationLength()));
+                }
+            }
+            return newElems;
         } else {
             return Collections.emptyList();
         }
