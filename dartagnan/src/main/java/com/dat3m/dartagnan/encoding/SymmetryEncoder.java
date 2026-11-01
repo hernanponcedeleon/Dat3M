@@ -84,6 +84,10 @@ public class SymmetryEncoder {
         }
     }
 
+    public boolean isEnabled() {
+        return !symmBreakTarget.isEmpty();
+    }
+
     public static SymmetryEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         return new SymmetryEncoder(context, context.getTask().getConfig());
     }

@@ -201,6 +201,9 @@ jobs:
       - name: Configuration tests
         run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/configuration/**/*" -f dartagnan/pom.xml
 
+      - name: Encoding tests
+        run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/encoding/**/*" -f dartagnan/pom.xml
+
       - name: Exception tests
         run: mvn --batch-mode test -Dtest="com/dat3m/dartagnan/exception/**/*" -f dartagnan/pom.xml
 

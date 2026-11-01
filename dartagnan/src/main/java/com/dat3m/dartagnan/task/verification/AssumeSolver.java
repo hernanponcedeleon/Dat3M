@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.task.SMTModelChecker;
 import com.dat3m.dartagnan.task.*;
+import com.google.common.base.Verify;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -53,8 +54,9 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
 
         EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
+        // Lazy closures rely on all their uses being negative, which symmetry breaking does not respect.
+        WmmEncoder wmmEncoder = WmmEncoder.withContext(context, canUseUserPropagators() && !symmetryEncoder.isEnabled());
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
@@ -62,6 +64,7 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model encoding");
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+        final ClosurePropagator closurePropagator = registerClosurePropagator(context, wmmEncoder);
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
@@ -97,6 +100,9 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         }
 
         logProverStatistics(logger, prover);
+        if (closurePropagator != null) {
+            logger.info("Lazy closures: {}", closurePropagator.getStatistics());
+        }
         checkForInterrupts();
 
         final IREvaluator model = (res != PASS) ? context.newEvaluator(prover) : null;
@@ -105,6 +111,17 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
 
         logger.info("Verification finished with result {}", res);
         return new VerificationResult(task, res, model);
+    }
+
+    private ClosurePropagator registerClosurePropagator(EncodingContext context, WmmEncoder wmmEncoder)
+            throws InterruptedException {
+        if (wmmEncoder.getLazyClosures().isEmpty()) {
+            return null;
+        }
+        final ClosurePropagator propagator = new ClosurePropagator(context, wmmEncoder.getLazyClosures());
+        prover.addConstraint(propagator.encodeInitialFacts());
+        Verify.verify(prover.registerUserPropagator(propagator), "Solver does not support user propagators.");
+        return propagator;
     }
 
 }

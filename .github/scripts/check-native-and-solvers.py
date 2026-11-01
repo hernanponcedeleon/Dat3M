@@ -38,12 +38,14 @@ def main():
     for variable in ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
         env[variable] = str(TARGET / "libs") + os.pathsep + env.get(variable, "")
 
+    checks = [(solver or "default", ["cat/c11.cat", PROGRAM] + ([f"--solver={solver}"] if solver else []))
+              for solver in [None, *sorted(solvers)]]
+    # Lazy closures are enforced by a Z3 user propagator, whose callbacks go through JNI
+    checks.append(("lazy closures", ["cat/rc11.cat", PROGRAM, "--encoding.wmm.lazyClosures=true"]))
+
     failures = []
-    for solver in [None, *sorted(solvers)]:
-        label = solver or "default"
-        command = [str(executable), "cat/c11.cat", PROGRAM]
-        if solver:
-            command.append(f"--solver={solver}")
+    for label, arguments in checks:
+        command = [str(executable), *arguments]
         print(f"\nChecking {label}: {PROGRAM} (expected PASS)", flush=True)
         try:
             result = subprocess.run(command, cwd=ROOT, env=env, text=True,
@@ -56,7 +58,7 @@ def main():
     if failures:
         print("Native solver checks failed:\n" + "\n".join(failures), file=sys.stderr)
         return 1
-    print(f"Validated the default solver and {len(solvers)} configured native solvers")
+    print(f"Validated the default solver, lazy closures and {len(solvers)} configured native solvers")
     return 0
 
 
