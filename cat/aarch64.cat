@@ -109,13 +109,16 @@ let haz-ob =
   [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
 
 (* Ordered-before *)
-let ob = obs; si | lob | haz-ob
+let rec ob = obs; si
+	| lob
+	| haz-ob
+	| ob; ob
 
 (* Internal visibility requirement *)
 acyclic po-loc | ca | rf as internal
 
 (* External visibility requirement *)
-acyclic ob as external
+irreflexive ob as external
 
 (* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
 empty rmw & (fre; coe) as atomic
