@@ -56,6 +56,10 @@ public class WmmEncoder {
     private final AxiomEncoder axiomEncoder = new AxiomEncoder();
     private final ActiveSetAnalysis activeSetAnalysis;
 
+    // Transitive closures that get enforced by a ClosurePropagator instead of being encoded.
+    private final Set<Relation> lazyClosureCandidates;
+    private final List<LazyClosure> lazyClosures = new ArrayList<>();
+
     // ==============================================================================================
     @Option(name = MEMORY_IS_ZEROED,
             description = "Assumes the whole memory is zeroed before the program runs." +
@@ -75,9 +79,15 @@ public class WmmEncoder {
             secure = true)
     boolean useSATEncoding = true;
 
+    @Option(name = LAZY_CLOSURES,
+            description = "Enforce transitive closures that are only used negatively with a user propagator" +
+                    " instead of encoding them. Only has an effect if the solver supports user propagators (Z3).",
+            secure = true)
+    private boolean useLazyClosures = true;
+
     // ==============================================================================================
 
-    private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
+    private WmmEncoder(EncodingContext ctx, boolean allowLazyClosures) throws InvalidConfigurationException {
         this.context = ctx;
         this.memoryModel = ctx.getTask().getMemoryModel();
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
@@ -86,12 +96,21 @@ public class WmmEncoder {
         logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
         logger.info("{}: {}", MULTI_READS, allowMultiReads);
         logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
+        logger.info("{}: {}", LAZY_CLOSURES, useLazyClosures && allowLazyClosures);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
+        this.lazyClosureCandidates = useLazyClosures && allowLazyClosures
+                ? RelationPolarity.getNegativelyUsedClosures(memoryModel)
+                : Set.of();
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        return new WmmEncoder(context);
+        return new WmmEncoder(context, false);
+    }
+
+    // If allowed, the caller must register a ClosurePropagator for the lazy closures (see getLazyClosures()).
+    public static WmmEncoder withContext(EncodingContext context, boolean allowLazyClosures) throws InvalidConfigurationException {
+        return new WmmEncoder(context, allowLazyClosures);
     }
 
     // ==================================================================================================
@@ -123,6 +142,15 @@ public class WmmEncoder {
 
     public BooleanFormula encodeAxiomConsistency(Axiom axiom) {
         return axiom.accept(axiomEncoder);
+    }
+
+    // A transitive closure whose must-edges got encoded, but whose remaining active edges (lazyEdges)
+    // are only defined by a ClosurePropagator.
+    public record LazyClosure(TransitiveClosure definition, EventGraph lazyEdges, EventGraph operandActiveSet) { }
+
+    // Only populated after encodeFullMemoryModel().
+    public List<LazyClosure> getLazyClosures() {
+        return Collections.unmodifiableList(lazyClosures);
     }
 
     public BooleanFormula encodeLastCoConstraints() {
@@ -496,6 +524,31 @@ public class WmmEncoder {
 
             final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
+
+            if (lazyClosureCandidates.contains(rel)) {
+                // The closure is only used negatively, so "a path implies an edge" suffices.
+                // A ClosurePropagator enforces this for all edges but the must-edges.
+                final MutableEventGraph lazyEdges = new MapEventGraph();
+                getActiveSet(trans).apply((e1, e2) -> {
+                    if (!relMustSet.contains(e1, e2)) {
+                        lazyEdges.add(e1, e2);
+                    }
+                });
+                // Without lazy edges, the encoding below is linear anyway.
+                if (!lazyEdges.isEmpty()) {
+                    final LazyClosure closure = new LazyClosure(trans, lazyEdges, getActiveSet(inner.getDefinition()));
+                    if (ClosurePropagator.canHandle(context, closure)) {
+                        getActiveSet(trans).apply((e1, e2) -> {
+                            if (relMustSet.contains(e1, e2)) {
+                                enc.add(bmgr.equivalence(transEdge.encode(e1, e2), execution(e1, e2)));
+                            }
+                        });
+                        lazyClosures.add(closure);
+                        return null;
+                    }
+                    logger.info("Encoding {} eagerly: too many events for a lazy encoding.", rel.getNameOrTerm());
+                }
+            }
 
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);

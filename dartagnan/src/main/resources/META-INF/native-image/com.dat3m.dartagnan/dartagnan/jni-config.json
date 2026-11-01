@@ -14,6 +14,32 @@
       ]
     },
     {
+      "name": "com.microsoft.z3.Native$UserPropagatorBase",
+      "methods": [
+        { "name": "pushWrapper", "parameterTypes": [] },
+        { "name": "popWrapper", "parameterTypes": ["int"] },
+        { "name": "finWrapper", "parameterTypes": [] },
+        { "name": "eqWrapper", "parameterTypes": ["long", "long"] },
+        { "name": "freshWrapper", "parameterTypes": ["long"] },
+        { "name": "createdWrapper", "parameterTypes": ["long"] },
+        { "name": "fixedWrapper", "parameterTypes": ["long", "long"] },
+        { "name": "decideWrapper", "parameterTypes": ["long", "int", "boolean"] }
+      ]
+    },
+    {
+      "name": "org.sosy_lab.java_smt.solvers.z3.Z3UserPropagator",
+      "methods": [
+        { "name": "pushWrapper", "parameterTypes": [] },
+        { "name": "popWrapper", "parameterTypes": ["int"] },
+        { "name": "finWrapper", "parameterTypes": [] },
+        { "name": "eqWrapper", "parameterTypes": ["long", "long"] },
+        { "name": "freshWrapper", "parameterTypes": ["long"] },
+        { "name": "createdWrapper", "parameterTypes": ["long"] },
+        { "name": "fixedWrapper", "parameterTypes": ["long", "long"] },
+        { "name": "decideWrapper", "parameterTypes": ["long", "int", "boolean"] }
+      ]
+    },
+    {
       "name": "org.sosy_lab.java_smt.solvers.mathsat5.Mathsat5NativeApi$TerminationCallback",
       "methods":
       [

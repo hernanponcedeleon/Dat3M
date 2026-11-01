@@ -116,6 +116,12 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
 
     // ====================================== Solver utility ==================================================
 
+    // User propagators complement the formula given to the solver: they need solver support,
+    // and they cannot be used when the formula gets dumped, because the dump would not be self-contained.
+    protected boolean canUseUserPropagators() {
+        return solverContext.getSolverName() == SolverContextFactory.Solvers.Z3 && !smtConfig.getDumpSmtLib();
+    }
+
     protected void initSMTSolver(Configuration config) throws InvalidConfigurationException {
         Preconditions.checkState(solverContext == null, "SolverContext already initialized");
 
