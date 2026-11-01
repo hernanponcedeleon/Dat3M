@@ -24,6 +24,8 @@ import java.util.function.Function;
  */
 final class ConsistencyChecker {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ConsistencyChecker.class);
+
     private final Wmm memoryModel;
     private final List<Thread> threads;
     private final Arch arch;
@@ -31,6 +33,10 @@ final class ConsistencyChecker {
     private final List<Axiom> flaggedAxioms;
     private final Map<Relation, Set<Relation>> sccOf = new HashMap<>();
     private final Map<String, Integer> tagIndices = new HashMap<>();
+    // Consistency axioms that can be checked on the events of a single location (see below).
+    private final List<Axiom> perLocationAxioms = new ArrayList<>();
+    private final Map<Relation, Boolean> restrictionSafe = new HashMap<>();
+    private final Map<Relation, Boolean> sameLocation = new HashMap<>();
 
     ConsistencyChecker(Wmm memoryModel, List<Thread> threads, Arch arch, boolean checkFlagged) {
         this.memoryModel = memoryModel;
@@ -41,6 +47,108 @@ final class ConsistencyChecker {
                 ? memoryModel.getAxioms().stream().filter(Axiom::isFlagged).toList()
                 : List.of();
         computeSCCs();
+        for (Axiom axiom : consistencyAxioms) {
+            final Relation r = axiom instanceof Acyclicity ? acyclicityTarget(axiom) : axiom.getRelation();
+            if (!axiom.isNegated() && !r.isSet() && isRestrictionSafe(r) && isSameLocation(r)) {
+                perLocationAxioms.add(axiom);
+            }
+        }
+        logger.info("Axioms checked per location before building graphs: {}", perLocationAxioms);
+    }
+
+    // acyclic(r+) iff acyclic(r): avoid computing closures.
+    private static Relation acyclicityTarget(Axiom axiom) {
+        Relation relation = axiom.getRelation();
+        while (relation.getDefinition() instanceof TransitiveClosure closure) {
+            relation = closure.getOperand();
+        }
+        return relation;
+    }
+
+    /*
+        Per-location checks.
+        A relation is "restriction-safe" if its value on a subset U of the universe (computed as if U were the whole
+        universe) equals its value restricted to U. A relation is "same-location" if it only relates events that
+        access the same address. If an axiom's relation is both, then the axiom fails on the whole graph whenever it
+        fails on the events of a single location (plus its init event). This gives a cheap necessary condition for
+        consistency that we use to discard rf/co choices before building their graph.
+        The classification is syntactic and conservative.
+     */
+    private boolean isRestrictionSafe(Relation r) {
+        final Boolean known = restrictionSafe.get(r);
+        if (known != null) {
+            return known;
+        }
+        restrictionSafe.put(r, false); // Recursive definitions are not safe.
+        final boolean safe = !sccOf.containsKey(r) && switch (r.getDefinition()) {
+            // Base relations that are determined pointwise (by the two events and their rf/co edges).
+            case ProgramOrder ignored -> true;
+            case SameLocation ignored -> true;
+            case External ignored -> true;
+            case Internal ignored -> true;
+            case ReadFrom ignored -> true;
+            case Coherence ignored -> true;
+            case SameInstruction ignored -> true;
+            case AMOPairs ignored -> true;
+            case LXSXPairs ignored -> true;
+            case Empty ignored -> true;
+            case TagSet ignored -> true;
+            case Union u -> u.getOperands().stream().allMatch(this::isRestrictionSafe);
+            case Intersection i -> i.getOperands().stream().allMatch(this::isRestrictionSafe);
+            case Difference d -> isRestrictionSafe(d.getMinuend()) && isRestrictionSafe(d.getSubtrahend());
+            case Inverse i -> isRestrictionSafe(i.getOperand());
+            case SetIdentity si -> isRestrictionSafe(si.getDomain());
+            case CartesianProduct cp -> isRestrictionSafe(cp.getDomain()) && isRestrictionSafe(cp.getRange());
+            // Intermediate events must be in the subset: guaranteed if one side relates same-location events.
+            case Composition c -> isRestrictionSafe(c.getLeftOperand()) && isRestrictionSafe(c.getRightOperand())
+                    && (isSameLocation(c.getLeftOperand()) || isSameLocation(c.getRightOperand()));
+            case TransitiveClosure tc -> isRestrictionSafe(tc.getOperand()) && isSameLocation(tc.getOperand());
+            case Projection pr -> isRestrictionSafe(pr.getOperand()) && isSameLocation(pr.getOperand());
+            default -> false;
+        };
+        restrictionSafe.put(r, safe);
+        return safe;
+    }
+
+    private boolean isSameLocation(Relation r) {
+        final Boolean known = sameLocation.get(r);
+        if (known != null) {
+            return known;
+        }
+        sameLocation.put(r, false);
+        final boolean local = !sccOf.containsKey(r) && switch (r.getDefinition()) {
+            case SameLocation ignored -> true;
+            case ReadFrom ignored -> true;
+            case Coherence ignored -> true;
+            case AMOPairs ignored -> true;
+            case SameInstruction ignored -> true;
+            case Empty ignored -> true;
+            case SetIdentity ignored -> true;
+            case Union u -> u.getOperands().stream().allMatch(this::isSameLocation);
+            case Intersection i -> i.getOperands().stream().anyMatch(this::isSameLocation);
+            case Difference d -> isSameLocation(d.getMinuend());
+            case Inverse i -> isSameLocation(i.getOperand());
+            case Composition c -> isSameLocation(c.getLeftOperand()) && isSameLocation(c.getRightOperand());
+            case TransitiveClosure tc -> isSameLocation(tc.getOperand());
+            default -> false;
+        };
+        sameLocation.put(r, local);
+        return local;
+    }
+
+    boolean hasPerLocationAxioms() {
+        return !perLocationAxioms.isEmpty();
+    }
+
+    // Necessary condition for consistency: the per-location axioms hold on the events of the given address.
+    boolean passesPerLocationAxioms(ExplorationGraph g, java.math.BigInteger address) {
+        final Evaluation eval = new Evaluation(g, address);
+        for (Axiom axiom : perLocationAxioms) {
+            if (!eval.holds(axiom)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void computeSCCs() {
@@ -99,17 +207,35 @@ final class ConsistencyChecker {
         private Map<Integer, long[]> threadMasks;
 
         Evaluation(ExplorationGraph g) {
+            this(g, null);
+        }
+
+        // If "address" is not null, the universe only contains the events accessing that address (and no phantoms).
+        Evaluation(ExplorationGraph g, java.math.BigInteger address) {
             this.g = g;
             elements = new ArrayList<>();
             phantoms = new BitSet();
             index = new IdentityHashMap<>();
             phantomIndex = new IdentityHashMap<>();
-            for (Node init : g.getInitNodes()) {
-                addElement(init);
-            }
-            for (Node node : g.getNodes()) {
-                if (node.isVisible()) {
-                    addElement(node);
+            if (address != null) {
+                for (Node node : g.getCo(address)) {
+                    if (node.isInit()) {
+                        addElement(node, false);
+                    }
+                }
+                for (Node node : g.getNodes()) {
+                    if (node.isVisible() && address.equals(node.address)) {
+                        addElement(node, false);
+                    }
+                }
+            } else {
+                for (Node init : g.getInitNodes()) {
+                    addElement(init, true);
+                }
+                for (Node node : g.getNodes()) {
+                    if (node.isVisible()) {
+                        addElement(node, true);
+                    }
                 }
             }
             this.n = elements.size();
@@ -123,10 +249,10 @@ final class ConsistencyChecker {
             }
         }
 
-        private void addElement(Node node) {
+        private void addElement(Node node, boolean withPhantom) {
             index.put(node, elements.size());
             elements.add(node);
-            if (!node.isInit() && !node.ctrlDeps.isEmpty()) {
+            if (withPhantom && !node.isInit() && !node.ctrlDeps.isEmpty()) {
                 phantomIndex.put(node, elements.size());
                 phantoms.set(elements.size());
                 elements.add(node);
@@ -165,15 +291,6 @@ final class ConsistencyChecker {
 
         // ------------------------------------------------------------------------------------------
         // Axioms
-
-        // acyclic(r+) iff acyclic(r): avoid computing closures.
-        private Relation acyclicityTarget(Axiom axiom) {
-            Relation relation = axiom.getRelation();
-            while (relation.getDefinition() instanceof TransitiveClosure closure) {
-                relation = closure.getOperand();
-            }
-            return relation;
-        }
 
         boolean holds(Axiom axiom) {
             final Relation relation = axiom instanceof Acyclicity ? acyclicityTarget(axiom) : axiom.getRelation();
@@ -429,7 +546,10 @@ final class ConsistencyChecker {
                 final List<Node> order = g.getCo(loc);
                 final long[] later = newMask();
                 for (int a = order.size() - 1; a >= 0; a--) {
-                    final int i = index.get(order.get(a));
+                    final Integer i = index.get(order.get(a));
+                    if (i == null) {
+                        continue; // Not part of a restricted universe
+                    }
                     result.orRow(i, later);
                     BitMatrix.setBit(later, i);
                 }
@@ -440,7 +560,13 @@ final class ConsistencyChecker {
         @Override
         public Object visitReadFrom(ReadFrom rf) {
             final BitMatrix result = new BitMatrix(n);
-            g.getRfMap().forEach((read, write) -> result.set(index.get(write), index.get(read)));
+            g.getRfMap().forEach((read, write) -> {
+                final Integer w = index.get(write);
+                final Integer r = index.get(read);
+                if (w != null && r != null) {
+                    result.set(w, r);
+                }
+            });
             return result;
         }
 
@@ -468,7 +594,7 @@ final class ConsistencyChecker {
             final BitMatrix result = new BitMatrix(n);
             for (int i : visibleIndices) {
                 final Node w = elements.get(i);
-                if (w.pairedLoad != null && !w.isExclusivePair) {
+                if (w.pairedLoad != null && !w.isExclusivePair && index.containsKey(w.pairedLoad)) {
                     result.set(index.get(w.pairedLoad), i);
                 }
             }
@@ -480,7 +606,7 @@ final class ConsistencyChecker {
             final BitMatrix result = new BitMatrix(n);
             for (int i : visibleIndices) {
                 final Node w = elements.get(i);
-                if (w.pairedLoad != null && w.isExclusivePair) {
+                if (w.pairedLoad != null && w.isExclusivePair && index.containsKey(w.pairedLoad)) {
                     result.set(index.get(w.pairedLoad), i);
                 }
             }

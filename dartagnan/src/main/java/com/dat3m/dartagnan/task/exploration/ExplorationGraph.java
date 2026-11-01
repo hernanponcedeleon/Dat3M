@@ -161,6 +161,34 @@ final class ExplorationGraph {
         rf.put(read, write);
     }
 
+    // Undoes addNode(n) (and its rf edge) for the node that was added last.
+    void removeLastNode(Node n) {
+        if (nodes.isEmpty() || nodes.get(nodes.size() - 1) != n) {
+            throw new IllegalStateException("Node " + n + " was not added last.");
+        }
+        nodes.remove(nodes.size() - 1);
+        stamps.remove(n);
+        rf.remove(n);
+        final ArrayList<Node> list = threadNodes.get(n.thread);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i) == n) {
+                list.remove(i);
+                break;
+            }
+        }
+    }
+
+    // Undoes insertCoAfter(write, _).
+    void removeFromCo(Node write) {
+        final ArrayList<Node> list = co.get(write.address);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i) == write) {
+                list.remove(i);
+                return;
+            }
+        }
+    }
+
     // Inserts the write immediately after "pred" in coherence order.
     void insertCoAfter(Node write, Node pred) {
         final ArrayList<Node> list = co.get(write.address);

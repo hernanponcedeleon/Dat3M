@@ -46,6 +46,7 @@ public final class TruStExplorer {
     public static final class Statistics {
         long visitedGraphs;
         long inconsistentGraphs;
+        long rejectedChoices;
         long completeExecutions;
         long blockedExecutions;
         long truncatedExecutions;
@@ -54,6 +55,7 @@ public final class TruStExplorer {
 
         public long getVisitedGraphs() { return visitedGraphs; }
         public long getInconsistentGraphs() { return inconsistentGraphs; }
+        public long getRejectedChoices() { return rejectedChoices; }
         public long getCompleteExecutions() { return completeExecutions; }
         public long getBlockedExecutions() { return blockedExecutions; }
         public long getTruncatedExecutions() { return truncatedExecutions; }
@@ -69,9 +71,10 @@ public final class TruStExplorer {
                             Filtered executions: %d
                             Inconsistent graphs: %d
                             Visited graphs: %d
+                            Rejected choices (per-location check): %d
                             Backward revisits: %d""",
                     completeExecutions, blockedExecutions, truncatedExecutions, filteredExecutions,
-                    inconsistentGraphs, visitedGraphs, backwardRevisits);
+                    inconsistentGraphs, visitedGraphs, rejectedChoices, backwardRevisits);
         }
     }
 
@@ -248,6 +251,9 @@ public final class TruStExplorer {
         // Push in reverse order so that writes are explored in coherence order.
         for (int i = writes.size() - 1; i >= 0; i--) {
             final Node write = writes.get(i);
+            if (!isPlausibleRf(g, read, write)) {
+                continue;
+            }
             stack.push(() -> {
                 final ExplorationGraph g2 = g.copy();
                 g2.addNode(read);
@@ -313,6 +319,9 @@ public final class TruStExplorer {
     private void pushCoPlacements(ExplorationGraph g, Node write) {
         final List<Node> writes = new ArrayList<>(g.getCo(write.address));
         for (final Node pred : writes) {
+            if (!isPlausibleCo(g, write, pred, true)) {
+                continue;
+            }
             stack.push(() -> {
                 final ExplorationGraph g2 = g.copy();
                 g2.insertCoAfter(write, pred);
@@ -320,6 +329,47 @@ public final class TruStExplorer {
                 visit(g2);
             });
         }
+    }
+
+    /*
+        Cheap rejection of rf/co choices before building their graph: the per-location axioms of the memory model
+        (e.g. coherence, atomicity) are checked on the events of the accessed location only.
+        This is a necessary condition for consistency, so rejected choices lead to inconsistent graphs.
+        The choice is applied to the graph tentatively and undone afterwards.
+     */
+    private boolean isPlausibleRf(ExplorationGraph g, Node read, Node write) {
+        if (!checker.hasPerLocationAxioms()) {
+            return true;
+        }
+        g.addNode(read);
+        g.setRf(read, write);
+        final boolean plausible = checker.passesPerLocationAxioms(g, read.address);
+        g.removeLastNode(read);
+        return countRejection(plausible);
+    }
+
+    // If "addWrite" is false, the write is already part of the graph (but not of co).
+    private boolean isPlausibleCo(ExplorationGraph g, Node write, Node pred, boolean addWrite) {
+        if (!checker.hasPerLocationAxioms()) {
+            return true;
+        }
+        g.insertCoAfter(write, pred);
+        if (addWrite) {
+            g.addNode(write);
+        }
+        final boolean plausible = checker.passesPerLocationAxioms(g, write.address);
+        if (addWrite) {
+            g.removeLastNode(write);
+        }
+        g.removeFromCo(write);
+        return countRejection(plausible);
+    }
+
+    private boolean countRejection(boolean plausible) {
+        if (!plausible) {
+            stats.rejectedChoices++;
+        }
+        return plausible;
     }
 
     private void backwardRevisit(ExplorationGraph g, Node write, Node read, Set<Node> deleted)
@@ -338,6 +388,9 @@ public final class TruStExplorer {
         final List<Node> writes = new ArrayList<>(g2.getCo(write.address));
         for (int i = writes.size() - 1; i >= 0; i--) {
             final Node pred = writes.get(i);
+            if (!isPlausibleCo(g2, write, pred, false)) {
+                continue;
+            }
             stack.push(() -> {
                 final ExplorationGraph g3 = g2.copy();
                 g3.insertCoAfter(write, pred);
