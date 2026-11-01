@@ -6,18 +6,27 @@ import com.dat3m.dartagnan.wmm.Relation;
 import java.util.Collections;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public abstract class Axiom extends ConstraintBase {
 
     protected final Relation rel;
     protected final boolean negated;
     // Marks if the axiom should be use to report properties rather than filter consistency
     protected final boolean flag;
+    // Marks if the axiom holds in every execution of the anarchic semantics, independently of the other axioms.
+    // Invariants are not encoded; they only provide information to the relation analysis.
+    // Invariants cannot be written in .cat files; only memory model transformation passes (see InferInvariants)
+    // create them, and they are responsible for their correctness: a wrong invariant makes the verification unsound.
+    protected final boolean invariant;
     protected String name;
 
-    Axiom(Relation rel, boolean negated, boolean flag) {
+    Axiom(Relation rel, boolean negated, boolean flag, boolean invariant) {
+        checkArgument(!(flag && invariant), "An axiom cannot be both flagged and an invariant.");
         this.rel = rel;
         this.negated = negated;
         this.flag = flag;
+        this.invariant = invariant;
     }
 
     @Override
@@ -35,6 +44,8 @@ public abstract class Axiom extends ConstraintBase {
 
     public boolean isNegated() { return negated; }
 
+    public boolean isInvariant() { return invariant; }
+
     public String getName() {
         return name;
     }
@@ -51,8 +62,8 @@ public abstract class Axiom extends ConstraintBase {
 
     @Override
     public String toString() {
-        return (flag ? "flag " : "") + (negated ? "~" : "") + getAxiomName() + " " + rel.getNameOrTerm()
-                + (name != null ? " as " + name : "");
+        return (flag ? "flag " : "") + (invariant ? "invariant " : "") + (negated ? "~" : "")
+                + getAxiomName() + " " + rel.getNameOrTerm() + (name != null ? " as " + name : "");
     }
 
 }

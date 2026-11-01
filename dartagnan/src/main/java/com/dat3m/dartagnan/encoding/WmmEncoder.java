@@ -934,7 +934,7 @@ public class WmmEncoder {
 
         @Override
         public Void visitAxiom(Axiom axiom) {
-            if (!axiom.isFlagged()) {
+            if (!axiom.isFlagged() && !axiom.isInvariant()) {
                 enc.add(axiom.accept(axiomEncoder));
             }
             return null;

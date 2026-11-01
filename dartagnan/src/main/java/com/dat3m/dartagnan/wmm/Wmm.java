@@ -36,8 +36,43 @@ public class Wmm {
         return Stream.concat(relations.stream().map(Relation::getDefinition), constraints.stream()).toList();
     }
 
+    /*
+        Returns the axioms that define the semantics of the model (consistency axioms and flagged axioms).
+        Invariants are not included, see getInvariants().
+     */
     public List<Axiom> getAxioms() {
-        return constraints.stream().filter(Axiom.class::isInstance).map(Axiom.class::cast).toList();
+        return constraints.stream().filter(Axiom.class::isInstance).map(Axiom.class::cast)
+                .filter(a -> !a.isInvariant()).toList();
+    }
+
+    /*
+        Returns the invariants added by memory model transformation passes.
+        They hold in every execution and are only used to strengthen analyses; they are not encoded.
+     */
+    public List<Axiom> getInvariants() {
+        return constraints.stream().filter(Axiom.class::isInstance).map(Axiom.class::cast)
+                .filter(Axiom::isInvariant).toList();
+    }
+
+    /*
+        Returns the relations that (directly or indirectly) contribute to some constraint other than an invariant,
+        together with the anarchic core relations.
+        The remaining relations are only used to state invariants and never need to be encoded.
+     */
+    public Set<Relation> getRelationsRelevantForSemantics() {
+        final Set<Relation> result = new HashSet<>();
+        final Deque<Relation> workList = new ArrayDeque<>();
+        ANARCHIC_CORE_RELATIONS.stream().map(this::getRelation).filter(Objects::nonNull).forEach(workList::add);
+        constraints.stream()
+                .filter(c -> !(c instanceof Axiom axiom && axiom.isInvariant()))
+                .forEach(c -> workList.addAll(c.getConstrainedRelations()));
+        while (!workList.isEmpty()) {
+            final Relation r = workList.pop();
+            if (result.add(r)) {
+                workList.addAll(r.getDependencies());
+            }
+        }
+        return result;
     }
 
     public Set<Relation> getRelations() {

@@ -68,6 +68,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final Map<Thread, Set<Event>> threadVisibleEvents = new HashMap<>();
     protected final Delta EMPTY;
     protected final IndexedEventGraph mutex;
+    // Containments R ⊆ T stated by invariants of the memory model (see InvariantBounds).
+    protected final InvariantBounds invariantBounds;
+    // For each relation, the pairs that got removed from its may-set by its invariant bounds during run().
+    // These removals are implied by invariants (not by axioms), so they are no discrepancies.
+    private final Map<Relation, IndexedEventGraph> boundRestrictions = new HashMap<>();
 
     protected NativeRelationAnalysis(Task t, Context context, Configuration config) {
         task = checkNotNull(t);
@@ -82,6 +87,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         allVisibleEvents = domainRepository.getDomain(EventDomainRepository.DomainBound.VISIBLE);
         EMPTY = new Delta(new IndexedEventGraph(allEvents), new IndexedEventGraph(allEvents));
         mutex = new IndexedEventGraph(allEvents);
+        invariantBounds = InvariantBounds.fromInvariants(t.getMemoryModel());
     }
 
     /**
@@ -155,6 +161,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             }
             // We can do a destructive update because we do not need <may> anymore
             may.removeAll(getKnowledge(r).getMaySet());
+            final IndexedEventGraph restricted = boundRestrictions.get(r);
+            if (restricted != null) {
+                may.removeAll(restricted);
+            }
             final IndexedEventGraph mayDiff = may;
             final IndexedEventGraph mustDiff = IndexedEventGraph.difference(getKnowledge(r).getMustSet(), must);
             discrepancies.computeIfAbsent(r, _ -> new ArrayList<>()).add(IndexedEventGraph.union(mayDiff, mustDiff));
@@ -187,6 +197,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         final Propagator propagator = new Propagator();
         DependencyGraph.from(memoryModel.getRelations()).getSCCs().forEach(scc -> processSCC(propagator, scc, qGlobal, dependents));
         checkAfterRun(qGlobal);
+        logger.debug("Invariants eliminated {} may-edges",
+                boundRestrictions.values().stream().mapToInt(IndexedEventGraph::size).sum());
         logger.trace("End");
     }
 
@@ -232,6 +244,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 toAdd.may.removeAll(k.getMustSet());
                 toAdd.must.removeAll(k.getMaySet());
             }
+            toAdd = restrictToInvariantBounds(relation, toAdd);
 
             Delta delta = joinSet(knowledgeMap.get(relation), toAdd);
             if (delta.may.isEmpty() && delta.must.isEmpty()) {
@@ -250,6 +263,29 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .add(d);
             }
         }
+    }
+
+    /*
+        Removes from the may-delta all pairs that are not in the may-set of some invariant bound of the relation.
+        Only bounds whose may-sets are complete at this point are used (base relations and strict dependencies).
+        Base relations are skipped, as their may-sets are computed directly.
+        The input delta is never modified.
+     */
+    private Delta restrictToInvariantBounds(Relation relation, Delta delta) {
+        if (relation.getDependencies().isEmpty() || delta.may.isEmpty()) {
+            return delta;
+        }
+        IndexedEventGraph may = delta.may;
+        for (Relation bound : invariantBounds.getComputedBeforeBounds(relation)) {
+            final EventGraph boundMay = knowledgeMap.get(bound).getMaySet();
+            final IndexedEventGraph restricted = may.filter(boundMay::contains);
+            if (restricted.size() != may.size()) {
+                final IndexedEventGraph removed = IndexedEventGraph.difference(may, restricted);
+                boundRestrictions.computeIfAbsent(relation, this::newGraph).addAll(removed);
+                may = restricted;
+            }
+        }
+        return may == delta.may ? delta : new Delta(may, delta.must);
     }
 
     private Delta combine(List<Delta> deltas) {
@@ -271,6 +307,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
         SequencedMap<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
+        // Invariants participate like any other axiom: they hold in every execution, so knowledge derived from
+        // them is sound. For example, if T loses a pair, so does every R with an invariant "empty R \ T".
+        // As for axioms, the removals derived from invariants get reported as discrepancies (and are encoded),
+        // except for those in relations that only contribute to invariants (they are never encoded).
         for (Constraint c : memoryModel.getConstraints()) {
             if (c instanceof Axiom axiom && axiom.isFlagged()) {
                 continue;

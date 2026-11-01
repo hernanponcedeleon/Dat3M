@@ -466,7 +466,13 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
         // We also cut annotated constraints.
         final Set<Constraint> constraintsToCut = new LinkedHashSet<>();
+        // Invariants and the relations that only contribute to them are not encoded.
+        final Set<Relation> relevantRelations = model.getRelationsRelevantForSemantics();
         for (Constraint c : model.getConstraints()) {
+            if ((c instanceof Axiom ax && ax.isInvariant())
+                    || (c instanceof Definition def && !relevantRelations.contains(def.getDefinedRelation()))) {
+                continue;
+            }
             // Cut annotated constraints
             if (c.hasMetadata(Wmm.CutAnnotation.class) ||
                     c instanceof Definition def && def.getDefinedRelation().hasMetadata(Wmm.CutAnnotation.class)) {

@@ -116,6 +116,11 @@ public final class RelationEventDomains {
             return re(relationsWithInvisibleDomain.containsAll(ops), relationsWithInvisibleRange.containsAll(ops));
         }
         @Override
+        public Result visitDifference(Difference diff) {
+            final Relation minuend = diff.getMinuend();
+            return re(relationsWithInvisibleDomain.contains(minuend), relationsWithInvisibleRange.contains(minuend));
+        }
+        @Override
         public Result visitComposition(Composition comp) {
             final boolean invisibleDomain = relationsWithInvisibleDomain.contains(comp.getLeftOperand());
             final boolean invisibleRange = relationsWithInvisibleRange.contains(comp.getRightOperand());

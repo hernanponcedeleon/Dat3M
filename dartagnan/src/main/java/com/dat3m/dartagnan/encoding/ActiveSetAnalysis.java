@@ -163,7 +163,8 @@ public class ActiveSetAnalysis {
         });
         // FIXME: This method is the most expensive one to compute (40% of runtime)
         //  Bottom-up computation of NativeRA is just implemented inefficiently
-        ra.collectDiscrepancies(relations, propagationQueue);
+        // Relations that only contribute to invariants are never encoded, so their discrepancies need not be encoded.
+        ra.collectDiscrepancies(memoryModel.getRelationsRelevantForSemantics(), propagationQueue);
 
         // ---- Compute active sets----
         final ActiveSetPropagator propagator = new ActiveSetPropagator();
@@ -189,13 +190,13 @@ public class ActiveSetAnalysis {
         final Set<Relation> relations = memoryModel.getRelations();
 
         final Map<Relation, List<EventGraph>> discrepancies = new HashMap<>();
-        ra.collectDiscrepancies(relations, discrepancies);
+        ra.collectDiscrepancies(memoryModel.getRelationsRelevantForSemantics(), discrepancies);
 
         final Map<Definition, IndexedEventGraph> activeSets = Maps.newHashMapWithExpectedSize(relations.size());
         for (Relation rel : relations) {
             final IndexedEventGraph active = newGraph(rel);
             active.addAll(getUnknowns(rel));
-            discrepancies.get(rel).forEach(active::addAll);
+            discrepancies.getOrDefault(rel, List.of()).forEach(active::addAll);
 
             activeSets.put(rel.getDefinition(), active);
         }

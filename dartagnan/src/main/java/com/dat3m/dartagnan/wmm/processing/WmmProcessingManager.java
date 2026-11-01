@@ -16,6 +16,7 @@ public class WmmProcessingManager implements WmmProcessor {
                 RemoveDeadRelations.newInstance(),
                 MergeEquivalentRelations.newInstance(),
                 FlattenAssociatives.newInstance(),
+                InferInvariants.newInstance(),
                 MarkFreeRelations.newInstance()
         ));
         processors.removeIf(Objects::isNull);

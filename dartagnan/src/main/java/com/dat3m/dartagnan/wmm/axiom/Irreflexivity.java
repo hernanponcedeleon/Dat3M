@@ -4,8 +4,12 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 public class Irreflexivity extends Axiom {
 
+    public Irreflexivity(Relation rel, boolean negated, boolean flag, boolean invariant) {
+        super(Relation.checkIsRelation(rel), negated, flag, invariant);
+    }
+
     public Irreflexivity(Relation rel, boolean negated, boolean flag) {
-        super(Relation.checkIsRelation(rel), negated, flag);
+        this(rel, negated, flag, false);
     }
 
     public Irreflexivity(Relation rel) {

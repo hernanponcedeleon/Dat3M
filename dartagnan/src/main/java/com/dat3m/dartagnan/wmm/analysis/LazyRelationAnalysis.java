@@ -108,6 +108,14 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         public RelationAnalysis.Knowledge getKnowledge(Relation relation) {
             if (!lazyKnowledgeMap.containsKey(relation)) {
                 RelationAnalysis.Knowledge knowledge = relation.getDefinition().accept(this);
+                if (!relation.getDependencies().isEmpty()) {
+                    // Same restriction as in NativeRelationAnalysis.
+                    for (Relation bound : invariantBounds.getComputedBeforeBounds(relation)) {
+                        final EventGraph boundMay = getKnowledge(bound).getMaySet();
+                        final EventGraph may = knowledge.getMaySet().filter(boundMay::contains);
+                        knowledge = new RelationAnalysis.Knowledge(may, knowledge.getMustSet());
+                    }
+                }
                 lazyKnowledgeMap.put(relation, knowledge);
             }
             return lazyKnowledgeMap.get(relation);

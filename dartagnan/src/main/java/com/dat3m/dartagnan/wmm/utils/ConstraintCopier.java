@@ -41,17 +41,20 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public Emptiness visitEmptiness(Emptiness axiom) {
-        return copyName(axiom, new Emptiness(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
+        return copyName(axiom, new Emptiness(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged(),
+                axiom.isInvariant()));
     }
 
     @Override
     public Irreflexivity visitIrreflexivity(Irreflexivity axiom) {
-        return copyName(axiom, new Irreflexivity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
+        return copyName(axiom, new Irreflexivity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged(),
+                axiom.isInvariant()));
     }
 
     @Override
     public Acyclicity visitAcyclicity(Acyclicity axiom) {
-        return copyName(axiom, new Acyclicity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
+        return copyName(axiom, new Acyclicity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged(),
+                axiom.isInvariant()));
     }
 
     @Override

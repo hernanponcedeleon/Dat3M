@@ -4,12 +4,16 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 public class Emptiness extends Axiom {
 
+    public Emptiness(Relation rel, boolean negated, boolean flag, boolean invariant) {
+        super(rel, negated, flag, invariant);
+    }
+
     public Emptiness(Relation rel, boolean negated, boolean flag) {
-        super(rel, negated, flag);
+        this(rel, negated, flag, false);
     }
 
     public Emptiness(Relation rel) {
-        super(rel, false, false);
+        this(rel, false, false);
     }
 
     @Override
