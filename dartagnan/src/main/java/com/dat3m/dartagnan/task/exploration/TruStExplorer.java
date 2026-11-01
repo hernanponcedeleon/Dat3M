@@ -49,6 +49,7 @@ public final class TruStExplorer {
         long rejectedChoices;
         long completeExecutions;
         long blockedExecutions;
+        long prunedSpinningGraphs;
         long truncatedExecutions;
         long filteredExecutions;
         long backwardRevisits;
@@ -58,6 +59,7 @@ public final class TruStExplorer {
         public long getRejectedChoices() { return rejectedChoices; }
         public long getCompleteExecutions() { return completeExecutions; }
         public long getBlockedExecutions() { return blockedExecutions; }
+        public long getPrunedSpinningGraphs() { return prunedSpinningGraphs; }
         public long getTruncatedExecutions() { return truncatedExecutions; }
         public long getFilteredExecutions() { return filteredExecutions; }
         public long getBackwardRevisits() { return backwardRevisits; }
@@ -67,13 +69,14 @@ public final class TruStExplorer {
             return String.format("""
                             Complete executions: %d
                             Blocked executions: %d
+                            Pruned graphs (permanently spinning thread): %d
                             Truncated executions: %d
                             Filtered executions: %d
                             Inconsistent graphs: %d
                             Visited graphs: %d
                             Rejected choices (per-location check): %d
                             Backward revisits: %d""",
-                    completeExecutions, blockedExecutions, truncatedExecutions, filteredExecutions,
+                    completeExecutions, blockedExecutions, prunedSpinningGraphs, truncatedExecutions, filteredExecutions,
                     inconsistentGraphs, visitedGraphs, rejectedChoices, backwardRevisits);
         }
     }
@@ -190,6 +193,14 @@ public final class TruStExplorer {
                 }
                 // We are not interested in assertions: the thread is considered blocked.
                 st.status = ThreadState.Status.BLOCKED;
+            }
+        }
+
+        // A thread that spins forever in every extension of the graph: only blocked executions can follow.
+        for (int s = 0; s < g.states.length; s++) {
+            if (g.states[s].status == ThreadState.Status.SPINNING && isPermanentlySpinning(g, s)) {
+                stats.prunedSpinningGraphs++;
+                return;
             }
         }
 
@@ -537,6 +548,45 @@ public final class TruStExplorer {
     }
 
     // A spinning thread is stuck if all reads of its last iteration read from coherence-maximal writes.
+    /*
+        A spinning thread spins forever in all extensions of the graph if the node it added last (i.e., its node with
+        the largest stamp) belongs to its last (side-effect-free) iteration and was not maximally added, independently
+        of the revisiting write: a read whose rf-source already had a co-later write when the read was added, or a
+        store-exclusive that failed although it could have succeeded. Then no revisit can change the thread:
+        - the node itself cannot be revisited, and revisiting an earlier read of the thread would delete it
+          (Algorithm 1 requires the revisited read and all deleted events to be maximally added);
+        - it is not porf-before any write of another thread (the thread adds no further events), so it is deleted
+          whenever an earlier node is, and revisits of later reads delete no node of the thread.
+        So the thread stays blocked with the same iteration. Hence, no complete execution can follow, and no
+        termination violation either (the stale read is never co-maximal, see isLivenessViolation).
+        The side-effect-free iteration has no writes, so other threads cannot depend on it: their behaviors
+        (incl. safety violations) are explored elsewhere. This corresponds to the "moot" optimization of GenMC.
+     */
+    private boolean isPermanentlySpinning(ExplorationGraph g, int t) {
+        Node last = null;
+        for (Node n : g.getThreadNodes(t)) {
+            if (last == null || g.stamp(n) > g.stamp(last)) {
+                last = n;
+            }
+        }
+        if (last == null || last.poIndex < g.states[t].iterationStart) {
+            return false;
+        }
+        if (last.kind == Node.Kind.EXCL_FAIL) {
+            return last.couldSucceed;
+        }
+        if (last.isRead()) {
+            final int stamp = g.stamp(last);
+            final List<Node> co = g.getCo(last.address);
+            for (int i = co.indexOf(g.getRf(last)) + 1; i < co.size(); i++) {
+                if (g.stamp(co.get(i)) < stamp) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private boolean isLivenessViolation(ExplorationGraph g, List<Integer> spinning) {
         for (int t : spinning) {
             final int start = g.states[t].iterationStart;
