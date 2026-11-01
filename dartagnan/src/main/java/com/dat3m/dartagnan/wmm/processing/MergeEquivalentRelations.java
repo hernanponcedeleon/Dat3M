@@ -99,6 +99,10 @@ public class MergeEquivalentRelations implements WmmProcessor {
         // TODO 2: Could be done more efficiently by using memoization.
         final List<Relation> deps1 = r1.getDependencies();
         final List<Relation> deps2 = r2.getDependencies();
+        if (deps1.size() != deps2.size()) {
+            // N-ary definitions (e.g., unions) with different number of operands
+            return false;
+        }
         for (int i = 0; i < deps1.size(); i++) {
             if (!areEquivalent(deps1.get(i), deps2.get(i))) {
                 return false;

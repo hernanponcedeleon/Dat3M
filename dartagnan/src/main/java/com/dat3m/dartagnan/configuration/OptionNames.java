@@ -69,6 +69,8 @@ public class OptionNames {
     public static final String WMM_LOCALLY_CONSISTENT = "wmm.analysis.assumeLocalConsistency";
     public static final String RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
     public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
+    public static final String WMM_ELIMINATE_RECURSION = "wmm.processing.eliminateRecursion";
+    public static final String WMM_SIMPLIFY_CLOSURES = "wmm.processing.simplifyClosures";
 
     // Refinement Options
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";

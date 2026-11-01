@@ -147,7 +147,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         ProcessingManager.fromConfig(config).run(program);
     }
 
-    public static void preprocessMemoryModel(Task task) {
+    public static void preprocessMemoryModel(Task task) throws InvalidConfigurationException {
         final Wmm memoryModel = task.getMemoryModel();
 
         // We remove flagged axioms if we do not check for them.
@@ -156,7 +156,7 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
                     .filter(Axiom::isFlagged)
                     .forEach(task.getMemoryModel()::removeConstraint);
         }
-        WmmProcessingManager.newInstance().run(memoryModel);
+        WmmProcessingManager.fromConfig(task.getConfig()).run(memoryModel);
     }
 
     public static void performStaticProgramAnalyses(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {

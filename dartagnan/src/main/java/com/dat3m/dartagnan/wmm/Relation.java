@@ -63,6 +63,10 @@ public final class Relation extends MetadataCarrierBase<Relation> implements Dep
         isRecursive = true;
     }
 
+    public void clearRecursive() {
+        isRecursive = false;
+    }
+
     @Override
     public List<Relation> getDependencies() {
         List<Relation> relations = getDefinition().getConstrainedRelations();
