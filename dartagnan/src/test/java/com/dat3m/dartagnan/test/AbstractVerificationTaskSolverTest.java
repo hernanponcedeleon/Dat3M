@@ -37,6 +37,12 @@ public abstract class AbstractVerificationTaskSolverTest {
         testSolver(Method.LAZY);
     }
 
+    @Test
+    public void testPropagator() throws Exception {
+        assumeTrue(isPropagatorMethodEnabled());
+        testSolver(Method.PROPAGATOR);
+    }
+
     @Rule
     public RuleChain ruleChain() {
         return RuleChain.outerRule(shutdownManager)
@@ -58,6 +64,8 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     protected boolean isEagerMethodEnabled() { return true; }
     protected boolean isLazyMethodEnabled() { return true; }
+    // The propagator method requires Z3 user propagators
+    protected boolean isPropagatorMethodEnabled() { return false; }
 
     private void testSolver(Method method) throws Exception {
         final VerificationTask task = getTask();

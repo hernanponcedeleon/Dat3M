@@ -42,23 +42,34 @@ public class VarGraph {
         return var2Edge.get(edgeVar);
     }
 
-    public void addMustEdge(int source, int target) {
-        addVarEdge(source, target, null);
+    /*
+        A must-edge (x, y) is only guaranteed to exist if both x and y execute.
+        It starts out unassigned and is enabled by the propagator once all literals
+        in <execLitIds> (which jointly imply exec(x) /\ exec(y)) are known to be true.
+     */
+    public Edge addMustEdge(int source, int target, int[] execLitIds) {
+        assert execLitIds.length > 0;
+        final Edge edge = new Edge(source, target, null, execLitIds);
+        addEdge(edge);
+        return edge;
     }
 
-    public void addVarEdge(int source, int target, BooleanFormula edgeVar) {
-        final Edge edge = new Edge(source, target, edgeVar);
+    public Edge addVarEdge(int source, int target, BooleanFormula edgeVar) {
+        assert edgeVar != null;
+        final Edge edge = new Edge(source, target, edgeVar, null);
+        addEdge(edge);
+        var2Edge.put(edgeVar, edge);
+        edge.negEdgeVar = bmgr.not(edgeVar);
+        dynamicEdges.add(edge);
+        return edge;
+    }
+
+    private void addEdge(Edge edge) {
+        final int source = edge.getSource();
+        final int target = edge.getTarget();
         inEdges[target].add(edge);
         outEdges[source].add(edge);
         allEdges.add(edge);
-
-        if (!edge.isMust()) {
-            var2Edge.put(edgeVar, edge);
-            edge.negEdgeVar = bmgr.not(edgeVar);
-            dynamicEdges.add(edge);
-        } else {
-            edge.value = TRUE;
-        }
     }
 
     public void push() {
@@ -77,7 +88,8 @@ public class VarGraph {
 
     public void assignEdge(Edge e, int value) {
         assert value == TRUE || value == FALSE;
-        assert !e.isMust();
+        assert e.isUnassigned();
+        assert !e.isMust() || value == TRUE;
         trace.add(e);
         e.value = value;
     }
@@ -87,7 +99,6 @@ public class VarGraph {
     }
 
     private void unassignEdge(Edge e) {
-        assert !e.isMust();
         e.value = UNASSIGNED;
     }
 
@@ -146,17 +157,21 @@ public class VarGraph {
 
         private final transient BooleanFormula edgeVar;
         private transient BooleanFormula negEdgeVar;
+        // Only for must-edges: ids of the execution literals that enable this edge.
+        private final int[] execLitIds;
 
         public int getSource() { return source; }
         public int getTarget() { return target; }
         public BooleanFormula getEdgeVar() { return edgeVar; }
         public BooleanFormula getNegEdgeVar() { return negEdgeVar; }
+        public int[] getExecLitIds() { return execLitIds; }
         public int getValue() { return value; }
 
-        public Edge(int source, int target, BooleanFormula edgeVar) {
+        private Edge(int source, int target, BooleanFormula edgeVar, int[] execLitIds) {
             this.source = source;
             this.target = target;
             this.edgeVar = edgeVar;
+            this.execLitIds = execLitIds;
         }
 
         public boolean isUnassigned() { return value == UNASSIGNED; }
