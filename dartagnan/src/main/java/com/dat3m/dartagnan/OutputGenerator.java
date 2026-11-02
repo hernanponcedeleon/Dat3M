@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.Dartagnan.ExitCode;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
@@ -26,6 +27,7 @@ import com.dat3m.dartagnan.task.verification.VerificationResult;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.model.ExecutionModelNext;
@@ -218,6 +220,23 @@ public class OutputGenerator {
     // Verification
 
     public Output getOutputFromSolver(VerificationTaskSolver solver) {
+        final Output output = getVerificationOutput(solver);
+        if (!(solver.getTask() instanceof WitnessValidationTask)) {
+            return output;
+        }
+        return new Output(toValidationExitCode(output.exitCode(), solver.getResult().getStatus()), output.summary());
+    }
+
+    // A validator confirms the witness by finding the violation it describes.
+    private static ExitCode toValidationExitCode(ExitCode verificationCode, VerificationStatus status) {
+        return switch (status) {
+            case FAIL -> NORMAL_TERMINATION;
+            case UNKNOWN -> verificationCode == BOUNDED_RESULT ? BOUNDED_RESULT : WITNESS_NOT_VALIDATED;
+            case PASS -> WITNESS_NOT_VALIDATED;
+        };
+    }
+
+    private Output getVerificationOutput(VerificationTaskSolver solver) {
         final VerificationTask task = solver.getTask();
         final VerificationResult result = solver.getResult();
         final VerificationStatus status = result.getStatus();
@@ -233,11 +252,13 @@ public class OutputGenerator {
 
         // ----------------- Generate optional witness -----------------
         batchIndex++;
-        try {
-            witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
-        } catch (IOException ex) {
-            logger.warn("Failed to generate witness file.", ex);
-            witnessFile = null;
+        witnessFile = null;
+        if (!(task instanceof WitnessValidationTask)) {
+            try {
+                witnessFile = generateWitnessIfAble(result, getWitnessFilename(programSource));
+            } catch (IOException ex) {
+                logger.warn("Failed to generate witness file.", ex);
+            }
         }
 
         // ----------------- Generate output of verification result -----------------

@@ -13,7 +13,10 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.task.TaskSolver;
 import com.dat3m.dartagnan.task.Task;
 import com.dat3m.dartagnan.task.Task.TaskBuilder;
+import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.witness.svcomp.ViolationWitness;
+import com.dat3m.dartagnan.witness.svcomp.WitnessYamlParser;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +69,10 @@ public class Dartagnan {
         final Path catFile  = getCatFileFromArgs(args);
         final List<Path> progFiles = getProgramFilesFromArgs(args, programParser::isSupportedFile);
         final boolean isBatchMode = progFiles.size() > 1;
+        if (isBatchMode && o.getValidationWitnessPath().isPresent()) {
+            throw new IllegalArgumentException("Cannot validate a witness in batch mode");
+        }
+        final Optional<ViolationWitness> witness = o.getValidationWitnessPath().map(Dartagnan::parseWitness);
         final OutputGenerator outputGenerator = OutputGenerator.create(isBatchMode, config);
 
         final Set<String> neededTools = progFiles.stream()
@@ -89,9 +96,10 @@ public class Dartagnan {
                             () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
                 final Wmm mcm = new ParserCat(o.getCatIncludePath()).parse(catFile);
-                final TaskBuilder builder = Task.builder()
-                        .withConfig(config)
-                        .withProgressModel(o.getProgressModel());
+                final TaskBuilder builder = (witness.isPresent()
+                        ? WitnessValidationTask.builder(witness.get())
+                        : Task.builder().withProgressModel(o.getProgressModel()))
+                        .withConfig(config);
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.
@@ -171,6 +179,14 @@ public class Dartagnan {
                 .build();
     }
 
+    private static ViolationWitness parseWitness(Path path) {
+        try {
+            return WitnessYamlParser.parse(path);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Cannot parse witness '%s'".formatted(path), exception);
+        }
+    }
+
     private static Path getCatFileFromArgs(String[] args) throws IOException {
         final Path catFile = Arrays.stream(args)
                 .filter(a -> a.endsWith(".cat"))
@@ -231,6 +247,15 @@ public class Dartagnan {
                 description = "A combination of properties to check for: program_spec, termination, cat_spec (defaults to all).",
                 toUppercase = true)
         private EnumSet<Property> property = Property.getDefault();
+
+        @Option(
+                name = VALIDATE,
+                description = "Validate the violation witness at the given path.")
+        private String validationWitnessPath;
+
+        public Optional<Path> getValidationWitnessPath() {
+            return Optional.ofNullable(validationWitnessPath).map(Path::of);
+        }
 
         public EnumSet<Property> getProperty() {
             return property;

@@ -1,0 +1,221 @@
+package com.dat3m.dartagnan.witness.svcomp;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+public class WitnessYamlParserTest {
+
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Test
+    public void parsesConstants() throws Exception {
+        for (String source : new String[]{"true", "TRUE", "1", "((true))"}) {
+            assertEquals(new BooleanConstant(true), parse(source, "c_expression"));
+        }
+        for (String source : new String[]{"false", "FALSE", "0", "(0)"}) {
+            assertEquals(new BooleanConstant(false), parse(source, "c_expression"));
+        }
+    }
+
+    @Test
+    public void parsesNestedConjunctionsAndLargeSignedIntegers() throws Exception {
+        assertEquals(new Conjunction(new VariableEquality("x", new BigInteger("-123456789012345678901234567890")),
+                        new Conjunction(new BooleanConstant(true), new VariableEquality("y", BigInteger.ZERO))),
+                parse(" (x == -123456789012345678901234567890) && (true && y == 0) ", "c_expression"));
+    }
+
+    @Test
+    public void rejectsUnsupportedSyntaxDuringYamlParsing() throws Exception {
+        for (String source : new String[]{"x == 1.5", "v[0] == 1", "x = 1", "x == 1 || y == 2",
+                "x == 1 trailing", "(x == 1", "x ==", "true &&", "2", ""}) {
+            final IOException exception = assertThrows(IOException.class, () -> parse(source, "c_expression"));
+            assertTrue(exception.getMessage().contains("Unsupported witness assumption"));
+        }
+    }
+
+    @Test
+    public void rejectsUnsupportedConstraintFormats() {
+        final IOException exception = assertThrows(IOException.class, () -> parse("true", "other_format"));
+        assertTrue(exception.getMessage().contains("Unsupported witness constraint format"));
+    }
+
+    @Test
+    public void prefersExactHashKeyOverBasenameMatches() throws Exception {
+        final ViolationWitness witness = parseWitness("true", "c_expression",
+                "{example.c: exact, dir/example.c: other}");
+        assertEquals("exact", witness.metadata().task().inputFileHash());
+    }
+
+    @Test
+    public void acceptsUniqueBasenameHashKey() throws Exception {
+        final ViolationWitness witness = parseWitness("true", "c_expression",
+                "{../dir/example.c: matching, other.c: unrelated}");
+        assertEquals(Path.of("example.c"), witness.metadata().task().inputFile());
+        assertEquals("matching", witness.metadata().task().inputFileHash());
+    }
+
+    @Test
+    public void rejectsMissingHashMatches() {
+        for (String hashes : new String[]{"{}", "{other.c: unrelated}"}) {
+            final IOException exception = assertThrows(IOException.class,
+                    () -> parseWitness("true", "c_expression", hashes));
+            assertTrue(exception.getMessage().contains("No input file hash matches"));
+        }
+    }
+
+    @Test
+    public void rejectsAmbiguousBasenameHashKeys() {
+        final IOException exception = assertThrows(IOException.class,
+                () -> parseWitness("true", "c_expression", "{dir1/example.c: first, dir2/example.c: second}"));
+        assertTrue(exception.getMessage().contains("Multiple input file hashes match"));
+    }
+
+    @Test
+    public void ignoresBranchingAndFunctionReturnWaypoints() throws Exception {
+        final ViolationWitness witness = parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: branching
+                        action: follow
+                        constraint: {value: 'true'}
+                        location: {file_name: example.c, line: 6}
+                - segment:
+                    - waypoint:
+                        type: function_return
+                        action: follow
+                        constraint: {value: '\\result == 0', format: acsl_expression}
+                        location: {file_name: example.c, line: 7}
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        location: {file_name: example.c, line: 7}
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        location: {file_name: example.c, line: 9}
+                """);
+        assertEquals(2, witness.segments().size());
+        assertTrue(witness.segments().getFirst().waypoints().getFirst() instanceof FunctionEnter);
+        assertEquals(1, witness.segments().getFirst().waypoints().size());
+    }
+
+    @Test
+    public void rejectsWitnessesWithoutTargets() {
+        final IOException exception = assertThrows(IOException.class, () -> parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        location: {file_name: example.c, line: 7}
+                """));
+        assertTrue(exception.getMessage().contains("Witness has no target waypoint"));
+    }
+
+    @Test
+    public void defaultsMissingThreadIdsToMainThread() throws Exception {
+        assertThreadIds("", 0);
+    }
+
+    @Test
+    public void preservesExplicitThreadIds() throws Exception {
+        assertThreadIds("thread_id: 0", 0);
+        assertThreadIds("thread_id: 2", 2);
+    }
+
+    @Test
+    public void rejectsInvalidExplicitThreadIds() {
+        for (String threadId : new String[]{"-1", "invalid", "null"}) {
+            assertThrows(IOException.class, () -> assertThreadIds("thread_id: " + threadId, 0));
+        }
+    }
+
+    private void assertThreadIds(String threadId, int expected) throws IOException {
+        final ViolationWitness witness = parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        %s
+                        location: {file_name: example.c, line: 7}
+                - segment:
+                    - waypoint:
+                        type: assumption
+                        action: follow
+                        %s
+                        constraint: {value: 'true', format: c_expression}
+                        location: {file_name: example.c, line: 8}
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        %s
+                        location: {file_name: example.c, line: 9}
+                """.formatted(threadId, threadId, threadId));
+        assertEquals(3, witness.segments().size());
+        for (Segment segment : witness.segments()) {
+            assertEquals(expected, segment.waypoints().getFirst().threadId());
+        }
+    }
+
+    private AssumptionExpression parse(String source, String format) throws IOException {
+        final ViolationWitness witness = parseWitness(source, format, "{example.c: deadbeef}");
+        return ((Assumption) witness.segments().getFirst().waypoints().getFirst()).expression();
+    }
+
+    private ViolationWitness parseWitness(String source, String format, String hashes) throws IOException {
+        return parseWitness(hashes, """
+                - segment:
+                    - waypoint:
+                        type: assumption
+                        action: follow
+                        thread_id: 0
+                        constraint:
+                          value: '%s'
+                          format: '%s'
+                        location:
+                          file_name: example.c
+                          line: 7
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        location: {file_name: example.c, line: 8}
+                """.formatted(source, format));
+    }
+
+    private ViolationWitness parseWitness(String hashes, String content) throws IOException {
+        final Path file = temporaryFolder.newFile().toPath();
+        Files.writeString(file, """
+                - entry_type: violation_sequence
+                  metadata:
+                    format_version: '2.2'
+                    uuid: test-uuid
+                    creation_time: '2026-01-01T00:00:00Z'
+                    producer:
+                      name: test
+                      version: test
+                    task:
+                      input_files: [example.c]
+                      input_file_hashes: %s
+                      specification: 'CHECK( init(main()), LTL(G ! data-race) )'
+                      data_model: LP64
+                      language: C
+                  content:
+                %s
+                """.formatted(hashes, content.indent(4)));
+        return WitnessYamlParser.parse(file);
+    }
+}

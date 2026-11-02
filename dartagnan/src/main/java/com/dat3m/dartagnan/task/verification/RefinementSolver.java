@@ -238,7 +238,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             final long lastTime = System.currentTimeMillis();
             prover.pop();
             prover.writeComment("Bound encoding");
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            prover.addConstraint(programEncoder.encodeBoundEventExec());
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));

@@ -41,23 +41,23 @@ public final class SvcompOutputGenerator {
 
     /** Writes the witness for {@code result} to {@code file}. Returns {@code null} if no witness was generated. */
     public Path generate(VerificationResult result, Path file) throws IOException {
-        final Optional<? extends SvcompWitness> witness = result.getStatus() == PASS
+        final Optional<? extends Witness> witness = result.getStatus() == PASS
                 ? correctnessWitness(result)
                 : violationWitness(result);
         if (witness.isEmpty()) {
             return null;
         }
-        SvcompWitnessYamlWriter.write(witness.get(), file);
+        WitnessYamlWriter.write(witness.get(), file);
         return file;
     }
 
-    private Optional<SvcompCorrectnessWitness> correctnessWitness(VerificationResult result) throws IOException {
+    private Optional<CorrectnessWitness> correctnessWitness(VerificationResult result) throws IOException {
         if (property.isEmpty()) {
             logger.warn("SV-COMP correctness witnesses require option {}.", WITNESS_PROPERTY);
             return Optional.empty();
         }
-        final Optional<SvcompCorrectnessWitness> witness =
-                SvcompWitnessExtractor.forCorrectness(result.getTask().getProgram(), property.get());
+        final Optional<CorrectnessWitness> witness =
+                WitnessExtractor.forCorrectness(result.getTask().getProgram(), property.get());
         if (witness.isEmpty()) {
             logger.warn("SV-COMP correctness witnesses are supported only for the following properties: {}.",
                     String.join(", ", supportedCorrectnessProperties()));
@@ -65,11 +65,11 @@ public final class SvcompOutputGenerator {
         return witness;
     }
 
-    private Optional<SvcompViolationWitness> violationWitness(VerificationResult result) throws IOException {
+    private Optional<ViolationWitness> violationWitness(VerificationResult result) throws IOException {
         if (!result.hasModel()) {
             return Optional.empty();
         }
-        final Optional<SvcompViolationWitness> witness = SvcompWitnessExtractor.forViolation(
+        final Optional<ViolationWitness> witness = WitnessExtractor.forViolation(
                 fromIREvaluator(result.getModel()), result.getTask().getProgram());
         if (witness.isEmpty()) {
             logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",

@@ -93,12 +93,6 @@ public class PropertyEncoder {
         return new PropertyEncoder(context, wmmEncoder);
     }
 
-    public BooleanFormula encodeBoundEventExec() {
-        logger.info("Encoding bound events execution");
-        return program.getThreadEvents()
-                .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
-    }
-
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
         Property.Type specType = Property.getCombinedType(properties, context.getTask());
         if (specType == Property.Type.MIXED) {

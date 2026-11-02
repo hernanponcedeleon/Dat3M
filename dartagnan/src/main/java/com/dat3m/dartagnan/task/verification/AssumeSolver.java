@@ -14,8 +14,9 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.List;
+
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
-import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends SMTModelChecker<VerificationTask> implements Verifier {
 
@@ -53,8 +54,8 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
-        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
         prover.writeComment("Program encoding");
@@ -64,24 +65,31 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Adding bounds
         prover.writeComment("Bounds over variables");
         prover.addConstraint(programEncoder.encodeBounds());
-        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperties());
-        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
-        prover.writeComment("Property encoding");
-        prover.addConstraint(assumedSpec);
+
+        final BooleanFormula assumption;
+        final BooleanFormula assumedEncoding;
+        if (task instanceof WitnessValidationTask) {
+            assumption = bmgr.makeVariable("DAT3M_witness_assumption");
+            assumedEncoding = SvcompWitnessEncoder.withContext(context).encode();
+            prover.writeComment("Witness encoding");
+        } else {
+            assumption = bmgr.makeVariable("DAT3M_spec_assumption");
+            assumedEncoding = PropertyEncoder.withContext(context, wmmEncoder).encodeProperties(task.getProperties());
+            prover.writeComment("Property encoding");
+        }
+        prover.addConstraint(bmgr.implication(assumption, assumedEncoding));
 
         checkForInterrupts();
 
         logger.info("Starting first solver.check()");
         VerificationStatus res;
-        if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
+        if (prover.isUnsatWithAssumptions(List.of(assumption))) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            prover.addConstraint(programEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover.isUnsat() ? PASS : UNKNOWN;
         } else {

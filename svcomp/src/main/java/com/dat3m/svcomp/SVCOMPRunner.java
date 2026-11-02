@@ -39,23 +39,37 @@ public class SVCOMPRunner {
                 description="The path to the property to be checked.")
         private void property(String p) {
             // TODO process the property file instead of assuming its contents based of its name
-            // We always enable PROGRAM_SPEC to detect calls to unknown functions.
+            // Verification also enables PROGRAM_SPEC (see getProperties) to detect calls to unknown functions.
             // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
-            if(p.contains("no-data-race")) {
-                property = EnumSet.of(Property.CAT_SPEC, Property.PROGRAM_SPEC);
-            } else if(p.contains("termination")) {
-                property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
-            } else if(p.contains("valid-memsafety")) {
-                property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
-            } else if(p.contains("unreach-call")) {
-                property = EnumSet.of(Property.PROGRAM_SPEC);
-                witnessProperty = "unreach-call";
-            } else if(p.contains("no-overflow")) {
-                property = EnumSet.of(Property.PROGRAM_SPEC);
-                witnessProperty = "no-overflow";
-            } else {
-                throw new IllegalArgumentException("Unrecognized property " + p);
+            final String name = Path.of(p).getFileName().toString().replaceFirst("\\.prp$", "");
+            switch (name) {
+                case "no-data-race" -> property = EnumSet.of(Property.CAT_SPEC);
+                case "termination" -> property = EnumSet.of(Property.TERMINATION);
+                case "valid-memsafety" -> property = EnumSet.of(Property.TRACKABILITY);
+                case "unreach-call", "no-overflow" -> {
+                    property = EnumSet.of(Property.PROGRAM_SPEC);
+                    witnessProperty = name;
+                }
+                default -> throw new IllegalArgumentException("Unrecognized property " + p);
             }
+        }
+
+        @Option(
+                name=VALIDATE,
+                description="Run Dartagnan as a violation witness validator. Argument is the witness path.")
+        private String validationWitnessPath;
+
+        public boolean isWitnessValidation() {
+            return validationWitnessPath != null;
+        }
+
+        // Verification additionally enables PROGRAM_SPEC; validation checks only the property of the witness.
+        public EnumSet<Property> getProperties() {
+            final EnumSet<Property> properties = EnumSet.copyOf(property);
+            if (!isWitnessValidation()) {
+                properties.add(Property.PROGRAM_SPEC);
+            }
+            return properties;
         }
 
         @Option(
@@ -122,16 +136,19 @@ public class SVCOMPRunner {
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
-            cmd.add(String.format("--%s=%s", PROPERTY, o.property.stream().map(Enum::name).collect(Collectors.joining(","))));
+            cmd.add(String.format("--%s=%s", PROPERTY,
+                    o.getProperties().stream().map(Enum::name).collect(Collectors.joining(","))));
             if (o.witnessProperty != null) {
                 cmd.add(String.format("--%s=%s", WITNESS_PROPERTY, o.witnessProperty));
             }
             cmd.addAll(filterOptions(config));
 
-            ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+            ProcessBuilder processBuilder = new ProcessBuilder(cmd).redirectErrorStream(true);
             try {
                 Process proc = processBuilder.start();
-                BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+                    read.lines().forEach(System.out::println);
+                }
                 exitCode = proc.waitFor();
                 if (exitCode == Dartagnan.ExitCode.UNKNOWN_ERROR.asInt()) {
                     System.out.println("Unknown error in dartagnan");
@@ -140,9 +157,6 @@ public class SVCOMPRunner {
                 if (isExternalError(exitCode)) { // E.g., SMT solver crash
                     System.out.println("Unknown external error");
                     System.exit(0);
-                }
-                while(read.ready()) {
-                    System.out.println(read.readLine());
                 }
             } catch(Exception e) {
                 System.out.println(e.getMessage());

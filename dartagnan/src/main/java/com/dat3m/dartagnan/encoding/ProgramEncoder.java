@@ -762,6 +762,12 @@ public class ProgramEncoder {
         return bmgr.and(enc);
     }
 
+    public BooleanFormula encodeBoundEventExec() {
+        logger.info("Encoding bound events execution");
+        return context.getTask().getProgram().getThreadEvents()
+                .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+    }
+
     public BooleanFormula encodeBounds() {
         Context analysisContext = context.getAnalysisContext();
 

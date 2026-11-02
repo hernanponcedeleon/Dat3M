@@ -100,7 +100,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         // ===================== Bounds check =====================
         logger.info("Starting bounds check");
-        prover.push(propertyEncoder.encodeBoundEventExec());
+        prover.push(programEncoder.encodeBoundEventExec());
         EnumerationStatus status = prover.isUnsat() ? COMPLETE : INCOMPLETE;
         prover.pop();
 

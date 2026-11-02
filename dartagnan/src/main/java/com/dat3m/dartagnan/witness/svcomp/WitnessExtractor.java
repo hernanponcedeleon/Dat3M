@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.witness.svcomp;
 
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.program.Program;
@@ -13,7 +12,6 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.model.ExecutionModelNext;
 import com.dat3m.dartagnan.model.MemoryObjectModel;
 import com.dat3m.dartagnan.model.RelationModel;
@@ -22,7 +20,7 @@ import com.dat3m.dartagnan.model.ThreadModel;
 import com.dat3m.dartagnan.model.event.AssertModel;
 import com.dat3m.dartagnan.model.event.EventModel;
 import com.dat3m.dartagnan.model.event.LoadModel;
-import com.google.common.base.Verify;
+import com.dat3m.dartagnan.model.event.MemoryEventModel;
 import com.google.common.base.VerifyException;
 
 import java.io.IOException;
@@ -32,15 +30,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.DATA_RACE_AXIOM;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.HB_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
-import static com.dat3m.dartagnan.witness.svcomp.SvcompWitness.*;
+import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static java.nio.file.Files.readAllBytes;
 
@@ -48,23 +47,20 @@ import static java.nio.file.Files.readAllBytes;
  * Generates SV-COMP witnesses: violation witnesses by projecting an {@link ExecutionModelNext},
  * correctness witnesses from a task whose properties hold.
  */
-public final class SvcompWitnessExtractor {
+public final class WitnessExtractor {
 
-    private static final String DATA_RACE_AXIOM = "data-race";
-    private static final String HB = "hb-consistency";
-    private static final Pattern C_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
-    private SvcompWitnessExtractor() { }
+    private WitnessExtractor() { }
 
-    public static Optional<SvcompCorrectnessWitness> forCorrectness(Program program, SvcompProperty property)
+    public static Optional<CorrectnessWitness> forCorrectness(Program program, SvcompProperty property)
             throws IOException {
         if (!property.supportsCorrectnessWitness()) {
             return Optional.empty();
         }
-        return Optional.of(new SvcompCorrectnessWitness(metadata(programFile(program), property.specification())));
+        return Optional.of(new CorrectnessWitness(metadata(programFile(program), property.specification())));
     }
 
-    public static Optional<SvcompViolationWitness> forViolation(ExecutionModelNext model, Program program)
+    public static Optional<ViolationWitness> forViolation(ExecutionModelNext model, Program program)
             throws IOException {
         final Map<SvcompProperty, SvcompViolation> violations = new EnumMap<>(SvcompProperty.class);
         if (model.isViolated(PROGRAM_SPEC)) {
@@ -101,28 +97,48 @@ public final class SvcompWitnessExtractor {
                 .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
-    private static SvcompViolationWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
+    private static ViolationWitness extract(ExecutionModelNext model, Program program, SvcompViolation violation)
             throws IOException {
         final Path programFile = programFile(program);
         final SyntacticContextAnalysis context = SyntacticContextAnalysis.newInstance(program);
 
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
-        final List<EventModel> linearized = linearize(model);
-        final Map<EventModel, String> assumptions = assumptionWaypoints(linearized, model, programFile);
-        final Set<EventModel> prefix = eventsBefore(violation.targets());
+        final RelationModel hb = findRelationModel(model, HB_RELATION)
+                .orElseThrow(() -> new VerifyException(
+                        "Execution model does not contain relation '%s'".formatted(HB_RELATION)));
+        final List<EventModel> linearized = ExecutionLinearizer.linearize(model, hb);
+        final Map<Event, ThreadModel> spawnedThreads = new HashMap<>();
+        for (ThreadModel thread : model.getThreadModels()) {
+            final ThreadStart start = thread.getThread().getEntry();
+            if (start.isSpawned()) {
+                spawnedThreads.put(start.getCreator(), thread);
+            }
+        }
+        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile, spawnedThreads.keySet());
+        final Map<SourcePoint, AssumptionExpression> assumptions = assumptionWaypoints(model, sourcePoints);
+        final Set<SourcePoint> creationPoints = linearized.stream()
+                .filter(event -> spawnedThreads.containsKey(event.getEvent()))
+                .map(sourcePoints::get).collect(Collectors.toSet());
+        final Set<SourcePoint> visited = new HashSet<>();
         for (EventModel event : linearized) {
-            if (!prefix.contains(event)) {
+            // Keep both race targets in the final segment.
+            if (violation.targets().contains(event)) {
+                break;
+            }
+            final ThreadModel spawned = spawnedThreads.get(event.getEvent());
+            if (spawned != null) {
+                registerThread(segments, spawned, threadIds, model, programFile);
+            }
+            final SourcePoint point = sourcePoints.get(event);
+            // A source point may span several events; emit its waypoint only at the first one.
+            if (point == null || creationPoints.contains(point) || !visited.add(point)) {
                 continue;
             }
             final ThreadModel thread = event.getThreadModel();
             registerThread(segments, thread, threadIds, model, programFile);
-            final String assumption = assumptions.get(event);
-            if (assumption != null) {
-                final Location location = inputLocation(event, programFile);
-                segments.add(new Segment(List.of(new Assumption(
-                        threadIds.get(thread), assumption, "c_expression", location))));
-            }
+            segments.add(new Segment(List.of(new Assumption(threadIds.get(thread),
+                    assumptions.getOrDefault(point, new BooleanConstant(true)), point.location()))));
         }
         for (EventModel target : violation.targets()) {
             registerThread(segments, target.getThreadModel(), threadIds, model, programFile);
@@ -133,7 +149,7 @@ public final class SvcompWitnessExtractor {
                 .toList();
         segments.add(new Segment(targetWaypoints));
 
-        return new SvcompViolationWitness(metadata(programFile, violation.property().specification()), segments);
+        return new ViolationWitness(metadata(programFile, violation.property().specification()), segments);
     }
 
     private static Path programFile(Program program) throws IOException {
@@ -151,105 +167,82 @@ public final class SvcompWitnessExtractor {
 
     /*
      * Version 2.2 has no direct representation of rf or co. Instead, a concurrent execution is described by an
-     * ordered sequence of thread-tagged waypoints. We only constrain reads that actually read from another thread.
-     * This keeps the witness coarse while recording the observable part of rf/co.
+     * ordered sequence of thread-tagged memory-access waypoints. Value constraints describe reads from other
+     * threads; other accesses use a true assumption to record their place in the interleaving.
      */
-    private static Map<EventModel, String> assumptionWaypoints(List<EventModel> linearized, ExecutionModelNext model,
-            Path programFile) {
-        final Map<EventModel, SourcePoint> sourcePoints = sourcePoints(model, programFile);
-        final Set<EventModel> crossThreadReads = relationEdges(model, RF).stream()
+    private static Map<SourcePoint, AssumptionExpression> assumptionWaypoints(ExecutionModelNext model,
+            Map<EventModel, SourcePoint> sourcePoints) {
+        // Sorted, so that the order of conjuncts is deterministic.
+        final List<LoadModel> crossThreadReads = relationEdges(model, RF).stream()
                 .filter(edge -> edge.to() instanceof LoadModel)
                 .filter(edge -> !(edge.from().getEvent() instanceof Init))
                 .filter(edge -> !edge.from().getThreadModel().equals(edge.to().getThreadModel()))
-                .map(EdgeModel::to)
-                .collect(Collectors.toSet());
+                .map(edge -> (LoadModel) edge.to())
+                .filter(sourcePoints::containsKey)
+                .distinct()
+                .sorted(Comparator.comparingInt(LoadModel::getId))
+                .toList();
 
-        final Map<SourcePoint, EventModel> representatives = new HashMap<>();
-        final Map<SourcePoint, Set<String>> constraints = new HashMap<>();
-        for (EventModel event : linearized) {
-            final SourcePoint point = sourcePoints.get(event);
-            if (!(event instanceof LoadModel load) || !crossThreadReads.contains(event)
-                    || point == null) {
-                continue;
-            }
-            final Optional<String> constraint = readValueAssumption(load, model);
-            if (constraint.isPresent()) {
-                representatives.putIfAbsent(point, event);
-                constraints.computeIfAbsent(point, _ -> new LinkedHashSet<>()).add(constraint.get());
-            }
+        final Map<SourcePoint, AssumptionExpression> result = new HashMap<>();
+        for (LoadModel load : crossThreadReads) {
+            readValueAssumption(load, model)
+                    .ifPresent(equality -> result.merge(sourcePoints.get(load), equality, Conjunction::new));
         }
-
-        final Map<EventModel, String> result = new HashMap<>();
-        constraints.forEach((point, values) ->
-                result.put(representatives.get(point), String.join(" && ", values)));
         return result;
     }
 
-    private static Map<EventModel, SourcePoint> sourcePoints(ExecutionModelNext model, Path programFile) {
+    // Only non-init memory accesses and thread creations get source points; they are the events that matter for waypoints.
+    private static Map<EventModel, SourcePoint> sourcePoints(ExecutionModelNext model, Path programFile,
+            Set<Event> creators) {
         final Map<EventModel, SourcePoint> result = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
-            Location previous = null;
-            int occurrence = 0;
             for (EventModel event : thread.getEventModels()) {
-                final Location location = inputLocation(event, programFile);
-                if (location == null) {
+                final boolean isAccess = event instanceof MemoryEventModel && !(event.getEvent() instanceof Init);
+                if (!isAccess && !creators.contains(event.getEvent())) {
                     continue;
                 }
-                if (!location.equals(previous)) {
-                    occurrence++;
-                    previous = location;
+                final Location location = inputLocation(event, programFile);
+                if (location == null) {
+                    // Accesses outside the input program, e.g., in headers, do not become waypoints.
+                    if (creators.contains(event.getEvent())) {
+                        throw new IllegalArgumentException("Thread creation has no source location in the input program");
+                    }
+                    continue;
                 }
-                result.put(event, new SourcePoint(thread, occurrence, location));
+                // Events of the same statement instance, as defined for validation, share a source point.
+                final List<Event> earlier = SourceMatching.earlierInStatementInstance(location, event.getEvent());
+                final Event start = earlier.isEmpty() ? event.getEvent() : earlier.getFirst();
+                result.put(event, new SourcePoint(thread, start, location));
             }
         }
         return result;
     }
 
-    private static Optional<String> readValueAssumption(LoadModel load, ExecutionModelNext model) {
+    private static Optional<VariableEquality> readValueAssumption(LoadModel load, ExecutionModelNext model) {
         final MemoryCoreEvent event = (MemoryCoreEvent) load.getEvent();
         if (!(event.getAccessType() instanceof IntegerType) && !(event.getAccessType() instanceof BooleanType)) {
             return Optional.empty();
         }
-        final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
         final Optional<MemoryObjectModel> object = model.getMemoryLayoutMap().values().stream()
-                .filter(memory -> memory.object().isStaticallyAllocated() && memory.object().hasName())
-                .filter(memory -> C_IDENTIFIER.matcher(memory.object().getName()).matches())
+                .filter(memory -> Variables.isVariable(memory.object()))
                 .filter(memory -> memory.address().equals(load.getAccessedAddress()))
-                .filter(memory -> memory.size().equals(BigInteger.valueOf(accessSize)))
+                .filter(memory -> Variables.scalarType(memory.object()).equals(Optional.of(event.getAccessType())))
                 .findFirst();
         if (object.isEmpty()) {
             return Optional.empty();
         }
-        final Optional<String> literal = switch (load.getValue().value()) {
-            case Boolean booleanValue -> Optional.of(booleanValue ? "1" : "0");
-            case Number number -> Optional.of(number.toString());
+        final Optional<BigInteger> literal = switch (load.getValue().value()) {
+            case Boolean booleanValue -> Optional.of(booleanValue ? BigInteger.ONE : BigInteger.ZERO);
+            case Number number -> Optional.of(new BigInteger(number.toString()));
             case null, default -> Optional.empty();
         };
-        return literal.map(l -> String.format("(%s == %s)", object.get().object().getName(), l));
+        return literal.map(l -> new VariableEquality(object.get().object().getName(), l));
     }
 
     private static Set<EdgeModel> relationEdges(ExecutionModelNext model, String name) {
         return findRelationModel(model, name)
                 .map(RelationModel::getEdgeModels)
                 .orElse(Set.of());
-    }
-
-    private static List<EventModel> linearize(ExecutionModelNext model) {
-        final RelationModel hb = findRelationModel(model, HB)
-                .orElseThrow(() -> new VerifyException(
-                        "Execution model does not contain relation '%s'".formatted(HB)));
-
-        final List<EventModel> events = model.getEventModels();
-        final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
-        for (EdgeModel edge : hb.getEdgeModels()) {
-            Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
-            predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
-        }
-
-        final DependencyGraph<EventModel> dependencyGraph = DependencyGraph.from(events, predecessors);
-        Verify.verify(dependencyGraph.getSCCs().size() == events.size(),
-                "svcomp.cat produced a non-SC execution");
-        return dependencyGraph.getNodeContents();
     }
 
     private static Optional<RelationModel> findRelationModel(ExecutionModelNext model, String name) {
@@ -276,7 +269,8 @@ public final class SvcompWitnessExtractor {
         return requireInputLocation(target, programFile);
     }
 
-    private record SourcePoint(ThreadModel thread, int occurrence, Location location) { }
+    // A statement instance, identified by its first event; each event executes at most once after unrolling.
+    private record SourcePoint(ThreadModel thread, Event start, Location location) { }
 
     private static void registerThread(List<Segment> segments, ThreadModel thread,
             Map<ThreadModel, Integer> threadIds, ExecutionModelNext model, Path programFile) {
@@ -304,19 +298,6 @@ public final class SvcompWitnessExtractor {
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Thread creator is not part of the execution model"));
     }
 
-    private static Set<EventModel> eventsBefore(List<EventModel> targets) {
-        final Set<EventModel> result = new HashSet<>();
-        for (EventModel target : targets) {
-            final List<EventModel> events = target.getThreadModel().getEventModels();
-            final int index = events.indexOf(target);
-            if (index < 0) {
-                throw new IllegalArgumentException("Violation target is not part of the execution model");
-            }
-            result.addAll(events.subList(0, index));
-        }
-        return result;
-    }
-
     private static Location requireInputLocation(EventModel event, Path programFile) {
         final Location location = inputLocation(event, programFile);
         if (location == null) {
@@ -330,12 +311,12 @@ public final class SvcompWitnessExtractor {
     }
 
     private static Location inputLocation(Event event, Path programFile) {
-        final SourceLocation location = event.getMetadata(SourceLocation.class);
-        if (!(location instanceof SourceLocation.Generic generic) || generic.lineNumber() < 1
-                || !generic.sourcePath().getFileName().equals(programFile.getFileName())) {
+        if (!(event.getMetadata(SourceLocation.class) instanceof SourceLocation.Generic(var _, int line))
+                || line < 1) {
             return null;
         }
-        return new Location(programFile, generic.lineNumber());
+        final Location location = new Location(programFile, line);
+        return SourceMatching.matches(location, event) ? location : null;
     }
 
     // The targets identify the event(s) constituting the violation and become the final target waypoints.
