@@ -437,7 +437,13 @@ final class ThreadInterpreter {
             assign(st, arg.getResultRegister(), st.arguments.get(arg.getIndex()), ImmutableSet.of());
         } else if (e instanceof ThreadReturn ret) {
             st.returnValue = ret.getValue().map(eval::evaluate).orElse(null);
-        } else if (e instanceof ThreadStart || e instanceof Label || e instanceof Skip
+        } else if (e instanceof Label label) {
+            if (isLoopHead(label)) {
+                // Entering the loop (or a new iteration): the current iteration starts here. Without this, the first
+                // iteration of a loop would also contain the events before the loop.
+                st.iterationStart = st.nextPoIndex;
+            }
+        } else if (e instanceof ThreadStart || e instanceof Skip
                 || e instanceof CodeAnnotation || e instanceof InstructionBoundary || e instanceof StateSnapshot) {
             // Nothing to do
         } else {
@@ -504,5 +510,14 @@ final class ThreadInterpreter {
                 return layout.getAddress(memoryObject);
             }
         });
+    }
+
+    private static boolean isLoopHead(Label label) {
+        for (CondJump jump : label.getJumpSet()) {
+            if (jump.getGlobalId() >= label.getGlobalId()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
