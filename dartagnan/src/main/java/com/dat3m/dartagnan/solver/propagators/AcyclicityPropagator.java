@@ -67,13 +67,20 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     private int curLevel = 0;
     private boolean raisedConflict = false;
 
-    private final Queue<Integer> workqueue = new ArrayDeque<>(); // Used for BFS
-    private final VarGraph.Edge[] ingoingMap; // Spanning tree for forward search
-    private final VarGraph.Edge[] outgoingMap; // Spanning tree for backward search
+    // BFS data. Instead of clearing the maps before each search, we mark visited nodes with a fresh stamp.
+    private final int[] queue;
+    private final VarGraph.Edge[] ingoingMap; // Spanning tree for forward search (valid if fwdStamps[x] == fwdStamp)
+    private final VarGraph.Edge[] outgoingMap; // Spanning tree for backward search (valid if bwdStamps[x] == bwdStamp)
+    private final int[] fwdStamps;
+    private final int[] bwdStamps;
+    private int fwdStamp = 0;
+    private int bwdStamp = 0;
+    private final List<VarGraph.Edge> disabledEdgesToPropagate = new ArrayList<>();
+    private final List<Watcher> enabledEdges = new ArrayList<>();
 
-    // TODO: Evaluate the need for this.
-    // Track already-made propagations to avoid redundant propagation
-    private Set<VarGraph.Edge> alreadyPropagatedEdges;
+    // Track already-made propagations (since the last backtrack) to avoid redundant propagation
+    private final List<Case> propagatedCases = new ArrayList<>();
+    private final List<VarGraph.Edge> propagatedEdges = new ArrayList<>();
 
     // -------- Misc --------
     // Used to cheaply associate data with BooleanFormulas
@@ -96,6 +103,9 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
                 .getDomain(EventDomainRepository.DomainBound.VISIBLE);
         ingoingMap = new VarGraph.Edge[domain.size()];
         outgoingMap = new VarGraph.Edge[domain.size()];
+        queue = new int[domain.size()];
+        fwdStamps = new int[domain.size()];
+        bwdStamps = new int[domain.size()];
     }
 
     public void registerAxiom(Acyclicity axiom) {
@@ -127,7 +137,7 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
                     if (must.contains(x, y)) {
                         final VarGraph.Edge edge = graph.addMustEdge(idx, idy, getExecLitIds(x, y));
                         for (int litId : edge.getExecLitIds()) {
-                            execLitWatchers.get(litId).add(new Watcher(graph, edge));
+                            execLitWatchers.get(litId).add(new Watcher(c, edge));
                         }
                     } else {
                         final BooleanFormula edgeLit = context.edge(rel, x, y);
@@ -147,13 +157,15 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
         formulaLookup = new CachingFormulaMap<>((numDynamicEdges + execLits.size()) * 2, key -> {
             final Case c = lit2Case.get(key);
             if (c != null) {
-                return new EdgeLitData(c.graph(), c.graph().getEdge(key));
+                return new EdgeLitData(c, c.graph().getEdge(key));
             }
             final Integer litId = execLit2Id.get(key);
             Preconditions.checkState(litId != null, "Unknown literal %s", key);
             return new ExecLitData(litId);
         });
-        alreadyPropagatedEdges = Collections.newSetFromMap(new IdentityHashMap<>(numDynamicEdges));
+        for (Case c : cases) {
+            c.propagated = new boolean[c.graph().getNumEdges()];
+        }
     }
 
     // Returns the ids of a minimal set of execution literals implying exec(x) /\ exec(y).
@@ -205,7 +217,11 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
         undone.forEach(id -> execLitValues[id] = UNASSIGNED);
         undone.clear();
 
-        alreadyPropagatedEdges.clear();
+        for (int i = 0; i < propagatedEdges.size(); i++) {
+            propagatedCases.get(i).propagated[propagatedEdges.get(i).getId()] = false;
+        }
+        propagatedCases.clear();
+        propagatedEdges.clear();
         // System.out.println("------- Pop to: " + curLevel + " -------");
     }
 
@@ -219,21 +235,20 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
         }
 
         switch (formulaLookup.get(expr)) {
-            case EdgeLitData(VarGraph graph, VarGraph.Edge edge) -> onEdgeAssignment(graph, edge, value);
+            case EdgeLitData(Case c, VarGraph.Edge edge) -> onEdgeAssignment(c, edge, value);
             case ExecLitData(int litId) -> onExecLitAssignment(litId, value);
         }
     }
 
-    private void onEdgeAssignment(VarGraph graph, VarGraph.Edge edge, boolean value) {
-        graph.assignEdge(edge, value);
+    private void onEdgeAssignment(Case c, VarGraph.Edge edge, boolean value) {
+        c.graph().assignEdge(edge, value);
 
         if (value) {
-            if (alreadyPropagatedEdges.contains(edge)) {
+            if (c.propagated[edge.getId()]) {
                 raisedConflict = true;
-                // System.out.println("Propagation conflict");
                 return;
             }
-            processEdgeAddition(graph, edge);
+            processEdgeAddition(c, edge);
             trackCheck();
         }
     }
@@ -248,24 +263,25 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
         }
 
         // First enable all must-edges whose execution condition became true, then check them for cycles.
-        final List<Watcher> enabledEdges = new ArrayList<>();
+        enabledEdges.clear();
         for (Watcher w : execLitWatchers.get(litId)) {
             final VarGraph.Edge edge = w.edge();
             if (edge.isUnassigned() && allExecLitsTrue(edge)) {
-                w.graph().assignEdge(edge, true);
+                w.c().graph().assignEdge(edge, true);
                 enabledEdges.add(w);
             }
         }
 
-        for (Watcher w : enabledEdges) {
+        for (int i = 0; i < enabledEdges.size(); i++) {
+            final Watcher w = enabledEdges.get(i);
             if (raisedConflict && stopOnConflict) {
                 return;
             }
-            if (alreadyPropagatedEdges.contains(w.edge())) {
+            if (w.c().propagated[w.edge().getId()]) {
                 raisedConflict = true;
                 continue;
             }
-            processEdgeAddition(w.graph(), w.edge());
+            processEdgeAddition(w.c(), w.edge());
             trackCheck();
         }
     }
@@ -289,20 +305,20 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
 
     // Checks for cycles caused by adding <edge> and possibly raises a conflict.
     // If no conflict is raised, tries to do theory propagation
-    private void processEdgeAddition(VarGraph graph, VarGraph.Edge edge) {
+    private void processEdgeAddition(Case c, VarGraph.Edge edge) {
 
-        if (forwardBfsSearch(graph, edge, ingoingMap)) {
+        if (forwardBfsSearch(c.graph(), edge)) {
             // We found a cycle
-            final List<BooleanFormula> conflict = computeCycleReason(edge, ingoingMap);
+            final List<BooleanFormula> conflict = computeCycleReason(edge);
             trackReason(conflict);
             getBackend().propagateConflict(conflict.toArray(new BooleanFormula[0]));
             raisedConflict = true;
         } else if (enableTheoryPropagation) {
-            backwardBfsPropagate(graph, edge, ingoingMap);
+            backwardBfsPropagate(c, edge);
         }
     }
 
-    private List<BooleanFormula> computeCycleReason(VarGraph.Edge edge, VarGraph.Edge[] ingoingMap) {
+    private List<BooleanFormula> computeCycleReason(VarGraph.Edge edge) {
         // Collect reason backwards
         final List<BooleanFormula> conflict = new ArrayList<>();
         curStamp++;
@@ -341,28 +357,32 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     // ==========================================================================
 
 
-    private boolean forwardBfsSearch(VarGraph graph, VarGraph.Edge addedEdge, VarGraph.Edge[] ingoingMap) {
-        Arrays.fill(ingoingMap, null);
-        workqueue.clear();
-        workqueue.add(addedEdge.getTarget());
-
+    private boolean forwardBfsSearch(VarGraph graph, VarGraph.Edge addedEdge) {
+        final int stamp = ++fwdStamp;
         final int target = addedEdge.getSource();
-        ingoingMap[addedEdge.getTarget()] = addedEdge;
+        final int start = addedEdge.getTarget();
+        int head = 0;
+        int tail = 0;
+        queue[tail++] = start;
+        fwdStamps[start] = stamp;
+        ingoingMap[start] = addedEdge;
 
-        do {
-            // Forward BFS
-            for (VarGraph.Edge outEdge : graph.getTrueOutEdges(workqueue.poll())) {
+        while (head < tail) {
+            final List<VarGraph.Edge> outEdges = graph.getTrueOutEdgeList(queue[head++]);
+            for (int i = 0; i < outEdges.size(); i++) {
+                final VarGraph.Edge outEdge = outEdges.get(i);
                 final int next = outEdge.getTarget();
                 if (next == target) {
                     // Found cycle
                     ingoingMap[next] = outEdge;
                     return true;
-                } else if (ingoingMap[next] == null) {
+                } else if (fwdStamps[next] != stamp) {
+                    fwdStamps[next] = stamp;
                     ingoingMap[next] = outEdge;
-                    workqueue.add(next);
+                    queue[tail++] = next;
                 }
             }
-        } while (!workqueue.isEmpty());
+        }
 
         // No cycle found
         return false;
@@ -371,36 +391,45 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     // ------------------------------------------------------------------------------------
     // Theory propagation
 
-    private void backwardBfsPropagate(VarGraph graph, VarGraph.Edge addedEdge, VarGraph.Edge[] ingoingMap) {
-        Arrays.fill(outgoingMap, null);
-        workqueue.clear();
-        workqueue.add(addedEdge.getSource());
+    // Requires that the last forward search started from <addedEdge> found no cycle.
+    private void backwardBfsPropagate(Case c, VarGraph.Edge addedEdge) {
+        final VarGraph graph = c.graph();
+        final int fStamp = fwdStamp;
+        final int stamp = ++bwdStamp;
+        final int start = addedEdge.getSource();
+        int head = 0;
+        int tail = 0;
+        queue[tail++] = start;
+        bwdStamps[start] = stamp;
 
         // Do backward BFS to collect disabled edges
-        final List<VarGraph.Edge> disabledEdgesToPropagate = new ArrayList<>();
-        do {
-            for (VarGraph.Edge inEdge : graph.getInEdges(workqueue.poll())) {
+        disabledEdgesToPropagate.clear();
+        while (head < tail) {
+            final List<VarGraph.Edge> inEdges = graph.getInEdgeList(queue[head++]);
+            for (int i = 0; i < inEdges.size(); i++) {
+                final VarGraph.Edge inEdge = inEdges.get(i);
                 if (inEdge.isFalse()) {
                     continue;
                 }
 
                 final int next = inEdge.getSource();
-                if (ingoingMap[next] != null) {
+                if (fwdStamps[next] == fStamp) {
                     // <inEdge> would close a cycle
                     assert inEdge.isUnassigned();
-                    if ((allowDuplicatePropagation || !alreadyPropagatedEdges.contains(inEdge))
+                    if ((allowDuplicatePropagation || !c.propagated[inEdge.getId()])
                             && (!inEdge.isMust() || getSingleUnassignedExecLit(inEdge) != -1)) {
                         disabledEdgesToPropagate.add(inEdge);
                     }
-                } else if (inEdge.isTrue() && outgoingMap[next] == null) {
+                } else if (inEdge.isTrue() && bwdStamps[next] != stamp) {
+                    bwdStamps[next] = stamp;
                     outgoingMap[next] = inEdge;
-                    workqueue.add(next);
+                    queue[tail++] = next;
                 }
             }
-        } while (!workqueue.isEmpty());
+        }
 
         // Propagate disabled edges
-        propagateDisabledEdges(disabledEdgesToPropagate, ingoingMap, outgoingMap);
+        propagateDisabledEdges(c, disabledEdgesToPropagate);
     }
 
     // A must-edge can only be disabled by falsifying one of its execution literals.
@@ -419,16 +448,18 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
         return unassigned;
     }
 
-    private void propagateDisabledEdges(List<VarGraph.Edge> disabledEdgesToPropagate, VarGraph.Edge[] ingoingMap, VarGraph.Edge[] outgoingMap) {
-        for (var edge : disabledEdgesToPropagate) {
+    private void propagateDisabledEdges(Case c, List<VarGraph.Edge> disabledEdgesToPropagate) {
+        for (int i = 0; i < disabledEdgesToPropagate.size(); i++) {
+            final VarGraph.Edge edge = disabledEdgesToPropagate.get(i);
             assert edge.isUnassigned();
             final List<BooleanFormula> reason = new ArrayList<>();
             curStamp++;
 
-            // Collect reason backwards
+            // Collect reason backwards (along the forward search tree, back to the source of the added edge)
             int cur = edge.getSource();
             VarGraph.Edge curEdge;
-            while ((curEdge = ingoingMap[cur]) != null) {
+            while (fwdStamps[cur] == fwdStamp) {
+                curEdge = ingoingMap[cur];
                 addEdgeReason(curEdge, reason);
                 cur = curEdge.getSource();
             }
@@ -463,7 +494,11 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
             final BooleanFormula[] propReason = reason.toArray(new BooleanFormula[0]);
             getBackend().propagateConsequence(propReason, consequence);
             numPropagations++;
-            alreadyPropagatedEdges.add(edge);
+            if (!c.propagated[edge.getId()]) {
+                c.propagated[edge.getId()] = true;
+                propagatedCases.add(c);
+                propagatedEdges.add(edge);
+            }
 
         }
     }
@@ -486,12 +521,24 @@ public class AcyclicityPropagator extends AbstractUserPropagator {
     // ===================================== Helper classes ====================================
 
     // We use a "case" per acyclicity axiom we want to track
-    private record Case(Acyclicity axiom, VarGraph graph) { }
+    private static final class Case {
+        private final Acyclicity axiom;
+        private final VarGraph graph;
+        private boolean[] propagated; // Edges propagated (to false) since the last backtrack
 
-    private record Watcher(VarGraph graph, VarGraph.Edge edge) { }
+        Case(Acyclicity axiom, VarGraph graph) {
+            this.axiom = axiom;
+            this.graph = graph;
+        }
+
+        Acyclicity axiom() { return axiom; }
+        VarGraph graph() { return graph; }
+    }
+
+    private record Watcher(Case c, VarGraph.Edge edge) { }
 
     private sealed interface LitData permits EdgeLitData, ExecLitData { }
-    private record EdgeLitData(VarGraph graph, VarGraph.Edge edge) implements LitData { }
+    private record EdgeLitData(Case c, VarGraph.Edge edge) implements LitData { }
     private record ExecLitData(int litId) implements LitData { }
 
 
