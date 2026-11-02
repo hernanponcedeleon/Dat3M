@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.EventData;
+import com.dat3m.dartagnan.solver.caat4wmm.EventData;
 
 import java.util.List;
 import java.util.Map;
