@@ -83,6 +83,36 @@ public class WitnessYamlParserTest {
     }
 
     @Test
+    public void ignoresBranchingAndFunctionReturnWaypoints() throws Exception {
+        final ViolationWitness witness = parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: branching
+                        action: follow
+                        constraint: {value: 'true'}
+                        location: {file_name: example.c, line: 6}
+                - segment:
+                    - waypoint:
+                        type: function_return
+                        action: follow
+                        constraint: {value: '\\result == 0', format: acsl_expression}
+                        location: {file_name: example.c, line: 7}
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        location: {file_name: example.c, line: 7}
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        location: {file_name: example.c, line: 9}
+                """);
+        assertEquals(2, witness.segments().size());
+        assertTrue(witness.segments().getFirst().waypoints().getFirst() instanceof FunctionEnter);
+        assertEquals(1, witness.segments().getFirst().waypoints().size());
+    }
+
+    @Test
     public void rejectsWitnessesWithoutTargets() {
         final IOException exception = assertThrows(IOException.class, () -> parseWitness("{example.c: deadbeef}", """
                 - segment:

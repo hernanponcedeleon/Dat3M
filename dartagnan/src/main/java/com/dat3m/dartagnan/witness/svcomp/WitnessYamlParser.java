@@ -25,11 +25,11 @@ import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
  * Entries: the first entry of type violation_sequence is read. Its metadata must name exactly one input file.
  *
  * Segments: each item of its content is a segment, i.e., a list of waypoints. Segments left without
- * waypoints, e.g., because they only contain branching waypoints, are dropped.
+ * waypoints, e.g., because they only contain ignored waypoints, are dropped.
  *
  * Waypoints: function_enter, assumption, and target waypoints are supported. Each has a location
- * (file name and line) and a thread ID, which is 0 if absent. Branching waypoints are ignored, because
- * a branch in the C source may have no corresponding branch after compilation to LLVM.
+ * (file name and line) and a thread ID, which is 0 if absent. Branching and function_return waypoints are
+ * ignored, because a branch or return in the C source may have no corresponding event in our IR.
  * Only the follow action is supported. At least one target waypoint is required.
  *
  * Assumptions: constraints must be C expressions built from Boolean constants (true, false, 0, 1),
@@ -84,9 +84,10 @@ public final class WitnessYamlParser {
                 final Map<?, ?> waypoint = asMapping(waypointItem, "waypoint");
                 final Map<?, ?> body = getMapping(waypoint, "waypoint");
                 final String type = getString(body, "type", "waypoint type");
-                if ("branching".equals(type)) {
-                    // Branching waypoints are deliberately ignored because source-level
-                    // branches may not have a corresponding LLVM-level branch after compilation.
+                if ("branching".equals(type) || "function_return".equals(type)) {
+                    // Branching and function_return waypoints are deliberately ignored: source-level branches
+                    // and returns may have no corresponding event in our IR. Ignoring a waypoint only admits
+                    // more executions, while the targets still require the violation.
                     continue;
                 }
                 final String action = getString(body, "action", "waypoint action");
