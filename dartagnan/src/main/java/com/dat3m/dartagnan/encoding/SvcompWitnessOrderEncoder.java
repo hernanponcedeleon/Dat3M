@@ -14,6 +14,7 @@ import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,8 +47,7 @@ final class SvcompWitnessOrderEncoder {
         this.bmgr = context.getBooleanFormulaManager();
         this.bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
         this.clockPrefix = context.getFormulaManager().escape(WITNESS_CLOCK) + " ";
-        this.rankWidth = Math.max(1, Integer.SIZE - Integer.numberOfLeadingZeros(
-                program.getThreadEvents().size() - 1));
+        this.rankWidth = Math.max(1, BigInteger.valueOf(program.getThreadEvents().size() - 1).bitLength());
     }
 
     BooleanFormula before(Event first, Event second) {
