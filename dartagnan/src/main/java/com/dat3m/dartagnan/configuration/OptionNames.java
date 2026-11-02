@@ -73,6 +73,11 @@ public class OptionNames {
     // Refinement Options
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
+    // Propagator Options (--method=propagator)
+    public static final String PROPAGATOR_MAX_AUTOMATON_STATES = "solver.propagator.maxAutomatonStates";
+    public static final String PROPAGATOR_IRREFLEXIVITY = "solver.propagator.irreflexivity";
+    public static final String PROPAGATOR_LEGACY_ACYCLICITY = "solver.propagator.legacyAcyclicity";
+
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
 

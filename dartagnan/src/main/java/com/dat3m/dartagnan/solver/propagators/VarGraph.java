@@ -16,6 +16,10 @@ public class VarGraph {
     final Map<BooleanFormula, Edge> var2Edge = new HashMap<>();
     final List<Edge>[] inEdges;
     final List<Edge>[] outEdges;
+    // Edges that are currently true. Since edges are unassigned in reverse order of assignment (by backtracking),
+    // we can maintain them as stacks.
+    final List<Edge>[] trueInEdges;
+    final List<Edge>[] trueOutEdges;
     final List<Edge> allEdges = new ArrayList<>();
     final List<Edge> dynamicEdges = new ArrayList<>();
 
@@ -32,9 +36,13 @@ public class VarGraph {
 
         inEdges = (List<Edge>[]) new List[domainSize];
         outEdges = (List<Edge>[]) new List[domainSize];
+        trueInEdges = (List<Edge>[]) new List[domainSize];
+        trueOutEdges = (List<Edge>[]) new List[domainSize];
         for (int i = 0; i < domainSize; i++) {
             inEdges[i] = new ArrayList<>();
             outEdges[i] = new ArrayList<>();
+            trueInEdges[i] = new ArrayList<>();
+            trueOutEdges[i] = new ArrayList<>();
         }
     }
 
@@ -48,15 +56,24 @@ public class VarGraph {
         in <execLitIds> (which jointly imply exec(x) /\ exec(y)) are known to be true.
      */
     public Edge addMustEdge(int source, int target, int[] execLitIds) {
+        return addMustEdge(source, target, 0, execLitIds);
+    }
+
+    public Edge addMustEdge(int source, int target, int label, int[] execLitIds) {
         assert execLitIds.length > 0;
-        final Edge edge = new Edge(source, target, null, execLitIds);
+        final Edge edge = new Edge(allEdges.size(), source, target, label, null, execLitIds);
         addEdge(edge);
         return edge;
     }
 
     public Edge addVarEdge(int source, int target, BooleanFormula edgeVar) {
+        return addVarEdge(source, target, 0, edgeVar);
+    }
+
+    // NOTE: If the same <edgeVar> is used for multiple edges, getEdge(edgeVar) returns only the last one.
+    public Edge addVarEdge(int source, int target, int label, BooleanFormula edgeVar) {
         assert edgeVar != null;
-        final Edge edge = new Edge(source, target, edgeVar, null);
+        final Edge edge = new Edge(allEdges.size(), source, target, label, edgeVar, null);
         addEdge(edge);
         var2Edge.put(edgeVar, edge);
         edge.negEdgeVar = bmgr.not(edgeVar);
@@ -82,7 +99,9 @@ public class VarGraph {
 
         int backtrackPoint = backtrackPoints.get(curLevel);
         backtrackPoints.subList(curLevel, backtrackPoints.size()).clear();
-        trace.subList(backtrackPoint, trace.size()).forEach(this::unassignEdge);
+        for (int i = trace.size() - 1; i >= backtrackPoint; i--) {
+            unassignEdge(trace.get(i));
+        }
         trace.subList(backtrackPoint, trace.size()).clear();
     }
 
@@ -92,6 +111,10 @@ public class VarGraph {
         assert !e.isMust() || value == TRUE;
         trace.add(e);
         e.value = value;
+        if (value == TRUE) {
+            trueOutEdges[e.source].add(e);
+            trueInEdges[e.target].add(e);
+        }
     }
 
     public void assignEdge(Edge e, boolean value) {
@@ -99,12 +122,25 @@ public class VarGraph {
     }
 
     private void unassignEdge(Edge e) {
+        if (e.value == TRUE) {
+            final List<Edge> out = trueOutEdges[e.source];
+            final List<Edge> in = trueInEdges[e.target];
+            assert out.get(out.size() - 1) == e && in.get(in.size() - 1) == e;
+            out.remove(out.size() - 1);
+            in.remove(in.size() - 1);
+        }
         e.value = UNASSIGNED;
     }
 
     public Iterable<Edge> getInEdges(int i) {
         return inEdges[i];
     }
+
+    public List<Edge> getInEdgeList(int i) { return inEdges[i]; }
+    public List<Edge> getTrueInEdgeList(int i) { return trueInEdges[i]; }
+    public List<Edge> getTrueOutEdgeList(int i) { return trueOutEdges[i]; }
+    public List<Edge> getOutEdgeList(int i) { return outEdges[i]; }
+    public int getNumEdges() { return allEdges.size(); }
 
     public Iterable<Edge> getTrueOutEdges(int i) {
         final var it = new FilteredIterator(outEdges[i], VarGraph::isEnabledEdge);
@@ -151,8 +187,10 @@ public class VarGraph {
     }
 
     public final static class Edge {
+        private final int id;
         private final int source;
         private final int target;
+        private final int label;
         private transient int value = UNASSIGNED;
 
         private final transient BooleanFormula edgeVar;
@@ -160,6 +198,8 @@ public class VarGraph {
         // Only for must-edges: ids of the execution literals that enable this edge.
         private final int[] execLitIds;
 
+        public int getId() { return id; }
+        public int getLabel() { return label; }
         public int getSource() { return source; }
         public int getTarget() { return target; }
         public BooleanFormula getEdgeVar() { return edgeVar; }
@@ -167,9 +207,11 @@ public class VarGraph {
         public int[] getExecLitIds() { return execLitIds; }
         public int getValue() { return value; }
 
-        private Edge(int source, int target, BooleanFormula edgeVar, int[] execLitIds) {
+        private Edge(int id, int source, int target, int label, BooleanFormula edgeVar, int[] execLitIds) {
+            this.id = id;
             this.source = source;
             this.target = target;
+            this.label = label;
             this.edgeVar = edgeVar;
             this.execLitIds = execLitIds;
         }
@@ -181,17 +223,17 @@ public class VarGraph {
 
         @Override
         public String toString() {
-            return "%s(%d, %d)".formatted(edgeVar, source, target);
+            return "%s[%d](%d, %d)".formatted(edgeVar, label, source, target);
         }
 
         @Override
         public int hashCode() {
-            return ((target << 14) - 1) + source;
+            return 31 * (((target << 14) - 1) + source) + label;
         }
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Edge edge && edge.source == source && edge.target == target;
+            return obj instanceof Edge edge && edge.source == source && edge.target == target && edge.label == label;
         }
     }
 }
