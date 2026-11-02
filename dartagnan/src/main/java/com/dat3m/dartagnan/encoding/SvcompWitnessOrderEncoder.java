@@ -25,7 +25,7 @@ import static com.dat3m.dartagnan.witness.svcomp.CatNames.RF_RELATION;
 
 /**
  * Orders the events of a candidate execution by ranks, the "witness clock". The ranks
- * respect every encoded hb-consistency edge and program order (the later may include
+ * respect the hb-consistency, rf, co, and fr edges and program order (the latter may include
  * non-visible events) between executed events, and no event of another thread is
  * ranked inside an executed atomic section or read-modify-write pair. Thus, the order
  * is compatible with the memory model, while unrelated events may also be ordered.

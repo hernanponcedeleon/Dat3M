@@ -13,10 +13,8 @@ import java.util.regex.Pattern;
 import static com.google.common.base.Verify.verify;
 
 /**
- * Defines which program variables witnesses may constrain.
- * Witness extraction and validation share these rules, so that every assumption we generate is one we can validate.
- * A variable is a bare identifier naming a statically allocated, initialized scalar memory object of integral scalar type.
- * Writes are only known after alias analysis, so this last rule is checked by {@link WitnessResolver} alone.
+ * Shared rules for witness variables: named, statically allocated, initialized integral scalars.
+ * {@link WitnessResolver} additionally checks that all writes match the object's type.
  */
 public final class Variables {
 

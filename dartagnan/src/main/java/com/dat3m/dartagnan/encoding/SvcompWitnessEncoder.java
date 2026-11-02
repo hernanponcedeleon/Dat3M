@@ -31,40 +31,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Step 3 of witness validation (see {@link WitnessValidationTask}): encodes a witness resolved by
- * {@link WitnessResolver} as constraints that restrict the encoded executions to those that follow the witness.
- *
- * Threads: each witness thread ID is bound to exactly one of its compatible program threads,
- * and distinct IDs are bound to distinct threads.
- *
- * Selection: each candidate event gets a selector (implemented as a BooleanFormula), and each waypoint
- * must select at least one of its candidates.
- * A selected candidate runs in the thread bound to the ID of its waypoint and satisfies the waypoint:
- * the thread entered by a function_enter waypoint starts executing, and its creator runs in the thread bound
- * to the parent's ID; a target is reached, i.e., its event executes; an assumption holds at the first executed
- * event of its statement instance.
- *
- * Assumptions: supported constraints are Boolean constants, expressions of the form
- * variable == integer_literal, or conjunctions of these. Floating-point assumptions are
- * currently unsupported. Each equality constrains the value of its variable immediately
- * before the source statement. Its value comes from the last executed write, including
- * initialization, before that position in the witness clock. All equalities in a conjunction
- * refer to the same position.
- *
- * Witness clock: {@link SvcompWitnessOrderEncoder} ranks the events in a total order that is compatible
- * with the memory model: it follows the hb-consistency, rf, co, and fr edges and program order between the
- * waypoints and the memory events of their threads, and it does not interleave atomic sections or
- * read-modify-write pairs with other threads.
- *
- * Segment order: selected events from consecutive segments are ranked in strictly increasing order, using a
- * separator rank between each pair of consecutive segments. The accesses to the variables of a selected
- * assumption, within the same statement instance, are also placed after the previous segment's events and
- * before the next segment's events. Events within one segment are not ordered among each other, e.g., the
- * two accesses of a data race.
- *
- * Targets: the selected targets must also constitute the violation of the property, as encoded by
- * {@link SvcompWitnessPropertyEncoder}, e.g., a violated assertion for unreach-call, or the two accesses
- * of a data race for no-data-race.
+ * Constrains executions to follow a resolved witness by selecting compatible
+ * waypoint candidates and binding witness IDs to distinct program threads.
+ * Assumptions read variable values immediately before their source statement.
+ * Segment ordering and target violations are handled by
+ * {@link SvcompWitnessOrderEncoder} and {@link SvcompWitnessPropertyEncoder}.
  */
 public final class SvcompWitnessEncoder {
 
@@ -294,6 +265,8 @@ public final class SvcompWitnessEncoder {
         return bmgr.and(constraints);
     }
 
+    // An equality holds if the last executed write to its variable (including initialization) before 'position'
+    // in the witness clock wrote its value. All equalities of a conjunction refer to the same position.
     private BooleanFormula encodeAssumption(AssumptionExpression assumption, Event position,
             Map<String, ResolvedVariable> variables) {
         return switch (assumption) {

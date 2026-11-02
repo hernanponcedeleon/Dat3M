@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -30,8 +29,7 @@ import static com.dat3m.dartagnan.witness.svcomp.SourceMatching.matches;
 import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
 
 /**
- * Step 2 of witness validation (see {@link WitnessValidationTask}):
- * maps the waypoints of a parsed witness to the events of the bounded program, i.e., after loop unrolling
+ * Maps the waypoints of a parsed witness to the events of the bounded program, i.e., after loop unrolling
  * and function inlining. For each waypoint, it collects the candidates, the events that may satisfy it.
  * Choosing among them is left to the encoding ({@link SvcompWitnessEncoder}).
  *
@@ -41,32 +39,11 @@ import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
  * location, e.g., one per loop iteration, so each witness ID keeps every program thread
  * compatible with it: a thread created at the location by a thread compatible with the parent.
  *
- * Locations: events are matched by source line and file name, ignoring directories (see {@link SourceMatching}).
- * Multiple events can match a location, for example after loop unrolling.
- *
- * Candidates: for a function_enter waypoint, the candidates are the entry events of the compatible child threads.
- * A target denotes the event at which the property is violated. For assertion-based properties, its candidates
- * are the assertions whose violation sites include the target location: the assertion itself and every call site
- * on its (inlined) call stack. Hence, a target may point to the failing assertion or to any call leading to it,
- * e.g., a call to a function wrapping the assertion. A target matching only other events has no candidates.
- * For other properties, the candidates of a target are all events at the location in a compatible thread.
- * The same holds for assumptions, except that function return markers are excluded. An assumption candidate
- * also records the earlier events of its statement instance, i.e., of the run of consecutive events at the
- * location it belongs to (e.g., one loop iteration), and the accesses to the constrained variables within it.
- *
- * Variables: each variable of an assumption must be a bare identifier naming a unique,
- * statically allocated, initialized scalar memory object of integral type, all of whose
- * writes have the type of the object (see {@link Variables}). A variable naming no memory object is left
- * unresolved, and equalities on it cannot be satisfied: unused objects are removed from the program, e.g.,
- * when all their accesses lie beyond the current bounds. Array indexing, member access, pointer dereferences,
- * register-only variables, and partial writes are currently unsupported. Assumptions that are the constant
- * true constrain nothing and are dropped.
- *
- * Missing candidates: a waypoint, or a witness thread ID, may have no candidates, e.g., when its code is only
- * reached beyond the unrolling or recursion bound. This is not an error: the waypoint cannot be satisfied,
- * which lets the solver decide whether higher bounds are needed. Only witnesses that do not fit the program
- * for any bound are rejected with an exception, e.g., when they refer to undeclared thread IDs or constrain
- * unsupported variables.
+ * Missing candidates: a waypoint, a witness thread ID, or an assumption variable may have no candidates,
+ * e.g., when its code is only reached beyond the unrolling or recursion bound. This is not an error:
+ * the waypoint cannot be satisfied, which lets the solver decide whether higher bounds are needed.
+ * Only witnesses that do not fit the program for any bound are rejected with an exception,
+ * e.g., when they refer to undeclared thread IDs or constrain unsupported variables.
  */
 public final class WitnessResolver {
 
@@ -222,6 +199,9 @@ public final class WitnessResolver {
     // ------------------------------------------------------------------------------------------------------
     // Candidate events
 
+    // For assertion-based properties, a target may point to the failing assertion or to any call leading to it,
+    // e.g., a call to a function wrapping the assertion. Its candidates are thus the assertions with a violation
+    // site at the target location. Otherwise, the candidates are the events at the location in a compatible thread.
     private List<Event> eventsForWaypoint(Waypoint waypoint, ResolvedThreads threads) {
         if (waypoint instanceof FunctionEnter enter) {
             return threads.byId().get(threads.entered().get(enter)).stream().<Event>map(Thread::getEntry).toList();
