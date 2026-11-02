@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.metadata.SourceLocation.SourcePath;
 import com.dat3m.dartagnan.model.Execution;
-import com.dat3m.dartagnan.model.MemoryLayout;
 import com.dat3m.dartagnan.model.ThreadExecution;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
