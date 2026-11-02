@@ -88,6 +88,8 @@ public class ProcessingManager implements ProgramProcessor {
     /*
         If "unroll" is false, loops are kept in the program (e.g. for stateless model checking).
         In that case, all passes that rely on bounded loops (unrolling, non-termination instrumentation) are skipped.
+        So are the simplifications that run after unrolling (assignment inlining, constant propagation, dead code
+        elimination): they assume loop-free code and only serve to reduce the size of the SMT encoding.
         Only loops that create threads are unrolled (up to "threadCreationBound"), because the program representation
         requires a static set of threads.
      */
@@ -142,7 +144,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
-                                simplifyFunction
+                                unroll ? simplifyFunction : null
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
@@ -159,12 +161,12 @@ public class ProcessingManager implements ProgramProcessor {
                                 SROA.newInstance()
                         ), Target.THREADS, true
                 ),
-                simplifyBoundedProgram,
+                unroll ? simplifyBoundedProgram : null,
                 RemoveUnusedMemory.newInstance(),
                 FunctionAllocation.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
-                detectMixedSizeAccesses ? simplifyBoundedProgram : null,
+                detectMixedSizeAccesses && unroll ? simplifyBoundedProgram : null,
                 unroll ? NonterminationDetection.fromConfig(config) : null,
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
