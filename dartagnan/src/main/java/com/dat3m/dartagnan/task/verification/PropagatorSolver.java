@@ -78,7 +78,6 @@ public class PropagatorSolver extends SMTModelChecker<VerificationTask> implemen
         System.out.println("Propagating axioms: " + axiomsToPropagate);
         AcyclicityPropagator propagator = new AcyclicityPropagator(wmmEncoder, context);
         axiomsToPropagate.forEach(propagator::registerAxiom);
-        prover.registerUserPropagator(propagator);
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
         prover.writeComment("Program encoding");
@@ -97,6 +96,12 @@ public class PropagatorSolver extends SMTModelChecker<VerificationTask> implemen
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
+
+        // NOTE: The propagator must be registered only after the encoding is added.
+        //  Registering a user propagator makes Z3 configure its SMT core immediately, based on the formulas
+        //  asserted so far. With no formulas, it falls back to a generic configuration (e.g. with relevancy
+        //  propagation enabled), which slows down the search considerably (2-3x in our experiments).
+        prover.registerUserPropagator(propagator);
 
         checkForInterrupts();
 
