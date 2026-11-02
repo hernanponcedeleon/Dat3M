@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.witness.svcomp.ViolationWitness;
 import com.dat3m.dartagnan.witness.svcomp.Witness.*;
@@ -168,16 +169,17 @@ public final class SvcompWitnessEncoder {
     }
 
     private BooleanFormula encodeThreadBindings(Map<Integer, List<Thread>> threads) {
+        final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
         final List<BooleanFormula> constraints = new ArrayList<>();
         final Map<Thread, List<BooleanFormula>> bindingsOfThread = new HashMap<>();
         threads.forEach((id, candidates) -> {
             final List<BooleanFormula> bindings = candidates.stream().map(thread -> bound(id, thread)).toList();
             constraints.add(bmgr.or(bindings));
-            constraints.add(atMostOne(bindings));
+            constraints.add(utils.atMostOnePairwise(bindings));
             candidates.forEach(thread -> bindingsOfThread.computeIfAbsent(thread, _ -> new ArrayList<>())
                     .add(bound(id, thread)));
         });
-        bindingsOfThread.values().forEach(bindings -> constraints.add(atMostOne(bindings)));
+        bindingsOfThread.values().forEach(bindings -> constraints.add(utils.atMostOnePairwise(bindings)));
         return bmgr.and(constraints);
     }
 
@@ -188,16 +190,6 @@ public final class SvcompWitnessEncoder {
             return binding;
         }
         return bmgr.and(binding, bound(enter.threadId(), thread.getEntry().getCreator().getThread()));
-    }
-
-    private BooleanFormula atMostOne(List<BooleanFormula> formulas) {
-        final List<BooleanFormula> constraints = new ArrayList<>();
-        for (int i = 0; i < formulas.size(); i++) {
-            for (int j = i + 1; j < formulas.size(); j++) {
-                constraints.add(bmgr.not(bmgr.and(formulas.get(i), formulas.get(j))));
-            }
-        }
-        return bmgr.and(constraints);
     }
 
     private BooleanFormula bound(int id, Thread thread) {
