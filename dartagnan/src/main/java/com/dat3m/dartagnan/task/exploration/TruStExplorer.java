@@ -319,6 +319,10 @@ public final class TruStExplorer {
         if (spawningStore != null) {
             writes.removeIf(w -> w.event != spawningStore);
         }
+        if (interpreter.isJoinLoad(read.event)) {
+            // The joined thread terminated: older writes to its state word say "alive" and block the join forever.
+            writes.subList(0, writes.size() - 1).clear();
+        }
         // Push in reverse order so that writes are explored in coherence order.
         for (int i = writes.size() - 1; i >= 0; i--) {
             final Node write = writes.get(i);

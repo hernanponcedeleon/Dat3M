@@ -51,6 +51,52 @@ final class ThreadInterpreter {
         this.layout = layout;
         this.zeroInitializedRegisters = program.registersAreZeroInitialized();
         this.shutdownNotifier = notifier;
+        collectJoinLoads();
+    }
+
+    /*
+        A pthread_join is lowered (see ThreadCreation) to an atomic fetch-and-AND on the state word of the joined
+        thread, followed by a ThreadJoin (waiting for its termination) and an assume that the fetched state says
+        that the thread is no longer alive. If the load of the fetch-and-AND runs before the joined thread
+        terminated, or if it reads an older value afterwards, it reads "alive" and the join blocks forever.
+        We therefore only enable this load once the joined thread terminated, and let it read the latest write
+        to the state word (the explorer does not offer older writes). Then the join never blocks.
+        Older writes can only be read in executions where the join blocks, unless the state word is also
+        written by pthread_detach (then a join may return early without waiting). So we do not treat joins
+        specially in programs that detach threads.
+     */
+    private final Map<Event, Integer> joinLoads = new HashMap<>();
+
+    private void collectJoinLoads() {
+        for (Thread thread : threads) {
+            for (Event e : thread.getEvents()) {
+                if (e instanceof Load load && load.getResultRegister().getName().startsWith("__detachThreadState")) {
+                    joinLoads.clear();
+                    return;
+                }
+                if (!(e instanceof ThreadJoin join) || !threadIndex.containsKey(join.getJoinThread())) {
+                    continue;
+                }
+                final List<MemoryCoreEvent> spawning = join.getJoinThread().getSpawningEvents();
+                if (spawning.isEmpty()) {
+                    continue;
+                }
+                final Expression stateAddress = spawning.get(0).getAddress();
+                Event cur = join.getPredecessor();
+                for (int i = 0; i < 8 && cur != null; i++, cur = cur.getPredecessor()) {
+                    if (cur instanceof Load load) {
+                        if (load.getAddress().equals(stateAddress)) {
+                            joinLoads.put(load, indexOf(join.getJoinThread()));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    boolean isJoinLoad(Event e) {
+        return joinLoads.containsKey(e);
     }
 
     List<Thread> getThreads() {
@@ -115,6 +161,10 @@ final class ThreadInterpreter {
         }
         if (e instanceof ThreadJoin join) {
             final int joined = indexOf(join.getJoinThread());
+            return g.states[joined].status == ThreadState.Status.TERMINATED;
+        }
+        final Integer joined = joinLoads.get(e);
+        if (joined != null) {
             return g.states[joined].status == ThreadState.Status.TERMINATED;
         }
         return true;
