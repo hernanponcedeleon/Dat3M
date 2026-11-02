@@ -23,7 +23,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 {"atomics/atomic_read_race.spvasm", 1, FAIL},
                 {"atomics/equality_fail.spvasm", 1, PASS},
                 {"atomics/forloop.spvasm", 1, FAIL},
-                {"atomics/histo.spvasm", 1, PASS},
                 {"barrier_intervals/test1.spvasm", 1, PASS},
                 {"barrier_intervals/test3.spvasm", 2, UNKNOWN},
                 {"barrier_intervals/test4.spvasm", 2, UNKNOWN},
@@ -43,7 +42,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spvasm", 1, FAIL},
                 {"localarrayaccess.spvasm", 1, PASS},
                 {"mem_fence.spvasm", 1, PASS},
-                {"misc/fail/miscfail1.spvasm", 1, FAIL},
                 {"misc/fail/miscfail3.spvasm", 1, FAIL},
                 {"misc/fail/struct_member_race.spvasm", 1, FAIL},
                 {"misc/pass/misc2.spvasm", 1, PASS},
@@ -107,6 +105,14 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_2.spvasm", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_3.spvasm", 1, PASS},
 
+                // Undefined behavior (see UB comments in the benchmark headers)
+                // {"atomics/histo.spvasm", 1, PASS},
+                // {"atomics/refined_atomic_abstraction/many_accesses.spvasm", 1, PASS},
+                // {"atomics/refined_atomic_abstraction/one_access.spvasm", 1, PASS},
+                // {"misc/fail/miscfail1.spvasm", 1, FAIL},
+                // {"transitiveclosuresimplified.spvasm", 1, PASS},
+                // {"warpsync/intragroup_scan.spvasm", 1, FAIL},
+
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spvasm", 1, FAIL},
 
@@ -118,7 +124,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // {"null_pointers/atomic_null.spvasm", 1, ??},
 
                 // Unsupported cuda warps
-                // {"warpsync/intragroup_scan.spvasm", 1, FAIL},
                 // {"warpsync/scan_warp.spvasm", 1, FAIL},
 
                 // Unsupported non-constant tags
@@ -176,8 +181,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // {"atomics/mismatched_types/int_add_with_long.spvasm", 1, ??},
                 // {"atomics/mismatched_types/int_add_with_short.spvasm", 1, PASS},
                 // {"atomics/pointers.spvasm", 1, FAIL},
-                // {"atomics/refined_atomic_abstraction/many_accesses.spvasm", 1, PASS},
-                // {"atomics/refined_atomic_abstraction/one_access.spvasm", 1, PASS},
                 // {"atomics/refined_atomic_abstraction/predication.spvasm", 1, FAIL},
                 // {"barrierconditionalkernelparam.spvasm", 1, PASS},
                 // {"benign_race_tests/fail/writetiddiv64_offbyone.spvasm", 1, FAIL},
@@ -221,7 +224,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // {"ternarytest.spvasm", 1, PASS},
                 // {"ternarytest2.spvasm", 1, PASS},
                 // {"test_for_get_group_id.spvasm", 1, PASS},
-                // {"transitiveclosuresimplified.spvasm", 1, PASS},
                 // {"vectortests/float4arrayaccess.spvasm", 1, PASS},
                 // {"vectortests/int3arrayaccess.spvasm", 1, PASS},
                 // {"vectortests/test_paren.spvasm", 1, FAIL},

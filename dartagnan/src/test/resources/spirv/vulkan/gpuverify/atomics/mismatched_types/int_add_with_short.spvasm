@@ -1,4 +1,4 @@
-; @Input: %19 = {0, 0, 0}
+; @Input: %15=5
 ; @Config: 3, 1, 2
 ; SPIR-V
 ; Version: 1.6

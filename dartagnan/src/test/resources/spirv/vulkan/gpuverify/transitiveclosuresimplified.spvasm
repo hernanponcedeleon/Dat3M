@@ -1,5 +1,9 @@
+; @Input: %15=64
 ; @Input: %14 = {{0, 0, 0, 0, 0, 0, 0, 0, 0}}
 ; @Config: 3, 1, 3
+; UB: graph (%14) has nine elements, but this configuration accesses indices 2080..2082.
+; The three threads initialize only entries 0..2 of primary_block_buffer (%18),
+; while the loop can read other uninitialized entries, causing UB independently of array sizes.
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0
