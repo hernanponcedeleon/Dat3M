@@ -93,7 +93,7 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         if (prover.isUnsatWithAssumptions(assumptions)) {
             checkForInterrupts();
             prover.writeComment("Bound encoding");
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            prover.addConstraint(programEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover.isUnsat() ? PASS : UNKNOWN;
         } else {
