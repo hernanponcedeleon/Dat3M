@@ -30,7 +30,7 @@ import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
  * Waypoints: function_enter, assumption, and target waypoints are supported. Each has a location
  * (file name and line) and a thread ID, which is 0 if absent. Branching waypoints are ignored, because
  * a branch in the C source may have no corresponding branch after compilation to LLVM.
- * Only the follow action is supported.
+ * Only the follow action is supported. At least one target waypoint is required.
  *
  * Assumptions: constraints must be C expressions built from Boolean constants (true, false, 0, 1),
  * equalities of the form {@code variable == integer_literal}, conjunctions ({@code &&}), and parentheses.
@@ -117,6 +117,9 @@ public final class WitnessYamlParser {
             if (!waypoints.isEmpty()) {
                 segments.add(new Segment(waypoints));
             }
+        }
+        if (segments.stream().flatMap(segment -> segment.waypoints().stream()).noneMatch(Target.class::isInstance)) {
+            throw new IllegalArgumentException("Witness has no target waypoint");
         }
         return new ViolationWitness(parsedMetadata, segments);
     }

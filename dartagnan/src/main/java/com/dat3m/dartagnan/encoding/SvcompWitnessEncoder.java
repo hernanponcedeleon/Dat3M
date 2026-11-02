@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
  * two accesses of a data race.
  *
  * Targets: the selected targets must also constitute the violation of the property, as encoded by
- * {@link SvcompWitnessTargetEncoder}, e.g., a violated assertion for unreach-call, or the two accesses
+ * {@link SvcompWitnessPropertyEncoder}, e.g., a violated assertion for unreach-call, or the two accesses
  * of a data race for no-data-race.
  */
 public final class SvcompWitnessEncoder {
@@ -94,7 +94,7 @@ public final class SvcompWitnessEncoder {
     private final Program program;
     private final BooleanFormulaManager bmgr;
     private final SvcompWitnessOrderEncoder order;
-    private final SvcompWitnessTargetEncoder targets;
+    private final SvcompWitnessPropertyEncoder propertyEncoder;
 
     private SvcompWitnessEncoder(EncodingContext context, ViolationWitness witness, Property property) {
         this.context = context;
@@ -103,7 +103,7 @@ public final class SvcompWitnessEncoder {
         this.program = context.getTask().getProgram();
         this.bmgr = context.getBooleanFormulaManager();
         this.order = new SvcompWitnessOrderEncoder(context);
-        this.targets = new SvcompWitnessTargetEncoder(context, property);
+        this.propertyEncoder = new SvcompWitnessPropertyEncoder(context, property);
     }
 
     public static SvcompWitnessEncoder withContext(EncodingContext context) {
@@ -125,7 +125,7 @@ public final class SvcompWitnessEncoder {
         final List<SegmentEncoding> segments = encodeSegments(resolvedWitness);
         // Every waypoint must be satisfied, even if there is nothing to order.
         constraints.add(encodeSegmentOrder(segments));
-        constraints.add(targets.encode(segments.stream()
+        constraints.add(propertyEncoder.encode(segments.stream()
                 .flatMap(segment -> segment.waypoints().stream())
                 .filter(waypoint -> waypoint.waypoint() instanceof Target)
                 .map(WaypointEncoding::selectors)
@@ -281,7 +281,7 @@ public final class SvcompWitnessEncoder {
     private BooleanFormula encodeWaypoint(ResolvedWaypoint waypoint, Candidate candidate,
             Map<String, ResolvedVariable> variables) {
         if (!(waypoint.waypoint() instanceof Assumption assumption)) {
-            // For targets, SvcompWitnessTargetEncoder encodes what else makes them a violation.
+            // For targets, SvcompWitnessPropertyEncoder encodes what else makes them a violation.
             return context.execution(candidate.event());
         }
         final List<BooleanFormula> constraints = new ArrayList<>();

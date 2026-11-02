@@ -83,6 +83,18 @@ public class WitnessYamlParserTest {
     }
 
     @Test
+    public void rejectsWitnessesWithoutTargets() {
+        final IOException exception = assertThrows(IOException.class, () -> parseWitness("{example.c: deadbeef}", """
+                - segment:
+                    - waypoint:
+                        type: function_enter
+                        action: follow
+                        location: {file_name: example.c, line: 7}
+                """));
+        assertTrue(exception.getMessage().contains("Witness has no target waypoint"));
+    }
+
+    @Test
     public void defaultsMissingThreadIdsToMainThread() throws Exception {
         assertThreadIds("", 0);
     }
@@ -146,6 +158,11 @@ public class WitnessYamlParserTest {
                         location:
                           file_name: example.c
                           line: 7
+                - segment:
+                    - waypoint:
+                        type: target
+                        action: follow
+                        location: {file_name: example.c, line: 8}
                 """.formatted(source, format));
     }
 
