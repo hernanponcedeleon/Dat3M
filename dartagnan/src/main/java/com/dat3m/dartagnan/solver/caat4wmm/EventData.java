@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver;
+package com.dat3m.dartagnan.solver.caat4wmm;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
