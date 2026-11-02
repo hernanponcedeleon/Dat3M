@@ -14,7 +14,8 @@ public abstract class Axiom extends ConstraintBase {
     protected final boolean negated;
     // Marks if the axiom should be use to report properties rather than filter consistency
     protected final boolean flag;
-    // Marks if the axiom holds in every execution of the anarchic semantics, independently of the other axioms.
+    // Marks if the axiom holds in every execution of the anarchic semantics, independently of the other axioms,
+    // i.e., in every model of the encoding without the axioms (not only in consistent executions).
     // Invariants are not encoded; they only provide information to the relation analysis.
     // Invariants cannot be written in .cat files; only memory model transformation passes (see InferInvariants)
     // create them, and they are responsible for their correctness: a wrong invariant makes the verification unsound.

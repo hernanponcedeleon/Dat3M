@@ -8,8 +8,16 @@ import java.util.*;
 
 /*
     Syntactically infers, for every relation R of a memory model, a set of transitive relations T
-    (called the "transitive bounds" of R) such that R is contained in T in every execution,
+    (called the "transitive bounds" of R) such that R is contained in T in every model of the encoding,
     independently of the axioms of the model. InferInvariants turns them into invariants.
+
+    Soundness requirement:
+        "Transitive" means transitive in every model of the encoding *without* the axioms, i.e., in every
+        execution of the anarchic semantics, and not only in consistent executions. Invariants are not encoded,
+        and the pairs they remove from may-sets are not encoded either. If T were only transitive in consistent
+        executions, a pruned pair could be exactly the one an axiom needs to reject an inconsistent execution,
+        and the reasoning would be circular.
+        Each rule below therefore relies on how the relation is encoded, not on the axioms of the model.
 
     Motivation:
         The relation analysis over-approximates a composition r1;r2 by may(r1);may(r2).
@@ -19,16 +27,17 @@ import java.util.*;
 
     Transitive relations (least fixed point of the following rules):
         - loc, int, the same-instruction relation, and the same-scope relations of a fixed scope level
-          (e.g. scta, swg). These are equivalence relations whose value in every execution is determined by
-          addresses / threads / instructions / scope ids, and thus transitive by construction.
+          (e.g. scta, swg). Their edges are encoded as "both events execute" plus an equivalence on
+          addresses / threads / instructions / scope ids, so they are transitive in every model of the encoding.
         - every transitive closure X+,
         - every intersection of transitive relations,
         - the inverse of a transitive relation,
         - A;T and T;B where T is transitive and A, B ⊆ ID (e.g. [W];loc;[W]):
           x A;T y A;T z implies x A x T y T z, hence x A;T z.
     Relations contained in ID (sets) are trivially transitive, but they are not used as bounds.
-    NOTE: co is deliberately excluded. Its encoding does not enforce transitivity for architectures
-          with non-total coherence, and the SAT encoding only enforces it partially.
+    NOTE: co is deliberately excluded. It is transitive in consistent executions, but not in every model of
+          the encoding: its encoding does not enforce transitivity for architectures with non-total coherence,
+          and the SAT encoding only enforces it partially.
     NOTE: The same-scope relation without a fixed scope level (sr) is not transitive.
 
     Containment rules (with ID denoting "contained in the identity relation", e.g. [W],

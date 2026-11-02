@@ -1,16 +1,16 @@
-# Branch result: `agentic/transitive-bounds`
+# Branch result: `agentic/wmm-invariants`
 
-This branch makes the relation analysis more precise using *transitive bounds*.
+This branch makes the relation analysis more precise using *invariants* of the memory model.
 It is based on `development` (`f5c2eb3cf`).
 
 ## Summary
 
-- **The change:** the relation analysis now prunes more pairs from the may-sets of derived relations, and the pruning is sound. If a relation `R` is contained in a transitive relation `T` (e.g. `fr ⊆ loc`, `fr ⊆ eco`), then any pair of `may(R)` that is not in `may(T)` is removed.
-- **Effect on the encoding:** across 21 benchmarks (`benchmarks/{challenging,lfds,locks}`) and 7 memory models, 144 configurations completed. In those, the number of **encoded edges drops from 8,982,501 to 8,660,105 (−3.6%)**:
-  - 50 configurations shrink, by up to −29%;
-  - 91 are unchanged;
-  - 3 grow slightly, by at most +0.2%.
-- **Where the increases come from:** only the part of the change that runs in the extended (axiom-based) relation analysis. See [Cases where the encoding grows](#cases-where-the-encoding-grows).
+- **The change:** a new memory model pass adds *invariants*, i.e., axioms that hold in every execution independently of the other axioms. For now, it adds `empty R \ T` (that is, `R ⊆ T`) for every relation `R` contained in a transitive relation `T`. The relation analysis uses these invariants to remove pairs from may-sets; invariants are never encoded.
+- **Effect on the encoding:** on the 9 programs of the performance benchmark selection, run under 7 memory models (63 configurations), the number of **encoded edges drops from 4,726,360 to 4,477,870 (−5.3%)**:
+  - 27 configurations shrink, by up to −29.7%;
+  - 34 are unchanged;
+  - 2 grow slightly, by at most +0.2%.
+- **Correctness:** all litmus tests pass (85,378 tests, 0 failures).
 
 ## The problem
 
@@ -32,23 +32,48 @@ Both `may-rf(w', r)` and `may-co(w', w)` hold, so `(r, w)` ends up in `may(fr)` 
 
 | File | Change |
 |---|---|
-| `wmm/analysis/TransitiveBounds.java` (new) | Infers, for every relation `R`, the transitive relations `T` with `R ⊆ T`. |
-| `wmm/analysis/NativeRelationAnalysis.java` | Uses the bounds to prune may-sets, in both the main pass and the extended pass. |
-| `wmm/analysis/LazyRelationAnalysis.java` | Applies the same main-pass pruning, because Native and Lazy must agree. |
-| `wmm/analysis/TransitiveBoundsTest.java` (new) | Tests the inference and both pruning steps. |
-| `relation-analysis/loc-composition.ll`, `benchmarks/miscellaneous/loc-composition.c` (new) | Test program from the example above. |
+| `wmm/axiom/Axiom.java` (and subclasses) | New `invariant` attribute. |
+| `wmm/Wmm.java` | `getAxioms()` excludes invariants; new `getInvariants()` and `getRelationsRelevantForSemantics()`. |
+| `wmm/processing/InferInvariants.java` (new) | Pass that adds the invariants. Runs after the passes that remove or merge relations. |
+| `wmm/processing/TransitiveBounds.java` (new) | Infers the containments `R ⊆ T` with `T` transitive. |
+| `wmm/analysis/InvariantBounds.java` (new) | Reads the containments `R ⊆ T` back from the invariants. |
+| `wmm/analysis/NativeRelationAnalysis.java`, `LazyRelationAnalysis.java` | Use the invariants to prune may-sets. |
+| `encoding/ActiveSetAnalysis.java`, `task/verification/RefinementSolver.java`, `encoding/WmmEncoder.java` | Never encode invariants or relations that only contribute to them. |
+| `wmm/analysis/RelationEventDomains.java` | Fix: a difference inherits the event domains of its minuend. |
+| `InvariantBoundsTest`, `InferInvariantsTest` (new), `loc-composition.ll`, `benchmarks/miscellaneous/loc-composition.c` (new) | Tests and the test program from the example above. |
 
-### 1. Inferring transitive bounds (`TransitiveBounds`)
+### 1. Invariants
 
-The relations treated as transitive are:
+An invariant is an axiom annotated with the `invariant` attribute. It must hold in every model of the encoding *without the axioms of the model*, i.e., in every execution of the anarchic semantics, not only in consistent executions. Hence:
 
-- `loc`, `int` and same-instruction (all equivalence relations);
+- it is never encoded (`Wmm.getAxioms()` does not return it, so the encoders, CAAT, the property encoder and symmetry breaking ignore it);
+- the relation analysis may use it freely.
+
+Invariants cannot be written in `.cat` files: the grammar is unchanged. Only memory model transformation passes create them, and they are responsible for their correctness. A wrong invariant makes the verification unsound.
+
+Relations that only contribute to invariants (e.g. the helper relation `R \ T` of `empty R \ T`) are not part of the semantics of the model. `Wmm.getRelationsRelevantForSemantics()` excludes them; they are left out of the active-set computation and of the refinement solver's cut, so they are never encoded.
+
+### 2. Inferring invariants (`InferInvariants`, `TransitiveBounds`)
+
+The pass adds `empty R \ T` for every relation `R` and every transitive relation `T ≠ R` with `R ⊆ T`. It only considers relations relevant for the semantics, so running it twice adds nothing.
+
+**Transitive relations** (least fixed point):
+
+- `loc`, `int`, the same-instruction relation and the same-scope relations of a fixed scope level (`scta`, `ssg`, `swg`, `sqf`, `sdv`): equivalence relations, transitive and symmetric by construction;
 - every closure `X+`;
-- intersections of transitive relations.
+- intersections of transitive relations;
+- inverses of transitive relations;
+- `A;T` and `T;B` with `T` transitive and `A`, `B` contained in the identity (e.g. `[W];loc;[W]`): `x A;T y A;T z` implies `x A x T y T z`, hence `x A;T z`.
 
-`co` is deliberately **not** treated as transitive. Its encoding does not enforce transitivity on architectures where coherence is not total.
+Relations contained in the identity (sets) are trivially transitive, but they are not used as bounds.
 
-Containment is computed as a greatest fixed point over the `.cat` definitions. The computation also tracks containment in the identity relation (`ID`), which is how sets such as `[W]` are represented.
+Excluded on purpose:
+
+- `co`: for architectures with non-total coherence (PTX, Vulkan), its encoding does not enforce transitivity; and the default SAT encoding only enforces it for some triples (see [Follow-ups](#follow-ups)).
+- `sr` (same scope at the scope level of each event): not transitive. If `x` is CTA-scoped, `y` is GPU-scoped and in the CTA of `x`, and `z` is GPU-scoped and in a different CTA of the same GPU, then `x sr y` and `y sr z`, but not `x sr z`.
+- `vloc` and `ssw` (sync-with): not transitive in general.
+
+**Containment** `R ⊆ T` is computed as a greatest fixed point over the `.cat` definitions. Containment in the identity (`ID`) is computed separately, also as a greatest fixed point.
 
 | Definition of `R` | Bounds of `R` |
 |---|---|
@@ -59,153 +84,99 @@ Containment is computed as a greatest fixed point over the `.cat` definitions. T
 | `A \ B` | bounds(A) |
 | `A+` | bounds(A) |
 | `A^-1` | symmetric bounds of A |
-| `A ; B` | `T` if (A ⊆ T or A ⊆ ID) and (B ⊆ T or B ⊆ ID) and (A ⊆ T or B ⊆ T); `ID` if both are ⊆ ID |
+| `A ; B` | `T` if (A ⊆ T or A ⊆ ID) and (B ⊆ T or B ⊆ ID) and (A ⊆ T or B ⊆ T) |
 
-For RC11 this gives, for example, `fr ⊆ {loc, eco}`, `po ⊆ {int, hb}` and `hbl ⊆ {loc, hb}`.
+For RC11 this gives, for example, `fr ⊆ {loc, eco}` and `hbl ⊆ {loc, hb}`.
 
-### 2. Main-pass pruning (`NativeRelationAnalysis.run`, `LazyRelationAnalysis`)
+### 3. Using invariants in the relation analysis
 
-While knowledge is propagated, a new may-pair of a derived relation `R` is dropped if it is not in `may(T)` for some bound `T` whose may-set is already final. That means `T` is a base relation such as `loc`, or a relation that `R` strictly depends on.
+**Main pass** (`NativeRelationAnalysis.run`, `LazyRelationAnalysis`). While knowledge is propagated, a new may-pair of a derived relation `R` is dropped if it is not in `may(T)` for some invariant `R ⊆ T` whose `T` is already final, i.e., a base relation such as `loc`, or a relation that `R` strictly depends on.
 
-Dropped pairs are recorded and excluded in `collectDiscrepancies`, so the encoder doesn't have to encode them.
+Dropped pairs are recorded and excluded in `collectDiscrepancies`: their absence is implied by an invariant, not by an axiom, so the encoder does not have to encode them.
 
-### 3. Extended-pass pruning (`NativeRelationAnalysis.runExtended`)
+**Extended pass** (`NativeRelationAnalysis.runExtended`). Invariants are treated like any other axiom. For example, if `acyclic(hb)` removes a pair from `hb`, the invariant `empty (pol;hb;pol) \ hb` removes it from `pol;hb;pol` as well. As with every removal in the extended analysis, these pairs are reported as discrepancies, and the encoder adds constraints that rule them out.
 
-The extended analysis can remove pairs from a transitive relation `T` because of an axiom; for example, `acyclic(hb)` removes pairs from `hb`. The same pairs are then also removed from every relation bounded by `T`, such as `pol;hb;pol`.
+### 4. Fix in `RelationEventDomains`
 
-As with every removal in the extended analysis, these pairs are reported as discrepancies, and the encoder adds constraints that rule them out.
+`RelationEventDomains` had no case for `Difference`, so every difference got visible-only event domains. No model used a difference whose minuend relates invisible events, so this went unnoticed. The inferred invariant `idd ⊆ idd+` creates `idd \ idd+`, where `idd` relates register events, and the analysis crashed with `NoSuchElementException`. A difference now inherits the domains of its minuend. `InvariantBoundsTest.differenceWithInvisibleEvents` fails without the fix.
 
 ## Why it is sound
 
-1. **The bounds are correct.**
-   - `loc`, `int` and same-instruction are equivalence relations, and closures are transitive by construction.
-   - Transitivity justifies the rules for `;` and `+`, symmetry justifies `^-1`, and the remaining operators follow from set algebra.
+1. **The inferred invariants hold in every model of the encoding, without the axioms.**
+   - This is stronger than holding in every consistent execution, and it has to be: invariants and the pairs they remove are not encoded. If an invariant relied on the axioms, a pruned pair could be exactly the one an axiom needs to reject an inconsistent execution, and the reasoning would be circular.
+   - In particular, each transitive relation `T` must be transitive in every model of the encoding. This is why `co` is excluded: it is transitive in consistent executions, but its encoding does not always enforce transitivity.
+   - `loc`, `int`, same-instruction and the fixed-level scope relations are encoded as "both events execute" plus a condition that is an equivalence (same address, same thread, same instruction, same scope ids). Closures are transitive by construction. The remaining transitivity rules follow from transitivity of their operands.
+   - Transitivity justifies the containment rules for `;` and `+`, symmetry justifies `^-1`, and the remaining operators follow from set algebra.
    - The base facts hold in the encoding: `rf` and `co` edges imply `sameAddress`.
    - For recursive relations, the meaning of the definition is the limit of a chain that starts at the empty relation. Each rule preserves containment in the final value of the bound, so the greatest fixed point is sound by induction.
+   - None of this uses the axioms of the model, so pruning with these invariants cannot hide a violation of an axiom.
 2. **Main pass.**
    - The main pass over-approximates every SMT model: in each model, a relation's value lies within its main-pass may-set.
    - So if `R ⊆ T` and a pair is not in `may(T)`, no model's `R` contains that pair.
-   - These removals hold regardless of the memory model's axioms and need not be encoded.
    - Only bounds whose may-sets are final are used, because may-sets only grow during the main pass.
-3. **Extended pass.**
-   - A pair removed from `T` by the extended analysis cannot occur in any consistent execution, and since `R ⊆ T` it cannot occur in `R` either.
-   - As for every removal in the extended analysis, the pair is reported as a discrepancy, and the encoding enforces its absence.
-4. **Must-sets are untouched.** Only may-sets are pruned.
+3. **Extended pass.** A pair removed from `T` cannot occur in any consistent execution, and since `R ⊆ T` it cannot occur in `R` either. As for every removal in the extended analysis, the pair is reported as a discrepancy, and the encoding enforces its absence.
+4. **Must-sets are untouched** by the main-pass pruning.
 
 ## Validation
 
-- **`TransitiveBoundsTest`**, with three tests:
-  - `inferredBounds` checks the bounds inferred for RC11 (`fr ⊆ {loc, eco}`, `co` not transitive, …).
-  - `composedRelationsRespectAliasing` checks that Native and Lazy never relate non-aliasing events in `fr`, `rf` or `co`. It fails if the main-pass pruning is switched off.
-  - `mayRespectsBoundsAfterExtendedAnalysis` checks that `may(R) ⊆ may(T)` holds for all bounds after the extended analysis, on RC11 and VMM. It fails if the extended-pass pruning is switched off; one failing case is `pol;hb;pol` against `hb` on `treiber`.
+- **`InferInvariantsTest`** (4 tests): inferred bounds for RC11; the inferred transitive relations (including `[W];loc;[W]`, inverses, `scta & swg`, and that `sr`, `co`, `po` and `[W];po;[R]` are not transitive); bounds become invariants that are not axioms and whose helper relations are not relevant for the semantics; the pass is idempotent.
+- **`InvariantBoundsTest`** (5 tests):
+  - bounds are read back from the invariants (`fr ⊆ {loc, eco}`, with only `loc` usable in the main pass);
+  - Native and Lazy never relate non-aliasing events in `fr`, `rf` or `co` on the example program;
+  - `may(R) ⊆ may(T)` holds for all invariants after the extended analysis, on RC11 and VMM;
+  - an invariant added by hand (`rf;rf^-1 ⊆ id`, standing in for a future pass) prunes `rf;rf^-1` in the extended analysis;
+  - the `RelationEventDomains` regression.
 - **`RelationAnalysisTest`** (Native and Lazy produce identical knowledge): 40 of 40 pass.
-- **Full test suite:** it was not rerun after rebasing on `development`. An earlier version of the change, before the rebase, passed the full suite on `master`: 102,635 tests, 0 failures. Its only errors came from the Yices2 solver being missing on the test machine.
+- **Litmus tests** (`Litmus*Test`, SMT and CAAT solvers): 85,378 tests, 0 failures, 0 errors, 7,935 skipped.
 
 ## Encoded edges
 
 **Setup:**
 
-- **Programs:** every `.c` file in `benchmarks/challenging`, `benchmarks/lfds` and `benchmarks/locks`, run with `--bound=2` and otherwise default options.
-- **Metric:** the `#Encoded edges` count that `WmmEncoder` reports.
-- **Models and targets:** `rc11.cat`/`c11`, `c11.cat`/`c11`, `vmm.cat`/`c11`, `aarch64.cat`/`arm8`, `riscv.cat`/`riscv`, `power.cat`/`power`, `tso.cat`/`tso`.
-- **Runs:** each run stopped right after encoding, without solving, with a 10-minute limit. `timeout` means neither `development` nor the branch finished the analysis within that limit.
+- **Programs:** the 9 programs of `.github/performance-benchmarks.yml`.
+- **Models and targets:** `rc11.cat`/`c11`, `c11.cat`/`c11`, `vmm.cat`/`c11`, `aarch64.cat`/`arm8`, `power.cat`/`power`, `tso.cat`/`tso`, `riscv.cat`/`riscv`.
+- **Bounds:** the bound given in the benchmark selection for that configuration; for configurations not in the selection, the bound of the program's `vmm.cat` configuration (or the default if it has none).
+- **Metric:** the `#Encoded edges` count that `WmmEncoder` reports. Each run stopped right after encoding, without solving. All 126 runs finished.
 
 Each cell shows `development → this branch`. Increases are in **bold**.
 
-| Benchmark | RC11 | C11 | VMM | ARMv8 | RISC-V | Power | TSO |
+| Benchmark | RC11 | C11 | VMM | ARMv8 | Power | TSO | RISC-V |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `challenging/cna.c` | 173,870 → 168,098 (-3.3%) | 272,492 → 270,224 (-0.8%) | 133,807 → 129,643 (-3.1%) | 57,373 → 53,653 (-6.5%) | 31,973 → 30,149 (-5.7%) | timeout | 46,621 → 43,429 (-6.8%) |
-| `challenging/harris-3.c` | 837,368 → 803,414 (-4.1%) | timeout | 653,940 → 649,638 (-0.7%) | 325,820 → 321,524 (-1.3%) | 180,517 → 178,291 (-1.2%) | timeout | 223,126 → 219,712 (-1.5%) |
-| `challenging/wsq.c` | 252,419 → 208,794 (-17.3%) | 297,242 → 279,909 (-5.8%) | 174,601 → 148,095 (-15.2%) | 104,975 → 76,627 (-27.0%) | 90,488 → 69,482 (-23.2%) | 1,145,955 → 1,075,849 (-6.1%) | 76,798 → 54,500 (-29.0%) |
-| `lfds/chase-lev.c` | 4,610 → 4,047 (-12.2%) | 4,771 → 4,422 (-7.3%) | 7,394 → 6,616 (-10.5%) | 6,296 → 5,428 (-13.8%) | 3,601 → 3,151 (-12.5%) | 9,542 → 8,366 (-12.3%) | 4,353 → 3,699 (-15.0%) |
-| `lfds/dglm.c` | 33,992 → 33,496 (-1.5%) | 70,968 (=) | 44,989 (=) | 14,643 (=) | 8,653 (=) | **73,589 → 73,591 (+2 edges)** | 11,627 (=) |
-| `lfds/hash_table.c` | 1,498 → 1,496 (-0.1%) | 1,001 (=) | 4,560 (=) | 1,010 (=) | 726 (=) | 1,769 (=) | 922 (=) |
-| `lfds/ms.c` | 39,488 → 38,774 (-1.8%) | 78,682 (=) | 51,507 (=) | 18,711 (=) | 10,733 (=) | 47,553 (=) | 14,828 (=) |
-| `lfds/safe_stack.c` | 231,984 → 230,934 (-0.5%) | 333,140 (=) | 145,148 (=) | 76,098 (=) | 47,731 (=) | **1,337,285 → 1,339,522 (+0.2%)** | 63,690 (=) |
-| `lfds/treiber.c` | 14,731 → 14,352 (-2.6%) | 25,514 (=) | 17,363 (=) | 8,177 (=) | 4,697 (=) | 17,189 (=) | 6,547 (=) |
-| `locks/clh_mutex.c` | 4,521 (=) | 7,685 (=) | 6,114 (=) | 2,156 (=) | 1,397 (=) | 7,092 → 7,011 (-1.1%) | 1,862 (=) |
-| `locks/cna.c` | 36,030 → 33,102 (-8.1%) | 76,619 → 75,767 (-1.1%) | 54,552 → 52,824 (-3.2%) | 19,760 → 17,570 (-11.1%) | 12,857 → 12,083 (-6.0%) | 219,876 → 212,724 (-3.3%) | 15,737 → 14,393 (-8.5%) |
-| `locks/deadlock.c` | 80 (=) | 68 (=) | 145 (=) | 80 (=) | 64 (=) | 68 (=) | 74 (=) |
-| `locks/linuxrwlock.c` | **14,208 → 14,214 (+6 edges)** | 19,364 (=) | 22,781 (=) | 12,648 (=) | 7,571 (=) | 18,610 (=) | 10,394 (=) |
-| `locks/mutex.c` | 16,224 → 15,876 (-2.1%) | 27,788 (=) | 21,705 (=) | 10,550 (=) | 5,909 (=) | 18,837 (=) | 8,402 (=) |
-| `locks/mutex_musl.c` | 17,292 → 17,145 (-0.9%) | 30,881 (=) | 29,631 (=) | 11,993 (=) | 7,616 (=) | 28,860 (=) | 9,803 (=) |
-| `locks/pthread_mutex.c` | 750 → 734 (-2.1%) | 1,020 (=) | 1,020 (=) | 441 (=) | 295 (=) | 803 (=) | 389 (=) |
-| `locks/seqlock.c` | 3,828 (=) | 3,712 (=) | 5,889 (=) | 2,829 (=) | 1,716 (=) | 2,737 (=) | 2,239 (=) |
-| `locks/spinlock.c` | 3,660 → 3,630 (-0.8%) | 5,666 (=) | 5,277 (=) | 2,417 (=) | 1,478 (=) | 4,680 (=) | 2,009 (=) |
-| `locks/ticket_awnsb_mutex.c` | 12,691 → 12,364 (-2.6%) | 27,401 → 27,293 (-0.4%) | 19,629 → 19,425 (-1.0%) | 5,240 → 5,048 (-3.7%) | 4,040 → 3,944 (-2.4%) | 20,598 → 20,478 (-0.6%) | 4,343 → 4,175 (-3.9%) |
-| `locks/ticketlock.c` | 1,755 → 1,752 (-0.2%) | 2,846 (=) | 2,832 (=) | 998 (=) | 638 (=) | 2,121 (=) | 896 (=) |
-| `locks/ttas.c` | 3,600 (=) | 5,636 (=) | 5,247 (=) | 2,405 (=) | 1,466 (=) | 4,668 (=) | 1,997 (=) |
+| `locks/cna.c` | 33,525 → 30,519 (−9.0%) | 70,700 → 69,848 (−1.2%) | 50,133 → 48,405 (−3.4%) | 18,248 → 16,058 (−12.0%) | 202,044 → 194,901 (−3.5%) | 14,609 → 13,265 (−9.2%) | 11,717 → 10,943 (−6.6%) |
+| `locks/linuxrwlock.c` | **14,208 → 14,232 (+0.2%)** | 19,364 (=) | 22,781 (=) | 12,648 (=) | 18,610 (=) | 10,394 (=) | 7,571 (=) |
+| `locks/mutex_musl.c` | 32,079 → 31,737 (−1.1%) | 58,805 (=) | 53,637 (=) | 52,502 (=) | 78,894 (=) | 17,864 (=) | 14,243 (=) |
+| `lfds/dglm.c` | 33,992 → 33,496 (−1.5%) | 70,968 (=) | 44,989 (=) | 27,106 (=) | 29,309 → 29,307 (−2 edges) | 11,627 (=) | 8,653 (=) |
+| `lfds/ms.c` | 39,488 → 38,774 (−1.8%) | 78,682 (=) | 51,507 (=) | 18,711 (=) | 47,553 (=) | 14,828 (=) | 10,733 (=) |
+| `lfds/treiber.c` | 30,682 → 29,840 (−2.7%) | 51,643 (=) | 35,841 (=) | 18,042 (=) | 58,559 (=) | 14,214 (=) | 10,155 (=) |
+| `lfds/safe_stack.c` | 25,165 → 25,144 (−0.1%) | 40,309 (=) | 17,752 (=) | 8,087 (=) | **135,984 → 136,229 (+0.2%)** | 6,894 (=) | 5,146 (=) |
+| `challenging/cna.c` | 83,942 → 80,942 (−3.6%) | 134,400 → 133,044 (−1.0%) | 67,823 → 65,411 (−3.6%) | 57,373 → 53,653 (−6.5%) | 573,657 → 566,489 (−1.2%) | 22,545 → 20,697 (−8.2%) | 15,181 → 14,125 (−7.0%) |
+| `challenging/wsq.c` | 236,990 → 197,413 (−16.7%) | 280,837 → 264,853 (−5.7%) | 160,178 → 135,754 (−15.2%) | 93,129 → 67,537 (−27.5%) | 1,091,063 → 1,027,298 (−5.8%) | 68,962 → 48,462 (−29.7%) | 79,085 → 60,182 (−23.9%) |
 
-**Totals** over the 144 configurations that both builds completed: 8,982,501 → 8,660,105 encoded edges (**−3.6%**). 50 configurations shrink, 91 are unchanged and 3 grow.
+**Totals** over the 63 configurations: 4,726,360 → 4,477,870 encoded edges (**−5.3%**). 27 configurations shrink, 34 are unchanged and 2 grow.
 
 **Observations:**
 
-- **Where the largest reductions are:** programs with ambiguous pointers, where may-alias is imprecise.
-
-  | Benchmark | Reduction |
-  |---|---|
-  | `challenging/wsq` | −6% to −29%, on all models |
-  | `lfds/chase-lev` | −7% to −15%, on all models |
-  | `locks/cna` | up to −11% |
-  | `challenging/cna` | up to −7% |
-- **Which model benefits most:** RC11, where 16 of 21 configurations shrink. Its `eco = (rf | co | fr)+` and `hb = (po | sw)+` are transitive bounds of many relations, and the extended analysis prunes them through the coherence axioms.
-- **Why running times aren't reported:** in our measurements, runs with *identical* encodings varied more between runs than the change itself moved the times. Encoding size is the more reliable indicator here.
+- **Where the largest reductions are:** programs with ambiguous pointers, where may-alias is imprecise. `challenging/wsq`, `challenging/cna` and `locks/cna` shrink on every model, by up to −29.7%.
+- **Which model benefits most:** RC11, where 8 of 9 programs shrink. Its `eco = (rf | co | fr)+` and `hb = (po | sw)+` are transitive bounds of many relations, and the extended analysis prunes them through the coherence axioms.
+- **Scope relations:** none of these models uses them, so the fixed-level scope relations do not affect these numbers. They matter for PTX and Vulkan.
+- **Why running times aren't reported:** encoding size is a more reliable indicator than running time, which varies between runs even for identical encodings.
 
 ## Cases where the encoding grows
 
-Three configurations grow:
-
 | Configuration | Change |
 |---|---|
-| `lfds/safe_stack` on Power | +2,237 edges (+0.2%) |
-| `locks/linuxrwlock` on RC11 | +6 edges |
-| `lfds/dglm` on Power | +2 edges |
+| `locks/linuxrwlock` on RC11 | +24 edges (+0.2%) |
+| `lfds/safe_stack` on Power | +245 edges (+0.2%) |
 
-**Cause.** The encoder does not encode every pair of a may-set. It encodes two kinds of pairs:
+**Cause.** The encoder encodes two kinds of pairs: the pairs the axioms need (the active sets), and every *discrepancy*, i.e., a pair the analysis removed from a relation although the relation's operands could still produce it. A discrepancy is encoded together with the operand edges that could produce it, so that the encoding can rule it out.
 
-- the pairs the axioms need (the active sets);
-- every *discrepancy*: a pair the analysis removed from a relation although the relation's operands could still produce it. A discrepancy must be encoded together with the operand edges that could produce it, so that the encoding can rule it out.
+- **Main-pass pruning can never increase the encoding.** The pairs it removes are not discrepancies.
+- **Extended-pass pruning can.** The pairs it removes are discrepancies. If no axiom ever needed such a pair, it would not have been encoded at all without the change.
 
-The two pruning steps differ here:
+An earlier measurement with the extended-pass pruning switched off showed no configuration growing, which supports this explanation. It was not repeated for these two cases.
 
-- **Main-pass pruning can never increase the encoding.** The pairs it removes are not discrepancies, because the encoding of the operands already implies their absence.
-- **Extended-pass pruning can.** The pairs it removes are discrepancies. If no axiom ever needed such a pair, it would not have been encoded at all without the change. Now it is encoded, together with the operand edges that could produce it. When that cost exceeds what the pruning saves elsewhere, the encoding grows.
+## Follow-ups
 
-**Evidence.** We measured a variant with only the extended-pass pruning switched off, labelled "main-pass filter only" below:
-
-- Its encoding is never larger than on `development`: 0 of 144 configurations grow. Its total is 8,677,801 edges (−3.4%).
-- The three configurations that grow return exactly to their `development` size (`safe_stack`/Power 1,337,285, `linuxrwlock`/RC11 14,208) or go below it (`dglm`/Power 73,583).
-
-The table lists every configuration where the extended-pass pruning makes a difference. A negative effect means fewer encoded edges with the extended-pass pruning.
-
-| Benchmark | Model | development | main-pass filter only | full branch | effect of extended-pass pruning |
-|---|---|---:|---:|---:|---:|
-| `challenging/harris-3.c` | RC11 | 837,368 | 830,768 | 803,414 | -27,354 |
-| `lfds/safe_stack.c` | RC11 | 231,984 | 231,984 | 230,934 | -1,050 |
-| `lfds/ms.c` | RC11 | 39,488 | 39,476 | 38,774 | -702 |
-| `lfds/dglm.c` | RC11 | 33,992 | 33,974 | 33,496 | -478 |
-| `locks/mutex.c` | RC11 | 16,224 | 16,224 | 15,876 | -348 |
-| `lfds/treiber.c` | RC11 | 14,731 | 14,677 | 14,352 | -325 |
-| `challenging/cna.c` | RC11 | 173,870 | 168,418 | 168,098 | -320 |
-| `locks/cna.c` | RC11 | 36,030 | 33,348 | 33,102 | -246 |
-| `locks/mutex_musl.c` | RC11 | 17,292 | 17,292 | 17,145 | -147 |
-| `locks/ticket_awnsb_mutex.c` | RC11 | 12,691 | 12,451 | 12,364 | -87 |
-| `locks/spinlock.c` | RC11 | 3,660 | 3,660 | 3,630 | -30 |
-| `locks/pthread_mutex.c` | RC11 | 750 | 750 | 734 | -16 |
-| `locks/ticketlock.c` | RC11 | 1,755 | 1,755 | 1,752 | -3 |
-| `locks/clh_mutex.c` | RC11 | 4,521 | 4,515 | 4,521 | +6 |
-| `locks/linuxrwlock.c` | RC11 | 14,208 | 14,208 | 14,214 | +6 |
-| `lfds/dglm.c` | Power | 73,589 | 73,583 | 73,591 | +8 |
-| `lfds/chase-lev.c` | Power | 9,542 | 8,354 | 8,366 | +12 |
-| `locks/clh_mutex.c` | Power | 7,092 | 6,996 | 7,011 | +15 |
-| `locks/cna.c` | Power | 219,876 | 212,463 | 212,724 | +261 |
-| `challenging/wsq.c` | RC11 | 252,419 | 206,573 | 208,794 | +2,221 |
-| `lfds/safe_stack.c` | Power | 1,337,285 | 1,337,285 | 1,339,522 | +2,237 |
-| `challenging/wsq.c` | Power | 1,145,955 | 1,067,205 | 1,075,849 | +8,644 |
-
-The extended-pass pruning saves edges in 13 configurations, all RC11, by up to −27,354 on `challenging/harris-3`. It costs edges in 9, mostly Power, by up to +8,644 on `challenging/wsq`. In total it contributes −17,696 edges (−0.2%).
-
-**Possible follow-ups:**
-
-- Restrict the extended-pass pruning to pairs that some axiom needs, so that the pruning never introduces new discrepancies.
-- Or drop the extended-pass pruning and keep only the main-pass pruning, which never increases the encoding.
+- **`co` as a transitive bound.** For architectures with total coherence, `co` is transitive in the integer-clock encoding. The default SAT encoding (`useSATEncoding = true`) only adds `co(x,y) ∧ co(y,z) ⇒ co(x,z)` when `(x,z)` is a may-pair that is not a must-pair, and so admits a `co` cycle in which `co(x,z)` is false: for example, `must(z,x)`, `may(x,y)` and `may(y,z)` hold, but `may(z,y)` and `may(y,x)` do not. Closing this gap would allow `co` as a bound for architectures with total coherence; the pass would also need to know the target architecture.
+- **Increases from the extended pass.** Restrict the extended-pass pruning to pairs that some axiom needs, so that it never introduces new discrepancies.
+- **More invariants.** The mechanism supports any kind of invariant; the analysis currently interprets `empty R \ T` in the main pass and every invariant in the extended pass.
