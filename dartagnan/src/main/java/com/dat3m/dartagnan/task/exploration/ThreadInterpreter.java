@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -443,6 +444,10 @@ final class ThreadInterpreter {
                 // iteration of a loop would also contain the events before the loop.
                 st.iterationStart = st.nextPoIndex;
             }
+        } else if (e instanceof LoopBound) {
+            // Precedes the header of a statically side-effect-free (spin) loop, whose back jump was replaced by
+            // the spinloop terminator: the (only) iteration starts here.
+            st.iterationStart = st.nextPoIndex;
         } else if (e instanceof ThreadStart || e instanceof Skip
                 || e instanceof CodeAnnotation || e instanceof InstructionBoundary || e instanceof StateSnapshot) {
             // Nothing to do

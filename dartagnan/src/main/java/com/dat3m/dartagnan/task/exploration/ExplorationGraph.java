@@ -19,6 +19,8 @@ final class ExplorationGraph {
     private final ArrayList<ArrayList<Node>> threadNodes;
     final ThreadState[] states;
     boolean truncated;
+    // Some read was revisited in place (awaits) when this graph or one of its ancestors was constructed.
+    boolean inPlaceRevisited;
 
     ExplorationGraph(ThreadState[] initialStates) {
         this.nodes = new ArrayList<>();
@@ -45,6 +47,7 @@ final class ExplorationGraph {
             states[i] = other.states[i].copy();
         }
         this.truncated = other.truncated;
+        this.inPlaceRevisited = other.inPlaceRevisited;
     }
 
     ExplorationGraph copy() {

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -53,6 +54,9 @@ public final class TruStExplorer {
         long truncatedExecutions;
         long filteredExecutions;
         long backwardRevisits;
+        long inPlaceRevisits;
+        long staleAwaitGraphs;
+        long awaitRestarts;
 
         public long getVisitedGraphs() { return visitedGraphs; }
         public long getInconsistentGraphs() { return inconsistentGraphs; }
@@ -63,6 +67,7 @@ public final class TruStExplorer {
         public long getTruncatedExecutions() { return truncatedExecutions; }
         public long getFilteredExecutions() { return filteredExecutions; }
         public long getBackwardRevisits() { return backwardRevisits; }
+        public long getInPlaceRevisits() { return inPlaceRevisits; }
 
         @Override
         public String toString() {
@@ -75,9 +80,13 @@ public final class TruStExplorer {
                             Inconsistent graphs: %d
                             Visited graphs: %d
                             Rejected choices (per-location check): %d
-                            Backward revisits: %d""",
+                            Backward revisits: %d
+                            In-place revisits (awaits): %d
+                            Pruned graphs (stale await read): %d
+                            Restarts without awaits: %d""",
                     completeExecutions, blockedExecutions, prunedSpinningGraphs, truncatedExecutions, filteredExecutions,
-                    inconsistentGraphs, visitedGraphs, rejectedChoices, backwardRevisits);
+                    inconsistentGraphs, visitedGraphs, rejectedChoices, backwardRevisits, inPlaceRevisits,
+                    staleAwaitGraphs, awaitRestarts);
         }
     }
 
@@ -87,6 +96,8 @@ public final class TruStExplorer {
     private final Program program;
     private final EnumSet<Property> properties;
     private final int maxEventsPerThread;
+    // Awamoche (Kokologiannakis et al., CAV'23): in-place revisits of blocked await reads.
+    private boolean awaits;
     private final boolean printExecutions;
     private final boolean stopOnReachability;
     private final ShutdownNotifier shutdownNotifier;
@@ -98,7 +109,7 @@ public final class TruStExplorer {
     // The first load of a spawned thread must read from the store of its creator (thread synchronization).
     private final Map<Event, Event> spawningLoadToStore = new HashMap<>();
 
-    private final Statistics stats = new Statistics();
+    private Statistics stats = new Statistics();
     private final ArrayDeque<WorkItem> stack = new ArrayDeque<>();
     private Violation violation;
     private boolean specificationReached;
@@ -112,10 +123,12 @@ public final class TruStExplorer {
     }
 
     public TruStExplorer(Program program, Wmm memoryModel, EnumSet<Property> properties, ExplorationOrder order,
-                         int maxEventsPerThread, boolean printExecutions, ShutdownNotifier shutdownNotifier) {
+                         int maxEventsPerThread, boolean awaits, boolean printExecutions,
+                         ShutdownNotifier shutdownNotifier) {
         this.program = program;
         this.properties = properties;
         this.maxEventsPerThread = maxEventsPerThread;
+        this.awaits = awaits;
         this.printExecutions = printExecutions;
         this.stopOnReachability = !printExecutions;
         this.shutdownNotifier = shutdownNotifier;
@@ -151,6 +164,41 @@ public final class TruStExplorer {
     // Main loop
 
     public void run() throws InterruptedException {
+        while (true) {
+            try {
+                explore();
+                return;
+            } catch (AwaitAssumptionViolated ex) {
+                // Graphs visited so far are genuine (consistent) graphs, so a violation found is a real one.
+                logger.warn("Restarting the exploration without await optimizations: {}", ex.getMessage());
+                if (violation != null) {
+                    return;
+                }
+                awaits = false;
+                final long restarts = stats.awaitRestarts + 1;
+                stats = new Statistics();
+                stats.awaitRestarts = restarts;
+                stack.clear();
+                outcomes.clear();
+                specificationReached = false;
+                reachabilityWitness = null;
+                stop = false;
+            }
+        }
+    }
+
+    /*
+        Awamoche assumes that same-location writes are causally ordered (so that the co-placement of a new write is
+        unique: it is co-maximal). We check that all other placements are rejected by the per-location axioms,
+        and restart the exploration without the optimization otherwise.
+     */
+    private static final class AwaitAssumptionViolated extends RuntimeException {
+        AwaitAssumptionViolated(String message) {
+            super(message, null, false, false);
+        }
+    }
+
+    private void explore() throws InterruptedException {
         final int numThreads = interpreter.getThreads().size();
         final ThreadState[] initial = new ThreadState[numThreads];
         for (int t = 0; t < numThreads; t++) {
@@ -193,6 +241,18 @@ public final class TruStExplorer {
                 }
                 // We are not interested in assertions: the thread is considered blocked.
                 st.status = ThreadState.Status.BLOCKED;
+            }
+        }
+
+        // Awamoche, Line 4: a blocked await read that does not read the latest write never leads to a useful
+        // execution (it is not revisited, since it reads non-maximally, and later writes revisit it in place).
+        if (awaits) {
+            for (int s = 0; s < g.states.length; s++) {
+                final Node await = blockedAwaitRead(g, s);
+                if (await != null && !readsCoMaximal(g, await)) {
+                    stats.staleAwaitGraphs++;
+                    return;
+                }
             }
         }
 
@@ -278,7 +338,7 @@ public final class TruStExplorer {
     // ------------------------------------------------------------------------------------------------
     // Lines 13-18: writes
 
-    private void visitWrite(ExplorationGraph g, int t) {
+    private void visitWrite(ExplorationGraph g, int t) throws InterruptedException {
         final Event e = g.states[t].pc;
         final Node write = interpreter.makeNode(g, t, false);
 
@@ -300,10 +360,12 @@ public final class TruStExplorer {
         // Line 15-18: backward revisits (pushed first, so they are explored after the forward cases)
         // The (strict) prefix of the write w.r.t. the exploration order and rf.
         final Set<Node> prefix = g.porfClosure(write.ePreds);
+        // Blocked await reads of the location are revisited in place instead (see pushCoPlacements).
+        final List<Node> awaitReads = awaits ? blockedAwaitReads(g, write.address) : List.of();
         final List<WorkItem> revisits = new ArrayList<>();
         for (Node read : g.getNodes()) {
             if (!read.isRead() || !read.address.equals(write.address) || prefix.contains(read)
-                    || spawningLoadToStore.containsKey(read.event)) {
+                    || spawningLoadToStore.containsKey(read.event) || awaitReads.contains(read)) {
                 continue;
             }
             final int readStamp = g.stamp(read);
@@ -313,7 +375,8 @@ public final class TruStExplorer {
                     deleted.add(n);
                 }
             }
-            if (!isMaximalExtension(g, read, deleted, prefix)) {
+            if (!(awaits ? isAwaitMaximalExtension(g, write, read, deleted, prefix)
+                    : isMaximalExtension(g, read, deleted, prefix))) {
                 continue;
             }
             revisits.add(() -> backwardRevisit(g, write, read, deleted));
@@ -323,7 +386,241 @@ public final class TruStExplorer {
         }
 
         // Line 14: VisitCOs
-        pushCoPlacements(g, write);
+        if (awaits) {
+            pushCoMaximalPlacement(g, write);
+        } else {
+            pushCoPlacements(g, write);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Awaits (Awamoche)
+
+    /*
+        The blocked await read of thread t, if any: the thread spins (its last iteration completed without side
+        effects) and that iteration contains a single read, which is not part of an RMW / exclusive pair.
+        The thread blocks because of the value of this read, and the loop exits iff the read returns a value
+        that makes the iteration take another path.
+     */
+    private Node blockedAwaitRead(ExplorationGraph g, int t) {
+        final ThreadState st = g.states[t];
+        if (st.status != ThreadState.Status.SPINNING) {
+            return null;
+        }
+        Node await = null;
+        for (Node n : g.getThreadNodes(t)) {
+            if (n.poIndex < st.iterationStart) {
+                continue;
+            }
+            if (n.isRead()) {
+                if (await != null || n.event.hasTag(Tag.RMW) || n.event.hasTag(Tag.EXCL)) {
+                    return null;
+                }
+                await = n;
+            } else if (n.isWrite() || n.kind == Node.Kind.EXCL_FAIL) {
+                return null;
+            }
+        }
+        return await;
+    }
+
+    private boolean hasBlockedAwaitRead(ExplorationGraph g) {
+        for (int t = 0; t < g.states.length; t++) {
+            if (blockedAwaitRead(g, t) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<Node> blockedAwaitReads(ExplorationGraph g, BigInteger address) {
+        final List<Node> result = new ArrayList<>();
+        for (int t = 0; t < g.states.length; t++) {
+            final Node await = blockedAwaitRead(g, t);
+            if (await != null && await.address.equals(address)) {
+                result.add(await);
+            }
+        }
+        return result;
+    }
+
+    private static boolean readsCoMaximal(ExplorationGraph g, Node read) {
+        final List<Node> co = g.getCo(read.address);
+        return co.get(co.size() - 1) == g.getRf(read);
+    }
+
+    // IPR(G, a): all blocked await reads of a's location read from a. Returns the number of revisited reads.
+    private int revisitInPlace(ExplorationGraph g, Node write) throws InterruptedException {
+        final List<Node> reads = blockedAwaitReads(g, write.address);
+        for (Node read : reads) {
+            g.setRf(read, write);
+            interpreter.replay(g, read.thread);
+        }
+        if (!reads.isEmpty()) {
+            g.inPlaceRevisited = true;
+        }
+        return reads.size();
+    }
+
+    /*
+        Awamoche assumes that same-location writes are causally ordered (no write-write races) and that coherence
+        follows this order, so that the only placement of a new write is the co-maximal one.
+        Returns true if the write is causally after all same-location writes and no other placement is consistent.
+        If the write races with some write, returns false if no placement is consistent (the graph is a dead end).
+        In all other cases, the assumption is violated (e.g., LKMM allows co to contradict porf for plain
+        accesses), and the exploration restarts without the optimization.
+        If "addWrite" is false, the write is already part of the graph (but not of co).
+     */
+    private boolean isCoMaximalOnly(ExplorationGraph g, Node write, boolean addWrite) {
+        final Set<Node> prefix = g.porfClosure(write.ePreds);
+        final List<Node> writes = new ArrayList<>(g.getCo(write.address));
+        final boolean ordered = writes.stream().allMatch(w -> w.isInit() || prefix.contains(w));
+        // If ordered, only the non-maximal placements must be inconsistent; otherwise all of them.
+        final int checked = ordered ? writes.size() - 1 : writes.size();
+        for (int i = 0; i < checked; i++) {
+            final Node pred = writes.get(i);
+            if (!isPlausibleCo(g, write, pred, addWrite)) {
+                continue;
+            }
+            final ExplorationGraph g2 = g.copy();
+            g2.insertCoAfter(write, pred);
+            if (addWrite) {
+                g2.addNode(write);
+            }
+            if (checker.check(g2).consistent()) {
+                throw new AwaitAssumptionViolated(ordered
+                        ? "write " + write + " may be placed before " + writes.get(i + 1) + " in coherence order"
+                        : "write " + write + " is not ordered with all writes to its location");
+            }
+        }
+        return ordered;
+    }
+
+    private void pushCoMaximalPlacement(ExplorationGraph g, Node write) {
+        if (!isCoMaximalOnly(g, write, true)) {
+            return;
+        }
+        final List<Node> writes = g.getCo(write.address);
+        final Node pred = writes.get(writes.size() - 1);
+        if (!isPlausibleCo(g, write, pred, true)) {
+            return;
+        }
+        stack.push(() -> {
+            final ExplorationGraph g2 = g.copy();
+            g2.insertCoAfter(write, pred);
+            addNode(g2, write);
+            stats.inPlaceRevisits += revisitInPlace(g2, write);
+            visit(g2);
+        });
+    }
+
+    // Kept reads whose rf-source was deleted (in-place revisited await reads) read from the latest write instead.
+    private static Set<Integer> fixDanglingReads(ExplorationGraph g) {
+        final Set<Integer> changed = new HashSet<>();
+        for (Node n : g.getNodes()) {
+            if (n.isRead()) {
+                final Node w = g.getRf(n);
+                if (w != null && !g.contains(w)) {
+                    final List<Node> co = g.getCo(n.address);
+                    g.setRf(n, co.get(co.size() - 1));
+                    changed.add(n.thread);
+                }
+            }
+        }
+        return changed;
+    }
+
+    /*
+        Awamoche's maximal extension check (Algorithm 2): the revisit of "read" by "write" is performed iff
+        removing the write, the read, and the deleted nodes, and then adding the read and the deleted nodes again
+        (in their original order) in a co-maximal way, with in-place revisits after each write, yields exactly
+        the current graph (without the write), and the read is not a blocked await read after it is added.
+        The check is performed operationally on a copy of the graph.
+     */
+    private boolean isAwaitMaximalExtension(ExplorationGraph g, Node write, Node read, Set<Node> deleted,
+                                            Set<Node> prefix) throws InterruptedException {
+        if (!g.inPlaceRevisited && !hasBlockedAwaitRead(g)) {
+            /*
+                Fast path: without in-place revisits in the history of g and without blocked await reads, no node
+                of g was ever a blocked await read (a thread only leaves such a state by an in-place revisit).
+                Then the replay below performs no in-place revisits, and it reproduces g iff each replayed node is
+                maximally added in the sense of TruSt (and the read is then not blocked either).
+             */
+            return isMaximalExtension(g, read, deleted, prefix);
+        }
+        final ExplorationGraph h = g.copy();
+        final Set<Node> removed = Collections.newSetFromMap(new IdentityHashMap<>());
+        removed.addAll(deleted);
+        removed.add(read);
+        removed.add(write);
+        final List<Node> replayed = new ArrayList<>(deleted);
+        replayed.sort(Comparator.comparingInt(g::stamp));
+        replayed.add(0, read);
+        try {
+            final Set<Integer> affected = new HashSet<>(h.removeNodes(removed));
+            affected.addAll(fixDanglingReads(h));
+            for (int t : affected) {
+                interpreter.replay(h, t);
+            }
+            for (Node n : replayed) {
+                if (!addCoMaximally(g, h, n)) {
+                    return false;
+                }
+                if (n == read && blockedAwaitRead(h, read.thread) == read) {
+                    return false;
+                }
+                if (n.isWrite()) {
+                    revisitInPlace(h, n);
+                }
+            }
+        } catch (IllegalStateException ex) {
+            return false; // A thread diverged from its nodes: the graph is not reached this way.
+        }
+        // Compare with the graph without the write.
+        for (Node n : h.getNodes()) {
+            if (n.isRead() && h.getRf(n) != g.getRf(n)) {
+                return false;
+            }
+        }
+        for (BigInteger address : h.getLocations()) {
+            final List<Node> expected = new ArrayList<>(g.getCo(address));
+            expected.remove(write);
+            if (!expected.equals(h.getCo(address))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Adds the node to h, in the way the exploration would add it when extending h co-maximally.
+    private boolean addCoMaximally(ExplorationGraph g, ExplorationGraph h, Node n) throws InterruptedException {
+        final ThreadState st = h.states[n.thread];
+        if (st.pc != n.event || st.nextPoIndex != n.poIndex || !interpreter.isEnabled(h, n.thread)) {
+            return false;
+        }
+        if (n.kind == Node.Kind.EXCL_FAIL && n.couldSucceed) {
+            return false; // The co-maximal way is to let the store-exclusive succeed.
+        }
+        if (n.isRead()) {
+            h.ensureLocation(layout.getInitNode(n.address, n.accessType));
+            final List<Node> co = h.getCo(n.address);
+            h.addNode(n);
+            h.setRf(n, co.get(co.size() - 1));
+        } else if (n.isWrite()) {
+            h.ensureLocation(layout.getInitNode(n.address, n.accessType));
+            final List<Node> co = h.getCo(n.address);
+            final Node last = co.get(co.size() - 1);
+            final List<Node> gco = g.getCo(n.address);
+            if (gco.indexOf(last) > gco.indexOf(n)) {
+                return false; // Not co-maximal
+            }
+            h.insertCoAfter(n, last);
+            h.addNode(n);
+        } else {
+            h.addNode(n);
+        }
+        interpreter.applyNode(h, st, n);
+        return true;
     }
 
     // Pushes one work item per possible co-placement of the write (Line 22).
@@ -385,6 +682,10 @@ public final class TruStExplorer {
 
     private void backwardRevisit(ExplorationGraph g, Node write, Node read, Set<Node> deleted)
             throws InterruptedException {
+        if (awaits) {
+            awaitBackwardRevisit(g, write, read, deleted);
+            return;
+        }
         stats.backwardRevisits++;
         final ExplorationGraph g2 = g.copy();
         final Set<Integer> affected = new HashSet<>(g2.removeNodes(deleted));
@@ -408,6 +709,41 @@ public final class TruStExplorer {
                 visit(g3);
             });
         }
+    }
+
+    /*
+        Awamoche's backward revisit: IPR(SetRF(G' ++ [read, write], read, write), write), where G' is the graph
+        without the read and the deleted nodes. The read is moved after the kept nodes (as if it was added last,
+        just before the write), and the write is placed co-maximally.
+     */
+    private void awaitBackwardRevisit(ExplorationGraph g, Node write, Node read, Set<Node> deleted)
+            throws InterruptedException {
+        stats.backwardRevisits++;
+        final ExplorationGraph g2 = g.copy();
+        final Set<Node> removed = Collections.newSetFromMap(new IdentityHashMap<>());
+        removed.addAll(deleted);
+        removed.add(read);
+        final Set<Integer> affected = new HashSet<>(g2.removeNodes(removed));
+        affected.addAll(fixDanglingReads(g2));
+        g2.addNode(read);
+        g2.addNode(write);
+        g2.setRf(read, write);
+        affected.add(read.thread);
+        affected.add(write.thread);
+        if (!isCoMaximalOnly(g2, write, false)) {
+            return;
+        }
+        final List<Node> writes = g2.getCo(write.address);
+        final Node pred = writes.get(writes.size() - 1);
+        if (!isPlausibleCo(g2, write, pred, false)) {
+            return;
+        }
+        g2.insertCoAfter(write, pred);
+        for (int thread : affected) {
+            interpreter.replay(g2, thread);
+        }
+        stats.inPlaceRevisits += revisitInPlace(g2, write);
+        stack.push(() -> visit(g2));
     }
 
     // ------------------------------------------------------------------------------------------------

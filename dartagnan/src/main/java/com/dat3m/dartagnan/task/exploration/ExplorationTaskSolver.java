@@ -21,6 +21,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_ORDER;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_THREAD_CREATION_BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_PRINT_EXECUTIONS;
+import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_AWAITS;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 /*
@@ -54,6 +55,13 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
                     "exploration). Executions that reach the bound make the result inconclusive. Default: 8.")
     @IntegerOption(min = 1)
     private int threadCreationBound = 8;
+
+    @Option(name = EXPLORATION_AWAITS,
+            description = "Avoids blocked executions of await loops (Awamoche, CAV'23): reads that block a " +
+                    "spinning thread are revisited in place by later writes. Requires that same-location writes are " +
+                    "ordered; otherwise the exploration restarts without this optimization. Ignored with " +
+                    EXPLORATION_MAX_EVENTS + ".")
+    private boolean awaits = false;
 
     @Option(name = EXPLORATION_PRINT_EXECUTIONS,
             description = "Prints every complete execution found during exploration (disables early termination).")
@@ -94,7 +102,7 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
 
             final EnumSet<Property> properties = task.getProperties();
             explorer = new TruStExplorer(program, task.getMemoryModel(), properties, order, maxEventsPerThread,
-                    printExecutions, shutdownManager.getNotifier());
+                    awaits && maxEventsPerThread == 0, printExecutions, shutdownManager.getNotifier());
             explorer.run();
         } finally {
             endRun();
