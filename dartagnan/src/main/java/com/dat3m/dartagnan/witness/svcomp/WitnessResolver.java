@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.witness.svcomp;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.SvcompWitnessEncoder;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -188,8 +189,12 @@ public final class WitnessResolver {
     private ResolvedThreads resolveThreads(ViolationWitness witness) {
         final Map<Integer, List<Thread>> result = new LinkedHashMap<>();
         final Map<FunctionEnter, Integer> entered = new IdentityHashMap<>();
-        result.put(0, List.of(program.getMainThread().orElseThrow(
-                () -> new IllegalArgumentException("Witness validation requires a designated main thread"))));
+        final List<Thread> rootThreads = program.getThreads().stream()
+                .filter(thread -> !thread.getEntry().isSpawned() && !IRHelper.isInitThread(thread)).toList();
+        if (rootThreads.size() != 1) {
+            throw new IllegalArgumentException("Witness validation requires a single main thread");
+        }
+        result.put(0, rootThreads);
         final List<Thread> spawnedThreads = program.getThreads().stream()
                 .filter(thread -> thread.getEntry().isSpawned()).toList();
         final List<FunctionEnter> entries = witness.segments().stream()

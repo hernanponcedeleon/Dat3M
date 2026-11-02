@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -125,7 +126,9 @@ public class WitnessResolverTest {
         }
 
         Thread main() {
-            return program.getMainThread().orElseThrow();
+            return program.getThreads().stream()
+                    .filter(thread -> !thread.getEntry().isSpawned() && !IRHelper.isInitThread(thread))
+                    .findFirst().orElseThrow();
         }
 
         List<Thread> workers() {
