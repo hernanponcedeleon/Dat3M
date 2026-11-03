@@ -64,6 +64,7 @@ public class ExecutionTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         final List<Object[]> data = new ArrayList<>();
+
         // Litmus tests whose encoding is satisfiable, so that the solver produces an execution.
         addLitmusTests(data, Arch.TSO, "TSO", null, Property.PROGRAM_SPEC, List.of(
                 "X86/R+po+po-po-pos", "X86/SB+mfence+po-rfi-po", "X86/classic", "X86/intel.paul-tso",
@@ -80,6 +81,20 @@ public class ExecutionTest {
         addLitmusTests(data, Arch.LKMM, "LKMM-DR", "linux-kernel", Property.CAT_SPEC, List.of(
                 "LKMM/auto/C-LB-Lrw+R-A+R-Od+R-D", "LKMM/auto/C-LB-Lwr+R-A+R-A+R-A", "LKMM/auto/C-LB-Lwr+R-Oc+R-D",
                 "LKMM/auto/C-LB-Lww+R-A+R-Od+R-Od", "LKMM/lockfree/Michael-Scott"));
+
+        // SPIR-V programs whose encoding is satisfiable: violated forall specifications, exists specifications
+        // that hold, and data races.
+        addSpirvTest(data, "vulkan/benchmarks/caslock-acq2rx", Arch.VULKAN, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "vulkan/patterns/mp-acq2rx", Arch.VULKAN, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "vulkan/patterns/sb", Arch.VULKAN, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "vulkan/barrier/scope/barrier-not-inscope-wg", Arch.VULKAN, Property.CAT_SPEC);
+        addSpirvTest(data, "vulkan/benchmarks/ticketlock-dv2wg-1.1.2", Arch.VULKAN, Property.CAT_SPEC);
+        addSpirvTest(data, "opencl/benchmarks/ticketlock-acq2rx", Arch.OPENCL, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "opencl/patterns/mp-rel2rx", Arch.OPENCL, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "opencl/barrier/inlining/barrier-inlining-1-exists-correct", Arch.OPENCL, Property.PROGRAM_SPEC);
+        addSpirvTest(data, "opencl/barrier/scope/barrier-not-inscope-wg", Arch.OPENCL, Property.CAT_SPEC);
+        addSpirvTest(data, "opencl/benchmarks/caslock-dv2wg-1.1.2", Arch.OPENCL, Property.CAT_SPEC);
+
         // LLVM programs: dynamic memory (incl. free), floats, nondeterminism, threads
         addLlvmTest(data, "locks/clh_mutex-acq2rx", Arch.IMM, 2);
         addLlvmTest(data, "locks/ticket_awnsb_mutex-acq2rx", Arch.IMM, 2);
@@ -100,6 +115,11 @@ public class ExecutionTest {
             final Path path = ResourceHelper.getRootPath("litmus/" + name + ".litmus");
             data.add(new Object[]{ suite + ":" + path.getFileName(), arch, path, wmmName, property, 1 });
         }
+    }
+
+    private static void addSpirvTest(List<Object[]> data, String name, Arch arch, Property property) {
+        final Path path = ResourceHelper.getTestResourcePath("spirv/" + name + ".spvasm");
+        data.add(new Object[]{ "spirv/" + name + ":" + property, arch, path, null, property, 1 });
     }
 
     private static void addLlvmTest(List<Object[]> data, String name, Arch arch, int bound) {
@@ -143,8 +163,22 @@ public class ExecutionTest {
         checkConsistency(execution);
         checkGraphvizWitness(execution);
 
-        final Program program = task.getProgram();
-        if (property == Property.PROGRAM_SPEC && program.getFormat() == Program.SourceLanguage.LITMUS) {
+    }
+
+    // The violations reported by the solver must be visible in the execution.
+    private void checkAgainstVerdict(Execution execution, VerificationResult result) {
+        final Program program = execution.getProgram();
+
+        if (result.isViolated(Property.CAT_SPEC)) {
+            assertFalse("No flag raised", execution.getRaisedFlags().isEmpty());
+        }
+
+        if (result.isViolated(Property.PROGRAM_SPEC) && program.getFormat() == Program.SourceLanguage.LLVM) {
+            assertTrue("No assertion violated",
+                    execution.getEvents(Assert.class).stream().anyMatch(execution::assertionViolated));
+        }
+
+        if (property == Property.PROGRAM_SPEC && program.getFormat() != Program.SourceLanguage.LLVM) {
             final Optional<Boolean> expected = expectedSpecValue(program.getSpecificationType(), result.getStatus());
             if (expected.isPresent()) {
                 assertEquals("Specification " + program.getSpecification(), expected,
@@ -154,7 +188,7 @@ public class ExecutionTest {
         }
     }
 
-    // The value the litmus specification must have in an execution that leads to the given verdict.
+    // The value the specification must have in an execution that leads to the given verdict.
     private static Optional<Boolean> expectedSpecValue(Program.SpecificationType type, VerificationStatus status) {
         return switch (type) {
             case EXISTS -> Optional.of(status == VerificationStatus.PASS);
@@ -162,18 +196,6 @@ public class ExecutionTest {
             case FORALL -> Optional.of(status != VerificationStatus.FAIL);
             case ASSERT -> Optional.empty();
         };
-    }
-
-    // The violations reported by the solver must be visible in the execution.
-    private static void checkAgainstVerdict(Execution execution, VerificationResult result) {
-        if (result.isViolated(Property.CAT_SPEC)) {
-            assertFalse("No flag raised", execution.getRaisedFlags().isEmpty());
-        }
-        if (result.isViolated(Property.PROGRAM_SPEC)
-                && execution.getProgram().getFormat() == Program.SourceLanguage.LLVM) {
-            assertTrue("No assertion violated",
-                    execution.getEvents(Assert.class).stream().anyMatch(execution::assertionViolated));
-        }
     }
 
     // Checks that values recomputed by the execution's own expression evaluation agree with the extracted values.
