@@ -45,7 +45,6 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class ExecutionTest {
 
-    private static final int TESTS_PER_SUITE = 25;
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final Arch arch;
@@ -65,11 +64,22 @@ public class ExecutionTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         final List<Object[]> data = new ArrayList<>();
-        addFailingLitmusTests(data, Arch.TSO, "TSO", null, Property.PROGRAM_SPEC);
-        addFailingLitmusTests(data, Arch.ARM8, "ARM8", null, Property.PROGRAM_SPEC);
-        addFailingLitmusTests(data, Arch.POWER, "PPC", null, Property.PROGRAM_SPEC);
-        addFailingLitmusTests(data, Arch.C11, "RC11", "rc11", Property.PROGRAM_SPEC);
-        addFailingLitmusTests(data, Arch.LKMM, "LKMM-DR", "linux-kernel", Property.CAT_SPEC);
+        // Litmus tests whose encoding is satisfiable, so that the solver produces an execution.
+        addLitmusTests(data, Arch.TSO, "TSO", null, Property.PROGRAM_SPEC, List.of(
+                "X86/R+po+po-po-pos", "X86/SB+mfence+po-rfi-po", "X86/classic", "X86/intel.paul-tso",
+                "X86/m44i"));
+        addLitmusTests(data, Arch.ARM8, "ARM8", null, Property.PROGRAM_SPEC, List.of(
+                "AARCH64/EXTRA/ARMARM04+TER", "AARCH64/PPO/MP+dmb.sy+addr-fri-[ws-rf]-ctrl-pos",
+                "AARCH64/SYS/2+2W+dmb.stpl+po", "AARCH64/dart/ATOM05-02", "AARCH64/mixed/PPOCA-MIXED-5"));
+        addLitmusTests(data, Arch.POWER, "PPC", null, Property.PROGRAM_SPEC, List.of(
+                "PPC/DETOUR0386", "PPC/DETOUR0868", "PPC/DETOUR1321", "PPC/W+RWC+lwsync+po+po",
+                "PPC/Z6.5+sync+sync+lwsync"));
+        addLitmusTests(data, Arch.C11, "RC11", "rc11", Property.PROGRAM_SPEC, List.of(
+                "C11/auto/a1+Wna+rel", "C11/auto/a1_reorder+sc+Racq", "C11/auto/a3+sc+Racq",
+                "C11/auto/a3_reorder+Wna+acq", "C11/auto/b_reorder+sc+acq"));
+        addLitmusTests(data, Arch.LKMM, "LKMM-DR", "linux-kernel", Property.CAT_SPEC, List.of(
+                "LKMM/auto/C-LB-Lrw+R-A+R-Od+R-D", "LKMM/auto/C-LB-Lwr+R-A+R-A+R-A", "LKMM/auto/C-LB-Lwr+R-Oc+R-D",
+                "LKMM/auto/C-LB-Lww+R-A+R-Od+R-Od", "LKMM/lockfree/Michael-Scott"));
         // LLVM programs: dynamic memory (incl. free), floats, nondeterminism, threads
         addLlvmTest(data, "locks/clh_mutex-acq2rx", Arch.IMM, 2);
         addLlvmTest(data, "locks/ticket_awnsb_mutex-acq2rx", Arch.IMM, 2);
@@ -84,16 +94,12 @@ public class ExecutionTest {
         return data;
     }
 
-    private static void addFailingLitmusTests(List<Object[]> data, Arch arch, String csv, String wmmName,
-                                              Property property) throws IOException {
-        final Set<Path> skip = ResourceHelper.getSkipSet();
-        ResourceHelper.parseExpectedResults(ResourceHelper.getTestResourcePath(csv + "-expected.csv"),
-                        ResourceHelper::getRootPath)
-                .keySet().stream()
-                .filter(p -> !skip.contains(p))
-                .sorted()
-                .limit(TESTS_PER_SUITE)
-                .forEach(p -> data.add(new Object[]{ csv + ":" + p.getFileName(), arch, p, wmmName, property, 1 }));
+    private static void addLitmusTests(List<Object[]> data, Arch arch, String suite, String wmmName,
+                                       Property property, List<String> names) {
+        for (String name : names) {
+            final Path path = ResourceHelper.getRootPath("litmus/" + name + ".litmus");
+            data.add(new Object[]{ suite + ":" + path.getFileName(), arch, path, wmmName, property, 1 });
+        }
     }
 
     private static void addLlvmTest(List<Object[]> data, String name, Arch arch, int bound) {
