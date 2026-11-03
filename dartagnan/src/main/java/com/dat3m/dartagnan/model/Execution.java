@@ -34,13 +34,11 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 /*
     A concrete execution of a program under a memory model, expressed purely in terms of Dartagnan's IR.
-
-    In contrast to IREvaluator, this class does not depend on an SMT model: once constructed (e.g. via
-    Execution.fromModel), it stays valid even after the solver and its model are closed.
     All values are represented as constant IR expressions (IntLiteral, BoolLiteral, ...).
 
     Since programs are unrolled, every event is executed at most once, so IR events identify executed events.
     Instances are immutable (derived relations are computed lazily from the base relations, which is thread-safe).
+
  */
 public final class Execution {
 

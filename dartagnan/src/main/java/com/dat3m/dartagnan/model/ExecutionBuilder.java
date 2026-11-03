@@ -81,6 +81,11 @@ final class ExecutionBuilder {
             if (!model.isExecuted(e)) {
                 continue;
             }
+            if (!blocked.isEmpty()) {
+                final String msg = "E%s was executed although thread %s is blocked at E%s."
+                        .formatted(e.getGlobalId(), thread.getName(), blocked.getFirst().getGlobalId());
+                throw new IllegalStateException(msg);
+            }
             trace.add(e);
             executed.add(e);
             extractEventData(e);
