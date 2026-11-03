@@ -54,6 +54,8 @@ final class ThreadState {
 
     // Position (poIndex) where the current loop iteration started.
     int iterationStart;
+    // Position (poIndex) where each spin loop (identified by its header, see ThreadAnalysis) was last entered.
+    final Map<Event, Integer> loopEntry;
 
     // The po-index of the pending event: all po-earlier events of the thread are in the graph.
     int nextPoIndex;
@@ -74,6 +76,7 @@ final class ThreadState {
         this.executedStatus = new HashMap<>();
         this.lastExecution = new HashMap<>();
         this.allocationCounts = new HashMap<>();
+        this.loopEntry = new HashMap<>();
     }
 
     private ThreadState(ThreadState other) {
@@ -95,6 +98,7 @@ final class ThreadState {
         this.violatedAssertion = other.violatedAssertion;
         this.boundReached = other.boundReached;
         this.iterationStart = other.iterationStart;
+        this.loopEntry = new HashMap<>(other.loopEntry);
         this.nextPoIndex = other.nextPoIndex;
         this.orderTracker = other.orderTracker.copy();
     }

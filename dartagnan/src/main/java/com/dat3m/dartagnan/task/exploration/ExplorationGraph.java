@@ -21,6 +21,9 @@ final class ExplorationGraph {
     boolean truncated;
     // Some read was revisited in place (awaits) when this graph or one of its ancestors was constructed.
     boolean inPlaceRevisited;
+    // If the graph was obtained from a graph whose consistency check was deferred: that graph (see TruStExplorer).
+    // Not copied.
+    ExplorationGraph uncheckedParent;
 
     ExplorationGraph(ThreadState[] initialStates) {
         this.nodes = new ArrayList<>();

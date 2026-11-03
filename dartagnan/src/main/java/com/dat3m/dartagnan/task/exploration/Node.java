@@ -57,10 +57,10 @@ public final class Node {
 
     private final Set<String> syntheticTags;
 
-    // Cache for tag queries by index (see ConsistencyChecker): bit k of tagKnown says whether tag k was queried,
-    // bit k of tagValue holds the answer. Nodes are shared between graphs, so each answer is computed once.
-    private long tagKnown;
-    private long tagValue;
+    // Cache for tag queries by index (see ConsistencyChecker): bit k says whether tag k was queried, bit 32+k holds
+    // the answer. Nodes are shared between graphs, so each answer is computed once. Both bits live in one (volatile)
+    // word, so that concurrent explorers never see a "known" bit without its answer (lost updates are harmless).
+    private volatile long tagCache;
 
     private Node(Builder b) {
         this.kind = b.kind;
@@ -98,19 +98,20 @@ public final class Node {
         return kind == Kind.INIT || kind == Kind.READ || kind == Kind.WRITE || kind == Kind.OTHER;
     }
 
-    // Tag query with caching for tag indices below 64.
+    // Tag query with caching for tag indices below 32.
     boolean hasTag(int tagIndex, String tag) {
-        if (tagIndex >= 64) {
+        if (tagIndex >= 32) {
             return hasTag(tag);
         }
-        final long bit = 1L << tagIndex;
-        if ((tagKnown & bit) == 0) {
-            if (hasTag(tag)) {
-                tagValue |= bit;
-            }
-            tagKnown |= bit;
+        final long known = 1L << tagIndex;
+        final long value = 1L << (tagIndex + 32);
+        final long cache = tagCache;
+        if ((cache & known) != 0) {
+            return (cache & value) != 0;
         }
-        return (tagValue & bit) != 0;
+        final boolean result = hasTag(tag);
+        tagCache = cache | known | (result ? value : 0);
+        return result;
     }
 
     public boolean hasTag(String tag) {

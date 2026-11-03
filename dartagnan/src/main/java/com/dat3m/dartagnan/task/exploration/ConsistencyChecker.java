@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Dimension;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /*
@@ -32,7 +33,7 @@ final class ConsistencyChecker {
     private final List<Axiom> consistencyAxioms;
     private final List<Axiom> flaggedAxioms;
     private final Map<Relation, Set<Relation>> sccOf = new HashMap<>();
-    private final Map<String, Integer> tagIndices = new HashMap<>();
+    private final Map<String, Integer> tagIndices = new ConcurrentHashMap<>();
     // Consistency axioms that can be checked on the events of a single location (see below).
     private final List<Axiom> perLocationAxioms = new ArrayList<>();
     private final Map<Relation, Boolean> restrictionSafe = new HashMap<>();
@@ -134,6 +135,20 @@ final class ConsistencyChecker {
         };
         sameLocation.put(r, local);
         return local;
+    }
+
+    private int tagIndex(String tag) {
+        final Integer known = tagIndices.get(tag);
+        if (known != null) {
+            return known;
+        }
+        synchronized (tagIndices) {
+            return tagIndices.computeIfAbsent(tag, k -> tagIndices.size());
+        }
+    }
+
+    boolean hasFlaggedAxioms() {
+        return !flaggedAxioms.isEmpty();
     }
 
     boolean hasPerLocationAxioms() {
@@ -468,7 +483,7 @@ final class ConsistencyChecker {
         @Override
         public Object visitTagSet(TagSet def) {
             final String tag = def.getTag();
-            final int tagIndex = tagIndices.computeIfAbsent(tag, k -> tagIndices.size());
+            final int tagIndex = tagIndex(tag);
             final BitSet result = new BitSet(n);
             for (int i : visibleIndices) {
                 if (elements.get(i).hasTag(tagIndex, tag)) {

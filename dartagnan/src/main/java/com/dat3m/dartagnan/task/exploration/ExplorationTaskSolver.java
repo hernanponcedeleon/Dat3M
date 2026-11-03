@@ -22,6 +22,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_THREAD_CREATION_BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_PRINT_EXECUTIONS;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_AWAITS;
+import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_SPIN_LAST;
+import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_THREADS;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 /*
@@ -63,6 +65,16 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
                     EXPLORATION_MAX_EVENTS + ".")
     private boolean awaits = false;
 
+    @Option(name = EXPLORATION_SPIN_LAST,
+            description = "Schedules threads with side-effect-free loops (e.g. await loops) after the other threads, " +
+                    "which avoids many blocked executions. Default: true.")
+    private boolean spinLast = true;
+
+    @Option(name = EXPLORATION_THREADS,
+            description = "Number of worker threads exploring execution graphs in parallel. Default: 1.")
+    @IntegerOption(min = 1)
+    private int threads = 1;
+
     @Option(name = EXPLORATION_PRINT_EXECUTIONS,
             description = "Prints every complete execution found during exploration (disables early termination).")
     private boolean printExecutions = false;
@@ -101,8 +113,10 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
             SMTModelChecker.preprocessMemoryModel(task);
 
             final EnumSet<Property> properties = task.getProperties();
-            explorer = new TruStExplorer(program, task.getMemoryModel(), properties, order, maxEventsPerThread,
-                    awaits && maxEventsPerThread == 0, printExecutions, shutdownManager.getNotifier());
+            final ExplorationSettings settings = new ExplorationSettings(order, maxEventsPerThread,
+                    awaits && maxEventsPerThread == 0, spinLast, printExecutions, threads);
+            explorer = new TruStExplorer(program, task.getMemoryModel(), properties, settings,
+                    shutdownManager.getNotifier());
             explorer.run();
         } finally {
             endRun();

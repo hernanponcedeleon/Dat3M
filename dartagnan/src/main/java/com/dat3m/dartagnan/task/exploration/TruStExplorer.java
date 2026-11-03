@@ -20,6 +20,7 @@ import org.sosy_lab.common.ShutdownNotifier;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
     Stateless model checking based on
@@ -27,8 +28,8 @@ import java.util.*;
         Michalis Kokologiannakis, Iason Marmanis, Vladimir Gladstein, Viktor Vafeiadis.
         "Truly Stateless, Optimal Dynamic Partial Order Reduction". POPL 2022.
 
-    The exploration follows Algorithm 1 of the paper, but uses an explicit work stack instead of recursion
-    so that (potentially infinite) executions do not overflow the call stack.
+    The exploration follows Algorithm 1 of the paper, but the recursive calls are work items run by a WorkScheduler
+    (on an explicit stack, so that long executions do not overflow the call stack, or by several worker threads).
 
     Programs are explored without loop unrolling. If the program has infinite executions, the exploration
     does not terminate, unless a bound on the number of events per thread is given.
@@ -47,6 +48,7 @@ public final class TruStExplorer {
     public static final class Statistics {
         long visitedGraphs;
         long inconsistentGraphs;
+        long deferredChecks;
         long rejectedChoices;
         long completeExecutions;
         long blockedExecutions;
@@ -57,6 +59,21 @@ public final class TruStExplorer {
         long inPlaceRevisits;
         long staleAwaitGraphs;
         long awaitRestarts;
+
+        void add(Statistics o) {
+            visitedGraphs += o.visitedGraphs;
+            inconsistentGraphs += o.inconsistentGraphs;
+            deferredChecks += o.deferredChecks;
+            rejectedChoices += o.rejectedChoices;
+            completeExecutions += o.completeExecutions;
+            blockedExecutions += o.blockedExecutions;
+            prunedSpinningGraphs += o.prunedSpinningGraphs;
+            truncatedExecutions += o.truncatedExecutions;
+            filteredExecutions += o.filteredExecutions;
+            backwardRevisits += o.backwardRevisits;
+            inPlaceRevisits += o.inPlaceRevisits;
+            staleAwaitGraphs += o.staleAwaitGraphs;
+        }
 
         public long getVisitedGraphs() { return visitedGraphs; }
         public long getInconsistentGraphs() { return inconsistentGraphs; }
@@ -79,13 +96,14 @@ public final class TruStExplorer {
                             Filtered executions: %d
                             Inconsistent graphs: %d
                             Visited graphs: %d
+                            Deferred consistency checks: %d
                             Rejected choices (per-location check): %d
                             Backward revisits: %d
                             In-place revisits (awaits): %d
                             Pruned graphs (stale await read): %d
                             Restarts without awaits: %d""",
                     completeExecutions, blockedExecutions, prunedSpinningGraphs, truncatedExecutions, filteredExecutions,
-                    inconsistentGraphs, visitedGraphs, rejectedChoices, backwardRevisits, inPlaceRevisits,
+                    inconsistentGraphs, visitedGraphs, deferredChecks, rejectedChoices, backwardRevisits, inPlaceRevisits,
                     staleAwaitGraphs, awaitRestarts);
         }
     }
@@ -99,37 +117,41 @@ public final class TruStExplorer {
     // Awamoche (Kokologiannakis et al., CAV'23): in-place revisits of blocked await reads.
     private boolean awaits;
     private final boolean printExecutions;
+    // Can be disabled for debugging.
+    private final boolean deferChecks;
     private final boolean stopOnReachability;
     private final ShutdownNotifier shutdownNotifier;
 
     private final MemoryLayout layout;
+    private final ThreadAnalysis analysis;
     private final ThreadInterpreter interpreter;
     private final ConsistencyChecker checker;
     private final Map<Thread, Integer> threadIndex = new HashMap<>();
     // The first load of a spawned thread must read from the store of its creator (thread synchronization).
     private final Map<Event, Event> spawningLoadToStore = new HashMap<>();
 
-    private Statistics stats = new Statistics();
-    private final ArrayDeque<WorkItem> stack = new ArrayDeque<>();
+    // Statistics are collected per worker thread and summed up on demand.
+    private List<Statistics> allStats = new CopyOnWriteArrayList<>();
+    private ThreadLocal<Statistics> localStats = newLocalStats();
+    private long awaitRestarts;
+
+    // Fixed thread priority (see computeSchedule).
+    private final int[] schedule;
+    private final int numWorkers;
+    private WorkScheduler scheduler;
     private Violation violation;
     private boolean specificationReached;
     private String reachabilityWitness;
     private final Set<String> outcomes = new LinkedHashSet<>();
-    private boolean stop;
 
-    @FunctionalInterface
-    private interface WorkItem {
-        void run() throws InterruptedException;
-    }
-
-    public TruStExplorer(Program program, Wmm memoryModel, EnumSet<Property> properties, ExplorationOrder order,
-                         int maxEventsPerThread, boolean awaits, boolean printExecutions,
+    public TruStExplorer(Program program, Wmm memoryModel, EnumSet<Property> properties, ExplorationSettings settings,
                          ShutdownNotifier shutdownNotifier) {
         this.program = program;
+        this.numWorkers = Math.max(1, settings.threads());
         this.properties = properties;
-        this.maxEventsPerThread = maxEventsPerThread;
-        this.awaits = awaits;
-        this.printExecutions = printExecutions;
+        this.maxEventsPerThread = settings.maxEventsPerThread();
+        this.awaits = settings.awaits();
+        this.printExecutions = settings.printExecutions();
         this.stopOnReachability = !printExecutions;
         this.shutdownNotifier = shutdownNotifier;
 
@@ -144,12 +166,22 @@ public final class TruStExplorer {
             }
         }
         this.layout = new MemoryLayout(program);
-        this.interpreter = new ThreadInterpreter(threads, layout, program, order, shutdownNotifier);
+        this.analysis = new ThreadAnalysis(threads);
+        this.interpreter = new ThreadInterpreter(threads, layout, program, settings.order(), analysis,
+                shutdownNotifier);
         this.checker = new ConsistencyChecker(memoryModel, threads, program.getArch(),
                 properties.contains(Property.CAT_SPEC));
+        this.deferChecks = true;
+        this.schedule = computeSchedule(threads.size(), settings.spinLast());
     }
 
-    public Statistics getStatistics() { return stats; }
+    public Statistics getStatistics() {
+        final Statistics sum = new Statistics();
+        allStats.forEach(sum::add);
+        sum.awaitRestarts = awaitRestarts;
+        return sum;
+    }
+
     public Optional<Violation> getViolation() { return Optional.ofNullable(violation); }
     public boolean isSpecificationReached() { return specificationReached; }
     public String getReachabilityWitness() { return reachabilityWitness; }
@@ -157,7 +189,7 @@ public final class TruStExplorer {
 
     // Exploration is complete if no execution was cut off by the event bound.
     public boolean isExhaustive() {
-        return stats.truncatedExecutions == 0;
+        return getStatistics().truncatedExecutions == 0;
     }
 
     // ================================================================================================
@@ -175,14 +207,12 @@ public final class TruStExplorer {
                     return;
                 }
                 awaits = false;
-                final long restarts = stats.awaitRestarts + 1;
-                stats = new Statistics();
-                stats.awaitRestarts = restarts;
-                stack.clear();
+                awaitRestarts++;
+                allStats = new CopyOnWriteArrayList<>();
+                localStats = newLocalStats();
                 outcomes.clear();
                 specificationReached = false;
                 reachabilityWitness = null;
-                stop = false;
             }
         }
     }
@@ -205,29 +235,84 @@ public final class TruStExplorer {
             initial[t] = interpreter.newInitialState(t);
         }
         final ExplorationGraph g0 = new ExplorationGraph(initial);
-        stack.push(() -> visit(g0));
-        while (!stack.isEmpty() && !stop) {
-            shutdownNotifier.shutdownIfNecessary();
-            stack.pop().run();
-        }
-        logger.info("Exploration finished.\n{}", stats);
+        scheduler = new WorkScheduler(numWorkers, shutdownNotifier);
+        scheduler.run(() -> visit(g0));
+        logger.info("Exploration finished.\n{}", getStatistics());
+    }
+
+    private void push(WorkScheduler.WorkItem item) {
+        scheduler.push(item);
+    }
+
+    // The statistics of the current worker thread.
+    private Statistics stats() {
+        return localStats.get();
+    }
+
+    private ThreadLocal<Statistics> newLocalStats() {
+        final List<Statistics> registry = allStats;
+        return ThreadLocal.withInitial(() -> {
+            final Statistics st = new Statistics();
+            registry.add(st);
+            return st;
+        });
     }
 
     // ================================================================================================
     // Visit (Algorithm 1)
 
-    private void visit(ExplorationGraph g) throws InterruptedException {
-        stats.visitedGraphs++;
-
-        // Line 4: consistency check
+    /*
+        Deferred consistency checks: the models are prefix-closed, so if a graph is inconsistent, so are all its
+        extensions. Hence, the check of a graph can be deferred to its extension as long as the exploration does not
+        branch: we check before reading with several candidate writes, before adding a write (which may revisit
+        reads), and before reporting anything (full graphs and violations). Steps that add a fence, a thread event,
+        or a read with a single candidate write are not checked.
+        Flagged axioms: a flagged violation of a graph whose check was deferred could be hidden by an inconsistency of
+        its extension. So if a graph is inconsistent, we check its unchecked ancestors for flagged violations.
+     */
+    private boolean check(ExplorationGraph g) {
         final ConsistencyChecker.Result result = checker.check(g);
         if (!result.consistent()) {
-            stats.inconsistentGraphs++;
-            return;
+            stats().inconsistentGraphs++;
+            if (checker.hasFlaggedAxioms()) {
+                checkUncheckedAncestors(g);
+            }
+            return false;
         }
         if (result.violatedFlag() != null) {
             reportCatViolation(g, result.violatedFlag());
-            return;
+            return false;
+        }
+        return true;
+    }
+
+    private void checkUncheckedAncestors(ExplorationGraph g) {
+        ExplorationGraph flagged = null;
+        Axiom flag = null;
+        for (ExplorationGraph p = g.uncheckedParent; p != null; p = p.uncheckedParent) {
+            final ConsistencyChecker.Result result = checker.check(p);
+            if (result.consistent() && result.violatedFlag() != null) {
+                // Keep the earliest one (the one the exploration would have reported without deferral).
+                flagged = p;
+                flag = result.violatedFlag();
+            }
+        }
+        if (flagged != null) {
+            reportCatViolation(flagged, flag);
+        }
+    }
+
+    private void visit(ExplorationGraph g) throws InterruptedException {
+        stats().visitedGraphs++;
+
+        // Line 4: consistency check (possibly deferred, see above)
+        final boolean hasError = Arrays.stream(g.states).anyMatch(st -> st.status == ThreadState.Status.ERROR);
+        boolean checked = false;
+        if (!deferChecks || hasError) {
+            if (!check(g)) {
+                return;
+            }
+            checked = true;
         }
 
         // Assertion violations (errors)
@@ -250,47 +335,85 @@ public final class TruStExplorer {
             for (int s = 0; s < g.states.length; s++) {
                 final Node await = blockedAwaitRead(g, s);
                 if (await != null && !readsCoMaximal(g, await)) {
-                    stats.staleAwaitGraphs++;
+                    stats().staleAwaitGraphs++;
                     return;
                 }
             }
         }
 
         // A thread that spins forever in every extension of the graph: only blocked executions can follow.
+        boolean spinningWithStaleRead = false;
         for (int s = 0; s < g.states.length; s++) {
-            if (g.states[s].status == ThreadState.Status.SPINNING && isPermanentlySpinning(g, s)) {
-                stats.prunedSpinningGraphs++;
-                return;
+            if (g.states[s].status == ThreadState.Status.SPINNING) {
+                if (isPermanentlySpinning(g, s)) {
+                    stats().prunedSpinningGraphs++;
+                    return;
+                }
+                spinningWithStaleRead |= hasStaleIterationRead(g, s);
             }
+        }
+        if (spinningWithStaleRead && !anyThreadMayWriteLater(g)) {
+            // No extension of the graph adds a write, so no read is ever revisited: the spinning thread with a stale
+            // read stays as it is, and only blocked executions that are no liveness violations can follow.
+            stats().prunedSpinningGraphs++;
+            return;
         }
 
         // Line 5: pick the next event
         final int t = pickNextThread(g);
         if (t < 0) {
-            handleFullGraph(g);
+            if (checked || check(g)) {
+                handleFullGraph(g);
+            }
             return;
         }
 
         final Event e = g.states[t].pc;
         if (e instanceof Load) {
-            visitRead(g, t);
+            visitRead(g, t, checked);
         } else if (e instanceof Store && !(e instanceof Init)) {
-            visitWrite(g, t);
+            if (checked || check(g)) {
+                visitWrite(g, t);
+            }
         } else {
+            if (!checked) {
+                stats().deferredChecks++;
+            }
+            final ExplorationGraph uncheckedParent = checked ? null : g;
             final Node node = interpreter.makeNode(g, t, false);
-            stack.push(() -> {
+            push(() -> {
                 final ExplorationGraph g2 = g.copy();
+                g2.uncheckedParent = uncheckedParent;
                 addNode(g2, node);
                 visit(g2);
             });
         }
     }
 
+    /*
+        Threads are scheduled by a fixed priority: TruSt adds the next event of the first enabled thread.
+        The priority must not depend on the graph, since TruSt's completeness relies on a fixed order.
+        With "spinLast", threads with side-effect-free loops (e.g. await loops or seqlock readers) come last: their
+        reads are then mostly added after the writes they wait for, so reads of stale values are not maximally added
+        and the spinning iterations they cause are pruned immediately (see isPermanentlySpinning), instead of leading
+        to blocked executions once later writes are added and revisit the reads.
+     */
+    private int[] computeSchedule(int numThreads, boolean spinLast) {
+        final List<Integer> priority = new ArrayList<>();
+        for (int t = 0; t < numThreads; t++) {
+            priority.add(t);
+        }
+        if (spinLast) {
+            priority.sort(Comparator.comparing(analysis::hasPureLoop));
+        }
+        return priority.stream().mapToInt(Integer::intValue).toArray();
+    }
+
     // Returns the thread of the next event to add, or -1 if the graph is full.
     // The truncation flag is recomputed: it is only meaningful for full graphs (where all threads are inspected).
     private int pickNextThread(ExplorationGraph g) {
         g.truncated = false;
-        for (int t = 0; t < g.states.length; t++) {
+        for (int t : schedule) {
             if (!interpreter.isEnabled(g, t)) {
                 continue;
             }
@@ -311,7 +434,7 @@ public final class TruStExplorer {
     // ------------------------------------------------------------------------------------------------
     // Lines 10-12: reads
 
-    private void visitRead(ExplorationGraph g, int t) {
+    private void visitRead(ExplorationGraph g, int t, boolean checked) {
         final Node read = interpreter.makeNode(g, t, false);
         g.ensureLocation(layout.getInitNode(read.address, read.accessType));
         final List<Node> writes = new ArrayList<>(g.getCo(read.address));
@@ -323,14 +446,25 @@ public final class TruStExplorer {
             // The joined thread terminated: older writes to its state word say "alive" and block the join forever.
             writes.subList(0, writes.size() - 1).clear();
         }
+        writes.removeIf(w -> !isPlausibleRf(g, read, w));
+        ExplorationGraph uncheckedParent = null;
+        if (!checked) {
+            if (writes.size() > 1) {
+                if (!check(g)) {
+                    return;
+                }
+            } else {
+                stats().deferredChecks++;
+                uncheckedParent = g;
+            }
+        }
+        final ExplorationGraph parent = uncheckedParent;
         // Push in reverse order so that writes are explored in coherence order.
         for (int i = writes.size() - 1; i >= 0; i--) {
             final Node write = writes.get(i);
-            if (!isPlausibleRf(g, read, write)) {
-                continue;
-            }
-            stack.push(() -> {
+            push(() -> {
                 final ExplorationGraph g2 = g.copy();
+                g2.uncheckedParent = parent;
                 g2.addNode(read);
                 g2.setRf(read, write);
                 interpreter.applyNode(g2, g2.states[t], read);
@@ -349,7 +483,7 @@ public final class TruStExplorer {
         // Weak store-exclusives may fail spuriously (or must fail if they have no matching load-exclusive).
         if (ThreadInterpreter.isWeakExclusiveStore(e)) {
             final Node failed = interpreter.makeNode(g, t, true);
-            stack.push(() -> {
+            push(() -> {
                 final ExplorationGraph g2 = g.copy();
                 addNode(g2, failed);
                 visit(g2);
@@ -366,7 +500,7 @@ public final class TruStExplorer {
         final Set<Node> prefix = g.porfClosure(write.ePreds);
         // Blocked await reads of the location are revisited in place instead (see pushCoPlacements).
         final List<Node> awaitReads = awaits ? blockedAwaitReads(g, write.address) : List.of();
-        final List<WorkItem> revisits = new ArrayList<>();
+        final List<WorkScheduler.WorkItem> revisits = new ArrayList<>();
         for (Node read : g.getNodes()) {
             if (!read.isRead() || !read.address.equals(write.address) || prefix.contains(read)
                     || spawningLoadToStore.containsKey(read.event) || awaitReads.contains(read)) {
@@ -386,7 +520,7 @@ public final class TruStExplorer {
             revisits.add(() -> backwardRevisit(g, write, read, deleted));
         }
         for (int i = revisits.size() - 1; i >= 0; i--) {
-            stack.push(revisits.get(i));
+            push(revisits.get(i));
         }
 
         // Line 14: VisitCOs
@@ -509,11 +643,11 @@ public final class TruStExplorer {
         if (!isPlausibleCo(g, write, pred, true)) {
             return;
         }
-        stack.push(() -> {
+        push(() -> {
             final ExplorationGraph g2 = g.copy();
             g2.insertCoAfter(write, pred);
             addNode(g2, write);
-            stats.inPlaceRevisits += revisitInPlace(g2, write);
+            stats().inPlaceRevisits += revisitInPlace(g2, write);
             visit(g2);
         });
     }
@@ -634,7 +768,7 @@ public final class TruStExplorer {
             if (!isPlausibleCo(g, write, pred, true)) {
                 continue;
             }
-            stack.push(() -> {
+            push(() -> {
                 final ExplorationGraph g2 = g.copy();
                 g2.insertCoAfter(write, pred);
                 addNode(g2, write);
@@ -679,7 +813,7 @@ public final class TruStExplorer {
 
     private boolean countRejection(boolean plausible) {
         if (!plausible) {
-            stats.rejectedChoices++;
+            stats().rejectedChoices++;
         }
         return plausible;
     }
@@ -690,7 +824,7 @@ public final class TruStExplorer {
             awaitBackwardRevisit(g, write, read, deleted);
             return;
         }
-        stats.backwardRevisits++;
+        stats().backwardRevisits++;
         final ExplorationGraph g2 = g.copy();
         final Set<Integer> affected = new HashSet<>(g2.removeNodes(deleted));
         g2.addNode(write);
@@ -707,7 +841,7 @@ public final class TruStExplorer {
             if (!isPlausibleCo(g2, write, pred, false)) {
                 continue;
             }
-            stack.push(() -> {
+            push(() -> {
                 final ExplorationGraph g3 = g2.copy();
                 g3.insertCoAfter(write, pred);
                 visit(g3);
@@ -722,7 +856,7 @@ public final class TruStExplorer {
      */
     private void awaitBackwardRevisit(ExplorationGraph g, Node write, Node read, Set<Node> deleted)
             throws InterruptedException {
-        stats.backwardRevisits++;
+        stats().backwardRevisits++;
         final ExplorationGraph g2 = g.copy();
         final Set<Node> removed = Collections.newSetFromMap(new IdentityHashMap<>());
         removed.addAll(deleted);
@@ -746,8 +880,8 @@ public final class TruStExplorer {
         for (int thread : affected) {
             interpreter.replay(g2, thread);
         }
-        stats.inPlaceRevisits += revisitInPlace(g2, write);
-        stack.push(() -> visit(g2));
+        stats().inPlaceRevisits += revisitInPlace(g2, write);
+        push(() -> visit(g2));
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -829,11 +963,11 @@ public final class TruStExplorer {
 
         final boolean boundReached = Arrays.stream(g.states).anyMatch(st -> st.boundReached);
         if (g.truncated || boundReached) {
-            stats.truncatedExecutions++;
+            stats().truncatedExecutions++;
             return;
         }
         if (!finished) {
-            stats.blockedExecutions++;
+            stats().blockedExecutions++;
             if (properties.contains(Property.TERMINATION) && !spinning.isEmpty() && isLivenessViolation(g, spinning)) {
                 reportViolation(ViolationKind.TERMINATION, "Threads " + spinning.stream()
                         .map(i -> interpreter.getThreads().get(i).toString()).toList()
@@ -842,11 +976,13 @@ public final class TruStExplorer {
             return;
         }
 
-        stats.completeExecutions++;
+        stats().completeExecutions++;
         if (printExecutions) {
             final String desc = g.toString(layout);
-            outcomes.add(desc);
-            logger.info("Execution #{}:\n{}", stats.completeExecutions, desc);
+            synchronized (this) {
+                outcomes.add(desc);
+            }
+            logger.info("Execution #{}:\n{}", stats().completeExecutions, desc);
         }
 
         if (!properties.contains(Property.PROGRAM_SPEC)) {
@@ -855,7 +991,7 @@ public final class TruStExplorer {
         final Expression filter = program.getFilterSpecification();
         final ConcreteEvaluator finalEval = finalStateEvaluator(g);
         if (filter != null && !finalEval.evaluateBoolean(filter)) {
-            stats.filteredExecutions++;
+            stats().filteredExecutions++;
             return;
         }
         final Expression spec = program.getSpecification();
@@ -865,11 +1001,15 @@ public final class TruStExplorer {
         final boolean holds = finalEval.evaluateBoolean(spec);
         switch (program.getSpecificationType()) {
             case EXISTS -> {
-                if (holds && !specificationReached) {
-                    specificationReached = true;
-                    reachabilityWitness = g.toString(layout);
-                    if (stopOnReachability) {
-                        stop = true;
+                if (holds) {
+                    synchronized (this) {
+                        if (!specificationReached) {
+                            specificationReached = true;
+                            reachabilityWitness = g.toString(layout);
+                            if (stopOnReachability) {
+                                scheduler.stop();
+                            }
+                        }
                     }
                 }
             }
@@ -927,6 +1067,32 @@ public final class TruStExplorer {
         return false;
     }
 
+    // Some read of the spinning iteration of thread t does not read from the latest write.
+    private static boolean hasStaleIterationRead(ExplorationGraph g, int t) {
+        final int start = g.states[t].iterationStart;
+        for (Node n : g.getThreadNodes(t)) {
+            if (n.poIndex >= start && n.isRead() && !readsCoMaximal(g, n)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /*
+        Whether some thread may add a write to the graph in some extension (an over-approximation).
+        Threads waiting for their creation are accounted for by their creator (thread creations count as writes).
+        Spinning and blocked threads only move on after a revisit, which requires a new write.
+     */
+    private boolean anyThreadMayWriteLater(ExplorationGraph g) {
+        for (int t = 0; t < g.states.length; t++) {
+            final ThreadState st = g.states[t];
+            if (st.isRunning() && !interpreter.isWaitingForCreation(g, t) && analysis.mayWriteLater(st.pc)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean isLivenessViolation(ExplorationGraph g, List<Integer> spinning) {
         for (int t : spinning) {
             final int start = g.states[t].iterationStart;
@@ -973,10 +1139,10 @@ public final class TruStExplorer {
         reportViolation(ViolationKind.CAT_SPEC, "Flagged axiom " + axiom.getNameOrTerm() + " is violated.", g);
     }
 
-    private void reportViolation(ViolationKind kind, String description, ExplorationGraph g) {
+    private synchronized void reportViolation(ViolationKind kind, String description, ExplorationGraph g) {
         if (violation == null) {
             violation = new Violation(kind, description, g.toString(layout));
         }
-        stop = true;
+        scheduler.stop();
     }
 }

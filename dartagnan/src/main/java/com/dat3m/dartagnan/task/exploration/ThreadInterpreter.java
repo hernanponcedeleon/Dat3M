@@ -39,9 +39,10 @@ final class ThreadInterpreter {
     private final ShutdownNotifier shutdownNotifier;
     private final ExplorationOrder order;
     private final Set<String> relaxedTags;
+    private final ThreadAnalysis analysis;
 
     ThreadInterpreter(List<Thread> threads, MemoryLayout layout, Program program, ExplorationOrder order,
-                      ShutdownNotifier notifier) {
+                      ThreadAnalysis analysis, ShutdownNotifier notifier) {
         this.order = order;
         this.relaxedTags = ExplorationOrder.relaxedTags(program.getArch());
         this.threads = threads;
@@ -51,6 +52,7 @@ final class ThreadInterpreter {
         this.layout = layout;
         this.zeroInitializedRegisters = program.registersAreZeroInitialized();
         this.shutdownNotifier = notifier;
+        this.analysis = analysis;
         collectJoinLoads();
     }
 
@@ -450,6 +452,11 @@ final class ThreadInterpreter {
                 }
                 if (jump.hasTag(Tag.SPINLOOP)) {
                     st.status = ThreadState.Status.SPINNING;
+                    // The side-effect-free iteration is the last iteration of this loop (not of an inner loop).
+                    final Integer start = st.loopEntry.get(analysis.getSpinLoopHeader(jump));
+                    if (start != null) {
+                        st.iterationStart = start;
+                    }
                     return;
                 }
                 next = jump.getLabel();
@@ -493,11 +500,17 @@ final class ThreadInterpreter {
                 // Entering the loop (or a new iteration): the current iteration starts here. Without this, the first
                 // iteration of a loop would also contain the events before the loop.
                 st.iterationStart = st.nextPoIndex;
+                if (analysis.isSpinLoopHeader(label)) {
+                    st.loopEntry.put(label, st.nextPoIndex);
+                }
             }
         } else if (e instanceof LoopBound) {
             // Precedes the header of a statically side-effect-free (spin) loop, whose back jump was replaced by
             // the spinloop terminator: the (only) iteration starts here.
             st.iterationStart = st.nextPoIndex;
+            if (analysis.isSpinLoopHeader(e)) {
+                st.loopEntry.put(e, st.nextPoIndex);
+            }
         } else if (e instanceof ThreadStart || e instanceof Skip
                 || e instanceof CodeAnnotation || e instanceof InstructionBoundary || e instanceof StateSnapshot) {
             // Nothing to do

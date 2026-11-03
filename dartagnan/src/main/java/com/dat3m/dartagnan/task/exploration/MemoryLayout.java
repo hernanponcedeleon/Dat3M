@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
     Assigns concrete addresses to memory objects.
@@ -32,10 +33,10 @@ final class MemoryLayout {
 
     private final Program program;
     private final TreeMap<BigInteger, Region> regions = new TreeMap<>();
-    private final Map<MemoryObject, Region> firstInstance = new HashMap<>();
+    private final Map<MemoryObject, Region> firstInstance = new ConcurrentHashMap<>();
     private final Map<Alloc, List<Region>> dynamicInstances = new HashMap<>();
     private final Map<MemoryObject, Map<Integer, Init>> initEvents = new HashMap<>();
-    private final Map<BigInteger, Node> initNodes = new HashMap<>();
+    private final Map<BigInteger, Node> initNodes = new ConcurrentHashMap<>();
     private final Set<String> syntheticInitTags;
     private BigInteger next = BigInteger.valueOf(0x1000);
 
@@ -95,6 +96,11 @@ final class MemoryLayout {
     }
 
     BigInteger getAddress(MemoryObject object) {
+        final Region known = firstInstance.get(object);
+        return known != null ? known.base() : getAddressSlow(object);
+    }
+
+    private synchronized BigInteger getAddressSlow(MemoryObject object) {
         Region region = firstInstance.get(object);
         if (region == null) {
             // Dynamically allocated object referenced directly: we use its first instance.
@@ -129,7 +135,12 @@ final class MemoryLayout {
     }
 
     // Returns the unique init node of the location.
-    synchronized Node getInitNode(BigInteger address, Type accessType) {
+    Node getInitNode(BigInteger address, Type accessType) {
+        final Node known = initNodes.get(address);
+        return known != null ? known : createInitNode(address, accessType);
+    }
+
+    private synchronized Node createInitNode(BigInteger address, Type accessType) {
         Node init = initNodes.get(address);
         if (init != null) {
             return init;
@@ -155,7 +166,7 @@ final class MemoryLayout {
         return init;
     }
 
-    String describe(BigInteger address) {
+    synchronized String describe(BigInteger address) {
         final Map.Entry<BigInteger, Region> entry = regions.floorEntry(address);
         if (entry != null) {
             final Region region = entry.getValue();
