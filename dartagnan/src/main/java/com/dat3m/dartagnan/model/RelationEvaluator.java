@@ -20,7 +20,7 @@ import java.util.*;
 
 /*
     Computes the derived relations of a memory model from the contents of its base relations.
-    Sets are represented as graphs containing only pairs (e, e), like in the rest of Dartagnan.
+    Sets are represented as graphs containing only pairs (e, e).
 
     A relation is considered "base" if it has no dependencies; its contents must be provided by the caller.
     All other relations are computed bottom-up along the dependency graph,

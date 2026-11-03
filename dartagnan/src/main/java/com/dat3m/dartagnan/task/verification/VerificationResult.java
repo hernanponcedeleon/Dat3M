@@ -8,15 +8,14 @@ import com.dat3m.dartagnan.task.TaskResult;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 
-import java.util.EnumSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.TRACKABILITY;
 
 /*
-    The result of a verification task. If the solver found an execution (e.g. a counterexample),
-    the result contains it as an Execution, which is independent of the solver's SMT model.
+    The result of a verification task with an optional execution (witness).
  */
 public final class VerificationResult implements TaskResult<VerificationTask> {
 
@@ -41,11 +40,13 @@ public final class VerificationResult implements TaskResult<VerificationTask> {
 
     // Extracts everything needed from the model. The model is not kept and can be closed afterward.
     public static VerificationResult fromModel(VerificationTask task, VerificationStatus status, IREvaluator model) {
-        final Set<Property> violated = EnumSet.noneOf(Property.class);
-        task.getProperties().stream().filter(p -> isViolated(p, task, model)).forEach(violated::add);
+        final Set<Property> violated = task.getProperties().stream()
+                .filter(p -> isViolated(p, task, model))
+                .collect(Collectors.toSet());
         final Set<MemoryObject> untrackable = violated.contains(TRACKABILITY)
-                ? Set.copyOf(task.getProgram().getMemory().getObjects().stream()
-                        .filter(o -> model.isLeaked(o) && !model.isTrackable(o)).toList())
+                ? task.getProgram().getMemory().getObjects().stream()
+                .filter(o -> model.isLeaked(o) && !model.isTrackable(o))
+                .collect(Collectors.toSet())
                 : Set.of();
         return new VerificationResult(task, status, Execution.fromModel(model), violated, untrackable);
     }
