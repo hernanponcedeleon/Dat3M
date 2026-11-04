@@ -141,7 +141,7 @@ enum PosixErrorCode {
     ENOTSUP, // 134 Not supported parameter or option
     ;
 
-    int getValue() {
+    int getValue(CLibraryVersion v) {
         return ordinal();
     }
 }

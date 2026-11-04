@@ -23,6 +23,7 @@ public class OptionNames {
     public static final String ENUMERATION_LIMIT = "enumeration.limit";
 
     // Modeling Options
+    public static final String CLIB = "modeling.clib";
     public static final String PROGRESSMODEL = "modeling.progress";
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";

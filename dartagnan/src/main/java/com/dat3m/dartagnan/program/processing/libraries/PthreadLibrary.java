@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -24,6 +25,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.CLIB;
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
@@ -124,6 +126,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             toUppercase = true)
     private boolean pthreadCreateAlwaysSucceeds = true;
 
+    @Option(name = CLIB,
+            description = "The Clib against which the program was compiled.",
+            secure = true,
+            toUppercase = true)
+    private CLibraryVersion clib = null;
+
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
         config.inject(this);
@@ -143,6 +151,25 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 .findFirst();
     }
 
+    @Override
+    public void link(Program program) {
+        if (clib == null) {
+            clib = deriveClibFromProgram(program);
+        }
+        super.link(program);
+    }
+
+    private static CLibraryVersion deriveClibFromProgram(Program program) {
+        final Program.TargetSystem targetSystem = program.getMetadata(Program.TargetSystem.class);
+        return switch (targetSystem) {
+            case Linux, Windows -> CLibraryVersion.GLIBC;
+            case MacOS -> CLibraryVersion.DARWIN_LIBC;
+            case null -> {
+                // TODO: logger.warn?
+                yield CLibraryVersion.GLIBC;
+            }
+        };
+    }
 
     // ========================================================================================
 
@@ -196,8 +223,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newGoto(endOfPthreadCreate),
                 // ----- FAIL -----
                 pthreadFailCase,
-                newLocal(resultRegister, expressions.makeValue(PosixErrorCode.EAGAIN.getValue(),
-                        (IntegerType) resultRegister.getType())),
+                assignPosixError(resultRegister, PosixErrorCode.EAGAIN),
                 endOfPthreadCreate
         );
     }
@@ -579,6 +605,26 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
+    private enum PthreadMutexTypeValue {
+        NORMAL(0, 0),
+        RECURSIVE(1, 2),
+        ERRORCHECK(2, 1);
+
+        final int valGlibc;
+        final int valDarwinLibc;
+        PthreadMutexTypeValue(int valGlibc, int valDarwinLibc) {
+            this.valGlibc = valGlibc;
+            this.valDarwinLibc = valDarwinLibc;
+        }
+
+        int value(CLibraryVersion clib) {
+            return switch (clib) {
+                case GLIBC -> valGlibc;
+                case DARWIN_LIBC ->  valDarwinLibc;
+            };
+        }
+    }
+
     private List<Event> inlinePthreadMutexAttr(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutexattr_init
         final String functionName = call.getCalledFunction().getName();
@@ -595,10 +641,20 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                     assignSuccess(errorRegister)
             );
         }
-        final boolean get = suffix.startsWith("get");
-        checkUnknownIntrinsic(get || suffix.startsWith("set"), call);
+
+        checkUnknownIntrinsic(suffix.startsWith("get") || suffix.startsWith("set"), call);
         checkUnknownIntrinsic(P_THREAD_MUTEXATTR.contains(suffix.substring(3)), call);
-        return List.of(
+
+        final List<Event> events = new ArrayList<>();
+        if (suffix.startsWith("settype")) {
+            final Expression typeArg = call.getArguments().get(1);
+            final Expression recVal = expressions.makeValue(PthreadMutexTypeValue.RECURSIVE.value(clib), (IntegerType) typeArg.getType());
+            final Expression isNonRec = expressions.makeNEQ(typeArg, recVal);
+            events.addAll(inlineAssert(isNonRec, true, AssertionType.UNKNOWN_FUNCTION, "Recursive mutexes are unsupported."));
+        }
+
+        return eventSequence(
+                events,
                 assignSuccess(errorRegister)
         );
     }
@@ -855,7 +911,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private Event assignPosixError(Register errorRegister, PosixErrorCode code) {
-        final Expression value = expressions.makeValue(code.getValue(), (IntegerType) errorRegister.getType());
+        final Expression value = expressions.makeValue(code.getValue(clib), (IntegerType) errorRegister.getType());
         return EventFactory.newLocal(errorRegister, value);
     }
 

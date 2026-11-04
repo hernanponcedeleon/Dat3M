@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -32,6 +33,8 @@ public class Program extends MetadataCarrierBase<Program> {
     private static final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
+
+    public enum TargetSystem implements Metadata { Linux, MacOS, Windows }
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
