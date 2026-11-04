@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.expression.type.FloatType;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
@@ -22,7 +24,9 @@ import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.test.TestHelper;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,6 +85,12 @@ public class ExecutionTest {
         addLitmusTests(data, Arch.LKMM, "LKMM-DR", "linux-kernel", Property.CAT_SPEC, List.of(
                 "LKMM/auto/C-LB-Lrw+R-A+R-Od+R-D", "LKMM/auto/C-LB-Lwr+R-A+R-A+R-A", "LKMM/auto/C-LB-Lwr+R-Oc+R-D",
                 "LKMM/auto/C-LB-Lww+R-A+R-Od+R-Od", "LKMM/lockfree/Michael-Scott"));
+        // Coherence is not total in PTX, so the final value must come from the right co-maximal store.
+        addLitmusTests(data, Arch.PTX, "PTX", "ptx-v7.5", Property.PROGRAM_SPEC, List.of(
+                "PTX/Memalloy/IRWIW_gl_cta"));
+        // Threads blocked at a barrier.
+        addLitmusTests(data, Arch.VULKAN, "VULKAN", "vulkan", Property.TERMINATION, List.of(
+                "VULKAN/Barrier/quorum1-hang"));
 
         // SPIR-V programs whose encoding is satisfiable: violated forall specifications, exists specifications
         // that hold, and data races.
@@ -173,6 +183,19 @@ public class ExecutionTest {
             assertFalse("No flag raised", execution.getRaisedFlags().isEmpty());
         }
 
+        if (result.isViolated(Property.TERMINATION)) {
+            final boolean isStuck = execution.getThreads().stream().anyMatch(ThreadExecution::isBlocked)
+                    || execution.getEvents(CondJump.class).stream()
+                            .anyMatch(j -> j.hasTag(Tag.NONTERMINATION) && execution.jumpTaken(j));
+            assertTrue("No thread is stuck", isStuck);
+        }
+        for (ThreadExecution thread : execution.getThreads()) {
+            for (BlockingEvent blocked : thread.getBlockedEvents()) {
+                assertTrue(execution.isBlocked(blocked));
+                assertFalse("Blocked event " + blocked + " is executed", execution.isExecuted(blocked));
+            }
+        }
+
         if (result.isViolated(Property.PROGRAM_SPEC) && program.getFormat() == Program.SourceLanguage.LLVM) {
             assertTrue("No assertion violated",
                     execution.getEvents(Assert.class).stream().anyMatch(execution::assertionViolated));
@@ -200,6 +223,11 @@ public class ExecutionTest {
 
     // Checks that values recomputed by the execution's own expression evaluation agree with the extracted values.
     private void checkConsistency(Execution execution) {
+        for (Relation relation : execution.getMemoryModel().getRelations()) {
+            if (RelationEvaluator.isBase(relation)) {
+                assertFalse("Mutable graph for " + relation, execution.getRelation(relation) instanceof MutableEventGraph);
+            }
+        }
         for (Axiom axiom : execution.getMemoryModel().getAxioms()) {
             if (!axiom.isFlagged()) {
                 assertTrue("Axiom violated: " + axiom, execution.isSatisfied(axiom));

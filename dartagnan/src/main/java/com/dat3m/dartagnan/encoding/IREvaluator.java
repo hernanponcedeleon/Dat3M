@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.BooleanType;
@@ -20,6 +19,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Evaluator;
 
 import java.math.BigInteger;
@@ -49,10 +49,11 @@ public class IREvaluator implements AutoCloseable {
 
     // NOTE: Values left unconstrained by the model are reported as zero.
     public Expression evaluate(TypedFormula<?, ?> typedFormula) {
-        final Object smtValue = smtModel.evaluate(typedFormula.formula());
-        return smtValue == null
-                ? ExpressionFactory.getInstance().makeGeneralZero(typedFormula.getType())
-                : ExpressionDecoder.decode(typedFormula.getType(), smtValue);
+        return ExpressionDecoder.decode(typedFormula.getType(), smtModel.evaluate(typedFormula.formula()));
+    }
+
+    public boolean isTrue(BooleanFormula formula) {
+        return TRUE.equals(smtModel.evaluate(formula));
     }
 
     public boolean evaluateBooleanAt(Expression expression, Event at) {

@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
@@ -59,6 +60,8 @@ public final class Execution {
     private final Map<NonDetValue, Expression> nondetValues;
 
     private final MemoryLayout memoryLayout;
+    // The final store of addresses with several co-maximal stores, i.e., when coherence is not total.
+    private final Map<BigInteger, Store> finalStores;
     // Contains all base relations; derived relations are computed on demand and cached.
     private final Map<Relation, EventGraph> relations;
 
@@ -69,7 +72,7 @@ public final class Execution {
               Map<MemoryCoreEvent, Expression> addresses, Map<MemoryCoreEvent, Expression> values,
               Map<RegWriter, Expression> results, Set<CondJump> takenJumps, Set<Assert> violatedAssertions,
               Map<NonDetValue, Expression> nondetValues, MemoryLayout memoryLayout,
-              Map<Relation, EventGraph> baseRelations) {
+              Map<BigInteger, Store> finalStores, Map<Relation, EventGraph> baseRelations) {
         this.program = program;
         this.memoryModel = memoryModel;
         this.threads = List.copyOf(threads);
@@ -80,7 +83,9 @@ public final class Execution {
         this.violatedAssertions = Set.copyOf(violatedAssertions);
         this.nondetValues = Map.copyOf(nondetValues);
         this.memoryLayout = memoryLayout;
-        this.relations = new HashMap<>(baseRelations);
+        this.finalStores = Map.copyOf(finalStores);
+        this.relations = new HashMap<>();
+        baseRelations.forEach((r, graph) -> relations.put(r, ImmutableMapEventGraph.from(graph)));
 
         final Map<Thread, ThreadExecution> threadMap = new LinkedHashMap<>();
         final List<Event> events = new ArrayList<>();
@@ -165,7 +170,7 @@ public final class Execution {
     }
 
     public boolean isBlocked(BlockingEvent event) {
-        return getThread(checkExecuted(event).getThread()).getBlockedEvents().contains(event);
+        return getThread(event.getThread()).getBlockedEvents().contains(event);
     }
 
     public boolean assertionViolated(Assert assertion) {
@@ -241,7 +246,11 @@ public final class Execution {
     }
 
     // The co-maximal store to the given address, if the memory model defines "co" and there are stores.
+    // If coherence is not total, this is the co-maximal store that determines the final value.
     public Optional<Store> getFinalStore(BigInteger address) {
+        if (finalStores.containsKey(address)) {
+            return Optional.of(finalStores.get(address));
+        }
         final Relation coRelation = memoryModel.getRelation(CO);
         if (coRelation == null) {
             return Optional.empty();

@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
@@ -30,6 +29,7 @@ import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.model.Execution;
+import com.dat3m.dartagnan.model.ThreadExecution;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -277,15 +277,18 @@ public class OutputGenerator {
             }
 
             if (props.contains(TERMINATION) && result.isViolated(TERMINATION)) {
-                for (Event e : execution.getEvents()) {
-                    final boolean isStuckLoop = e instanceof CondJump jump
-                            && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
-                            && execution.jumpTaken(jump);
-                    final boolean isStuckBarrier = e instanceof BlockingEvent barrier
-                            && execution.isBlocked(barrier);
-
-                    if (isStuckLoop || isStuckBarrier) {
-                        appendTo(details, e, synContext);
+                for (ThreadExecution thread : execution.getThreads()) {
+                    for (Event e : thread.getTrace()) {
+                        final boolean isStuckLoop = e instanceof CondJump jump
+                                && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
+                                && execution.jumpTaken(jump);
+                        if (isStuckLoop) {
+                            appendTo(details, e, synContext);
+                        }
+                    }
+                    // Blocked events are not executed, so they come after the trace.
+                    for (Event barrier : thread.getBlockedEvents()) {
+                        appendTo(details, barrier, synContext);
                     }
                 }
                 return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
@@ -432,7 +435,13 @@ public class OutputGenerator {
         final StringBuilder output = new StringBuilder();
         for (Axiom ax : execution.getRaisedFlags()) {
             StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-            execution.getRelation(ax.getRelation()).apply((e1, e2) -> {
+            final List<Event[]> pairs = new ArrayList<>();
+            execution.getRelation(ax.getRelation()).apply((e1, e2) -> pairs.add(new Event[]{ e1, e2 }));
+            // The graph iterates in hash order, so we sort the pairs to get a deterministic output.
+            pairs.sort(Comparator.<Event[]>comparingInt(p -> p[0].getGlobalId()).thenComparingInt(p -> p[1].getGlobalId()));
+            for (Event[] pair : pairs) {
+                final Event e1 = pair[0];
+                final Event e2 = pair[1];
                 final String callSeparator = " -> ";
                 final String callStackFirst = makeContextString(
                         synContext.getContextInfo(e1).getContextOfType(CallContext.class),
@@ -449,7 +458,7 @@ public class OutputGenerator {
                         .append("\t(E").append(e1.getGlobalId())
                         .append(" / E").append(e2.getGlobalId()).append(")")
                         .append("\n");
-            });
+            }
             output.append(violatingPairs);
         }
 

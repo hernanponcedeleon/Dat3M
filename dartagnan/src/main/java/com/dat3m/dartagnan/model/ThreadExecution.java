@@ -65,7 +65,7 @@ public final class ThreadExecution {
         return pos;
     }
 
-    // Executed blocking events that are blocked, i.e., the thread got stuck at them.
+    // Blocking events the thread reached but got stuck at. They are not executed and thus not part of the trace.
     public List<BlockingEvent> getBlockedEvents() {
         return blockedEvents;
     }
