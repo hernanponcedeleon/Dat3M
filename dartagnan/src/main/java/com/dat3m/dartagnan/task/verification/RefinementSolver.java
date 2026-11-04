@@ -178,7 +178,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         //  ------- Generate refinement model -------
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
+        final WmmEncoder baselineEncoder = WmmEncoder.withExactRelations(context); // CAAT reads encoded relations from the model
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 

@@ -35,6 +35,7 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -75,23 +76,54 @@ public class WmmEncoder {
             secure = true)
     boolean useSATEncoding = true;
 
+    @Option(name = POLARITY_AWARE_ENCODING,
+            description = "Encode each derived relation only in the direction(s) required by the axioms that " +
+                    "(transitively) use it, instead of a full equivalence (Plaisted-Greenbaum style). " +
+                    "Edge variables of derived relations may then over-approximate (or under-approximate) " +
+                    "the relation in a model. Ignored by solvers that read derived relations from the model.",
+            secure = true)
+    private boolean polarityAware = true;
+
+    // ==============================================================================================
+    // Polarities of derived relations.
+    // LOWER: the encoding must guarantee "definition holds => edge variable is true" (edge >= relation).
+    //        Required where the edge variable is used negatively, e.g., in (non-negated) consistency axioms.
+    // UPPER: the encoding must guarantee "edge variable is true => definition holds" (edge <= relation).
+    //        Required where the edge variable is used positively, e.g., in negated axioms.
+    private static final int LOWER = 1;
+    private static final int UPPER = 2;
+    private static final int EXACT = LOWER | UPPER;
+
+    private final Map<Relation, Integer> polarities;
+
     // ==============================================================================================
 
-    private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
+    private WmmEncoder(EncodingContext ctx, boolean allowPolarity) throws InvalidConfigurationException {
         this.context = ctx;
         this.memoryModel = ctx.getTask().getMemoryModel();
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
 
         ctx.getTask().getConfig().inject(this);
+        polarityAware &= allowPolarity;
         logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
         logger.info("{}: {}", MULTI_READS, allowMultiReads);
         logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
+        logger.info("{}: {}", POLARITY_AWARE_ENCODING, polarityAware);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
+        this.polarities = polarityAware ? computePolarities() : Map.of();
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        return new WmmEncoder(context);
+        return new WmmEncoder(context, true);
+    }
+
+    /*
+        Use this factory if the values of derived relations are read from the model (e.g., by CAAT during refinement),
+        in which case each encoded relation must be encoded exactly.
+     */
+    public static WmmEncoder withExactRelations(EncodingContext context) throws InvalidConfigurationException {
+        return new WmmEncoder(context, false);
     }
 
     // ==================================================================================================
@@ -288,6 +320,80 @@ public class WmmEncoder {
 
     }
 
+    /*
+        Computes for each relation which directions of its definition need to be encoded.
+        Axioms seed the polarities:
+            - consistency axioms (acyclic/irreflexive/empty) only forbid edges: LOWER
+            - negated axioms require edges to exist: UPPER
+            - flagged axioms are treated like non-flagged ones: their formula only occurs positively,
+              under weak tracking ("trackingLit => axiom holds", see PropertyEncoder), so a model that claims a flag
+              is violated must really violate it, which is the same requirement as for consistency axioms.
+              NOTE: the pairs reported for a violated flag (IREvaluator.eventGraph) are then guaranteed to be real
+              (for negated flags), but may not be all of them.
+        Polarities are propagated to the operands of each definition. All operators are monotone,
+        except for the subtrahend of a difference, which flips the polarity.
+        Definitions not handled by the derived-relation encoders (base relations) are always encoded exactly,
+        so their operands (if any) are required to be EXACT as well.
+     */
+    private Map<Relation, Integer> computePolarities() {
+        final Map<Relation, Integer> pol = new HashMap<>();
+        final Deque<Relation> worklist = new ArrayDeque<>();
+        final BiConsumer<Relation, Integer> require = (rel, p) -> {
+            final int old = pol.getOrDefault(rel, 0);
+            if ((old | p) != old) {
+                pol.put(rel, old | p);
+                worklist.add(rel);
+            }
+        };
+
+        for (Constraint c : context.constraintsToEncode) {
+            if (c instanceof Axiom ax) {
+                require.accept(ax.getRelation(), ax.isNegated() ? UPPER : LOWER);
+            }
+        }
+
+        while (!worklist.isEmpty()) {
+            final Relation rel = worklist.poll();
+            final int p = pol.get(rel);
+            final Definition def = rel.getDefinition();
+            if (def instanceof Difference diff) {
+                require.accept(diff.getMinuend(), p);
+                require.accept(diff.getSubtrahend(), flip(p));
+            } else if (isMonotoneDerived(def)) {
+                rel.getDependencies().forEach(dep -> require.accept(dep, p));
+            } else {
+                rel.getDependencies().forEach(dep -> require.accept(dep, EXACT));
+            }
+        }
+
+        if (logger.isInfoEnabled()) {
+            final long lower = pol.values().stream().filter(p -> p == LOWER).count();
+            final long upper = pol.values().stream().filter(p -> p == UPPER).count();
+            final long exact = pol.values().stream().filter(p -> p == EXACT).count();
+            logger.info("Relation polarities: {} lower-only, {} upper-only, {} exact", lower, upper, exact);
+        }
+        return pol;
+    }
+
+    private static int flip(int polarity) {
+        return ((polarity & LOWER) != 0 ? UPPER : 0) | ((polarity & UPPER) != 0 ? LOWER : 0);
+    }
+
+    private static boolean isMonotoneDerived(Definition def) {
+        return def instanceof Union || def instanceof Intersection || def instanceof Composition
+                || def instanceof Projection || def instanceof TransitiveClosure || def instanceof SetIdentity
+                || def instanceof Inverse || def instanceof CartesianProduct;
+    }
+
+    private int getPolarity(Relation rel) {
+        if (!polarityAware) {
+            return EXACT;
+        }
+        // Relations not reachable from any axiom are encoded exactly (to be on the safe side).
+        final int p = polarities.getOrDefault(rel, 0);
+        return p == 0 ? EXACT : p;
+    }
+
     private void encodeContradictions(List<BooleanFormula> enc) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         ra.getContradictions().apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
@@ -347,6 +453,25 @@ public class WmmEncoder {
             });
         }
 
+        // Encodes "edge <=> definition", restricted to the direction(s) required by the polarity.
+        private void encodeDefinition(int polarity, BooleanFormula edge, BooleanFormula definition) {
+            switch (polarity) {
+                case LOWER -> enc.add(bmgr.implication(definition, edge));
+                case UPPER -> enc.add(bmgr.implication(edge, definition));
+                default -> enc.add(bmgr.equivalence(edge, definition));
+            }
+        }
+
+        // Encodes "edge <=> OR(disjuncts)", restricted to the direction(s) required by the polarity.
+        // In the LOWER case, we emit one (small) implication per disjunct instead of a single large one.
+        private void encodeDisjunctiveDefinition(int polarity, BooleanFormula edge, List<BooleanFormula> disjuncts) {
+            if (polarity == LOWER) {
+                disjuncts.forEach(d -> enc.add(bmgr.implication(d, edge)));
+            } else {
+                encodeDefinition(polarity, edge, bmgr.or(disjuncts));
+            }
+        }
+
         @Override
         public Void visitDefinition(Definition def) {
             if (STATIC_RELATIONS.contains(def.getClass())) {
@@ -372,6 +497,7 @@ public class WmmEncoder {
             EventGraph must = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            final int polarity = getPolarity(rel);
             getActiveSet(union).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (must.contains(e1, e2)) {
@@ -381,7 +507,7 @@ public class WmmEncoder {
                     for (EncodingContext.EdgeEncoder e : encoders) {
                         opt.add(e.encode(e1, e2));
                     }
-                    enc.add(bmgr.equivalence(edge, bmgr.or(opt)));
+                    encodeDisjunctiveDefinition(polarity, edge, opt);
                 }
             });
             return null;
@@ -395,6 +521,7 @@ public class WmmEncoder {
             RelationAnalysis.Knowledge[] knowledges = operands.stream().map(ra::getKnowledge).toArray(RelationAnalysis.Knowledge[]::new);
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            final int polarity = getPolarity(rel);
             getActiveSet(inter).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
@@ -406,7 +533,7 @@ public class WmmEncoder {
                             opt.add(encoders[i].encode(e1, e2));
                         }
                     }
-                    enc.add(bmgr.equivalence(edge, bmgr.and(opt)));
+                    encodeDefinition(polarity, edge, bmgr.and(opt));
                 }
             });
             return null;
@@ -421,6 +548,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
             EncodingContext.EdgeEncoder enc2 = context.edge(r2);
+            final int polarity = getPolarity(rel);
             getActiveSet(diff).apply((e1, e2) -> {
                 BooleanFormula edge = enc0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
@@ -428,7 +556,7 @@ public class WmmEncoder {
                 } else {
                     BooleanFormula opt1 = enc1.encode(e1, e2);
                     BooleanFormula opt2 = bmgr.not(enc2.encode(e1, e2));
-                    enc.add(bmgr.equivalence(edge, bmgr.and(opt1, opt2)));
+                    encodeDefinition(polarity, edge, bmgr.and(opt1, opt2));
                 }
             });
             return null;
@@ -448,6 +576,7 @@ public class WmmEncoder {
             final EventGraph a1 = EventGraph.union(getActiveSet(r1.getDefinition()), k1.getMustSet());
             final EventGraph a2 = EventGraph.union(getActiveSet(r2.getDefinition()), k2.getMustSet());
             Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
+            final int polarity = getPolarity(rel);
             getActiveSet(comp).apply((e1, e2) -> {
                 final List<BooleanFormula> orClause = new ArrayList<>();
                 if (k.getMustSet().contains(e1, e2)) {
@@ -461,7 +590,7 @@ public class WmmEncoder {
                         }
                     }
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), bmgr.or(orClause)));
+                encodeDisjunctiveDefinition(polarity, enc0.encode(e1, e2), orClause);
             });
             return null;
         }
@@ -475,13 +604,14 @@ public class WmmEncoder {
             final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
             final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
+            final int polarity = getPolarity(rel);
             getActiveSet(projection).apply((e1, e2) -> {
                 assert e1.equals(e2);
                 final var opt = new ArrayList<BooleanFormula>();
                 for (Event alt : altMap.getOrDefault(e1, Set.of())) {
                     opt.add(enc1.encode(dom ? e1 : alt, dom ? alt : e1));
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e1), bmgr.or(opt)));
+                encodeDisjunctiveDefinition(polarity, enc0.encode(e1, e1), opt);
             });
             return null;
         }
@@ -496,6 +626,7 @@ public class WmmEncoder {
 
             final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
+            final int polarity = getPolarity(rel);
 
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
@@ -513,7 +644,7 @@ public class WmmEncoder {
                         }
                     }
 
-                    enc.add(bmgr.equivalence(edge, bmgr.or(orClause)));
+                    encodeDisjunctiveDefinition(polarity, edge, orClause);
                 }
             });
             return null;
@@ -526,13 +657,14 @@ public class WmmEncoder {
             EventGraph mustSet = ra.getKnowledge(setId).getMustSet();
             EncodingContext.EdgeEncoder encSetId = context.edge(setId);
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            final int polarity = getPolarity(setId);
             getActiveSet(id).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(polarity,
                             encSetId.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : e1 == e2 ? encDomain.encode(e1, e2) : bmgr.makeFalse()
-                    ))
+                    )
             );
             return null;
         }
@@ -544,13 +676,14 @@ public class WmmEncoder {
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final int polarity = getPolarity(rel);
             getActiveSet(inv).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(polarity,
                             enc0.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : enc1.encode(e2, e1)
-                    ))
+                    )
             );
             return null;
         }
@@ -564,13 +697,14 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder encProduct = context.edge(product);
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
             EncodingContext.EdgeEncoder encRange = context.edge(range);
+            final int polarity = getPolarity(product);
             getActiveSet(cartesianProduct).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(polarity,
                             encProduct.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2))
-                    ))
+                    )
             );
             return null;
         }
