@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.frontend.llvm;
 
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.LLVMIRLexer;
-import com.dat3m.dartagnan.parsers.LLVMIR;
-import com.dat3m.dartagnan.parsers.LLVMIR.*;
+import com.dat3m.dartagnan.parsers.LLVMIRParser;
+import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
 import com.dat3m.dartagnan.frontend.ParserInterface;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
@@ -17,7 +17,7 @@ public class ParserLlvm implements ParserInterface<Program> {
         lexer.addErrorListener(new DiagnosticErrorListener(true));
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        LLVMIR parser = new LLVMIR(tokenStream);
+        LLVMIRParser parser = new LLVMIRParser(tokenStream);
         parser.addErrorListener(new AbortErrorListener());
         CompilationUnitContext parserEntryPoint = parser.compilationUnit();
         VisitorLlvm visitor = new VisitorLlvm(parserEntryPoint);

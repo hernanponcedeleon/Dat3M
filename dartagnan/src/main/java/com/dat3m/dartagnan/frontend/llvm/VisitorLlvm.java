@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.frontend.llvm.asm.*;
 import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.SourceLocation;
-import com.dat3m.dartagnan.parsers.LLVMIR.*;
-import com.dat3m.dartagnan.parsers.LLVMIR;
+import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Entrypoint;
@@ -84,15 +83,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private static DataLayout parseDataLayout(CompilationUnitContext ctx) {
-        final DataLayout dataLayout = new DataLayout();
-        for (TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            final TargetDefContext target = entity.targetDef();
-            if (target != null && target.targetDataLayout() != null) {
-                dataLayout.visit(target.targetDataLayout().dataLayout());
-                break;
-            }
-        }
-        return dataLayout;
+        final String targetDataLayout = ctx.topLevelEntity().stream()
+                .map(TopLevelEntityContext::targetDef)
+                .map(t -> t == null ? null : t.targetDataLayout())
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(c -> c.StringLit().getText())
+                .map(s -> s.substring(1, s.length() - 1))
+                .orElse("");
+        return new DataLayout(targetDataLayout);
     }
 
     public Program buildProgram() {
@@ -106,10 +105,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Also collect all type definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() != null) {
-                entity.accept(this);
+                visitMetadataDef(entity.metadataDef());
             }
             if (entity.typeDef() != null) {
-                entity.accept(this);
+                visitTypeDef(entity.typeDef());
             }
         }
 
@@ -135,11 +134,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.targetDef() == null &&
-                    entity.metadataDef() == null &&
-                    entity.globalDef() == null &&
-                    entity.typeDef() == null &&
-                    entity.funcDecl() == null) {
+            if (entity.targetDef() == null && entity.globalDef() == null && entity.typeDef() == null && entity.funcDecl() == null) {
                 entity.accept(this);
             }
         }
@@ -1251,7 +1246,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final TypeContext typeContext : ctx.type()) {
             fields.add(parseTypeLayout(typeContext));
         }
-        parsedType = dataLayout.structType(fields, ctx.packed != null);
+        // TODO The grammar we currently gives no indicator whether the aggregate should be packed or not.
+        final boolean packed = !ctx.getChild(0).getText().equals("{");
+        parsedType = dataLayout.structType(fields, packed);
         return null;
     }
 
@@ -1751,7 +1748,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return Math.addExact(size, Math.floorMod(-size, alignment));
     }
 
-    private static final class DataLayout extends LLVMIRBaseVisitor<Void> {
+    private static final class DataLayout {
 
         private int pointerSize = 64;
         private final Map<Integer, Integer> pointerSizes = new HashMap<>();
@@ -1773,6 +1770,26 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         private final Map<Integer, Alignment> pointerAlignments = new HashMap<>(Map.of(
                 0, new Alignment(8, 8)));
         private Alignment aggregateAlignment = new Alignment(1, 8);
+
+        private DataLayout(String dataLayout) {
+            if (!dataLayout.isEmpty()) {
+                for (String entry : dataLayout.split("-")) {
+                    visitDataLayoutEntry(entry);
+                }
+            }
+        }
+
+        private void visitDataLayoutEntry(String entry) {
+            final String[] arguments = entry.substring(1).split(":");
+            switch (entry.charAt(0)) {
+                case 'e' -> bigEndian = false;
+                case 'E' -> bigEndian = true;
+                case 'p' -> visitPointerLayout(arguments);
+                case 'i' -> visitIntegerLayout(arguments);
+                case 'f' -> visitFloatLayout(arguments);
+                case 'a' -> visitAggregateLayout(arguments);
+            }
+        }
 
         private ParsedType valueType(Type type) {
             if (type instanceof IntegerType integer) {
@@ -1819,64 +1836,51 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return new Alignment(naturalAlignment, naturalAlignment);
         }
 
-        @Override
-        public Void visitEndianness(EndiannessContext ctx) {
-            bigEndian = ctx.order.getType() == LLVMIR.DataLayoutBigEndian;
-            return null;
-        }
-
-        @Override
-        public Void visitPointerLayout(PointerLayoutContext ctx) {
-            final int addressSpace = ctx.addressSpace == null ? 0 : parseInt(ctx.addressSpace);
-            final int size = parseInt(ctx.size);
+        private void visitPointerLayout(String[] arguments) {
+            final int addressSpace = parseAddressSpace(arguments[0]);
+            final int size = Integer.parseInt(arguments[1]);
+            final int indexSize = arguments.length <= 4 ? size : Integer.parseInt(arguments[4]);
             check(size > 0, "Pointer size must be positive");
             check(addressSpace < (1 << 24), "Pointer address space exceeds LLVM's limit");
-            final int indexSize = ctx.indexSize == null ? size : parseInt(ctx.indexSize);
             check(indexSize > 0 && indexSize <= size, "Pointer index size must be positive and at most the pointer size");
-            pointerAlignments.put(addressSpace, parseAlignment(ctx.alignment(), false));
+            check(arguments.length <= 5, "Extra arguments");
+            pointerAlignments.put(addressSpace, parseAlignment(arguments, 2, false));
             pointerSizes.put(addressSpace, size);
             pointerIndexSizes.put(addressSpace, indexSize);
             if (addressSpace == 0) {
                 pointerSize = size;
             }
-            return null;
         }
 
-        @Override
-        public Void visitIntegerLayout(IntegerLayoutContext ctx) {
-            final int width = parseInt(ctx.width);
+        private void visitIntegerLayout(String[] arguments) {
+            final int width = Integer.parseInt(arguments[0]);
+            final Alignment alignment = parseAlignment(arguments, 1, false);
             check(width > 0, "Integer width must be positive");
-            final Alignment alignment = parseAlignment(ctx.alignment(), false);
             check(width != 8 || alignment.abi() == 1, "i8 must be byte-aligned");
+            check(arguments.length <= 3, "Extra arguments");
             integerAlignments.put(width, alignment);
-            return null;
         }
 
-        @Override
-        public Void visitFloatLayout(FloatLayoutContext ctx) {
-            final int width = parseInt(ctx.width);
+        private void visitFloatLayout(String[] arguments) {
+            final int width = Integer.parseInt(arguments[0]);
             check(width > 0, "Floating-point width must be positive");
-            floatAlignments.put(width, parseAlignment(ctx.alignment(), false));
-            return null;
+            check(arguments.length <= 3, "Extra arguments");
+            floatAlignments.put(width, parseAlignment(arguments, 1, false));
         }
 
-        @Override
-        public Void visitAggregateLayout(AggregateLayoutContext ctx) {
-            aggregateAlignment = parseAlignment(ctx.alignment(), true);
-            return null;
+        private void visitAggregateLayout(String[] arguments) {
+            check(arguments.length <= 3, "Extra arguments");
+            aggregateAlignment = parseAlignment(arguments, 1, true);
         }
 
-        private int parseInt(Token token) {
-            try {
-                return Integer.parseInt(token.getText());
-            } catch (NumberFormatException e) {
-                throw new ParsingException("Data-layout value '%s' exceeds the supported range", token.getText());
-            }
+        private static int parseAddressSpace(String text) {
+            // TODO text has the form [<flags>][<as>][(<name>)]
+            return text.isEmpty() ? 0 : Integer.parseInt(text);
         }
 
-        private Alignment parseAlignment(AlignmentContext ctx, boolean aggregate) {
-            final int abi = parseInt(ctx.abi);
-            final int preferred = ctx.preferred == null ? abi : parseInt(ctx.preferred);
+        private Alignment parseAlignment(String[] arguments, int index, boolean aggregate) {
+            final int abi = Integer.parseInt(arguments[index]);
+            final int preferred = arguments.length == index + 1 ? abi : Integer.parseInt(arguments[index + 1]);
             check(validAlignment(abi, aggregate) && validAlignment(preferred, aggregate),
                     "Alignment must be a power of two in bits, at least one byte");
             check(preferred >= abi, "Preferred alignment is smaller than ABI alignment");
