@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.model;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ExpressionEncoder;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
@@ -9,6 +11,7 @@ import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -23,7 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.toUnsignedValue;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 
 /*
     Extracts an Execution from an SMT model.
@@ -65,9 +70,10 @@ final class ExecutionBuilder {
         final List<ThreadExecution> threads = program.getThreads().stream().map(this::extractThread).toList();
         final Map<NonDetValue, Expression> nondetValues = extractNondetValues();
         final MemoryLayout layout = extractMemoryLayout();
+        final Map<BigInteger, Store> finalStores = extractFinalStores();
         final Map<Relation, EventGraph> relations = extractBaseRelations();
         return new Execution(program, memoryModel, threads, addresses, values, results, takenJumps,
-                violatedAssertions, nondetValues, layout, relations);
+                violatedAssertions, nondetValues, layout, finalStores, relations);
     }
 
     // ======================================================================================================
@@ -78,6 +84,11 @@ final class ExecutionBuilder {
         final List<Event> trace = new ArrayList<>();
         final List<BlockingEvent> blocked = new ArrayList<>();
         for (Event e : thread.getEvents()) {
+            // A blocked event is reached by the control flow but not executed.
+            if (e instanceof BlockingEvent b && model.isBlocked(b)) {
+                blocked.add(b);
+                continue;
+            }
             if (!model.isExecuted(e)) {
                 continue;
             }
@@ -89,9 +100,6 @@ final class ExecutionBuilder {
             trace.add(e);
             executed.add(e);
             extractEventData(e);
-            if (e instanceof BlockingEvent b && model.isBlocked(b)) {
-                blocked.add(b);
-            }
         }
         return new ThreadExecution(thread, trace, blocked);
     }
@@ -141,6 +149,34 @@ final class ExecutionBuilder {
         return new MemoryLayout(objects);
     }
 
+    // Without a total coherence order, an address can have several co-maximal stores, and the encoding (see
+    // WmmEncoder) lets the final value be that of any of them. We pick the co-maximal store whose value the
+    // model chose as the final value.
+    private Map<BigInteger, Store> extractFinalStores() {
+        final Map<BigInteger, Store> finalStores = new HashMap<>();
+        if (program.getFormat() == LLVM || Arch.coIsTotal(program.getArch())) {
+            return finalStores;
+        }
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+        final List<Store> stores = program.getThreadEvents(Store.class).stream().filter(executed::contains).toList();
+        for (Init init : program.getThreadEvents(Init.class)) {
+            if (!executed.contains(init)) {
+                continue;
+            }
+            final BigInteger address = toUnsignedValue(addresses.get(init));
+            final Expression finalValue = new FinalMemoryValue(init.getValue().getType(), init.getBase(), init.getOffset());
+            for (Store store : stores) {
+                if (address.equals(toUnsignedValue(addresses.get(store)))
+                        && model.isTrue(context.lastCoVar(store))
+                        && model.isTrue(exprEncoder.assignEqual(finalValue, context.value(store), MEMORY_ROUND_TRIP_RELAXED))) {
+                    finalStores.put(address, store);
+                    break;
+                }
+            }
+        }
+        return finalStores;
+    }
+
     // ======================================================================================================
     // Memory model
 
@@ -160,6 +196,9 @@ final class ExecutionBuilder {
         final EventGraph must = knowledge.getMustSet();
         final EncodingContext.EdgeEncoder edge = context.edge(relation);
         final MapEventGraph graph = new MapEventGraph();
+        // TODO: The encoding only constrains the edge variables of the active set. Edges outside it can take
+        //  arbitrary values in the model, so the extracted base relations may contain edges that the memory
+        //  model would not allow.
         knowledge.getMaySet().apply((e1, e2) -> {
             if (executed.contains(e1) && executed.contains(e2) && (must.contains(e1, e2) || model.hasEdge(edge, e1, e2))) {
                 graph.add(e1, e2);

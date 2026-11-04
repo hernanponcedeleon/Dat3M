@@ -31,7 +31,11 @@ final class ExpressionDecoder {
 
     private ExpressionDecoder() {}
 
+    // Values left unconstrained by the model (null) are decoded as zero.
     static Expression decode(Type type, Object value) {
+        if (value == null) {
+            return expressions.makeGeneralZero(type);
+        }
         return switch (type) {
             case BooleanType _ -> expressions.makeValue((Boolean) value);
             case IntegerType intType -> decodeInteger((BigInteger) value, intType);
