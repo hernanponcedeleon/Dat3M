@@ -49,7 +49,6 @@ public class PropertyEncoder {
     private final WmmEncoder wmmEncoder;
 
     // We may want to make this configurable or just keep the option fixed.
-    // CAUTION: WmmEncoder's polarity-aware encoding relies on weak tracking (flagged axioms occur only positively).
     private final boolean doWeakTracking = true;
 
     /*

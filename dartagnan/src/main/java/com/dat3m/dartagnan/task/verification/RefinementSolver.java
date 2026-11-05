@@ -180,8 +180,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         //  ------- Generate refinement model -------
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        final WmmEncoder baselineEncoder = WmmEncoder.withExactRelations(context); // CAAT reads encoded relations from the model
-        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, baselineEncoder);
+        final WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -193,7 +193,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model (baseline) encoding");
-        prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         // Bounds

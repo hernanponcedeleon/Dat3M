@@ -80,7 +80,7 @@ public class EnumerationSolver extends SMTModelChecker<EnumerationTask> {
 
         EncodingContext context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
-        WmmEncoder wmmEncoder = WmmEncoder.withExactRelations(context); // Enumerated models are read back
+        WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
 

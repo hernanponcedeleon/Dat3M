@@ -82,19 +82,18 @@ public class WmmEncoder {
             description = "Encode each derived relation only in the direction(s) required by the axioms that " +
                     "(transitively) use it, instead of a full equivalence (Plaisted-Greenbaum style). " +
                     "Edge variables of derived relations may then over-approximate (or under-approximate) " +
-                    "the relation in a model. Ignored by solvers that read derived relations from the model.",
+                    "the relation in a model.",
             secure = true)
     private boolean polarityAware = true;
 
     // ==============================================================================================
 
-    private WmmEncoder(EncodingContext ctx, boolean allowPolarity) throws InvalidConfigurationException {
+    private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
         this.context = ctx;
         this.memoryModel = ctx.getTask().getMemoryModel();
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
 
         ctx.getTask().getConfig().inject(this);
-        polarityAware &= allowPolarity;
         logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
         logger.info("{}: {}", MULTI_READS, allowMultiReads);
         logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
@@ -105,15 +104,7 @@ public class WmmEncoder {
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        return new WmmEncoder(context, true);
-    }
-
-    /*
-        Use this factory if the values of derived relations are read from the model (e.g., by CAAT during refinement),
-        in which case each encoded relation must be encoded exactly.
-     */
-    public static WmmEncoder withExactRelations(EncodingContext context) throws InvalidConfigurationException {
-        return new WmmEncoder(context, false);
+        return new WmmEncoder(context);
     }
 
     // ==================================================================================================
