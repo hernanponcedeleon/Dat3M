@@ -650,7 +650,9 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             final Expression typeArg = call.getArguments().get(1);
             final Expression recVal = expressions.makeValue(PthreadMutexTypeValue.RECURSIVE.value(clib), (IntegerType) typeArg.getType());
             final Expression isNonRec = expressions.makeNEQ(typeArg, recVal);
-            events.addAll(inlineAssert(isNonRec, true, AssertionType.UNKNOWN_FUNCTION, "Recursive mutexes are unsupported."));
+            // FIXME: We add the "unknown function" suffix only to satisfy Svcomp/BenchExec
+            events.addAll(inlineAssert(isNonRec, true,
+                    AssertionType.UNKNOWN_FUNCTION, "Recursive mutexes are unsupported. #unknown function"));
         }
 
         return eventSequence(
