@@ -29,6 +29,8 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis.Polarity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -499,62 +501,6 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         return constraintsToCut;
     }
 
-
-    /*
-        The constraints/relations of the Wmm can be categorised into positive and negative,
-        depending on whether the number of negations applied to the constraint/relation is even (=positive)
-        or odd (=negative).
-        Negations come from negated axioms (~empty(r)), RHS of differences (c = a \ b), or
-        complementation (Y = ~X). Complementation is just a difference: ~X = _ \ X, so there is no special
-        treatment required.
-        A relation can be both negative and positive if it is used multiple times,
-        once with odd negations and once with even negations.
-        It can also be neither, if the relation is dead (i.e., irrelevant for all axioms).
-     */
-    private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
-
-    private PolaritySeparator computePolaritySeparator(Wmm wmm) {
-        final Set<Constraint> positives = new LinkedHashSet<>();
-        final Set<Constraint> negatives = new LinkedHashSet<>();
-        final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
-            private boolean polarity = true;
-
-            @Override
-            public Void visitAxiom(Axiom axiom) {
-                polarity = !axiom.isNegated();
-                process(axiom);
-                return axiom.getRelation().getDefinition().accept(this);
-            }
-
-            @Override
-            public Void visitDefinition(Definition def) {
-                if (process(def)) {
-                    def.getConstrainedRelations().subList(1, def.getConstrainedRelations().size())
-                            .forEach(r -> r.getDefinition().accept(this));
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitDifference(Difference def) {
-                if (process(def)) {
-                    def.getMinuend().getDefinition().accept(this);
-                    polarity = !polarity;
-                    def.getSubtrahend().getDefinition().accept(this);
-                    polarity = !polarity;
-                }
-                return null;
-            }
-
-            private boolean process(Constraint c) {
-                return (polarity ? positives : negatives).add(c);
-            }
-        };
-
-        wmm.getAxioms().forEach(ax -> ax.accept(collector));
-        return new PolaritySeparator(positives, negatives);
-    }
-
     /*
         This pass rewrites the memory model so that no non-negative constraints appear on the RHS of a difference.
         Consider "r = a \ b" where b is non-negative (note that r and a must be non-positive then).
@@ -616,10 +562,10 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         and simply recompute it under the original memory model, giving us the precise violations.
      */
     private void instrumentPolaritySeparation(Wmm wmm) {
-        final PolaritySeparator separator = computePolaritySeparator(wmm);
-        final List<Difference> negDiff = separator.negatives().stream()
+        final PolarityAnalysis pa = PolarityAnalysis.of(wmm);
+        final List<Difference> negDiff = wmm.getConstraints().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
-                .filter(diff -> !separator.negatives().contains(diff.getSubtrahend().getDefinition()))
+                .filter(diff -> pa.get(diff.getSubtrahend()) == Polarity.POSITIVE)
                 .distinct().toList();
 
         final Map<Relation, Relation> replacements = new HashMap<>();

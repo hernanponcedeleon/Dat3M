@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis.Polarity;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -35,12 +37,10 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
-import static com.dat3m.dartagnan.encoding.WmmEncoder.Polarity.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -57,6 +57,7 @@ public class WmmEncoder {
 
     private final AxiomEncoder axiomEncoder = new AxiomEncoder();
     private final ActiveSetAnalysis activeSetAnalysis;
+    private final PolarityAnalysis polarityAnalysis;
 
     // ==============================================================================================
     @Option(name = MEMORY_IS_ZEROED,
@@ -85,30 +86,6 @@ public class WmmEncoder {
             secure = true)
     private boolean polarityAware = true;
 
-    // Usually "let r = def" is encoded as "r(x,y) <=> def(x,y)"
-    // Polarities allow us to encode only one direction of the equivalence, if
-    // r affects the axioms only positively or only negatively.
-    enum Polarity {
-        BOT,   // Dummy
-        LOWER, // "def => r"
-        UPPER, // "r => def"
-        EXACT; // "r <=> def"
-
-        Polarity flip() {
-            return switch (this) {
-                case LOWER -> UPPER;
-                case UPPER -> LOWER;
-                default -> this;
-            };
-        }
-
-        static Polarity join(Polarity a, Polarity b) {
-            return a == BOT ? b : b == BOT ? a : a == b ? a : EXACT;
-        }
-    }
-
-    private final Map<Relation, Polarity> polarities;
-
     // ==============================================================================================
 
     private WmmEncoder(EncodingContext ctx, boolean allowPolarity) throws InvalidConfigurationException {
@@ -124,7 +101,7 @@ public class WmmEncoder {
         logger.info("{}: {}", POLARITY_AWARE_ENCODING, polarityAware);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
-        this.polarities = polarityAware ? computePolarities() : Map.of();
+        this.polarityAnalysis = polarityAware ? PolarityAnalysis.of(memoryModel) : null;
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -357,65 +334,13 @@ public class WmmEncoder {
     // ================================================================================================
     // Polarities
 
-    /*
-        Computes for each relation which directions of its definition need to be encoded.
-        The computation goes top-down from the axiom's relations which have polarity
-        given by the axioms (LOWER if positive, UPPER if negated).
-        Base relations are always encoded exactly (polarity EXACT).
-     */
-    private Map<Relation, Polarity> computePolarities() {
-        final Map<Relation, Polarity> pol = new HashMap<>();
-        final Deque<Relation> worklist = new ArrayDeque<>();
-        final BiConsumer<Relation, Polarity> require = (rel, p) -> {
-            final Polarity old = pol.getOrDefault(rel, BOT);
-            final Polarity join  = Polarity.join(old, p);
-            if (join != old) {
-                pol.put(rel, join);
-                worklist.add(rel);
-            }
-        };
-
-        for (Constraint c : context.constraintsToEncode) {
-            if (c instanceof Axiom ax) {
-                require.accept(ax.getRelation(), ax.isNegated() ? UPPER : LOWER);
-            }
-        }
-
-        while (!worklist.isEmpty()) {
-            final Relation rel = worklist.poll();
-            final Polarity p = pol.get(rel);
-            final Definition def = rel.getDefinition();
-            if (def instanceof Difference diff) {
-                require.accept(diff.getMinuend(), p);
-                require.accept(diff.getSubtrahend(), p.flip());
-            } else if (isMonotoneDerived(def)) {
-                rel.getDependencies().forEach(dep -> require.accept(dep, p));
-            } else {
-                rel.getDependencies().forEach(dep -> require.accept(dep, EXACT));
-            }
-        }
-
-        if (logger.isInfoEnabled()) {
-            final long lower = pol.values().stream().filter(p -> p == LOWER).count();
-            final long upper = pol.values().stream().filter(p -> p == UPPER).count();
-            final long exact = pol.values().stream().filter(p -> p == EXACT).count();
-            logger.info("Relation polarities: {} lower-only, {} upper-only, {} exact", lower, upper, exact);
-        }
-        return pol;
-    }
-
-    private static boolean isMonotoneDerived(Definition def) {
-        return def instanceof Union || def instanceof Intersection || def instanceof Composition
-                || def instanceof Projection || def instanceof TransitiveClosure || def instanceof SetIdentity
-                || def instanceof Inverse || def instanceof CartesianProduct;
-    }
-
     private Polarity getPolarity(Relation rel) {
         if (!polarityAware) {
-            return EXACT;
+            return Polarity.ALL;
         }
+        final Polarity p = polarityAnalysis.get(rel);
         // Relations not reachable from any axiom are encoded exactly (to be on the safe side).
-        return polarities.getOrDefault(rel, EXACT);
+        return p == Polarity.UNKNOWN ? Polarity.ALL : p;
     }
 
     // ================================================================================================
@@ -459,8 +384,8 @@ public class WmmEncoder {
         // Encodes "edge <=> definition", restricted to the direction(s) required by the polarity.
         private void encodeDefinition(Polarity polarity, BooleanFormula edge, BooleanFormula definition) {
             switch (polarity) {
-                case LOWER -> enc.add(bmgr.implication(definition, edge));
-                case UPPER -> enc.add(bmgr.implication(edge, definition));
+                case POSITIVE -> enc.add(bmgr.implication(definition, edge));
+                case NEGATIVE -> enc.add(bmgr.implication(edge, definition));
                 default -> enc.add(bmgr.equivalence(edge, definition));
             }
         }
@@ -468,7 +393,7 @@ public class WmmEncoder {
         // Encodes "edge <=> OR(disjuncts)", restricted to the direction(s) required by the polarity.
         // In the LOWER case, we emit one (small) implication per disjunct instead of a single large one.
         private void encodeDisjunctiveDefinition(Polarity polarity, BooleanFormula edge, List<BooleanFormula> disjuncts) {
-            if (polarity == LOWER) {
+            if (polarity == Polarity.POSITIVE) {
                 disjuncts.forEach(d -> enc.add(bmgr.implication(d, edge)));
             } else {
                 encodeDefinition(polarity, edge, bmgr.or(disjuncts));
