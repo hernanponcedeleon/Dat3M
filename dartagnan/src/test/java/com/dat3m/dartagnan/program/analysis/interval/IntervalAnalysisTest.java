@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.task.Context;
@@ -59,7 +58,7 @@ public class IntervalAnalysisTest {
     public void straightlinePropagation() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -95,7 +94,7 @@ public class IntervalAnalysisTest {
     public void twoPredecessors() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Label trueb = b.getOrCreateLabel(0, "true");
         Label join = b.getOrCreateLabel(0, "join");
@@ -127,7 +126,7 @@ public class IntervalAnalysisTest {
     public void threePredecessors() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Label branch1 = b.getOrCreateLabel(0, "branch1");
         Label branch2 = b.getOrCreateLabel(0, "branch2");
@@ -167,7 +166,7 @@ public class IntervalAnalysisTest {
     public void evaluateSimpleExpressions() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -194,7 +193,7 @@ public class IntervalAnalysisTest {
     public void evaluateBinaryExpressions() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
 
@@ -220,7 +219,7 @@ public class IntervalAnalysisTest {
     public void binaryExpressionsWithTopReturnsTop() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
 
@@ -299,7 +298,7 @@ public class IntervalAnalysisTest {
     public void combineBranchesOfITE() throws IOException, InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         b.newThread(0);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         Register r0 = b.getOrNewRegister(0, "r0", type);
 
         Local loc1 = newLocal(r0, expressions.makeITE(b.newConstant(types.getBooleanType()), expressions.makeZero(type), expressions.makeOne(type)));
@@ -325,7 +324,7 @@ public class IntervalAnalysisTest {
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
         MemoryObject x = b.newMemoryObject("x", 1);
         MemoryObject y = b.newMemoryObject("y", 1);
-        IntegerType type = Memory.getDefaultArchType();
+        IntegerType type = b.getArchType();
         x.setInitialValue(0, expressions.makeZero(type));
         y.setInitialValue(0, expressions.makeZero(type));
         b.newThread(0);

@@ -192,7 +192,7 @@ public class AnalysisTest {
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        b.newFunction("test", 0, types.getFunctionType(Memory.getDefaultArchType(), List.of()), List.of());
+        b.newFunction("test", 0, types.getFunctionType(b.getArchType(), List.of()), List.of());
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -212,7 +212,7 @@ public class AnalysisTest {
         Local r20 = newLocal(r2, r0);
         b.addChildWithoutSourceLoc(0, r20);
         //  r3 = 0
-        Local r30 = newLocal(r3, expressions.makeZero(Memory.getDefaultArchType()));
+        Local r30 = newLocal(r3, expressions.makeZero(b.getArchType()));
         b.addChildWithoutSourceLoc(0, r30);
         //  do {
         Label begin = b.getOrCreateLabel(0, "begin");
@@ -768,8 +768,8 @@ public class AnalysisTest {
     public void allKindsOfMixedSizeAccesses() throws Exception {
         TypeFactory types = TypeFactory.getInstance();
         ExpressionFactory expressions = ExpressionFactory.getInstance();
-        IntegerType pointerType = Memory.getDefaultArchType();
         ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        IntegerType archType = b.getArchType();
         b.newThread(0);
         Register r8 = b.getOrNewRegister(0, "r8", types.getIntegerType(8));
         Register r16 = b.getOrNewRegister(0, "r16", types.getIntegerType(16));
@@ -785,7 +785,7 @@ public class AnalysisTest {
             final StringBuilder exp = new StringBuilder();
             for (int offset = 0; offset < 9; offset++) {
                 final MemoryObject x = b.getOrNewMemoryObject(String.format("x%d:%d", i, offset), OBJECT_SIZE);
-                final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, pointerType));
+                final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, archType));
                 b.addChildWithoutSourceLoc(0, newLoad(r, x));
                 b.addChildWithoutSourceLoc(0, newLoad(s, address));
                 if (0 < offset && offset < rBytes) {
