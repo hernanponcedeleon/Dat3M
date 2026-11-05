@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.common.ShutdownNotifier;
 
@@ -32,8 +33,21 @@ final class ThreadInterpreter {
 
     private static final int SHUTDOWN_CHECK_INTERVAL = 1 << 16;
 
-    private final List<Thread> threads;
-    private final Map<Thread, Integer> threadIndex = new HashMap<>();
+    /*
+        Thread instances. The initial (non-spawned) threads are the first instances. Spawned threads are templates:
+        each execution of a ThreadCreate event spawns a new instance of its template, identified by the creating
+        instance, the position (po-index) of the creation in it, and the ThreadCreate event. Instances get their
+        index when they are first created in any graph, and keep it, so the index of an instance is the same in all
+        graphs. Instance indices also define the (fixed) scheduling priority of threads.
+     */
+    private record Instance(Thread template, int parent, int createPoIndex, ThreadCreate create) {}
+    private record InstanceKey(int parent, int createPoIndex, ThreadCreate create) {}
+
+    private final List<Thread> initialThreads;
+    private final Map<Thread, Integer> initialIndex = new HashMap<>();
+    private final Map<InstanceKey, Integer> instanceIndex = new HashMap<>();
+    private volatile Instance[] instances;
+
     private final MemoryLayout layout;
     private final boolean zeroInitializedRegisters;
     private final ShutdownNotifier shutdownNotifier;
@@ -45,79 +59,147 @@ final class ThreadInterpreter {
                       ThreadAnalysis analysis, ShutdownNotifier notifier) {
         this.order = order;
         this.relaxedTags = ExplorationOrder.relaxedTags(program.getArch());
-        this.threads = threads;
-        for (int i = 0; i < threads.size(); i++) {
-            threadIndex.put(threads.get(i), i);
+        this.initialThreads = threads.stream().filter(t -> !t.getEntry().isSpawned()).toList();
+        final List<Instance> initial = new ArrayList<>();
+        for (int i = 0; i < initialThreads.size(); i++) {
+            initialIndex.put(initialThreads.get(i), i);
+            initial.add(new Instance(initialThreads.get(i), -1, -1, null));
         }
+        this.instances = initial.toArray(new Instance[0]);
         this.layout = layout;
         this.zeroInitializedRegisters = program.registersAreZeroInitialized();
         this.shutdownNotifier = notifier;
         this.analysis = analysis;
-        collectJoinLoads();
+        collectJoinLoads(threads);
     }
 
     /*
-        A pthread_join is lowered (see ThreadCreation) to an atomic fetch-and-AND on the state word of the joined
-        thread, followed by a ThreadJoin (waiting for its termination) and an assume that the fetched state says
-        that the thread is no longer alive. If the load of the fetch-and-AND runs before the joined thread
-        terminated, or if it reads an older value afterwards, it reads "alive" and the join blocks forever.
+        A pthread_join is lowered (see ThreadCreation) to an atomic fetch-and-AND on the state object of the joined
+        thread, followed by an assume that the fetched state says that the thread is no longer alive.
+        If the load of the fetch-and-AND runs before the joined thread terminated, or if it reads an older value
+        afterwards, it reads "alive" and the join blocks forever.
         We therefore only enable this load once the joined thread terminated, and let it read the latest write
-        to the state word (the explorer does not offer older writes). Then the join never blocks.
-        Older writes can only be read in executions where the join blocks, unless the state word is also
+        to the state object (the explorer does not offer older writes). Then the join never blocks.
+        The subsequent load of the return value also reads the latest write: the only write is the joined thread's,
+        which happens before the load.
+        Older writes can only be read in executions where the join blocks, unless the state object is also
         written by pthread_detach (then a join may return early without waiting). So we do not treat joins
         specially in programs that detach threads.
      */
-    private final Map<Event, Integer> joinLoads = new HashMap<>();
+    private final Set<Event> joinLoads = new HashSet<>();
 
-    private void collectJoinLoads() {
+    private void collectJoinLoads(List<Thread> threads) {
         for (Thread thread : threads) {
             for (Event e : thread.getEvents()) {
-                if (e instanceof Load load && load.getResultRegister().getName().startsWith("__detachThreadState")) {
+                if (e instanceof Load load && load.getResultRegister().getName().startsWith("__detachThreadState")
+                        || e.hasMetadata(ThreadCreation.DetachStateLoad.class)) {
                     joinLoads.clear();
                     return;
                 }
-                if (!(e instanceof ThreadJoin join) || !threadIndex.containsKey(join.getJoinThread())) {
-                    continue;
-                }
-                final List<MemoryCoreEvent> spawning = join.getJoinThread().getSpawningEvents();
-                if (spawning.isEmpty()) {
-                    continue;
-                }
-                final Expression stateAddress = spawning.get(0).getAddress();
-                Event cur = join.getPredecessor();
-                for (int i = 0; i < 8 && cur != null; i++, cur = cur.getPredecessor()) {
-                    if (cur instanceof Load load) {
-                        if (load.getAddress().equals(stateAddress)) {
-                            joinLoads.put(load, indexOf(join.getJoinThread()));
-                        }
-                        break;
-                    }
+                if (e instanceof Load && e.hasMetadata(ThreadCreation.JoinStateLoad.class)) {
+                    joinLoads.add(e);
                 }
             }
         }
     }
 
     boolean isJoinLoad(Event e) {
-        return joinLoads.containsKey(e);
+        return joinLoads.contains(e);
     }
 
-    List<Thread> getThreads() {
-        return threads;
+    // ================================================================================================
+    // Thread instances
+
+    int getNumInitialThreads() {
+        return initialThreads.size();
     }
 
-    int indexOf(Thread thread) {
-        final Integer index = threadIndex.get(thread);
+    // The code of the thread instance.
+    Thread getThread(int t) {
+        return instances[t].template();
+    }
+
+    boolean isSpawned(int t) {
+        return instances[t].create() != null;
+    }
+
+    // The index of an initial (non-spawned) thread, or null.
+    Integer indexOfInitial(Thread thread) {
+        return initialIndex.get(thread);
+    }
+
+    private int indexOf(Thread thread) {
+        final Integer index = initialIndex.get(thread);
         if (index == null) {
-            throw new UnsupportedOperationException("Unknown thread " + thread);
+            throw new UnsupportedOperationException("Exploration cannot refer to spawned thread " + thread
+                    + " statically.");
         }
         return index;
+    }
+
+    // The instance spawned by the given node of thread "parent" (executing "create").
+    private int spawnedInstance(int parent, int poIndex, ThreadCreate create) {
+        final InstanceKey key = new InstanceKey(parent, poIndex, create);
+        synchronized (instanceIndex) {
+            final Integer known = instanceIndex.get(key);
+            if (known != null) {
+                return known;
+            }
+            final Instance[] old = instances;
+            final Instance[] extended = Arrays.copyOf(old, old.length + 1);
+            extended[old.length] = new Instance(create.getSpawnedThread(), parent, poIndex, create);
+            instances = extended;
+            instanceIndex.put(key, old.length);
+            return old.length;
+        }
+    }
+
+    /*
+        Removes the states of spawned instances whose creation is not part of the graph (anymore), e.g. after a
+        revisit deleted it. Their nodes were deleted as well, since they are porf-after the creation.
+     */
+    void removeUncreatedThreads(ExplorationGraph g) {
+        for (int t = 0; t < g.states.length; t++) {
+            if (g.states[t] != null && isSpawned(t) && findCreator(g, t) == null) {
+                if (!g.getThreadNodes(t).isEmpty()) {
+                    throw new IllegalStateException("Thread " + t + " has nodes but was not created.");
+                }
+                g.states[t] = null;
+            }
+        }
+    }
+
+    // The address of the state object of a spawned instance (its last argument, see ThreadCreation).
+    private BigInteger stateObjectOf(ExplorationGraph g, int t) {
+        final Node creator = findCreator(g, t);
+        if (creator == null) {
+            return null;
+        }
+        final Object value = creator.payload.get(creator.payload.size() - 1);
+        return Values.convert(value, TypeFactory.getInstance().getPointerType()) instanceof BigInteger a ? a : null;
+    }
+
+    // The thread joined by a join load (which accesses the thread's state object, see ThreadCreation).
+    private int joinedInstance(ExplorationGraph g, ThreadState st, Load load) {
+        final Type ptrType = TypeFactory.getInstance().getPointerType();
+        final BigInteger address = Values.asInteger(Values.convert(evaluator(st).evaluate(load.getAddress()), ptrType));
+        final BigInteger returnValueAddress = address.subtract(BigInteger.valueOf(ThreadCreation.RETURN_VALUE_OFFSET));
+        for (int t = getNumInitialThreads(); t < g.states.length; t++) {
+            if (g.states[t] != null) {
+                final BigInteger stateObject = stateObjectOf(g, t);
+                if (address.equals(stateObject) || returnValueAddress.equals(stateObject)) {
+                    return t;
+                }
+            }
+        }
+        throw new UnsupportedOperationException("Exploration does not support joining an invalid thread id: " + load);
     }
 
     // ================================================================================================
     // Initial states and replay
 
     private ThreadState newState(int t) {
-        return new ThreadState(threads.get(t).getEntry(), new ExplorationOrder.Tracker(order, relaxedTags));
+        return new ThreadState(t, getThread(t).getEntry(), new ExplorationOrder.Tracker(order, relaxedTags));
     }
 
     ThreadState newInitialState(int t) throws InterruptedException {
@@ -132,6 +214,10 @@ final class ThreadInterpreter {
         (With the DEPENDENCIES order, the graph may contain po-later nodes after such a "hole".)
      */
     void replay(ExplorationGraph g, int t) throws InterruptedException {
+        if (isSpawned(t) && findCreator(g, t) == null) {
+            g.states[t] = null;
+            return;
+        }
         final ThreadState st = newState(t);
         g.states[t] = st;
         advance(st);
@@ -153,8 +239,8 @@ final class ThreadInterpreter {
 
     // Can the pending event of thread t be added to the graph?
     boolean isEnabled(ExplorationGraph g, int t) {
-        final ThreadState st = g.states[t];
-        if (!st.isRunning()) {
+        final ThreadState st = g.getState(t);
+        if (st == null || !st.isRunning()) {
             return false;
         }
         final Event e = st.pc;
@@ -165,8 +251,8 @@ final class ThreadInterpreter {
             final int joined = indexOf(join.getJoinThread());
             return g.states[joined].status == ThreadState.Status.TERMINATED;
         }
-        final Integer joined = joinLoads.get(e);
-        if (joined != null) {
+        if (joinLoads.contains(e)) {
+            final int joined = joinedInstance(g, st, (Load) e);
             return g.states[joined].status == ThreadState.Status.TERMINATED;
         }
         return true;
@@ -174,20 +260,17 @@ final class ThreadInterpreter {
 
     // A spawned thread that was never created does not exist.
     boolean isWaitingForCreation(ExplorationGraph g, int t) {
-        final ThreadState st = g.states[t];
-        return st.isRunning() && st.pc instanceof ThreadStart && findCreator(g, t) == null;
+        final ThreadState st = g.getState(t);
+        return st != null && st.isRunning() && st.pc instanceof ThreadStart && findCreator(g, t) == null;
     }
 
     private Node findCreator(ExplorationGraph g, int t) {
-        final ThreadStart start = (ThreadStart) threads.get(t).getEntry();
-        final ThreadCreate create = start.getCreator();
-        final int creatorThread = indexOf(create.getThread());
-        for (Node n : g.getThreadNodes(creatorThread)) {
-            if (n.event == create) {
-                return n;
-            }
+        final Instance instance = instances[t];
+        if (instance.create() == null) {
+            return null;
         }
-        return null;
+        final Node n = g.getThreadNode(instance.parent(), instance.createPoIndex());
+        return n != null && n.event == instance.create() ? n : null;
     }
 
     static boolean isWeakExclusiveStore(Event e) {
@@ -225,11 +308,7 @@ final class ThreadInterpreter {
             return b;
         }
         if (e instanceof ThreadCreate create) {
-            final int spawned = indexOf(create.getSpawnedThread());
-            if (g.states[spawned].started || !g.getThreadNodes(spawned).isEmpty()) {
-                throw new UnsupportedOperationException(
-                        "Exploration does not support creating the same thread multiple times: " + create);
-            }
+            final int spawned = spawnedInstance(t, poIndex, create);
             final Node.Builder b = Node.builder(Node.Kind.THREAD_CREATE, t, poIndex, e);
             b.otherThread = spawned;
             final List<Object> args = new ArrayList<>();
@@ -309,7 +388,7 @@ final class ThreadInterpreter {
 
     private void fillMemoryInfo(Node.Builder b, ThreadState st, ConcreteEvaluator eval, MemoryCoreEvent mem) {
         final Type ptrType = TypeFactory.getInstance().getPointerType();
-        b.address = (BigInteger) Values.convert(eval.evaluate(mem.getAddress()), ptrType);
+        b.address = Values.asInteger(Values.convert(eval.evaluate(mem.getAddress()), ptrType));
         b.accessType = mem.getAccessType();
         b.addrDeps = provenance(st, List.of(mem.getAddress()));
         b.ctrlDeps = st.controlDependencies(mem);
@@ -394,7 +473,13 @@ final class ThreadInterpreter {
                 assign(st, reg, ret == null ? ConcreteEvaluator.zeroOf(reg.getType()) : Values.convert(ret, reg.getType()),
                         ImmutableSet.of());
             }
-            case OTHER, THREAD_CREATE -> { }
+            case THREAD_CREATE -> {
+                g.ensureThread(n.otherThread);
+                if (g.states[n.otherThread] == null) {
+                    g.states[n.otherThread] = newInitialState(n.otherThread);
+                }
+            }
+            case OTHER -> { }
             case INIT -> throw new IllegalStateException();
         }
         st.orderTracker.update(n);
@@ -481,7 +566,7 @@ final class ThreadInterpreter {
             final TypeFactory types = TypeFactory.getInstance();
             final int elementSize = Math.max(types.getMemorySizeInBytes(alloc.getAllocationType()), 1);
             final int count = eval.evaluateInteger(alloc.getArraySize()).intValueExact();
-            final BigInteger address = layout.allocate(alloc, instance, elementSize * Math.max(count, 1));
+            final BigInteger address = layout.allocate(alloc, st.thread, instance, elementSize * Math.max(count, 1));
             assign(st, alloc.getResultRegister(), address, ImmutableSet.of());
         } else if (e instanceof ExecutionStatus status) {
             final boolean executed = st.executedStatus.getOrDefault(status.getStatusEvent(), false);

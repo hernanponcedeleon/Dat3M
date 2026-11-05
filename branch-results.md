@@ -3,13 +3,13 @@
 This branch adds a new task to Dartagnan: **exploration**. It enumerates the consistent executions of a program with the
 TruSt algorithm (Kokologiannakis et al., *Truly Stateless, Optimal Dynamic Partial Order Reduction*, POPL'22,
 [doi:10.1145/3498711](https://dl.acm.org/doi/10.1145/3498711)). Each execution graph is checked directly against the CAT
-model. No SMT solver is involved, and loops are not unrolled.
+model. No SMT solver is involved, and loops are not unrolled, not even loops that create threads.
 
 ```
 dartagnan cat/aarch64.cat --target=arm8 program.c --mode=exploration \
     [--exploration.order=po|dependencies] [--exploration.threads=N] \
     [--exploration.spinLast=true|false] [--exploration.awaits=true|false] \
-    [--exploration.maxEventsPerThread=N] [--exploration.threadCreationBound=N] \
+    [--exploration.maxEventsPerThread=N] \
     [--exploration.printExecutions=true]
 ```
 
@@ -22,7 +22,6 @@ dartagnan cat/aarch64.cat --target=arm8 program.c --mode=exploration \
 | `exploration.spinLast` | true | Schedules threads with store-free loops after the other threads. |
 | `exploration.awaits` | false | Awamoche-style in-place revisits of await reads. Ignored with `maxEventsPerThread`. |
 | `exploration.maxEventsPerThread` | 0 (unbounded) | Cuts off executions longer than this bound; the result becomes `UNKNOWN`. |
-| `exploration.threadCreationBound` | 8 | Unrolling bound for loops that create threads, the only loops that are unrolled. |
 | `exploration.printExecutions` | false | Prints every complete execution, which disables early termination. |
 
 Result semantics:
@@ -51,9 +50,9 @@ Result semantics:
 | `ThreadAnalysis` | Static facts about the thread code: which threads have store-free loops, the header of each spin loop, and from which program points a thread may still write. |
 | `ExplorationSettings` | The explorer's options (order, bound, awaits, spinLast, printExecutions, threads). |
 | `ExplorationGraph` | Execution graph: nodes, `rf`, `co` per location, per-thread nodes and porf-prefix computation. Holes are allowed in dependencies mode. |
-| `ThreadInterpreter`, `ThreadState` | Concrete interpreter of the processed (non-unrolled) program. It tracks data, address and control dependencies at run time, replays a thread against an existing graph, and tracks the iteration start of each spin loop. |
+| `ThreadInterpreter`, `ThreadState` | Concrete interpreter of the processed (non-unrolled) program. It tracks data, address and control dependencies at run time, replays a thread against an existing graph, and tracks the iteration start of each spin loop. It also keeps the registry of thread instances (see Dynamic thread creation). |
 | `ConcreteEvaluator`, `Values` | Concrete expression evaluation. Values are bit-vectors stored modulo 2^w, plus a lazy `UNDEFINED` for nondeterministic values. |
-| `MemoryLayout` | Deterministic addresses for static objects and per-instance dynamic allocations, plus init nodes. Thread-safe, with lock-free lookups. |
+| `MemoryLayout` | Deterministic addresses for static objects and dynamic allocations (per allocation site, thread instance and execution count), plus init nodes. Thread-safe, with lock-free lookups. |
 | `ConsistencyChecker`, `BitMatrix` | Evaluates arbitrary `.cat` models on a graph with bit matrices, using fixpoints for recursive definitions. Supports the axioms (acyclic, irreflexive, empty, flagged), a per-location pre-check, and the base relations used by the CPU models. |
 | `ExplorationOrder` | The exploration order E (`po` or `dependencies`) and the per-thread tracker that computes E-predecessors of new events. |
 | `Node` | Immutable event instance, shared between graphs, with a per-node tag cache. |
@@ -75,12 +74,39 @@ of visited graphs does not depend on the schedule.
   - a single volatile word for each node's tag cache;
   - synchronized violation and outcome reporting.
 
+### Dynamic thread creation
+
+Threads are created at run time, like loop iterations are executed at run time; no loop is unrolled.
+
+- **Templates:** `ThreadCreation.withDynamicInstances` (used only by exploration) turns each `pthread_create` site into a
+  thread template. A site inside a loop yields a single template.
+- **Instances:** each execution of a `ThreadCreate` event spawns a new instance of its template. An instance is
+  identified by (creating instance, po-index of the creation, `ThreadCreate` event) and gets an index the first time it
+  is created in any graph. The index is the same in all graphs, so nodes keep referring to the right thread across
+  revisits, and the index order is a fixed scheduling priority, as TruSt requires.
+- **Graphs:** a graph only contains the instances whose creation it contains. A revisit that deletes a creation also
+  deletes the spawned instance, whose nodes are all porf-after the creation.
+- **No static thread references:** nothing in the lowered code names a thread instance statically.
+  - `pthread_create` allocates a fresh state object (thread state and return value), stores "alive and joinable" to it
+    with release semantics, and passes its address to the new thread as an extra last argument. The address is the
+    `pthread_t` value; `pthread_self` returns it.
+  - The new thread reads its state with acquire semantics. On termination it stores its return value into the state
+    object and clears the "alive" flag with release semantics.
+  - `pthread_join` and `pthread_detach` are atomic fetch-and-ANDs on the address given by the thread id. A join then
+    loads the return value from the state object.
+- **Allocations:** they are keyed by (allocation site, thread instance, execution count), so instances of the same
+  template get distinct thread-local objects and state objects.
+- **Join loads:** they carry the `ThreadCreation.JoinStateLoad` metadata. Such a load is enabled once the instance
+  owning the accessed state object has terminated, and it reads the latest write, as before.
+
 ### Changes outside the new package
 
 - `ProcessingManager.forExploration`: the pipeline without loop unrolling (no `NaiveLoopBoundAnnotation`, no
   `NonterminationDetection`). It also skips the post-unrolling simplifications (assignment inlining, constant
   propagation, dead assignment elimination), which assume loop-free code.
-- `LoopUnrolling.forThreadCreatingLoops`: unrolls only loops that contain thread creation.
+- `ThreadCreation.withDynamicInstances`: the thread-template lowering described above. BMC is unchanged.
+- `Thread.getSpawningEvents`: accepts a creator store and a spawned load whose address registers differ (dynamic
+  instances).
 - `DynamicSpinLoopDetection.withZeroInitializedTracking`: in exploration mode, the registers tracked by the
   instrumentation are zero-initialised instead of nondet. BMC is unchanged.
 - `Intrinsics.matches`: recognises the Darwin symbol prefix `\01` (e.g. `\01_pthread_join`).
@@ -153,7 +179,9 @@ of visited graphs does not depend on the schedule.
    - **The user is responsible for the model forbidding `E ∪ rf` cycles.** If the model allows such a cycle, the
      exploration misses those executions (incompleteness), but never reports an inconsistent one.
 2. **Thread creation.** The first load of a spawned thread must read from its creator's store, and it is never
-   revisited. Thread-creating loops are unrolled.
+   revisited. `pthread_join` and `pthread_detach` assume a valid thread id (the address of a thread's state object)
+   and matching return types. Recursive thread creation (a thread function that creates threads of itself, directly
+   or indirectly) is not supported, as in BMC.
 3. **Not supported** (rejected with an error):
    - mixed-size accesses (`--mixedSize=true`);
    - computations on nondeterministic values (`__VERIFIER_nondet_*` used in arithmetic or branches);
@@ -353,6 +381,5 @@ Power treiber went from 182 s to 4.4 s. Where Eager used to be 2–4× faster on
    - **nondeterministic values:** enumerate finite domains or use symbolic values; this is needed for cna;
    - **varying-size allocations:** needed for ticket_awnsb_mutex on RC11;
    - **mixed-size accesses**.
-5. **Dynamic thread creation:** this would remove the need to unroll thread-creating loops.
-6. **Native image:** it needs a parallel GC to be competitive. G1 is available on Linux, not macOS. Evaluate it on
+5. **Native image:** it needs a parallel GC to be competitive. G1 is available on Linux, not macOS. Evaluate it on
    Linux.

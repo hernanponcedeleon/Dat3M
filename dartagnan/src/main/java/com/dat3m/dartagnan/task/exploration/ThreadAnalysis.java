@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.annotations.LoopBound;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.processing.ThreadCreation;
 
 import java.util.*;
 
@@ -17,8 +18,8 @@ import java.util.*;
  */
 final class ThreadAnalysis {
 
-    // Threads (by index) with loops without memory writes (e.g. await loops or the retry loops of seqlock readers).
-    private final Set<Integer> threadsWithPureLoops = new HashSet<>();
+    // Threads with loops without memory writes (e.g. await loops or the retry loops of seqlock readers).
+    private final Set<Thread> threadsWithPureLoops = new HashSet<>();
     // For each spin-loop terminator, the event that starts the iterations of its loop (see collectSpinLoopHeaders).
     private final Map<Event, Event> spinLoopHeaders = new HashMap<>();
     private final Set<Event> spinLoopHeaderSet = new HashSet<>();
@@ -26,16 +27,16 @@ final class ThreadAnalysis {
     private final Set<Event> mayWriteLater = new HashSet<>();
 
     ThreadAnalysis(List<Thread> threads) {
-        for (int t = 0; t < threads.size(); t++) {
-            if (hasPureLoop(threads.get(t))) {
-                threadsWithPureLoops.add(t);
+        for (Thread thread : threads) {
+            if (computeHasPureLoop(thread)) {
+                threadsWithPureLoops.add(thread);
             }
         }
         threads.forEach(this::collectSpinLoopHeaders);
         collectMayWriteLater(threads);
     }
 
-    boolean hasPureLoop(int thread) {
+    boolean hasPureLoop(Thread thread) {
         return threadsWithPureLoops.contains(thread);
     }
 
@@ -56,7 +57,7 @@ final class ThreadAnalysis {
     // ================================================================================================
     // Pure loops
 
-    private static boolean hasPureLoop(Thread thread) {
+    private static boolean computeHasPureLoop(Thread thread) {
         for (Event e : thread.getEvents()) {
             if (e instanceof CondJump jump && isBackJump(jump) && isPureLoop(jump)) {
                 return true;
@@ -133,7 +134,9 @@ final class ThreadAnalysis {
     /*
         Backward fixpoint over the control flow of each thread.
         Writes to thread-state words (pthread bookkeeping) are ignored: they are only read by spawning loads and
-        join loads, which are never revisited (see TruStExplorer.visitWrite and visitRead).
+        join loads, which are never revisited (see TruStExplorer.visitWrite and visitRead), and by the loads of
+        return values, which are only added after the joined thread terminated (they follow a join load).
+        With dynamically instantiated threads, these accesses are marked (ThreadCreation.ThreadStateAccess).
      */
     private void collectMayWriteLater(List<Thread> threads) {
         final Set<Expression> stateWords = new HashSet<>();
@@ -163,7 +166,8 @@ final class ThreadAnalysis {
         if (e instanceof ThreadCreate) {
             return true;
         }
-        return e.hasTag(Tag.WRITE) && !(e instanceof MemoryCoreEvent m && stateWords.contains(m.getAddress()));
+        return e.hasTag(Tag.WRITE) && !(e instanceof MemoryCoreEvent m && stateWords.contains(m.getAddress()))
+                && !e.hasMetadata(ThreadCreation.ThreadStateAccess.class);
     }
 
     private boolean mayWriteAfter(Event e) {

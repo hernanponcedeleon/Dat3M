@@ -11,11 +11,15 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -76,15 +80,54 @@ public class ThreadCreation implements ProgramProcessor {
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
 
-    private ThreadCreation(Configuration config) throws InvalidConfigurationException {
+    /*
+        If set, each spawned Thread is a template that may be instantiated several times at run time, e.g. by a
+        pthread_create inside a loop (used by exploration, which does not unroll loops).
+        Then nothing may refer to a thread instance statically: each execution of a pthread_create allocates a fresh
+        state object for the new instance, whose address is passed to it as an extra (last) argument and serves as
+        its thread id. Joining and detaching access the state object through the thread id, and the return value of
+        a thread is passed through the state object (at offset RETURN_VALUE_OFFSET).
+     */
+    private final boolean dynamicInstances;
+
+    private ThreadCreation(Configuration config, boolean dynamicInstances) throws InvalidConfigurationException {
         config.inject(this);
         compiler = Compilation.fromConfig(config);
+        this.dynamicInstances = dynamicInstances;
     }
 
     public static final String THREAD_SELF_REGISTER_NAME = "__dat3m_thread_self";
+    public static final int RETURN_VALUE_OFFSET = 8;
+
+    // Metadata of the accesses to state objects (dynamic instances only). They do not affect the semantics.
+    // All accesses to state objects.
+    public record ThreadStateAccess() implements Metadata { }
+    // The loads of pthread_join (of the thread state and of the return value).
+    public record JoinStateLoad() implements Metadata { }
+    // The loads of pthread_detach.
+    public record DetachStateLoad() implements Metadata { }
+
+    private static List<Event> markStateAccesses(List<Event> events) {
+        events.stream().filter(MemoryCoreEvent.class::isInstance).forEach(ThreadCreation::markStateAccess);
+        return events;
+    }
+
+    private static Event markStateAccess(Event event) {
+        event.setMetadata(new ThreadStateAccess());
+        return event;
+    }
+
+    private static Event markJoinLoad(Event load) {
+        load.setMetadata(new JoinStateLoad());
+        return load;
+    }
 
     public static ThreadCreation fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ThreadCreation(config);
+        return new ThreadCreation(config, false);
+    }
+
+    public static ThreadCreation withDynamicInstances(Configuration config) throws InvalidConfigurationException {
+        return new ThreadCreation(config, true);
     }
 
     @Override
@@ -95,8 +138,13 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<ThreadData> threads = createThreads(ep);
                 resolvePthreadSelf(program);
                 resolveDynamicThreadLocals(program, threads);
-                resolveDynamicThreadJoin(program, threads);
-                resolveDynamicThreadDetach(program, threads);
+                if (dynamicInstances) {
+                    resolveDynamicThreadJoinByAddress(program);
+                    resolveDynamicThreadDetachByAddress(program);
+                } else {
+                    resolveDynamicThreadJoin(program, threads);
+                    resolveDynamicThreadDetach(program, threads);
+                }
                 IdReassignment.newInstance().run(program);
                 resolveTidExpressions(program);
             }
@@ -148,17 +196,34 @@ public class ThreadCreation implements ProgramProcessor {
                 final Function targetFunction = create.getDirectCallTarget();
                 final List<Expression> arguments = create.getArguments();
 
-                final ThreadCreate createEvent = newThreadCreate(arguments);
-                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                final List<Event> replacement;
+                final ThreadData spawnedThread;
+                if (dynamicInstances) {
+                    // The state object of the new instance is passed as the last argument.
+                    final Register stateObject = thread.newUniqueRegister("__threadState", archType);
+                    final List<Expression> extendedArguments = new ArrayList<>(arguments);
+                    extendedArguments.add(stateObject);
+                    final ThreadCreate createEvent = newThreadCreate(extendedArguments);
+                    spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                    replacement = eventSequence(
+                            newAlloc(stateObject, stateObjectType(targetFunction), expressions.makeOne(archType),
+                                    false, true),
+                            markStateAccesses(newReleaseStore(stateObject, threadState(ALIVE | JOINABLE))),
+                            createEvent,
+                            newLocal(tidRegister, expressions.makeCast(stateObject, tidRegister.getType()))
+                    );
+                } else {
+                    final ThreadCreate createEvent = newThreadCreate(arguments);
+                    spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                    replacement = eventSequence(
+                            newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
+                            createEvent,
+                            newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
+                    );
+                }
                 assert spawnedThread.isDynamic();
                 workingQueue.add(spawnedThread);
                 allThreads.add(spawnedThread);
-
-                final List<Event> replacement = eventSequence(
-                        newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
-                        createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
-                );
                 IRHelper.replaceWithMetadata(create, replacement);
 
                 nextTid++;
@@ -261,6 +326,82 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
+    // The state object of a dynamic thread instance: the thread state, followed by the return value.
+    private Type stateObjectType(Function function) {
+        final Type returnType = function.hasReturnValue() ? function.getFunctionType().getReturnType() : archType;
+        return types.getAggregateType(List.of(threadStateType, returnType), List.of(0, RETURN_VALUE_OFFSET));
+    }
+
+    /*
+        Dynamic instances: the thread id is the address of the state object of the joined thread.
+        We assume that the thread id is valid (except for self-joins) and that the return types match.
+     */
+    private void resolveDynamicThreadJoinByAddress(Program program) {
+        int joinCounter = 0;
+        for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
+            final Thread caller = join.getThread();
+            final Expression stateAddress = expressions.makeCast(join.getTid(), archType);
+
+            final Register joinRegister = join.getResultRegister();
+            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
+            final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
+
+            final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
+            final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);
+            final Register threadStateRegister = caller.newRegister("__joinThreadState#" + joinCounter, threadStateType);
+            final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
+
+            final List<Event> fetchState = markStateAccesses(
+                    newAcquireAnd(threadStateRegister, stateAddress, threadState(ALIVE)));
+            fetchState.stream().filter(Load.class::isInstance).forEach(ThreadCreation::markJoinLoad);
+            final Expression isAlive = threadStateFlag(threadStateRegister, ALIVE);
+            final Expression isJoinable = threadStateFlag(threadStateRegister, JOINABLE);
+            final Expression retValAddress = expressions.makeAdd(stateAddress,
+                    expressions.makeValue(RETURN_VALUE_OFFSET, archType));
+            // A thread cannot join itself.
+            final Expression self = expressions.makeCast(caller.getRegister(THREAD_SELF_REGISTER_NAME), archType);
+            final List<Event> replacement = eventSequence(
+                    newLocal(statusRegister, expressions.makeValue(INVALID_TID.getErrorCode(), statusType)),
+                    newLocal(retValRegister, expressions.makeGeneralZero(retValType)),
+                    newJump(expressions.makeEQ(stateAddress, self), joinEnd),
+                    newLocal(statusRegister, expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType)),
+                    fetchState,
+                    newJumpUnless(expressions.makeBooleanCast(isJoinable), joinEnd),
+                    // Waits for the termination of the thread.
+                    newAssume(expressions.makeNot(expressions.makeBooleanCast(isAlive))),
+                    // The return value is written once, before the thread terminates: the load reads the latest write.
+                    markJoinLoad(markStateAccess(newLoad(retValRegister, retValAddress))),
+                    newLocal(statusRegister, expressions.makeValue(SUCCESS.getErrorCode(), statusType)),
+                    joinEnd,
+                    newLocal(joinRegister, expressions.makeConstruct(joinRegister.getType(), List.of(statusRegister, retValRegister)))
+            );
+            IRHelper.replaceWithMetadata(join, replacement);
+            joinCounter++;
+        }
+    }
+
+    private void resolveDynamicThreadDetachByAddress(Program program) {
+        int detachCounter = 0;
+        for (DynamicThreadDetach detach : program.getThreadEvents(DynamicThreadDetach.class)) {
+            final Thread caller = detach.getThread();
+            final Register statusRegister = detach.getResultRegister();
+            final IntegerType statusType = (IntegerType) statusRegister.getType();
+            final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
+            final Expression detachedThread = expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType);
+            final Register threadState = caller.newRegister("__detachThreadState#" + detachCounter, threadStateType);
+            final Expression isJoinable = expressions.makeBooleanCast(threadStateFlag(threadState, JOINABLE));
+            final List<Event> fetchState = markStateAccesses(newRelaxedAnd(threadState,
+                    expressions.makeCast(detach.getTid(), archType), threadState(ALIVE)));
+            fetchState.stream().filter(Load.class::isInstance).forEach(e -> e.setMetadata(new DetachStateLoad()));
+            final List<Event> replacement = eventSequence(
+                    fetchState,
+                    newLocal(statusRegister, expressions.makeITE(isJoinable, successValue, detachedThread))
+            );
+            IRHelper.replaceWithMetadata(detach, replacement);
+            detachCounter++;
+        }
+    }
+
     private void resolveDynamicThreadDetach(Program program, List<ThreadData> threadData) {
         int detachCounter = 0;
         for (DynamicThreadDetach detach : program.getThreadEvents(DynamicThreadDetach.class)) {
@@ -333,7 +474,10 @@ public class ThreadCreation implements ProgramProcessor {
                 final Register resultRegister = getResultRegister(call);
                 assert resultRegister.getType() instanceof IntegerType;
                 assert call.getArguments().isEmpty();
-                final Expression tidExpr = new TIdExpr((IntegerType) resultRegister.getType(), call.getThread());
+                final Thread thread = call.getThread();
+                final Expression tidExpr = dynamicInstances && thread.getEntry().isSpawned()
+                        ? expressions.makeCast(thread.getRegister(THREAD_SELF_REGISTER_NAME), resultRegister.getType())
+                        : new TIdExpr((IntegerType) resultRegister.getType(), thread);
                 final Local tidAssignment = newLocal(resultRegister, tidExpr);
                 IRHelper.replaceWithMetadata(call, tidAssignment);
             }
@@ -355,7 +499,10 @@ public class ThreadCreation implements ProgramProcessor {
         thread.getEntry().insertAfter(body);
 
         // ------------------- Define runtime thread id -------------------
-        final var tidExpr = new TIdExpr(types.getArchType(), thread);
+        // With dynamic instances, the thread id is the address of the state object (the last argument).
+        final Register stateObject = dynamicInstances && creator != null
+                ? thread.newRegister("__threadStateObject", archType) : null;
+        final Expression tidExpr = stateObject != null ? stateObject : new TIdExpr(types.getArchType(), thread);
         thread.getEntry().insertAfter(newLocal(thread.getOrNewRegister(THREAD_SELF_REGISTER_NAME, tidExpr.getType()), tidExpr));
 
         // ------------------- Create thread-local variables -------------------
@@ -395,21 +542,48 @@ public class ThreadCreation implements ProgramProcessor {
             }
 
             // We use accesses to a common memory object to synchronize creator and thread.
-            final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
-            comAddress.setName("__com_" + function.getName() + "#" + tid);
-            comAddress.setInitialValue(0, threadState(0));
+            final MemoryObject comAddress;
+            final Expression stateAddress;
+            final Event syncPosition;
+            if (stateObject != null) {
+                comAddress = null;
+                stateAddress = stateObject;
+                thread.getEntry().insertAfter(newThreadArgument(stateObject, creator, params.size()));
+                // Synchronize after all arguments, since the state object is one of them.
+                Event last = thread.getEntry();
+                while (last.getSuccessor() instanceof ThreadArgument) {
+                    last = last.getSuccessor();
+                }
+                syncPosition = last;
+            } else {
+                comAddress = function.getProgram().getMemory().allocate(1);
+                comAddress.setName("__com_" + function.getName() + "#" + tid);
+                comAddress.setInitialValue(0, threadState(0));
+                stateAddress = comAddress;
+                syncPosition = thread.getEntry();
+            }
 
             // Sync
             final Register threadState = thread.newRegister("__threadStateT" + tid, threadStateType);
             final Expression isAlive = threadStateFlag(threadState, ALIVE);
-            thread.getEntry().insertAfter(eventSequence(
-                    newAcquireLoad(threadState, comAddress),
+            final List<Event> startLoad = newAcquireLoad(threadState, stateAddress);
+            if (stateObject != null) {
+                markStateAccesses(startLoad);
+            }
+            syncPosition.insertAfter(eventSequence(
+                    startLoad,
                     newAssume(expressions.makeBooleanCast(isAlive))
             ));
 
             // End
             // Reset the ALIVE flag.
-            threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadState(JOINABLE)));
+            final List<Event> end = newReleaseAnd(threadState, stateAddress, threadState(JOINABLE));
+            threadReturnLabel.insertAfter(stateObject != null ? markStateAccesses(end) : end);
+            if (stateObject != null && returnRegister != null) {
+                // Pass the return value to joining threads.
+                threadReturnLabel.insertAfter(markStateAccess(newStore(expressions.makeAdd(stateObject,
+                        expressions.makeValue(RETURN_VALUE_OFFSET, archType)), returnRegister)));
+            }
 
             creator.setSpawnedThread(thread);
             return new ThreadData(thread, comAddress, threadReturnLabel);
@@ -702,8 +876,9 @@ public class ThreadCreation implements ProgramProcessor {
     // ==============================================================================================================
     // Helper classes
 
+    // With dynamic instances, spawned threads have no static comAddress (see ThreadCreation.withDynamicInstances).
     private record ThreadData(Thread thread, MemoryObject comAddress, Label returnLabel) {
-        public boolean isDynamic() { return comAddress != null; }
+        public boolean isDynamic() { return thread.getEntry().isSpawned(); }
         // We assume all dynamically created threads are joinable.
         // This is not true for pthread_join in general.
         public boolean isJoinable() { return isDynamic(); }

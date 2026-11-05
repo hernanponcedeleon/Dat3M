@@ -69,6 +69,12 @@ public class ExplorationTest {
                 {"exploration/lb_loop", "c11", Arch.C11, DEPENDENCIES, 0, FAIL},
                 {"exploration/lb_loop", "aarch64", Arch.ARM8, PO, 0, PASS},
                 {"exploration/lb_loop", "aarch64", Arch.ARM8, DEPENDENCIES, 0, FAIL},
+                // Threads created (and joined) in loops: the loops are not unrolled, threads are created dynamically.
+                {"exploration/create_loop", "rc11", Arch.C11, PO, 0, PASS},
+                {"exploration/create_loop", "aarch64", Arch.ARM8, DEPENDENCIES, 0, PASS},
+                {"exploration/create_loop_race", "rc11", Arch.C11, PO, 0, FAIL},
+                {"exploration/create_nondet", "rc11", Arch.C11, PO, 0, PASS},
+                {"exploration/create_nondet", "aarch64", Arch.ARM8, DEPENDENCIES, 0, PASS},
                 // Locks (with spin loops). Bounded model checking reports UNKNOWN for ttas (bound 1).
                 {"locks/spinlock", "rc11", Arch.C11, PO, 0, PASS},
                 {"locks/spinlock-acq2rx", "rc11", Arch.C11, PO, 0, FAIL},

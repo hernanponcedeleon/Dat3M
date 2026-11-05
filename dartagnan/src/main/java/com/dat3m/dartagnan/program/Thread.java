@@ -77,7 +77,8 @@ public class Thread extends Function {
         cur = start.getCreator();
         while (!(cur instanceof Store startStore)) { cur = cur.getPredecessor(); }
         
-        assert startStore.getAddress().equals(startLoad.getAddress());
+        // With dynamically instantiated threads (see ThreadCreation), the address is passed as an argument.
+        assert startStore.getAddress().equals(startLoad.getAddress()) || startLoad.getAddress() instanceof Register;
         
         return List.of(startLoad, startStore);
     }

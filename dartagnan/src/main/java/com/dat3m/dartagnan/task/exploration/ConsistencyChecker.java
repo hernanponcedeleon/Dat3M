@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.wmm.utils.Dimension;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 /*
     Evaluates a CAT memory model on a concrete execution graph.
@@ -28,7 +29,8 @@ final class ConsistencyChecker {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ConsistencyChecker.class);
 
     private final Wmm memoryModel;
-    private final List<Thread> threads;
+    // The code of each thread instance.
+    private final IntFunction<Thread> threads;
     private final Arch arch;
     private final List<Axiom> consistencyAxioms;
     private final List<Axiom> flaggedAxioms;
@@ -39,7 +41,7 @@ final class ConsistencyChecker {
     private final Map<Relation, Boolean> restrictionSafe = new HashMap<>();
     private final Map<Relation, Boolean> sameLocation = new HashMap<>();
 
-    ConsistencyChecker(Wmm memoryModel, List<Thread> threads, Arch arch, boolean checkFlagged) {
+    ConsistencyChecker(Wmm memoryModel, IntFunction<Thread> threads, Arch arch, boolean checkFlagged) {
         this.memoryModel = memoryModel;
         this.threads = threads;
         this.arch = arch;
@@ -711,16 +713,16 @@ final class ConsistencyChecker {
             final BitMatrix result = new BitMatrix(n);
             for (int i : visibleIndices) {
                 final Node a = elements.get(i);
-                if (a.isInit() || !threads.get(a.thread).hasScope()) {
+                if (a.isInit() || !threads.apply(a.thread).hasScope()) {
                     continue;
                 }
-                final Thread t1 = threads.get(a.thread);
+                final Thread t1 = threads.apply(a.thread);
                 for (int j : visibleIndices) {
                     final Node b = elements.get(j);
-                    if (b.isInit() || !threads.get(b.thread).hasScope()) {
+                    if (b.isInit() || !threads.apply(b.thread).hasScope()) {
                         continue;
                     }
-                    final Thread t2 = threads.get(b.thread);
+                    final Thread t2 = threads.apply(b.thread);
                     final boolean related;
                     if (specificScope != null) {
                         related = t1.getScopeHierarchy().canSyncAtScope(t2.getScopeHierarchy(), specificScope);
@@ -747,13 +749,13 @@ final class ConsistencyChecker {
                 if (a.isInit()) {
                     continue;
                 }
-                final Thread t1 = threads.get(a.thread);
+                final Thread t1 = threads.apply(a.thread);
                 if (!t1.hasSyncSet()) {
                     continue;
                 }
                 for (int j : visibleIndices) {
                     final Node b = elements.get(j);
-                    if (!b.isInit() && b.thread != a.thread && t1.getSyncSet().contains(threads.get(b.thread))) {
+                    if (!b.isInit() && b.thread != a.thread && t1.getSyncSet().contains(threads.apply(b.thread))) {
                         result.set(i, j);
                     }
                 }

@@ -9,7 +9,6 @@ public class OptionNames {
     public static final String EXPLORATION_MAX_EVENTS = "exploration.maxEventsPerThread";
     public static final String EXPLORATION_PRINT_EXECUTIONS = "exploration.printExecutions";
     public static final String EXPLORATION_ORDER = "exploration.order";
-    public static final String EXPLORATION_THREAD_CREATION_BOUND = "exploration.threadCreationBound";
     public static final String EXPLORATION_AWAITS = "exploration.awaits";
     public static final String EXPLORATION_THREADS = "exploration.threads";
     public static final String EXPLORATION_SPIN_LAST = "exploration.spinLast";

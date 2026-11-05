@@ -19,22 +19,25 @@ import java.util.concurrent.ConcurrentHashMap;
 /*
     Assigns concrete addresses to memory objects.
     Statically allocated objects get a fixed address.
-    Each dynamic execution of an allocation site (Alloc event) gets its own fresh region.
-    The assignment is a deterministic function of (allocation site, instance number),
-    so it does not depend on the order in which executions are explored.
+    Each dynamic execution of an allocation site (Alloc event) gets its own fresh region, identified by the
+    allocation site, the executing thread instance (threads spawned from the same template share allocation sites),
+    and the number of previous executions of the site by that thread.
+    The same execution of an allocation site always gets the same address, in every explored graph.
 
     The layout also provides the (unique) init node of each location.
  */
 final class MemoryLayout {
 
     record Region(MemoryObject object, int instance, BigInteger base, int size) {}
+    private record AllocationKey(Alloc alloc, int thread, int count) {}
 
     private static final int DEFAULT_ALIGNMENT = 8;
 
     private final Program program;
     private final TreeMap<BigInteger, Region> regions = new TreeMap<>();
     private final Map<MemoryObject, Region> firstInstance = new ConcurrentHashMap<>();
-    private final Map<Alloc, List<Region>> dynamicInstances = new HashMap<>();
+    private final Map<AllocationKey, Region> dynamicInstances = new HashMap<>();
+    private final Map<Alloc, Integer> numInstances = new HashMap<>();
     private final Map<MemoryObject, Map<Integer, Init>> initEvents = new HashMap<>();
     private final Map<BigInteger, Node> initNodes = new ConcurrentHashMap<>();
     private final Set<String> syntheticInitTags;
@@ -103,16 +106,16 @@ final class MemoryLayout {
     private synchronized BigInteger getAddressSlow(MemoryObject object) {
         Region region = firstInstance.get(object);
         if (region == null) {
-            // Dynamically allocated object referenced directly: we use its first instance.
+            // Dynamically allocated object referenced directly: we use its first allocation by the first thread.
             Preconditions.checkState(object.isDynamicallyAllocated());
-            region = getDynamicRegion(object.getAllocationSite(), 0, sizeOf(object));
+            region = getDynamicRegion(new AllocationKey(object.getAllocationSite(), 0, 0), sizeOf(object));
         }
         return region.base();
     }
 
-    // Returns the address of the given instance of the allocation site.
-    synchronized BigInteger allocate(Alloc alloc, int instance, int sizeInBytes) {
-        final Region region = getDynamicRegion(alloc, instance, sizeInBytes);
+    // Returns the address of the count-th execution of the allocation site by the given thread instance.
+    synchronized BigInteger allocate(Alloc alloc, int thread, int count, int sizeInBytes) {
+        final Region region = getDynamicRegion(new AllocationKey(alloc, thread, count), sizeInBytes);
         if (region.size() < sizeInBytes) {
             throw new UnsupportedOperationException(String.format(
                     "Allocation site %s allocates objects of varying size (%d > %d).", alloc, sizeInBytes, region.size()));
@@ -120,18 +123,20 @@ final class MemoryLayout {
         return region.base();
     }
 
-    private Region getDynamicRegion(Alloc alloc, int instance, int sizeInBytes) {
-        final List<Region> instances = dynamicInstances.computeIfAbsent(alloc, k -> new ArrayList<>());
-        while (instances.size() <= instance) {
-            final MemoryObject object = alloc.getAllocatedObject();
-            final int size = Math.max(instances.size() == instance ? sizeInBytes : 0, sizeOf(object));
-            final Region region = allocateRegion(object, instances.size(), Math.max(size, 1), alignmentOf(object));
-            instances.add(region);
-            if (instances.size() == 1) {
-                firstInstance.put(object, region);
-            }
+    private Region getDynamicRegion(AllocationKey key, int sizeInBytes) {
+        final Region known = dynamicInstances.get(key);
+        if (known != null) {
+            return known;
         }
-        return instances.get(instance);
+        final MemoryObject object = key.alloc().getAllocatedObject();
+        final int instance = numInstances.merge(key.alloc(), 1, Integer::sum) - 1;
+        final int size = Math.max(sizeInBytes, sizeOf(object));
+        final Region region = allocateRegion(object, instance, Math.max(size, 1), alignmentOf(object));
+        dynamicInstances.put(key, region);
+        if (instance == 0) {
+            firstInstance.put(object, region);
+        }
+        return region;
     }
 
     // Returns the unique init node of the location.

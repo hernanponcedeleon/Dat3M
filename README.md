@@ -118,7 +118,8 @@ dartagnan cat/rc11.cat --target=c11 program.c --mode=exploration [options]
 ```
 Loops are **not** unrolled. Loop iterations without side effects (e.g. spinning on a flag) block the thread, so programs
 with spin loops can be verified completely (`PASS`). Programs with infinite executions are explored forever,
-unless a bound is given. Loops that create threads are the only ones that get unrolled (`exploration.threadCreationBound`, default 8).
+unless a bound is given. Threads are created dynamically: each execution of `pthread_create` (e.g. inside a loop) spawns
+a new thread, so loops that create threads are not unrolled either.
 Options:
 - `exploration.maxEventsPerThread`: maximal number of events per thread (default 0, i.e. unbounded). Executions exceeding the bound are cut off, and the result becomes `UNKNOWN` unless a violation is found.
 - `exploration.order`: `po` (default) is the original TruSt algorithm, which requires `po | rf` to be acyclic in all consistent executions (e.g. SC, TSO, RC11).

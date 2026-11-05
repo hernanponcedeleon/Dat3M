@@ -135,8 +135,8 @@ public final class TruStExplorer {
     private ThreadLocal<Statistics> localStats = newLocalStats();
     private long awaitRestarts;
 
-    // Fixed thread priority (see computeSchedule).
-    private final int[] schedule;
+    // Fixed thread priority (see pickNextThread).
+    private final boolean spinLast;
     private final int numWorkers;
     private WorkScheduler scheduler;
     private Violation violation;
@@ -158,9 +158,8 @@ public final class TruStExplorer {
         final List<Thread> threads = program.getThreads().stream()
                 .filter(t -> t.getEvents().stream().noneMatch(Init.class::isInstance))
                 .toList();
-        for (int i = 0; i < threads.size(); i++) {
-            threadIndex.put(threads.get(i), i);
-            final List<? extends Event> spawning = threads.get(i).getSpawningEvents();
+        for (Thread thread : threads) {
+            final List<? extends Event> spawning = thread.getSpawningEvents();
             if (spawning.size() == 2) {
                 spawningLoadToStore.put(spawning.get(0), spawning.get(1));
             }
@@ -169,10 +168,16 @@ public final class TruStExplorer {
         this.analysis = new ThreadAnalysis(threads);
         this.interpreter = new ThreadInterpreter(threads, layout, program, settings.order(), analysis,
                 shutdownNotifier);
-        this.checker = new ConsistencyChecker(memoryModel, threads, program.getArch(),
+        for (Thread thread : threads) {
+            final Integer index = interpreter.indexOfInitial(thread);
+            if (index != null) {
+                threadIndex.put(thread, index);
+            }
+        }
+        this.checker = new ConsistencyChecker(memoryModel, interpreter::getThread, program.getArch(),
                 properties.contains(Property.CAT_SPEC));
         this.deferChecks = true;
-        this.schedule = computeSchedule(threads.size(), settings.spinLast());
+        this.spinLast = settings.spinLast();
     }
 
     public Statistics getStatistics() {
@@ -229,7 +234,7 @@ public final class TruStExplorer {
     }
 
     private void explore() throws InterruptedException {
-        final int numThreads = interpreter.getThreads().size();
+        final int numThreads = interpreter.getNumInitialThreads();
         final ThreadState[] initial = new ThreadState[numThreads];
         for (int t = 0; t < numThreads; t++) {
             initial[t] = interpreter.newInitialState(t);
@@ -306,7 +311,7 @@ public final class TruStExplorer {
         stats().visitedGraphs++;
 
         // Line 4: consistency check (possibly deferred, see above)
-        final boolean hasError = Arrays.stream(g.states).anyMatch(st -> st.status == ThreadState.Status.ERROR);
+        final boolean hasError = Arrays.stream(g.states).anyMatch(st -> st != null && st.status == ThreadState.Status.ERROR);
         boolean checked = false;
         if (!deferChecks || hasError) {
             if (!check(g)) {
@@ -318,10 +323,10 @@ public final class TruStExplorer {
         // Assertion violations (errors)
         for (int t = 0; t < g.states.length; t++) {
             final ThreadState st = g.states[t];
-            if (st.status == ThreadState.Status.ERROR) {
+            if (st != null && st.status == ThreadState.Status.ERROR) {
                 if (properties.contains(Property.PROGRAM_SPEC)) {
                     reportViolation(ViolationKind.ASSERTION, String.format("Assertion violation in thread %s: %s",
-                            interpreter.getThreads().get(t), st.violatedAssertion), g);
+                            interpreter.getThread(t), st.violatedAssertion), g);
                     return;
                 }
                 // We are not interested in assertions: the thread is considered blocked.
@@ -344,7 +349,7 @@ public final class TruStExplorer {
         // A thread that spins forever in every extension of the graph: only blocked executions can follow.
         boolean spinningWithStaleRead = false;
         for (int s = 0; s < g.states.length; s++) {
-            if (g.states[s].status == ThreadState.Status.SPINNING) {
+            if (g.states[s] != null && g.states[s].status == ThreadState.Status.SPINNING) {
                 if (isPermanentlySpinning(g, s)) {
                     stats().prunedSpinningGraphs++;
                     return;
@@ -392,36 +397,29 @@ public final class TruStExplorer {
 
     /*
         Threads are scheduled by a fixed priority: TruSt adds the next event of the first enabled thread.
-        The priority must not depend on the graph, since TruSt's completeness relies on a fixed order.
+        The priority must not depend on the graph, since TruSt's completeness relies on a fixed order. Threads are
+        ordered by their instance index, which is the same in all graphs (see ThreadInterpreter).
         With "spinLast", threads with side-effect-free loops (e.g. await loops or seqlock readers) come last: their
         reads are then mostly added after the writes they wait for, so reads of stale values are not maximally added
         and the spinning iterations they cause are pruned immediately (see isPermanentlySpinning), instead of leading
         to blocked executions once later writes are added and revisit the reads.
      */
-    private int[] computeSchedule(int numThreads, boolean spinLast) {
-        final List<Integer> priority = new ArrayList<>();
-        for (int t = 0; t < numThreads; t++) {
-            priority.add(t);
-        }
-        if (spinLast) {
-            priority.sort(Comparator.comparing(analysis::hasPureLoop));
-        }
-        return priority.stream().mapToInt(Integer::intValue).toArray();
-    }
-
     // Returns the thread of the next event to add, or -1 if the graph is full.
     // The truncation flag is recomputed: it is only meaningful for full graphs (where all threads are inspected).
     private int pickNextThread(ExplorationGraph g) {
         g.truncated = false;
-        for (int t : schedule) {
-            if (!interpreter.isEnabled(g, t)) {
-                continue;
+        for (int pass = 0; pass < (spinLast ? 2 : 1); pass++) {
+            for (int t = 0; t < g.states.length; t++) {
+                if (!interpreter.isEnabled(g, t)
+                        || spinLast && analysis.hasPureLoop(interpreter.getThread(t)) != (pass == 1)) {
+                    continue;
+                }
+                if (maxEventsPerThread > 0 && g.states[t].nextPoIndex >= maxEventsPerThread) {
+                    g.truncated = true;
+                    continue;
+                }
+                return t;
             }
-            if (maxEventsPerThread > 0 && g.states[t].nextPoIndex >= maxEventsPerThread) {
-                g.truncated = true;
-                continue;
-            }
-            return t;
         }
         return -1;
     }
@@ -541,8 +539,8 @@ public final class TruStExplorer {
         that makes the iteration take another path.
      */
     private Node blockedAwaitRead(ExplorationGraph g, int t) {
-        final ThreadState st = g.states[t];
-        if (st.status != ThreadState.Status.SPINNING) {
+        final ThreadState st = g.getState(t);
+        if (st == null || st.status != ThreadState.Status.SPINNING) {
             return null;
         }
         Node await = null;
@@ -700,6 +698,7 @@ public final class TruStExplorer {
             for (int t : affected) {
                 interpreter.replay(h, t);
             }
+            interpreter.removeUncreatedThreads(h);
             for (Node n : replayed) {
                 if (!addCoMaximally(g, h, n)) {
                     return false;
@@ -732,8 +731,8 @@ public final class TruStExplorer {
 
     // Adds the node to h, in the way the exploration would add it when extending h co-maximally.
     private boolean addCoMaximally(ExplorationGraph g, ExplorationGraph h, Node n) throws InterruptedException {
-        final ThreadState st = h.states[n.thread];
-        if (st.pc != n.event || st.nextPoIndex != n.poIndex || !interpreter.isEnabled(h, n.thread)) {
+        final ThreadState st = h.getState(n.thread);
+        if (st == null || st.pc != n.event || st.nextPoIndex != n.poIndex || !interpreter.isEnabled(h, n.thread)) {
             return false;
         }
         if (n.kind == Node.Kind.EXCL_FAIL && n.couldSucceed) {
@@ -834,6 +833,7 @@ public final class TruStExplorer {
         for (int thread : affected) {
             interpreter.replay(g2, thread);
         }
+        interpreter.removeUncreatedThreads(g2);
         // The write is not yet placed in coherence order: we explore all placements.
         final List<Node> writes = new ArrayList<>(g2.getCo(write.address));
         for (int i = writes.size() - 1; i >= 0; i--) {
@@ -880,6 +880,7 @@ public final class TruStExplorer {
         for (int thread : affected) {
             interpreter.replay(g2, thread);
         }
+        interpreter.removeUncreatedThreads(g2);
         stats().inPlaceRevisits += revisitInPlace(g2, write);
         push(() -> visit(g2));
     }
@@ -946,6 +947,9 @@ public final class TruStExplorer {
         final List<Integer> spinning = new ArrayList<>();
         for (int t = 0; t < g.states.length; t++) {
             final ThreadState st = g.states[t];
+            if (st == null) {
+                continue;
+            }
             switch (st.status) {
                 case TERMINATED -> { }
                 case RUNNING -> {
@@ -961,7 +965,7 @@ public final class TruStExplorer {
             }
         }
 
-        final boolean boundReached = Arrays.stream(g.states).anyMatch(st -> st.boundReached);
+        final boolean boundReached = Arrays.stream(g.states).anyMatch(st -> st != null && st.boundReached);
         if (g.truncated || boundReached) {
             stats().truncatedExecutions++;
             return;
@@ -970,7 +974,7 @@ public final class TruStExplorer {
             stats().blockedExecutions++;
             if (properties.contains(Property.TERMINATION) && !spinning.isEmpty() && isLivenessViolation(g, spinning)) {
                 reportViolation(ViolationKind.TERMINATION, "Threads " + spinning.stream()
-                        .map(i -> interpreter.getThreads().get(i).toString()).toList()
+                        .map(i -> interpreter.getThread(i).toString()).toList()
                         + " are stuck in side-effect-free loops.", g);
             }
             return;
@@ -1086,7 +1090,7 @@ public final class TruStExplorer {
     private boolean anyThreadMayWriteLater(ExplorationGraph g) {
         for (int t = 0; t < g.states.length; t++) {
             final ThreadState st = g.states[t];
-            if (st.isRunning() && !interpreter.isWaitingForCreation(g, t) && analysis.mayWriteLater(st.pc)) {
+            if (st != null && st.isRunning() && !interpreter.isWaitingForCreation(g, t) && analysis.mayWriteLater(st.pc)) {
                 return true;
             }
         }

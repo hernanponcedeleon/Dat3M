@@ -21,6 +21,8 @@ final class ThreadState {
         ERROR           // The thread violated an assertion
     }
 
+    // The thread instance (index into the graph's threads).
+    final int thread;
     Event pc;
     Status status = Status.RUNNING;
     boolean started;
@@ -49,7 +51,7 @@ final class ThreadState {
     Object returnValue;
     List<Object> arguments = List.of();
     Assert violatedAssertion;
-    // The thread reached the unrolling bound of a (thread-creating) loop.
+    // The thread reached an unrolling bound (e.g. of recursive inlining).
     boolean boundReached;
 
     // Position (poIndex) where the current loop iteration started.
@@ -64,7 +66,8 @@ final class ThreadState {
 
     record ScopedCtrl(Set<Event> scope, Set<Node> sources) {}
 
-    ThreadState(Event entry, ExplorationOrder.Tracker tracker) {
+    ThreadState(int thread, Event entry, ExplorationOrder.Tracker tracker) {
+        this.thread = thread;
         this.pc = entry;
         this.orderTracker = tracker;
         this.registers = new HashMap<>();
@@ -80,6 +83,7 @@ final class ThreadState {
     }
 
     private ThreadState(ThreadState other) {
+        this.thread = other.thread;
         this.pc = other.pc;
         this.status = other.status;
         this.started = other.started;

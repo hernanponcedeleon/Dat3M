@@ -9,6 +9,8 @@ import java.util.*;
     - Init nodes are implicit: they are part of the coherence order of every location that is accessed
       and are considered to be added before every other node.
     - The graph also stores the local state of every thread after executing its nodes.
+    - Threads are identified by their instance index (see ThreadInterpreter). Spawned threads are added when their
+      creation is added; instances that do not exist in the graph have no state (null).
  */
 final class ExplorationGraph {
 
@@ -17,7 +19,7 @@ final class ExplorationGraph {
     private final IdentityHashMap<Node, Node> rf;
     private final LinkedHashMap<BigInteger, ArrayList<Node>> co;
     private final ArrayList<ArrayList<Node>> threadNodes;
-    final ThreadState[] states;
+    ThreadState[] states;
     boolean truncated;
     // Some read was revisited in place (awaits) when this graph or one of its ancestors was constructed.
     boolean inPlaceRevisited;
@@ -47,7 +49,7 @@ final class ExplorationGraph {
         other.threadNodes.forEach(l -> threadNodes.add(new ArrayList<>(l)));
         this.states = new ThreadState[other.states.length];
         for (int i = 0; i < states.length; i++) {
-            states[i] = other.states[i].copy();
+            states[i] = other.states[i] == null ? null : other.states[i].copy();
         }
         this.truncated = other.truncated;
         this.inPlaceRevisited = other.inPlaceRevisited;
@@ -68,12 +70,17 @@ final class ExplorationGraph {
     }
 
     List<Node> getThreadNodes(int thread) {
-        return Collections.unmodifiableList(threadNodes.get(thread));
+        return thread < threadNodes.size() ? Collections.unmodifiableList(threadNodes.get(thread)) : List.of();
     }
 
     Node getLastNodeOfThread(int thread) {
-        final List<Node> list = threadNodes.get(thread);
+        final List<Node> list = getThreadNodes(thread);
         return list.isEmpty() ? null : list.get(list.size() - 1);
+    }
+
+    // The state of the thread instance, or null if it does not exist in this graph.
+    ThreadState getState(int thread) {
+        return thread < states.length ? states[thread] : null;
     }
 
     int getNumThreads() {
@@ -121,6 +128,19 @@ final class ExplorationGraph {
 
     // ==================================== Mutators ====================================
 
+    // Makes room for the thread instance (without creating its state).
+    void ensureThread(int thread) {
+        while (threadNodes.size() <= thread) {
+            threadNodes.add(new ArrayList<>());
+        }
+        if (states.length <= thread) {
+            states = Arrays.copyOf(states, Math.max(thread + 1, 2 * states.length));
+            while (threadNodes.size() < states.length) {
+                threadNodes.add(new ArrayList<>());
+            }
+        }
+    }
+
     void ensureLocation(Node init) {
         co.computeIfAbsent(init.address, k -> {
             final ArrayList<Node> list = new ArrayList<>();
@@ -146,6 +166,9 @@ final class ExplorationGraph {
 
     // Returns the node of thread t at the given po-position, or null if there is none.
     Node getThreadNode(int t, int poIndex) {
+        if (t >= threadNodes.size()) {
+            return null;
+        }
         final ArrayList<Node> list = threadNodes.get(t);
         int lo = 0;
         int hi = list.size() - 1;
@@ -279,7 +302,7 @@ final class ExplorationGraph {
     String toString(MemoryLayout layout) {
         final StringBuilder sb = new StringBuilder();
         for (int t = 0; t < threadNodes.size(); t++) {
-            if (threadNodes.get(t).isEmpty()) {
+            if (threadNodes.get(t).isEmpty() || states[t] == null) {
                 continue;
             }
             sb.append("  Thread ").append(t).append(" [").append(states[t].status).append("]\n");

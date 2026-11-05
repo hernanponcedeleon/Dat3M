@@ -82,7 +82,7 @@ public class ProcessingManager implements ProgramProcessor {
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
-        this(config, true, 0);
+        this(config, true);
     }
 
     /*
@@ -90,10 +90,10 @@ public class ProcessingManager implements ProgramProcessor {
         In that case, all passes that rely on bounded loops (unrolling, non-termination instrumentation) are skipped.
         So are the simplifications that run after unrolling (assignment inlining, constant propagation, dead code
         elimination): they assume loop-free code and only serve to reduce the size of the SMT encoding.
-        Only loops that create threads are unrolled (up to "threadCreationBound"), because the program representation
-        requires a static set of threads.
+        Threads are created dynamically: each pthread_create site yields a thread template that may be instantiated
+        several times at run time (see ThreadCreation.withDynamicInstances).
      */
-    private ProcessingManager(Configuration config, boolean unroll, int threadCreationBound)
+    private ProcessingManager(Configuration config, boolean unroll)
             throws InvalidConfigurationException {
         config.inject(this);
         final Intrinsics intrinsics = Intrinsics.newInstance(detectMixedSizeAccesses);
@@ -138,8 +138,7 @@ public class ProcessingManager implements ProgramProcessor {
                         ? (unroll ? DynamicSpinLoopDetection.fromConfig(config) : DynamicSpinLoopDetection.withZeroInitializedTracking())
                         : null,
                 unroll ? ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true) : null,
-                unroll ? LoopUnrolling.fromConfig(config) // We keep unrolling global for now
-                        : LoopUnrolling.forThreadCreatingLoops(threadCreationBound),
+                unroll ? LoopUnrolling.fromConfig(config) : null, // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", ProgramPrinter.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
@@ -147,7 +146,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 unroll ? simplifyFunction : null
                         ), Target.FUNCTIONS, true
                 ),
-                ThreadCreation.fromConfig(config),
+                unroll ? ThreadCreation.fromConfig(config) : ThreadCreation.withDynamicInstances(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 NaiveDevirtualisation.newInstance(),
@@ -184,9 +183,8 @@ public class ProcessingManager implements ProgramProcessor {
         return new ProcessingManager(config);
     }
 
-    public static ProcessingManager forExploration(Configuration config, int threadCreationBound)
-            throws InvalidConfigurationException {
-        return new ProcessingManager(config, false, threadCreationBound);
+    public static ProcessingManager forExploration(Configuration config) throws InvalidConfigurationException {
+        return new ProcessingManager(config, false);
     }
 
     // ==================================================

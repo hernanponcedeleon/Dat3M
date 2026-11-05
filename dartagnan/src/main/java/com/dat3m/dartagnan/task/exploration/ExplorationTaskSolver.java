@@ -19,7 +19,6 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_MAX_EVENTS;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_ORDER;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
-import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_THREAD_CREATION_BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_PRINT_EXECUTIONS;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_AWAITS;
 import static com.dat3m.dartagnan.configuration.OptionNames.EXPLORATION_SPIN_LAST;
@@ -51,12 +50,6 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
                     "and fence/acquire/release ordering; allows exploring e.g. load buffering).",
             toUppercase = true)
     private ExplorationOrder order = ExplorationOrder.PO;
-
-    @Option(name = EXPLORATION_THREAD_CREATION_BOUND,
-            description = "Unrolling bound for loops that create threads (the only loops that are unrolled during " +
-                    "exploration). Executions that reach the bound make the result inconclusive. Default: 8.")
-    @IntegerOption(min = 1)
-    private int threadCreationBound = 8;
 
     @Option(name = EXPLORATION_AWAITS,
             description = "Avoids blocked executions of await loops (Awamoche, CAV'23): reads that block a " +
@@ -109,7 +102,7 @@ public final class ExplorationTaskSolver extends TaskSolverBase<ExplorationTaskS
         startRun();
         try {
             final Program program = task.getProgram();
-            ProcessingManager.forExploration(task.getConfig(), threadCreationBound).run(program);
+            ProcessingManager.forExploration(task.getConfig()).run(program);
             SMTModelChecker.preprocessMemoryModel(task);
 
             final EnumSet<Property> properties = task.getProperties();

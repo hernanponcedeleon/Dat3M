@@ -75,11 +75,6 @@ public class LoopUnrolling implements ProgramProcessor {
     // all computed loop bounds for later storing them into a file (if desired).
     private Map<Function, Map<CondJump, Integer>> globalLoopBoundsMap = new HashMap<>();
 
-    // Selects the loops to unroll (by default: all loops).
-    private java.util.function.BiPredicate<Label, CondJump> loopFilter = (header, backJump) -> true;
-    // Whether the program gets marked as (fully) unrolled.
-    private boolean markProgramAsUnrolled = true;
-
     private LoopUnrolling() {
     }
 
@@ -96,32 +91,10 @@ public class LoopUnrolling implements ProgramProcessor {
         return new LoopUnrolling();
     }
 
-    /*
-        Only unrolls loops that spawn threads (i.e., contain thread creation), up to the given bound.
-        All other loops are kept. This is used by exploration (stateless model checking), which handles
-        loops dynamically, but relies on a static set of threads.
-     */
-    public static LoopUnrolling forThreadCreatingLoops(int bound) {
-        final LoopUnrolling unrolling = new LoopUnrolling();
-        unrolling.setUnrollingBound(bound);
-        unrolling.loopFilter = LoopUnrolling::containsThreadCreation;
-        unrolling.markProgramAsUnrolled = false;
-        return unrolling;
-    }
-
-    private static boolean containsThreadCreation(Label header, CondJump backJump) {
-        for (Event e = header.getSuccessor(); e != null && e != backJump; e = e.getSuccessor()) {
-            if (e instanceof com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     @Override
     public void run(Program program) {
-        if (markProgramAsUnrolled && program.isUnrolled()) {
+        if (program.isUnrolled()) {
             logger.warn("Skipped unrolling: Program is already unrolled.");
             return;
         }
@@ -133,16 +106,13 @@ public class LoopUnrolling implements ProgramProcessor {
         final int defaultBound = this.bound;
         program.getFunctions().forEach(this::run);
         program.getThreads().forEach(this::run);
-        if (markProgramAsUnrolled) {
-            program.markAsUnrolled(defaultBound);
-        }
+        program.markAsUnrolled(defaultBound);
         IdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 
         toPath(boundsSavePath).ifPresent(path -> dumpLoopBoundsMapToFile(program, globalLoopBoundsMap, path));
         globalLoopBoundsMap = null; // Save up some memory
 
-        logger.info(markProgramAsUnrolled ? "Program unrolled {} times" : "Thread-creating loops unrolled {} times",
-                defaultBound);
+        logger.info("Program unrolled {} times", defaultBound);
     }
 
     private void run(Function function) {
@@ -177,7 +147,7 @@ public class LoopUnrolling implements ProgramProcessor {
                             .filter(IRHelper::isBackJump).findFirst();
                     final boolean isLoop = backjump.isPresent();
 
-                    if (isLoop && loopFilter.test(label, backjump.get())) {
+                    if (isLoop) {
                         // Bound annotation > Spin loop tag > default bound
                         final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
                                 : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
