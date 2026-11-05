@@ -429,7 +429,7 @@ public class WmmEncoder {
             getActiveSet(union).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (must.contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(polarity, edge, execution(e1, e2));
                 } else {
                     List<BooleanFormula> opt = new ArrayList<>(operands.size());
                     for (EncodingContext.EdgeEncoder e : encoders) {
@@ -453,7 +453,7 @@ public class WmmEncoder {
             getActiveSet(inter).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(polarity, edge, execution(e1, e2));
                 } else {
                     List<BooleanFormula> opt = new ArrayList<>(operands.size());
                     for (int i = 0; i < operands.size(); i++) {
@@ -480,7 +480,7 @@ public class WmmEncoder {
             getActiveSet(diff).apply((e1, e2) -> {
                 BooleanFormula edge = enc0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(polarity, edge, execution(e1, e2));
                 } else {
                     BooleanFormula opt1 = enc1.encode(e1, e2);
                     BooleanFormula opt2 = bmgr.not(enc2.encode(e1, e2));
@@ -559,7 +559,7 @@ public class WmmEncoder {
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(polarity, edge, execution(e1, e2));
                 } else {
                     final List<BooleanFormula> orClause = new ArrayList<>();
                     if (innerMaySet.contains(e1, e2)) {
