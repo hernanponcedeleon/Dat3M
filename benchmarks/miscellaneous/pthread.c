@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <dat3m.h>
 
@@ -82,7 +83,7 @@ void mutex_lock(pthread_mutex_t* lock)
 bool mutex_trylock(pthread_mutex_t* lock)
 {
     int status = pthread_mutex_trylock(lock);
-    //assert(status == 0 || status == EBUSY); // TODO Add support for platform-dependent error codes.
+    assert(status == 0 || status == EBUSY);
     return status == 0;
 }
 
@@ -98,7 +99,7 @@ void mutex_test()
     pthread_mutex_t mutex1;
     //TODO Add different behavior based on attributes.
     mutex_init(&mutex0, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT, 1);
-    mutex_init(&mutex1, PTHREAD_MUTEX_RECURSIVE, PTHREAD_PRIO_PROTECT, 2);
+    mutex_init(&mutex1, PTHREAD_MUTEX_NORMAL, PTHREAD_PRIO_PROTECT, 2);
 
     {
         mutex_lock(&mutex0);
@@ -122,12 +123,7 @@ void mutex_test()
             mutex_unlock(&mutex0);
         }
 
-        /*{
-            //TODO Add support for recursive mutexes.
-            bool success = mutex_trylock(&mutex1);
-            assert(success);
-            mutex_unlock(&mutex1);
-        }*/
+        // TODO Add support for recursive mutexes.
 
         mutex_unlock(&mutex1);
     }
@@ -287,7 +283,7 @@ void rwlock_wrlock(pthread_rwlock_t* lock)
 bool rwlock_trywrlock(pthread_rwlock_t* lock)
 {
     int status = pthread_rwlock_trywrlock(lock);
-    //assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
+    assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
     return status == 0;
 }
 
@@ -300,7 +296,7 @@ void rwlock_rdlock(pthread_rwlock_t* lock)
 bool rwlock_tryrdlock(pthread_rwlock_t* lock)
 {
     int status = pthread_rwlock_tryrdlock(lock);
-    //assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
+    assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
     return status == 0;
 }
 
