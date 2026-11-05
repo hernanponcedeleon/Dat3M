@@ -283,7 +283,7 @@ void rwlock_wrlock(pthread_rwlock_t* lock)
 bool rwlock_trywrlock(pthread_rwlock_t* lock)
 {
     int status = pthread_rwlock_trywrlock(lock);
-    assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
+    assert(status == 0 || status == EBUSY);
     return status == 0;
 }
 
@@ -296,7 +296,7 @@ void rwlock_rdlock(pthread_rwlock_t* lock)
 bool rwlock_tryrdlock(pthread_rwlock_t* lock)
 {
     int status = pthread_rwlock_tryrdlock(lock);
-    assert(status == 0 || status == EBUSY); //TODO Add support for platform-dependent error codes.
+    assert(status == 0 || status == EBUSY);
     return status == 0;
 }
 
