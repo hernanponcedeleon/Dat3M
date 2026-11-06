@@ -9,6 +9,9 @@ import com.dat3m.dartagnan.wmm.definition.Difference;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis.Polarity.NEGATIVE;
+import static com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis.Polarity.POSITIVE;
+
 /*
     The constraints/relations of the Wmm can be categorised into positive and negative,
     depending on whether the number of negations applied to the constraint/relation is even (=positive)
@@ -27,10 +30,29 @@ NOTE: Technically, regular axioms should be treated "negatively" since they are 
 public class PolarityAnalysis {
 
     public enum Polarity {
-        UNKNOWN,
+        ABSENT, // For dead relations/constraints
         POSITIVE,
         NEGATIVE,
-        ALL;
+        BOTH;
+
+        Polarity flip() {
+            return switch (this) {
+                case POSITIVE -> NEGATIVE;
+                case NEGATIVE -> POSITIVE;
+                default -> this;
+            };
+        }
+
+        public boolean isNonNegative() {
+            return this == ABSENT || this == POSITIVE;
+        }
+
+        static Polarity fromSigns(boolean isPos, boolean isNeg) {
+            return (!isPos && !isNeg) ? Polarity.ABSENT
+                    : (isPos && isNeg) ? Polarity.BOTH
+                    : isPos ? POSITIVE
+                    : NEGATIVE;
+        }
     }
 
     private final Map<Constraint, Polarity> polarities = new HashMap<>();
@@ -56,11 +78,12 @@ public class PolarityAnalysis {
         final Set<Constraint> negatives = new HashSet<>();
 
         final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
-            private boolean polarity = true;
+            // INVARIANT: polarity is POSITIVE or NEGATIVE
+            private Polarity polarity = POSITIVE;
 
             @Override
             public Void visitAxiom(Axiom axiom) {
-                polarity = !axiom.isNegated();
+                polarity = axiom.isNegated() ? NEGATIVE : POSITIVE;
                 process(axiom);
                 return axiom.getRelation().getDefinition().accept(this);
             }
@@ -78,30 +101,24 @@ public class PolarityAnalysis {
             public Void visitDifference(Difference def) {
                 if (process(def)) {
                     def.getMinuend().getDefinition().accept(this);
-                    polarity = !polarity;
+                    polarity = polarity.flip();
                     def.getSubtrahend().getDefinition().accept(this);
-                    polarity = !polarity;
+                    polarity = polarity.flip();
                 }
                 return null;
             }
 
             private boolean process(Constraint c) {
-                return (polarity ? positives : negatives).add(c);
+                return (polarity == POSITIVE ? positives : negatives).add(c);
             }
         };
 
         wmm.getAxioms().forEach(ax -> ax.accept(collector));
 
         for (Constraint c : wmm.getConstraints()) {
-            final boolean isNeg = negatives.contains(c);
             final boolean isPos = positives.contains(c);
-
-            // NOTE: Unreachable constraints get UNKNOWN
-            final Polarity p = (!isPos && !isNeg) ? Polarity.UNKNOWN
-                    : (isPos && isNeg) ? Polarity.ALL
-                    : isPos ? Polarity.POSITIVE
-                    : Polarity.NEGATIVE;
-            polarities.put(c, p);
+            final boolean isNeg = negatives.contains(c);
+            polarities.put(c, Polarity.fromSigns(isPos, isNeg));
         }
     }
 }

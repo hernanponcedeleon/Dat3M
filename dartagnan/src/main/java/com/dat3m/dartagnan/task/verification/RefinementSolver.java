@@ -565,7 +565,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         final PolarityAnalysis pa = PolarityAnalysis.of(wmm);
         final List<Difference> negDiff = wmm.getConstraints().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
-                .filter(diff -> pa.get(diff.getSubtrahend()) == Polarity.POSITIVE)
+                .filter(diff -> pa.get(diff.getSubtrahend()).isNonNegative())
                 .distinct().toList();
 
         final Map<Relation, Relation> replacements = new HashMap<>();
