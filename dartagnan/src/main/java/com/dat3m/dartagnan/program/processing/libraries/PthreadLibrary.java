@@ -28,7 +28,6 @@ import org.sosy_lab.common.configuration.Options;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.CLIB;
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
@@ -132,10 +131,6 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             toUppercase = true)
     private boolean pthreadCreateAlwaysSucceeds = true;
 
-    @Option(name = CLIB,
-            description = "The Clib against which the program was compiled.",
-            secure = true,
-            toUppercase = true)
     // TODO: Once we need this in other libraries (stdlib?), we need to move the clib code
     //  into a unifying location (maybe have a root CLibrary with sublibraries like pthread).
     private CLibImplementation clib = null;
@@ -165,9 +160,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             // Only link against LLVM code
             return;
         }
-        if (clib == null) {
-            clib = deriveClibFromProgram(program);
-        }
+        clib = deriveClibFromProgram(program);
         logger.info("Linking pthread library matching {}", clib);
         super.link(program);
     }
@@ -181,8 +174,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             case MACOS -> DARWIN_LIBC;
             case WINDOWS -> MINGW;
             case OTHER -> {
-                logger.warn("Could not derive the Clib the program was compiled against; defaulting to {}. " +
-                        "Use --{}={} to specify the Clib.", GLIBC, CLIB, CLibImplementation.values());
+                logger.warn("Could not derive the Clib the program was compiled against; defaulting to {}. ", GLIBC);
                 yield GLIBC;
             }
         };
