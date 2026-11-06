@@ -32,7 +32,7 @@ public class ProcessingTest {
         final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
-        final Register r0 = f.newRegister("r0", types.getArchType());
+        final Register r0 = f.newRegister("r0", program.getArchType());
         final Register r1 = f.newRegister("r1", types.getBooleanType());
         final Event alloc = newAlloc(r0, types.getBooleanType(), 1);
         final Event storeFalse = EventFactory.newStore(r0, expressions.makeFalse());
@@ -57,17 +57,17 @@ public class ProcessingTest {
         final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
-        final Register r0 = f.newRegister("r0", types.getArchType());
-        final Register r1 = f.newRegister("r1", types.getArchType());
-        final Register r2 = f.newRegister("r2", types.getArchType());
+        final Register r0 = f.newRegister("r0", program.getArchType());
+        final Register r1 = f.newRegister("r1", program.getArchType());
+        final Register r2 = f.newRegister("r2", program.getArchType());
         final Register r3 = f.newRegister("r3", types.getBooleanType());
         final Event allocX = newAlloc(r0, types.getBooleanType(), 2);
-        final Event allocY = newAlloc(r1, types.getArchType(), 1);
+        final Event allocY = newAlloc(r1, program.getArchType(), 1);
         final Event storeIndex = EventFactory.newStore(r1,
                 expressions.makeITE(
                         program.newConstant(types.getBooleanType()),
-                        expressions.makeValue(1, types.getArchType()),
-                        expressions.makeValue(0, types.getArchType())));
+                        expressions.makeValue(1, program.getArchType()),
+                        expressions.makeValue(0, program.getArchType())));
         final Event loadIndex = EventFactory.newLoad(r2, r1);
         final Event storeTrue = EventFactory.newStore(expressions.makeAdd(r0, r2), expressions.makeTrue());
         final Event loadTrue = EventFactory.newLoad(r3, expressions.makeAdd(r0, r2));
@@ -90,18 +90,18 @@ public class ProcessingTest {
         final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
-        final Register r0 = f.newRegister("r0", types.getArchType());
-        final Register r1 = f.newRegister("r1", types.getArchType());
-        final Register r2 = f.newRegister("r2", types.getArchType());
+        final Register r0 = f.newRegister("r0", program.getArchType());
+        final Register r1 = f.newRegister("r1", program.getArchType());
+        final Register r2 = f.newRegister("r2", program.getArchType());
         final Register r3 = f.newRegister("r3", types.getBooleanType());
         final Event allocX = newAlloc(r0, types.getBooleanType(), 2);
-        final Event allocY = newAlloc(r1, types.getArchType(), 1);
+        final Event allocY = newAlloc(r1, program.getArchType(), 1);
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelEndIf = EventFactory.newLabel("endIf");
         final Event jumpNondet = EventFactory.newJump(program.newConstant(types.getBooleanType()), labelThen);
         final Event gotoEndIf = EventFactory.newGoto(labelEndIf);
-        final Event store0 = EventFactory.newStore(r1, expressions.makeValue(0, types.getArchType()));
-        final Event store1 = EventFactory.newStore(r1, expressions.makeValue(1, types.getArchType()));
+        final Event store0 = EventFactory.newStore(r1, expressions.makeValue(0, program.getArchType()));
+        final Event store1 = EventFactory.newStore(r1, expressions.makeValue(1, program.getArchType()));
         final Event loadIndex = EventFactory.newLoad(r2, r1);
         final Event storeTrue = EventFactory.newStore(expressions.makeAdd(r0, r2), expressions.makeTrue());
         final Event loadTrue = EventFactory.newLoad(r3, expressions.makeAdd(r0, r2));
@@ -131,18 +131,18 @@ public class ProcessingTest {
         final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
-        final Register r0 = f.newRegister("r0", types.getArchType());
-        final Register r1 = f.newRegister("r1", types.getArchType());
-        final Register r2 = f.newRegister("r2", types.getArchType());
+        final Register r0 = f.newRegister("r0", program.getArchType());
+        final Register r1 = f.newRegister("r1", program.getArchType());
+        final Register r2 = f.newRegister("r2", program.getArchType());
         final Register r3 = f.newRegister("r3", types.getBooleanType());
         final Event allocX = newAlloc(r0, types.getBooleanType(), 2);
-        final Event allocY = newAlloc(r1, types.getArchType(), 1);
+        final Event allocY = newAlloc(r1, program.getArchType(), 1);
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelEndIf = EventFactory.newLabel("endIf");
         final Event jumpNondet = EventFactory.newJump(program.newConstant(types.getBooleanType()), labelThen);
         final Event gotoEndIf = EventFactory.newGoto(labelEndIf);
         final Event store0 = EventFactory.newStore(r1, r0);
-        final Event store1 = EventFactory.newStore(r1, expressions.makeAdd(r0, expressions.makeValue(1, types.getArchType())));
+        final Event store1 = EventFactory.newStore(r1, expressions.makeAdd(r0, expressions.makeValue(1, program.getArchType())));
         final Event loadIndex = EventFactory.newLoad(r2, r1);
         final Event storeTrue = EventFactory.newStore(r2, expressions.makeTrue());
         final Event loadTrue = EventFactory.newLoad(r3, r2);
@@ -175,7 +175,7 @@ public class ProcessingTest {
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
         final Expression c = program.newConstant(types.getBooleanType());
-        final Register r = f.newRegister("r", types.getArchType());
+        final Register r = f.newRegister("r", program.getArchType());
         final Label labelL = EventFactory.newLabel("L");
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelSkip = EventFactory.newLabel("skip");
@@ -183,7 +183,7 @@ public class ProcessingTest {
         final Event jumpC = EventFactory.newJump(c, labelSkip);
         final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
         final Event gotoEnd = EventFactory.newGoto(labelEnd);
-        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, program.getArchType()));
         f.append(List.of(jumpC, labelL, jumpNotC, gotoEnd, labelThen, local, labelSkip, labelEnd));
         RemoveDeadCondJumps.newInstance().run(f);
         assertTrue(f.getEvents().contains(jumpNotC));
@@ -198,14 +198,14 @@ public class ProcessingTest {
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
         final Expression c = program.newConstant(types.getBooleanType());
-        final Register r = f.newRegister("r", types.getArchType());
+        final Register r = f.newRegister("r", program.getArchType());
         final Label labelL = EventFactory.newLabel("L");
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelEnd = EventFactory.newLabel("end");
         final Event jumpC = EventFactory.newJump(c, labelL);
         final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
         final Event gotoEnd = EventFactory.newGoto(labelEnd);
-        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, program.getArchType()));
         f.append(List.of(jumpC, labelL, jumpNotC, gotoEnd, labelThen, local, labelEnd));
         RemoveDeadCondJumps.newInstance().run(f);
         assertTrue(f.getEvents().contains(jumpNotC));
@@ -220,7 +220,7 @@ public class ProcessingTest {
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
         final Expression c = program.newConstant(types.getBooleanType());
-        final Register r = f.newRegister("r", types.getArchType());
+        final Register r = f.newRegister("r", program.getArchType());
         final Label labelL = EventFactory.newLabel("L");
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelEnd = EventFactory.newLabel("end");
@@ -228,7 +228,7 @@ public class ProcessingTest {
         final Event gotoEnd0 = EventFactory.newGoto(labelEnd);
         final Event jumpNotC = EventFactory.newJump(expressions.makeNot(c), labelThen);
         final Event gotoEnd1 = EventFactory.newGoto(labelEnd);
-        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, program.getArchType()));
         f.append(List.of(jumpC, gotoEnd0, labelL, jumpNotC, gotoEnd1, labelThen, local, labelEnd));
         RemoveDeadCondJumps.newInstance().run(f);
         assertFalse(f.getEvents().contains(jumpNotC));
@@ -242,7 +242,7 @@ public class ProcessingTest {
         final Function f = new Function("f", types.getFunctionType(types.getVoidType(), List.of()), List.of(), 0, null);
         program.addFunction(f);
         final Expression c = program.newConstant(types.getBooleanType());
-        final Register r = f.newRegister("r", types.getArchType());
+        final Register r = f.newRegister("r", program.getArchType());
         final Label labelL = EventFactory.newLabel("L");
         final Label labelThen = EventFactory.newLabel("then");
         final Label labelSkip = EventFactory.newLabel("skip");
@@ -250,7 +250,7 @@ public class ProcessingTest {
         final Event jumpC0 = EventFactory.newJump(c, labelSkip);
         final Event jumpC1 = EventFactory.newJump(c, labelThen);
         final Event gotoEnd = EventFactory.newGoto(labelEnd);
-        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, types.getArchType()));
+        final Event local = EventFactory.newLocal(r, expressions.makeValue(1, program.getArchType()));
         f.append(List.of(jumpC0, labelL, jumpC1, gotoEnd, labelThen, local, labelSkip, labelEnd));
         RemoveDeadCondJumps.newInstance().run(f);
         assertTrue(f.getEvents().contains(jumpC0));
@@ -258,7 +258,8 @@ public class ProcessingTest {
     }
 
     private Event newAlloc(Register address, Type type, int count) {
-        return EventFactory.newAlloc(address, type, expressions.makeValue(count, types.getArchType()), false, false);
+        final Expression size = expressions.makeValue(count, address.getFunction().getProgram().getArchType());
+        return EventFactory.newAlloc(address, type, size, false, false);
     }
 
     private void assertLocal(Event event) {

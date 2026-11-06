@@ -64,7 +64,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register condition = builder.getOrNewRegister(0, "condition", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(condition, builder.newConstant(type)));
@@ -110,13 +110,13 @@ public class AliasAnalysisSoundnessTest {
         builder.newThread(0);
         builder.newThread(1);
 
-        Register pointer = builder.getOrNewRegister(0, "pointer", types.getArchType());
+        Register pointer = builder.getOrNewRegister(0, "pointer", builder.getArchType());
         Load load = EventFactory.newLoad(pointer, slot);
         builder.addChildWithoutSourceLoc(0, load);
-        Store indirect = EventFactory.newStore(pointer, expressions.makeZero(types.getArchType()));
+        Store indirect = EventFactory.newStore(pointer, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(0, indirect);
-        Store atX = EventFactory.newStore(x, expressions.makeZero(types.getArchType()));
-        Store atY = EventFactory.newStore(y, expressions.makeZero(types.getArchType()));
+        Store atX = EventFactory.newStore(x, expressions.makeZero(builder.getArchType()));
+        Store atY = EventFactory.newStore(y, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(0, atX);
         builder.addChildWithoutSourceLoc(0, atY);
         builder.addChildWithoutSourceLoc(1, EventFactory.newStore(slot, y));
@@ -146,7 +146,7 @@ public class AliasAnalysisSoundnessTest {
         builder.newThread(0);
         builder.newThread(1);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Expression elementSize = expressions.makeValue(8, type);
         Register storeIndex = builder.getOrNewRegister(0, "storeIndex", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(storeIndex, builder.newConstant(type)));
@@ -181,7 +181,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject destination = builder.newMemoryObject("destination", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register condition = builder.getOrNewRegister(0, "condition", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(condition, builder.newConstant(type)));
@@ -220,7 +220,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject x = builder.newMemoryObject("x", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register mask = builder.getOrNewRegister(0, "mask", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(mask, builder.newConstant(type)));
@@ -249,7 +249,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         ArrayType aggregateType = types.getArrayType(type, 2);
         Register condition = builder.getOrNewRegister(0, "condition", type);
         Register aggregate = builder.getOrNewRegister(0, "aggregate", aggregateType);
@@ -290,7 +290,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject x = builder.newMemoryObject("x", 16);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Register index = builder.getOrNewRegister(0, "index", type);
         Register pointer = builder.getOrNewRegister(0, "pointer", type);
         builder.addChildWithoutSourceLoc(0, EventFactory.newLocal(index, builder.newConstant(type)));
@@ -323,7 +323,7 @@ public class AliasAnalysisSoundnessTest {
         MemoryObject y = builder.newMemoryObject("y", 8);
         builder.newThread(0);
 
-        IntegerType type = types.getArchType();
+        IntegerType type = builder.getArchType();
         Store unknown = EventFactory.newStore(expressions.makeZero(type), expressions.makeZero(type));
         Store atX = EventFactory.newStore(x, expressions.makeZero(type));
         Store atY = EventFactory.newStore(y, expressions.makeZero(type));
@@ -339,10 +339,9 @@ public class AliasAnalysisSoundnessTest {
 
     @Test
     public void cancellingIntegerAddressTermsRetainProvenance() throws Exception {
-        final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final IntegerType type = types.getArchType();
         final ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        final IntegerType type = builder.getArchType();
         final MemoryObject x = builder.newMemoryObject("x", 64);
         final MemoryObject y = builder.newMemoryObject("y", 8);
         final MemoryObject slot = builder.newMemoryObject("slot", 8);

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -124,6 +125,9 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             toUppercase = true)
     private boolean pthreadCreateAlwaysSucceeds = true;
 
+    private IntegerType archType;
+    private FunctionType threadType;
+
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
         config.inject(this);
@@ -143,12 +147,14 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 .findFirst();
     }
 
+    @Override
+    public void link(Program program) {
+        archType = program.getArchType();
+        threadType = types.getFunctionType(program.getPointerType(), List.of(program.getPointerType()));
+        super.link(program);
+    }
 
     // ========================================================================================
-
-    private final static FunctionType PTHREAD_THREAD_TYPE = types.getFunctionType(
-            types.getPointerType(), List.of(types.getPointerType())
-    );
 
     private List<Event> inlinePthreadCreate(FunctionCall call) {
         final List<Expression> arguments = call.getArguments();
@@ -162,8 +168,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
-        final Register tidReg = call.getFunction().newUniqueRegister("__tid", types.getArchType());
-        final Event createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
+        final Register tidReg = call.getFunction().newUniqueRegister("__tid", call.getFunction().getProgram().getArchType());
+        final Event createEvent = newDynamicThreadCreate(tidReg, threadType, targetFunction, List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
 
@@ -212,7 +218,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
 
-        final Type joinType = types.getAggregateType(List.of(types.getIntegerType(8), PTHREAD_THREAD_TYPE.getReturnType()));
+        final Type joinType = types.getAggregateType(List.of(types.getByteType(), threadType.getReturnType()));
         final Register joinReg = call.getFunction().newUniqueRegister("__joinReg", joinType);
 
         final Expression status = expressions.makeExtract(joinReg, 0);
@@ -255,7 +261,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     private List<Event> inlinePthreadExit(FunctionCall call) {
         final List<Expression> arguments = call.getArguments();
-        assert arguments.size() == 1 && arguments.get(0).getType().equals(PTHREAD_THREAD_TYPE.getReturnType());
+        assert arguments.size() == 1 && arguments.get(0).getType().equals(threadType.getReturnType());
 
         return List.of(newThreadReturn(arguments.get(0)));
     }
@@ -624,7 +630,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
         final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
-                newLoopBound(expressions.makeValue(1, types.getArchType())),
+                newLoopBound(expressions.makeOne(types.getIntegerType(32))),
                 spinLoopHead,
                 newPthreadTryLock(oldValueSuccessRegister, address),
                 EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),
@@ -657,7 +663,6 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         //TODO store a value such that later uses of the lock fail
         //final Expression lock = call.getArguments().get(0);
-        //final Expression finalizedValue = expressions.makeZero(types.getArchType());
         return List.of(
                 //EventFactory.newStore(lock, finalizedValue)
                 assignSuccess(errorRegister)
@@ -781,7 +786,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private IntegerType getRwlockDatatype() {
-        return types.getArchType();
+        return archType;
     }
 
     private IntLiteral getRwlockUnlockedValue() {
