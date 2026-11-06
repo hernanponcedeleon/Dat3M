@@ -46,6 +46,13 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean dynamicSpinLoopDetection = true;
 
+    @Option(name = REMOVE_WRITE_ONLY_MEMORY,
+            description = "Removes the plain accesses to memory whose value is never observed (e.g. statistics counters)." +
+                    " This lets non-termination detection repeat loops that update such memory." +
+                    " It also removes data races on that memory. Defaults to 'false'.",
+            secure = true)
+    private boolean removeWriteOnlyMemory = false;
+
     @Option(name = MIXED_SIZE,
             description = "If 'true', checks for mixed-size and misaligned memory accesses." +
                     " This also enables a subsequent program transformation to handle these events." +
@@ -114,6 +121,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RemoveDeadFunctions.newInstance(),
+                removeWriteOnlyMemory ? RemoveWriteOnlyMemory.newInstance() : null,
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL, config) : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),

@@ -145,6 +145,10 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_unstructured_spin", TSO, PASS},
                 {"nontermination/termination_repetition", TSO, UNKNOWN},
                 {"nontermination/locks_abort", IMM, PASS},
+                // A changing write-only counter hides the repetition; see WriteOnlyMemoryLivenessTest
+                {"nontermination/write_only_counter_starvation", IMM, UNKNOWN},
+                {"nontermination/write_only_counter_terminates", IMM, UNKNOWN},
+                {"nontermination/read_counter_controls_loop", IMM, UNKNOWN},
                 // Termination tests related to pthread_join() modeling
                 {"nontermination/nontermination_pthread_join_1", IMM, PASS},
                 {"nontermination/nontermination_pthread_join_2", IMM, PASS},
