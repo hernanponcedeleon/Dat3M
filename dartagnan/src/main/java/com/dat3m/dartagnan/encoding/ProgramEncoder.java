@@ -205,6 +205,9 @@ public class ProgramEncoder {
             if (!e.cfImpliesExec()) {
                 enc.add(bmgr.implication(context.execution(e), context.controlFlow(e)));
             }
+            if (e instanceof BlockingEvent b) {
+                enc.add(bmgr.implication(context.blocked(b), context.execution(b)));
+            }
         }
 
         // Encode global event semantics
@@ -223,11 +226,11 @@ public class ProgramEncoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for (ThreadJoin join : program.getThreadEvents(ThreadJoin.class)) {
             final BooleanFormula joinCf = context.controlFlow(join);
-            final BooleanFormula joinExec = context.execution(join);
+            final BooleanFormula joinPassed = bmgr.and(joinCf, context.unblocked(join));
             final BooleanFormula terminated = threadHasTerminatedNormally(join.getJoinThread());
 
-            enc.add(bmgr.implication(joinExec, terminated));
-            enc.add(bmgr.implication(bmgr.and(terminated, joinCf), joinExec));
+            // The join blocks iff it is reached but the joined thread did not terminate (normally).
+            enc.add(bmgr.equivalence(context.blocked(join), bmgr.and(joinCf, bmgr.not(terminated))));
 
             final List<ThreadReturn> returns = join.getJoinThread().getEvents(ThreadReturn.class);
             Verify.verify(returns.size() <= 1, "Unexpected number of ThreadReturn events.");
@@ -237,7 +240,7 @@ public class ProgramEncoder {
             if (returns.size() == 1 && returns.getFirst().hasValue()) {
                 final ThreadReturn ret = returns.getFirst();
                 enc.add(bmgr.implication(
-                        joinExec,
+                        joinPassed,
                         exprEnc.assignEqualAt(context.result(join), join, ret.getValue().get(), ret)
                 ));
                 // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
@@ -278,7 +281,9 @@ public class ProgramEncoder {
         for (Map.Entry<String, List<ControlBarrier>> entry : barriers.entrySet()) {
             BooleanFormula variable = allCfVariables.get(entry.getKey());
             for (ControlBarrier barrier : entry.getValue()) {
-                enc = bmgr.and(enc, bmgr.equivalence(variable, context.execution(barrier)));
+                // A barrier blocks iff it is reached but not all barriers of its group are reached.
+                enc = bmgr.and(enc, bmgr.equivalence(context.blocked(barrier),
+                        bmgr.and(context.controlFlow(barrier), bmgr.not(variable))));
             }
         }
         return enc;
@@ -315,7 +320,8 @@ public class ProgramEncoder {
             BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
             allCF = bmgr.and(allCF, cf);
         }
-        return bmgr.and(context.sync(e1), bmgr.equivalence(allCF, context.execution(e1)));
+        final BooleanFormula blocked = bmgr.and(context.controlFlow(e1), bmgr.not(allCF));
+        return bmgr.and(context.sync(e1), bmgr.equivalence(context.blocked(e1), blocked));
     }
 
     /*
@@ -329,8 +335,8 @@ public class ProgramEncoder {
      * event, because for PTX `resourceId` may vary in different executions.
      *
      * Constraints:
-     * - `sync(e) => exec(e)`
-     * - `exec(e) <=> (cf(e) /\ (sync_count(e) >= quorum(e)))`
+     * - `sync(e) => (cf(e) /\ !blocked(e))`
+     * - `blocked(e) <=> (cf(e) /\ !(sync_count(e) >= quorum(e)))`
      * - `(cf_count(e) >= quorum(e)) => (sync_count(e) >= quorum(e))`
      * - `cf_count(e) <=> sum((cf(e1) /\ sameId(e, e1)), (cf(e2) /\ sameId(e, e2)), .., (cf(en) /\ sameId(e, en)))`
      * - `sync_count(e) <=> sum((sync(e1) /\ sameId(e, e1)), (sync(e2) /\ sameId(e, e2)), .., (sync(en) /\ sameId(e, en)))`
@@ -360,8 +366,8 @@ public class ProgramEncoder {
         final BooleanFormula enc = bmgr.and(
                 bmgr.implication(cfCountGTEQuorum, hasQuorum),
                 bmgr.equivalence(hasQuorum, syncCountGTEQuorum),
-                bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)),
-                bmgr.implication(context.sync(e1), context.execution(e1)),
+                bmgr.equivalence(context.blocked(e1), bmgr.and(context.controlFlow(e1), bmgr.not(hasQuorum))),
+                bmgr.implication(context.sync(e1), bmgr.and(context.controlFlow(e1), context.unblocked(e1))),
                 exprEnc.equal(cfCount, numCfMembers),
                 exprEnc.equal(syncCount, numSyncMembers)
         );

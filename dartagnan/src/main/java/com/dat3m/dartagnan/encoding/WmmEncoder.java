@@ -926,10 +926,13 @@ public class WmmEncoder {
         public Void visitSyncBarrier(SyncBar syncBar) {
             final Relation rel = syncBar.getDefinedRelation();
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
-            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             getActiveSet(syncBar).apply((e1, e2) -> {
-                BooleanFormula condition = execution(e1, e2);
-                if (!mustSet.contains(e1, e2) && e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
+                // Blocked barriers are executed, but do not synchronize.
+                // TODO: Shall we synchronize blocked barriers?
+                //  This seems reasonable and would also give us must edges back.
+                BooleanFormula condition = bmgr.and(execution(e1, e2),
+                        context.unblocked((BlockingEvent) e1), context.unblocked((BlockingEvent) e2));
+                if (e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
                     condition = bmgr.and(condition, context.sync(b1));
                     if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
                         condition = bmgr.and(condition, context.getExpressionEncoder().equalAt(

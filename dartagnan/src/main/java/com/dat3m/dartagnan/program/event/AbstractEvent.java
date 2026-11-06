@@ -279,7 +279,7 @@ public abstract class AbstractEvent extends MetadataCarrierBase<Event> implement
     // This method needs to get overwritten for conditional events.
     @Override
     public boolean cfImpliesExec() {
-        return !(this instanceof BlockingEvent);
+        return true;
     }
 
 }

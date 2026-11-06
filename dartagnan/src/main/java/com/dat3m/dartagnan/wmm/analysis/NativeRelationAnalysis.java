@@ -1023,7 +1023,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSyncBarrier(SyncBar syncBar) {
-            final IndexedEventGraph must = newGraphForDefinition(syncBar);
+            // NOTE: Barriers are executed even if they are blocked, but blocked barriers do not synchronize.
+            //  Hence, we cannot derive any must-edges from execution alone.
+            final IndexedEventGraph may = newGraphForDefinition(syncBar);
+            final IndexedEventGraph must = newGraphWithDomain(may);
             List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class).stream()
                     .filter(e -> !(e instanceof NamedBarrier))
                     .toList();
@@ -1037,10 +1040,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .filter(e2 -> hierarchy.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope))
                         .filter(e2 -> !e1Mutex.contains(e2))
                         .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
-                        .forEach(e2 -> must.add(e1, e2));
+                        .forEach(e2 -> may.add(e1, e2));
             }
 
-            final IndexedEventGraph may = newGraph(must);
             List<NamedBarrier> namedBarriers = program.getThreadEvents(NamedBarrier.class);
             for (NamedBarrier e1 : namedBarriers) {
                 String id = e1.getInstanceId();
@@ -1052,16 +1054,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .filter(e2 -> hierarchy.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope))
                         .filter(e2 -> !e1Mutex.contains(e2))
                         .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
-                        .forEach(e2 -> {
-                            if (e1.getResourceId().equals(e2.getResourceId())) {
-                                may.add(e1, e2);
-                                if (e1.getQuorum() == null) {
-                                    must.add(e1, e2);
-                                }
-                            } else if (!(e1.getResourceId() instanceof IntLiteral) || !(e2.getResourceId() instanceof IntLiteral)) {
-                                may.add(e1, e2);
-                            }
-                        });
+                        .filter(e2 -> e1.getResourceId().equals(e2.getResourceId())
+                                || !(e1.getResourceId() instanceof IntLiteral)
+                                || !(e2.getResourceId() instanceof IntLiteral))
+                        .forEach(e2 -> may.add(e1, e2));
             }
             return new MutableKnowledge(may, must);
         }
