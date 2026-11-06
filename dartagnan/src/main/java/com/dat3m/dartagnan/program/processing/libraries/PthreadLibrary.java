@@ -162,8 +162,9 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private static CLibraryVersion deriveClibFromProgram(Program program) {
         final Program.TargetSystem targetSystem = program.getMetadata(Program.TargetSystem.class);
         return switch (targetSystem) {
-            case Linux, Windows -> CLibraryVersion.GLIBC;
+            case Linux -> CLibraryVersion.GLIBC;
             case MacOS -> CLibraryVersion.DARWIN_LIBC;
+            case Windows -> CLibraryVersion.MINGW;
             case null -> {
                 // TODO: logger.warn?
                 yield CLibraryVersion.GLIBC;
@@ -375,20 +376,23 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
 
     private enum PthreadDetachStateValue {
-        JOINABLE(0, 1),
-        DETACHED(1, 2);
+        JOINABLE(0, 1, 0),
+        DETACHED(1, 2, 4);
 
         final int valGlibc;
         final int valDarwinLibc;
-        PthreadDetachStateValue(int valGlibc, int valDarwinLibc) {
+        final int valMingw;
+        PthreadDetachStateValue(int valGlibc, int valDarwinLibc, int valMingw) {
             this.valGlibc = valGlibc;
             this.valDarwinLibc = valDarwinLibc;
+            this.valMingw = valMingw;
         }
 
         int value(CLibraryVersion clib) {
             return switch (clib) {
                 case GLIBC -> valGlibc;
                 case DARWIN_LIBC -> valDarwinLibc;
+                case MINGW -> valMingw;
             };
         }
     }
@@ -635,21 +639,24 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private enum PthreadMutexTypeValue {
-        NORMAL(0, 0),
-        RECURSIVE(1, 2),
-        ERRORCHECK(2, 1);
+        NORMAL(0, 0, 0),
+        RECURSIVE(1, 2, 2),
+        ERRORCHECK(2, 1, 1);
 
         final int valGlibc;
         final int valDarwinLibc;
-        PthreadMutexTypeValue(int valGlibc, int valDarwinLibc) {
+        final int valMingw;
+        PthreadMutexTypeValue(int valGlibc, int valDarwinLibc, int valMingw) {
             this.valGlibc = valGlibc;
             this.valDarwinLibc = valDarwinLibc;
+            this.valMingw = valMingw;
         }
 
         int value(CLibraryVersion clib) {
             return switch (clib) {
                 case GLIBC -> valGlibc;
-                case DARWIN_LIBC ->  valDarwinLibc;
+                case DARWIN_LIBC -> valDarwinLibc;
+                case MINGW -> valMingw;
             };
         }
     }
@@ -906,16 +913,16 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression initRoutine = call.getArguments().get(1);
 
         // PTHREAD_ONCE_INIT is platform-specific:
-        //  - glibc: pthread_once_t is an int, initialized to 0.
+        //  - glibc and MinGW (winpthreads): pthread_once_t is an int (long on MinGW, which is 32-bit), initialized to 0.
         //  - Darwin libc: pthread_once_t is a struct { long __sig; char __opaque[8]; },
         //    initialized to { _PTHREAD_ONCE_SIG_init, {0} }.
         // The states 'running' and 'complete' are internal to our model and only have to differ from 'uninitialized'.
         final IntegerType stateType = switch (clib) {
-            case GLIBC -> getNativeIntType();
+            case GLIBC, MINGW -> getNativeIntType();
             case DARWIN_LIBC -> types.getIntegerType(64);
         };
         final Expression uninitialized = switch (clib) {
-            case GLIBC -> expressions.makeZero(stateType);
+            case GLIBC, MINGW -> expressions.makeZero(stateType);
             case DARWIN_LIBC -> expressions.makeValue(DARWIN_PTHREAD_ONCE_SIG_INIT, stateType);
         };
         final Expression running = expressions.makeOne(stateType);
