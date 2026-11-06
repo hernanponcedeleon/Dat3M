@@ -42,7 +42,7 @@ jobs:
             runner: ubuntu-latest
             artifact: linux-x64
           - platform: macOS ARM64
-            runner: macos-14
+            runner: macos-15
             artifact: macos-arm64
     steps:
       - name: Check out base revision
