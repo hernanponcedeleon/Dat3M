@@ -48,6 +48,7 @@ public class OptionNames {
     public static final String DEAD_ASSIGNMENT_ELIMINATION = "program.processing.dce";
     public static final String ASSIGNMENT_INLINING = "program.processing.assignmentInlining";
     public static final String DYNAMIC_SPINLOOP_DETECTION = "program.processing.spinloops";
+    public static final String REMOVE_WRITE_ONLY_MEMORY = "program.processing.removeWriteOnlyMemory";
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
     public static final String NONTERMINATION_INSTRUMENTATION = "program.processing.nonTermination";
