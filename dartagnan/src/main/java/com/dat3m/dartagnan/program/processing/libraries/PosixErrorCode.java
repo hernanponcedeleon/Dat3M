@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * Integer-valued POSIX error codes as defined by the supported C standard libraries.
- * The numeric values differ between libraries, so each constant stores one value per {@link CLibraryVersion}.
+ * The numeric values differ between libraries, so each constant stores one value per {@link CLibImplementation}.
  * Codes that a library does not define are marked with {@code NA.V}.
  *
  * Sources:
@@ -182,16 +182,16 @@ enum PosixErrorCode {
         this.valMingw = valMingw;
     }
 
-    boolean isDefined(CLibraryVersion clib) {
+    boolean isDefined(CLibImplementation clib) {
         return getRawValue(clib) != NA.V;
     }
 
-    int getValue(CLibraryVersion clib) {
+    int getValue(CLibImplementation clib) {
         Preconditions.checkArgument(isDefined(clib), "Error code %s is not defined in %s.", this, clib);
         return getRawValue(clib);
     }
 
-    private int getRawValue(CLibraryVersion clib) {
+    private int getRawValue(CLibImplementation clib) {
         return switch (clib) {
             case GLIBC -> valGlibc;
             case DARWIN_LIBC -> valDarwinLibc;

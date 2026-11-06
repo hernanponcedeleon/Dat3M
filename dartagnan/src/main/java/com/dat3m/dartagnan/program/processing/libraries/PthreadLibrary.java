@@ -130,7 +130,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             description = "The Clib against which the program was compiled.",
             secure = true,
             toUppercase = true)
-    private CLibraryVersion clib = null;
+    private CLibImplementation clib = null;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
@@ -159,15 +159,15 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         super.link(program);
     }
 
-    private static CLibraryVersion deriveClibFromProgram(Program program) {
+    private static CLibImplementation deriveClibFromProgram(Program program) {
         final Program.TargetSystem targetSystem = program.getMetadata(Program.TargetSystem.class);
         return switch (targetSystem) {
-            case Linux -> CLibraryVersion.GLIBC;
-            case MacOS -> CLibraryVersion.DARWIN_LIBC;
-            case Windows -> CLibraryVersion.MINGW;
+            case Linux -> CLibImplementation.GLIBC;
+            case MacOS -> CLibImplementation.DARWIN_LIBC;
+            case Windows -> CLibImplementation.MINGW;
             case null -> {
                 // TODO: logger.warn?
-                yield CLibraryVersion.GLIBC;
+                yield CLibImplementation.GLIBC;
             }
         };
     }
@@ -388,7 +388,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             this.valMingw = valMingw;
         }
 
-        int value(CLibraryVersion clib) {
+        int value(CLibImplementation clib) {
             return switch (clib) {
                 case GLIBC -> valGlibc;
                 case DARWIN_LIBC -> valDarwinLibc;
@@ -652,7 +652,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             this.valMingw = valMingw;
         }
 
-        int value(CLibraryVersion clib) {
+        int value(CLibImplementation clib) {
             return switch (clib) {
                 case GLIBC -> valGlibc;
                 case DARWIN_LIBC -> valDarwinLibc;
