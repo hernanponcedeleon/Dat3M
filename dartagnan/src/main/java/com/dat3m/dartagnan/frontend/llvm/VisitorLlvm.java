@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -149,13 +150,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (int i = 1; i < components.length; i++) {
             final String c = components[i];
             if (c.startsWith("linux")) {
-                return Program.TargetSystem.Linux;
+                return new Program.TargetSystem(OperatingSystem.LINUX);
             }
             if (c.startsWith("macos") || c.startsWith("darwin")) {
-                return Program.TargetSystem.MacOS;
+                return new Program.TargetSystem(OperatingSystem.MACOS);
             }
             if (c.startsWith("windows") || c.startsWith("win32") || c.startsWith("mingw")) {
-                return Program.TargetSystem.Windows;
+                return new Program.TargetSystem(OperatingSystem.WINDOWS);
             }
         }
         return null;

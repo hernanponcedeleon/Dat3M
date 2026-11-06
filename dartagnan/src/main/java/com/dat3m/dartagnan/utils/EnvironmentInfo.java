@@ -16,10 +16,6 @@ import java.util.Set;
 
 public class EnvironmentInfo {
 
-    public enum OperatingSystem {
-        LINUX, MACOS, WINDOWS, OTHER
-    }
-
     public enum Architecture {
         X86_64, ARM64, OTHER
     }
@@ -33,7 +29,6 @@ public class EnvironmentInfo {
                 .getResourceAsStream("git.properties")) {
             if (is != null) {
                 properties.load(is);
-                return;
             }
         } catch (IOException _) {
             logger.warn("Failed to load git.properties");

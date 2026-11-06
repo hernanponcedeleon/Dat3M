@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -34,7 +35,7 @@ public class Program extends MetadataCarrierBase<Program> {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
-    public enum TargetSystem implements Metadata { Linux, MacOS, Windows }
+    public record TargetSystem(OperatingSystem operatingSystem) implements Metadata {}
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 

@@ -17,6 +17,9 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.utils.OperatingSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -31,6 +34,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.INVALID_TID;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
+import static com.dat3m.dartagnan.program.processing.libraries.CLibImplementation.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @Options
@@ -120,6 +124,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(PthreadLibrary.class);
+
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
             description = "Calling pthread_create is guaranteed to succeed (default true).",
             secure = true,
@@ -130,6 +136,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             description = "The Clib against which the program was compiled.",
             secure = true,
             toUppercase = true)
+    // TODO: Once we need this in other libraries (stdlib?), we need to move the clib code
+    //  into a unifying location (maybe have a root CLibrary with sublibraries like pthread).
     private CLibImplementation clib = null;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
@@ -153,21 +161,29 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     @Override
     public void link(Program program) {
+        if (program.getFormat() != Program.SourceLanguage.LLVM) {
+            // Only link against LLVM code
+            return;
+        }
         if (clib == null) {
             clib = deriveClibFromProgram(program);
         }
+        logger.info("Linking pthread library matching {}", clib);
         super.link(program);
     }
 
     private static CLibImplementation deriveClibFromProgram(Program program) {
         final Program.TargetSystem targetSystem = program.getMetadata(Program.TargetSystem.class);
-        return switch (targetSystem) {
-            case Linux -> CLibImplementation.GLIBC;
-            case MacOS -> CLibImplementation.DARWIN_LIBC;
-            case Windows -> CLibImplementation.MINGW;
-            case null -> {
-                // TODO: logger.warn?
-                yield CLibImplementation.GLIBC;
+        final OperatingSystem os = targetSystem != null ? targetSystem.operatingSystem() : OperatingSystem.OTHER;
+
+        return switch (os) {
+            case LINUX -> GLIBC;
+            case MACOS -> DARWIN_LIBC;
+            case WINDOWS -> MINGW;
+            case OTHER -> {
+                logger.warn("Could not derive the Clib the program was compiled against; defaulting to {}. " +
+                        "Use --{}={} to specify the Clib.", GLIBC, CLIB, CLibImplementation.values());
+                yield GLIBC;
             }
         };
     }
@@ -254,7 +270,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
         return eventSequence(
                 newDynamicThreadJoin(joinReg, tidExpr),
-                newLocal(statusRegister, toPosixErrorCode(status, statusType)),
+                newLocal(statusRegister, internalThreadErrorToPosixErrorCode(status, statusType)),
                 jump,
                 storeRetVal,
                 joinEnd,
@@ -276,12 +292,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         return eventSequence(
                 newDynamicThreadDetach(internalStatus, tidExpr),
                 newAssert(expressions.makeNEQ(internalStatus, statusInvalidTId), "Invalid thread id in pthread_detach."),
-                newLocal(statusRegister, toPosixErrorCode(internalStatus, statusType))
+                newLocal(statusRegister, internalThreadErrorToPosixErrorCode(internalStatus, statusType))
         );
     }
 
     // Translates the internal status of DynamicThreadJoin/DynamicThreadDetach into a POSIX error code.
-    private Expression toPosixErrorCode(Expression internalStatus, IntegerType resultType) {
+    private Expression internalThreadErrorToPosixErrorCode(Expression internalStatus, IntegerType resultType) {
         final IntegerType internalType = (IntegerType) internalStatus.getType();
         final Expression isSuccess = expressions.makeEQ(internalStatus, expressions.makeValue(SUCCESS.getErrorCode(), internalType));
         final Expression isInvalidTid = expressions.makeEQ(internalStatus, expressions.makeValue(INVALID_TID.getErrorCode(), internalType));

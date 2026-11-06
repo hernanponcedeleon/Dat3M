@@ -38,7 +38,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.utils.EnvironmentInfo.Architecture.X86_64;
-import static com.dat3m.dartagnan.utils.EnvironmentInfo.OperatingSystem.LINUX;
+import static com.dat3m.dartagnan.utils.OperatingSystem.LINUX;
 
 // Base class for SMT-based model checkers
 public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseable {
