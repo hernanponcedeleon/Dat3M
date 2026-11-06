@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -124,6 +125,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
             toUppercase = true)
     private boolean pthreadCreateAlwaysSucceeds = true;
 
+    private IntegerType archType;
+
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
         config.inject(this);
@@ -143,6 +146,11 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 .findFirst();
     }
 
+    @Override
+    public void link(Program program) {
+        archType = program.getArchType();
+        super.link(program);
+    }
 
     // ========================================================================================
 
@@ -648,7 +656,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression lockAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         return List.of(
-                newStore(lockAddress, getRwlockUnlockedValue(call.getFunction())),
+                newStore(lockAddress, getRwlockUnlockedValue()),
                 assignSuccess(errorRegister)
         );
     }
@@ -668,7 +676,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_rwlock_wrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
@@ -684,7 +692,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_rwlock_trywrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
@@ -698,25 +706,25 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private Event newRwlockTryWrlock(Register oldValueAndSuccess, Expression lockAddress) {
-        final Expression unlocked = getRwlockUnlockedValue(oldValueAndSuccess.getFunction());
-        final Expression locked = getRwlockWriteLockedValue(oldValueAndSuccess.getFunction());
+        final Expression unlocked = getRwlockUnlockedValue();
+        final Expression locked = getRwlockWriteLockedValue();
         return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_rdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_rdlock", oldValueAndSuccessType);
-        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
+        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
         final Expression oldValueResult = expressions.makeExtract(oldValueAndSuccess, 0);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
-        final Expression wasWriteLocked = expressions.makeEQ(oldValueResult, getRwlockWriteLockedValue(call.getFunction()));
+        final Expression wasWriteLocked = expressions.makeEQ(oldValueResult, getRwlockWriteLockedValue());
         return List.of(
                 // Expect any other value than write-locked.
                 EventFactory.newNonDetChoice(expectedRegister),
-                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue(call.getFunction()))),
+                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
                 newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
@@ -730,18 +738,18 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(call.getFunction()), types.getBooleanType()));
+        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_try_rdlock", oldValueAndSuccessType);
-        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
+        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         final Expression actualResult = expressions.makeExtract(oldValueAndSuccess, 0);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
-        final Expression wasWriteLocked = expressions.makeEQ(actualResult, getRwlockWriteLockedValue(call.getFunction()));
+        final Expression wasWriteLocked = expressions.makeEQ(actualResult, getRwlockWriteLockedValue());
         return List.of(
                 // Expect any other value than write-locked.
                 EventFactory.newNonDetChoice(expectedRegister),
-                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue(call.getFunction()))),
+                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
                 newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
@@ -753,9 +761,9 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     }
 
     private Event newRwlockTryRdlock(Register oldValueAndSuccess, Expression lockAddress, Expression expected) {
-        final Expression wasUnlocked = expressions.makeEQ(expected, getRwlockUnlockedValue(oldValueAndSuccess.getFunction()));
-        final Expression lockedOnce = expressions.makeValue(BigInteger.TWO, getRwlockDatatype(oldValueAndSuccess.getFunction()));
-        final Expression lockedMore = expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype(oldValueAndSuccess.getFunction())));
+        final Expression wasUnlocked = expressions.makeEQ(expected, getRwlockUnlockedValue());
+        final Expression lockedOnce = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
+        final Expression lockedMore = expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()));
         final Expression locked = expressions.makeITE(wasUnlocked, lockedOnce, lockedMore);
         return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, expected, locked, Tag.C11.MO_ACQUIRE, true);
     }
@@ -763,11 +771,11 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
-        final Register decrementRegister = call.getFunction().newRegister(getRwlockDatatype(call.getFunction()));
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
+        final Register decrementRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression one = expressions.makeOne(getRwlockDatatype(call.getFunction()));
-        final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype(call.getFunction()));
+        final Expression one = expressions.makeOne(getRwlockDatatype());
+        final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
         final Expression lastReader = expressions.makeEQ(oldValueRegister, two);
         final Expression properDecrement = expressions.makeITE(lastReader, two, one);
         //TODO does not recognize whether the calling thread is allowed to unlock
@@ -780,18 +788,18 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
-    private IntegerType getRwlockDatatype(Function function) {
-        return function.getProgram().getArchType();
+    private IntegerType getRwlockDatatype() {
+        return archType;
     }
 
-    private IntLiteral getRwlockUnlockedValue(Function function) {
+    private IntLiteral getRwlockUnlockedValue() {
         //FIXME this assumes that the lock is initialized with pthread_rwlock_init,
         // but some programs may explicitly initialize it with other platform-dependent values.
-        return expressions.makeZero(getRwlockDatatype(function));
+        return expressions.makeZero(getRwlockDatatype());
     }
 
-    private IntLiteral getRwlockWriteLockedValue(Function function) {
-        return expressions.makeOne(getRwlockDatatype(function));
+    private IntLiteral getRwlockWriteLockedValue() {
+        return expressions.makeOne(getRwlockDatatype());
     }
 
     private List<Event> inlinePthreadRwlockAttr(FunctionCall call) {
