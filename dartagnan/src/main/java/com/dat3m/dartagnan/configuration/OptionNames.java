@@ -43,6 +43,7 @@ public class OptionNames {
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
     public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
     public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
+    public static final String POLARITY_AWARE_ENCODING = "encoding.wmm.polarityAware";
     public static final String ROUNDING_MODE_FLOATS = "encoding.roundingModeFloat";
 
     // Program Processing Options

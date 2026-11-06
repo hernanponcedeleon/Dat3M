@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis.Polarity;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -55,6 +57,7 @@ public class WmmEncoder {
 
     private final AxiomEncoder axiomEncoder = new AxiomEncoder();
     private final ActiveSetAnalysis activeSetAnalysis;
+    private final PolarityAnalysis polarityAnalysis;
 
     // ==============================================================================================
     @Option(name = MEMORY_IS_ZEROED,
@@ -75,6 +78,14 @@ public class WmmEncoder {
             secure = true)
     boolean useSATEncoding = true;
 
+    @Option(name = POLARITY_AWARE_ENCODING,
+            description = "Encode each derived relation only in the direction(s) required by the axioms that " +
+                    "(transitively) use it, instead of a full equivalence (Plaisted-Greenbaum style). " +
+                    "Edge variables of derived relations may then over-approximate (or under-approximate) " +
+                    "the relation in a model.",
+            secure = true)
+    private boolean polarityAware = true;
+
     // ==============================================================================================
 
     private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
@@ -86,8 +97,10 @@ public class WmmEncoder {
         logger.info("{}: {}", MEMORY_IS_ZEROED, memoryIsZeroed);
         logger.info("{}: {}", MULTI_READS, allowMultiReads);
         logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
+        logger.info("{}: {}", POLARITY_AWARE_ENCODING, polarityAware);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
+        this.polarityAnalysis = polarityAware ? PolarityAnalysis.of(memoryModel) : null;
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -310,6 +323,29 @@ public class WmmEncoder {
     }
 
     // ================================================================================================
+    // Approximative encodings
+
+    private enum ApproxType {
+        UNDER, // edge => def (fewer edges than def requires)
+        OVER,  // edge <= def (more edges than def requires)
+        EXACT  // edge <=> def
+    }
+
+    private static ApproxType approxTypeFromPolarity(Polarity polarity) {
+        return switch (polarity) {
+            case POSITIVE -> ApproxType.OVER;
+            case NEGATIVE -> ApproxType.UNDER;
+            default ->  ApproxType.EXACT;
+        };
+    }
+
+    private ApproxType getApproxType(Relation rel) {
+        return polarityAware
+                ? approxTypeFromPolarity(polarityAnalysis.get(rel))
+                : ApproxType.EXACT;
+    }
+
+    // ================================================================================================
     // Constraint encoding
 
     // TODO: Change encoder to return encoding rather than accumulating it.
@@ -347,6 +383,25 @@ public class WmmEncoder {
             });
         }
 
+        // Encodes "edge <=> definition", restricted to the direction(s) required by the approximation.
+        private void encodeDefinition(ApproxType approxType, BooleanFormula edge, BooleanFormula definition) {
+            switch (approxType) {
+                case OVER -> enc.add(bmgr.implication(definition, edge));
+                case UNDER -> enc.add(bmgr.implication(edge, definition));
+                case EXACT -> enc.add(bmgr.equivalence(edge, definition));
+            }
+        }
+
+        // Encodes "edge <=> OR(disjuncts)", restricted to the direction(s) required by the approximation.
+        // In the OVER case, we emit one (small) implication per disjunct instead of a single large one.
+        private void encodeDisjunctiveDefinition(ApproxType approxType, BooleanFormula edge, List<BooleanFormula> disjuncts) {
+            if (approxType == ApproxType.OVER) {
+                disjuncts.forEach(d -> enc.add(bmgr.implication(d, edge)));
+            } else {
+                encodeDefinition(approxType, edge, bmgr.or(disjuncts));
+            }
+        }
+
         @Override
         public Void visitDefinition(Definition def) {
             if (STATIC_RELATIONS.contains(def.getClass())) {
@@ -372,16 +427,17 @@ public class WmmEncoder {
             EventGraph must = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(union).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (must.contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(approxType, edge, execution(e1, e2));
                 } else {
                     List<BooleanFormula> opt = new ArrayList<>(operands.size());
                     for (EncodingContext.EdgeEncoder e : encoders) {
                         opt.add(e.encode(e1, e2));
                     }
-                    enc.add(bmgr.equivalence(edge, bmgr.or(opt)));
+                    encodeDisjunctiveDefinition(approxType, edge, opt);
                 }
             });
             return null;
@@ -395,10 +451,11 @@ public class WmmEncoder {
             RelationAnalysis.Knowledge[] knowledges = operands.stream().map(ra::getKnowledge).toArray(RelationAnalysis.Knowledge[]::new);
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(inter).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(approxType, edge, execution(e1, e2));
                 } else {
                     List<BooleanFormula> opt = new ArrayList<>(operands.size());
                     for (int i = 0; i < operands.size(); i++) {
@@ -406,7 +463,7 @@ public class WmmEncoder {
                             opt.add(encoders[i].encode(e1, e2));
                         }
                     }
-                    enc.add(bmgr.equivalence(edge, bmgr.and(opt)));
+                    encodeDefinition(approxType, edge, bmgr.and(opt));
                 }
             });
             return null;
@@ -421,14 +478,15 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
             EncodingContext.EdgeEncoder enc2 = context.edge(r2);
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(diff).apply((e1, e2) -> {
                 BooleanFormula edge = enc0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(approxType, edge, execution(e1, e2));
                 } else {
                     BooleanFormula opt1 = enc1.encode(e1, e2);
                     BooleanFormula opt2 = bmgr.not(enc2.encode(e1, e2));
-                    enc.add(bmgr.equivalence(edge, bmgr.and(opt1, opt2)));
+                    encodeDefinition(approxType, edge, bmgr.and(opt1, opt2));
                 }
             });
             return null;
@@ -448,6 +506,7 @@ public class WmmEncoder {
             final EventGraph a1 = EventGraph.union(getActiveSet(r1.getDefinition()), k1.getMustSet());
             final EventGraph a2 = EventGraph.union(getActiveSet(r2.getDefinition()), k2.getMustSet());
             Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(comp).apply((e1, e2) -> {
                 final List<BooleanFormula> orClause = new ArrayList<>();
                 if (k.getMustSet().contains(e1, e2)) {
@@ -461,7 +520,7 @@ public class WmmEncoder {
                         }
                     }
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), bmgr.or(orClause)));
+                encodeDisjunctiveDefinition(approxType, enc0.encode(e1, e2), orClause);
             });
             return null;
         }
@@ -475,13 +534,14 @@ public class WmmEncoder {
             final boolean dom = projection.getDimension() == Dimension.DOMAIN;
             final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
             final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(projection).apply((e1, e2) -> {
                 assert e1.equals(e2);
                 final var opt = new ArrayList<BooleanFormula>();
                 for (Event alt : altMap.getOrDefault(e1, Set.of())) {
                     opt.add(enc1.encode(dom ? e1 : alt, dom ? alt : e1));
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e1), bmgr.or(opt)));
+                encodeDisjunctiveDefinition(approxType, enc0.encode(e1, e1), opt);
             });
             return null;
         }
@@ -496,11 +556,12 @@ public class WmmEncoder {
 
             final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
+            final ApproxType approxType = getApproxType(rel);
 
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
-                    enc.add(bmgr.equivalence(edge, execution(e1, e2)));
+                    encodeDefinition(approxType, edge, execution(e1, e2));
                 } else {
                     final List<BooleanFormula> orClause = new ArrayList<>();
                     if (innerMaySet.contains(e1, e2)) {
@@ -513,7 +574,7 @@ public class WmmEncoder {
                         }
                     }
 
-                    enc.add(bmgr.equivalence(edge, bmgr.or(orClause)));
+                    encodeDisjunctiveDefinition(approxType, edge, orClause);
                 }
             });
             return null;
@@ -526,13 +587,14 @@ public class WmmEncoder {
             EventGraph mustSet = ra.getKnowledge(setId).getMustSet();
             EncodingContext.EdgeEncoder encSetId = context.edge(setId);
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            final ApproxType approxType = getApproxType(setId);
             getActiveSet(id).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(approxType,
                             encSetId.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : e1 == e2 ? encDomain.encode(e1, e2) : bmgr.makeFalse()
-                    ))
+                    )
             );
             return null;
         }
@@ -544,13 +606,14 @@ public class WmmEncoder {
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final ApproxType approxType = getApproxType(rel);
             getActiveSet(inv).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(approxType,
                             enc0.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : enc1.encode(e2, e1)
-                    ))
+                    )
             );
             return null;
         }
@@ -564,13 +627,14 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder encProduct = context.edge(product);
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
             EncodingContext.EdgeEncoder encRange = context.edge(range);
+            final ApproxType approxType = getApproxType(product);
             getActiveSet(cartesianProduct).apply((e1, e2) ->
-                    enc.add(bmgr.equivalence(
+                    encodeDefinition(approxType,
                             encProduct.encode(e1, e2),
                             mustSet.contains(e1, e2)
                                     ? execution(e1, e2)
                                     : bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2))
-                    ))
+                    )
             );
             return null;
         }
