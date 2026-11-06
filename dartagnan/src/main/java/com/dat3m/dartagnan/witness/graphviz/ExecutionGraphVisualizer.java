@@ -1,18 +1,23 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import com.dat3m.dartagnan.model.*;
-import com.dat3m.dartagnan.model.event.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
+import com.dat3m.dartagnan.model.Execution;
+import com.dat3m.dartagnan.model.MemoryLayout;
+import com.dat3m.dartagnan.model.ThreadExecution;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.model.RelationModel.EdgeModel;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SameInstruction;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -40,10 +45,10 @@ public class ExecutionGraphVisualizer {
     private final Graphviz graphviz;
     private final ColorMap colorMap;
     private SyntacticContextAnalysis synContext = getEmptyInstance();
-    private final Map<String, BiPredicate<EventModel, EventModel>> filter = new HashMap<>();
-    private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
+    private final Map<String, BiPredicate<Event, Event>> filter = new HashMap<>();
     private static final Set<String> OPTIONAL_RELATIONS = Set.of(SI);
     private Set<String> relsToShow;
+    private Execution execution;
 
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
@@ -62,17 +67,17 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    public ExecutionGraphVisualizer setFilter(String relationName, BiPredicate<EventModel, EventModel> filter) {
+    public ExecutionGraphVisualizer setFilter(String relationName, BiPredicate<Event, Event> filter) {
         this.filter.put(relationName, filter);
         return this;
     }
 
-    public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
-        computeAddressMap(model);
+    public void generateGraphOfExecution(Writer writer, String graphName, Execution execution) throws IOException {
+        this.execution = execution;
         graphviz.beginDigraph(graphName);
         graphviz.appendLine(String.format("label=\"%s\"", graphName));
-        addEvents(model);
-        addRelations(model);
+        addEvents();
+        addRelations();
         graphviz.end();
         graphviz.generateOutput(writer);
     }
@@ -82,27 +87,21 @@ public class ExecutionGraphVisualizer {
         relsToShow = Set.of(relsToShowStr.split(",\\s*"));
     }
 
-    private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
+    private BiPredicate<Event, Event> getFilter(String relationName) {
         return filter.getOrDefault(relationName, (x, y) -> true);
     }
 
-    private void computeAddressMap(ExecutionModelNext model) {
-        model.getMemoryLayoutMap().entrySet().stream()
-             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().value()))
-             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
-    }
-
-    private List<List<EventModel>> getEventModelsToShow(ThreadModel tm) {
-        final List<List<EventModel>> instructions = new ArrayList<>();
-        final List<InstructionBoundary> markers = tm.getThread().getEvents(InstructionBoundary.class);
+    private List<List<Event>> getEventsToShow(ThreadExecution thread) {
+        final List<List<Event>> instructions = new ArrayList<>();
+        final List<InstructionBoundary> markers = thread.getThread().getEvents(InstructionBoundary.class);
         int b = 0;
-        List<EventModel> instruction = null;
-        for (EventModel e : tm.getEventModels()) {
-            if (!showModel(e)) {
+        List<Event> instruction = null;
+        for (Event e : thread.getTrace()) {
+            if (!isShown(e)) {
                 continue;
             }
             boolean insideInstruction = instruction != null;
-            while (b < markers.size() && markers.get(b).getGlobalId() < e.getEvent().getGlobalId()) {
+            while (b < markers.size() && markers.get(b).getGlobalId() < e.getGlobalId()) {
                 b++;
                 insideInstruction = !insideInstruction;
                 instruction = null;
@@ -119,25 +118,25 @@ public class ExecutionGraphVisualizer {
         return instructions;
     }
 
-    private boolean showModel(EventModel e) {
-        return e instanceof MemoryEventModel
-                || e instanceof GenericVisibleEventModel
-                || e instanceof LocalModel
-                || e instanceof AssertModel;
+    private boolean isShown(Event e) {
+        return switch (e) {
+            case MemoryCoreEvent _, GenericVisibleEvent _, Local _, Assert _ -> true;
+            default -> false;
+        };
     }
 
-    private void addEvents(ExecutionModelNext model) {
-        for (ThreadModel tm : model.getThreadModels()) {
+    private void addEvents() {
+        for (ThreadExecution thread : execution.getThreads()) {
 
-            if (IRHelper.isInitThread(tm.getThread())) {
+            if (IRHelper.isInitThread(thread.getThread()) || !thread.hasStarted()) {
                 continue;
             }
 
-            graphviz.beginSubgraph("T" + tm.getId());
+            graphviz.beginSubgraph("T" + thread.getThread().getId());
 
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            for (List<EventModel> instruction : instructions) {
-                for (EventModel event : instruction) {
+            final List<List<Event>> instructions = getEventsToShow(thread);
+            for (List<Event> instruction : instructions) {
+                for (Event event : instruction) {
                     appendNode(event, nodeLabel(event));
                 }
             }
@@ -155,26 +154,21 @@ public class ExecutionGraphVisualizer {
         }
     }
 
-    private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
-        return model.getRelationModels().stream()
-                    .filter(rm -> rm.getRelation().hasName(name))
-                    .findFirst().orElse(null);
-    }
-
     // Getting the correct relation to show is tricky.
     // In the case of redefinition, we care about the one defined last.
     // If there is no redefinition, we simply return the original one.
-    private RelationModel getRelationModel(ExecutionModelNext model, String name) {
+    private Relation getRelation(String name) {
+        final Wmm memoryModel = execution.getMemoryModel();
         // First check if the original definition is asked.
         if (name.endsWith("#0")) {
             String originalName = name.substring(0, name.lastIndexOf("#"));
-            return getRelationModelByName(model, originalName);
+            return memoryModel.getRelation(originalName);
         }
 
         int maxId = -1;
-        for (RelationModel rm : model.getRelationModels()) {
+        for (Relation r : memoryModel.getRelations()) {
             int defIndex = -1;
-            for (String n : rm.getRelation().getNames()) {
+            for (String n : r.getNames()) {
                 if (n.startsWith(name + "#")) {
                     defIndex = tryParseInt(n).orElse(-1);
                     if (defIndex > -1) { break; }
@@ -182,54 +176,56 @@ public class ExecutionGraphVisualizer {
             }
             maxId = Math.max(maxId, defIndex);
         }
-        return maxId != -1 ? getRelationModelByName(model, name + "#" + maxId)
-                           : getRelationModelByName(model, name);
+        return maxId != -1 ? memoryModel.getRelation(name + "#" + maxId) : memoryModel.getRelation(name);
     }
 
-    private void addRelations(ExecutionModelNext model) {
+    private void addRelations() {
         for (String name : relsToShow) {
-            RelationModel rm = getRelationModel(model, name);
-            if (rm == null) {
+            final Relation relation = getRelation(name);
+            if (relation == null) {
                 if (!OPTIONAL_RELATIONS.contains(name)) {
                     logger.warn("Relation with the name {} does not exist", name);
                 }
                 continue;
             }
             // For PO and CO we do not show the transitive edges in witness.
-            if (rm.getRelation().getDefinition().getClass() == ProgramOrder.class) {
-                addProgramOrder(model, name);
-            } else if (rm.getRelation().getDefinition().getClass() == Coherence.class) {
-                addCoherence(rm, model, name);
-            } else if (rm.getRelation().getDefinition().getClass() == SameInstruction.class) {
-                addSameInstruction(model, name);
+            if (relation.getDefinition().getClass() == ProgramOrder.class) {
+                addProgramOrder(name);
+            } else if (relation.getDefinition().getClass() == Coherence.class) {
+                addCoherence(relation, name);
+            } else if (relation.getDefinition().getClass() == SameInstruction.class) {
+                addSameInstruction(name);
             } else {
-                addRelation(rm, name);
+                addRelation(relation, name);
             }
         }
     }
 
-    private void addRelation(RelationModel rm, String name) {
+    private void addRelation(Relation relation, String name) {
         graphviz.beginSubgraph(name);
         graphviz.setEdgeAttributes(String.format("color=%s, label=\"%s\"", colorMap.getColor(name), name));
-        final BiPredicate<EventModel, EventModel> filter = getFilter(name);
-        for (EdgeModel edge : rm.getEdgeModels()) {
-            appendEdge(filter, edge.from(), edge.to());
-        }
+        final BiPredicate<Event, Event> filter = getFilter(name);
+        execution.getRelation(relation).apply((from, to) -> {
+            // Edges between hidden events would create undeclared nodes.
+            if (isShown(from) && isShown(to)) {
+                appendEdge(filter, from, to);
+            }
+        });
         graphviz.end();
     }
 
-    private void addProgramOrder(ExecutionModelNext model, String name) {
+    private void addProgramOrder(String name) {
         graphviz.beginSubgraph(name);
         graphviz.setEdgeAttributes(String.format("color=%s, weight=100, label=\"%s\"", colorMap.getColor(PO), name));
-        final BiPredicate<EventModel, EventModel> filter = getFilter(PO);
-        for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
+        final BiPredicate<Event, Event> filter = getFilter(PO);
+        for (ThreadExecution thread : execution.getThreads()) {
+            final List<List<Event>> instructions = getEventsToShow(thread);
             if (instructions.size() <= 1) { continue; }
             for (int i = 1; i < instructions.size(); i++) {
-                final List<EventModel> fromList = instructions.get(i - 1);
-                final List<EventModel> toList = instructions.get(i);
-                for (EventModel from : fromList) {
-                    for (EventModel to : toList) {
+                final List<Event> fromList = instructions.get(i - 1);
+                final List<Event> toList = instructions.get(i);
+                for (Event from : fromList) {
+                    for (Event to : toList) {
                         appendEdge(filter, from, to);
                     }
                 }
@@ -238,45 +234,37 @@ public class ExecutionGraphVisualizer {
         graphviz.end();
     }
 
-    private void addCoherence(RelationModel rm, ExecutionModelNext model, String name) {
+    private void addCoherence(Relation relation, String name) {
         graphviz.beginSubgraph(name);
         graphviz.setEdgeAttributes(String.format("color=%s, label=\"%s\"", colorMap.getColor(CO), name));
-        BiPredicate<EventModel, EventModel> filter = getFilter(CO);
+        final BiPredicate<Event, Event> filter = getFilter(CO);
 
-        Set<EdgeModel> coModels = rm.getEdgeModels();
-        for (Set<StoreModel> writes : model.getAddressWritesMap().values()) {
-            List<StoreModel> coSortedWrites;
-            Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
-            for (StoreModel w1 : writes) {
-                coEdges.put(w1, new ArrayList<>());
-                for (StoreModel w2 : writes) {
-                    if (coModels.contains(new EdgeModel(w1, w2))) {
-                        coEdges.get(w1).add(w2);
-                    }
-                }
+        final EventGraph co = execution.getRelation(relation);
+        for (BigInteger address : execution.getAccessedAddresses()) {
+            final List<Store> writes = execution.getAccesses(address).stream()
+                    .filter(Store.class::isInstance).map(Store.class::cast).toList();
+            final Map<Store, List<Store>> coEdges = new HashMap<>();
+            for (Store w1 : writes) {
+                coEdges.put(w1, writes.stream().filter(w2 -> co.contains(w1, w2)).toList());
             }
-            DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
-            coSortedWrites = new ArrayList<>(depGraph.getNodeContents().reversed());
+            final DependencyGraph<Store> depGraph = DependencyGraph.from(writes, coEdges);
+            final List<Store> coSortedWrites = depGraph.getNodeContents().reversed();
 
-            for (int i = 0; i < coSortedWrites.size(); i++) {
-                if (i >= 1) {
-                    EventModel w1 = coSortedWrites.get(i - 1);
-                    EventModel w2 = coSortedWrites.get(i);
-                    appendEdge(filter, w1, w2);
-                }
+            for (int i = 1; i < coSortedWrites.size(); i++) {
+                appendEdge(filter, coSortedWrites.get(i - 1), coSortedWrites.get(i));
             }
         }
         graphviz.end();
     }
 
-    private void addSameInstruction(ExecutionModelNext model, String name) {
+    private void addSameInstruction(String name) {
         graphviz.beginSubgraph(name);
         graphviz.setEdgeAttributes(String.format("color=%s, arrowhead=none", colorMap.getColor(name)));
-        final BiPredicate<EventModel, EventModel> filter = getFilter(name);
-        for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
+        final BiPredicate<Event, Event> filter = getFilter(name);
+        for (ThreadExecution thread : execution.getThreads()) {
+            final List<List<Event>> instructions = getEventsToShow(thread);
             if (instructions.size() <= 1) { continue; }
-            for (List<EventModel> instruction : instructions) {
+            for (List<Event> instruction : instructions) {
                 int end = instruction.size() - 1;
                 for (int i = 0; i < end; i++) {
                     appendEdge(filter, instruction.get(i), instruction.get(i + 1));
@@ -286,17 +274,15 @@ public class ExecutionGraphVisualizer {
         graphviz.end();
     }
 
-    private String getAddressString(ValueModel address) {
-        final BigInteger addrValue = (BigInteger) address.value();
-        final MemoryObjectModel accObj = sortedMemoryObjects.reversed().stream()
-                .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
-                .findFirst().orElse(null);
+    private String getAddressString(MemoryCoreEvent e) {
+        final BigInteger addrValue = execution.addressValue(e);
+        final MemoryLayout.AllocatedObject accObj = execution.getMemoryLayout().floor(addrValue).orElse(null);
 
         if (accObj == null) {
             return addrValue + " [OOB]";
         } else {
-            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().value()).add(accObj.size())) >= 0;
-            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().value());
+            final boolean isOOB = !accObj.contains(addrValue);
+            final BigInteger offset = addrValue.subtract(accObj.address());
             return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
                     !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
                     isOOB ? " [OOB]" : ""
@@ -304,64 +290,74 @@ public class ExecutionGraphVisualizer {
         }
     }
 
-    private String eventToNode(EventModel e) {
-        if (e instanceof StoreModel sm && e.getEvent() instanceof Init) {
-            return String.format("\"I(%s, %s)\"", getAddressString(sm.getAccessedAddress()), sm.getValue());
-        }
-        return "e" + e.getId();
+    // Prints constants without their type, e.g., "1" instead of "bv64(1)".
+    private static String valueString(Expression value) {
+        return switch (value) {
+            case IntLiteral lit -> lit.getValue().toString();
+            case ToMemoryCast cast when cast.getOperand() instanceof IntLiteral lit -> lit.getValue().toString();
+            default -> value.toString();
+        };
     }
 
-    private String nodeLabel(EventModel e) {
+    private String eventToNode(Event e) {
+        if (e instanceof Init init) {
+            return String.format("\"I(%s, %s)\"", getAddressString(init), valueString(execution.value(init)));
+        }
+        return "e" + execution.getId(e);
+    }
+
+    private String nodeLabel(Event e) {
         // We have MemEvent + Fence + Local + Assert
         final String tag = switch (e) {
-            case MemoryEventModel mem -> {
-                String address = getAddressString(mem.getAccessedAddress());
-                ValueModel value = mem.getValue();
-                MemoryCoreEvent.MemoryOrder mo = mem.getEvent().getMetadata(MemoryCoreEvent.MemoryOrder.class);
-                String moString = mo == null ? "" : ", " + mo.value();
-                yield mem instanceof StoreModel ?
-                        String.format("W(%s, %s%s)", address, value, moString) :
-                        String.format("%s = R(%s%s)", value, address, moString);
-            }
-            case LocalModel lm -> String.format("%s(%s) <- %s",
-                lm.getEvent().getResultRegister(),
-                lm.getValue(),
-                lm.getEvent().getExpr()
+            case Load load -> String.format("%s = R(%s%s)",
+                    valueString(execution.value(load)), getAddressString(load), memoryOrderString(load));
+            case Store store -> String.format("W(%s, %s%s)",
+                    getAddressString(store), valueString(execution.value(store)), memoryOrderString(store));
+            case MemoryCoreEvent mem -> String.format("%s(%s)", mem.getClass().getSimpleName(), getAddressString(mem));
+            case Local local -> String.format("%s(%s) <- %s",
+                    local.getResultRegister(),
+                    valueString(execution.result(local)),
+                    local.getExpr()
             );
-            case AssertModel am -> String.format("Assertion(%s)", am.getResult());
-            default -> e.getEvent().toString();
+            case Assert assertion -> String.format("Assertion(%s)", !execution.assertionViolated(assertion));
+            default -> e.toString();
         };
-        final Thread thread = e.getThreadModel().getThread();
+        final Thread thread = e.getThread();
         final String callStack = makeContextString(
-            synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
+            synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> \\n");
         final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
         final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\\n%s",
-                e.getThreadModel().getName(),
-                e.getThreadModel().getId(),
+                thread.getName(),
+                thread.getId(),
                 scope,
-                e.getEvent().getGlobalId(),
+                e.getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
-                getSourceLocationString(e.getEvent()),
+                getSourceLocationString(e),
                 tag)
                 .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string
         return "label=\"" + nodeString + "\"";
     }
 
-    private void appendEdge(BiPredicate<EventModel, EventModel> filter, EventModel a, EventModel b) {
+    private static String memoryOrderString(MemoryCoreEvent e) {
+        final MemoryCoreEvent.MemoryOrder mo = e.getMetadata(MemoryCoreEvent.MemoryOrder.class);
+        return mo == null ? "" : ", " + mo.value();
+    }
+
+    private void appendEdge(BiPredicate<Event, Event> filter, Event a, Event b) {
         if (filter.test(a, b)) {
             graphviz.addEdge(eventToNode(a), eventToNode(b), (String[]) null);
         }
     }
 
-    private void appendNode(EventModel e, String... attributes) {
+    private void appendNode(Event e, String... attributes) {
         graphviz.addNode(eventToNode(e), attributes);
     }
 
-    public static Path generateGraphvizFile(ExecutionModelNext model,
+    public static Path generateGraphvizFile(Execution execution,
                                             String graphName,
-                                            BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> coFilter,
+                                            BiPredicate<Event, Event> rfFilter,
+                                            BiPredicate<Event, Event> coFilter,
                                             Path dir,
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext,
@@ -382,7 +378,7 @@ public class ExecutionGraphVisualizer {
             visualizer.setSyntacticContext(synContext)
                       .setFilter(RF, rfFilter)
                       .setFilter(CO, coFilter)
-                      .generateGraphOfExecutionModel(writer, graphName, model);
+                      .generateGraphOfExecution(writer, graphName, execution);
 
             writer.flush();
             if (convertToPNG) {
