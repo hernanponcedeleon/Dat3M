@@ -145,6 +145,8 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_unstructured_spin", TSO, PASS},
                 {"nontermination/termination_repetition", TSO, UNKNOWN},
                 {"nontermination/locks_abort", IMM, PASS},
+                // usleep is a no-op like sleep
+                {"nontermination/usleep_spin", IMM, PASS},
                 // Termination tests related to pthread_join() modeling
                 {"nontermination/nontermination_pthread_join_1", IMM, PASS},
                 {"nontermination/nontermination_pthread_join_2", IMM, PASS},

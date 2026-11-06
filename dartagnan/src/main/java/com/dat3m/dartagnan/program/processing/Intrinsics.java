@@ -242,7 +242,7 @@ public class Intrinsics {
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
-        STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        STD_SLEEP(List.of("sleep", "usleep", "nanosleep"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
