@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -16,6 +17,9 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.utils.OperatingSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -29,6 +33,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.INVALID_TID;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
+import static com.dat3m.dartagnan.program.processing.libraries.CLibImplementation.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @Options
@@ -118,11 +123,17 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(PthreadLibrary.class);
+
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
             description = "Calling pthread_create is guaranteed to succeed (default true).",
             secure = true,
             toUppercase = true)
     private boolean pthreadCreateAlwaysSucceeds = true;
+
+    // TODO: Once we need this in other libraries (stdlib?), we need to move the clib code
+    //  into a unifying location (maybe have a root CLibrary with sublibraries like pthread).
+    private CLibImplementation clib = null;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
@@ -143,6 +154,31 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 .findFirst();
     }
 
+    @Override
+    public void link(Program program) {
+        if (program.getFormat() != Program.SourceLanguage.LLVM) {
+            // Only link against LLVM code
+            return;
+        }
+        clib = deriveClibFromProgram(program);
+        logger.info("Linking pthread library matching {}", clib);
+        super.link(program);
+    }
+
+    private static CLibImplementation deriveClibFromProgram(Program program) {
+        final Program.TargetSystem targetSystem = program.getMetadata(Program.TargetSystem.class);
+        final OperatingSystem os = targetSystem != null ? targetSystem.operatingSystem() : OperatingSystem.OTHER;
+
+        return switch (os) {
+            case LINUX -> GLIBC;
+            case MACOS -> DARWIN_LIBC;
+            case WINDOWS -> MINGW;
+            case OTHER -> {
+                logger.warn("Could not derive the Clib the program was compiled against; defaulting to {}. ", GLIBC);
+                yield GLIBC;
+            }
+        };
+    }
 
     // ========================================================================================
 
@@ -196,8 +232,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newGoto(endOfPthreadCreate),
                 // ----- FAIL -----
                 pthreadFailCase,
-                newLocal(resultRegister, expressions.makeValue(PosixErrorCode.EAGAIN.getValue(),
-                        (IntegerType) resultRegister.getType())),
+                assignPosixError(resultRegister, PosixErrorCode.EAGAIN),
                 endOfPthreadCreate
         );
     }
@@ -227,9 +262,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
         return eventSequence(
                 newDynamicThreadJoin(joinReg, tidExpr),
-                // TODO: We use our internal error codes which do not match with pthread's error codes,
-                //  except for the success case (error code == 0).
-                newLocal(statusRegister, expressions.makeCast(status, statusType)),
+                newLocal(statusRegister, internalThreadErrorToPosixErrorCode(status, statusType)),
                 jump,
                 storeRetVal,
                 joinEnd,
@@ -244,13 +277,26 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
+        final Register internalStatus = call.getFunction().newUniqueRegister("__pthread_detach_status", statusType);
 
         final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
 
         return eventSequence(
-                newDynamicThreadDetach(statusRegister, tidExpr),
-                newAssert(expressions.makeNEQ(statusRegister, statusInvalidTId), "Invalid thread id in pthread_detach.")
+                newDynamicThreadDetach(internalStatus, tidExpr),
+                newAssert(expressions.makeNEQ(internalStatus, statusInvalidTId), "Invalid thread id in pthread_detach."),
+                newLocal(statusRegister, internalThreadErrorToPosixErrorCode(internalStatus, statusType))
         );
+    }
+
+    // Translates the internal status of DynamicThreadJoin/DynamicThreadDetach into a POSIX error code.
+    private Expression internalThreadErrorToPosixErrorCode(Expression internalStatus, IntegerType resultType) {
+        final IntegerType internalType = (IntegerType) internalStatus.getType();
+        final Expression isSuccess = expressions.makeEQ(internalStatus, expressions.makeValue(SUCCESS.getErrorCode(), internalType));
+        final Expression isInvalidTid = expressions.makeEQ(internalStatus, expressions.makeValue(INVALID_TID.getErrorCode(), internalType));
+        // INVALID_RETURN_TYPE and DETACHED_THREAD both map to EINVAL ("thread is not joinable" / no better match).
+        return expressions.makeITE(isSuccess, expressions.makeGeneralZero(resultType),
+                expressions.makeITE(isInvalidTid, makePosixError(PosixErrorCode.ESRCH, resultType),
+                        makePosixError(PosixErrorCode.EINVAL, resultType)));
     }
 
     private List<Event> inlinePthreadExit(FunctionCall call) {
@@ -337,13 +383,34 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
 
     private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
 
+    private enum PthreadDetachStateValue {
+        JOINABLE(0, 1, 0),
+        DETACHED(1, 2, 4);
+
+        final int valGlibc;
+        final int valDarwinLibc;
+        final int valMingw;
+        PthreadDetachStateValue(int valGlibc, int valDarwinLibc, int valMingw) {
+            this.valGlibc = valGlibc;
+            this.valDarwinLibc = valDarwinLibc;
+            this.valMingw = valMingw;
+        }
+
+        int value(CLibImplementation clib) {
+            return switch (clib) {
+                case GLIBC -> valGlibc;
+                case DARWIN_LIBC -> valDarwinLibc;
+                case MINGW -> valMingw;
+            };
+        }
+    }
+
     private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate,
                                                                               Label returnEINVAL) {
-        // POSIX defines these two named constants of type int.
+        // POSIX defines these two named constants of type int, but their values are platform-specific.
         // see https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/pthread.h.html
-        //TODO values may vary by platform
-        final long PTHREAD_CREATE_DETACHED = 1;
-        final long PTHREAD_CREATE_JOINABLE = 0;
+        final int PTHREAD_CREATE_DETACHED = PthreadDetachStateValue.DETACHED.value(clib);
+        final int PTHREAD_CREATE_JOINABLE = PthreadDetachStateValue.JOINABLE.value(clib);
         final int flagIndex = 1;
         final IntegerType attrType = (IntegerType) oldValue.getType();
         final IntegerType valueType = getNativeIntType();
@@ -560,10 +627,10 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Type oldValueAndSuccessType = types.getAggregateType(List.of(getPthreadMutexType(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", oldValueAndSuccessType);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression fail = expressions.makeNot(expressions.makeExtract(oldValueAndSuccess, 1));
+        final Expression success = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
                 newPthreadTryLock(oldValueAndSuccess, lockAddress),
-                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
+                assignSuccessOrPosixError(errorRegister, success, PosixErrorCode.EBUSY)
         );
     }
 
@@ -577,6 +644,29 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newPthreadUnlock(oldValueRegister, lockAddress),
                 assignSuccess(errorRegister)
         );
+    }
+
+    private enum PthreadMutexTypeValue {
+        NORMAL(0, 0, 0),
+        RECURSIVE(1, 2, 2),
+        ERRORCHECK(2, 1, 1);
+
+        final int valGlibc;
+        final int valDarwinLibc;
+        final int valMingw;
+        PthreadMutexTypeValue(int valGlibc, int valDarwinLibc, int valMingw) {
+            this.valGlibc = valGlibc;
+            this.valDarwinLibc = valDarwinLibc;
+            this.valMingw = valMingw;
+        }
+
+        int value(CLibImplementation clib) {
+            return switch (clib) {
+                case GLIBC -> valGlibc;
+                case DARWIN_LIBC -> valDarwinLibc;
+                case MINGW -> valMingw;
+            };
+        }
     }
 
     private List<Event> inlinePthreadMutexAttr(FunctionCall call) {
@@ -595,10 +685,22 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                     assignSuccess(errorRegister)
             );
         }
-        final boolean get = suffix.startsWith("get");
-        checkUnknownIntrinsic(get || suffix.startsWith("set"), call);
+
+        checkUnknownIntrinsic(suffix.startsWith("get") || suffix.startsWith("set"), call);
         checkUnknownIntrinsic(P_THREAD_MUTEXATTR.contains(suffix.substring(3)), call);
-        return List.of(
+
+        final List<Event> events = new ArrayList<>();
+        if (suffix.startsWith("settype")) {
+            final Expression typeArg = call.getArguments().get(1);
+            final Expression recVal = expressions.makeValue(PthreadMutexTypeValue.RECURSIVE.value(clib), (IntegerType) typeArg.getType());
+            final Expression isNonRec = expressions.makeNEQ(typeArg, recVal);
+            // FIXME: We add the "unknown function" suffix only to satisfy Svcomp/BenchExec
+            events.addAll(inlineAssert(isNonRec, true,
+                    AssertionType.UNKNOWN_FUNCTION, "Recursive mutexes are unsupported. #unknown function"));
+        }
+
+        return eventSequence(
+                events,
                 assignSuccess(errorRegister)
         );
     }
@@ -686,14 +788,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression lockAddress = call.getArguments().get(0);
         final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
-        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         return List.of(
                 // Write-lock only if unlocked.
                 newRwlockTryWrlock(oldValueAndSuccess, lockAddress),
-                // Indicate success by returning zero.
-                EventFactory.newNonDetChoice(errorRegister),
-                EventFactory.newAssume(expressions.makeEQ(successResult, expressions.makeEQ(errorRegister, success)))
+                // Indicate success by returning zero, and failure by returning EBUSY.
+                assignSuccessOrPosixError(errorRegister, successResult, PosixErrorCode.EBUSY)
         );
     }
 
@@ -734,7 +834,6 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_rwlock_try_rdlock", oldValueAndSuccessType);
         final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         final Expression actualResult = expressions.makeExtract(oldValueAndSuccess, 0);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         final Expression wasWriteLocked = expressions.makeEQ(actualResult, getRwlockWriteLockedValue());
@@ -746,9 +845,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successResult, wasWriteLocked)),
-                // Indicate success with zero.
-                EventFactory.newNonDetChoice(errorRegister),
-                EventFactory.newAssume(expressions.makeEQ(successResult, expressions.makeEQ(errorRegister, success)))
+                // Indicate success with zero, and failure with EBUSY.
+                assignSuccessOrPosixError(errorRegister, successResult, PosixErrorCode.EBUSY)
         );
     }
 
@@ -814,13 +912,27 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
+    // see _PTHREAD_ONCE_SIG_init in Darwin's sys/_pthread/_pthread_types.h
+    private static final long DARWIN_PTHREAD_ONCE_SIG_INIT = 0x30B1BCBAL;
+
     private List<Event> inlinePthreadOnce(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression controlAddress = call.getArguments().get(0);
         final Expression initRoutine = call.getArguments().get(1);
 
-        final IntegerType stateType = getNativeIntType();
-        final Expression uninitialized = expressions.makeZero(stateType);
+        // PTHREAD_ONCE_INIT is platform-specific:
+        //  - glibc and MinGW (winpthreads): pthread_once_t is an int (long on MinGW, which is 32-bit), initialized to 0.
+        //  - Darwin libc: pthread_once_t is a struct { long __sig; char __opaque[8]; },
+        //    initialized to { _PTHREAD_ONCE_SIG_init, {0} }.
+        // The states 'running' and 'complete' are internal to our model and only have to differ from 'uninitialized'.
+        final IntegerType stateType = switch (clib) {
+            case GLIBC, MINGW -> getNativeIntType();
+            case DARWIN_LIBC -> types.getIntegerType(64);
+        };
+        final Expression uninitialized = switch (clib) {
+            case GLIBC, MINGW -> expressions.makeZero(stateType);
+            case DARWIN_LIBC -> expressions.makeValue(DARWIN_PTHREAD_ONCE_SIG_INIT, stateType);
+        };
         final Expression running = expressions.makeOne(stateType);
         final Expression complete = expressions.makeValue(2, stateType);
         final Type stateAndSuccessType = types.getAggregateType(List.of(stateType, types.getBooleanType()));
@@ -854,8 +966,17 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         return types.getIntegerType(32);
     }
 
+    private Expression makePosixError(PosixErrorCode code, IntegerType type) {
+        return expressions.makeValue(code.getValue(clib), type);
+    }
+
     private Event assignPosixError(Register errorRegister, PosixErrorCode code) {
-        final Expression value = expressions.makeValue(code.getValue(), (IntegerType) errorRegister.getType());
+        return EventFactory.newLocal(errorRegister, makePosixError(code, (IntegerType) errorRegister.getType()));
+    }
+
+    private Event assignSuccessOrPosixError(Register errorRegister, Expression success, PosixErrorCode code) {
+        final IntegerType type = (IntegerType) errorRegister.getType();
+        final Expression value = expressions.makeITE(success, expressions.makeGeneralZero(type), makePosixError(code, type));
         return EventFactory.newLocal(errorRegister, value);
     }
 

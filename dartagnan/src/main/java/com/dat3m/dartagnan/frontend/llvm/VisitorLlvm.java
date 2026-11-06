@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -128,6 +129,38 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Top Level Entities
+
+    @Override
+    public Expression visitTargetTriple(TargetTripleContext ctx) {
+        final String triple = parseQuotedString(ctx.StringLit());
+        final Program.TargetSystem targetSystem = parseTargetSystem(triple);
+        if (targetSystem != null) {
+            program.setMetadata(targetSystem);
+        } else {
+            logger.warn("Unrecognized target system in target triple \"{}\".", triple);
+        }
+        return null;
+    }
+
+    // Target triples have the shape <arch>-<vendor>-<os>[-<environment>], e.g.,
+    // "x86_64-pc-linux-gnu", "arm64-apple-macosx14.0.0", or "x86_64-pc-windows-msvc".
+    // The vendor component may be omitted, so we inspect all components after the architecture.
+    private static Program.TargetSystem parseTargetSystem(String triple) {
+        final String[] components = triple.toLowerCase().split("-");
+        for (int i = 1; i < components.length; i++) {
+            final String c = components[i];
+            if (c.startsWith("linux")) {
+                return new Program.TargetSystem(OperatingSystem.LINUX);
+            }
+            if (c.startsWith("macos") || c.startsWith("darwin")) {
+                return new Program.TargetSystem(OperatingSystem.MACOS);
+            }
+            if (c.startsWith("windows") || c.startsWith("win32") || c.startsWith("mingw")) {
+                return new Program.TargetSystem(OperatingSystem.WINDOWS);
+            }
+        }
+        return null;
+    }
 
     @Override
     public Expression visitTypeDef(TypeDefContext ctx) {

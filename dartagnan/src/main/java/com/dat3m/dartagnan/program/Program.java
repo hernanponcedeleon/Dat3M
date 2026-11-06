@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -12,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -32,6 +34,8 @@ public class Program extends MetadataCarrierBase<Program> {
     private static final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
+
+    public record TargetSystem(OperatingSystem operatingSystem) implements Metadata {}
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 

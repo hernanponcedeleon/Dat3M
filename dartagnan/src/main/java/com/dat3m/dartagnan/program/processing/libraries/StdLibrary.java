@@ -34,7 +34,7 @@ public class StdLibrary extends AbstractLibrary<StdLibrary> {
         STD_CALLOC("calloc", StdLibrary::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", StdLibrary::inlineAlignedAlloc),
         STD_FREE("free", StdLibrary::inlineFree),
-        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), StdLibrary::inlineUserAssert),
+        STD_ASSERT(List.of("__assert_fail", "__assert_rtn", "_assert"), StdLibrary::inlineUserAssert),
         STD_EXIT("exit", StdLibrary::inlineExit),
         STD_ABORT("abort", StdLibrary::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), StdLibrary::inlineAsZero),
