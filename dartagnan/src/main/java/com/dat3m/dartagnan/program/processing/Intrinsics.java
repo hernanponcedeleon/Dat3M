@@ -966,11 +966,18 @@ public class Intrinsics {
         final Type oldValueAndSuccessType = types.getAggregateType(List.of(getRwlockDatatype(), types.getBooleanType()));
         final Register oldValueAndSuccess = call.getFunction().newRegister(oldValueAndSuccessType);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
+        // We implement this as a CAS-spinlock, like pthread_mutex_lock, so a writer that never gets the lock
+        // does not count as terminated.
+        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
+        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
+                newLoopBound(expressions.makeValue(1, types.getArchType())),
+                spinLoopHead,
                 // Write-lock only if unlocked.
                 newRwlockTryWrlock(oldValueAndSuccess, lockAddress),
-                // Deadlock if a violation occurred in another thread.
-                EventFactory.newAbortIf(expressions.makeNot(successResult)),
+                EventFactory.newJump(successResult, spinLoopEnd),
+                EventFactory.newGoto(spinLoopHead),
+                spinLoopEnd,
                 assignSuccess(errorRegister)
         );
     }
@@ -1008,7 +1015,13 @@ public class Intrinsics {
         final Expression oldValueResult = expressions.makeExtract(oldValueAndSuccess, 0);
         final Expression successResult = expressions.makeExtract(oldValueAndSuccess, 1);
         final Expression wasWriteLocked = expressions.makeEQ(oldValueResult, getRwlockWriteLockedValue());
+        // We implement this as a CAS-spinlock, like pthread_mutex_lock, so a reader that never gets the lock
+        // does not count as terminated.
+        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
+        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
+                newLoopBound(expressions.makeValue(1, types.getArchType())),
+                spinLoopHead,
                 // Expect any other value than write-locked.
                 EventFactory.newNonDetChoice(expectedRegister),
                 EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
@@ -1016,8 +1029,9 @@ public class Intrinsics {
                 newRwlockTryRdlock(oldValueAndSuccess, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successResult, wasWriteLocked)),
-                // Deadlock if a violation occurred in another thread.
-                EventFactory.newAbortIf(expressions.makeNot(successResult)),
+                EventFactory.newJump(successResult, spinLoopEnd),
+                EventFactory.newGoto(spinLoopHead),
+                spinLoopEnd,
                 assignSuccess(errorRegister)
         );
     }

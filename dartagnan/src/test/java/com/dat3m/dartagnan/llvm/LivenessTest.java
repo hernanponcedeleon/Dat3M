@@ -145,6 +145,10 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_unstructured_spin", TSO, PASS},
                 {"nontermination/termination_repetition", TSO, UNKNOWN},
                 {"nontermination/locks_abort", IMM, PASS},
+                // pthread_rwlock_*lock waits like pthread_mutex_lock: a thread that never gets the lock does not terminate
+                {"nontermination/rwlock_wrlock_waits", IMM, FAIL},
+                {"nontermination/rwlock_rdlock_waits", IMM, FAIL},
+                {"nontermination/rwlock_terminates", IMM, PASS},
                 // Termination tests related to pthread_join() modeling
                 {"nontermination/nontermination_pthread_join_1", IMM, PASS},
                 {"nontermination/nontermination_pthread_join_2", IMM, PASS},
