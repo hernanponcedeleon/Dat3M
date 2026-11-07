@@ -24,10 +24,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -559,17 +556,30 @@ public class WmmEncoder {
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
             final ApproxType approxType = getApproxType(rel);
 
-            // In the OVER case, we can skip clauses that are implied by others, and we can
+            // In the OVER/EXACT case, we can (i) skip clauses that are implied by others, and (ii) we can
             // decompose each pair from either end, choosing the cheaper one.
             final boolean over = approxType == ApproxType.OVER || approxType == ApproxType.EXACT;
-            final Map<Event, List<Event>> sortedSuccessors = ImmutableMap.copyOf(Maps.transformValues(innerMaySet.getOutMap(),
-                    set -> set.stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList()));
-            final Map<Event, List<Event>> sortedPredecessors = ImmutableMap.copyOf(Maps.transformValues(innerMaySet.getInMap(),
-                    set -> set.stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList()));
-            // ASSUMPTION: the must set is acyclic
-            final EventGraph implied = over
+
+            // For point (i), instead of encoding r+, we encode transMustRed(r)+ where
+            // transMustRed is a transitive reduction over the must-set:
+            //    transMustRed(r) = r \ must(r+);must(r+)
+            // This is the same trick we use to reduce acyclicity encoding.
+            // The computation is only correct if must(r+) is acyclic
+            final boolean acyclicMust = relMustSet.getDomain().stream().noneMatch(e -> relMustSet.contains(e, e));
+            final EventGraph implied = (over && acyclicMust)
                     ? ra.computeComposition(relMustSet, relMustSet).getMustSet()
                     : EventGraph.empty();
+
+            final Map<Event, List<Event>> relevantSuccessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getOutMap(),
+                    (x, succs) -> succs.stream()
+                            .filter(y -> y != x && !implied.contains(x, y))
+                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
+            ));
+            final Map<Event, List<Event>> relevantPredecessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getInMap(),
+                    (x, preds) -> preds.stream()
+                            .filter(y -> y != x && !implied.contains(y, x))
+                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
+            ));
 
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
@@ -580,11 +590,8 @@ public class WmmEncoder {
 
                 // Left-linear: step(e1, e) & trans(e, e2) => trans(e1, e2)
                 final List<Event> leftSteps = new ArrayList<>();
-                for (Event e : sortedSuccessors.get(e1)) {
-                    if (e == e1 || e == e2 || !relMaySet.contains(e, e2)) {
-                        continue;
-                    }
-                    if (implied.contains(e1, e)) {
+                for (Event e : Objects.requireNonNull(relevantSuccessors.get(e1))) {
+                    if (e == e2 || !relMaySet.contains(e, e2)) {
                         continue;
                     }
                     leftSteps.add(e);
@@ -594,11 +601,8 @@ public class WmmEncoder {
                 List<Event> rightSteps = null;
                 if (over && leftSteps.size() > 1) {
                     rightSteps = new ArrayList<>();
-                    for (Event e : sortedPredecessors.get(e2)) {
-                        if (e == e1 || e == e2 || !relMaySet.contains(e1, e)) {
-                            continue;
-                        }
-                        if (implied.contains(e, e2)) {
+                    for (Event e : Objects.requireNonNull(relevantPredecessors.get(e2))) {
+                        if (e == e2 || !relMaySet.contains(e1, e)) {
                             continue;
                         }
                         rightSteps.add(e);
