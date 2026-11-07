@@ -24,8 +24,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -56,6 +55,7 @@ public class WmmEncoder {
     private final Wmm memoryModel;
 
     private final AxiomEncoder axiomEncoder = new AxiomEncoder();
+    private final ExecutionAnalysis exec;
     private final ActiveSetAnalysis activeSetAnalysis;
     private final PolarityAnalysis polarityAnalysis;
 
@@ -91,6 +91,7 @@ public class WmmEncoder {
     private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
         this.context = ctx;
         this.memoryModel = ctx.getTask().getMemoryModel();
+        this.exec = ctx.getAnalysisContext().requires(ExecutionAnalysis.class);
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
 
         ctx.getTask().getConfig().inject(this);
@@ -140,7 +141,6 @@ public class WmmEncoder {
 
     public BooleanFormula encodeLastCoConstraints() {
         final Program program = context.getTask().getProgram();
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
 
@@ -257,7 +257,6 @@ public class WmmEncoder {
 
         final Relation co = memoryModel.getRelation(RelationNameRepository.CO);
         final RelationAnalysis.Knowledge k = ra.getKnowledge(co);
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         MutableEventGraph transCo = new MapEventGraph();
         Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
         Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
@@ -292,7 +291,6 @@ public class WmmEncoder {
         final EventGraph mustTrans = ra.computeTransitiveClosure(mustSet).getMustSet();
         final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
         final Map<Event, Set<Event>> mustInTrans = mustTrans.getInMap();
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
 
         // NOTE: The exec.isImplied check is a performance optimization: it does not improve precision
         // but allows us to sometimes skip the more expensive inclusion check
@@ -558,24 +556,85 @@ public class WmmEncoder {
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
             final ApproxType approxType = getApproxType(rel);
 
+            // WARNING: Although we generate clauses according to <approxType>,
+            // the encoding is generally over-approximate (even with <approxType> == EXACT).
+            // We can only guarantee the following:
+            //     if r+ is acyclic, then the EXACT encoding will be exact
+            // An always-exact recursive encoding would require Kleene-Iteration or a
+            // refinement loop to fix spurious over approximation
+            // We have no such fallback encoding.
+
+            // OPTIMIZATION:
+            // Instead of encoding r+, we encode transMustRed(r)+ where
+            // transMustRed is a transitive reduction over the must-set:
+            //    transMustRed(r) = r \ must(r+);must(r+)
+            // This is the same trick we use to reduce acyclicity encoding.
+            // The computation is only correct if must(r+) is acyclic
+            final boolean acyclicMust = relMustSet.getDomain().stream().noneMatch(e -> relMustSet.contains(e, e));
+            final EventGraph implied = acyclicMust
+                    ? ra.computeComposition(relMustSet, relMustSet).getMustSet()
+                    : EventGraph.empty();
+
+            final Map<Event, List<Event>> relevantSuccessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getOutMap(),
+                    (x, succs) -> succs.stream()
+                            .filter(y -> y != x && !implied.contains(x, y))
+                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
+            ));
+            final Map<Event, List<Event>> relevantPredecessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getInMap(),
+                    (x, preds) -> preds.stream()
+                            .filter(y -> y != x && !implied.contains(y, x))
+                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
+            ));
+
             getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
                     encodeDefinition(approxType, edge, execution(e1, e2));
-                } else {
-                    final List<BooleanFormula> orClause = new ArrayList<>();
-                    if (innerMaySet.contains(e1, e2)) {
-                        orClause.add(innerEdge.encode(e1, e2));
+                    return;
+                }
+
+                // Left-linear: step(e1, e) & trans(e, e2) => trans(e1, e2)
+                final List<Event> leftSteps = new ArrayList<>();
+                for (Event e : Objects.requireNonNull(relevantSuccessors.get(e1))) {
+                    if (e == e2 || !relMaySet.contains(e, e2)) {
+                        continue;
                     }
-                    for (Event e : innerMaySet.getRange(e1)) {
-                        if (e != e1 && e != e2 && relMaySet.contains(e, e2)) {
-                            final BooleanFormula tVar = relMustSet.contains(e1, e) ? transEdge.encode(e1, e) : innerEdge.encode(e1, e);
-                            orClause.add(bmgr.and(tVar, transEdge.encode(e, e2)));
+                    leftSteps.add(e);
+                }
+
+                // Right-linear: trans(e1, e) & step(e, e2) => trans(e1, e2)
+                List<Event> rightSteps = null;
+                if (leftSteps.size() > 1) {
+                    rightSteps = new ArrayList<>();
+                    for (Event e : Objects.requireNonNull(relevantPredecessors.get(e2))) {
+                        if (e == e2 || !relMaySet.contains(e1, e)) {
+                            continue;
+                        }
+                        rightSteps.add(e);
+
+                        if (rightSteps.size() >= leftSteps.size()) {
+                            rightSteps = null;
+                            break;
                         }
                     }
-
-                    encodeDisjunctiveDefinition(approxType, edge, orClause);
                 }
+
+                final List<BooleanFormula> orClause = new ArrayList<>();
+                if (innerMaySet.contains(e1, e2)) {
+                    orClause.add(innerEdge.encode(e1, e2));
+                }
+                if (rightSteps != null) {
+                    for (Event e : rightSteps) {
+                        final BooleanFormula tVar = relMustSet.contains(e, e2) ? transEdge.encode(e, e2) : innerEdge.encode(e, e2);
+                        orClause.add(bmgr.and(transEdge.encode(e1, e), tVar));
+                    }
+                } else {
+                    for (Event e : leftSteps) {
+                        final BooleanFormula tVar = relMustSet.contains(e1, e) ? transEdge.encode(e1, e) : innerEdge.encode(e1, e);
+                        orClause.add(bmgr.and(tVar, transEdge.encode(e, e2)));
+                    }
+                }
+                encodeDisjunctiveDefinition(approxType, edge, orClause);
             });
             return null;
         }
