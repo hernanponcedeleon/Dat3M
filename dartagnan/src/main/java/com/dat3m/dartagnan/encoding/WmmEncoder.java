@@ -556,17 +556,22 @@ public class WmmEncoder {
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
             final ApproxType approxType = getApproxType(rel);
 
-            // In the OVER/EXACT case, we can (i) skip clauses that are implied by others, and (ii) we can
-            // decompose each pair from either end, choosing the cheaper one.
-            final boolean over = approxType == ApproxType.OVER || approxType == ApproxType.EXACT;
+            // WARNING: Although we generate clauses according to <approxType>,
+            // the encoding is generally over-approximate (even with <approxType> == EXACT).
+            // We can only guarantee the following:
+            //     if r+ is acyclic, then the EXACT encoding will be exact
+            // An always-exact recursive encoding would require Kleene-Iteration or a
+            // refinement loop to fix spurious over approximation
+            // We have no such fallback encoding.
 
-            // For point (i), instead of encoding r+, we encode transMustRed(r)+ where
+            // OPTIMIZATION:
+            // Instead of encoding r+, we encode transMustRed(r)+ where
             // transMustRed is a transitive reduction over the must-set:
             //    transMustRed(r) = r \ must(r+);must(r+)
             // This is the same trick we use to reduce acyclicity encoding.
             // The computation is only correct if must(r+) is acyclic
             final boolean acyclicMust = relMustSet.getDomain().stream().noneMatch(e -> relMustSet.contains(e, e));
-            final EventGraph implied = (over && acyclicMust)
+            final EventGraph implied = acyclicMust
                     ? ra.computeComposition(relMustSet, relMustSet).getMustSet()
                     : EventGraph.empty();
 
@@ -596,10 +601,10 @@ public class WmmEncoder {
                     }
                     leftSteps.add(e);
                 }
+
                 // Right-linear: trans(e1, e) & step(e, e2) => trans(e1, e2)
-                // Only valid in the OVER case, where any real path forces trans by induction from either end.
                 List<Event> rightSteps = null;
-                if (over && leftSteps.size() > 1) {
+                if (leftSteps.size() > 1) {
                     rightSteps = new ArrayList<>();
                     for (Event e : Objects.requireNonNull(relevantPredecessors.get(e2))) {
                         if (e == e2 || !relMaySet.contains(e1, e)) {
