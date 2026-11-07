@@ -1281,7 +1281,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             for (ParamContext paramContext : ctx.params().param()) {
                 paramTypes.add(parseType(paramContext.type()));
             }
-            parsedType = new ParsedType(types.getFunctionType(returnType, paramTypes, isVarArgs), new Alignment(1, 1));
+            final Type type = types.getFunctionType(returnType, paramTypes, isVarArgs);
+            parsedType = new ParsedType(type, new Alignment(1, 1), Math.ceilDiv(dataLayout.pointerSize, 8));
             return null;
         } else {
             return super.visitType(ctx);
