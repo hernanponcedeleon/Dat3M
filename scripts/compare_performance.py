@@ -37,7 +37,8 @@ def parse_arguments():
     parser.add_argument("--head-checkout", type=Path, required=True)
     parser.add_argument("--timeout", type=float, required=True, help="timeout for one verification run in seconds")
     parser.add_argument("--jobs", type=int, required=True, help="number of benchmark runs to execute in parallel")
-    parser.add_argument("--min-average-seconds", type=float, required=True)
+    parser.add_argument("--min-average-seconds", type=float, default=0,
+                        help="minimum average runtime for inclusion in the report (default: 0, includes all benchmarks)")
     parser.add_argument("--markdown", type=Path, required=True)
     parser.add_argument("--json", type=Path, required=True)
     arguments = parser.parse_args()

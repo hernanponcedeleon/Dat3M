@@ -93,7 +93,6 @@ jobs:
             --head-checkout "$GITHUB_WORKSPACE/head" \
             --timeout 180 \
             --jobs 1 \
-            --min-average-seconds 5 \
             --markdown performance/report.md \
             --json performance/results.json
 
