@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.Dartagnan.ExitCode;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
@@ -324,7 +325,7 @@ public class OutputGenerator {
         } else if (status == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
-                    .stream().filter(model::isExecuted)
+                    .stream().filter(e -> model.isExecuted(e) && !ProgramEncoder.isRedundantBound(e, task))
                     .toList();
             for (Event bound : reachedBounds) {
                 details

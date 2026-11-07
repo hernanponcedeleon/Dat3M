@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -18,6 +19,8 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.task.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -764,8 +767,17 @@ public class ProgramEncoder {
 
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
-        return context.getTask().getProgram().getThreadEvents()
-                .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+        final Task task = context.getTask();
+        return task.getProgram().getThreadEvents().stream()
+                .filter(e -> e.hasTag(Tag.BOUND) && !isRedundantBound(e, task))
+                .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+    }
+
+    // Executions that reach a cycle-bounded bound event repeat a side-effect-free loop state, so they are
+    // redundant unless we check termination (where they are handled by the non-termination encoding).
+    public static boolean isRedundantBound(Event bound, Task task) {
+        return bound.hasTag(Tag.CYCLE_BOUNDED)
+                && !(task instanceof VerificationTask vTask && vTask.getProperties().contains(Property.TERMINATION));
     }
 
     public BooleanFormula encodeBounds() {

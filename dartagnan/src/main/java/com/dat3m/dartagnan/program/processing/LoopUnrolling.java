@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
@@ -25,6 +26,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -149,8 +151,14 @@ public class LoopUnrolling implements ProgramProcessor {
 
                     if (isLoop) {
                         // Bound annotation > Spin loop tag > default bound
-                        final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
+                        int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
                                 : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
+                        if (label.hasTag(Tag.CYCLE_BOUNDED) && (curBoundAnnotation == null || bound > defaultBound)) {
+                            // Executions beyond the cycle bound are redundant, so the loop gets cut at that bound.
+                            // If the cycle bound exceeds the default bound, we unroll and report as usual.
+                            label.removeTags(Tag.CYCLE_BOUNDED);
+                            bound = defaultBound;
+                        }
                         loopBoundsMap.put(backjump.get(), bound);
                         curBoundAnnotation = null;
                     }
@@ -173,6 +181,7 @@ public class LoopUnrolling implements ProgramProcessor {
     private void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
         final String loopName = loopBegin.getName();
+        final boolean cutAtBound = loopBegin.hasTag(Tag.CYCLE_BOUNDED);
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(IRHelper.isBackJump(loopBackJump),
                 "The jump does not belong to a loop.");
@@ -187,6 +196,10 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 // This is the last iteration, so we replace the back jump by a bound event.
                 final Event boundEvent = EventFactory.newAbort(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                if (cutAtBound) {
+                    // Further iterations are redundant for safety properties (see ProgramEncoder.isRedundantBound).
+                    boundEvent.addTags(Tag.CYCLE_BOUNDED);
+                }
                 IRHelper.replaceWithMetadata(loopBackJump, boundEvent);
                 boundEvent.setMetadata(new Event.UnrollingBound(bound));
 

@@ -7,10 +7,12 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.CycleBoundAnalysis;
+import com.dat3m.dartagnan.program.analysis.ExitGuardAnalysis;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -18,11 +20,13 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.SPINLOOP_EXIT_GUARD_MAX_STEPS;
 
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
@@ -49,13 +53,31 @@ import java.util.Set;
 
 
     NOTE: This pass is required to detect termination violations involving side-effect-free spinning.
+
+    Static bound of 1:
+        If a loop has no written live registers and every global side effect is "exit-guarded", i.e.,
+        no path on which the side effect executes reaches the back-jump, then every iteration that reaches the
+        back-jump is side-effect-free and gets cut by the instrumentation above.
+        Hence, the second iteration is unreachable and we can annotate the loop with a bound of 1.
+        Typical example is a CAS loop that re-reads its expected value in every iteration:
+            do { r = load(x); } while (!CAS(x, r, f(r)));
+        The store of the CAS only executes on success, which leaves the loop.
  */
+@Options
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpinLoopDetection.class);
 
-    public static DynamicSpinLoopDetection fromConfig(Configuration config) {
-        return new DynamicSpinLoopDetection();
+    @Option(name = SPINLOOP_EXIT_GUARD_MAX_STEPS,
+            description = "Maximal number of steps the exit-guard analysis explores per side effect before giving up" +
+                    " (the loop is then not statically bounded). Defaults to 10000.",
+            secure = true)
+    private int exitGuardMaxSteps = 10_000;
+
+    public static DynamicSpinLoopDetection fromConfig(Configuration config) throws InvalidConfigurationException {
+        final DynamicSpinLoopDetection pass = new DynamicSpinLoopDetection();
+        config.inject(pass);
+        return pass;
     }
 
     @Override
@@ -64,7 +86,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                 "DynamicSpinLoopDetection cannot be run on already unrolled programs.");
 
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
-        AnalysisStats stats = new AnalysisStats(0);
+        AnalysisStats stats = new AnalysisStats(0, 0);
         for (Function func : Iterables.concat(program.getFunctions(), program.getThreads())) {
             final List<LoopData> loops = computeLoopData(func, loopAnalysis);
             final LiveRegistersAnalysis liveRegsAna =  LiveRegistersAnalysis.forFunction(func);
@@ -75,6 +97,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         IdReassignment.newInstance().run(program); // Reassign ids for the instrumented code.
 
         logger.info("Found {} static spin loops.", stats.numStaticSpinLoops());
+        logger.info("Found {} loops with finitely many side-effect-free loop states (cycle bounded).", stats.numCycleBoundedLoops());
     }
 
     // ==================================================================================================
@@ -118,6 +141,23 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                 writtenLiveRegisters,
                 readRegisters
         ));
+
+        // Check if all global side effects are guaranteed to leave the loop (e.g., successful CAS).
+        if (!loop.globalSideEffects.isEmpty()) {
+            final ExitGuardAnalysis exitGuardAnalysis = ExitGuardAnalysis.forLoop(loop.loopInfo, exitGuardMaxSteps);
+            loop.allSideEffectsExitGuarded = loop.globalSideEffects.stream().allMatch(exitGuardAnalysis::isExitGuarded);
+        }
+
+        // Loops with loop-carried registers but write-free back edges: if the number of distinct loop-carried
+        // states is finite (M), any execution with M back jumps repeats a state, and the iterations in between
+        // are side-effect-free as a whole. Such executions are redundant (unless we check termination), so we can
+        // unroll M times and ignore the bound event (see LoopUnrolling and ProgramEncoder.isRedundantBound).
+        if (!writtenLiveRegisters.isEmpty() && loop.hasWriteFreeBackEdges()) {
+            final long numStates = CycleBoundAnalysis.countLoopCarriedStates(loop.loopInfo, loop.writtenLiveRegisters);
+            if (numStates <= Integer.MAX_VALUE) {
+                loop.cycleBound = (int) numStates;
+            }
+        }
     }
 
     private void instrumentLoop(LoopData loop) {
@@ -179,10 +219,14 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             );
         }
 
-        // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
-        if (loop.isSideEffectFree()) {
-            final Event loopBound = EventFactory.newLoopBound(expressions.makeValue(1, types.getArchType()));
-            loop.getStart().insertBefore(loopBound);
+        // Static bounds: a loop whose back-jumping iterations are all side-effect-free is bounded by 1.
+        // A loop with finitely many loop-carried states is bounded by that number (cut at the bound).
+        final int staticBound = loop.isStaticSpinLoop() ? 1 : loop.cycleBound;
+        if (staticBound > 0) {
+            loop.getStart().insertBefore(EventFactory.newLoopBound(expressions.makeValue(staticBound, types.getArchType())));
+            if (!loop.isStaticSpinLoop()) {
+                loop.getStart().addTags(Tag.CYCLE_BOUNDED);
+            }
         }
     }
 
@@ -193,8 +237,9 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
     }
 
     private AnalysisStats collectStats(List<LoopData> loops) {
-        int numStaticSpinLoops = Math.toIntExact(loops.stream().filter(LoopData::isSideEffectFree).count());
-        return new AnalysisStats(numStaticSpinLoops);
+        int numStaticSpinLoops = Math.toIntExact(loops.stream().filter(LoopData::isStaticSpinLoop).count());
+        int numCycleBoundedLoops = Math.toIntExact(loops.stream().filter(l -> l.cycleBound > 0).count());
+        return new AnalysisStats(numStaticSpinLoops, numCycleBoundedLoops);
     }
 
     // ==================================================================================================
@@ -205,9 +250,17 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         private final List<Event> globalSideEffects = new ArrayList<>();
         private final List<Register> writtenLiveRegisters = new ArrayList<>();
         private final List<Register> writtenLiveOnBackjumpRegisters = new ArrayList<>();
+        private boolean allSideEffectsExitGuarded = false;
+        private int cycleBound = 0;
 
-        public boolean isSideEffectFree() {
-            return writtenLiveRegisters.isEmpty() && globalSideEffects.isEmpty();
+        // No iteration that reaches the back jump executes a global side effect.
+        public boolean hasWriteFreeBackEdges() {
+            return globalSideEffects.isEmpty() || allSideEffectsExitGuarded;
+        }
+
+        // Every iteration that reaches the back jump is side-effect-free (and hence cut by the instrumentation).
+        public boolean isStaticSpinLoop() {
+            return writtenLiveRegisters.isEmpty() && hasWriteFreeBackEdges();
         }
 
         private LoopData(LoopAnalysis.LoopInfo loopInfo) {
@@ -224,10 +277,11 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         }
     }
 
-    private record AnalysisStats(int numStaticSpinLoops) {
+    private record AnalysisStats(int numStaticSpinLoops, int numCycleBoundedLoops) {
 
         private AnalysisStats add(AnalysisStats stats) {
-            return new AnalysisStats(this.numStaticSpinLoops + stats.numStaticSpinLoops);
+            return new AnalysisStats(this.numStaticSpinLoops + stats.numStaticSpinLoops,
+                    this.numCycleBoundedLoops + stats.numCycleBoundedLoops);
         }
     }
 }

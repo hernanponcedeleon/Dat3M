@@ -36,6 +36,9 @@ public final class Tag {
     public static final String NONTERMINATION   = "__NONTERMINATION";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP         = "__SPINLOOP";
+    // Marks loops (and their bound events) whose executions beyond the annotated bound are redundant for safety
+    // properties: they repeat a loop state without side effects in between. Reaching such a bound is not reported.
+    public static final String CYCLE_BOUNDED    = "__CYCLE_BOUNDED";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String NO_INSTRUCTION   = "__NO_INSTRUCTION";
