@@ -24,8 +24,10 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -56,6 +58,7 @@ public class WmmEncoder {
     private final Wmm memoryModel;
 
     private final AxiomEncoder axiomEncoder = new AxiomEncoder();
+    private final ExecutionAnalysis exec;
     private final ActiveSetAnalysis activeSetAnalysis;
     private final PolarityAnalysis polarityAnalysis;
 
@@ -91,6 +94,7 @@ public class WmmEncoder {
     private WmmEncoder(EncodingContext ctx) throws InvalidConfigurationException {
         this.context = ctx;
         this.memoryModel = ctx.getTask().getMemoryModel();
+        this.exec = ctx.getAnalysisContext().requires(ExecutionAnalysis.class);
         this.ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
 
         ctx.getTask().getConfig().inject(this);
@@ -140,7 +144,6 @@ public class WmmEncoder {
 
     public BooleanFormula encodeLastCoConstraints() {
         final Program program = context.getTask().getProgram();
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
 
@@ -257,7 +260,6 @@ public class WmmEncoder {
 
         final Relation co = memoryModel.getRelation(RelationNameRepository.CO);
         final RelationAnalysis.Knowledge k = ra.getKnowledge(co);
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         MutableEventGraph transCo = new MapEventGraph();
         Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
         Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
@@ -292,7 +294,6 @@ public class WmmEncoder {
         final EventGraph mustTrans = ra.computeTransitiveClosure(mustSet).getMustSet();
         final Map<Event, Set<Event>> mustIn = mustSet.getInMap();
         final Map<Event, Set<Event>> mustInTrans = mustTrans.getInMap();
-        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
 
         // NOTE: The exec.isImplied check is a performance optimization: it does not improve precision
         // but allows us to sometimes skip the more expensive inclusion check
@@ -558,35 +559,33 @@ public class WmmEncoder {
             final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
             final ApproxType approxType = getApproxType(rel);
 
-            // In the OVER case, we can skip clauses that are implied by others (see isRedundantStep) and we can
-            // decompose each pair from either end, choosing the cheaper one (see isRedundantPredecessorStep).
-            final boolean over = approxType == ApproxType.OVER;
-            final EventGraph innerMustSet = ra.getKnowledge(inner).getMustSet();
-            final EventGraph activeSet = getActiveSet(trans);
-            final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
-            final Map<Event, Set<Event>> innerPredecessors = innerMaySet.getInMap();
-            final Map<Event, List<Event>> sortedSuccessors = new HashMap<>();
-            final Map<Event, List<Event>> sortedPredecessors = new HashMap<>();
-            activeSet.apply((e1, e2) -> {
+            // In the OVER case, we can skip clauses that are implied by others, and we can
+            // decompose each pair from either end, choosing the cheaper one.
+            final boolean over = approxType == ApproxType.OVER || approxType == ApproxType.EXACT;
+            final Map<Event, List<Event>> sortedSuccessors = ImmutableMap.copyOf(Maps.transformValues(innerMaySet.getOutMap(),
+                    set -> set.stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList()));
+            final Map<Event, List<Event>> sortedPredecessors = ImmutableMap.copyOf(Maps.transformValues(innerMaySet.getInMap(),
+                    set -> set.stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList()));
+            // ASSUMPTION: the must set is acyclic
+            final EventGraph implied = over
+                    ? ra.computeComposition(relMustSet, relMustSet).getMustSet()
+                    : EventGraph.empty();
+
+            getActiveSet(trans).apply((e1, e2) -> {
                 final BooleanFormula edge = transEdge.encode(e1, e2);
                 if (relMustSet.contains(e1, e2)) {
                     encodeDefinition(approxType, edge, execution(e1, e2));
                     return;
                 }
+
                 // Left-linear: step(e1, e) & trans(e, e2) => trans(e1, e2)
-                final List<Event> successors = sortedSuccessors.computeIfAbsent(e1, x -> innerMaySet.getRange(x)
-                        .stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList());
                 final List<Event> leftSteps = new ArrayList<>();
-                final List<Event> keptMustSuccessors = new ArrayList<>();
-                for (Event e : successors) {
+                for (Event e : sortedSuccessors.get(e1)) {
                     if (e == e1 || e == e2 || !relMaySet.contains(e, e2)) {
                         continue;
                     }
-                    if (over && isRedundantStep(e1, e, e2, keptMustSuccessors, innerMustSet, relMustSet, activeSet, exec)) {
+                    if (implied.contains(e1, e)) {
                         continue;
-                    }
-                    if (relMustSet.contains(e1, e) || innerMustSet.contains(e1, e)) {
-                        keptMustSuccessors.add(e);
                     }
                     leftSteps.add(e);
                 }
@@ -594,22 +593,16 @@ public class WmmEncoder {
                 // Only valid in the OVER case, where any real path forces trans by induction from either end.
                 List<Event> rightSteps = null;
                 if (over && leftSteps.size() > 1) {
-                    final List<Event> predecessors = sortedPredecessors.computeIfAbsent(e2, y -> innerPredecessors
-                            .getOrDefault(y, Set.of()).stream()
-                            .sorted(Comparator.comparingInt(Event::getGlobalId).reversed()).toList());
                     rightSteps = new ArrayList<>();
-                    final List<Event> keptMustPredecessors = new ArrayList<>();
-                    for (Event e : predecessors) {
+                    for (Event e : sortedPredecessors.get(e2)) {
                         if (e == e1 || e == e2 || !relMaySet.contains(e1, e)) {
                             continue;
                         }
-                        if (isRedundantPredecessorStep(e1, e, e2, keptMustPredecessors, innerMustSet, relMustSet, activeSet, exec)) {
+                        if (implied.contains(e, e2)) {
                             continue;
                         }
-                        if (relMustSet.contains(e, e2) || innerMustSet.contains(e, e2)) {
-                            keptMustPredecessors.add(e);
-                        }
                         rightSteps.add(e);
+
                         if (rightSteps.size() >= leftSteps.size()) {
                             rightSteps = null;
                             break;
@@ -635,56 +628,6 @@ public class WmmEncoder {
                 encodeDisjunctiveDefinition(approxType, edge, orClause);
             });
             return null;
-        }
-
-        // In an over-approximating encoding of trans = inner^+, the clause
-        //      "step(e1, e) & trans(e, e2) => trans(e1, e2)"
-        // is redundant if there is an already encoded must-step e1 -> k with id(e1) < id(k) < id(e) such that
-        // k -> e is a must-edge of inner, k executes whenever e1 or e executes, and trans(k, e2) is encoded.
-        // Then every real path e1 -> e ~> e2 induces the real path k -> e ~> e2 of the same length, which forces
-        // trans(k, e2) and thus trans(e1, e2) via the kept clause of k.
-        private boolean isRedundantStep(Event e1, Event e, Event e2, List<Event> keptMustSteps,
-                                        EventGraph innerMustSet, EventGraph relMustSet, EventGraph activeSet,
-                                        ExecutionAnalysis exec) {
-            final int id1 = e1.getGlobalId();
-            final int id = e.getGlobalId();
-            for (Event k : keptMustSteps) {
-                final int idK = k.getGlobalId();
-                if (idK <= id1 || idK >= id || k == e2 || !innerMustSet.contains(k, e)) {
-                    continue;
-                }
-                if ((exec.isImplied(e1, k) || exec.isImplied(e, k))
-                        && (relMustSet.contains(k, e2) || activeSet.contains(k, e2))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // Mirror image of isRedundantStep for the right-linear decomposition: the clause
-        //      "trans(e1, e) & step(e, e2) => trans(e1, e2)"
-        // is redundant if there is an already encoded must-step k -> e2 with id(e) < id(k) < id(e2) such that
-        // e -> k is a must-edge of inner, k executes whenever e or e2 executes, and trans(e1, k) is encoded.
-        // Then every real path e1 ~> e -> e2 induces the real path e1 ~> e -> k, which forces trans(e1, k)
-        // and thus trans(e1, e2) via the kept clause of k.
-        // Soundness of both reductions (also when mixing decompositions) follows by induction over the path length
-        // and, for paths of equal length, over id(target) - id(source), which strictly decreases in both cases.
-        private boolean isRedundantPredecessorStep(Event e1, Event e, Event e2, List<Event> keptMustPredecessors,
-                                                   EventGraph innerMustSet, EventGraph relMustSet, EventGraph activeSet,
-                                                   ExecutionAnalysis exec) {
-            final int id2 = e2.getGlobalId();
-            final int id = e.getGlobalId();
-            for (Event k : keptMustPredecessors) {
-                final int idK = k.getGlobalId();
-                if (idK >= id2 || idK <= id || k == e1 || !innerMustSet.contains(e, k)) {
-                    continue;
-                }
-                if ((exec.isImplied(e2, k) || exec.isImplied(e, k))
-                        && (relMustSet.contains(e1, k) || activeSet.contains(e1, k))) {
-                    return true;
-                }
-            }
-            return false;
         }
 
         @Override
