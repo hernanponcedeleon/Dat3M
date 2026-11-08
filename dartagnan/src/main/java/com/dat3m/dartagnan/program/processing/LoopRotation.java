@@ -43,7 +43,8 @@ import java.util.stream.Collectors;
     and the loop becomes side-effect-free (statically bounded by 1).
 
     We rotate only if this removes all loop-carried registers, i.e., some register written in the loop is live
-    at "L" but none is live at "C".
+    at "L" but none is live at "C", and the loop has no global side effects (otherwise it cannot become a
+    static spin loop anyway).
  */
 public class LoopRotation implements FunctionProcessor {
 
@@ -84,6 +85,10 @@ public class LoopRotation implements FunctionProcessor {
         Verify.verify(backJump.isGoto() && backJump.getLabel() == header
                         && header.getJumpSet().stream().noneMatch(j -> j != backJump && body.contains(j)),
                 "Loop %s is not in normal form.", header);
+
+        if (body.stream().anyMatch(DynamicSpinLoopDetection::isGlobalSideEffect)) {
+            return false;
+        }
 
         // The header must consist of side-effect-free events followed by the loop condition.
         final List<Event> headerEvents = new ArrayList<>();
