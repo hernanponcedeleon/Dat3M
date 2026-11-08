@@ -104,14 +104,21 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             Program program,
             List<Branch> branches,
             Map<Event, Branch> event2BranchMap,
-            Set<Event> unreachableEvents // these events do not have a branch
+            Set<Event> unreachableEvents, // these events do not have a branch
+            List<Branch> postOrder // children before parents
     ) {}
 
     private BranchDecomposition computeBranchDecomposition(Program program) {
         final Map<Event, Branch> event2BranchMap = new HashMap<>();
         final List<Branch> branches = new ArrayList<>();
+        // Branches whose events still need to be collected. We use a worklist instead of recursion,
+        // because the branch structure of unrolled programs can be very deep.
+        final Deque<Branch> toExtend = new ArrayDeque<>();
         for (Thread thread : program.getThreads()) {
-            computeBranchDecomposition(thread.getEntry(), event2BranchMap, branches);
+            getOrCreateBranch(thread.getEntry(), event2BranchMap, branches, toExtend);
+            while (!toExtend.isEmpty()) {
+                extendBranch(toExtend.pop(), event2BranchMap, branches, toExtend);
+            }
         }
 
         final Set<Event> unreachable = new HashSet<>();
@@ -119,19 +126,26 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 .filter(e -> !event2BranchMap.containsKey(e))
                 .forEach(unreachable::add);
 
-        return new BranchDecomposition(program, branches, event2BranchMap, unreachable);
+        return new BranchDecomposition(program, branches, event2BranchMap, unreachable, computePostOrder(branches));
     }
 
-    private Branch computeBranchDecomposition(Event root, Map<Event, Branch> event2BranchMap, List<Branch> branches) {
-        if (event2BranchMap.containsKey(root)) {
+    private Branch getOrCreateBranch(Event root, Map<Event, Branch> event2BranchMap, List<Branch> branches,
+            Deque<Branch> toExtend) {
+        final Branch existing = event2BranchMap.get(root);
+        if (existing != null) {
             // <root> was already visited
-            return event2BranchMap.get(root);
+            return existing;
         }
-
-        final Branch branch = new Branch(root);
+        final Branch branch = new Branch(root, branches.size());
         event2BranchMap.put(root, branch);
         branches.add(branch);
-        Event succ = root;
+        toExtend.push(branch);
+        return branch;
+    }
+
+    private void extendBranch(Branch branch, Map<Event, Branch> event2BranchMap, List<Branch> branches,
+            Deque<Branch> toExtend) {
+        Event succ = branch.getRoot();
         while (true) {
             switch (succ) {
                 case CondJump jump -> {
@@ -140,20 +154,20 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                         succ = jump.getLabel();
                     } else {
                         // Split into two branches...
-                        final Branch b1 = computeBranchDecomposition(jump.getSuccessor(), event2BranchMap, branches);
-                        final Branch b2 = computeBranchDecomposition(jump.getLabel(), event2BranchMap, branches);
+                        final Branch b1 = getOrCreateBranch(jump.getSuccessor(), event2BranchMap, branches, toExtend);
+                        final Branch b2 = getOrCreateBranch(jump.getLabel(), event2BranchMap, branches, toExtend);
                         branch.children.add(b1);
                         branch.children.add(b2);
                         b1.parents.add(branch);
                         b2.parents.add(branch);
-                        return branch;
+                        return;
                     }
                 }
                 case BlockingEvent barrier -> {
-                    final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
+                    final Branch succBranch = getOrCreateBranch(barrier.getSuccessor(), event2BranchMap, branches, toExtend);
                     branch.children.add(succBranch);
                     succBranch.parents.add(branch);
-                    return branch;
+                    return;
                 }
                 default -> {
                     // No branching happened, thus we stay on the current branch
@@ -163,13 +177,13 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
             if (succ == null) {
                 // We reached the end of function, so the branch is done.
-                return branch;
+                return;
             } else if ((succ instanceof Label label && !label.getJumpSet().isEmpty()) || event2BranchMap.containsKey(succ)) {
                 // We ran into a merge point, so the branch is done
-                final Branch succBranch = computeBranchDecomposition(succ, event2BranchMap, branches);
+                final Branch succBranch = getOrCreateBranch(succ, event2BranchMap, branches, toExtend);
                 succBranch.parents.add(branch);
                 branch.children.add(succBranch);
-                return branch;
+                return;
             } else {
                 // extend the branch
                 branch.events.add(succ);
@@ -179,49 +193,48 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void computeExclusiveBranches(BranchDecomposition decomposition) {
-        final Map<Thread, List<Branch>> threadBranches = new HashMap<>();
-        for (Thread thread : decomposition.program.getThreads()) {
-            threadBranches.put(thread, new ArrayList<>());
-        }
+        // Two branches of the same thread are mutually exclusive iff neither can reach the other.
+        // We use bit sets indexed by Branch.id: the reachability information is quadratic in the number of branches,
+        // which can be large for programs with many unrolled loop iterations.
+        final Map<Thread, BitSet> threadBranches = new HashMap<>();
         for (Branch branch : decomposition.branches) {
-            threadBranches.get(branch.getRoot().getThread()).add(branch);
+            threadBranches.computeIfAbsent(branch.getRoot().getThread(), _ -> new BitSet()).set(branch.id);
         }
 
-        for (List<Branch> branches : threadBranches.values()) {
-            branches.sort(Comparator.comparingInt(b -> b.getRoot().getGlobalId()));
-            branches.forEach(this::computeReachableBranches);
+        // Reachability (including the branch itself), forwards in post-order and backwards in reverse post-order.
+        final int numBranches = decomposition.branches.size();
+        final BitSet[] reachable = new BitSet[numBranches];
+        final BitSet[] reaching = new BitSet[numBranches];
+        for (Branch b : decomposition.postOrder) {
+            reachable[b.id] = union(b, b.children, reachable);
+        }
+        for (Branch b : decomposition.postOrder.reversed()) {
+            reaching[b.id] = union(b, b.parents, reaching);
+        }
 
-            for (int i = 0; i < branches.size(); i++) {
-                for (int j = i + 1; j < branches.size(); j++) {
-                    final Branch b1 = branches.get(i);
-                    final Branch b2 = branches.get(j);
-
-                    if (!b1.reachableBranches.contains(b2) && !b2.reachableBranches.contains(b1)) {
-                        b1.exclusiveBranches.add(b2);
-                        b2.exclusiveBranches.add(b1);
-                    }
-                }
-            }
+        for (Branch b : decomposition.branches) {
+            final BitSet exclusive = (BitSet) threadBranches.get(b.getRoot().getThread()).clone();
+            exclusive.andNot(reachable[b.id]);
+            exclusive.andNot(reaching[b.id]);
+            b.exclusiveBranches.or(exclusive);
         }
     }
 
-    private void computeReachableBranches(Branch b) {
-        if (b.reachableBranchesComputed) {
-            return;
-        }
-
-        for (Branch child : b.children) {
-            computeReachableBranches(child);
-            b.reachableBranches.addAll(child.reachableBranches);
-        }
-
-        b.reachableBranchesComputed = true;
+    private static BitSet union(Branch b, Collection<Branch> neighbours, BitSet[] sets) {
+        final BitSet union = new BitSet();
+        union.set(b.id);
+        neighbours.forEach(n -> union.or(sets[n.id]));
+        return union;
     }
 
     private void computeBranchImplications(BranchDecomposition decomposition) {
-        for (Branch b : decomposition.branches) {
-            computeMustPredSet(b);
-            computeMustSuccSet(b);
+        for (Branch b : decomposition.postOrder) {
+            if (!isEndingWithBlockingEvent(b)) {
+                b.mustSucc.or(intersection(b.children, br -> br.mustSucc));
+            }
+        }
+        for (Branch b : decomposition.postOrder.reversed()) {
+            b.mustPred.or(intersection(b.parents, br -> br.mustPred));
         }
 
         final List<Branch> unconditionalThreadInitialBranches = new ArrayList<>();
@@ -231,10 +244,11 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
             if (start.isSpawned()) {
                 final Branch creatorBranch = decomposition.event2BranchMap.get(start.getCreator());
-                threadInitialBranch.mustPred.add(creatorBranch);
-                threadInitialBranch.exclusiveBranches.addAll(creatorBranch.exclusiveBranches);
-                creatorBranch.exclusiveBranches.forEach(b -> b.exclusiveBranches.add(threadInitialBranch));
-                creatorBranch.mustSucc.add(threadInitialBranch);
+                threadInitialBranch.mustPred.set(creatorBranch.id);
+                threadInitialBranch.exclusiveBranches.or(creatorBranch.exclusiveBranches);
+                creatorBranch.exclusiveBranches.stream()
+                        .forEach(id -> decomposition.branches.get(id).exclusiveBranches.set(threadInitialBranch.id));
+                creatorBranch.mustSucc.set(threadInitialBranch.id);
             } else {
                 unconditionalThreadInitialBranches.add(threadInitialBranch);
             }
@@ -244,51 +258,54 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         for (int i = 0; i < unconditionalThreadInitialBranches.size() - 1; i++) {
             final Branch b1 = unconditionalThreadInitialBranches.get(i);
             final Branch b2 = unconditionalThreadInitialBranches.get(i + 1);
-            b1.mustSucc.add(b2);
-            b2.mustPred.add(b1);
+            b1.mustSucc.set(b2.id);
+            b2.mustPred.set(b1.id);
         }
     }
 
-    private void computeMustPredSet(Branch b) {
-        if (b.mustPredComputed) {
-            return;
-        }
-
-        Set<Branch> commonPred = null;
-        for (Branch br : b.parents) {
-            computeMustPredSet(br);
-            if (commonPred == null) {
-                commonPred = new HashSet<>(br.mustPred);
-            } else {
-                commonPred.retainAll(br.mustPred);
+    // Post-order (children before parents) of the branch graph, which is acyclic for unrolled programs.
+    // Iterative, since the branch graph of an unrolled program can be very deep.
+    private static List<Branch> computePostOrder(List<Branch> branches) {
+        final List<Branch> postOrder = new ArrayList<>(branches.size());
+        final boolean[] visited = new boolean[branches.size()];
+        final Deque<Iterator<Branch>> stack = new ArrayDeque<>();
+        final Deque<Branch> path = new ArrayDeque<>();
+        for (Branch root : branches) {
+            if (visited[root.id]) {
+                continue;
             }
-        }
-        if (commonPred != null) {
-            b.mustPred.addAll(commonPred);
-        }
-        b.mustPredComputed = true;
-    }
-
-    private void computeMustSuccSet(Branch b) {
-        if (b.mustSuccComputed) {
-            return;
-        }
-
-        Set<Branch> commonSucc = null;
-        for (Branch br : b.children) {
-            computeMustSuccSet(br);
-            if (!isEndingWithBlockingEvent(b)) {
-                if (commonSucc == null) {
-                    commonSucc = new HashSet<>(br.mustSucc);
+            visited[root.id] = true;
+            path.push(root);
+            stack.push(root.children.iterator());
+            while (!stack.isEmpty()) {
+                final Iterator<Branch> it = stack.peek();
+                if (it.hasNext()) {
+                    final Branch child = it.next();
+                    if (!visited[child.id]) {
+                        visited[child.id] = true;
+                        path.push(child);
+                        stack.push(child.children.iterator());
+                    }
                 } else {
-                    commonSucc.retainAll(br.mustSucc);
+                    stack.pop();
+                    postOrder.add(path.pop());
                 }
             }
         }
-        if (commonSucc != null) {
-            b.mustSucc.addAll(commonSucc);
+        return postOrder;
+    }
+
+    // Intersection of the sets of <branches>, or the empty set if there are none.
+    private static BitSet intersection(Collection<Branch> branches, java.util.function.Function<Branch, BitSet> set) {
+        BitSet result = null;
+        for (Branch br : branches) {
+            if (result == null) {
+                result = (BitSet) set.apply(br).clone();
+            } else {
+                result.and(set.apply(br));
+            }
         }
-        b.mustSuccComputed = true;
+        return result == null ? new BitSet() : result;
     }
 
     private boolean isEndingWithBlockingEvent(Branch branch) {
@@ -302,7 +319,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void createBranchClasses(BranchDecomposition decomposition) {
         // -------------------------- Create branch classes --------------------------
-        final DependencyGraph<Branch> depGraph = DependencyGraph.from(decomposition.branches, Branch::getImpliedBranches);
+        final List<Branch> branches = decomposition.branches;
+        final DependencyGraph<Branch> depGraph = DependencyGraph.from(branches, b -> b.getImpliedBranches(branches));
         // The order of the SCCs depends on hash codes. We sort them to create the classes deterministically.
         final Comparator<Branch> branchOrder = Comparator.comparingInt(b -> b.getRoot().getGlobalId());
         final List<List<Branch>> branchSCCs = depGraph.getSCCs().stream()
@@ -320,8 +338,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             final BranchClass branchClass = branch2ClassMap.get(branchesInClass.getFirst());
             for (Branch branch : branchesInClass) {
                 branchClass.addAllInternal(branch.events);
-                branch.getImpliedBranches().stream().map(branch2ClassMap::get).forEach(branchClass.impliedClasses::add);
-                branch.exclusiveBranches.stream().map(branch2ClassMap::get).forEach(branchClass.exclusiveClasses::add);
+                branch.getImpliedBranches(branches).stream().map(branch2ClassMap::get).forEach(branchClass.impliedClasses::add);
+                branch.exclusiveBranches.stream().mapToObj(branches::get).map(branch2ClassMap::get).forEach(branchClass.exclusiveClasses::add);
             }
             branchClass.representative = branchClass.stream()
                     .min(Comparator.comparingInt(Event::getGlobalId))
@@ -391,28 +409,30 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private static class Branch {
+        // Index of this branch in BranchDecomposition.branches. The sets of branches below are bit sets over
+        // these indices: they can contain up to quadratically many elements in total.
+        final int id;
         final Set<Branch> children = new HashSet<>();
         final Set<Branch> parents = new HashSet<>();
-        final Set<Branch> mustSucc = new HashSet<>();
-        final Set<Branch> mustPred = new HashSet<>();
+        final BitSet mustSucc = new BitSet();
+        final BitSet mustPred = new BitSet();
         final List<Event> events = new ArrayList<>();
-        final Set<Branch> reachableBranches = new HashSet<>();
-        final Set<Branch> exclusiveBranches = new HashSet<>();
+        final BitSet exclusiveBranches = new BitSet();
 
-        boolean mustPredComputed = false;
-        boolean mustSuccComputed = false;
-        boolean reachableBranchesComputed = false;
-
-        public Branch(Event root) {
-            mustPred.add(this);
-            mustSucc.add(this);
-            reachableBranches.add(this);
+        public Branch(Event root, int id) {
+            this.id = id;
+            mustPred.set(id);
+            mustSucc.set(id);
             events.add(root);
         }
 
         public Event getRoot() { return events.getFirst(); }
 
-        public Collection<Branch> getImpliedBranches() { return Sets.union(mustSucc, mustPred);}
+        public List<Branch> getImpliedBranches(List<Branch> branches) {
+            final BitSet implied = (BitSet) mustSucc.clone();
+            implied.or(mustPred);
+            return implied.stream().mapToObj(branches::get).toList();
+        }
 
         @Override
         public String toString() {
