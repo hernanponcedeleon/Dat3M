@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.model.ExecutionModelNext;
-import com.dat3m.dartagnan.model.RelationModel;
 import com.dat3m.dartagnan.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.model.ThreadModel;
 import com.dat3m.dartagnan.model.event.EventModel;
@@ -18,10 +17,10 @@ final class ExecutionLinearizer {
 
     private ExecutionLinearizer() { }
 
-    static List<EventModel> linearize(ExecutionModelNext model, RelationModel hb) {
+    static List<EventModel> linearize(ExecutionModelNext model, Collection<EdgeModel> order) {
         final List<EventModel> events = model.getEventModels();
         final Map<EventModel, Set<EventModel>> predecessors = new HashMap<>();
-        for (EdgeModel edge : hb.getEdgeModels()) {
+        for (EdgeModel edge : order) {
             Verify.verify(edge.from() != edge.to(), "svcomp.cat produced a non-SC execution");
             predecessors.computeIfAbsent(edge.to(), _ -> new HashSet<>()).add(edge.from());
         }

@@ -11,6 +11,7 @@ public final class CatNames {
     public static final String RF_RELATION = "rf";
     public static final String CO_RELATION = "co";
     public static final String FR_RELATION = "fr";
+    public static final String RMW_RELATION = "rmw";
     /** Name of the flagged axiom that reports data races. */
     public static final String DATA_RACE_AXIOM = "data-race";
 

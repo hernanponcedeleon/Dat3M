@@ -70,7 +70,8 @@ public final class SvcompOutputGenerator {
             return Optional.empty();
         }
         final Optional<ViolationWitness> witness = WitnessExtractor.forViolation(
-                fromIREvaluator(result.getModel()), result.getTask().getProgram());
+                fromIREvaluator(result.getModel(),
+                        WitnessExtractor.requiredRelations(result.getTask().getMemoryModel())), result.getTask().getProgram());
         if (witness.isEmpty()) {
             logger.warn("SV-COMP violation witnesses are supported only for the following properties: {}.",
                     String.join(", ", supportedViolationProperties()));

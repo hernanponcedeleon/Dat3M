@@ -21,7 +21,8 @@ import com.dat3m.dartagnan.model.event.AssertModel;
 import com.dat3m.dartagnan.model.event.EventModel;
 import com.dat3m.dartagnan.model.event.LoadModel;
 import com.dat3m.dartagnan.model.event.MemoryEventModel;
-import com.google.common.base.VerifyException;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -35,12 +36,14 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.witness.svcomp.CatNames.DATA_RACE_AXIOM;
-import static com.dat3m.dartagnan.witness.svcomp.CatNames.HB_RELATION;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.CO_RELATION;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.FR_RELATION;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.RF_RELATION;
+import static com.dat3m.dartagnan.witness.svcomp.CatNames.RMW_RELATION;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.DATA_RACE;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.UNREACH_CALL;
 import static com.dat3m.dartagnan.witness.svcomp.SvcompProperty.fromAssertionError;
 import static com.dat3m.dartagnan.witness.svcomp.Witness.*;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static java.nio.file.Files.readAllBytes;
 
 /**
@@ -58,6 +61,38 @@ public final class WitnessExtractor {
             return Optional.empty();
         }
         return Optional.of(new CorrectnessWitness(metadata(programFile(program), property.specification())));
+    }
+
+    /*
+        The relations of <wmm> that violation witness extraction reads from the execution model.
+        NOTE: We do not use HB_RELATION itself: it contains (the transitive) po, which is quadratic in the number
+        of events, while linearization only needs its inter-thread edges (see interThreadOrder).
+     */
+    public static Set<Relation> requiredRelations(Wmm wmm) {
+        final Set<String> names = Set.of(RF_RELATION, CO_RELATION, FR_RELATION, RMW_RELATION);
+        return wmm.getRelations().stream()
+                .filter(relation -> names.stream().anyMatch(relation::hasName))
+                .collect(Collectors.toSet());
+    }
+
+    /*
+        The inter-thread edges of HB_RELATION (which is assumed to contain po).
+        Intra-thread edges are not needed: in a consistent execution they agree with po, which the linearizer adds.
+     */
+    private static List<EdgeModel> interThreadOrder(ExecutionModelNext model) {
+        final List<EdgeModel> comExt = new ArrayList<>();
+        for (String name : List.of(RF_RELATION, CO_RELATION, FR_RELATION)) {
+            relationEdges(model, name).stream()
+                    .filter(edge -> edge.from().getThreadModel() != edge.to().getThreadModel())
+                    .forEach(comExt::add);
+        }
+        final List<EdgeModel> order = new ArrayList<>(comExt);
+        // the write of a RMW inherits the inter-thread order of its read.
+        for (EdgeModel rmw : relationEdges(model, RMW_RELATION)) {
+            comExt.stream().filter(e -> e.from() == rmw.from())
+                    .forEach(e -> order.add(new EdgeModel(rmw.to(), e.to())));
+        }
+        return order;
     }
 
     public static Optional<ViolationWitness> forViolation(ExecutionModelNext model, Program program)
@@ -92,8 +127,7 @@ public final class WitnessExtractor {
         return model.getFlaggedAxioms().stream()
                 .filter(axiom -> DATA_RACE_AXIOM.equals(axiom.getName()))
                 .findFirst()
-                .flatMap(axiom -> model.getRelationModel(axiom.getRelation()))
-                .flatMap(relation -> relation.getEdgeModels().stream().findFirst())
+                .flatMap(axiom -> model.getFlaggedAxiomEdges(axiom).stream().findFirst())
                 .map(edge -> new SvcompViolation(DATA_RACE, List.of(edge.from(), edge.to())));
     }
 
@@ -104,10 +138,7 @@ public final class WitnessExtractor {
 
         final Map<ThreadModel, Integer> threadIds = new HashMap<>();
         final List<Segment> segments = new ArrayList<>();
-        final RelationModel hb = findRelationModel(model, HB_RELATION)
-                .orElseThrow(() -> new VerifyException(
-                        "Execution model does not contain relation '%s'".formatted(HB_RELATION)));
-        final List<EventModel> linearized = ExecutionLinearizer.linearize(model, hb);
+        final List<EventModel> linearized = ExecutionLinearizer.linearize(model, interThreadOrder(model));
         final Map<Event, ThreadModel> spawnedThreads = new HashMap<>();
         for (ThreadModel thread : model.getThreadModels()) {
             final ThreadStart start = thread.getThread().getEntry();
@@ -173,7 +204,7 @@ public final class WitnessExtractor {
     private static Map<SourcePoint, AssumptionExpression> assumptionWaypoints(ExecutionModelNext model,
             Map<EventModel, SourcePoint> sourcePoints) {
         // Sorted, so that the order of conjuncts is deterministic.
-        final List<LoadModel> crossThreadReads = relationEdges(model, RF).stream()
+        final List<LoadModel> crossThreadReads = relationEdges(model, RF_RELATION).stream()
                 .filter(edge -> edge.to() instanceof LoadModel)
                 .filter(edge -> !(edge.from().getEvent() instanceof Init))
                 .filter(edge -> !edge.from().getThreadModel().equals(edge.to().getThreadModel()))

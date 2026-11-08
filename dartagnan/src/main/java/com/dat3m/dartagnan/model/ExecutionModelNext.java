@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.model;
 
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.model.event.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -19,7 +20,7 @@ public class ExecutionModelNext {
     private final Map<Relation, RelationModel> relationMap;
     private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
     private final Set<Property> violatedProperties;
-    private final Set<Axiom> flaggedAxioms;
+    private final Map<Axiom, Set<EdgeModel>> flaggedAxioms;
 
     private final Map<ValueModel, Set<LoadModel>> addressReadsMap;
     private final Map<ValueModel, Set<StoreModel>> addressWritesMap;
@@ -31,7 +32,7 @@ public class ExecutionModelNext {
         relationMap = new HashMap<>();
         memoryLayoutMap = new HashMap<>();
         violatedProperties = EnumSet.noneOf(Property.class);
-        flaggedAxioms = new LinkedHashSet<>();
+        flaggedAxioms = new LinkedHashMap<>();
 
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
@@ -58,9 +59,9 @@ public class ExecutionModelNext {
         violatedProperties.add(property);
     }
 
-    void addFlaggedAxiom(Axiom axiom) {
+    void addFlaggedAxiom(Axiom axiom, Set<EdgeModel> edges) {
         Preconditions.checkArgument(axiom.isFlagged(), "Axiom is not flagged: %s", axiom);
-        flaggedAxioms.add(axiom);
+        flaggedAxioms.put(axiom, Collections.unmodifiableSet(edges));
     }
 
     public void addAddressRead(ValueModel address, LoadModel read) {
@@ -110,7 +111,11 @@ public class ExecutionModelNext {
     }
 
     public Set<Axiom> getFlaggedAxioms() {
-        return Collections.unmodifiableSet(flaggedAxioms);
+        return Collections.unmodifiableSet(flaggedAxioms.keySet());
+    }
+
+    public Set<EdgeModel> getFlaggedAxiomEdges(Axiom axiom) {
+        return flaggedAxioms.getOrDefault(axiom, Set.of());
     }
 
     public Optional<RelationModel> getRelationModel(Relation relation) {

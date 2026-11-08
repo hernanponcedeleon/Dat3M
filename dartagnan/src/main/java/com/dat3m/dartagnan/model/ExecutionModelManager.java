@@ -75,7 +75,15 @@ public class ExecutionModelManager {
         return new ExecutionModelManager().buildExecutionModel(evaluator);
     }
 
+    public static ExecutionModelNext fromIREvaluator(IREvaluator evaluator, Collection<Relation> relations) {
+        return new ExecutionModelManager().buildExecutionModel(evaluator, relations);
+    }
+
     public ExecutionModelNext buildExecutionModel(IREvaluator evaluator) {
+        return buildExecutionModel(evaluator, evaluator.getEncodingContext().getTask().getMemoryModel().getRelations());
+    }
+
+    public ExecutionModelNext buildExecutionModel(IREvaluator evaluator, Collection<Relation> relations) {
         executionModel = new ExecutionModelNext();
 
         this.context = evaluator.getEncodingContext();
@@ -89,7 +97,7 @@ public class ExecutionModelManager {
         relModelCache.clear();
         predicateCache.clear();
         edgeModelCache.clear();
-        extractRelations();
+        extractRelations(relations);
         extractViolations();
 
         this.context = null;
@@ -109,8 +117,20 @@ public class ExecutionModelManager {
             wmm.getAxioms().stream()
                     .filter(Axiom::isFlagged)
                     .filter(model::isFlaggedAxiomViolated)
-                    .forEach(executionModel::addFlaggedAxiom);
+                    .forEach(axiom -> executionModel.addFlaggedAxiom(axiom, flaggedEdges(axiom)));
         }
+    }
+
+    private Set<EdgeModel> flaggedEdges(Axiom axiom) {
+        final Set<EdgeModel> edges = new LinkedHashSet<>();
+        model.eventGraph(axiom.getRelation()).apply((a, b) -> {
+            final EventModel from = executionModel.getEventModelByEvent(a);
+            final EventModel to = executionModel.getEventModelByEvent(b);
+            if (from != null && to != null) {
+                edges.add(new EdgeModel(from, to));
+            }
+        });
+        return edges;
     }
 
     private void extractEvents() {
@@ -208,8 +228,8 @@ public class ExecutionModelManager {
         }
     }
 
-    private void extractRelations() {
-        Set<Relation> relsToExtract = new HashSet<>(wmm.getRelations());
+    private void extractRelations(Collection<Relation> relations) {
+        Set<Relation> relsToExtract = new HashSet<>(relations);
         for (Relation r : relsToExtract) { createModel(r); }
 
         Set<CAATPredicate> predicates = new HashSet<>();
