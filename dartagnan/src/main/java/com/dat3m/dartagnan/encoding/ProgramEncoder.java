@@ -443,49 +443,30 @@ public class ProgramEncoder {
 
     /**
      * @return
-     * Describes that for each pair of events, if the reader uses the result of the writer,
-     * then the value the reader gets from the register is exactly the value that the writer computed.
-     * Also, the reader may only use the value of the latest writer that is executed.
-     * Also, if no fitting writer is executed, the reader uses 0.
+     * Describes the direct dependencies between register writers and readers:
+     * the reader uses the result of the writer iff both are executed and no later writer of the same register
+     * (that may reach the reader) was executed.
+     * The values of registers themselves need no encoding:
+     * they are directly described by terms (see {@link EncodingContext#registerValue}).
      */
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
-        final ExpressionFactory exprs = ExpressionFactory.getInstance();
-        final boolean initializeRegisters = context.getTask().getProgram().registersAreZeroInitialized();
-
         List<BooleanFormula> enc = new ArrayList<>();
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
             for (Register register : writers.getUsedRegisters()) {
-                final List<BooleanFormula> overwrite = new ArrayList<>();
                 final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
-                for (RegWriter writer : reg.getMayWriters().reversed()) {
-                    BooleanFormula edge;
-                    if (reg.getMustWriters().contains(writer)) {
-                        if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
-                            // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
-                            // By getting rid of the guard "dep" in this special case, we end up with an unconditional
-                            // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
-                            // in preprocessing.
-                            assert reg.getMayWriters().size() == 1;
-                            edge = bmgr.makeTrue();
-                        } else {
-                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
-                        }
-                    } else {
-                        edge = context.dependency(writer, reader);
-                        enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
-                    }
-                    BooleanFormula equalValue = exprEnc.assignEqualAt(register, reader, context.result(writer), writer);
-                    enc.add(bmgr.implication(edge, equalValue));
-                    overwrite.add(context.execution(writer));
+                final List<RegWriter> mayWriters = reg.getMayWriters();
+                if (mayWriters.size() == reg.getMustWriters().size()) {
+                    continue;
                 }
-
-                if(initializeRegisters && !reg.mustBeInitialized()) {
-                    final Expression zero = exprs.makeGeneralZero(register.getType());
-                    overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(exprEnc.assignEqualAt(register, reader, zero, reader));
-                    enc.add(bmgr.or(overwrite));
+                BooleanFormula notOverwritten = context.controlFlow(reader);
+                for (RegWriter writer : mayWriters.reversed()) {
+                    if (!reg.getMustWriters().contains(writer)) {
+                        enc.add(bmgr.equivalence(context.dependency(writer, reader),
+                                bmgr.and(context.execution(writer), notOverwritten)));
+                    }
+                    notOverwritten = bmgr.and(notOverwritten, bmgr.not(context.execution(writer)));
                 }
             }
         }
@@ -555,11 +536,17 @@ public class ProgramEncoder {
 
         @Override
         public BooleanFormula visitLocal(Local e) {
+            if (context.isResultInlined(e)) {
+                return bmgr.makeTrue();
+            }
             return exprEnc.assignEqualAt(context.result(e), e, e.getExpr(), e);
         }
 
         @Override
         public BooleanFormula visitAlloc(Alloc e) {
+            if (context.isResultInlined(e)) {
+                return bmgr.makeTrue();
+            }
             return exprEnc.assignEqualAt(context.result(e), e, e.getAllocatedObject(), e);
         }
 

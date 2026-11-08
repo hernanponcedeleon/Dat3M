@@ -2,13 +2,16 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -49,6 +52,7 @@ public final class EncodingContext {
     private final Context analysisContext;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
+    private final ReachingDefinitionsAnalysis reachingDefinitions;
     private final RelationAnalysis relationAnalysis;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
@@ -68,6 +72,10 @@ public final class EncodingContext {
 
     private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
     private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
+    // Writers whose result is not a fresh variable but directly the term computed by the writer.
+    private final Set<RegWriter> inlinedResults = new HashSet<>();
+    // The value of a register at a reader is a term over the results of its reaching definitions.
+    private final Map<Event, Map<Register, TypedFormula<?, ?>>> registerValues = new HashMap<>();
 
     // TODO: Once we have a PointerType, this needs to get updated.
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
@@ -80,6 +88,7 @@ public final class EncodingContext {
         a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
+        reachingDefinitions = a.requires(ReachingDefinitionsAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
         fmgr = new FormulaManagerExt(m);
         bmgr = fmgr.getBooleanFormulaManager();
@@ -226,6 +235,21 @@ public final class EncodingContext {
         return results.get(event);
     }
 
+    /// Returns {@code true} if {@link #result(RegWriter)} is not a fresh variable but the term computed by the writer.
+    /// In this case, the writer's semantics need not be encoded.
+    public boolean isResultInlined(RegWriter writer) {
+        return inlinedResults.contains(writer);
+    }
+
+    /// Returns the value of {@code register} as used by {@code reader}, or {@code null} if {@code reader} does not
+    /// read {@code register}.
+    /// The value is a term over the results of the reaching definitions and is only meaningful if {@code reader}
+    /// is in the control flow.
+    public TypedFormula<?, ?> registerValue(Event reader, Register register) {
+        final Map<Register, TypedFormula<?, ?>> regValues = registerValues.get(reader);
+        return regValues == null ? null : regValues.get(register);
+    }
+
     // ====================================================================================
     // Relations
 
@@ -337,10 +361,33 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
             }
+        }
+
+        // ------- Data flow -------
+        // NOTE: Events are visited in program order, so the results of all reaching definitions of a reader
+        // are known when the reader is visited.
+        final Map<RegisterValueKey, TypedFormula<?, ?>> registerValueCache = new HashMap<>();
+        int numRegisterReads = 0;
+        for (Event e : task.getProgram().getThreadEvents()) {
+            if (e instanceof RegReader reader) {
+                final ReachingDefinitionsAnalysis.Writers writers = reachingDefinitions.getWriters(reader);
+                final Map<Register, TypedFormula<?, ?>> regValues = new HashMap<>();
+                for (Register register : writers.getUsedRegisters()) {
+                    regValues.put(register, computeRegisterValue(reader, register, writers.ofRegister(register), registerValueCache));
+                    numRegisterReads++;
+                }
+                registerValues.put(e, regValues);
+            }
             if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();
-                final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                results.put(e, exprEncoder.makeVariable(name, register.getType()));
+                final TypedFormula<?, ?> inlined = computeInlinedResult(rw);
+                if (inlined != null) {
+                    results.put(e, inlined);
+                    inlinedResults.add(rw);
+                } else {
+                    final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
+                    results.put(e, exprEncoder.makeVariable(name, register.getType()));
+                }
             }
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
@@ -351,5 +398,71 @@ public final class EncodingContext {
                 }
             }
         }
+        logger.info("Register reads: {}, distinct register values: {}, inlined results: {}",
+                numRegisterReads, registerValueCache.size(), inlinedResults.size());
+    }
+
+    private record RegisterValueKey(Register register, List<RegWriter> writers, boolean initialized) {}
+
+    /*
+        Computes the value of a register at a reader as an ite-chain over its reaching definitions:
+            ite(exec(w_n), result(w_n), ite(exec(w_n-1), result(w_n-1), ... uninit))
+        where w_1, ..., w_n are the potential writers in program order.
+        This is sound, because (after unrolling) all reaching definitions precede the reader, so if the reader is
+        executed, the last executed writer (= the one with the largest id) is the one that the reader observes.
+        Readers with identical reaching definitions get the same term.
+     */
+    private TypedFormula<?, ?> computeRegisterValue(RegReader reader, Register register,
+                                                    ReachingDefinitionsAnalysis.RegisterWriters regWriters,
+                                                    Map<RegisterValueKey, TypedFormula<?, ?>> cache) {
+        List<RegWriter> writers = regWriters.getMayWriters();
+        // If the reader is in the control flow and some writer is guaranteed to be executed with the reader,
+        // all earlier writers are irrelevant.
+        boolean initialized = regWriters.mustBeInitialized();
+        if (reader.cfImpliesExec()) {
+            for (int i = writers.size() - 1; i >= 0; i--) {
+                if (executionAnalysis.isImplied(reader, writers.get(i))) {
+                    writers = writers.subList(i, writers.size());
+                    initialized = true;
+                    break;
+                }
+            }
+        }
+        final RegisterValueKey key = new RegisterValueKey(register, List.copyOf(writers), initialized);
+        return cache.computeIfAbsent(key, k -> computeRegisterValue(reader, k));
+    }
+
+    private TypedFormula<?, ?> computeRegisterValue(RegReader reader, RegisterValueKey key) {
+        final Register register = key.register();
+        final List<RegWriter> writers = key.writers();
+        final boolean initialized = key.initialized();
+
+        Formula value;
+        int start = 0;
+        if (initialized && !writers.isEmpty()) {
+            value = result(writers.getFirst()).formula();
+            start = 1;
+        } else if (task.getProgram().registersAreZeroInitialized()) {
+            value = exprEncoder.encodeFinal(exprs.makeGeneralZero(register.getType())).formula();
+        } else {
+            final String name = register.getName() + "(" + reader.getGlobalId() + "_uninit)";
+            value = exprEncoder.makeVariable(name, register.getType()).formula();
+        }
+        for (RegWriter writer : writers.subList(start, writers.size())) {
+            value = fmgr.ifThenElse(execution(writer), result(writer).formula(), value);
+        }
+
+        return new TypedFormula<>(register.getType(), value);
+    }
+
+    // Returns the term that the writer computes, if its result can be described directly by it.
+    private TypedFormula<?, ?> computeInlinedResult(RegWriter writer) {
+        final Type type = writer.getResultRegister().getType();
+        final TypedFormula<?, ?> value = switch (writer) {
+            case Local local -> exprEncoder.encodeAt(local.getExpr(), local);
+            case Alloc alloc -> exprEncoder.encodeAt(alloc.getAllocatedObject(), alloc);
+            default -> null;
+        };
+        return value != null && value.getType().equals(type) ? value : null;
     }
 }
