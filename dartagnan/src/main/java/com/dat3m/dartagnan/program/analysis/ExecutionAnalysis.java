@@ -85,8 +85,13 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
 
     private void computeImplyingEvents(Program program, IndexedDomain<Event> eventDomain) {
         // (=> & int)
+        final boolean fair = progressModel.isUniform() && progressModel.getDefaultProgress() == ProgressModel.FAIR;
         for (Thread thread : program.getThreads()) {
             final IndexedSet<Event> events = eventDomain.newSet(thread.getEvents());
+            if (fair) {
+                computeIntraThreadImplyingEventsFair(events, eventDomain);
+                continue;
+            }
             for (Event e1 : events) {
                 final IndexedSet<Event> implying = new IndexedSet<>(events);
                 implying.removeIf(e2 -> !implied(e2, e1));
@@ -118,6 +123,35 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         }
         for (Map.Entry<Event, Set<Event>> entry : eventsByImpliedEvent.entrySet()) {
             entry.setValue(((IndexedSet<Event>) entry.getValue()).toUnmodifiableCopy());
+        }
+    }
+
+    // Under uniform fair progress, "implied(e2, e1)" holds iff e2 == e1, or e1.cfImpliesExec() and the branch class
+    // of e2 implies the one of e1. Hence, all events of the same class with cfImpliesExec() have the same set of
+    // implying events, which we compute once per class (instead of a quadratic number of implied() checks).
+    // Each event gets its own copy, which is cheap: IndexedSet copies share their content until modified.
+    private void computeIntraThreadImplyingEventsFair(IndexedSet<Event> events, IndexedDomain<Event> eventDomain) {
+        final Map<BranchEquivalence.Class, IndexedSet<Event>> eventsByClass = new HashMap<>();
+        for (Event e : events) {
+            eventsByClass.computeIfAbsent(eq.getEquivalenceClass(e), _ -> eventDomain.newSet()).add(e);
+        }
+        final Map<BranchEquivalence.Class, IndexedSet<Event>> implyingByClass = new HashMap<>();
+        eventsByClass.forEach((implying, implyingEvents) -> {
+            for (BranchEquivalence.Class implied : implying.getImpliedClasses()) {
+                if (eventsByClass.containsKey(implied)) {
+                    implyingByClass.computeIfAbsent(implied, _ -> eventDomain.newSet()).addAll(implyingEvents);
+                }
+            }
+        });
+        for (Event e1 : events) {
+            final IndexedSet<Event> implying;
+            if (e1.cfImpliesExec()) {
+                implying = new IndexedSet<>(implyingByClass.get(eq.getEquivalenceClass(e1)));
+            } else {
+                implying = eventDomain.newSet();
+                implying.add(e1);
+            }
+            eventsByImpliedEvent.put(e1, implying);
         }
     }
 
