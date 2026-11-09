@@ -26,12 +26,16 @@ propagated, with the literals of the path as the reason.
   `lfds/dglm.c` (45% faster) and vmm `locks/cna.c` (13%), and hurt on power `locks/linuxrwlock.c` (31% slower)
   and vmm `lfds/treiber.c` (8%); vmm `lfds/dglm.c`, `lfds/ms.c` and `lfds/safe_stack.c` are slower in every
   pair (16–48% on average) but too noisy to be significant.
+- **Conclusion: this is a dead end.** Profiling shows that the lazy encoding gives Z3 a better search (14% fewer
+  conflicts on power `locks/linuxrwlock.c`), but every consequence reported through the user propagator costs Z3
+  more than the clauses it replaces. Two attempts to make the propagator cheaper made it slower. See
+  [Why the propagator cannot be made fast enough](#why-the-propagator-cannot-be-made-fast-enough-a-dead-end).
 - Before the rebase, against `f5c2eb3cf`, the same change made the CI benchmarks 35% faster (391.0 s to
   254.2 s). Most of that gain is now delivered by `development` itself: #1154 and #1159 encode the closures
   more cheaply, and `development` went from 391.0 s to 215.2 s on these benchmarks.
 - The option `encoding.wmm.lazyClosures` is on by default (`--encoding.wmm.lazyClosures=false` disables it).
-  It only has an effect with the eager method and Z3. Given the numbers above, it should probably be off by
-  default (see [TODOs](#todos-and-possible-improvements)).
+  It only has an effect with the eager method and Z3. Given the numbers above, the branch should not be merged
+  with lazy closures on by default.
 
 ## Motivation
 
@@ -443,15 +447,112 @@ python3 -m venv /tmp/perf-venv && /tmp/perf-venv/bin/pip install PyYAML
   --markdown /tmp/perf/report.md --json /tmp/perf/results.json
 ```
 
+## Why the propagator cannot be made fast enough (a dead end)
+
+After the rebase, the branch is slower than `development` on most vmm configurations and on power
+`locks/linuxrwlock.c`. We profiled where the time goes and tried two ways to make the propagator cheaper. Neither
+helped. Short version: the cost is in Z3 handling the consequences that the propagator reports, not in our Java
+code, and the obvious ways to report fewer of them make things worse.
+
+### Where the time goes
+
+All measurements on power `locks/linuxrwlock.c`, bound 3 (UNKNOWN in all runs), on the JVM, with
+`-DlogLevel=DEBUG` to get Z3's statistics. The machine was loaded (load average 10–17), so differences of about 5 s
+are noise.
+
+Z3 statistics, lazy closures off vs on (both runs under Java Flight Recorder, so the times are inflated):
+
+| | Lazy closures off | Lazy closures on |
+|---|---:|---:|
+| Time | 47.8 s | 63 s |
+| Z3 conflicts | 170,649 | 143,079 (−16%) |
+| Z3 propagations | 463M | 392M (−15%) |
+| `propagateConsequence` calls by the propagator | – | 11.7M (about 80 per conflict) |
+
+The only lazy closure in this configuration is `hb^+` (101 events, 1,820 steps). With lazy closures, Z3 needs
+fewer conflicts and fewer propagations, so the search itself is better; the run is still slower.
+
+To separate the costs, we ran the eager encoding with the propagator registered next to it (temporary
+diagnostics, not committed), in two runs per variant, interleaved:
+
+| Variant | Run 1 | Run 2 | Conflicts |
+|---|---:|---:|---:|
+| Eager encoding (lazy closures off) | 56.5 s | 47.6 s | 171k |
+| Eager + propagator watching the same 1,005 literals, callbacks return immediately | 54.6 s | 45.4 s | 157–161k |
+| Eager + propagator maintaining reachability, never propagating | 53.2 s | 51.5 s | 157k |
+| Lazy closures (committed propagator) | 59.8 s | 59.9 s | 147k |
+
+- Registering a propagator, receiving its callbacks (for these 1,005 literals) and maintaining reachability cost
+  nothing measurable.
+- The extra ~10 s comes from the propagations themselves. In the CPU profile, only 2–3 s of that is in Java (our
+  reachability updates and reason construction, JavaSMT wrapping the callback arguments) and in the native
+  `propagateConsequence` calls; the rest is inside Z3's search. A consequence reported by a user propagator is
+  more expensive for Z3 than a clause of the eager encoding: clauses are handled natively and can be learned from,
+  while propagator consequences are reported again by the propagator after every backtrack.
+- So the 14–16% better search does not pay for the cost of reporting about 80 consequences per conflict.
+
+### Two attempts to make the propagator cheaper
+
+Both were implemented, passed `LazyClosuresTest` (both modes), and were then reverted.
+
+1. **Do not propagate closure edges that are already true.** The propagator does not watch the closure literals,
+   so it cannot tell whether an edge already holds. Watching them showed that this almost never happens: only
+   4,962 of 14.2M propagations could be skipped. The difference between our 11.7M calls and Z3's
+   `user-propagations` statistic (354k) therefore does not mean that our propagations are redundant.
+2. **Conflict-only mode.** Report an edge only once Z3 has assigned it false while a path exists (which yields a
+   conflict), or at the final check if it is still not true. This cuts the propagations from 14.2M to 2,362.
+   But it also needs the closure literals to be watched.
+
+Both variants watch 7,600 more literals (8,605 instead of 1,005). Every assignment of a watched literal is a
+callback into Java, and that cost dominates:
+
+| power `locks/linuxrwlock.c`, bound 3, single runs | Time | Conflicts | Propagations by the propagator |
+|---|---:|---:|---:|
+| Committed propagator | about 60 s | 147k | 11.7M |
+| Skip already-true edges | 1:30 min | 194k | 14.2M (4,962 skipped) |
+| Conflict-only | 1:09 min | 177k | 2,362 |
+
+Conflict-only mode also made `LazyClosuresTest` take 184 s instead of 39 s.
+
+On the 6 configurations that were slower with lazy closures, all four versions were run interleaved, 3 runs each.
+The run was stopped after 41 of 72 runs, because the trend was clear (seconds per run, all versions give the same
+result):
+
+| Model | Benchmark | Bound | development | committed propagator | skip already-true | conflict-only |
+|---|---|---:|---|---|---|---|
+| power | locks/linuxrwlock.c | 3 | 49, 47, 45 | 65, 58, 60 | 71, 66, 64 | 63, 61, 49 |
+| power | lfds/ms.c | 3 | 32, 33, 32 | 37, 32, 40 | 49, 40, 43 | 34, 32, 42 |
+| vmm | lfds/dglm.c | 3 | 25, 23, 23 | 34, 31, 32 | 30, 28, 34 | 23, 22, 30 |
+| vmm | lfds/ms.c | 3 | 66 | 87 | 84 | 87, 56 |
+
+Not measured: vmm `lfds/treiber.c` (bound 5) and `lfds/safe_stack.c` (bound 2). The times are higher than in the
+earlier measurements because the machine was more loaded; the versions ran interleaved, so they are comparable to
+each other. Skipping already-true edges is the slowest version. Conflict-only is the best of the lazy versions and
+roughly matches `development` on vmm `lfds/dglm.c`, but none of them is faster than `development` on any of these
+configurations.
+
+### Why this is a dead end
+
+- The gain measured before the rebase came from replacing an expensive eager encoding. #1154 and #1159 made that
+  encoding cheap inside `development` (391 s to 215 s on the CI benchmarks), which removes most of what the
+  propagator could save.
+- What remains is the price of the user propagator API itself: each consequence costs Z3 more than a clause.
+  Making our Java code faster could save at most the 2–3 s that it accounts for. Reporting fewer consequences
+  requires knowing the values of the closure literals, and watching them costs more than it saves.
+- The lazy encoding does produce a better search. Getting that benefit would need a cheaper way to talk to the
+  solver: e.g. adding the "path implies edge" implications as learned clauses that Z3 keeps across backtracks,
+  which JavaSMT's propagator API does not offer, or a native Z3 theory. Neither is a small change.
+
+Remaining open points, not pursued: power `lfds/dglm.c` is consistently 45% faster with lazy closures, so a
+heuristic that chooses lazy closures per closure or per program could keep that win; nobody knows yet what
+distinguishes it from `locks/linuxrwlock.c`. And rc11, imm, linux-kernel, vulkan and svcomp were never benchmarked.
+
 ## TODOs and possible improvements
 
-1. **Decide whether lazy closures stay (and on by default).** After the rebase, they are 4.9% slower on the
-   CI benchmarks overall (10.8% slower on vmm), and 6.0% slower with larger bounds. Options: turn
-   `encoding.wmm.lazyClosures` off by default and keep the code for further experiments, or drop the branch.
-   Before deciding, comparing Z3's statistics (conflicts, propagations, time spent in callbacks) would show
-   whether the propagator's overhead or a different search is responsible. Good candidates are the clear
-   cases in both directions: power `lfds/dglm.c` (45% faster at bound 3) against power `locks/linuxrwlock.c`
-   (31% slower) and vmm `lfds/dglm.c` (34% slower at bound 3).
+1. **Decide what happens to the branch.** Lazy closures do not pay off after the rebase, and the propagator cannot
+   be made cheap enough (see the dead-end section above). Options: keep the branch unmerged as a record of the
+   experiment, or merge it with `encoding.wmm.lazyClosures` off by default so it can still be tried on other
+   models. The latter adds about 450 lines of code that are not used by default.
 2. **Measure the other affected models.** The CI performance set only covers vmm, power and aarch64. Closures
    also become lazy for rc11, imm, arm, riscv, linux-kernel, ptx, vulkan (19 closures) and svcomp (`hb-race`,
    which matters for SV-COMP data race tasks). Correctness is covered by the regression run above (before the
