@@ -199,7 +199,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
-        final Register tidReg = call.getFunction().newUniqueRegister("__tid", call.getFunction().getProgram().getArchType());
+        final Register tidReg = call.getFunction().newUniqueRegister("__tid", archType);
         final Event createEvent = newDynamicThreadCreate(tidReg, threadType, targetFunction, List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
