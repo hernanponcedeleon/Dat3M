@@ -4,4 +4,4 @@ The resources are generated with `clang -S -emit-llvm`.
 
 ## Special compiler options
 - `ilp32-long-in-struct.c`: `-m32`
-- `ilp32-ubsan-struct.c`: `-m32 -fsanitize=undefined`
+- `ilp32-ubsan-struct.c`: `-m32 -fsanitize=signed-integer-overflow`
