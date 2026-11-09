@@ -112,10 +112,19 @@ public class WmmEncoder {
         logger.info("{}: {}", LAZY_CLOSURES, useLazyClosures && allowLazyClosures);
 
         this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
-        this.polarityAnalysis = polarityAware ? PolarityAnalysis.of(memoryModel) : null;
-        this.lazyClosureCandidates = useLazyClosures && allowLazyClosures
-                ? RelationPolarity.getNegativelyUsedClosures(memoryModel)
-                : Set.of();
+        final boolean lazy = useLazyClosures && allowLazyClosures;
+        this.polarityAnalysis = polarityAware || lazy ? PolarityAnalysis.of(memoryModel) : null;
+        this.lazyClosureCandidates = lazy ? getNegativelyUsedClosures(memoryModel, polarityAnalysis) : Set.of();
+    }
+
+    // Transitive closures that only occur under an odd number of negations: they are forbidden by axioms,
+    // so adding edges to them can never help to satisfy the encoding.
+    // NOTE: PolarityAnalysis names polarities syntactically, i.e., such closures are POSITIVE.
+    static Set<Relation> getNegativelyUsedClosures(Wmm memoryModel, PolarityAnalysis polarityAnalysis) {
+        return memoryModel.getRelations().stream()
+                .filter(r -> r.getDefinition() instanceof TransitiveClosure)
+                .filter(r -> polarityAnalysis.get(r) == Polarity.POSITIVE)
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -599,7 +608,7 @@ public class WmmEncoder {
                     if (ClosurePropagator.canHandle(context, closure)) {
                         getActiveSet(trans).apply((e1, e2) -> {
                             if (relMustSet.contains(e1, e2)) {
-                                enc.add(bmgr.equivalence(transEdge.encode(e1, e2), execution(e1, e2)));
+                                encodeDefinition(approxType, transEdge.encode(e1, e2), execution(e1, e2));
                             }
                         });
                         lazyClosures.add(closure);

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.frontend.cat.ParserCat;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.test.TestHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
 import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import org.junit.Test;
 
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class RelationPolarityTest {
+public class LazyClosureCandidatesTest {
 
     @Test
     public void closureUnderAxiomIsNegative() {
@@ -51,12 +52,12 @@ public class RelationPolarityTest {
 
     private static boolean isNegativeClosure(String model) {
         final Wmm memoryModel = new ParserCat().parse(model);
-        return RelationPolarity.getNegativelyUsedClosures(memoryModel).contains(memoryModel.getRelation("r"));
+        return WmmEncoder.getNegativelyUsedClosures(memoryModel, PolarityAnalysis.of(memoryModel)).contains(memoryModel.getRelation("r"));
     }
 
     private static Set<String> negativeClosureOperands(String modelName) throws IOException {
         final Wmm memoryModel = TestHelper.parseWmm(ResourceHelper.getCatPathFromName(modelName));
-        return RelationPolarity.getNegativelyUsedClosures(memoryModel).stream()
+        return WmmEncoder.getNegativelyUsedClosures(memoryModel, PolarityAnalysis.of(memoryModel)).stream()
                 .map(r -> ((TransitiveClosure) r.getDefinition()).getOperand().getNameOrTerm())
                 .collect(Collectors.toSet());
     }
