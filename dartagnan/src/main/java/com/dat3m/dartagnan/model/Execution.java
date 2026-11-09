@@ -67,6 +67,8 @@ public final class Execution {
 
     // Derived lookup structures
     private final Map<BigInteger, List<MemoryCoreEvent>> accessesByAddress;
+    // Stores by the physical address they write to (see MemoryLayout.toPhysicalAddress), for final values.
+    private final Map<BigInteger, List<Store>> storesByPhysicalAddress;
 
     Execution(Program program, Wmm memoryModel, List<ThreadExecution> threads,
               Map<MemoryCoreEvent, Expression> addresses, Map<MemoryCoreEvent, Expression> values,
@@ -110,6 +112,16 @@ public final class Execution {
         }
         accessesByAddress.replaceAll((_, list) -> List.copyOf(list));
         this.accessesByAddress = Collections.unmodifiableMap(accessesByAddress);
+
+        final Map<BigInteger, List<Store>> storesByPhysicalAddress = new HashMap<>();
+        for (Event e : events) {
+            if (e instanceof Store store) {
+                final BigInteger physical = memoryLayout.toPhysicalAddress(toUnsignedValue(this.addresses.get(store)));
+                storesByPhysicalAddress.computeIfAbsent(physical, _ -> new ArrayList<>()).add(store);
+            }
+        }
+        storesByPhysicalAddress.replaceAll((_, list) -> List.copyOf(list));
+        this.storesByPhysicalAddress = Collections.unmodifiableMap(storesByPhysicalAddress);
     }
 
     public static Execution fromModel(IREvaluator model) {
@@ -247,6 +259,7 @@ public final class Execution {
 
     // The co-maximal store to the given address, if the memory model defines "co" and there are stores.
     // If coherence is not total, this is the co-maximal store that determines the final value.
+    // With virtual addressing, this considers the stores to all virtual addresses of the same physical address.
     public Optional<Store> getFinalStore(BigInteger address) {
         if (finalStores.containsKey(address)) {
             return Optional.of(finalStores.get(address));
@@ -256,8 +269,7 @@ public final class Execution {
             return Optional.empty();
         }
         final EventGraph co = getRelation(coRelation);
-        final List<Store> stores = getAccesses(address).stream()
-                .filter(Store.class::isInstance).map(Store.class::cast).toList();
+        final List<Store> stores = storesByPhysicalAddress.getOrDefault(memoryLayout.toPhysicalAddress(address), List.of());
         return stores.stream()
                 .filter(s -> stores.stream().noneMatch(other -> other != s && co.contains(s, other)))
                 .findFirst();

@@ -70,7 +70,7 @@ final class ExecutionBuilder {
         final List<ThreadExecution> threads = program.getThreads().stream().map(this::extractThread).toList();
         final Map<NonDetValue, Expression> nondetValues = extractNondetValues();
         final MemoryLayout layout = extractMemoryLayout();
-        final Map<BigInteger, Store> finalStores = extractFinalStores();
+        final Map<BigInteger, Store> finalStores = extractFinalStores(layout);
         final Map<Relation, EventGraph> relations = extractBaseRelations(layout);
         return new Execution(program, memoryModel, threads, addresses, values, results, takenJumps,
                 violatedAssertions, nondetValues, layout, finalStores, relations);
@@ -152,7 +152,11 @@ final class ExecutionBuilder {
     // Without a total coherence order, an address can have several co-maximal stores, and the encoding (see
     // WmmEncoder) lets the final value be that of any of them. We pick the co-maximal store whose value the
     // model chose as the final value.
-    private Map<BigInteger, Store> extractFinalStores() {
+    // With virtual addressing, stores to any virtual address of the same physical address are candidates, but each
+    // virtual address has its own final value in the encoding, so the result is keyed by the virtual address.
+    // FIXME: each virtual address having its own final store is likely not intended and should be fixed in the encoding.
+    //  Until then, we mimic this flaw here.
+    private Map<BigInteger, Store> extractFinalStores(MemoryLayout layout) {
         final Map<BigInteger, Store> finalStores = new HashMap<>();
         if (program.getFormat() == LLVM || Arch.coIsTotal(program.getArch())) {
             return finalStores;
@@ -164,9 +168,10 @@ final class ExecutionBuilder {
                 continue;
             }
             final BigInteger address = toUnsignedValue(addresses.get(init));
+            final BigInteger physicalAddress = layout.toPhysicalAddress(address);
             final Expression finalValue = new FinalMemoryValue(init.getValue().getType(), init.getBase(), init.getOffset());
             for (Store store : stores) {
-                if (address.equals(toUnsignedValue(addresses.get(store)))
+                if (physicalAddress.equals(layout.toPhysicalAddress(toUnsignedValue(addresses.get(store))))
                         && model.isTrue(context.lastCoVar(store))
                         && model.isTrue(exprEncoder.assignEqual(finalValue, context.value(store), MEMORY_ROUND_TRIP_RELAXED))) {
                     finalStores.put(address, store);
