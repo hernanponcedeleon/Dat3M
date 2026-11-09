@@ -64,8 +64,7 @@ public class LoopFormVerification implements ProgramProcessor {
 
             loopCounter++;
             final Label loopBegin = label;
-            loopBegin.setName(String.format("%s%s", loopBegin.getName(), LoopUnrolling.LOOP_LABEL_IDENTIFIER));
-            loopBegin.addTags(Tag.NOOPT);
+            markLoopHeader(loopBegin);
 
             final CondJump uniqueBackJump = backJumps.getFirst();
             if (!uniqueBackJump.isGoto()) {
@@ -91,4 +90,15 @@ public class LoopFormVerification implements ProgramProcessor {
         return loopCounter;
     }
 
+    public static void markLoopHeader(Label header) {
+        header.setName(header.getName() + LoopUnrolling.LOOP_LABEL_IDENTIFIER);
+        header.addTags(Tag.NOOPT);
+    }
+
+    public static void unmarkLoopHeader(Label header) {
+        final String name = header.getName();
+        if (name.endsWith(LoopUnrolling.LOOP_LABEL_IDENTIFIER)) {
+            header.setName(name.substring(0, name.length() - LoopUnrolling.LOOP_LABEL_IDENTIFIER.length()));
+        }
+    }
 }

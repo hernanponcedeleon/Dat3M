@@ -85,6 +85,14 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         return loops.stream().map(LoopData::new).toList();
     }
 
+    // We assume side effects for all writes, writing intrinsics, and non-intrinsic function calls.
+    public static boolean isGlobalSideEffect(Event e) {
+        return e.hasTag(Tag.WRITE) || (e instanceof CallEvent call &&
+                (!call.isDirectCall()
+                        || !call.getDirectCallTarget().isIntrinsic()
+                        || call.getDirectCallTarget().getIntrinsicInfo().writesMemory()));
+    }
+
     private void collectSideEffects(LoopData loop, LiveRegistersAnalysis liveRegsAna) {
         final Set<Register> writtenRegisters = new HashSet<>();
         final Set<Register> readRegisters = new HashSet<>();
@@ -96,11 +104,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             if (cur instanceof RegWriter writer) {
                 writtenRegisters.add(writer.getResultRegister());
             }
-            if (cur.hasTag(Tag.WRITE) || (cur instanceof CallEvent call &&
-                    (!call.isDirectCall()
-                            || !call.getDirectCallTarget().isIntrinsic()
-                            || call.getDirectCallTarget().getIntrinsicInfo().writesMemory()))) {
-                // We assume side effects for all writes, writing intrinsics, and non-intrinsic function calls.
+            if (isGlobalSideEffect(cur)) {
                 loop.globalSideEffects.add(cur);
             }
         } while ((cur = cur.getSuccessor()) != loop.getEnd().getSuccessor());
