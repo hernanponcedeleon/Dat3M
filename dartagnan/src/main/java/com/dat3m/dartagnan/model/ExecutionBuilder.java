@@ -34,7 +34,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
     Extracts an Execution from an SMT model.
 
     Relations:
-      - Base relations are read from the SMT model, except for "loc" which is computed from the concrete addresses.
+      - Base relations are read from the SMT model, except for "loc" which is computed from the (physical) addresses.
         Edges in the must-set are present iff both events are executed, so only may-but-not-must edges are queried.
       - Derived relations are computed on demand by the Execution from the base relations (see RelationEvaluator),
         because the SMT encoding only constrains derived edges that are relevant to the axioms (active sets).
@@ -71,7 +71,7 @@ final class ExecutionBuilder {
         final Map<NonDetValue, Expression> nondetValues = extractNondetValues();
         final MemoryLayout layout = extractMemoryLayout();
         final Map<BigInteger, Store> finalStores = extractFinalStores();
-        final Map<Relation, EventGraph> relations = extractBaseRelations();
+        final Map<Relation, EventGraph> relations = extractBaseRelations(layout);
         return new Execution(program, memoryModel, threads, addresses, values, results, takenJumps,
                 violatedAssertions, nondetValues, layout, finalStores, relations);
     }
@@ -180,11 +180,11 @@ final class ExecutionBuilder {
     // ======================================================================================================
     // Memory model
 
-    private Map<Relation, EventGraph> extractBaseRelations() {
+    private Map<Relation, EventGraph> extractBaseRelations(MemoryLayout layout) {
         final Map<Relation, EventGraph> base = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             if (RelationEvaluator.isBase(r)) {
-                base.put(r, r.getDefinition() instanceof SameLocation ? computeSameLocation() : extractFromModel(r));
+                base.put(r, r.getDefinition() instanceof SameLocation ? computeSameLocation(layout) : extractFromModel(r));
             }
         }
         return base;
@@ -207,10 +207,14 @@ final class ExecutionBuilder {
         return graph;
     }
 
-    private EventGraph computeSameLocation() {
+    // Events are at the same location if they access the same physical address. With virtual addressing,
+    // distinct virtual addresses can map to the same physical address (see MemoryLayout.toPhysicalAddress).
+    private EventGraph computeSameLocation(MemoryLayout layout) {
         final Map<BigInteger, Set<Event>> byAddress = new HashMap<>();
         addresses.forEach((e, addr) ->
-                byAddress.computeIfAbsent(toUnsignedValue(addr), _ -> new HashSet<>()).add(e));
+                byAddress.computeIfAbsent(layout.toPhysicalAddress(toUnsignedValue(addr)),
+                _ -> new HashSet<>()).add(e)
+        );
         final MapEventGraph graph = new MapEventGraph();
         for (Set<Event> events : byAddress.values()) {
             events.forEach(e -> graph.addRange(e, events));

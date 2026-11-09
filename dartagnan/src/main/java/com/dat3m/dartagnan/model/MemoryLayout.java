@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.model;
 
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
@@ -62,6 +63,18 @@ public final class MemoryLayout {
         return floor(address)
                 .filter(obj -> obj.contains(address))
                 .map(obj -> new Location(obj, address.subtract(obj.address())));
+    }
+
+    // Translates the potentially virtual address to its physical address. Addresses within a virtual memory
+    // object map to the same offset within its physical memory object, all other addresses are physical already.
+    public BigInteger toPhysicalAddress(BigInteger address) {
+        final Optional<Location> location = resolve(address);
+        if (location.isEmpty() || !(location.get().base().object() instanceof VirtualMemoryObject virtual)) {
+            return address;
+        }
+        return get(virtual.getPhysicalAddress())
+                .map(physical -> physical.address().add(location.get().offset()))
+                .orElse(address);
     }
 
     // Returns the (non-empty) object with the greatest start address at or below the given address, if any.

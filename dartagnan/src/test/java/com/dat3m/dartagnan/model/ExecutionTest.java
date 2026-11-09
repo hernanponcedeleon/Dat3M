@@ -26,6 +26,7 @@ import com.dat3m.dartagnan.test.TestHelper;
 import com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +40,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
@@ -88,6 +90,9 @@ public class ExecutionTest {
         // Coherence is not total in PTX, so the final value must come from the right co-maximal store.
         addLitmusTests(data, Arch.PTX, "PTX", "ptx-v7.5", Property.PROGRAM_SPEC, List.of(
                 "PTX/Memalloy/IRWIW_gl_cta"));
+        // Virtual addressing: accesses to distinct virtual addresses of the same physical location.
+        addLitmusTests(data, Arch.PTX, "PTX", "ptx-v7.5", Property.PROGRAM_SPEC, List.of(
+                "PTX/Nvidia/proxy/Proxy-SingleThread-rf-surW-genR", "PTX/Nvidia/proxy/Proxy-MP-gpu2"));
         // Threads blocked at a barrier.
         addLitmusTests(data, Arch.VULKAN, "VULKAN", "vulkan", Property.TERMINATION, List.of(
                 "VULKAN/Barrier/quorum1-hang"));
@@ -223,6 +228,12 @@ public class ExecutionTest {
 
     // Checks that values recomputed by the execution's own expression evaluation agree with the extracted values.
     private void checkConsistency(Execution execution) {
+        // rf and co are subsets of loc (virtual addressing is correctly handled)
+        final EventGraph loc = execution.getRelation(LOC).orElseThrow();
+        for (String name : List.of(RF, CO)) {
+            execution.getRelation(name).ifPresent(graph -> graph.apply((e1, e2) ->
+                    assertTrue(name + " edge (" + e1 + ", " + e2 + ") is not in loc", loc.contains(e1, e2))));
+        }
         for (Relation relation : execution.getMemoryModel().getRelations()) {
             if (RelationEvaluator.isBase(relation)) {
                 assertFalse("Mutable graph for " + relation, execution.getRelation(relation) instanceof MutableEventGraph);
