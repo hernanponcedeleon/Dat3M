@@ -60,7 +60,13 @@ public final class Execution {
     private final Map<NonDetValue, Expression> nondetValues;
 
     private final MemoryLayout memoryLayout;
-    // The final store of addresses with several co-maximal stores, i.e., when coherence is not total.
+
+    // NOTE: When there are several co-maximal stores (partial co), we use this map to pick one per address.
+    // The picked store is based on which store was used to justify the FinalMemoryValue of said address.
+    // If co is total, we do NOT(!) use this map and instead extract the stores directly from co.
+    // This it has two advantages:
+    //   (1) we do not rely on the encoding of lastCo/FinalMemoryValue, which might not be encoded
+    //   (2) we can do the computation lazily, only when final values are requested.
     private final Map<BigInteger, Store> finalStores;
     // Contains all base relations; derived relations are computed on demand and cached.
     private final Map<Relation, EventGraph> relations;
@@ -190,8 +196,8 @@ public final class Execution {
     }
 
     // The value chosen for a nondeterministic value of the program.
-    public Optional<Expression> value(NonDetValue nonDet) {
-        return Optional.ofNullable(nondetValues.get(nonDet));
+    public Expression value(NonDetValue nonDet) {
+        return nondetValues.get(nonDet);
     }
 
     public record RegisterRead(Register register, Event reader) { }
