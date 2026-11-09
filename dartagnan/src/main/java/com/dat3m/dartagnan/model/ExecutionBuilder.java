@@ -35,6 +35,8 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 
     Relations:
       - Base relations are read from the SMT model, except for "loc" which is computed from the (physical) addresses.
+        We compute loc ourselves because the relation might not be encoded fully due to active sets, or the
+        memory model not mentioning loc at all (e.g. sc.cat).
         Edges in the must-set are present iff both events are executed, so only may-but-not-must edges are queried.
       - Derived relations are computed on demand by the Execution from the base relations (see RelationEvaluator),
         because the SMT encoding only constrains derived edges that are relevant to the axioms (active sets).
