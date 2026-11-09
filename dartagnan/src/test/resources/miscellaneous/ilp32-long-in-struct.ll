@@ -1,5 +1,5 @@
-; ModuleID = 'benchmarks/miscellaneous/ilp32-long.c'
-source_filename = "benchmarks/miscellaneous/ilp32-long.c"
+; ModuleID = 'benchmarks/miscellaneous/ilp32-long-in-struct.c'
+source_filename = "benchmarks/miscellaneous/ilp32-long-in-struct.c"
 target datalayout = "e-m:e-p:32:32-p270:32:32-p271:32:32-p272:64:64-i128:128-f64:32:64-f80:32-n8:16:32-S128"
 target triple = "i386-pc-linux-gnu"
 
@@ -7,7 +7,7 @@ target triple = "i386-pc-linux-gnu"
 
 @s = dso_local global %struct.S zeroinitializer, align 4, !dbg !0
 @.str = private unnamed_addr constant [10 x i8] c"s.b == 42\00", align 1, !dbg !5
-@.str.1 = private unnamed_addr constant [38 x i8] c"benchmarks/miscellaneous/ilp32-long.c\00", align 1, !dbg !11
+@.str.1 = private unnamed_addr constant [48 x i8] c"benchmarks/miscellaneous/ilp32-long-in-struct.c\00", align 1, !dbg !11
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1, !dbg !16
 
 ; Function Attrs: noinline nounwind uwtable
@@ -54,7 +54,7 @@ attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protect
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
 !1 = distinct !DIGlobalVariable(name: "s", scope: !2, file: !3, line: 12, type: !22, isLocal: false, isDefinition: true)
 !2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 22.1.8", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, globals: !4, splitDebugInlining: false, nameTableKind: None)
-!3 = !DIFile(filename: "benchmarks/miscellaneous/ilp32-long.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "9e86caa5bf109e76ecc1621e69f0a1e7")
+!3 = !DIFile(filename: "benchmarks/miscellaneous/ilp32-long-in-struct.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "9e86caa5bf109e76ecc1621e69f0a1e7")
 !4 = !{!5, !11, !16, !0}
 !5 = !DIGlobalVariableExpression(var: !6, expr: !DIExpression())
 !6 = distinct !DIGlobalVariable(scope: null, file: !3, line: 22, type: !7, isLocal: true, isDefinition: true)
@@ -64,9 +64,9 @@ attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protect
 !10 = !DISubrange(count: 10)
 !11 = !DIGlobalVariableExpression(var: !12, expr: !DIExpression())
 !12 = distinct !DIGlobalVariable(scope: null, file: !3, line: 22, type: !13, isLocal: true, isDefinition: true)
-!13 = !DICompositeType(tag: DW_TAG_array_type, baseType: !8, size: 304, elements: !14)
+!13 = !DICompositeType(tag: DW_TAG_array_type, baseType: !8, size: 384, elements: !14)
 !14 = !{!15}
-!15 = !DISubrange(count: 38)
+!15 = !DISubrange(count: 48)
 !16 = !DIGlobalVariableExpression(var: !17, expr: !DIExpression())
 !17 = distinct !DIGlobalVariable(scope: null, file: !3, line: 22, type: !18, isLocal: true, isDefinition: true)
 !18 = !DICompositeType(tag: DW_TAG_array_type, baseType: !19, size: 40, elements: !20)
