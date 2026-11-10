@@ -1,32 +1,88 @@
 package com.dat3m.dartagnan.task.verification;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.IREvaluator;
+import com.dat3m.dartagnan.model.Execution;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.task.TaskResult;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.TRACKABILITY;
+
+/*
+    The result of a verification task with an optional execution (witness).
+ */
 public final class VerificationResult implements TaskResult<VerificationTask> {
 
     private final VerificationTask task;
     private final VerificationStatus status;
-    private final IREvaluator model;
+    private final Execution execution;
+    private final Set<Property> violatedProperties;
+    private final Set<MemoryObject> untrackableObjects;
 
-    public VerificationResult(VerificationTask task, VerificationStatus status, IREvaluator model) {
+    private VerificationResult(VerificationTask task, VerificationStatus status, Execution execution,
+                               Set<Property> violatedProperties, Set<MemoryObject> untrackableObjects) {
         this.task = Preconditions.checkNotNull(task);
         this.status = status;
-        this.model = model;
+        this.execution = execution;
+        this.violatedProperties = Set.copyOf(violatedProperties);
+        this.untrackableObjects = Set.copyOf(untrackableObjects);
+    }
+
+    public static VerificationResult withoutExecution(VerificationTask task, VerificationStatus status) {
+        return new VerificationResult(task, status, null, Set.of(), Set.of());
+    }
+
+    // Extracts everything needed from the model. The model is not kept and can be closed afterward.
+    public static VerificationResult fromModel(VerificationTask task, VerificationStatus status, IREvaluator model) {
+        final Set<Property> violated = task.getProperties().stream()
+                .filter(p -> isViolated(p, task, model))
+                .collect(Collectors.toSet());
+        final Set<MemoryObject> untrackable = violated.contains(TRACKABILITY)
+                ? task.getProgram().getMemory().getObjects().stream()
+                .filter(o -> model.isLeaked(o) && !model.isTrackable(o))
+                .collect(Collectors.toSet())
+                : Set.of();
+        return new VerificationResult(task, status, Execution.fromModel(model), violated, untrackable);
+    }
+
+    // Witness validation encodes only the individual flagged axioms, not the CAT_SPEC variable for their conjunction.
+    private static boolean isViolated(Property property, VerificationTask task, IREvaluator model) {
+        return property == CAT_SPEC
+                ? task.getMemoryModel().getAxioms().stream().filter(Axiom::isFlagged).anyMatch(model::isFlaggedAxiomViolated)
+                : model.propertyViolated(property);
     }
 
     public VerificationStatus getStatus() {
         return status;
     }
 
-    public IREvaluator getModel() {
-        Preconditions.checkState(hasModel(), "No model available");
-        return model;
+    public boolean hasExecution() {
+        return execution != null;
     }
 
-    public boolean hasModel() {
-        return model != null;
+    public Execution getExecution() {
+        Preconditions.checkState(hasExecution(), "No execution available");
+        return execution;
+    }
+
+    // Whether the solver reports the property as violated by the found execution.
+    public boolean isViolated(Property property) {
+        return violatedProperties.contains(property);
+    }
+
+    public Set<Property> getViolatedProperties() {
+        return violatedProperties;
+    }
+
+    // Heap objects that leak without being trackable (only computed if TRACKABILITY is violated).
+    public Set<MemoryObject> getUntrackableObjects() {
+        return untrackableObjects;
     }
 
     @Override
@@ -36,8 +92,8 @@ public final class VerificationResult implements TaskResult<VerificationTask> {
 
     @Override
     public String toString() {
-        return "VerificationResult[property=%s, status=%s, model=%s]".formatted(
-                task.getProperties(), status, hasModel() ? "yes" : "no"
+        return "VerificationResult[property=%s, status=%s, execution=%s]".formatted(
+                task.getProperties(), status, hasExecution() ? "yes" : "no"
         );
     }
 

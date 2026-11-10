@@ -2,7 +2,6 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.Dartagnan.ExitCode;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
@@ -12,7 +11,6 @@ import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
@@ -30,10 +28,10 @@ import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.task.verification.WitnessValidationTask;
 import com.dat3m.dartagnan.task.*;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.model.ExecutionModelNext;
+import com.dat3m.dartagnan.model.Execution;
+import com.dat3m.dartagnan.model.ThreadExecution;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.svcomp.SvcompOutputGenerator;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
@@ -63,7 +61,6 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.SPV;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.Dartagnan.ExitCode.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
-import static com.dat3m.dartagnan.model.ExecutionModelManager.fromIREvaluator;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 
 @Options
@@ -245,9 +242,9 @@ public class OutputGenerator {
                 ? p.getMetadata(SourcePath.class).toString()
                 : Optional.ofNullable(p.getName()).filter(name -> !name.isBlank()).orElse("unknown");
         final EnumSet<Property> props = task.getProperties();
-        final IREvaluator model = result.hasModel() ? result.getModel() : null;
-        final boolean hasViolationsWithModel = status == FAIL && model != null;
-        final boolean hasViolationsWithoutWitness = status == FAIL && model == null;
+        final Execution execution = result.hasExecution() ? result.getExecution() : null;
+        final boolean hasViolationsWithModel = status == FAIL && execution != null;
+        final boolean hasViolationsWithoutWitness = status == FAIL && execution == null;
         final long time = solver.getRuntime();
 
         // ----------------- Generate optional witness -----------------
@@ -268,9 +265,9 @@ public class OutputGenerator {
         StringBuilder details = new StringBuilder();
         if (hasViolationsWithModel) {
 
-            if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                List<Assert> violations = p.getThreadEvents(Assert.class)
-                        .stream().filter(model::assertionViolated)
+            if (props.contains(PROGRAM_SPEC) && result.isViolated(PROGRAM_SPEC)) {
+                List<Assert> violations = execution.getEvents(Assert.class)
+                        .stream().filter(execution::assertionViolated)
                         .toList();
                 for (Assert ass : violations) {
                     appendTo(details, ass, synContext);
@@ -279,25 +276,28 @@ public class OutputGenerator {
                         getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
             }
 
-            if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
-                for (Event e : p.getThreadEvents()) {
-                    final boolean isStuckLoop = e instanceof CondJump jump
-                            && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
-                            && model.jumpTaken(jump);
-                    final boolean isStuckBarrier = e instanceof BlockingEvent barrier
-                            && model.isBlocked(barrier);
-
-                    if (isStuckLoop || isStuckBarrier) {
-                        appendTo(details, e, synContext);
+            if (props.contains(TERMINATION) && result.isViolated(TERMINATION)) {
+                for (ThreadExecution thread : execution.getThreads()) {
+                    for (Event e : thread.getTrace()) {
+                        final boolean isStuckLoop = e instanceof CondJump jump
+                                && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
+                                && execution.jumpTaken(jump);
+                        if (isStuckLoop) {
+                            appendTo(details, e, synContext);
+                        }
+                    }
+                    // Blocked events are not executed, so they come after the trace.
+                    for (Event barrier : thread.getBlockedEvents()) {
+                        appendTo(details, barrier, synContext);
                     }
                 }
                 return new Output(TERMINATION_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
                         "", TERMINATION_REASON, details.toString(), time, witnessFile));
             }
 
-            if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
+            if (props.contains(TRACKABILITY) && result.isViolated(TRACKABILITY)) {
                 for (MemoryObject o : p.getMemory().getObjects()) {
-                    if (model.isLeaked(o) && !model.isTrackable(o)) {
+                    if (result.getUntrackableObjects().contains(o)) {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
@@ -305,15 +305,9 @@ public class OutputGenerator {
                         "", SVCOMP_UNTRACKABLE_OBJECT_REASON, details.toString(), time, witnessFile));
             }
 
-            if (props.contains(CAT_SPEC)) {
-                final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
-                        .filter(Axiom::isFlagged)
-                        .filter(model::isFlaggedAxiomViolated)
-                        .toList();
-                if (!violatedCATSpecs.isEmpty()) {
-                    return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
-                            "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, model, synContext), time, witnessFile));
-                }
+            if (props.contains(CAT_SPEC) && result.isViolated(CAT_SPEC)) {
+                return new Output(CAT_SPEC_VIOLATION, toVerificationSummary(programSource, filter, FAIL,
+                        "", CAT_SPEC_REASON, getFlaggedPairsOutput(task, execution, synContext), time, witnessFile));
             }
 
             throw new RuntimeException("Unreachable");
@@ -321,10 +315,10 @@ public class OutputGenerator {
             // Only for programs with exists/forall specifications
             return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
-        } else if (status == UNKNOWN && model != null) {
+        } else if (status == UNKNOWN && execution != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
-                    .stream().filter(model::isExecuted)
+                    .stream().filter(execution::isExecuted)
                     .toList();
             for (Event bound : reachedBounds) {
                 details
@@ -355,17 +349,17 @@ public class OutputGenerator {
 
         switch (witnessType) {
             case DOT, PNG -> {
-                if (!result.hasModel()) {
+                if (!result.hasExecution()) {
                     return null;
                 }
                 final VerificationTask task = result.getTask();
-                final ExecutionModelNext model = fromIREvaluator(result.getModel());
+                final Execution execution = result.getExecution();
                 final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
                 // RF edges give both ordering and data flow information, thus even when the pair is in PO
                 // we get some data flow information by observing the edge
                 // CO edges only give ordering information which is known if the pair is also in PO
-                return generateGraphvizFile(model, task.getProgram().getName(), (x, y) -> true,
-                        (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                return generateGraphvizFile(execution, task.getProgram().getName(), (x, y) -> true,
+                        (x, y) -> !x.getThread().equals(y.getThread()),
                         getOrCreateOutputDirectory(), filename,
                         synContext, witnessType.convertToPng(), task.getConfig()
                 );
@@ -433,36 +427,39 @@ public class OutputGenerator {
         details.append("\n");
     }
 
-    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model, SyntacticContextAnalysis synContext) {
+    private static String getFlaggedPairsOutput(VerificationTask task, Execution execution, SyntacticContextAnalysis synContext) {
         if (!task.getProperties().contains(CAT_SPEC)) {
             return "";
         }
 
-        final Wmm wmm = task.getMemoryModel();
         final StringBuilder output = new StringBuilder();
-        for (Axiom ax : wmm.getAxioms()) {
-            if (ax.isFlagged() && model.isFlaggedAxiomViolated(ax)) {
-                StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                model.eventGraph(ax.getRelation()).apply((e1, e2) -> {
-                    final String callSeparator = " -> ";
-                    final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
-                            callSeparator);
-                    final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
-                            callSeparator);
+        for (Axiom ax : execution.getRaisedFlags()) {
+            StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
+            final List<Event[]> pairs = new ArrayList<>();
+            execution.getRelation(ax.getRelation()).apply((e1, e2) -> pairs.add(new Event[]{ e1, e2 }));
+            // The graph iterates in hash order, so we sort the pairs to get a deterministic output.
+            pairs.sort(Comparator.<Event[]>comparingInt(p -> p[0].getGlobalId()).thenComparingInt(p -> p[1].getGlobalId()));
+            for (Event[] pair : pairs) {
+                final Event e1 = pair[0];
+                final Event e2 = pair[1];
+                final String callSeparator = " -> ";
+                final String callStackFirst = makeContextString(
+                        synContext.getContextInfo(e1).getContextOfType(CallContext.class),
+                        callSeparator);
+                final String callStackSecond = makeContextString(
+                        synContext.getContextInfo(e2).getContextOfType(CallContext.class),
+                        callSeparator);
 
-                    violatingPairs
-                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e1))
-                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e2))
-                            .append("\t(E").append(e1.getGlobalId())
-                            .append(" / E").append(e2.getGlobalId()).append(")")
-                            .append("\n");
-                });
-                output.append(violatingPairs);
+                violatingPairs
+                        .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                        .append(getSourceLocationString(e1))
+                        .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                        .append(getSourceLocationString(e2))
+                        .append("\t(E").append(e1.getGlobalId())
+                        .append(" / E").append(e2.getGlobalId()).append(")")
+                        .append("\n");
             }
+            output.append(violatingPairs);
         }
 
         return output.toString();
