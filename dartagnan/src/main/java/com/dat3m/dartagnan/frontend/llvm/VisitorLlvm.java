@@ -1770,6 +1770,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             this(type, alignment, size < 0 ? size : alignTo(size, alignment.abi()));
         }
 
+        @Override
         public int allocationSize() {
             // TypeFactory pads aggregates to the natural alignment of their fields rather than to the data layout's.
             // Strides and allocations derived from LLVM's size must not be smaller than TypeFactory's size.
