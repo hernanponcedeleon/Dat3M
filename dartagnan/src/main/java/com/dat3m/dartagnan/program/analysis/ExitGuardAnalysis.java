@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Assume;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -27,22 +26,25 @@ import java.util.*;
 
 /*
     Checks whether a global side effect "e" is exit-guarded, i.e., no path that executes "e" can reach the
-    back-jump of its loop. The analysis explores all paths from "e" to the loop exit, tracking (symbolic) values
-    of registers that are assigned along the path. Branches whose guard becomes constant under the path facts
-    (e.g., the CAS success flag after its guarding jump) are followed in one direction only.
+    back-jump of its loop. The analysis explores all paths of one iteration, starting at the loop header and
+    tracking (symbolic) values of registers that are assigned along the path. Branches whose guard becomes constant
+    under the path facts (e.g., the CAS success flag after its guarding jump) are followed in one direction only.
  */
 public class ExitGuardAnalysis {
 
-    // Bounds the explored states per query; if exceeded, the answer is conservative. Typical CAS loops need 10-20 steps.
-    private static final int MAX_STEPS = 100;
+    // Bounds the explored states per query; if exceeded, the answer is conservative.
+    // Typical CAS loops (including nested ones) should not need more than 1000 steps.
+    private static final int MAX_STEPS = 1000;
 
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Set<Event> body;
+    private final Event header;
     private final Event backJump;
 
     private ExitGuardAnalysis(LoopAnalysis.LoopInfo loop) {
         final LoopAnalysis.LoopIterationInfo iteration = loop.iterations().getFirst();
         this.body = new HashSet<>(iteration.computeBody());
+        this.header = iteration.getIterationStart();
         this.backJump = iteration.getIterationEnd();
     }
 
@@ -50,35 +52,13 @@ public class ExitGuardAnalysis {
         return new ExitGuardAnalysis(loop);
     }
 
-    private record State(Event event, Map<Register, Expression> facts) {}
+    // "executed" tracks whether the side effect has been executed on the current path.
+    private record State(Event event, Map<Register, Expression> facts, boolean executed) {}
 
     public boolean isExitGuarded(Event sideEffect) {
-        // Find the jump (if any) that guards the side effect via fall-through.
-        CondJump guard = null;
-        Event cur = sideEffect.getPredecessor();
-        while (cur != null && body.contains(cur)) {
-            if (cur instanceof Label label && !label.getJumpSet().isEmpty()) {
-                break; // Merge point
-            }
-            if (cur instanceof CondJump jump) {
-                guard = jump.isGoto() ? null : jump;
-                break;
-            }
-            cur = cur.getPredecessor();
-        }
-
-        final Map<Register, Expression> initialFacts = new HashMap<>();
-        final Event start;
-        if (guard != null) {
-            assume(guard.getGuard(), false, initialFacts);
-            start = guard.getSuccessor();
-        } else {
-            start = sideEffect;
-        }
-
         final Deque<State> worklist = new ArrayDeque<>();
         final Set<State> visited = new HashSet<>();
-        worklist.push(new State(start, initialFacts));
+        worklist.push(new State(header, new HashMap<>(), false));
         int steps = 0;
         while (!worklist.isEmpty()) {
             if (++steps > MAX_STEPS) {
@@ -92,8 +72,12 @@ public class ExitGuardAnalysis {
             if (e == null || !body.contains(e)) {
                 continue; // Left the loop
             }
+            final boolean executed = state.executed() || e == sideEffect;
             if (e == backJump) {
-                return false;
+                if (executed) {
+                    return false;
+                }
+                continue; // Iteration without the side effect
             }
             final Map<Register, Expression> facts = state.facts();
 
@@ -101,36 +85,36 @@ public class ExitGuardAnalysis {
                 case CondJump jump -> {
                     final Expression cond = evaluate(jump.getGuard(), facts);
                     if (!isFalse(cond)) {
-                        worklist.push(branch(jump.getLabel(), jump.getGuard(), true, facts));
+                        worklist.push(branch(jump.getLabel(), jump.getGuard(), true, facts, executed));
                     }
                     if (!isTrue(cond)) {
-                        worklist.push(branch(jump.getSuccessor(), jump.getGuard(), false, facts));
+                        worklist.push(branch(jump.getSuccessor(), jump.getGuard(), false, facts, executed));
                     }
                 }
                 case Return _ -> { } // Path leaves the function
                 case AbortIf abort when isTrue(evaluate(abort.getCondition(), facts)) -> { } // Path aborts
                 case Assume assume when isFalse(evaluate(assume.getExpr(), facts)) -> { } // Infeasible path
-                default -> worklist.push(new State(e.getSuccessor(), transfer(e, facts, sideEffect)));
+                default -> worklist.push(new State(e.getSuccessor(), transfer(e, facts, executed ? sideEffect : null), executed));
             }
         }
         return true;
     }
 
     // State reached by following a branch whose guard evaluates to "value".
-    private State branch(Event target, Expression guard, boolean value, Map<Register, Expression> facts) {
+    private State branch(Event target, Expression guard, boolean value, Map<Register, Expression> facts, boolean executed) {
         final Map<Register, Expression> branchFacts = new HashMap<>(facts);
         assume(guard, value, branchFacts);
-        return new State(target, branchFacts);
+        return new State(target, branchFacts, executed);
     }
 
-    // Facts after executing "e" (assuming "sideEffect" executes).
-    private Map<Register, Expression> transfer(Event e, Map<Register, Expression> facts, Event sideEffect) {
+    // Facts after executing "e". "executedSideEffect" is the side effect if it was executed on the path, or null.
+    private Map<Register, Expression> transfer(Event e, Map<Register, Expression> facts, Event executedSideEffect) {
         final Map<Register, Expression> nextFacts = new HashMap<>(facts);
         if (e instanceof RegWriter writer) {
             final Register reg = writer.getResultRegister();
             final Expression value = switch (e) {
                 case Local local -> evaluate(local.getExpr(), facts);
-                case ExecutionStatus status when status.getStatusEvent() == sideEffect ->
+                case ExecutionStatus status when executedSideEffect != null && status.getStatusEvent() == executedSideEffect ->
                         expressions.makeGeneralZero(reg.getType());
                 default -> null;
             };
