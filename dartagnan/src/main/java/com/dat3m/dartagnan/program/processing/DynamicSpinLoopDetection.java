@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.ExitImplicationAnalysis;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
@@ -49,6 +50,10 @@ import java.util.Set;
 
 
     NOTE: This pass is required to detect termination violations involving side-effect-free spinning.
+
+    If a loop has no written live registers and every global side effect implies an exit of the loop,
+    i.e., no path on which the side effect executes reaches the back-jump (see ExitImplicationAnalysis), then every
+    iteration that reaches the back-jump is side-effect-free and gets cut by the instrumentation above.
  */
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
@@ -122,6 +127,13 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                 writtenLiveRegisters,
                 readRegisters
         ));
+
+        // Check if all global side effects are guaranteed to leave the loop (e.g., successful CAS).
+        if (writtenLiveRegisters.isEmpty() && !loop.globalSideEffects.isEmpty()) {
+            final ExitImplicationAnalysis exitImplicationAnalysis = ExitImplicationAnalysis.forLoop(loop.loopInfo);
+            loop.allSideEffectsImplyExit = loop.globalSideEffects.stream()
+                    .allMatch(exitImplicationAnalysis::impliesExit);
+        }
     }
 
     private void instrumentLoop(LoopData loop) {
@@ -183,8 +195,8 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             );
         }
 
-        // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
-        if (loop.isSideEffectFree()) {
+        // Special case: If every back-jumping iteration is side-effect-free, we can set its unrolling bound to 1.
+        if (loop.isStaticSpinLoop()) {
             final Event loopBound = EventFactory.newLoopBound(expressions.makeOne(types.getIntegerType(32)));
             loop.getStart().insertBefore(loopBound);
         }
@@ -197,7 +209,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
     }
 
     private AnalysisStats collectStats(List<LoopData> loops) {
-        int numStaticSpinLoops = Math.toIntExact(loops.stream().filter(LoopData::isSideEffectFree).count());
+        int numStaticSpinLoops = Math.toIntExact(loops.stream().filter(LoopData::isStaticSpinLoop).count());
         return new AnalysisStats(numStaticSpinLoops);
     }
 
@@ -209,9 +221,11 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         private final List<Event> globalSideEffects = new ArrayList<>();
         private final List<Register> writtenLiveRegisters = new ArrayList<>();
         private final List<Register> writtenLiveOnBackjumpRegisters = new ArrayList<>();
+        private boolean allSideEffectsImplyExit = false;
 
-        public boolean isSideEffectFree() {
-            return writtenLiveRegisters.isEmpty() && globalSideEffects.isEmpty();
+        // Every iteration that reaches the back jump is side-effect-free (and hence cut by the instrumentation).
+        public boolean isStaticSpinLoop() {
+            return writtenLiveRegisters.isEmpty() && (globalSideEffects.isEmpty() || allSideEffectsImplyExit);
         }
 
         private LoopData(LoopAnalysis.LoopInfo loopInfo) {
