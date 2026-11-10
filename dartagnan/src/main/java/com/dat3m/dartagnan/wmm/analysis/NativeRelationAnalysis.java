@@ -136,13 +136,32 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     public void collectDiscrepancies(Set<Relation> relations, Map<Relation, List<EventGraph>> discrepancies) {
         Propagator p = new Propagator();
         Initializer init = getInitializer();
+        // Knowledge of recursively defined relations that is implied by their definitions alone.
+        final Map<Relation, Knowledge> recursiveKnowledge = new HashMap<>();
+        for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(task.getMemoryModel().getRelations()).getSCCs()) {
+            final Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
+            final boolean isRecursive = stratum.size() > 1
+                    || stratum.stream().anyMatch(r -> r.getDependencies().contains(r));
+            if (isRecursive && !Collections.disjoint(stratum, relations)) {
+                recursiveKnowledge.putAll(recomputeRecursiveKnowledge(stratum));
+            }
+        }
         for (Relation r : relations) {
             final IndexedEventGraph may = newGraph(r);
             final IndexedEventGraph must = newGraph(r);
-            if (r.getDependencies().isEmpty()) {
+            if (recursiveKnowledge.containsKey(r)) {
+                may.addAll(recursiveKnowledge.get(r).getMaySet());
+                must.addAll(recursiveKnowledge.get(r).getMustSet());
+            } else if (r.getDependencies().isEmpty()) {
                 final Knowledge k = r.getDefinition().accept(init);
                 may.addAll(k.getMaySet());
                 must.addAll(k.getMustSet());
+            } else if (r.getDefinition() instanceof TransitiveClosure trans) {
+                // The propagator would start from the current knowledge of <r> itself, which may contain
+                // edges obtained by the extended analysis. Those edges are not implied by the operand.
+                final MutableKnowledge k1 = knowledgeMap.get(trans.getOperand());
+                may.addAll(computeTransitiveClosure(newGraph(r), k1.getMaySet(), true));
+                must.addAll(computeTransitiveClosure(newGraph(r), k1.getMustSet(), false));
             } else {
                 for (Relation c : r.getDependencies()) {
                     p.setSource(c);
@@ -157,7 +176,73 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             may.removeAll(getKnowledge(r).getMaySet());
             final IndexedEventGraph mayDiff = may;
             final IndexedEventGraph mustDiff = IndexedEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            discrepancies.computeIfAbsent(r, _ -> new ArrayList<>()).add(IndexedEventGraph.union(mayDiff, mustDiff));
+            final IndexedEventGraph diff = IndexedEventGraph.union(mayDiff, mustDiff);
+            // Edges between contradictory events are already excluded by the encoding of the contradictions.
+            if (!mutex.isEmpty()) {
+                diff.removeAll(mutex);
+                diff.removeAll(mutex.inverse());
+            }
+            discrepancies.computeIfAbsent(r, _ -> new ArrayList<>()).add(diff);
+        }
+    }
+
+    // Recomputes the knowledge of a recursive component from scratch, using the final knowledge of all
+    // relations outside the component but none of the (extended) knowledge of the component itself.
+    private Map<Relation, Knowledge> recomputeRecursiveKnowledge(Set<Relation> stratum) {
+        final Initializer initializer = getInitializer();
+        final Propagator propagator = new Propagator();
+        final Map<Relation, MutableKnowledge> saved = new HashMap<>();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
+        final SequencedMap<Relation, List<Delta>> q = new LinkedHashMap<>();
+        for (Relation r : stratum) {
+            saved.put(r, knowledgeMap.get(r));
+            for (Relation dep : r.getDependencies()) {
+                dependents.computeIfAbsent(dep, _ -> new ArrayList<>()).add(r.getDefinition());
+            }
+        }
+        try {
+            for (Relation r : stratum) {
+                final MutableKnowledge k = r.getDefinition().accept(initializer);
+                knowledgeMap.put(r, new MutableKnowledge(newGraph(r), newGraph(r)));
+                q.computeIfAbsent(r, _ -> new ArrayList<>()).add(new Delta(k.getMaySet(), k.getMustSet()));
+            }
+            // Contributions of dependencies outside the component
+            for (Relation r : stratum) {
+                for (Relation dep : r.getDependencies()) {
+                    if (stratum.contains(dep)) {
+                        continue;
+                    }
+                    propagator.setSource(dep);
+                    propagator.setMay(knowledgeMap.get(dep).getMaySet());
+                    propagator.setMust(knowledgeMap.get(dep).getMustSet());
+                    q.computeIfAbsent(r, _ -> new ArrayList<>()).add(r.getDefinition().accept(propagator));
+                }
+            }
+            while (!q.isEmpty()) {
+                final Map.Entry<Relation, List<Delta>> next = q.pollFirstEntry();
+                final Relation relation = next.getKey();
+                final Delta toAdd = combine(next.getValue());
+                if (relation.getDefinition() instanceof Difference difference) {
+                    final MutableKnowledge k = knowledgeMap.get(difference.getSubtrahend());
+                    toAdd.may.removeAll(k.getMustSet());
+                    toAdd.must.removeAll(k.getMaySet());
+                }
+                final Delta delta = joinSet(knowledgeMap.get(relation), toAdd);
+                if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                    continue;
+                }
+                propagator.setSource(relation);
+                propagator.setMay(delta.may);
+                propagator.setMust(delta.must);
+                for (Definition c : dependents.getOrDefault(relation, List.of())) {
+                    q.computeIfAbsent(c.getDefinedRelation(), _ -> new ArrayList<>()).add(c.accept(propagator));
+                }
+            }
+            final Map<Relation, Knowledge> result = new HashMap<>();
+            stratum.forEach(r -> result.put(r, knowledgeMap.get(r)));
+            return result;
+        } finally {
+            knowledgeMap.putAll(saved);
         }
     }
 
@@ -286,15 +371,32 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         // repeat until convergence
         while (!q.isEmpty()) {
             final Map.Entry<Relation, List<ExtendedDelta>> next = q.pollFirstEntry();
-            Relation relation = next.getKey();
+            final Relation relation = next.getKey();
             logger.trace("Extended knowledge update for '{}'", relation);
-            MutableKnowledge knowledge = knowledgeMap.get(relation);
-            ExtendedDelta delta = join(knowledge, next.getValue());
+            final MutableKnowledge knowledge = knowledgeMap.get(relation);
+            final IndexedEventGraph contradictions = new IndexedEventGraph(allEvents);
+            final ExtendedDelta delta = join(knowledge, next.getValue(), contradictions);
+            if (!contradictions.isEmpty()) {
+                // The events of a contradiction cannot both be executed, so no relation can relate them.
+                for (Relation r : memoryModel.getRelations()) {
+                    final EventGraph may = knowledgeMap.get(r).getMaySet();
+                    final IndexedEventGraph d = newGraph(r);
+                    contradictions.apply((x, y) -> {
+                        if (may.contains(x, y)) {
+                            d.add(x, y);
+                        }
+                        if (may.contains(y, x)) {
+                            d.add(y, x);
+                        }
+                    });
+                    if (!d.isEmpty()) {
+                        q.computeIfAbsent(r, _ -> new ArrayList<>()).add(new ExtendedDelta(d, newGraph(r)));
+                    }
+                }
+            }
             if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
                 continue;
             }
-            mutex.addAll(IndexedEventGraph.difference(delta.enabled, knowledge.getMaySet()));
-            mutex.addAll(IndexedEventGraph.intersection(delta.disabled, knowledge.getMustSet()));
             for (Constraint c : dependents.getOrDefault(relation, List.of())) {
                 logger.trace("Extended propagation from '{}' to '{}'", relation, c);
                 for (Map.Entry<Relation, ExtendedDelta> e :
@@ -336,7 +438,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return diff;
     }
 
-    private ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l) {
+    private ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l, IndexedEventGraph newContradictions) {
         verify(!l.isEmpty(), "empty update in extended analysis");
         final IndexedEventGraph disableSet = IndexedEventGraph.union(l.stream().map(d -> d.disabled)
                 .toArray(IndexedEventGraph[]::new));
@@ -345,7 +447,17 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         disableSet.retainAll(k.getMaySet());
         k.getMaySet().removeAll(disableSet);
         enableSet.removeAll(k.getMustSet());
+        // Enabled edges outside the may-set are contradictions, i.e., their events cannot both be executed.
+        // We record them as such instead of adding them to the must-set (the caller disables them in all relations).
+        newContradictions.addAll(IndexedEventGraph.difference(enableSet, k.getMaySet()));
+        enableSet.retainAll(k.getMaySet());
         k.getMustSet().addAll(enableSet);
+        // Disabled must-edges are contradictions as well. They are removed from the must-set, which keeps it a
+        // subset of the may-set.
+        newContradictions.addAll(IndexedEventGraph.intersection(disableSet, k.getMustSet()));
+        k.getMustSet().removeAll(disableSet);
+        newContradictions.removeAll(mutex);
+        mutex.addAll(newContradictions);
         return new ExtendedDelta(disableSet, enableSet);
     }
 
@@ -1164,14 +1276,35 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return Map.of();
         }
 
+        private void merge(Map<Relation, ExtendedDelta> map, Relation rel, EventGraph d, EventGraph e) {
+            if (d.isEmpty() && e.isEmpty()) {
+                return;
+            }
+            final ExtendedDelta delta = map.computeIfAbsent(rel, r -> new ExtendedDelta(newGraph(r), newGraph(r)));
+            delta.disabled.addAll(d);
+            delta.enabled.addAll(e);
+        }
+
+        // Edges of 'edges' that no operand of 'operands' other than 'operand' can contain.
+        private IndexedEventGraph enabledOnlyIn(Relation operand, List<Relation> operands, IndexedEventGraph edges) {
+            final IndexedEventGraph e = newGraph(edges);
+            for (Relation other : operands) {
+                if (!other.equals(operand) && !e.isEmpty()) {
+                    e.removeAll(knowledgeMap.get(other).getMaySet());
+                }
+            }
+            return e;
+        }
+
         @Override
         public Map<Relation, ExtendedDelta> visitUnion(Union union) {
             final Relation rel = union.getDefinedRelation();
             final List<Relation> operands = union.getOperands();
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
+                // An enabled edge of the union is enabled in an operand, if all other operands exclude it.
                 for (Relation o : operands) {
-                    map.put(o, new ExtendedDelta(disabled, newGraph(rel)));
+                    map.put(o, new ExtendedDelta(disabled, enabledOnlyIn(o, operands, enabled)));
                 }
             }
             if (operands.contains(origin)) {
@@ -1180,6 +1313,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     d.removeAll(knowledgeMap.get(operand).getMaySet());
                 }
                 map.put(rel, new ExtendedDelta(d, enabled));
+                // A disabled operand edge may leave a single operand that can still provide an enabled union edge.
+                final IndexedEventGraph candidates = IndexedEventGraph.intersection(disabled, knowledgeMap.get(rel).getMustSet());
+                if (!candidates.isEmpty()) {
+                    for (Relation o : operands) {
+                        if (!o.equals(origin)) {
+                            final IndexedEventGraph e = enabledOnlyIn(o, operands, candidates);
+                            if (!e.isEmpty()) {
+                                map.put(o, new ExtendedDelta(newGraph(o), e));
+                            }
+                        }
+                    }
+                }
             }
             return map;
         }
@@ -1206,6 +1351,23 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .reduce(IndexedEventGraph::intersection)
                         .orElseThrow();
                 map.put(rel, new ExtendedDelta(disabled, e));
+                // An operand edge that became enabled while the intersection excludes it:
+                // If all operands but one are enabled, the remaining operand must exclude it.
+                final IndexedEventGraph candidates = IndexedEventGraph.difference(enabled, knowledgeMap.get(rel).getMaySet());
+                if (!candidates.isEmpty()) {
+                    for (Relation o : operands) {
+                        if (o.equals(origin)) {
+                            continue;
+                        }
+                        final IndexedEventGraph d = newGraph(candidates);
+                        for (Relation other : operands) {
+                            if (!other.equals(o) && !d.isEmpty()) {
+                                d.retainAll(knowledgeMap.get(other).getMustSet());
+                            }
+                        }
+                        merge(map, o, d, EventGraph.empty());
+                    }
+                }
             }
             return map;
         }
@@ -1218,9 +1380,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(r0)) {
                 map.put(r1, new ExtendedDelta(IndexedEventGraph.difference(disabled, knowledgeMap.get(r2).getMaySet()), enabled));
+                // r1(x,y) and not r0(x,y) implies r2(x,y); r0(x,y) implies not r2(x,y)
+                map.put(r2, new ExtendedDelta(enabled, IndexedEventGraph.intersection(disabled, knowledgeMap.get(r1).getMustSet())));
             }
             if (origin.equals(r1)) {
                 map.put(r0, new ExtendedDelta(disabled, IndexedEventGraph.difference(enabled, knowledgeMap.get(r2).getMaySet())));
+                // r1(x,y) and not r0(x,y) implies r2(x,y)
+                map.put(r2, new ExtendedDelta(newGraph(r2), IndexedEventGraph.difference(enabled, knowledgeMap.get(r0).getMaySet())));
             }
             if (origin.equals(r2)) {
                 MutableKnowledge k1 = knowledgeMap.get(r1);
@@ -1294,10 +1460,44 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 }
             }
 
+            // An enabled edge r0(x,z) with a single witness y (r1(x,y) and r2(y,z)) enables both r1(x,y) and r2(y,z).
+            // Candidates are new enabled edges of r0 and enabled edges of r0 whose witnesses got disabled.
+            final IndexedEventGraph witnessCandidates = newGraphWithDomain(k0.getMustSet());
+            if (origin.equals(r0)) {
+                witnessCandidates.addAll(enabled);
+            }
+            if (!disabled.isEmpty() && (origin.equals(r1) || origin.equals(r2))) {
+                final EventGraph mustIn0 = k0.getMustSet().inverse();
+                if (origin.equals(r1)) {
+                    disabled.getDomain().forEach(x -> witnessCandidates.addRange(x, k0.getMustSet().getRange(x)));
+                }
+                if (origin.equals(r2)) {
+                    disabled.getRange().forEach(z -> mustIn0.getRange(z).forEach(x -> witnessCandidates.add(x, z)));
+                }
+            }
+            final IndexedEventGraph e1 = newGraph(r1);
+            final IndexedEventGraph e2 = newGraph(r2);
+            if (!witnessCandidates.isEmpty()) {
+                final EventGraph mayIn2 = k2.getMaySet().inverse();
+                witnessCandidates.apply((x, z) -> {
+                    final Set<Event> witnesses = SetUtil.intersection(k1.getMaySet().getRange(x), mayIn2.getRange(z));
+                    if (witnesses.size() == 1) {
+                        final Event y = witnesses.iterator().next();
+                        // r1(x,y) is only guaranteed if z is executed whenever x and y are
+                        if (exec.isImplied(x, z) || exec.isImplied(y, z)) {
+                            e1.add(x, y);
+                        }
+                        if (exec.isImplied(z, x) || exec.isImplied(y, x)) {
+                            e2.add(y, z);
+                        }
+                    }
+                });
+            }
+
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             map.put(r0, new ExtendedDelta(d0, e0));
-            map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, newGraph(r1))).disabled.addAll(d1);
-            map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, newGraph(r2))).disabled.addAll(d2);
+            merge(map, r1, d1, e1);
+            merge(map, r2, d2, e2);
             return map;
         }
 
@@ -1332,7 +1532,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final Relation r0 = inv.getDefinedRelation();
             final Relation r1 = inv.getOperand();
             if (origin.equals(r0)) {
-                return Map.of(r1, new ExtendedDelta(disabled.inverse(), newGraphWithDomain(disabled)));
+                return Map.of(r1, new ExtendedDelta(disabled.inverse(), enabled.inverse()));
             }
             if (origin.equals(r1)) {
                 return Map.of(r0, new ExtendedDelta(disabled.inverse(), enabled.inverse()));
@@ -1416,9 +1616,44 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 });
             }
+            // An enabled edge r0(x,z) whose first (last) step can only be r1(x,y) (r1(y,z)) enables that step.
+            // Candidates are new enabled edges of r0 and enabled edges of r0 whose paths got disabled.
+            final IndexedEventGraph pathCandidates = newGraphWithDomain(k0.getMustSet());
+            if (origin.equals(r0)) {
+                pathCandidates.addAll(enabled);
+            }
+            if (!disabled.isEmpty()) {
+                final EventGraph mustIn0 = k0.getMustSet().inverse();
+                disabled.getDomain().forEach(x -> pathCandidates.addRange(x, k0.getMustSet().getRange(x)));
+                disabled.getRange().forEach(z -> mustIn0.getRange(z).forEach(x -> pathCandidates.add(x, z)));
+            }
+            final IndexedEventGraph e1 = newGraphWithDomain(d1);
+            if (!pathCandidates.isEmpty()) {
+                final EventGraph may0 = k0.getMaySet();
+                final EventGraph mayIn1 = k1.getMaySet().inverse();
+                pathCandidates.apply((x, z) -> {
+                    if (Tuple.isLoop(x, z)) {
+                        return;
+                    }
+                    final Set<Event> first = SetUtil.filter(k1.getMaySet().getRange(x), y -> y == z || may0.contains(y, z));
+                    if (first.size() == 1) {
+                        final Event y = first.iterator().next();
+                        if (y == z || exec.isImplied(x, z) || exec.isImplied(y, z)) {
+                            e1.add(x, y);
+                        }
+                    }
+                    final Set<Event> last = SetUtil.filter(mayIn1.getRange(z), y -> y == x || may0.contains(x, y));
+                    if (last.size() == 1) {
+                        final Event y = last.iterator().next();
+                        if (y == x || exec.isImplied(z, x) || exec.isImplied(y, x)) {
+                            e1.add(y, z);
+                        }
+                    }
+                });
+            }
             return Map.of(
                     r0, new ExtendedDelta(d0, e0),
-                    r1, new ExtendedDelta(d1, newGraphWithDomain(d1)));
+                    r1, new ExtendedDelta(d1, e1));
         }
 
         @Override
