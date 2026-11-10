@@ -1770,6 +1770,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             this(type, alignment, size < 0 ? size : alignTo(size, alignment.abi()));
         }
 
+        public int allocationSize() {
+            // TypeFactory pads aggregates to the natural alignment of their fields rather than to the data layout's.
+            // Strides and allocations derived from LLVM's size must not be smaller than TypeFactory's size.
+            // TODO: Remove once aggregate types can carry an explicit size.
+            final int naturalSize = TypeFactory.getInstance().getMemorySizeInBytes(type);
+            if (0 <= allocationSize && allocationSize < naturalSize) {
+                throw new ParsingException("Unsupported struct layout: data layout requires %d bytes, "
+                        + "but natural layout requires %d bytes for %s", allocationSize, naturalSize, type);
+            }
+            return allocationSize;
+        }
+
         private Type allocationType() {
             final TypeFactory types = TypeFactory.getInstance();
             final int size = allocationSize();
@@ -1846,14 +1858,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     fields.stream().map(ParsedType::type).toList(), offsets);
             final var alignment = new Alignment(abi, Math.max(abi, aggregateAlignment.preferred()));
             final int allocationSize = alignTo(offset, abi);
-            // TypeFactory pads aggregates to the natural alignment of their fields rather than to the data layout's.
-            // Strides and allocations derived from LLVM's size must not be smaller than TypeFactory's size.
-            // TODO: Remove once aggregate types can carry an explicit size.
-            final int naturalSize = TypeFactory.getInstance().getMemorySizeInBytes(type);
-            if (0 <= allocationSize && allocationSize < naturalSize) {
-                throw new ParsingException("Unsupported struct layout: data layout requires %d bytes, "
-                        + "but natural layout requires %d bytes for %s", allocationSize, naturalSize, type);
-            }
             return new ParsedType(type, alignment, allocationSize);
         }
 

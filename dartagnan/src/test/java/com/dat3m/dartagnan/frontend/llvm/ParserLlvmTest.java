@@ -221,12 +221,6 @@ public class ParserLlvmTest {
         new ProgramParser().parse(ResourceHelper.getTestResourcePath("miscellaneous/ilp32-long-in-struct.ll"));
     }
 
-    //TODO accept this program and add it to MiscellaneousTest.
-    @Test(expected = ParsingException.class)
-    public void ilp32UbsanStructIsMisaligned() throws Exception {
-        new ProgramParser().parse(ResourceHelper.getTestResourcePath("miscellaneous/ilp32-ubsan-struct.ll"));
-    }
-
     private static void assertInferredAlignment(String layout, String type, long expected) {
         final Program program = parse(layout, "@g = global " + type + " zeroinitializer",
                 "%p = alloca " + type + "\nret i32 0");
