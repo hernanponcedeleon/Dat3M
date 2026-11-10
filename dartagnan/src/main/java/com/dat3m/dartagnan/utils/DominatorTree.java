@@ -97,6 +97,7 @@ public final class DominatorTree<TNode> {
                     parentMap.put(succ, cur);
                     cur = succ;
                     childrenTraversed = false;
+                    break;
                 }
             }
             if (childrenTraversed) {
