@@ -113,7 +113,9 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"alias-shrinkToBounds", IMM, FAIL, 1},
                 {"zext", IMM, PASS, 1},
                 {"fallThroughCondJump", IMM, PASS, 1},
-                {"fallThroughCondJump_f", IMM, FAIL, 1}
+                {"fallThroughCondJump_f", IMM, FAIL, 1},
+                {"ilp32-long-cas", IMM, PASS, 1},
+                {"ilp32-ubsan-struct", IMM, PASS, 1},
         });
     }
 }

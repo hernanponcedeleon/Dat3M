@@ -36,7 +36,6 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, Expression alignment, boolean isHeapAllocation,
                  boolean doesZeroOutMemory) {
-        Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getPointerType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         Preconditions.checkArgument(alignment.getType() instanceof IntegerType);
         this.resultRegister = resultRegister;

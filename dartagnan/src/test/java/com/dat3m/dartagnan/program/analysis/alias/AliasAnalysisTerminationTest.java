@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.frontend.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -34,7 +33,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
 @RunWith(Parameterized.class)
 public class AliasAnalysisTerminationTest {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Rule
@@ -107,15 +105,15 @@ public class AliasAnalysisTerminationTest {
 
     private Register loadAndIncrease(ProgramBuilder builder, int threadId, String name,
             MemoryObject source, MemoryObject destination) {
-        Register pointer = builder.getOrNewRegister(threadId, name, types.getArchType());
-        Expression next = expressions.makeAdd(pointer, expressions.makeValue(8, types.getArchType()));
+        Register pointer = builder.getOrNewRegister(threadId, name, builder.getArchType());
+        Expression next = expressions.makeAdd(pointer, expressions.makeValue(8, builder.getArchType()));
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newLoad(pointer, source));
         builder.addChildWithoutSourceLoc(threadId, EventFactory.newStore(destination, next));
         return pointer;
     }
 
     private Store addStore(ProgramBuilder builder, int threadId, Expression address) {
-        Store store = EventFactory.newStore(address, expressions.makeZero(types.getArchType()));
+        Store store = EventFactory.newStore(address, expressions.makeZero(builder.getArchType()));
         builder.addChildWithoutSourceLoc(threadId, store);
         return store;
     }

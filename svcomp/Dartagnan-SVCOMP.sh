@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-    echo "No input file supplied"
-    exit 0
+    echo "Usage: $0 <property.prp> <program.c|program.i> [ILP32|LP64]" >&2
+    exit 1
 fi
 
 export DAT3M_HOME=$(pwd)
@@ -16,8 +16,18 @@ else
         witnesspath=$2
         shift 2
     fi
+    if [ $# -ne 2 ] && [ $# -ne 3 ]; then
+        echo "Usage: $0 <property.prp> <program.c|program.i> [ILP32|LP64]" >&2
+        exit 1
+    fi
     propertypath=$1
     programpath=$2
+
+    case "${3:-LP64}" in
+        ILP32) export DAT3M_COMPILER_OPTIONS="-m32" ;;
+        LP64) export DAT3M_COMPILER_OPTIONS="-m64" ;;
+        *) echo "Unsupported data model: ${3} (expected ILP32 or LP64)" >&2; exit 1 ;;
+    esac
 
     cmd=(svcomp/target/svcomp)
     compilation_pipeline=svcomp/compilation.yml
