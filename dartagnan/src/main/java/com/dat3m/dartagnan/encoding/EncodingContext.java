@@ -64,6 +64,7 @@ public final class EncodingContext {
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
+    private final Map<BlockingEvent, BooleanFormula> blockedVariables = new HashMap<>();
 
     private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
     private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
@@ -143,12 +144,13 @@ public final class EncodingContext {
         return bmgr.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
     }
 
-    public BooleanFormula blocked(BlockingEvent barrier) {
-        return bmgr.and(controlFlow(barrier), bmgr.not(execution(barrier)));
+    // NOTE: We enforce "blocked(e) => exec(e)", so a blocked event must be executed.
+    public BooleanFormula blocked(BlockingEvent event) {
+        return blockedVariables.get(event);
     }
 
-    public BooleanFormula unblocked(BlockingEvent barrier) {
-        return execution(barrier);
+    public BooleanFormula unblocked(BlockingEvent event) {
+        return bmgr.not(blocked(event));
     }
 
     public BooleanFormula sync(NamedBarrier event) {
@@ -332,6 +334,9 @@ public final class EncodingContext {
         for (Event e : task.getProgram().getThreadEvents()) {
             if (e instanceof NamedBarrier b) {
                 syncVariables.put(b, bmgr.makeVariable("sync " + e.getGlobalId()));
+            }
+            if (e instanceof BlockingEvent b) {
+                blockedVariables.put(b, bmgr.makeVariable("blocked " + e.getGlobalId()));
             }
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
