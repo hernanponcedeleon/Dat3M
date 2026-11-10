@@ -48,9 +48,14 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     protected Task.TaskBuilder getTaskBuilder() { return Task.builder(); }
 
-    protected abstract Path getProgramPath();
+    // Override either the path or the parsed object (e.g., to parse from a string).
+    protected Path getProgramPath() { throw new UnsupportedOperationException(); }
 
-    protected abstract Path getTargetWmmPath();
+    protected Path getTargetWmmPath() { throw new UnsupportedOperationException(); }
+
+    protected Program getProgram() throws Exception { return TestHelper.parseProgram(getProgramPath()); }
+
+    protected Wmm getTargetWmm() throws Exception { return TestHelper.parseWmm(getTargetWmmPath()); }
 
     protected abstract EnumSet<Property> getTestedProperties();
 
@@ -72,8 +77,8 @@ public abstract class AbstractVerificationTaskSolverTest {
 
     private VerificationTask getTask() throws Exception {
         final Task.TaskBuilder task = getTaskBuilder();
-        final Program program = TestHelper.parseProgram(getProgramPath());
-        final Wmm targetModel = TestHelper.parseWmm(getTargetWmmPath());
+        final Program program = getProgram();
+        final Wmm targetModel = getTargetWmm();
         final EnumSet<Property> properties = getTestedProperties();
         return task.build(program, targetModel, properties);
     }
