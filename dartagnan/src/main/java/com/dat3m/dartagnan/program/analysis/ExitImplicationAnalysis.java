@@ -43,15 +43,20 @@ public class ExitImplicationAnalysis {
     private final Event header;
     private final Event backJump;
 
-    private ExitImplicationAnalysis(LoopAnalysis.LoopInfo loop) {
-        final LoopAnalysis.LoopIterationInfo iteration = loop.iterations().getFirst();
+    private ExitImplicationAnalysis(LoopAnalysis.LoopIterationInfo iteration) {
         this.body = new HashSet<>(iteration.computeBody());
         this.header = iteration.getIterationStart();
         this.backJump = iteration.getIterationEnd();
     }
 
     public static ExitImplicationAnalysis forLoop(LoopAnalysis.LoopInfo loop) {
-        return new ExitImplicationAnalysis(loop);
+        return new ExitImplicationAnalysis(loop.iterations().getFirst());
+    }
+
+    // Also works on unrolled loops: the iteration's last event plays the role of the back-jump, i.e., reaching it
+    // counts as continuing with the next iteration (or hitting the unrolling bound).
+    public static ExitImplicationAnalysis forIteration(LoopAnalysis.LoopIterationInfo iteration) {
+        return new ExitImplicationAnalysis(iteration);
     }
 
     // "executed" tracks whether the queried event has been executed on the current path.
