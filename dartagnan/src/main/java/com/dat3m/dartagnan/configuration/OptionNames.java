@@ -74,6 +74,8 @@ public class OptionNames {
 
     // Refinement Options
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
+    public static final String EAGER_APPROX_DEPTH = "refinement.eagerApproxDepth";
+    public static final String EDGE_LEARNING = "refinement.edgeLearning";
 
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";

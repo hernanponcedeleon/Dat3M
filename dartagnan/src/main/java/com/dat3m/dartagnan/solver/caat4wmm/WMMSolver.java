@@ -11,7 +11,19 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.model.ExecutionModel;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.Set;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
+import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
+import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+
+import java.util.*;
 
 /*
     This is our domain-specific bridging component that specializes the CAATSolver to the WMM setting.
@@ -32,6 +44,58 @@ public class WMMSolver {
 
     public static WMMSolver withContext(EncodingContext context) throws InvalidConfigurationException {
         return new WMMSolver(context);
+    }
+
+    // Edge learning: for axioms ax(R) that are (eagerly) encoded as ax(R' | F) with F initially free,
+    // we learn "reason(e) => F(e)" for the edges e of violations of ax(R) instead of blocking whole violations.
+    private final Map<Axiom, Relation> learnedRelations = new HashMap<>();
+    private final Reasoner edgeReasoner = new Reasoner();
+
+    public void setLearnedRelations(Map<Axiom, Relation> learned) {
+        learnedRelations.clear();
+        learnedRelations.putAll(learned);
+    }
+
+    private Set<Conjunction<CoreLiteral>> computeEdgeLearningReasons() {
+        final EventDomain domain = executionGraph.getDomain();
+        final Set<Conjunction<CoreLiteral>> coreReasons = new HashSet<>();
+        final List<Conjunction<CAATLiteral>> otherReasons = new ArrayList<>();
+        for (Map.Entry<Axiom, Constraint> entry : executionGraph.getAxiomConstraintMap().entrySet()) {
+            final Constraint constraint = entry.getValue();
+            if (!constraint.checkForViolations()) {
+                continue;
+            }
+            final Relation learned = learnedRelations.get(entry.getKey());
+            if (learned == null) {
+                otherReasons.addAll(edgeReasoner.computeViolationReasons(constraint).getCubes());
+                continue;
+            }
+            final CAATPredicate pred = constraint.getConstrainedPredicate();
+            final Set<Derivable> seen = new HashSet<>();
+            for (Collection<? extends Derivable> violation : constraint.getViolations()) {
+                for (Derivable d : violation) {
+                    if (!seen.add(d)) {
+                        continue;
+                    }
+                    final Event e1;
+                    final Event e2;
+                    if (d instanceof Edge edge) {
+                        e1 = domain.getObjectById(edge.getFirst()).getEvent();
+                        e2 = domain.getObjectById(edge.getSecond()).getEvent();
+                    } else if (d instanceof Element ele) {
+                        e1 = e2 = domain.getObjectById(ele.getId()).getEvent();
+                    } else {
+                        continue;
+                    }
+                    final Conjunction<CAATLiteral> edgeReason = edgeReasoner.computeReason(pred, d);
+                    coreReasons.addAll(reasoner.toCoreReasons(edgeReason, new RelLiteral(learned, e1, e2, false)));
+                }
+            }
+        }
+        if (!otherReasons.isEmpty()) {
+            coreReasons.addAll(reasoner.toCoreReasons(new DNF<>(otherReasons)));
+        }
+        return coreReasons;
     }
 
     public ExecutionModel getExecution() {
@@ -59,7 +123,9 @@ public class WMMSolver {
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
             curTime = System.currentTimeMillis();
-            Set<Conjunction<CoreLiteral>> coreReasons = reasoner.toCoreReasons(caatResult.getBaseReasons());
+            Set<Conjunction<CoreLiteral>> coreReasons = learnedRelations.isEmpty()
+                    ? reasoner.toCoreReasons(caatResult.getBaseReasons())
+                    : computeEdgeLearningReasons();
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();

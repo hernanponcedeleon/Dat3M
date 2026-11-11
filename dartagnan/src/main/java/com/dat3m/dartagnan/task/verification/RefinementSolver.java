@@ -30,8 +30,13 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -80,6 +85,23 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;
+
+    @Option(name=EAGER_APPROX_DEPTH,
+            description="Eagerly encodes, for every lazily checked axiom, the same axiom over an under-approximation " +
+                    "of its relation that contains only derivations up to the given composition depth " +
+                    "(no transitive closures / recursion). Negative values disable this.",
+            secure=true)
+    private int eagerApproxDepth = -1;
+
+    @Option(name=EDGE_LEARNING,
+            description="Requires refinement.eagerApproxDepth >= 0. Encodes ax(R' | F) instead of ax(R') where F is a " +
+                    "free relation, and learns derivations of individual R-edges into F during refinement.",
+            secure=true)
+    private boolean edgeLearning = false;
+
+    // Edge learning: original axiom -> learned relation F, and (F, R'|F, R) for may-set restriction.
+    private final Map<Axiom, Relation> learnedRelations = new HashMap<>();
+    private final List<Relation[]> learnedRestrictions = new ArrayList<>();
 
     // ================================================================================================================
     // Data classes
@@ -158,10 +180,14 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
         instrumentPolaritySeparation(task.getMemoryModel());
+        if (eagerApproxDepth >= 0) {
+            instrumentEagerApproximation(task.getMemoryModel(), eagerApproxDepth);
+        }
 
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        restrictLearnedRelations(analysisContext);
         performIntervalAnalysis(task, analysisContext, config);
         return analysisContext;
     }
@@ -185,6 +211,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context);
+        solver.setLearnedRelations(learnedRelations);
         final Refiner refiner = Refiner.newInstance();
         final Property.Type propertyType = Property.getCombinedType(task.getProperties(), task);
 
@@ -560,6 +587,209 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         If we want to get all violations of an execution, we could take the found execution (under the new memory model)
         and simply recompute it under the original memory model, giving us the precise violations.
      */
+    /*
+        "Vertical" cutting: instead of choosing which relations/axioms to encode eagerly (horizontal cut),
+        we eagerly encode the simple derivations of every lazily checked axiom and leave the complex ones
+        (deep compositions, transitive closures, recursion) to the CAAT solver.
+
+        For each non-negated, non-flagged axiom ax(R) that is not cut, we construct an under-approximation
+        R' of R (R' \subseteq R in every execution) and add a cut axiom ax(R').
+        Soundness: ax is monotone (acyclic/empty/irreflexive), so ax(R) implies ax(R').
+        Hence the new axiom does not remove any consistent execution, while the original ax(R) is still
+        checked lazily (completeness is unchanged).
+        If R itself is simple, we just cut the original axiom.
+     */
+    private void instrumentEagerApproximation(Wmm wmm, int depth) {
+        final EagerApproximator approximator = new EagerApproximator(wmm);
+        int cut = 0;
+        int approximated = 0;
+        for (Axiom ax : List.copyOf(wmm.getAxioms())) {
+            if (ax.isNegated() || ax.isFlagged() || ax.hasMetadata(Wmm.CutAnnotation.class)) {
+                continue;
+            }
+            final Relation rel = ax.getRelation();
+            if (approximator.isSimple(rel, depth)) {
+                logger.debug("Eager approximation: cutting {}", ax.getNameOrTerm());
+                ax.setMetadata(Wmm.CutAnnotation.get());
+                cut++;
+                continue;
+            }
+            Relation approx = approximator.approximate(rel, depth);
+            if (edgeLearning) {
+                final Relation learned = wmm.addDefinition(new Free(wmm.newRelation("learned(" + ax.getNameOrTerm() + ")", rel.getArity())));
+                final Relation union = approx == null ? learned
+                        : wmm.addDefinition(new Union(wmm.newRelation(rel.getArity()), approx, learned));
+                learnedRelations.put(ax, learned);
+                learnedRestrictions.add(new Relation[] { learned, union, rel });
+                approx = union;
+            }
+            if (approx == null) {
+                continue;
+            }
+            final Axiom approxAx = switch (ax) {
+                case Acyclicity _ -> new Acyclicity(approx);
+                case Irreflexivity _ -> new Irreflexivity(approx);
+                case Emptiness _ -> new Emptiness(approx);
+                default -> null;
+            };
+            if (approxAx == null) {
+                continue;
+            }
+            approxAx.setName("approx(" + ax.getNameOrTerm() + ")");
+            logger.debug("Eager approximation: approximating {}", ax.getNameOrTerm());
+            approxAx.setMetadata(Wmm.CutAnnotation.get());
+            wmm.addConstraint(approxAx);
+            approximated++;
+        }
+        logger.info("Eager approximation (depth {}): cut {} axioms, added {} approximated axioms.",
+                depth, cut, approximated);
+    }
+
+    // The learned relations F are free, i.e., their may-sets contain all pairs of events.
+    // Since we only ever learn edges of the original relation R, we restrict the may-sets of F and R'|F to that of R.
+    // This is sound: the solver can always choose F \subseteq R.
+    private void restrictLearnedRelations(Context analysisContext) {
+        if (learnedRestrictions.isEmpty()) {
+            return;
+        }
+        final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
+        for (Relation[] triple : learnedRestrictions) {
+            final EventGraph allowed = ra.getKnowledge(triple[2]).getMaySet();
+            for (int i = 0; i < 2; i++) {
+                if (!(ra.getKnowledge(triple[i]).getMaySet() instanceof MutableEventGraph may)) {
+                    throw new UnsupportedOperationException("Edge learning requires a mutable relation analysis.");
+                }
+                final List<Event[]> toRemove = new ArrayList<>();
+                may.apply((e1, e2) -> {
+                    if (!allowed.contains(e1, e2)) {
+                        toRemove.add(new Event[] { e1, e2 });
+                    }
+                });
+                toRemove.forEach(p -> may.remove(p[0], p[1]));
+            }
+        }
+    }
+
+    private static final class EagerApproximator {
+        private static final int INF = Integer.MAX_VALUE / 2;
+        private final Wmm wmm;
+        private final Map<Relation, Integer> complexity = new HashMap<>();
+        private final Map<Relation, Map<Integer, Relation>> cache = new HashMap<>();
+
+        EagerApproximator(Wmm wmm) { this.wmm = wmm; }
+
+        boolean isSimple(Relation r, int depth) {
+            return complexity(r) <= depth;
+        }
+
+        // Composition depth of the definition tree (ignoring compositions with set filters);
+        // INF if it contains a transitive closure or recursion.
+        private int complexity(Relation r) {
+            final Integer cached = complexity.get(r);
+            if (cached != null) {
+                return cached;
+            }
+            if (r.isRecursive()) {
+                complexity.put(r, INF);
+                return INF;
+            }
+            complexity.put(r, INF); // guard against cycles
+            final Definition def = r.getDefinition();
+            final List<? extends Relation> deps = def.getConstrainedRelations().subList(1, def.getConstrainedRelations().size());
+            int c = 0;
+            for (Relation dep : deps) {
+                c = Math.max(c, complexity(dep));
+            }
+            if (def instanceof TransitiveClosure) {
+                c = INF;
+            } else if (def instanceof Composition comp && !isFilter(comp.getLeftOperand()) && !isFilter(comp.getRightOperand())) {
+                c = Math.min(INF, c + 1);
+            }
+            complexity.put(r, c);
+            return c;
+        }
+
+        private static boolean isFilter(Relation r) {
+            return r.getDefinition() instanceof SetIdentity;
+        }
+
+        // Returns a relation R' with R' \subseteq r, or null if the approximation is empty.
+        Relation approximate(Relation r, int depth) {
+            if (complexity(r) <= depth) {
+                return r;
+            }
+            if (depth < 0) {
+                return null;
+            }
+            final Map<Integer, Relation> byDepth = cache.computeIfAbsent(r, _ -> new HashMap<>());
+            if (byDepth.containsKey(depth)) {
+                return byDepth.get(depth);
+            }
+            byDepth.put(depth, null); // guard against cycles through recursion
+            final Relation result = r.isRecursive()
+                    ? approximateDefinition(r.getDefinition(), depth - 1)
+                    : approximateDefinition(r.getDefinition(), depth);
+            byDepth.put(depth, result);
+            return result;
+        }
+
+        private Relation approximateDefinition(Definition def, int depth) {
+            if (depth < 0) {
+                return null;
+            }
+            final Relation.Arity arity = def.getDefinedRelation().getArity();
+            return switch (def) {
+                case Union u -> {
+                    final List<Relation> ops = u.getOperands().stream()
+                            .map(o -> approximate(o, depth)).filter(Objects::nonNull).toList();
+                    yield ops.isEmpty() ? null
+                            : ops.size() == 1 ? ops.get(0)
+                            : wmm.addDefinition(new Union(wmm.newRelation(arity), ops.toArray(new Relation[0])));
+                }
+                case Intersection i -> {
+                    final List<Relation> ops = new ArrayList<>();
+                    for (Relation o : i.getOperands()) {
+                        final Relation a = approximate(o, depth);
+                        if (a == null) {
+                            yield null;
+                        }
+                        ops.add(a);
+                    }
+                    yield wmm.addDefinition(new Intersection(wmm.newRelation(arity), ops.toArray(new Relation[0])));
+                }
+                case Composition c -> {
+                    final boolean counts = !isFilter(c.getLeftOperand()) && !isFilter(c.getRightOperand());
+                    final int d = counts ? depth - 1 : depth;
+                    final Relation l = approximate(c.getLeftOperand(), d);
+                    final Relation r = l == null ? null : approximate(c.getRightOperand(), d);
+                    yield (l == null || r == null) ? null
+                            : wmm.addDefinition(new Composition(wmm.newRelation(arity), l, r));
+                }
+                // r+ is approximated by (an approximation of) r
+                case TransitiveClosure tc -> approximate(tc.getOperand(), depth);
+                case Difference diff -> {
+                    final Relation m = approximate(diff.getMinuend(), depth);
+                    yield m == null ? null
+                            : wmm.addDefinition(new Difference(wmm.newRelation(arity), m, diff.getSubtrahend()));
+                }
+                case Inverse inv -> {
+                    final Relation o = approximate(inv.getOperand(), depth);
+                    yield o == null ? null : wmm.addDefinition(new Inverse(wmm.newRelation(arity), o));
+                }
+                case Projection p -> {
+                    final Relation o = approximate(p.getOperand(), depth);
+                    yield o == null ? null : wmm.addDefinition(new Projection(wmm.newRelation(arity), o, p.getDimension()));
+                }
+                case SetIdentity s -> {
+                    final Relation o = approximate(s.getDomain(), depth);
+                    yield o == null ? null : wmm.addDefinition(new SetIdentity(wmm.newRelation(arity), o));
+                }
+                // Anything else (base relations, static relations, products, ...) is kept as is.
+                default -> def.getDefinedRelation();
+            };
+        }
+    }
+
     private void instrumentPolaritySeparation(Wmm wmm) {
         final PolarityAnalysis pa = PolarityAnalysis.of(wmm);
         final List<Difference> negDiff = wmm.getConstraints().stream()

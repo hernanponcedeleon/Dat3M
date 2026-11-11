@@ -109,6 +109,15 @@ public class CoreReasoner {
     }
 
     public Set<Conjunction<CoreLiteral>> toCoreReasons(Conjunction<CAATLiteral> baseReason) {
+        return toCoreReasons(baseReason, null);
+    }
+
+    /*
+        Same as above, but appends <extraLiteral> to the (unreduced) core reason before computing the symmetric orbit,
+        so that the literal gets permuted consistently with the rest of the reason.
+        This is used for edge learning: a reason "R ∧ ¬F(e)" yields the clause "R => F(e)".
+     */
+    public Set<Conjunction<CoreLiteral>> toCoreReasons(Conjunction<CAATLiteral> baseReason, CoreLiteral extraLiteral) {
         final EventDomain domain = executionGraph.getDomain();
 
         // We compute the orbit of <baseReason> under the symmetry group of the program's threads.
@@ -117,7 +126,12 @@ public class CoreReasoner {
         // reductions we can apply to a core reason may not be sound for its symmetric counterparts.
         final Set<List<CoreLiteral>> orbit = new HashSet<>();
         final Deque<List<CoreLiteral>> workqueue = new ArrayDeque<>();
-        workqueue.add(toUnreducedCoreReason(baseReason, domain));
+        final List<CoreLiteral> initial = toUnreducedCoreReason(baseReason, domain);
+        if (extraLiteral != null) {
+            initial.add(extraLiteral);
+        }
+        orbit.add(initial);
+        workqueue.add(initial);
         while (!workqueue.isEmpty()) {
             final List<CoreLiteral> reason = workqueue.removeFirst();
             for (Function<Event, Event> generator : symmGenerators) {
