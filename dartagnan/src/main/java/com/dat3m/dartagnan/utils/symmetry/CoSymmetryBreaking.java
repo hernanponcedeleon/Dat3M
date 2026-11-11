@@ -3,6 +3,13 @@ package com.dat3m.dartagnan.utils.symmetry;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ExitImplicationAnalysis;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -34,9 +41,16 @@ import java.util.*;
     The key is invariant under thread renaming, so sorting the threads of any execution by it yields an equivalent
     execution satisfying all constraints: no symmetry orbit is excluded.
 
-    Level order: we prefer stores that are executed whenever the thread terminates normally (implied by its
-    ThreadReturn events), then plain stores over RMW stores (to order threads by, e.g., the order of their critical
-    sections rather than by their lock acquisition attempts), then stores closer to the middle of the thread.
+    Level order (each criterion breaks ties of the previous ones):
+      (1) stores executed whenever the thread terminates normally (implied by its ThreadReturn events),
+      (2) stores whose value depends on a load from the same address (coherence then ties the rf-edges of that load
+          to the co-order, e.g., "sum++" in a critical section or the "fetch_add" of a ticket lock),
+      (3) among those, RMW stores first (atomicity makes them read from their immediate co-predecessor, so their
+          co-order determines their values); among the others, plain stores first (RMW stores without such a
+          dependency typically record lock acquisition attempts, e.g., an exchange),
+      (4) stores whose execution implies that an enclosing loop exits (e.g., the successful CAS of a retry loop,
+          typically the linearization point), earlier iterations first,
+      (5) stores closer to the middle of the thread.
  */
 public class CoSymmetryBreaking {
 
@@ -46,6 +60,7 @@ public class CoSymmetryBreaking {
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
     private final ExecutionAnalysis exec;
+    private final ReachingDefinitionsAnalysis reachingDefinitions;
     private final Relation co;
 
     public CoSymmetryBreaking(EncodingContext context) {
@@ -53,6 +68,7 @@ public class CoSymmetryBreaking {
         this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
         this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
         this.exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.reachingDefinitions = context.getAnalysisContext().requires(ReachingDefinitionsAnalysis.class);
         this.co = context.getTask().getMemoryModel().getRelation(RelationNameRepository.CO);
     }
 
@@ -118,6 +134,74 @@ public class CoSymmetryBreaking {
         return bmgr.and(enc);
     }
 
+    // Maps each store whose execution implies that (the current iteration of) some enclosing loop exits
+    // to the number of that iteration (in the unrolled program).
+    private Map<Store, Integer> computeLoopExitingStores(Thread thread, List<Store> stores) {
+        final Map<Store, Integer> result = new HashMap<>();
+        final List<LoopAnalysis.LoopInfo> loops;
+        try {
+            loops = LoopAnalysis.onFunction(thread).getLoopsOfFunction(thread);
+        } catch (RuntimeException e) {
+            logger.warn("Could not compute loops of {}: {}", thread, e.getMessage());
+            return result;
+        }
+        for (LoopAnalysis.LoopInfo loop : loops) {
+            for (LoopAnalysis.LoopIterationInfo iteration : loop.iterations()) {
+                if (iteration.getIterationEnd() == null) {
+                    continue;
+                }
+                final Set<Event> body = new HashSet<>(iteration.computeBody());
+                final ExitImplicationAnalysis exitAnalysis = ExitImplicationAnalysis.forIteration(iteration);
+                for (Store w : stores) {
+                    if (body.contains(w) && exitAnalysis.impliesExit(w)) {
+                        result.merge(w, iteration.getIterationNumber(), Math::min);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    // True if the stored value (transitively, through register dependencies) depends on a load from the same address.
+    // Then coherence ties the rf-edges of that load closely to the co-order of the store (e.g., "sum++").
+    private boolean dependsOnLoadFromSameAddress(Store store) {
+        final Deque<RegReader> worklist = new ArrayDeque<>();
+        final Set<Event> visited = new HashSet<>();
+        final Set<Register> valueRegs = store.getMemValue().getRegs();
+        for (Register reg : valueRegs) {
+            for (RegWriter writer : reachingDefinitions.getWriters(store).ofRegister(reg).getMayWriters()) {
+                if (visited.add(writer)) {
+                    if (writer instanceof Load load) {
+                        if (alias.mustAlias(load, store)) {
+                            return true;
+                        }
+                    } else if (writer instanceof RegReader reader) {
+                        worklist.add(reader);
+                    }
+                }
+            }
+        }
+        while (!worklist.isEmpty()) {
+            final RegReader reader = worklist.poll();
+            final ReachingDefinitionsAnalysis.Writers writers = reachingDefinitions.getWriters(reader);
+            for (Register reg : writers.getUsedRegisters()) {
+                for (RegWriter writer : writers.ofRegister(reg).getMayWriters()) {
+                    if (!visited.add(writer)) {
+                        continue;
+                    }
+                    if (writer instanceof Load load) {
+                        if (alias.mustAlias(load, store)) {
+                            return true;
+                        }
+                    } else if (writer instanceof RegReader next) {
+                        worklist.add(next);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     // Stores of the first thread whose symmetric copies must alias, in breaking order.
     private List<Store> computeLevels(List<Thread> threads) {
         final Thread rep = threads.getFirst();
@@ -134,9 +218,24 @@ public class CoSymmetryBreaking {
                 levels.add(w);
             }
         }
+        final Map<Store, Integer> exitIteration = computeLoopExitingStores(rep, levels);
+        final Set<Store> sameAddressDependent = new HashSet<>();
+        for (Store w : levels) {
+            if (dependsOnLoadFromSameAddress(w)) {
+                sameAddressDependent.add(w);
+            }
+        }
+        logger.info("Stores depending on a load from the same address: {}", sameAddressDependent.stream()
+                .map(w -> "E" + w.getGlobalId() + "@" + events.indexOf(w)).toList());
+        logger.info("Loop-exiting stores (with iteration): {}", exitIteration.entrySet().stream()
+                .map(en -> "E" + en.getKey().getGlobalId() + "@" + events.indexOf(en.getKey()) + "#" + en.getValue()).toList());
         levels.sort(Comparator
                 .comparing((Store w) -> !returns.stream().allMatch(r -> exec.isImplied(r, w)))
-                .thenComparing(w -> w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL))
+                .thenComparing((Store w) -> !sameAddressDependent.contains(w))
+                // Among same-address dependent stores, atomic ones (e.g., fetch_add) first; otherwise plain ones first.
+                .thenComparing(w -> sameAddressDependent.contains(w) != (w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL)))
+                .thenComparing((Store w) -> !exitIteration.containsKey(w))
+                .thenComparing(w -> exitIteration.getOrDefault(w, 0))
                 .thenComparingDouble(w -> Math.abs(events.indexOf(w) - middle)));
         return levels;
     }
