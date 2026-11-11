@@ -41,16 +41,16 @@ import java.util.*;
     The key is invariant under thread renaming, so sorting the threads of any execution by it yields an equivalent
     execution satisfying all constraints: no symmetry orbit is excluded.
 
-    Level order (each criterion breaks ties of the previous ones):
-      (1) stores executed whenever the thread terminates normally (implied by its ThreadReturn events),
-      (2) stores whose value depends on a load from the same address (coherence then ties the rf-edges of that load
-          to the co-order, e.g., "sum++" in a critical section or the "fetch_add" of a ticket lock),
-      (3) among those, RMW stores first (atomicity makes them read from their immediate co-predecessor, so their
-          co-order determines their values); among the others, plain stores first (RMW stores without such a
-          dependency typically record lock acquisition attempts, e.g., an exchange),
-      (4) stores whose execution implies that an enclosing loop exits (e.g., the successful CAS of a retry loop,
-          typically the linearization point), earlier iterations first,
-      (5) stores closer to the middle of the thread.
+    Level order:
+      (1) Stores whose value depends on a load from the same address come first, earliest in program order first.
+          Coherence ties the rf-edges of that load to the co-order (e.g., "sum++" in a critical section, or the
+          "fetch_add" of a ticket lock), and earlier stores are bypassed by fewer paths, so more threads (including
+          those cut off later) get ordered by them.
+      (2) The remaining stores are ordered by: executed whenever the thread terminates normally (implied by its
+          ThreadReturn events), plain over RMW stores (RMW stores without such a dependency typically record lock
+          acquisition attempts, e.g., an exchange), execution implies that an enclosing loop exits (e.g., the
+          successful CAS of a retry loop, typically the linearization point; earlier iterations first), and
+          closeness to the middle of the thread.
  */
 public class CoSymmetryBreaking {
 
@@ -230,10 +230,12 @@ public class CoSymmetryBreaking {
         logger.info("Loop-exiting stores (with iteration): {}", exitIteration.entrySet().stream()
                 .map(en -> "E" + en.getKey().getGlobalId() + "@" + events.indexOf(en.getKey()) + "#" + en.getValue()).toList());
         levels.sort(Comparator
-                .comparing((Store w) -> !returns.stream().allMatch(r -> exec.isImplied(r, w)))
-                .thenComparing((Store w) -> !sameAddressDependent.contains(w))
-                // Among same-address dependent stores, atomic ones (e.g., fetch_add) first; otherwise plain ones first.
-                .thenComparing(w -> sameAddressDependent.contains(w) != (w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL)))
+                // Same-address dependent stores first, earliest in program order first.
+                .comparing((Store w) -> !sameAddressDependent.contains(w))
+                .thenComparingInt(w -> sameAddressDependent.contains(w) ? events.indexOf(w) : 0)
+                // Remaining stores: implied by ThreadReturn, plain over RMW, loop exiting, close to the middle.
+                .thenComparing((Store w) -> !returns.stream().allMatch(r -> exec.isImplied(r, w)))
+                .thenComparing(w -> w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL))
                 .thenComparing((Store w) -> !exitIteration.containsKey(w))
                 .thenComparing(w -> exitIteration.getOrDefault(w, 0))
                 .thenComparingDouble(w -> Math.abs(events.indexOf(w) - middle)));
