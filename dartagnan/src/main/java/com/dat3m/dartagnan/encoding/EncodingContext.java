@@ -72,6 +72,7 @@ public final class EncodingContext {
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
+    private MemoryLayoutPlan memoryLayout;
 
     private EncodingContext(Task t, Context a, FormulaManager m, Collection<? extends Constraint> c) {
         task = checkNotNull(t);
@@ -213,9 +214,14 @@ public final class EncodingContext {
         if (!object.isHeapAllocated() || task.getProgram().allocationsAreSafe()) {
             return bmgr.makeTrue();
         }
+        if (memoryLayout.isFixed(object)) {
+            return bmgr.makeBoolean(memoryLayout.getPlacement(object).fits());
+        }
         final int allocationSiteId = object.getAllocationSite().getGlobalId();
         return bmgr.makeVariable(fmgr.escape("fits%d".formatted(allocationSiteId)));
     }
+
+    MemoryLayoutPlan getMemoryLayoutPlan() { return memoryLayout; }
 
     /// Describes that {@code object} has been successfully allocated during the execution.
     public BooleanFormula allocated(MemoryObject object) {
@@ -341,6 +347,7 @@ public final class EncodingContext {
         }
 
         // ------- Memory object variables -------
+        memoryLayout = MemoryLayoutPlan.compute(task.getProgram().getMemory());
         for (MemoryObject memoryObject : task.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
