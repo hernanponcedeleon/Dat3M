@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.task.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -381,30 +382,23 @@ public class ProgramEncoder {
         final IntegerType archType = memory.getArchType();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<BooleanFormula> enc = new ArrayList<>();
-        final boolean safeAllocations = context.getTask().getProgram().allocationsAreSafe();
-        final MemoryLayoutPlan layout = context.getMemoryLayoutPlan();
 
-        // NOTE: Objects of known size and alignment have a fixed placement (see MemoryLayoutPlan).
-        //  We even give non-allocated objects a proper, well-aligned address.
-        for (MemoryObject cur : layout.getFixedObjects()) {
-            final MemoryLayoutPlan.Placement placement = layout.getPlacement(cur);
-            enc.add(exprEnc.assignEqual(context.size(cur), exprs.makeValue(placement.size(), archType)));
-            enc.add(exprEnc.assignEqual(context.address(cur), exprs.makeValue(placement.address(), archType)));
-            if (!placement.fits() && safeAllocations) {
-                // Discard executions where a heap allocation that can never fit is executed.
-                enc.add(bmgr.not(context.execution(cur.getAllocationSite())));
-            }
-        }
-
-        // NOTE: All other objects are placed after the fixed objects (stack objects before heap objects).
+        // TODO: We could sort the objects to generate better encoding:
+        //  "static -> dynamic with known size -> dynamic with unknown size"
+        //  For the former two we can then statically assign addresses as we do now and
+        //  only the latter needs dynamic encodings.
+        // NOTE: Heap objects are placed after all static and stack objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
         //  With safe allocations, executions where a heap object does not fit are discarded instead.
-        //  Stack objects are assumed to be small enough to never wrap around.
+        //  Static and stack objects are assumed to be small enough to never wrap around.
+        final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
+                .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
+                .addAll(memory.getObjects().stream().filter(MemoryObject::isHeapAllocated).iterator())
+                .build();
         final Expression zero = exprs.makeZero(archType);
-        final List<MemoryObject> dynamicObjects = layout.getDynamicObjects();
-        for (int i = 0; i < dynamicObjects.size(); i++) {
-            final MemoryObject cur = dynamicObjects.get(i);
+        for (int i = 0; i < memoryObjects.size(); i++) {
+            final MemoryObject cur = memoryObjects.get(i);
             final Expression addrVar = context.address(cur);
             final Expression sizeVar = context.size(cur);
 
@@ -417,6 +411,10 @@ public class ProgramEncoder {
             } else {
                 final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
                 final Expression one = exprs.makeOne(archType);
+
+                // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
+                // even if the allocation does not get executed. This improves performance.
+                // We could also do this if the size is unknown but has a known upper bound.
                 size = cur.hasKnownSize() ? cur.size() : exprs.makeITE(exec, cur.size(), zero);
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
@@ -428,18 +426,19 @@ public class ProgramEncoder {
                         : exprEnc.assignEqualAt(a, alloc, b, alloc);
             };
 
-            // Objects are placed at the next well-aligned address that is available.
+            // Objects are placed at the next well-aligned address that is available
+            // (the first object is placed at alignment).
             // NOTE: The padding is in [1, alignment] for addresses below 2^(n-1) and in [1, 2*alignment) otherwise
             //  (signed remainder), and the resulting address is well-aligned in both cases.
-            final MemoryObject prev = i > 0 ? dynamicObjects.get(i - 1) : null;
-            final Expression nextAvailableAddr = prev == null
-                    ? exprs.makeValue(layout.getNextAvailableAddress(), archType)
+            final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
+            final Expression nextAvailableAddr = prev == null ? zero
                     : exprs.makeAdd(context.address(prev), context.size(prev));
             final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
                     exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
             );
 
             if (!cur.isHeapAllocated()) {
+                // Encode size and address (we even give non-allocated objects a proper, well-aligned address)
                 enc.add(assign.apply(sizeVar, size));
                 enc.add(assign.apply(addrVar, nextAlignedAddr));
                 continue;
@@ -457,9 +456,11 @@ public class ProgramEncoder {
                     )
             );
             final BooleanFormula fitsFormula = exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula();
-            if (safeAllocations) {
+            if (context.getTask().getProgram().allocationsAreSafe()) {
                 // Discard executions where a heap object does not fit.
-                // NOTE: Non-executed objects of unknown size reserve no memory and fit trivially
+                // NOTE: This is not guarded by the execution of the allocation: objects of known size reserve memory
+                //  even if not executed and thus must fit as well, so that they do not push later objects out of the
+                //  address space. Non-executed objects of unknown size reserve no memory and fit trivially
                 //  (unless the address space is already exhausted).
                 enc.add(fitsFormula);
                 enc.add(assign.apply(sizeVar, size));
