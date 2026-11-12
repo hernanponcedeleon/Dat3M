@@ -428,12 +428,13 @@ public class ProgramEncoder {
 
             // Objects are placed at the next well-aligned address that is available
             // (the first object is placed at alignment).
-            // NOTE: The padding is always in [1, alignment].
+            // NOTE: The padding is in [1, alignment] for addresses below 2^(n-1) and in [1, 2*alignment) otherwise
+            //  (signed remainder), and the resulting address is well-aligned in both cases.
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             final Expression nextAvailableAddr = prev == null ? zero
                     : exprs.makeAdd(context.address(prev), context.size(prev));
             final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                    exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, false))
+                    exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
             );
 
             if (!cur.isHeapAllocated()) {
