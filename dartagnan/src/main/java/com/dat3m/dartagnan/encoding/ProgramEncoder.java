@@ -35,6 +35,7 @@ import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.SAFE_ALLOCATIONS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.CAST;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
@@ -74,6 +75,7 @@ public class ProgramEncoder {
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", INITIALIZE_REGISTERS, context.getTask().getProgram().registersAreZeroInitialized());
         logger.info("{}: {}", IGNORE_FILTER_SPECIFICATION, encoder.ignoreFilterSpec);
+        logger.info("{}: {}", SAFE_ALLOCATIONS, context.getTask().getProgram().allocationsAreSafe());
         return encoder;
     }
 
@@ -388,6 +390,7 @@ public class ProgramEncoder {
         // NOTE: Heap objects are placed after all static and stack objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
+        //  With safe allocations, executions where an allocation does not fit are discarded instead.
         //  Static and stack objects are assumed to be small enough to never wrap around.
         final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
                 .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
@@ -453,6 +456,10 @@ public class ProgramEncoder {
             );
             final BooleanFormula fitsVar = context.allocationSucceeds(cur);
             enc.add(bmgr.equivalence(fitsVar, exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula()));
+            if (context.getTask().getProgram().allocationsAreSafe()) {
+                // Discard executions where an executed heap allocation does not fit.
+                enc.add(bmgr.implication(context.execution(cur.getAllocationSite()), fitsVar));
+            }
 
             // A failed allocation reserves no memory and does not consume padding.
             // Its (unobservable) address is the next available address, so the next object is placed right after
@@ -590,7 +597,8 @@ public class ProgramEncoder {
             if (!e.isHeapAllocation()) {
                 return exprEnc.assignEqualAt(context.result(e), e, object, e);
             }
-            // Heap allocations that do not fit into the address space return NULL.
+            // Heap allocations that do not fit into the address space return NULL
+            // (unless safe allocations are assumed, in which case they always fit).
             final ExpressionFactory exprs = context.getExpressionFactory();
             final Expression fits = exprEnc.wrap(context.allocationSucceeds(object));
             final Expression nullPtr = exprs.makeZero((IntegerType) object.getType());

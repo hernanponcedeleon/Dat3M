@@ -37,6 +37,9 @@ public class MiscellaneousTest extends AbstractCTest {
         if (name.equals("recursion")) {
             task = task.withOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
         }
+        if (name.equals("ilp32-nondet-malloc-no-wraparound")) {
+            task = task.withOption(OptionNames.SAFE_ALLOCATIONS, "false");
+        }
         if (name.equals("memcpy_s")) {
             task = task.withOption(OptionNames.MIXED_SIZE, "true");
         }
@@ -119,6 +122,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"ilp32-ubsan-struct", IMM, PASS, 1},
                 {"deadNullCheckUnreachable", IMM, PASS, 1},
                 {"ilp32-nondet-malloc-no-wraparound", IMM, PASS, 1},
+                {"ilp32-safe-malloc", IMM, PASS, 1},
         });
     }
 }
