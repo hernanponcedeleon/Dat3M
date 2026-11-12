@@ -10,6 +10,9 @@ import java.util.function.Function;
 
     Let G = (V, A, r) be a directed graph rooted in r.
     NOTE: In the following description we assume that all nodes in V are reachable from r.
+          Nodes that are unreachable from r are not part of the dominator tree (see "contains").
+          Queries involving such nodes are answered conservatively: an unreachable node neither
+          dominates nor is dominated by any other node, and it has no (common) dominators.
 
     DEFINITION (Domination): A node w is dominated by v if all paths from r to w pass through v, i.e.,
     all those paths have the shape r ->* v ->* w.
@@ -51,21 +54,27 @@ public final class DominatorTree<TNode> {
         return immDominator.containsKey(node);
     }
 
+    // Returns false if either node is unreachable from the root.
     public boolean isDominatedBy(TNode node, TNode dominator) {
-        return getNearestCommonDominator(node, dominator) == dominator;
+        return contains(node) && contains(dominator) && getNearestCommonDominator(node, dominator) == dominator;
     }
 
     public TNode getImmediateDominator(TNode node) {
         return immDominator.get(node);
     }
 
+    // Returns null if either node is unreachable from the root.
     public TNode getNearestCommonDominator(TNode a, TNode b) {
+        if (!contains(a) || !contains(b)) {
+            return null;
+        }
         return intersect(a, b, immDominator, reversePostOrder);
     }
 
+    // Returns no dominators if the node is unreachable from the root.
     public Iterable<TNode> getDominators(TNode node) {
         return () -> new Iterator<>() {
-            TNode cur = node;
+            TNode cur = contains(node) ? node : null;
             @Override
             public boolean hasNext() { return cur != null; }
             @Override

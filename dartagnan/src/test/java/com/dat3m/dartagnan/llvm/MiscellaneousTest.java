@@ -116,6 +116,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"fallThroughCondJump_f", IMM, FAIL, 1},
                 {"ilp32-long-cas", IMM, PASS, 1},
                 {"ilp32-ubsan-struct", IMM, PASS, 1},
+                {"deadNullCheckUnreachable", IMM, PASS, 1},
         });
     }
 }
