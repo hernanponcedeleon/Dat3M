@@ -33,7 +33,8 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
     it tries to figure out the signedness of expressions and if they are always positive, then they cannot be NULL.
 
     The signedness is determined as follows:
-      - Registers written to by Allocs as well as MemoryObject expressions are always positive (allocations always succeed!)
+      - Registers written to by stack Allocs as well as MemoryObject expressions are always positive.
+        Heap allocations may return NULL (if the object does not fit into the address space), so they are only non-negative.
       - Positive constants are positive (duh).
       - Some operations (like addition) preserve positiveness.
 
@@ -122,7 +123,8 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
 
         @Override
         public Void visitAlloc(Alloc e) {
-            final Sign sign = Sign.POS;
+            // Heap allocations return NULL if the object does not fit into the address space.
+            final Sign sign = e.isHeapAllocation() ? Sign.NON_NEG : Sign.POS;
             signMap.compute(e.getResultRegister(), (key, s) -> s == null ? sign : Sign.meet(s, sign));
             return null;
         }

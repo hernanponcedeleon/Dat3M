@@ -385,7 +385,15 @@ public class ProgramEncoder {
         //  "static -> dynamic with known size -> dynamic with unknown size"
         //  For the former two we can then statically assign addresses as we do now and
         //  only the latter needs dynamic encodings.
-        final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
+        // NOTE: Heap objects are placed after all static and stack objects.
+        //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
+        //  and reserves no memory, so the layout never wraps around the address space.
+        //  Static and stack objects are assumed to be small enough to never wrap around.
+        final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
+                .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
+                .addAll(memory.getObjects().stream().filter(MemoryObject::isHeapAllocated).iterator())
+                .build();
+        final Expression zero = exprs.makeZero(archType);
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
             final Expression addrVar = context.address(cur);
@@ -399,7 +407,6 @@ public class ProgramEncoder {
                 alignment = cur.alignment();
             } else {
                 final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
-                final Expression zero = exprs.makeZero(archType);
                 final Expression one = exprs.makeOne(archType);
 
                 // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
@@ -416,23 +423,43 @@ public class ProgramEncoder {
                         : exprEnc.assignEqualAt(a, alloc, b, alloc);
             };
 
-            // Encode size
-            enc.add(assign.apply(sizeVar, size));
-
-            // Encode address (we even give non-allocated objects a proper, well-aligned address)
+            // Objects are placed at the next well-aligned address that is available
+            // (the first object is placed at alignment).
+            // NOTE: The padding is always in [1, alignment].
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
-            if (prev == null) {
-                // First object is placed at alignment
-                enc.add(assign.apply(addrVar, alignment));
-            } else {
-                final Expression nextAvailableAddr = exprs.makeAdd(context.address(prev), context.size(prev));
-                final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
-                );
+            final Expression nextAvailableAddr = prev == null ? zero
+                    : exprs.makeAdd(context.address(prev), context.size(prev));
+            final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
+                    exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, false))
+            );
 
-                // ... other objects are placed at the next well-aligned address that is available.
+            if (!cur.isHeapAllocated()) {
+                // Encode size and address (we even give non-allocated objects a proper, well-aligned address)
+                enc.add(assign.apply(sizeVar, size));
                 enc.add(assign.apply(addrVar, nextAlignedAddr));
+                continue;
             }
+
+            // Heap allocations succeed only if the object fits into the address space, i.e.,
+            // neither the padding nor the object itself wraps around.
+            // NOTE: The end address must also be non-zero, so that the next object does not start at address 0.
+            final Expression endAddr = exprs.makeAdd(nextAlignedAddr, size);
+            final Expression fitsExpr = exprs.makeAnd(
+                    exprs.makeLT(nextAvailableAddr, nextAlignedAddr, false),
+                    exprs.makeAnd(
+                            exprs.makeLTE(nextAlignedAddr, endAddr, false),
+                            exprs.makeNEQ(endAddr, zero)
+                    )
+            );
+            final BooleanFormula fitsVar = context.allocationSucceeds(cur);
+            enc.add(bmgr.equivalence(fitsVar, exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula()));
+
+            // A failed allocation reserves no memory and does not consume padding.
+            // Its (unobservable) address is the next available address, so the next object is placed right after
+            // the last successfully allocated object.
+            final Expression fits = exprEnc.wrap(fitsVar);
+            enc.add(assign.apply(sizeVar, exprs.makeITE(fits, size, zero)));
+            enc.add(assign.apply(addrVar, exprs.makeITE(fits, nextAlignedAddr, nextAvailableAddr)));
         }
 
         return bmgr.and(enc);
@@ -559,7 +586,15 @@ public class ProgramEncoder {
 
         @Override
         public BooleanFormula visitAlloc(Alloc e) {
-            return exprEnc.assignEqualAt(context.result(e), e, e.getAllocatedObject(), e);
+            final MemoryObject object = e.getAllocatedObject();
+            if (!e.isHeapAllocation()) {
+                return exprEnc.assignEqualAt(context.result(e), e, object, e);
+            }
+            // Heap allocations that do not fit into the address space return NULL.
+            final ExpressionFactory exprs = context.getExpressionFactory();
+            final Expression fits = exprEnc.wrap(context.allocationSucceeds(object));
+            final Expression nullPtr = exprs.makeZero((IntegerType) object.getType());
+            return exprEnc.assignEqualAt(context.result(e), e, exprs.makeITE(fits, object, nullPtr), e);
         }
 
         @Override

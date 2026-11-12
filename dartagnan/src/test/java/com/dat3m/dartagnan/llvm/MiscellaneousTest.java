@@ -118,6 +118,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"ilp32-long-cas", IMM, PASS, 1},
                 {"ilp32-ubsan-struct", IMM, PASS, 1},
                 {"deadNullCheckUnreachable", IMM, PASS, 1},
+                {"ilp32-nondet-malloc-no-wraparound", IMM, PASS, 1},
         });
     }
 }
