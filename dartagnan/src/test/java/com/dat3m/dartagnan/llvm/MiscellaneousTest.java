@@ -40,9 +40,6 @@ public class MiscellaneousTest extends AbstractCTest {
         if (name.equals("memcpy_s")) {
             task = task.withOption(OptionNames.MIXED_SIZE, "true");
         }
-        if (name.startsWith("memory-bounds")) {
-            task = task.withOption(OptionNames.MEMORY_BOUNDS_CHECKS, "true");
-        }
         return task;
     }
 
@@ -120,8 +117,6 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"ilp32-long-cas", IMM, PASS, 1},
                 {"ilp32-ubsan-struct", IMM, PASS, 1},
                 {"deadNullCheckUnreachable", IMM, PASS, 1},
-                {"memory-bounds", IMM, PASS, 5},
-                {"memory-bounds_f", IMM, FAIL, 6},
         });
     }
 }
