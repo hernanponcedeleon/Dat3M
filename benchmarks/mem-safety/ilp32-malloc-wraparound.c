@@ -3,10 +3,15 @@
 #include <stdint.h>
 
 /*
-    Requires --modeling.safeAllocs=false.
     On 32-bit, a heap allocation with a nondeterministic size can be almost as large as the whole address space.
     Such an allocation must not cause later objects to wrap around the address space
-    (e.g., to address 0 or on top of other objects). If it does not fit, malloc returns NULL.
+    (e.g., to address 0 or on top of other objects).
+
+    Expected verdicts:
+      --modeling.safeAllocs=false:  default: true
+                                    -DFAIL:  false (malloc returns NULL if the object does not fit)
+      --modeling.safeAllocs=true:   default: true
+                                    -DFAIL:  true (executions where an allocation does not fit are discarded)
 */
 
 extern unsigned int __VERIFIER_nondet_uint(void);
@@ -18,6 +23,9 @@ int main(void) {
     size_t size = __VERIFIER_nondet_uint();
     char *big = malloc(size);
     int *small = malloc(sizeof(int));
+#ifdef FAIL
+    assert(big != NULL && small != NULL);
+#endif
     if (big == NULL || small == NULL) {
         return 0;
     }
