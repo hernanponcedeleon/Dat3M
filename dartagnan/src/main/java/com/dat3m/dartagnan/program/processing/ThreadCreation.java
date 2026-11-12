@@ -506,6 +506,10 @@ public class ThreadCreation implements ProgramProcessor {
             final MemoryObject destructor = program.getMemory().allocate(size);
             final var t = (IntegerType) create.getResultRegister().getType();
             data.setIsThreadLocal(true);
+            // Initially, pthread_getspecific returns NULL in every thread.
+            // NOTE: The thread-local copies derive their type from the initialized fields, so this also gives them
+            // the proper size (without any initialized field, they would be empty objects).
+            data.setInitialValue(0, nil);
             storage.add(new Storage(id, data, destructor));
             create.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_create"),
@@ -542,6 +546,8 @@ public class ThreadCreation implements ProgramProcessor {
             get.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_get"),
                     newLocal(data, match.compute(Storage::data, get.getKey())),
+                    // pthread_getspecific returns NULL for invalid keys.
+                    newLocal(get.getResultRegister(), expressions.makeGeneralZero(get.getResultRegister().getType())),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
                     newLoad(get.getResultRegister(), data),
                     end,
@@ -554,6 +560,8 @@ public class ThreadCreation implements ProgramProcessor {
             set.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_set"),
                     newLocal(data, match.compute(Storage::data, set.getKey())),
+                    // Signals success, unless the key is invalid.
+                    newLocal(set.getResultRegister(), expressions.makeNEQ(data, nil)),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
                     newStore(data, set.getValue()),
                     end,

@@ -342,8 +342,8 @@ public class EventFactory {
         return new DynamicThreadLocalGet(value, key);
     }
 
-    public static DynamicThreadLocalSet newDynamicThreadLocalSet(Expression key, Expression value) {
-        return new DynamicThreadLocalSet(key, value);
+    public static DynamicThreadLocalSet newDynamicThreadLocalSet(Register success, Expression key, Expression value) {
+        return new DynamicThreadLocalSet(success, key, value);
     }
 
     public static ThreadCreate newThreadCreate(List<Expression> arguments) {
