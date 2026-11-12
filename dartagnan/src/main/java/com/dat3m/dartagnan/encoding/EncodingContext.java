@@ -207,9 +207,10 @@ public final class EncodingContext {
     }
 
     /// Describes that the heap allocation of {@code object} fits into the address space, i.e., it returns the object
-    /// rather than NULL (if executed). Allocations of static and stack objects always succeed.
+    /// rather than NULL (if executed). Allocations of static and stack objects always succeed,
+    /// and so do heap allocations if safe allocations are assumed.
     public BooleanFormula allocationSucceeds(MemoryObject object) {
-        if (!object.isHeapAllocated()) {
+        if (!object.isHeapAllocated() || task.getProgram().allocationsAreSafe()) {
             return bmgr.makeTrue();
         }
         final int allocationSiteId = object.getAllocationSite().getGlobalId();

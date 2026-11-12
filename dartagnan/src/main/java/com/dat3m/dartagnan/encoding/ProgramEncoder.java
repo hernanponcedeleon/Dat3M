@@ -390,7 +390,7 @@ public class ProgramEncoder {
         // NOTE: Heap objects are placed after all static and stack objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
-        //  With safe allocations, executions where an allocation does not fit are discarded instead.
+        //  With safe allocations, executions where a heap object does not fit are discarded instead.
         //  Static and stack objects are assumed to be small enough to never wrap around.
         final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
                 .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
@@ -454,12 +454,21 @@ public class ProgramEncoder {
                             exprs.makeNEQ(endAddr, zero)
                     )
             );
-            final BooleanFormula fitsVar = context.allocationSucceeds(cur);
-            enc.add(bmgr.equivalence(fitsVar, exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula()));
+            final BooleanFormula fitsFormula = exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula();
             if (context.getTask().getProgram().allocationsAreSafe()) {
-                // Discard executions where an executed heap allocation does not fit.
-                enc.add(bmgr.implication(context.execution(cur.getAllocationSite()), fitsVar));
+                // Discard executions where a heap object does not fit.
+                // NOTE: This is not guarded by the execution of the allocation: objects of known size reserve memory
+                //  even if not executed and thus must fit as well, so that they do not push later objects out of the
+                //  address space. Non-executed objects of unknown size reserve no memory and fit trivially
+                //  (unless the address space is already exhausted).
+                enc.add(fitsFormula);
+                enc.add(assign.apply(sizeVar, size));
+                enc.add(assign.apply(addrVar, nextAlignedAddr));
+                continue;
             }
+
+            final BooleanFormula fitsVar = context.allocationSucceeds(cur);
+            enc.add(bmgr.equivalence(fitsVar, fitsFormula));
 
             // A failed allocation reserves no memory and does not consume padding.
             // Its (unobservable) address is the next available address, so the next object is placed right after
@@ -594,11 +603,10 @@ public class ProgramEncoder {
         @Override
         public BooleanFormula visitAlloc(Alloc e) {
             final MemoryObject object = e.getAllocatedObject();
-            if (!e.isHeapAllocation()) {
+            if (!e.isHeapAllocation() || context.getTask().getProgram().allocationsAreSafe()) {
                 return exprEnc.assignEqualAt(context.result(e), e, object, e);
             }
-            // Heap allocations that do not fit into the address space return NULL
-            // (unless safe allocations are assumed, in which case they always fit).
+            // Heap allocations that do not fit into the address space return NULL.
             final ExpressionFactory exprs = context.getExpressionFactory();
             final Expression fits = exprEnc.wrap(context.allocationSucceeds(object));
             final Expression nullPtr = exprs.makeZero((IntegerType) object.getType());
