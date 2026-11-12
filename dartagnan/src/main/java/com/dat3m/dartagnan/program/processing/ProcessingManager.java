@@ -54,6 +54,12 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean detectMixedSizeAccesses = false;
 
+    @Option(name = MEMORY_BOUNDS_CHECKS,
+            description = "Instruments memory accesses with assertions that they stay within the bounds of the " +
+                    "memory object they may address. Defaults to 'false'.",
+            secure = true)
+    private boolean memoryBoundsChecks = false;
+
     // =================== Debugging options ===================
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
@@ -154,6 +160,7 @@ public class ProcessingManager implements ProgramProcessor {
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
+                memoryBoundsChecks ? MemoryBoundsChecks.fromConfig(config) : null,
                 // --- Statistics + verification ---
                 PointerWidthVerification.newInstance(),
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
