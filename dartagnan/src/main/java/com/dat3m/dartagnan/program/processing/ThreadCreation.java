@@ -35,10 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import java.math.BigInteger;
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ARGC_MAX;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.*;
 
@@ -67,6 +70,11 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
 public class ThreadCreation implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadCreation.class);
+
+    @Option(name = ARGC_MAX,
+            description = "Upper bound on the number of arguments 'argc' passed to 'main'. Defaults to 10.",
+            secure = true)
+    private int argcMax = 10;
 
     private final Compilation compiler;
 
@@ -138,6 +146,7 @@ public class ThreadCreation implements ProgramProcessor {
         final List<ThreadData> allThreads = new ArrayList<>();
         final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.function(), nextTid++, null);
         allThreads.add(entryPoint);
+        initializeMainArguments(entryPoint.thread());
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
         while (!workingQueue.isEmpty()) {
@@ -169,6 +178,56 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
         return allThreads;
+    }
+
+    /*
+        If the entry point has the signature "int main(int argc, char *argv[], ...)", this method makes "argv" point to
+        an array of "argc + 1" pointers whose last entry is NULL, as guaranteed by the C standard (5.1.2.2.1).
+        The strings themselves are not modeled, i.e., the entries "argv[0..argc-1]" remain unconstrained.
+        Without this, "argc" and "argv" are unrelated nondeterministic values and "argv" does not point to any object.
+        Nothing is done if "main" uses neither "argc" nor "argv".
+     */
+    private void initializeMainArguments(Thread main) {
+        final Program program = main.getProgram();
+        final Type pointerType = program.getPointerType();
+        final List<Register> parameters = main.getParameterRegisters();
+        if (!main.getName().equals("main") || parameters.size() < 2
+                || !(parameters.get(0).getType() instanceof IntegerType argcType)
+                || !parameters.get(1).getType().equals(pointerType)) {
+            return;
+        }
+        final Register argc = parameters.get(0);
+        final Register argv = parameters.get(1);
+        final boolean argumentsUsed = main.getEvents(RegReader.class).stream()
+                .flatMap(reader -> reader.getRegisterReads().stream())
+                .anyMatch(read -> read.register() == argc || read.register() == argv);
+        if (!argumentsUsed) {
+            return;
+        }
+        final IntegerType archType = program.getArchType();
+        final int pointerBytes = types.getMemorySizeInBytes(pointerType);
+
+        // 1 <= argc <= argcMax. Besides keeping the argv array small, this also matters because the memory layout
+        // does not prevent objects from wrapping around the address space: a huge argv array could, e.g.,
+        // make &argv[argc] appear as a null pointer on 32-bit architectures.
+        Preconditions.checkArgument(argcMax >= 1, "Option %s must be positive.", ARGC_MAX);
+        final BigInteger maxArgc = argcType.getMaximumValue(true).min(BigInteger.valueOf(argcMax));
+        final Expression argcInRange = expressions.makeAnd(
+                expressions.makeGTE(argc, expressions.makeOne(argcType), true),
+                expressions.makeLTE(argc, expressions.makeValue(maxArgc, argcType), true));
+
+        final Expression argcArch = expressions.makeCast(argc, archType, true);
+        final Expression arraySize = expressions.makeAdd(argcArch, expressions.makeOne(archType));
+        final Expression lastEntry = expressions.makeAdd(argv,
+                expressions.makeMul(argcArch, expressions.makeValue(pointerBytes, archType)));
+
+        // NOTE: "argc" needs an explicit definition, otherwise its uses are not guaranteed to read the same value.
+        main.getEntry().insertAfter(eventSequence(
+                newLocal(argc, program.newConstant(argcType)),
+                newAssume(argcInRange),
+                newAlloc(argv, pointerType, arraySize, false, false),
+                newStore(lastEntry, expressions.makeGeneralZero(pointerType))
+        ));
     }
 
     /*

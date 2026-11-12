@@ -26,6 +26,7 @@ public class OptionNames {
     public static final String PROGRESSMODEL = "modeling.progress";
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
+    public static final String ARGC_MAX = "modeling.argcMax";
     public static final String MEMORY_IS_ZEROED = "modeling.initializeMemory";
     public static final String INITIALIZE_REGISTERS = "modeling.initializeRegisters";
     public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initializeDynamicAllocations";

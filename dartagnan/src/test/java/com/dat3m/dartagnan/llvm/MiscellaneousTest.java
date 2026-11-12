@@ -124,6 +124,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"deadNullCheckUnreachable", IMM, PASS, 1},
                 {"calloc_nondet_size", IMM, PASS, 1},
                 {"calloc_nondet_size_f", IMM, FAIL, 1},
+                {"main-args", IMM, PASS, 1},
+                {"main-args_f", IMM, FAIL, 1},
         });
     }
 }
