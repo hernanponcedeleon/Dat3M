@@ -17,6 +17,7 @@ public interface ExpressionKind {
         FUNCTION_ADDR,
         MEMORY_ADDR,
         FINAL_MEM_VAL,
+        SIZE_OF,
         REGISTER,
         GEP,
         CONSTRUCT,

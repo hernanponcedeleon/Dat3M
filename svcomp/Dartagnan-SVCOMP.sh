@@ -35,6 +35,7 @@ else
         compilation_pipeline=svcomp/compilation-no-overflow.yml
     elif [[ $propertypath == *"valid-memsafety.prp"* ]]; then
         compilation_pipeline=svcomp/compilation-valid-memsafety.yml
+        cmd+=(--program.processing.memoryBoundsChecks=true)
     fi
     cmd+=("--compilation.pipeline=$DAT3M_HOME/$compilation_pipeline")
 
