@@ -31,7 +31,6 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
@@ -390,7 +389,8 @@ public class ProgramEncoder {
         // NOTE: Heap objects are placed after all static and stack objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
-        //  With safe allocations, executions where a heap object does not fit are discarded instead.
+        //  With safe allocations, executions where an executed heap allocation does not fit are discarded instead.
+        //  Dynamic allocations that are not executed reserve no memory.
         //  Static and stack objects are assumed to be small enough to never wrap around.
         final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
                 .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
@@ -401,30 +401,8 @@ public class ProgramEncoder {
             final MemoryObject cur = memoryObjects.get(i);
             final Expression addrVar = context.address(cur);
             final Expression sizeVar = context.size(cur);
-
-            final Expression size;
-            final Expression alignment;
-            // Compute size & alignment expressions
-            if (cur.isStaticallyAllocated()) {
-                size = cur.size();
-                alignment = cur.alignment();
-            } else {
-                final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
-                final Expression one = exprs.makeOne(archType);
-
-                // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
-                // even if the allocation does not get executed. This improves performance.
-                // We could also do this if the size is unknown but has a known upper bound.
-                size = cur.hasKnownSize() ? cur.size() : exprs.makeITE(exec, cur.size(), zero);
-                alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
-            }
-
-            final BiFunction<Expression, Expression, BooleanFormula> assign = (a, b) -> {
-                final Event alloc = cur.getAllocationSite();
-                return cur.isStaticallyAllocated()
-                        ? exprEnc.assignEqual(a, b)
-                        : exprEnc.assignEqualAt(a, alloc, b, alloc);
-            };
+            final Expression size = cur.size();
+            final Expression alignment = cur.alignment();
 
             // Objects are placed at the next well-aligned address that is available
             // (the first object is placed at alignment).
@@ -437,46 +415,49 @@ public class ProgramEncoder {
                     exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
             );
 
+            if (cur.isStaticallyAllocated()) {
+                enc.add(exprEnc.assignEqual(sizeVar, size));
+                enc.add(exprEnc.assignEqual(addrVar, nextAlignedAddr));
+                continue;
+            }
+
+            // Dynamic objects reserve memory only if their allocation is executed (and succeeds).
+            // A non-reserved object has size 0 and does not consume padding: its (unobservable) address is the next
+            // available address, so the next object is placed right after the last reserved object.
+            final Event alloc = cur.getAllocationSite();
+            final BooleanFormula exec = context.execution(alloc);
+            final BooleanFormula reserved;
             if (!cur.isHeapAllocated()) {
-                // Encode size and address (we even give non-allocated objects a proper, well-aligned address)
-                enc.add(assign.apply(sizeVar, size));
-                enc.add(assign.apply(addrVar, nextAlignedAddr));
-                continue;
+                reserved = exec;
+            } else {
+                // Heap allocations succeed only if the object fits into the address space, i.e.,
+                // neither the padding nor the object itself wraps around.
+                // NOTE: The end address must also be non-zero, so that the next object does not start at address 0.
+                final Expression endAddr = exprs.makeAdd(nextAlignedAddr, size);
+                final Expression fitsExpr = exprs.makeAnd(
+                        exprs.makeLT(nextAvailableAddr, nextAlignedAddr, false),
+                        exprs.makeAnd(
+                                exprs.makeLTE(nextAlignedAddr, endAddr, false),
+                                exprs.makeNEQ(endAddr, zero)
+                        )
+                );
+                final BooleanFormula fitsFormula = exprEnc.encodeBooleanAt(fitsExpr, alloc).formula();
+                if (context.getTask().getProgram().allocationsAreSafe()) {
+                    // Discard executions where an executed heap allocation does not fit.
+                    enc.add(bmgr.implication(exec, fitsFormula));
+                    reserved = exec;
+                } else {
+                    // Heap allocations that do not fit return NULL (see visitAlloc).
+                    final BooleanFormula fitsVar = context.allocationSucceeds(cur);
+                    enc.add(bmgr.equivalence(fitsVar, fitsFormula));
+                    reserved = bmgr.and(exec, fitsVar);
+                }
             }
 
-            // Heap allocations succeed only if the object fits into the address space, i.e.,
-            // neither the padding nor the object itself wraps around.
-            // NOTE: The end address must also be non-zero, so that the next object does not start at address 0.
-            final Expression endAddr = exprs.makeAdd(nextAlignedAddr, size);
-            final Expression fitsExpr = exprs.makeAnd(
-                    exprs.makeLT(nextAvailableAddr, nextAlignedAddr, false),
-                    exprs.makeAnd(
-                            exprs.makeLTE(nextAlignedAddr, endAddr, false),
-                            exprs.makeNEQ(endAddr, zero)
-                    )
-            );
-            final BooleanFormula fitsFormula = exprEnc.encodeBooleanAt(fitsExpr, cur.getAllocationSite()).formula();
-            if (context.getTask().getProgram().allocationsAreSafe()) {
-                // Discard executions where a heap object does not fit.
-                // NOTE: This is not guarded by the execution of the allocation: objects of known size reserve memory
-                //  even if not executed and thus must fit as well, so that they do not push later objects out of the
-                //  address space. Non-executed objects of unknown size reserve no memory and fit trivially
-                //  (unless the address space is already exhausted).
-                enc.add(fitsFormula);
-                enc.add(assign.apply(sizeVar, size));
-                enc.add(assign.apply(addrVar, nextAlignedAddr));
-                continue;
-            }
-
-            final BooleanFormula fitsVar = context.allocationSucceeds(cur);
-            enc.add(bmgr.equivalence(fitsVar, fitsFormula));
-
-            // A failed allocation reserves no memory and does not consume padding.
-            // Its (unobservable) address is the next available address, so the next object is placed right after
-            // the last successfully allocated object.
-            final Expression fits = exprEnc.wrap(fitsVar);
-            enc.add(assign.apply(sizeVar, exprs.makeITE(fits, size, zero)));
-            enc.add(assign.apply(addrVar, exprs.makeITE(fits, nextAlignedAddr, nextAvailableAddr)));
+            final Expression isReserved = exprEnc.wrap(reserved);
+            enc.add(exprEnc.assignEqualAt(sizeVar, alloc, exprs.makeITE(isReserved, size, zero), alloc));
+            enc.add(exprEnc.assignEqualAt(addrVar, alloc,
+                    exprs.makeITE(isReserved, nextAlignedAddr, nextAvailableAddr), alloc));
         }
 
         return bmgr.and(enc);

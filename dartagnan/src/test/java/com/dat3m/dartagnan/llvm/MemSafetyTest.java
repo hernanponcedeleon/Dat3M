@@ -66,6 +66,10 @@ public class MemSafetyTest extends AbstractCTest {
                 {"ilp32-malloc-too-large_f", IMM, FAIL, 1, false},
                 {"ilp32-malloc-too-large", IMM, PASS, 1, true},
                 {"ilp32-malloc-too-large_f", IMM, PASS, 1, true},
+                {"ilp32-malloc-not-executed", IMM, PASS, 1, false},
+                {"ilp32-malloc-not-executed_f", IMM, FAIL, 1, false},
+                {"ilp32-malloc-not-executed", IMM, PASS, 1, true},
+                {"ilp32-malloc-not-executed_f", IMM, FAIL, 1, true},
                 // TODO: The following accesses are not instrumented yet, so their violations are missed.
                 // Accesses with an empty set of addressable objects are skipped.
                 // {"memory-bounds-uninit-pointer", IMM, FAIL, 1, true},
