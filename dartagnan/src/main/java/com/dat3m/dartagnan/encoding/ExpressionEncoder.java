@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
+import com.dat3m.dartagnan.program.memory.SizeOfExpr;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
@@ -658,6 +659,15 @@ public class ExpressionEncoder {
         @Override
         public Formula visitMemoryObject(MemoryObject memObj) {
             return makeVariable(String.format("addrof(%s)", memObj), memObj.getType());
+        }
+
+        @Override
+        public Formula visitSizeOfExpression(SizeOfExpr expr) {
+            final TypedFormula<IntegerType, ?> size = context.size(expr.getMemoryObject());
+            Preconditions.checkState(size != null, "No size variable for %s.", expr.getMemoryObject());
+            Preconditions.checkArgument(size.getType().equals(expr.getType()),
+                    "Type mismatch between %s and the size variable of type %s.", expr, size.getType());
+            return size.formula();
         }
 
         @Override
