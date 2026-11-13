@@ -143,23 +143,38 @@ public class IntegerHelper {
         return normalizeUnsigned(ux.remainder(uy), bitWidth);
     }
 
-    // We use LLVM semantics: "y" is considered unsigned
+    // We use LLVM semantics: "y" is considered unsigned.
+    // NOTE: Shifting by at least the bit width yields poison in LLVM, so any value is correct.
+    //  We use the SMT-LIB semantics (as in the encoding), i.e., all bits are shifted out.
     public static BigInteger lshift(BigInteger x, BigInteger y, int bitWidth) {
         y = normalizeUnsigned(y, bitWidth);
+        if (shiftsOutAllBits(y, bitWidth)) {
+            return BigInteger.ZERO;
+        }
         return truncate(x.shiftLeft(y.intValueExact()), bitWidth);
     }
 
-    // We use LLVM semantics: "y" is considered unsigned
+    // We use LLVM semantics: "y" is considered unsigned (see also lshift).
     public static BigInteger rshift(BigInteger x, BigInteger y, int bitWidth) {
         x = normalizeUnsigned(x, bitWidth);
         y = normalizeUnsigned(y, bitWidth);
+        if (shiftsOutAllBits(y, bitWidth)) {
+            return BigInteger.ZERO;
+        }
         return x.shiftRight(y.intValueExact());
     }
 
-    // We use LLVM semantics: "y" is considered unsigned
+    // We use LLVM semantics: "y" is considered unsigned (see also lshift).
     public static BigInteger arshift(BigInteger x, BigInteger y, int bitWidth) {
         y = normalizeUnsigned(y, bitWidth);
+        if (shiftsOutAllBits(y, bitWidth)) {
+            return normalizeSigned(x, bitWidth).signum() < 0 ? BigInteger.ONE.negate() : BigInteger.ZERO;
+        }
         return x.shiftRight(y.intValueExact());
+    }
+
+    private static boolean shiftsOutAllBits(BigInteger shiftAmount, int bitWidth) {
+        return bitWidth >= 0 && shiftAmount.compareTo(BigInteger.valueOf(bitWidth)) >= 0;
     }
 
     public static BigInteger smax(BigInteger x, BigInteger y, int bitWidth) {
