@@ -6,10 +6,8 @@
     next to the program's other objects.
 
     Expected verdicts:
-      --modeling.safeAllocs=false:  default: true  (malloc always returns NULL)
-                                    -DFAIL:  false
-      --modeling.safeAllocs=true:   default: true  (executions reaching the allocation are discarded)
-                                    -DFAIL:  true
+      default: true  (malloc always returns NULL)
+      -DFAIL:  false
 */
 
 extern void *malloc(size_t size);

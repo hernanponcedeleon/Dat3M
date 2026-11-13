@@ -34,7 +34,6 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.SAFE_ALLOCATIONS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.CAST;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
@@ -74,7 +73,6 @@ public class ProgramEncoder {
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", INITIALIZE_REGISTERS, context.getTask().getProgram().registersAreZeroInitialized());
         logger.info("{}: {}", IGNORE_FILTER_SPECIFICATION, encoder.ignoreFilterSpec);
-        logger.info("{}: {}", SAFE_ALLOCATIONS, context.getTask().getProgram().allocationsAreSafe());
         return encoder;
     }
 
@@ -389,7 +387,6 @@ public class ProgramEncoder {
         // NOTE: Heap objects are placed after all static and stack objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
-        //  With safe allocations, executions where an executed heap allocation does not fit are discarded instead.
         //  Dynamic allocations that are not executed reserve no memory.
         //  Static and stack objects are assumed to be small enough to never wrap around.
         final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
@@ -441,17 +438,11 @@ public class ProgramEncoder {
                                 exprs.makeNEQ(endAddr, zero)
                         )
                 );
+                // Heap allocations that do not fit return NULL (see visitAlloc).
                 final BooleanFormula fitsFormula = exprEnc.encodeBooleanAt(fitsExpr, alloc).formula();
-                if (context.getTask().getProgram().allocationsAreSafe()) {
-                    // Discard executions where an executed heap allocation does not fit.
-                    enc.add(bmgr.implication(exec, fitsFormula));
-                    reserved = exec;
-                } else {
-                    // Heap allocations that do not fit return NULL (see visitAlloc).
-                    final BooleanFormula fitsVar = context.allocationSucceeds(cur);
-                    enc.add(bmgr.equivalence(fitsVar, fitsFormula));
-                    reserved = bmgr.and(exec, fitsVar);
-                }
+                final BooleanFormula fitsVar = context.allocationSucceeds(cur);
+                enc.add(bmgr.equivalence(fitsVar, fitsFormula));
+                reserved = bmgr.and(exec, fitsVar);
             }
 
             final Expression isReserved = exprEnc.wrap(reserved);
@@ -585,7 +576,7 @@ public class ProgramEncoder {
         @Override
         public BooleanFormula visitAlloc(Alloc e) {
             final MemoryObject object = e.getAllocatedObject();
-            if (!e.isHeapAllocation() || context.getTask().getProgram().allocationsAreSafe()) {
+            if (!e.isHeapAllocation()) {
                 return exprEnc.assignEqualAt(context.result(e), e, object, e);
             }
             // Heap allocations that do not fit into the address space return NULL.

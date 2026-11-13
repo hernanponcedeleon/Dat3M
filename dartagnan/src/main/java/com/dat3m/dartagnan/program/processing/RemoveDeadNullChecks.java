@@ -34,8 +34,7 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 
     The signedness is determined as follows:
       - Registers written to by stack Allocs as well as MemoryObject expressions are always positive.
-        Heap allocations may return NULL (if the object does not fit into the address space), so they are only non-negative,
-        unless safe allocations are assumed.
+        Heap allocations may return NULL (if the object does not fit into the address space), so they are only non-negative.
       - Positive constants are positive (duh).
       - Some operations (like addition) preserve positiveness.
 
@@ -74,7 +73,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
         }
 
         // Collects signs of registers.
-        final SignChecker signChecker = new SignChecker(function.getProgram().allocationsAreSafe());
+        final SignChecker signChecker = new SignChecker();
         function.getEvents().forEach(e -> e.accept(signChecker));
 
         // Simplify null checks on always-positive (and hence non-null) expressions.
@@ -106,11 +105,6 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
     private static class SignChecker implements ExpressionVisitor<Sign>, EventVisitor<Void> {
 
         private final Map<Register, Sign> signMap = new HashMap<>();
-        private final boolean safeAllocations;
-
-        private SignChecker(boolean safeAllocations) {
-            this.safeAllocations = safeAllocations;
-        }
 
         @Override
         public Void visitEvent(Event e) {
@@ -129,8 +123,8 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
 
         @Override
         public Void visitAlloc(Alloc e) {
-            // Heap allocations return NULL if the object does not fit into the address space (unless safe).
-            final Sign sign = e.isHeapAllocation() && !safeAllocations ? Sign.NON_NEG : Sign.POS;
+            // Heap allocations return NULL if the object does not fit into the address space.
+            final Sign sign = e.isHeapAllocation() ? Sign.NON_NEG : Sign.POS;
             signMap.compute(e.getResultRegister(), (key, s) -> s == null ? sign : Sign.meet(s, sign));
             return null;
         }

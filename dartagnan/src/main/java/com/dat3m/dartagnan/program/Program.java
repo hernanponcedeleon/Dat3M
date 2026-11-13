@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.ROUNDING_MODE_FLOATS;
-import static com.dat3m.dartagnan.configuration.OptionNames.SAFE_ALLOCATIONS;
 import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.NEAREST_TIES_TO_EVEN;
 
 public class Program extends MetadataCarrierBase<Program> {
@@ -51,13 +50,6 @@ public class Program extends MetadataCarrierBase<Program> {
                 description = "Assume registers start off containing zero.",
                 secure = true)
         private boolean initializeRegisters = false;
-
-        @Option(name = SAFE_ALLOCATIONS,
-                description = "Assume that heap allocations always fit into the address space and thus never return NULL. " +
-                        "Executions with allocations that do not fit are discarded. " +
-                        "Otherwise, heap allocations that do not fit return NULL (default false).",
-                secure = true)
-        private boolean safeAllocations = false;
     }
 
     // Shape
@@ -192,11 +184,6 @@ public class Program extends MetadataCarrierBase<Program> {
 
     public boolean registersAreZeroInitialized() {
         return semanticConfig.initializeRegisters;
-    }
-
-    // If true, heap allocations always succeed (never return NULL).
-    public boolean allocationsAreSafe() {
-        return semanticConfig.safeAllocations;
     }
 
     public void setFloatRoundingMode(FloatingPointRoundingMode roundingMode) {

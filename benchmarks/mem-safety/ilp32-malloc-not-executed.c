@@ -7,10 +7,8 @@
     must not reserve memory.
 
     Expected verdicts:
-      --modeling.safeAllocs=false:  default: true
-                                    -DFAIL:  false (the executed allocation can succeed)
-      --modeling.safeAllocs=true:   default: true
-                                    -DFAIL:  false (the executed allocation succeeds)
+      default: true
+      -DFAIL:  false (the executed allocation can succeed)
 */
 
 extern void *malloc(size_t size);

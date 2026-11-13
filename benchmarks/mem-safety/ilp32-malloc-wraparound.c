@@ -8,10 +8,8 @@
     (e.g., to address 0 or on top of other objects).
 
     Expected verdicts:
-      --modeling.safeAllocs=false:  default: true
-                                    -DFAIL:  false (malloc returns NULL if the object does not fit)
-      --modeling.safeAllocs=true:   default: true
-                                    -DFAIL:  true (executions where an allocation does not fit are discarded)
+      default: true
+      -DFAIL:  false (malloc returns NULL if the object does not fit)
 */
 
 extern unsigned int __VERIFIER_nondet_uint(void);
