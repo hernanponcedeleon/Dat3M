@@ -573,9 +573,10 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
+        final Register success = call.getFunction().newUniqueRegister("__pthread_setspecific_success", types.getBooleanType());
         return List.of(
-                newDynamicThreadLocalSet(key, value),
-                assignSuccess(errorRegister)
+                newDynamicThreadLocalSet(success, key, value),
+                assignSuccessOrPosixError(errorRegister, success, PosixErrorCode.EINVAL)
         );
     }
 

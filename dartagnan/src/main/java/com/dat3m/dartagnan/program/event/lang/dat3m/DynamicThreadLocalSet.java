@@ -5,24 +5,29 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class DynamicThreadLocalSet extends AbstractEvent implements RegReader {
+// The result register is set to true on success and to false if the key is invalid.
+public final class DynamicThreadLocalSet extends AbstractEvent implements RegWriter, RegReader {
 
+    private Register success;
     private Expression key;
     private Expression value;
 
-    public DynamicThreadLocalSet(Expression k, Expression v) {
+    public DynamicThreadLocalSet(Register s, Expression k, Expression v) {
+        success = checkNotNull(s);
         key = checkNotNull(k);
         value = checkNotNull(v);
     }
 
     private DynamicThreadLocalSet(DynamicThreadLocalSet other) {
         super(other);
+        success = other.success;
         key = other.key;
         value = other.value;
     }
@@ -30,6 +35,10 @@ public final class DynamicThreadLocalSet extends AbstractEvent implements RegRea
     public Expression getKey() { return key; }
 
     public Expression getValue() { return value; }
+
+    @Override public Register getResultRegister() { return success; }
+
+    @Override public void setResultRegister(Register r) { success = checkNotNull(r); }
 
     @Override
     public Set<Register.Read> getRegisterReads() {
@@ -43,7 +52,7 @@ public final class DynamicThreadLocalSet extends AbstractEvent implements RegRea
         value = value.accept(transformer);
     }
 
-    @Override public String defaultString() { return "DynamicThreadLocalGet(%s, %s)".formatted(key, value); }
+    @Override public String defaultString() { return "%s = DynamicThreadLocalSet(%s, %s)".formatted(success, key, value); }
 
     @Override public DynamicThreadLocalSet getCopy() { return new DynamicThreadLocalSet(this); }
 }
