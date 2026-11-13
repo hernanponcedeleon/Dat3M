@@ -187,6 +187,7 @@ public class ThreadCreation implements ProgramProcessor {
         an array of "argc + 1" pointers whose last entry is NULL, as guaranteed by the C standard (5.1.2.2.1).
         The strings themselves are not modeled, i.e., the entries "argv[0..argc-1]" remain unconstrained.
         Nothing is done if "main" uses neither "argc" nor "argv".
+        TODO: Consider moving this instrumentation into LLVMVisitor in the future once it accepts options
      */
     private void initializeMainArguments(Thread main) {
         final Program program = main.getProgram();
