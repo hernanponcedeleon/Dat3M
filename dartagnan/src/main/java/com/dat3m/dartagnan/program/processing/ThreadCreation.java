@@ -154,10 +154,14 @@ public class ThreadCreation implements ProgramProcessor {
                 workingQueue.add(spawnedThread);
                 allThreads.add(spawnedThread);
 
+                // NOTE: The tid is stored before the release store that the spawned thread synchronizes with,
+                //  so the spawned thread (and threads synchronizing with it) observe the stored tid.
+                final Expression tid = new TIdExpr(archType, spawnedThread.thread());
                 final List<Event> replacement = eventSequence(
+                        create.hasTidAddress() ? newStore(create.getTidAddress(), tid) : null,
                         newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
+                        newLocal(tidRegister, tid)
                 );
                 IRHelper.replaceWithMetadata(create, replacement);
 

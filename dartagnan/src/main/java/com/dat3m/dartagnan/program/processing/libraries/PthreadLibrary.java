@@ -200,7 +200,8 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         assert resultRegister.getType() instanceof IntegerType;
 
         final Register tidReg = call.getFunction().newUniqueRegister("__tid", archType);
-        final Event createEvent = newDynamicThreadCreate(tidReg, threadType, targetFunction, List.of(argument));
+        final Event createEvent = newDynamicThreadCreate(tidReg, pidResultAddress, threadType, targetFunction,
+                List.of(argument));
         final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
         final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
 
@@ -225,9 +226,10 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newJumpUnless(testPthreadCreateDetached(attributesRegister), skipDetachLabel),
                 newDynamicThreadDetach(resultRegister, tidReg),
                 skipDetachLabel,
-                // Finally, return the thread ID and the status.
+                // Finally, return the status.
+                // NOTE: The thread id is stored by the create event itself, before the thread is spawned (as in glibc),
+                // so that threads synchronizing with the spawned thread observe it.
                 skipAttrLabel,
-                newStore(pidResultAddress, tidReg),
                 // TODO: Allow to return failure value (!= 0)
                 newLocal(resultRegister, expressions.makeGeneralZero(resultRegister.getType())),
                 newGoto(endOfPthreadCreate),
