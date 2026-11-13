@@ -100,20 +100,26 @@ public final class MemoryBoundsChecks implements ProgramProcessor {
         logger.info("Inserted {} memory bounds checks for {} memory accesses.", numChecks, accesses.size());
     }
 
-    // OR_o (o <= addr && addr + accessSize <= o + size(o))
+    // OR_o (o <= addr && accessSize <= size(o) && addr - o <= size(o) - accessSize)
+    // NOTE: All comparisons are unsigned. We compare offsets rather than end addresses (addr + accessSize <= o + size(o)),
+    //  because the additions may wrap around the address space, e.g., for an access ending exactly at 2^n.
+    //  The first two conjuncts ensure that neither subtraction wraps around.
     private Expression inBounds(Program program, MemoryCoreEvent access, Collection<MemoryObject> objects) {
         final IntegerType archType = program.getArchType();
         final Expression address = expressions.makeCast(access.getAddress(), archType);
         final Expression accessSize = expressions.makeValue(types.getMemorySizeInBytes(access.getAccessType()), archType);
-        final Expression accessEnd = expressions.makeAdd(address, accessSize);
         final List<Expression> cases = new ArrayList<>();
         for (MemoryObject object : objects) {
             final Expression base = expressions.makeCast(object, archType);
-            final Expression size = object.hasKnownSize() ? object.size() : new SizeOfExpr(archType, object);
-            final Expression end = expressions.makeAdd(base, expressions.makeCast(size, archType));
+            final Expression size = expressions.makeCast(
+                    object.hasKnownSize() ? object.size() : new SizeOfExpr(archType, object), archType);
+            final Expression offset = expressions.makeSub(address, base);
+            final Expression maxOffset = expressions.makeSub(size, accessSize);
             cases.add(expressions.makeAnd(
                     expressions.makeLTE(base, address, false),
-                    expressions.makeLTE(accessEnd, end, false)));
+                    expressions.makeAnd(
+                            expressions.makeLTE(accessSize, size, false),
+                            expressions.makeLTE(offset, maxOffset, false))));
         }
         return cases.stream().reduce(expressions::makeOr).orElseThrow();
     }

@@ -52,6 +52,8 @@ public class MemSafetyTest extends AbstractCTest {
                 {"memory-bounds-select_f", IMM, FAIL, 1},
                 {"memory-bounds-unknown-size", IMM, PASS, 1},
                 {"memory-bounds-unknown-size_f", IMM, FAIL, 1},
+                {"memory-bounds-wraparound", IMM, PASS, 1},
+                {"memory-bounds-wraparound_f", IMM, FAIL, 1},
                 // TODO: The following accesses are not instrumented yet, so their violations are missed.
                 // Accesses with an empty set of addressable objects are skipped.
                 // {"memory-bounds-uninit-pointer", IMM, FAIL, 1},
