@@ -29,6 +29,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /*
     Instruments every load and store with an assertion that the accessed bytes lie within one of the memory objects
@@ -88,8 +89,11 @@ public final class MemoryBoundsChecks implements ProgramProcessor {
                 .toList();
         int numChecks = 0;
         for (MemoryCoreEvent access : accesses) {
-            final Collection<MemoryObject> objects = alias.addressableObjects(access);
-            if (objects.isEmpty() || objects.contains(null)) {
+            // A null element means that the address may be NULL, which the check rejects anyway.
+            final List<MemoryObject> objects = alias.addressableObjects(access).stream()
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (objects.isEmpty()) {
                 continue;
             }
             final Assert check = EventFactory.newAssert(inBounds(program, access, objects), ERROR_MESSAGE);
