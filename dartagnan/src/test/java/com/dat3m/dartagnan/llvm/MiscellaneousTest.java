@@ -40,6 +40,10 @@ public class MiscellaneousTest extends AbstractCTest {
         if (name.equals("memcpy_s")) {
             task = task.withOption(OptionNames.MIXED_SIZE, "true");
         }
+        if (name.startsWith("calloc_nondet_size")) {
+            // Uninitialized memory is nondeterministic, so only calloc'ed memory reads zero.
+            task = task.withOption(OptionNames.MEMORY_IS_ZEROED, "false");
+        }
         return task;
     }
 
@@ -118,6 +122,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"ilp32-long-cas", IMM, PASS, 1},
                 {"ilp32-ubsan-struct", IMM, PASS, 1},
                 {"deadNullCheckUnreachable", IMM, PASS, 1},
+                {"calloc_nondet_size", IMM, PASS, 1},
+                {"calloc_nondet_size_f", IMM, FAIL, 1},
         });
     }
 }

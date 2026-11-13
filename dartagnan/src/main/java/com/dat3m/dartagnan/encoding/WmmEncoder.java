@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -10,6 +12,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.*;
@@ -846,9 +849,13 @@ public class WmmEncoder {
             // Encode the existence of rf-edges (+ semantics of uninit reads)
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
-                if (memoryIsZeroed) {
+                // Uninit reads return zero if all memory is zeroed or if they read from implicitly
+                // zero-initialized objects (see MemoryObject.isImplicitlyZeroInitialized).
+                final BooleanFormula readsZero = memoryIsZeroed ? bmgr.makeTrue() : readsImplicitlyZeroedMemory(r);
+                if (!bmgr.isFalse(readsZero)) {
                     final Expression zero = context.getExpressionFactory().makeGeneralZero(r.getAccessType());
-                    enc.add(bmgr.implication(uninit, exprEncoder.assignEqual(context.value(r), zero)));
+                    enc.add(bmgr.implication(bmgr.and(uninit, readsZero),
+                            exprEncoder.assignEqual(context.value(r), zero)));
                 }
 
                 final List<BooleanFormula> rfChoices = Lists.newArrayList(Iterables.concat(
@@ -860,6 +867,27 @@ public class WmmEncoder {
                 enc.add(bmgr.implication(context.execution(r), rfExistenceConstraint));
             }
             return null;
+        }
+
+        // OR_o (o <= addr && addr - o < size(o)) over all implicitly zero-initialized objects o the load may access.
+        private BooleanFormula readsImplicitlyZeroedMemory(Load load) {
+            final AliasAnalysis alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+            final ExpressionFactory exprs = context.getExpressionFactory();
+            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+            final IntegerType archType = program.getArchType();
+            final Expression address = exprs.makeCast(context.address(load), archType);
+            final List<BooleanFormula> cases = new ArrayList<>();
+            for (MemoryObject object : alias.addressableObjects(load)) {
+                if (object == null || !object.isImplicitlyZeroInitialized()) {
+                    continue;
+                }
+                final Expression base = exprs.makeCast(context.address(object), archType);
+                final Expression inObject = exprs.makeAnd(
+                        exprs.makeLTE(base, address, false),
+                        exprs.makeLT(exprs.makeSub(address, base), context.size(object), false));
+                cases.add(exprEncoder.encodeBooleanFinal(inObject).formula());
+            }
+            return bmgr.or(cases);
         }
 
         private BooleanFormula getUninitReadVar(Load load) {

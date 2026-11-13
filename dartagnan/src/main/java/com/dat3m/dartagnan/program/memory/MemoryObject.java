@@ -70,6 +70,13 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         return ((IntLiteral)size).getValueAsInt();
     }
 
+    // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size) cannot be
+    // initialized with Init events. Instead, reads from such objects that have no write partner (uninit reads)
+    // return zero (see WmmEncoder).
+    public boolean isImplicitlyZeroInitialized() {
+        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasKnownSize();
+    }
+
     public Expression alignment() { return alignment; }
     public boolean hasKnownAlignment() { return alignment instanceof IntLiteral; }
     public int getKnownAlignment() {
