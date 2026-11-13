@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.IntegerOption;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -74,6 +75,7 @@ public class ThreadCreation implements ProgramProcessor {
     @Option(name = ARGC_MAX,
             description = "Upper bound on the number of arguments 'argc' passed to 'main'. Defaults to 10.",
             secure = true)
+    @IntegerOption(min = 0)
     private int argcMax = 10;
 
     private final Compilation compiler;
@@ -184,7 +186,6 @@ public class ThreadCreation implements ProgramProcessor {
         If the entry point has the signature "int main(int argc, char *argv[], ...)", this method makes "argv" point to
         an array of "argc + 1" pointers whose last entry is NULL, as guaranteed by the C standard (5.1.2.2.1).
         The strings themselves are not modeled, i.e., the entries "argv[0..argc-1]" remain unconstrained.
-        Without this, "argc" and "argv" are unrelated nondeterministic values and "argv" does not point to any object.
         Nothing is done if "main" uses neither "argc" nor "argv".
      */
     private void initializeMainArguments(Thread main) {
@@ -211,7 +212,6 @@ public class ThreadCreation implements ProgramProcessor {
         // Besides keeping the argv array small, the upper bound also matters because the memory layout
         // does not prevent objects from wrapping around the address space: a huge argv array could, e.g.,
         // make &argv[argc] appear as a null pointer on 32-bit architectures.
-        Preconditions.checkArgument(argcMax >= 0, "Option %s must be non-negative.", ARGC_MAX);
         final BigInteger maxArgc = argcType.getMaximumValue(true).min(BigInteger.valueOf(argcMax));
         final Expression argcInRange = expressions.makeAnd(
                 expressions.makeGTE(argc, expressions.makeZero(argcType), true),
@@ -222,7 +222,6 @@ public class ThreadCreation implements ProgramProcessor {
         final Expression lastEntry = expressions.makeAdd(argv,
                 expressions.makeMul(argcArch, expressions.makeValue(pointerBytes, archType)));
 
-        // NOTE: "argc" needs an explicit definition, otherwise its uses are not guaranteed to read the same value.
         main.getEntry().insertAfter(eventSequence(
                 newLocal(argc, program.newConstant(argcType)),
                 newAssume(argcInRange),
