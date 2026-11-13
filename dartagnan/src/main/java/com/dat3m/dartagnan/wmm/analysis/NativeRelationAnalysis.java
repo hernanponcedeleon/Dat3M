@@ -1632,11 +1632,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 final EventGraph may0 = k0.getMaySet();
                 final EventGraph mayIn0 = may0.inverse();
                 final EventGraph mayIn1 = k1.getMaySet().inverse();
+                final Set<Event> union = SetUtil.union(may0.getDomain(), mayIn0.getDomain());
+                final IndexedDomain<Event> domain = ((IndexedSet<Event>) union).domain();
+                assert domain.fullSet().containsAll(pathCandidates.eventDomain(Dimension.DOMAIN).fullSet());
+                assert domain.fullSet().containsAll(pathCandidates.eventDomain(Dimension.RANGE).fullSet());
                 pathCandidates.apply((x, z) -> {
                     if (Tuple.isLoop(x, z)) {
                         return;
                     }
-                    final Set<Event> first = newSet(mayIn0.getRange(z));
+                    final Set<Event> first = domain.newSet(mayIn0.getRange(z));
                     first.add(z);
                     first.retainAll(k1.getMaySet().getRange(x));
                     if (first.size() == 1) {
@@ -1645,7 +1649,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                             e1.add(x, y);
                         }
                     }
-                    final Set<Event> last = newSet(may0.getRange(x));
+                    final Set<Event> last = domain.newSet(may0.getRange(x));
                     last.add(x);
                     last.retainAll(mayIn1.getRange(z));
                     if (last.size() == 1) {
