@@ -59,6 +59,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 NonterminationDetection.class,
                 ProcessingManager.class,
                 SparseConditionalConstantPropagation.class,
+                ThreadCreation.class,
                 Compilation.class,
                 CoreReasoner.class,
                 Dartagnan.DartagnanOptions.class,
