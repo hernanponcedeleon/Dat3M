@@ -322,6 +322,11 @@ public class EventFactory {
         return new DynamicThreadCreate(tidRegister, funcType, functionPtr, arguments);
     }
 
+    public static DynamicThreadCreate newDynamicThreadCreate(Register tidRegister, Expression tidAddress, FunctionType funcType,
+                                                             Expression functionPtr, List<Expression> arguments) {
+        return new DynamicThreadCreate(tidRegister, tidAddress, funcType, functionPtr, arguments);
+    }
+
     public static DynamicThreadJoin newDynamicThreadJoin(Register resultRegister, Expression tidExpr) {
         return new DynamicThreadJoin(resultRegister, tidExpr);
     }
