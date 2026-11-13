@@ -103,6 +103,10 @@ public final class TypeFactory {
     }
 
     public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets) {
+        return getAggregateType(fields, offsets, computeDefaultSize(fields, offsets));
+    }
+
+    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets, int size) {
         checkNotNull(fields);
         checkNotNull(offsets);
         checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
@@ -115,7 +119,7 @@ public final class TypeFactory {
         checkArgument(IntStream.range(0, fields.size() - 1).allMatch(
                 i -> hasKnownSize(fields.get(i))),
                 "Non-last element with unknown size");
-        return typeNormalizer.normalize(new AggregateType(fields, offsets));
+        return typeNormalizer.normalize(new AggregateType(fields, offsets, size));
     }
 
     private List<Integer> computeDefaultOffsets(List<Type> fields) {
@@ -131,6 +135,16 @@ public final class TypeFactory {
             offset += getMemorySizeInBytes(fields.get(i));
         }
         return offsets;
+    }
+
+    private int computeDefaultSize(List<Type> fields, List<Integer> offsets) {
+        if (!fields.stream().allMatch(this::hasKnownSize)) {
+            return -1;
+        }
+        if (fields.isEmpty()) {
+            return 0;
+        }
+        return offsets.getLast() + getMemorySizeInBytes(fields.getLast());
     }
 
     public ArrayType getArrayType(Type element) {
@@ -194,17 +208,15 @@ public final class TypeFactory {
                 int size = elSize * arrayType.getNumElements();
                 yield arrayType.getAlignment() != null ? paddedSize(size, arrayType.getAlignment()) : size;
             }
+            case AggregateType aType when !padded -> aType.getAllocationSize();
             case AggregateType aType -> {
                 List<TypeOffset> typeOffsets = aType.getFields();
-                if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
-                    yield -1;
-                }
                 if (typeOffsets.isEmpty()) {
                     yield 0;
                 }
                 TypeOffset lastTypeOffset = typeOffsets.getLast();
                 int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
-                yield padded ? paddedSize(baseSize, getAlignment(type)) : baseSize;
+                yield paddedSize(baseSize, getAlignment(type));
             }
             default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
         };

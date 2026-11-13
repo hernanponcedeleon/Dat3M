@@ -1303,7 +1303,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     ? ctx.opaquePointerType().addrSpace() : ctx.addrSpace());
             return null;
         } else if (ctx.getText().equals("void")) {
-            parsedType = new ParsedType(types.getVoidType(), new Alignment(1, 1), 1);
+            parsedType = new ParsedType(types.getVoidType(), new Alignment(1, 1));
             return null;
         } else if (ctx.type() != null && ctx.params() != null) {
             //FIXME: this should parse a function type "retType (params)", but
@@ -1315,7 +1315,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 paramTypes.add(parseType(paramContext.type()));
             }
             final Type type = types.getFunctionType(returnType, paramTypes, isVarArgs);
-            parsedType = new ParsedType(type, new Alignment(1, 1), Math.ceilDiv(dataLayout.pointerSize, 8));
+            parsedType = new ParsedType(type, new Alignment(1, 1));
             return null;
         } else {
             return super.visitType(ctx);
@@ -1764,23 +1764,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // Keep layout alongside the parsed type: pointers and integers can have the same
     // internal representation while LLVM assigns them different ABI alignments.
-    private record ParsedType(Type type, Alignment alignment, int allocationSize) {
-        private ParsedType(Type type, Alignment alignment) {
-            final int size = TypeFactory.getInstance().getMemorySizeInBytes(type);
-            this(type, alignment, size < 0 ? size : alignTo(size, alignment.abi()));
-        }
+    private record ParsedType(Type type, Alignment alignment) {
 
-        @Override
-        public int allocationSize() {
-            // TypeFactory pads aggregates to the natural alignment of their fields rather than to the data layout's.
-            // Strides and allocations derived from LLVM's size must not be smaller than TypeFactory's size.
-            // TODO: Remove once aggregate types can carry an explicit size.
-            final int naturalSize = TypeFactory.getInstance().getMemorySizeInBytes(type);
-            if (0 <= allocationSize && allocationSize < naturalSize) {
-                throw new ParsingException("Unsupported struct layout: data layout requires %d bytes, "
-                        + "but natural layout requires %d bytes for %s", allocationSize, naturalSize, type);
-            }
-            return allocationSize;
+        private int allocationSize() {
+            return TypeFactory.getInstance().getMemorySizeInBytes(type);
         }
 
         private Type allocationType() {
@@ -1856,10 +1843,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 offset = Math.addExact(offset, field.allocationSize());
             }
             final Type type = TypeFactory.getInstance().getAggregateType(
-                    fields.stream().map(ParsedType::type).toList(), offsets);
+                    fields.stream().map(ParsedType::type).toList(), offsets, alignTo(offset, abi));
             final var alignment = new Alignment(abi, Math.max(abi, aggregateAlignment.preferred()));
-            final int allocationSize = alignTo(offset, abi);
-            return new ParsedType(type, alignment, allocationSize);
+            return new ParsedType(type, alignment);
         }
 
         private Alignment getPointerAlignment(int addressSpace) {
