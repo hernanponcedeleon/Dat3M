@@ -1630,19 +1630,24 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final IndexedEventGraph e1 = newGraphWithDomain(d1);
             if (!pathCandidates.isEmpty()) {
                 final EventGraph may0 = k0.getMaySet();
+                final EventGraph mayIn0 = may0.inverse();
                 final EventGraph mayIn1 = k1.getMaySet().inverse();
                 pathCandidates.apply((x, z) -> {
                     if (Tuple.isLoop(x, z)) {
                         return;
                     }
-                    final Set<Event> first = SetUtil.filter(k1.getMaySet().getRange(x), y -> y == z || may0.contains(y, z));
+                    final Set<Event> first = newSet(mayIn0.getRange(z));
+                    first.add(z);
+                    first.retainAll(k1.getMaySet().getRange(x));
                     if (first.size() == 1) {
                         final Event y = first.iterator().next();
                         if (y == z || exec.isImplied(x, z) || exec.isImplied(y, z)) {
                             e1.add(x, y);
                         }
                     }
-                    final Set<Event> last = SetUtil.filter(mayIn1.getRange(z), y -> y == x || may0.contains(x, y));
+                    final Set<Event> last = newSet(may0.getRange(x));
+                    last.add(x);
+                    last.retainAll(mayIn1.getRange(z));
                     if (last.size() == 1) {
                         final Event y = last.iterator().next();
                         if (y == x || exec.isImplied(z, x) || exec.isImplied(y, x)) {
