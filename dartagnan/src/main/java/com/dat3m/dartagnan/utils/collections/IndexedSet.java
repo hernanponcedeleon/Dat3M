@@ -151,8 +151,14 @@ public final class IndexedSet<E> extends AbstractSet<E> {
                 return o.loneMember == -1 || test(elements.length, member, loneMember, o.loneMember);
             }
             if (member != null) {
-                for (int pageindex = 0; pageindex < member.length; pageindex++) {
+                final int pagecount = Integer.min(member.length, o.member.length);
+                for (int pageindex = 0; pageindex < pagecount; pageindex++) {
                     if (0L != (~member[pageindex] & o.member[pageindex])) {
+                        return false;
+                    }
+                }
+                for (int pageindex = pagecount; pageindex < o.member.length; pageindex++) {
+                    if (0L != o.member[pageindex]) {
                         return false;
                     }
                 }
