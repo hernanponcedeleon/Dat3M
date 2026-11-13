@@ -45,6 +45,10 @@ import java.util.Objects;
     For objects of unknown size, the check refers to the size chosen by the memory layout (SizeOfExpr).
     If the alias analysis reports all objects, the check is still sound (but cannot detect overflows into
     other objects), so these accesses are instrumented.
+
+    TODO: This pass runs late in the pipeline, so earlier passes may already have removed out-of-bounds accesses.
+     E.g., MemToReg promotes stack allocations whose accesses have constant offsets to registers, without checking
+     that these offsets are in bounds. The (out-of-bounds) accesses then no longer exist and cannot be detected here.
  */
 public final class MemoryBoundsChecks implements ProgramProcessor {
 
