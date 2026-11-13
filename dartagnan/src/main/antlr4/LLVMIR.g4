@@ -379,6 +379,8 @@ inAlloca: 'inalloca' '(' type ')';
 paramAttr:
 	'allocalign'
 	| 'allocptr'
+	| 'dead_on_return'
+	| 'dead_on_unwind'
 	| 'immarg'
 	| 'inreg'
 	| 'nest'
@@ -394,6 +396,7 @@ paramAttr:
 	| 'swiftasync'
 	| 'swifterror'
 	| 'swiftself'
+	| 'writable'
 	| 'writeonly'
 	| 'zeroext';
 preallocated: 'preallocated' '(' type ')';
