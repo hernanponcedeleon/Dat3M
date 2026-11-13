@@ -54,9 +54,10 @@ public class Program extends MetadataCarrierBase<Program> {
 
         @Option(name = SAFE_ALLOCATIONS,
                 description = "Assume that heap allocations always fit into the address space and thus never return NULL. " +
-                        "Executions with allocations that do not fit are discarded (default true).",
+                        "Executions with allocations that do not fit are discarded. " +
+                        "Otherwise, heap allocations that do not fit return NULL (default false).",
                 secure = true)
-        private boolean safeAllocations = true;
+        private boolean safeAllocations = false;
     }
 
     // Shape
