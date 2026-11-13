@@ -121,6 +121,7 @@ public class WmmEncoder {
             c.accept(encoder);
         }
         encodeContradictions(encoder.enc);
+        logger.info("#Aliased edges: {}", encoder.aliasedEdges);
 
         // FIXME: This is slightly off for base relations like rf and co
         //  where we ignore the active set during encoding (we encode slightly more than
@@ -366,6 +367,23 @@ public class WmmEncoder {
         final Program program = context.getTask().getProgram();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
+        int aliasedEdges = 0;
+
+        // Returns the edges of the defined relation whose definition clause needs to be encoded:
+        // the active set without the edges that are substituted by their definition (see EdgeAliasing).
+        // For an aliased edge, EncodingContext.edge() already returns (the formula of) its definition,
+        // so its definition clause would only relate that formula to itself (e.g. "l <=> l"),
+        // which is redundant.
+        // NOTE: Aliased edges must not be removed from the active set itself. The alias refers to
+        //  the edges of the operands, so those must stay active and keep their definitions encoded.
+        //  Hence, the filtering happens only here, when encoding the definition clauses.
+        private EventGraph getEncodedSet(Definition def) {
+            final Relation rel = def.getDefinedRelation();
+            final EventGraph active = getActiveSet(def);
+            final EventGraph encoded = active.filter((e1, e2) -> !context.isAliased(rel, e1, e2));
+            aliasedEdges += active.size() - encoded.size();
+            return encoded;
+        }
 
         // ASSUMPTION: The active set of a static relation is a subset of the most precise may-set.
         //             This holds true as long as our RA computes the most precise may-set for static relations.
@@ -424,7 +442,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(union).apply((e1, e2) -> {
+            getEncodedSet(union).apply((e1, e2) -> {
                 final BooleanFormula edge = e0.encode(e1, e2);
                 List<BooleanFormula> opt = new ArrayList<>(operands.size());
                 for (EncodingContext.EdgeEncoder e : encoders) {
@@ -443,7 +461,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(inter).apply((e1, e2) -> {
+            getEncodedSet(inter).apply((e1, e2) -> {
                 final BooleanFormula edge = e0.encode(e1, e2);
                 final List<BooleanFormula> opt = new ArrayList<>(operands.size());
                 for (int i = 0; i < operands.size(); i++) {
@@ -466,7 +484,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
             EncodingContext.EdgeEncoder enc2 = context.edge(r2);
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(diff).apply((e1, e2) -> {
+            getEncodedSet(diff).apply((e1, e2) -> {
                 final BooleanFormula edge = enc0.encode(e1, e2);
                 BooleanFormula opt1 = enc1.encode(e1, e2);
                 BooleanFormula opt2 = bmgr.not(enc2.encode(e1, e2));
@@ -487,7 +505,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder enc2 = context.edge(r2).withCache();
             Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(comp).apply((e1, e2) -> {
+            getEncodedSet(comp).apply((e1, e2) -> {
                 final List<BooleanFormula> orClause = new ArrayList<>();
                 for (Event e : out.getOrDefault(e1, Set.of())) {
                     if (k2.getMaySet().contains(e, e2)) {
@@ -509,7 +527,7 @@ public class WmmEncoder {
             final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
             final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(projection).apply((e1, e2) -> {
+            getEncodedSet(projection).apply((e1, e2) -> {
                 assert e1.equals(e2);
                 final var opt = new ArrayList<BooleanFormula>();
                 for (Event alt : altMap.getOrDefault(e1, Set.of())) {
@@ -622,7 +640,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder encSetId = context.edge(setId);
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
             final ApproxType approxType = getApproxType(setId);
-            getActiveSet(id).apply((e1, e2) ->
+            getEncodedSet(id).apply((e1, e2) ->
                     encodeDefinition(approxType,
                             encSetId.encode(e1, e2),
                             e1 == e2 ? encDomain.encode(e1, e2) : bmgr.makeFalse()
@@ -638,7 +656,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
             final ApproxType approxType = getApproxType(rel);
-            getActiveSet(inv).apply((e1, e2) ->
+            getEncodedSet(inv).apply((e1, e2) ->
                     encodeDefinition(approxType,
                             enc0.encode(e1, e2),
                             enc1.encode(e2, e1))
@@ -655,7 +673,7 @@ public class WmmEncoder {
             EncodingContext.EdgeEncoder encDomain = context.edge(domain);
             EncodingContext.EdgeEncoder encRange = context.edge(range);
             final ApproxType approxType = getApproxType(product);
-            getActiveSet(cartesianProduct).apply((e1, e2) ->
+            getEncodedSet(cartesianProduct).apply((e1, e2) ->
                     encodeDefinition(approxType,
                             encProduct.encode(e1, e2),
                             bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2))

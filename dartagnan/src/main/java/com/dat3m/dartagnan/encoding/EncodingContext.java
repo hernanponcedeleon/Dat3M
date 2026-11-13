@@ -34,6 +34,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.EDGE_ALIASING;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -60,6 +61,15 @@ public final class EncodingContext {
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
     private boolean shouldMergeCFVars = true;
+
+    @Option(name = EDGE_ALIASING,
+            description = "Substitutes edges of derived relations by their definition instead of introducing " +
+                    "a new variable. The value selects which edges are substituted: NONE (no aliasing) or " +
+                    "LITERALS (edges whose definition is equivalent to a constant or a literal). See EdgeAliasPolicy.",
+            secure = true)
+    private EdgeAliasPolicy.Preset edgeAliasPolicy = EdgeAliasPolicy.Preset.LITERALS;
+
+    private Map<Relation, EdgeAliasing.Alias> edgeAliases = Map.of();
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
@@ -105,6 +115,7 @@ public final class EncodingContext {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
+        logger.info("{}: {}", EDGE_ALIASING, context.edgeAliasPolicy);
         context.initialize();
 
         return context;
@@ -260,7 +271,7 @@ public final class EncodingContext {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
-        EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
+        EdgeEncoder variable = getEdgeVariableEncoder(relation);
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
             return !may.contains(e1, e2)
@@ -271,8 +282,33 @@ public final class EncodingContext {
         };
     }
 
+    // Returns true if the non-trivial edge (e1, e2) of the relation is substituted by its definition
+    // (see EdgeAliasing). The definition of such edges must not be encoded.
+    // The may/must check mirrors edge(): trivial edges are never aliased.
+    public boolean isAliased(Relation relation, Event e1, Event e2) {
+        final EdgeAliasing.Alias alias = edgeAliases.get(relation);
+        if (alias == null) {
+            return false;
+        }
+        final RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
+        return k.getMaySet().contains(e1, e2) && !k.getMustSet().contains(e1, e2) && alias.get(e1, e2) != null;
+    }
+
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation).encode(first, second);
+    }
+
+    // Encodes non-trivial edges: either by the definition they are aliased to (see EdgeAliasing) or by a variable.
+    private EdgeEncoder getEdgeVariableEncoder(Relation relation) {
+        final EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
+        final EdgeAliasing.Alias alias = edgeAliases.get(relation);
+        if (alias == null) {
+            return variable;
+        }
+        return (e1, e2) -> {
+            final BooleanFormula aliased = alias.get(e1, e2);
+            return aliased != null ? aliased : variable.encode(e1, e2);
+        };
     }
 
     private EdgeEncoder getEdgeVariableEncoder(Definition def) {
@@ -349,6 +385,11 @@ public final class EncodingContext {
                     default -> { }
                 }
             }
+        }
+
+        // ------- Edge aliases -------
+        if (edgeAliasPolicy != EdgeAliasPolicy.Preset.NONE) {
+            edgeAliases = EdgeAliasing.compute(this, constraintsToEncode, edgeAliasPolicy);
         }
     }
 }
