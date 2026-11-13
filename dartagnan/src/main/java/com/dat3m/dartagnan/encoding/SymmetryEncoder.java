@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.symmetry.CoSymmetryBreaking;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
@@ -48,6 +49,7 @@ public class SymmetryEncoder {
                     The target to break symmetry on. Allowed options are:
                     - A relation name to break symmetry on.
                     - The special value "_cf" to break symmetry on the control flow.
+                    - The special value "_co" for (sound) coherence-based symmetry breaking (see CoSymmetryBreaking).
                     - The empty string to disable symmetry breaking.""",
             secure = true)
     private String symmBreakTarget = "";
@@ -70,6 +72,8 @@ public class SymmetryEncoder {
 
         if (symmBreakTarget.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
+        } else if (symmBreakTarget.equals("_co")) {
+            logger.info("Breaking symmetry on coherence.");
         } else if (symmBreakTarget.equals("_cf")) {
             logger.info("Breaking symmetry on control flow.");
             c.getAnalysisContext().requires(BranchEquivalence.class);
@@ -95,6 +99,8 @@ public class SymmetryEncoder {
         switch(symmBreakTarget) {
             case "":
                 return bmgr.makeTrue();
+            case "_co":
+                return new CoSymmetryBreaking(context).encode();
             case "_cf":
                 maySet = cfSet();
                 edgeEncoder = context::execution;
