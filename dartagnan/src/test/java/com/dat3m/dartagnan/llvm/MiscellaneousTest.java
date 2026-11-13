@@ -126,6 +126,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"calloc_nondet_size_f", IMM, FAIL, 1},
                 {"main-args", IMM, PASS, 1},
                 {"main-args_f", IMM, FAIL, 1},
+                {"main-args-zero_f", IMM, FAIL, 1},
         });
     }
 }

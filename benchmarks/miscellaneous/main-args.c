@@ -1,11 +1,13 @@
 /*
     argv points to an array of argc + 1 pointers whose last entry is NULL (C11 5.1.2.2.1).
+    argc may be 0, in which case argv[0] is NULL.
     The strings argv[0..argc-1] are not modeled, so their values are unconstrained.
     Compile with -fsanitize=null to check that accesses to argv within argc are valid.
 
     Expected verdicts:
       default:     PASS
       -DFAIL:      FAIL (argv[0] may be any pointer)
+      -DZERO:      FAIL (argc may be 0)
 */
 
 extern void __assert_fail(const char *, const char *, unsigned int, const char *);
@@ -19,10 +21,12 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-#ifdef FAIL
+#if defined(FAIL)
     if (argv[0] == 0) reach_error();
+#elif defined(ZERO)
+    if (argc == 0) reach_error();
 #else
-    if (argc < 1 || argv[argc] != 0) reach_error();
+    if (argc < 0 || argv[argc] != 0) reach_error();
 #endif
     return 0;
 }

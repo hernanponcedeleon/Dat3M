@@ -207,13 +207,14 @@ public class ThreadCreation implements ProgramProcessor {
         final IntegerType archType = program.getArchType();
         final int pointerBytes = types.getMemorySizeInBytes(pointerType);
 
-        // 1 <= argc <= argcMax. Besides keeping the argv array small, this also matters because the memory layout
+        // 0 <= argc <= argcMax (argc may be 0, in which case argv[0] is NULL).
+        // Besides keeping the argv array small, the upper bound also matters because the memory layout
         // does not prevent objects from wrapping around the address space: a huge argv array could, e.g.,
         // make &argv[argc] appear as a null pointer on 32-bit architectures.
-        Preconditions.checkArgument(argcMax >= 1, "Option %s must be positive.", ARGC_MAX);
+        Preconditions.checkArgument(argcMax >= 0, "Option %s must be non-negative.", ARGC_MAX);
         final BigInteger maxArgc = argcType.getMaximumValue(true).min(BigInteger.valueOf(argcMax));
         final Expression argcInRange = expressions.makeAnd(
-                expressions.makeGTE(argc, expressions.makeOne(argcType), true),
+                expressions.makeGTE(argc, expressions.makeZero(argcType), true),
                 expressions.makeLTE(argc, expressions.makeValue(maxArgc, argcType), true));
 
         final Expression argcArch = expressions.makeCast(argc, archType, true);
