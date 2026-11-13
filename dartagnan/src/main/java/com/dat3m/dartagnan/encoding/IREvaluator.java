@@ -89,7 +89,7 @@ public class IREvaluator implements AutoCloseable {
     }
 
     public boolean isAllocated(MemoryObject memObj) {
-        return memObj.isStaticallyAllocated() || isExecuted(memObj.getAllocationSite());
+        return TRUE.equals(smtModel.evaluate(ctx.allocated(memObj)));
     }
 
     public Expression value(MemoryCoreEvent e) {

@@ -200,9 +200,28 @@ public final class EncodingContext {
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
     // NOTE: This formula represents the size of successfully allocated memory objects.
-    // For non-allocated memory objects, the size may be any non-negative value.
+    // For non-allocated memory objects, the size may be any non-negative value
+    // (zero for heap objects whose allocation does not fit into the address space).
     public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
+    }
+
+    /// Describes that the heap allocation of {@code object} fits into the address space, i.e., it returns the object
+    /// rather than NULL (if executed). Allocations of static and stack objects always succeed.
+    public BooleanFormula allocationSucceeds(MemoryObject object) {
+        if (!object.isHeapAllocated()) {
+            return bmgr.makeTrue();
+        }
+        final int allocationSiteId = object.getAllocationSite().getGlobalId();
+        return bmgr.makeVariable(fmgr.escape("fits%d".formatted(allocationSiteId)));
+    }
+
+    /// Describes that {@code object} has been successfully allocated during the execution.
+    public BooleanFormula allocated(MemoryObject object) {
+        if (object.isStaticallyAllocated()) {
+            return bmgr.makeTrue();
+        }
+        return bmgr.and(execution(object.getAllocationSite()), allocationSucceeds(object));
     }
 
     /// Describes that {@code object} has been allocated, but has not been deallocated during the execution.

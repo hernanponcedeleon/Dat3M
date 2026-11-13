@@ -260,7 +260,7 @@ public class PropertyEncoder {
         }
         // Do not leak unallocated objects.
         for (Map.Entry<MemoryObject, Var> entry : variables.entrySet()) {
-            enc.add(bmgr.implication(entry.getValue().leak, context.execution(entry.getKey().getAllocationSite())));
+            enc.add(bmgr.implication(entry.getValue().leak, context.allocated(entry.getKey())));
         }
         // Do not leak deallocated objects.
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();

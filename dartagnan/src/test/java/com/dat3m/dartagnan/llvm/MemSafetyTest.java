@@ -54,6 +54,12 @@ public class MemSafetyTest extends AbstractCTest {
                 {"memory-bounds-unknown-size_f", IMM, FAIL, 1},
                 {"memory-bounds-wraparound", IMM, PASS, 1},
                 {"memory-bounds-wraparound_f", IMM, FAIL, 1},
+                {"ilp32-malloc-wraparound", IMM, PASS, 1},
+                {"ilp32-malloc-wraparound_f", IMM, FAIL, 1},
+                {"ilp32-malloc-too-large", IMM, PASS, 1},
+                {"ilp32-malloc-too-large_f", IMM, FAIL, 1},
+                {"ilp32-malloc-not-executed", IMM, PASS, 1},
+                {"ilp32-malloc-not-executed_f", IMM, FAIL, 1},
                 // TODO: The following accesses are not instrumented yet, so their violations are missed.
                 // Accesses with an empty set of addressable objects are skipped.
                 // {"memory-bounds-uninit-pointer", IMM, FAIL, 1},
