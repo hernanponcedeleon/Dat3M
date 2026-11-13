@@ -144,7 +144,8 @@ public final class TypeFactory {
         if (fields.isEmpty()) {
             return 0;
         }
-        return offsets.getLast() + getMemorySizeInBytes(fields.getLast());
+        final int alignment = fields.stream().mapToInt(this::getAlignment).max().orElseThrow();
+        return paddedSize(offsets.getLast() + getMemorySizeInBytes(fields.getLast()), alignment);
     }
 
     public ArrayType getArrayType(Type element) {
@@ -208,15 +209,14 @@ public final class TypeFactory {
                 int size = elSize * arrayType.getNumElements();
                 yield arrayType.getAlignment() != null ? paddedSize(size, arrayType.getAlignment()) : size;
             }
-            case AggregateType aType when !padded -> aType.getAllocationSize();
+            case AggregateType aType when padded -> aType.getAllocationSize();
             case AggregateType aType -> {
                 List<TypeOffset> typeOffsets = aType.getFields();
                 if (typeOffsets.isEmpty()) {
                     yield 0;
                 }
                 TypeOffset lastTypeOffset = typeOffsets.getLast();
-                int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
-                yield paddedSize(baseSize, getAlignment(type));
+                yield lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
             }
             default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
         };
@@ -232,7 +232,7 @@ public final class TypeFactory {
                 }
                 yield getAlignment(arrayType.getElementType());
             }
-            case AggregateType aType -> aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
+            case AggregateType aType -> aType.getFields().stream().mapToInt(o -> getAlignment(o.type())).max().orElse(1);
             default -> throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
         };
     }
