@@ -4,14 +4,12 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.frontend.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.test.ResourceHelper;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -213,12 +211,6 @@ public class ParserLlvmTest {
                 "%S = type { i8, i32 }\n@g = global %S zeroinitializer",
                 "%p = alloca %S\nret i32 0");
         assertAllocationAlignments(program, 16);
-    }
-
-    //TODO accept this program and add it to MiscellaneousTest.
-    @Test(expected = ParsingException.class)
-    public void ilp32LongIsMisaligned() throws Exception {
-        new ProgramParser().parse(ResourceHelper.getTestResourcePath("miscellaneous/ilp32-long-in-struct.ll"));
     }
 
     private static void assertInferredAlignment(String layout, String type, long expected) {
