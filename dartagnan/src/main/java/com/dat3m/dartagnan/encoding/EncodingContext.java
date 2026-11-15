@@ -49,6 +49,7 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
+    private final EdgeEquivalenceAnalysis edgeEquivalenceAnalysis;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
     final Collection<Constraint> constraintsToEncode;
@@ -80,6 +81,7 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
+        edgeEquivalenceAnalysis = a.requires(EdgeEquivalenceAnalysis.class);
         fmgr = new FormulaManagerExt(m);
         bmgr = fmgr.getBooleanFormulaManager();
         exprEncoder = new ExpressionEncoder(this);
@@ -280,13 +282,24 @@ public final class EncodingContext {
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
         EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
+        // Relations whose definition is not encoded (e.g. cut in refinement) must stay free variables.
+        final boolean useEquivalents = edgeEquivalenceAnalysis.hasEquivalents(relation)
+                && isEncoded(relation.getDefinition());
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
-            return !may.contains(e1, e2)
-                    ? bmgr.makeFalse()
-                    : must.contains(e1, e2)
-                    ? execution(e1, e2)
-                    : variable.encode(e1, e2);
+            if (!may.contains(e1, e2)) {
+                return bmgr.makeFalse();
+            }
+            if (must.contains(e1, e2)) {
+                return execution(e1, e2);
+            }
+            if (useEquivalents) {
+                final Optional<EdgeEquivalenceAnalysis.Edge> eq = edgeEquivalenceAnalysis.getEquivalent(relation, e1, e2);
+                if (eq.isPresent()) {
+                    return edge(eq.get().relation(), eq.get().first(), eq.get().second());
+                }
+            }
+            return variable.encode(e1, e2);
         };
     }
 

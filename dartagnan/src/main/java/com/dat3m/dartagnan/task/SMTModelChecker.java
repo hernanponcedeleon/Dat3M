@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.task.verification.VerificationTask;
 import com.dat3m.dartagnan.utils.EnvironmentInfo;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ActiveSetAnalysis;
+import com.dat3m.dartagnan.encoding.EdgeEquivalenceAnalysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -184,6 +186,8 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationEventDomains.class, RelationEventDomains.newInstance(task.getMemoryModel(), analysisContext));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+        analysisContext.register(ActiveSetAnalysis.class, ActiveSetAnalysis.newInstance(task.getMemoryModel(), analysisContext, config));
+        analysisContext.register(EdgeEquivalenceAnalysis.class, EdgeEquivalenceAnalysis.fromConfig(task.getMemoryModel(), analysisContext, config));
     }
 
     public static void performIntervalAnalysis(Task task, Context analysisContext, Configuration config) throws InvalidConfigurationException {

@@ -47,6 +47,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 OutputGenerator.class,
                 ActiveSetAnalysis.class,
                 EncodingContext.class,
+                EdgeEquivalenceAnalysis.class,
                 ProgramEncoder.class,
                 SymmetryEncoder.class,
                 WmmEncoder.class,
