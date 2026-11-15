@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.DirectAddressDependency;
 import com.dat3m.dartagnan.wmm.definition.DirectDataDependency;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
+    private final Map<Relation, EdgeEncoder> edgeEncoders = new HashMap<>();
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
@@ -95,7 +97,7 @@ public final class EncodingContext {
         // NOTE: This guarantees a deterministic ordering of the constraints to be encoded
         constraintsToEncode = t.getMemoryModel().getConstraints().stream()
                 .filter(depGraph::contains)
-                .toList();
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     public static EncodingContext of(Task task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -278,6 +280,10 @@ public final class EncodingContext {
     }
 
     public EdgeEncoder edge(Relation relation) {
+        return edgeEncoders.computeIfAbsent(relation, this::createEdgeEncoder);
+    }
+
+    private EdgeEncoder createEdgeEncoder(Relation relation) {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
