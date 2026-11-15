@@ -74,6 +74,11 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.encoding.EdgeEquivalenceAnalysis",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
         "name":"com.dat3m.dartagnan.program.Program$SemanticConfig",
         "allDeclaredFields":true
       },
