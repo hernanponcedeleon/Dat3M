@@ -39,9 +39,10 @@ import static com.dat3m.dartagnan.configuration.OptionNames.EDGE_EQUIVALENCE;
         r := [s] * [t]     r(e1, e2) == s(e1, e1)   if t(e2, e2) is a droppable must-edge
         r := s & t         r(e1, e2) == s(e1, e2)   if t(e1, e2) is a droppable must-edge
     then s(e3, e4) is the equivalent edge of r(e1, e2): EncodingContext.edge() returns the formula of s(e3, e4)
-    for r(e1, e2). The definition clause of r(e1, e2) is still encoded, but it becomes a tautology
-    (e.g. "l <=> l"), which the solver removes. Chains collapse, because the equivalent edge is itself obtained
-    via EncodingContext.edge().
+    for r(e1, e2). Chains of substitutions collapse, because the equivalent edge is itself obtained via
+    EncodingContext.edge().
+    The definition clause of r(e1, e2) is still encoded by WmmEncoder. Without dropped must-edges (inverse,
+    union, difference, set identity, projection) it becomes a tautology (e.g. "l <=> l"), which the solver removes.
 
     An edge r(e1, e2) has an equivalent edge only if
         - r is not (mutually) recursive (to guarantee termination when resolving equivalent edges),
@@ -57,6 +58,13 @@ import static com.dat3m.dartagnan.configuration.OptionNames.EDGE_EQUIVALENCE;
           from one. Their encoding only requires the edges to be a fixed point of the definition, not
           necessarily the least one, so an edge can support itself (e.g. via a cycle) even if its events
           are not executed.
+    NOTE: WmmEncoder does not know about dropped must-edges and keeps them in the definition clause, e.g.
+     "k(a, b) <=> k(a, b) /\ exec(c) /\ exec(d)" for a composition, product or intersection. Which direction
+     of this clause is encoded depends on the approximation of the substituted relation:
+        - OVER (positive polarity):   "k(a, b) /\ exec(c) /\ exec(d) => k(a, b)", a tautology.
+        - EXACT or UNDER (negative):  contains "k(a, b) => exec(c) /\ exec(d)", which is not a tautology.
+     The latter is redundant only if k(a, b) indeed implies the execution of c and d, i.e. if the
+     must-edge conditions above are correct.
     NOTE: Equivalent edges are computed for all definitions. EncodingContext ignores them for relations whose
      definition is not encoded (e.g. cut definitions in refinement), so that those stay free variables.
  */
