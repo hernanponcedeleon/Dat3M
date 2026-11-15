@@ -502,7 +502,8 @@ public class ThreadCreation implements ProgramProcessor {
                 contentTypes.add(memoryObject.getInitialValue(initOffset).getType());
                 offsets.add(initOffset);
             }
-            final Type memoryType = types.getAggregateType(contentTypes, offsets);
+            // Keep the original size: the natural size of the initialized fields may differ from it.
+            final Type memoryType = types.getAggregateType(contentTypes, offsets, memoryObject.getKnownSize());
 
             // Allocate single object of memory type
             final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, pointerType);
