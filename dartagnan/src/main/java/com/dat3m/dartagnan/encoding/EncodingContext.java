@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.DirectAddressDependency;
 import com.dat3m.dartagnan.wmm.definition.DirectDataDependency;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
+    private final EdgeEquivalenceAnalysis edgeEquivalenceAnalysis;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
     final Collection<Constraint> constraintsToEncode;
@@ -61,6 +63,7 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
+    private final Map<Relation, EdgeEncoder> edgeEncoders = new HashMap<>();
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
@@ -80,6 +83,7 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
+        edgeEquivalenceAnalysis = a.requires(EdgeEquivalenceAnalysis.class);
         fmgr = new FormulaManagerExt(m);
         bmgr = fmgr.getBooleanFormulaManager();
         exprEncoder = new ExpressionEncoder(this);
@@ -93,7 +97,7 @@ public final class EncodingContext {
         // NOTE: This guarantees a deterministic ordering of the constraints to be encoded
         constraintsToEncode = t.getMemoryModel().getConstraints().stream()
                 .filter(depGraph::contains)
-                .toList();
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     public static EncodingContext of(Task task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -276,17 +280,32 @@ public final class EncodingContext {
     }
 
     public EdgeEncoder edge(Relation relation) {
+        return edgeEncoders.computeIfAbsent(relation, this::createEdgeEncoder);
+    }
+
+    private EdgeEncoder createEdgeEncoder(Relation relation) {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EventGraph may = k.getMaySet();
         EventGraph must = k.getMustSet();
         EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
+        // Relations whose definition is not encoded (e.g. cut in refinement) must stay free variables.
+        final boolean useEquivalents = edgeEquivalenceAnalysis.hasEquivalents(relation)
+                && isEncoded(relation.getDefinition());
         return (e1, e2) -> {
             checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
-            return !may.contains(e1, e2)
-                    ? bmgr.makeFalse()
-                    : must.contains(e1, e2)
-                    ? execution(e1, e2)
-                    : variable.encode(e1, e2);
+            if (!may.contains(e1, e2)) {
+                return bmgr.makeFalse();
+            }
+            if (must.contains(e1, e2)) {
+                return execution(e1, e2);
+            }
+            if (useEquivalents) {
+                final Optional<EdgeEquivalenceAnalysis.Edge> eq = edgeEquivalenceAnalysis.getEquivalent(relation, e1, e2);
+                if (eq.isPresent()) {
+                    return edge(eq.get().relation(), eq.get().first(), eq.get().second());
+                }
+            }
+            return variable.encode(e1, e2);
         };
     }
 

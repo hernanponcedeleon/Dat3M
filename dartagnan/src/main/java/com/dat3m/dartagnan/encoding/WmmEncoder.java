@@ -102,7 +102,7 @@ public class WmmEncoder {
         logger.info("{}: {}", IDL_TO_SAT, useSATEncoding);
         logger.info("{}: {}", POLARITY_AWARE_ENCODING, polarityAware);
 
-        this.activeSetAnalysis = ActiveSetAnalysis.newInstance(ctx.getTask(), ctx.getAnalysisContext());
+        this.activeSetAnalysis = ctx.getAnalysisContext().requires(ActiveSetAnalysis.class);
         this.polarityAnalysis = polarityAware ? PolarityAnalysis.of(memoryModel) : null;
     }
 
