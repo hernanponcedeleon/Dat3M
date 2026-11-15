@@ -1770,19 +1770,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             this(type, alignment, size < 0 ? size : alignTo(size, alignment.abi()));
         }
 
-        @Override
-        public int allocationSize() {
-            // TypeFactory pads aggregates to the natural alignment of their fields rather than to the data layout's.
-            // Strides and allocations derived from LLVM's size must not be smaller than TypeFactory's size.
-            // TODO: Remove once aggregate types can carry an explicit size.
-            final int naturalSize = TypeFactory.getInstance().getMemorySizeInBytes(type);
-            if (0 <= allocationSize && allocationSize < naturalSize) {
-                throw new ParsingException("Unsupported struct layout: data layout requires %d bytes, "
-                        + "but natural layout requires %d bytes for %s", allocationSize, naturalSize, type);
-            }
-            return allocationSize;
-        }
-
         private Type allocationType() {
             final TypeFactory types = TypeFactory.getInstance();
             final int size = allocationSize();
@@ -1848,17 +1835,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final List<Integer> offsets = new ArrayList<>();
             int offset = 0;
             int abi = packed ? 1 : aggregateAlignment.abi();
+            boolean unknownSize = false;
             for (ParsedType field : fields) {
                 final int alignment = packed ? 1 : field.alignment().abi();
                 abi = Math.max(abi, alignment);
                 offset = alignTo(offset, alignment);
                 offsets.add(offset);
-                offset = Math.addExact(offset, field.allocationSize());
+                // Only the last field may have unknown size (checked by TypeFactory).
+                unknownSize = field.allocationSize() < 0;
+                offset = unknownSize ? offset : Math.addExact(offset, field.allocationSize());
             }
+            final int allocationSize = unknownSize ? -1 : alignTo(offset, abi);
             final Type type = TypeFactory.getInstance().getAggregateType(
-                    fields.stream().map(ParsedType::type).toList(), offsets);
+                    fields.stream().map(ParsedType::type).toList(), offsets, allocationSize);
             final var alignment = new Alignment(abi, Math.max(abi, aggregateAlignment.preferred()));
-            final int allocationSize = alignTo(offset, abi);
             return new ParsedType(type, alignment, allocationSize);
         }
 

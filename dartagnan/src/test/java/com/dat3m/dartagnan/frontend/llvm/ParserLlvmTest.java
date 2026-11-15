@@ -215,10 +215,27 @@ public class ParserLlvmTest {
         assertAllocationAlignments(program, 16);
     }
 
-    //TODO accept this program and add it to MiscellaneousTest.
-    @Test(expected = ParsingException.class)
-    public void ilp32LongIsMisaligned() throws Exception {
-        new ProgramParser().parse(ResourceHelper.getTestResourcePath("miscellaneous/ilp32-long-in-struct.ll"));
+    @Test
+    public void ilp32LongInStructUsesDataLayoutSize() throws Exception {
+        // The data layout aligns i64 to 4 bytes: { i32, i64 } has 12 bytes rather than the natural 16.
+        final Program program = new ProgramParser().parse(
+                ResourceHelper.getTestResourcePath("miscellaneous/ilp32-long-in-struct.ll"));
+        assertEquals(12, program.getMemory().getObjects().stream()
+                .filter(o -> "s".equals(o.getName())).findFirst().orElseThrow().getKnownSize());
+    }
+
+    @Test
+    public void allocationSizesFollowDataLayout() {
+        // i24 occupies 4 bytes in memory, so the i8 field starts at offset 4.
+        assertGlobalSize("e", "{ i24, i8 }", 8);
+        assertGlobalSize("e", "[3 x i24]", 12);
+        assertGlobalSize("e-i64:32:64", "{ i32, i64 }", 12);
+        assertGlobalSize("e-i64:32:64", "[2 x { i32, i64 }]", 24);
+    }
+
+    private static void assertGlobalSize(String layout, String type, int expected) {
+        final Program program = parse(layout, "@g = global " + type + " zeroinitializer", "ret i32 0");
+        assertEquals(expected, program.getMemory().getObjects().iterator().next().getKnownSize());
     }
 
     private static void assertInferredAlignment(String layout, String type, long expected) {
