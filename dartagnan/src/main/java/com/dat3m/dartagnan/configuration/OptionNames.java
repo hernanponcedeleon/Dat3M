@@ -80,6 +80,7 @@ public class OptionNames {
 
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
+    public static final String YICES2_SOLVER_TYPE = "solver.yices2.solverType";
 
     // Witness Options
     public static final String WITNESS_SHOW = "witness.show";

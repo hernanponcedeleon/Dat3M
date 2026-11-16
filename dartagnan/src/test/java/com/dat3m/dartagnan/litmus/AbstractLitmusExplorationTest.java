@@ -74,7 +74,6 @@ public abstract class AbstractLitmusExplorationTest extends AbstractEnumerationT
                 .withTarget(target)
                 .withProgressModel(getProgressModel())
                 .withOption(ENUMERATION_LIMIT, String.valueOf(getEnumerationLimit()))
-                .withOption(PHANTOM_REFERENCES, "true")
                 .withOption(INITIALIZE_REGISTERS, "true");
     }
 

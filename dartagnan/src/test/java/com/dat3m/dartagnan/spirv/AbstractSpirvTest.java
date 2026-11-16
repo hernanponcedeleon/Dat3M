@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.spirv;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
@@ -39,8 +38,7 @@ public abstract class AbstractSpirvTest extends AbstractVerificationTaskSolverTe
                 .withSolver(SolverContextFactory.Solvers.Z3)
                 .withBound(bound)
                 .withTarget(target)
-                .withProgressModel(getProgressModel())
-                .withOption(OptionNames.PHANTOM_REFERENCES, "true");
+                .withProgressModel(getProgressModel());
     }
 
     @Override
