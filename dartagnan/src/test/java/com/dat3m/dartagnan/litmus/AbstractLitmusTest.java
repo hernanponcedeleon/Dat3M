@@ -77,7 +77,6 @@ public abstract class AbstractLitmusTest extends AbstractVerificationTaskSolverT
                 .withBound(getBound())
                 .withTarget(target)
                 .withProgressModel(getProgressModel())
-                .withOption(PHANTOM_REFERENCES, "true")
                 .withOption(INITIALIZE_REGISTERS, "true");
     }
 

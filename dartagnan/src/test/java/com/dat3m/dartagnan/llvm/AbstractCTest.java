@@ -48,8 +48,7 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
                 .withSolver(getSolver())
                 .withBound(getBound())
                 .withTarget(target)
-                .withProgressModel(getProgressModel())
-                .withOption(OptionNames.PHANTOM_REFERENCES, "true");
+                .withProgressModel(getProgressModel());
     }
 
     @Override

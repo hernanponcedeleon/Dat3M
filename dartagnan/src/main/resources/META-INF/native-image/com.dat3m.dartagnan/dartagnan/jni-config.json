@@ -40,7 +40,7 @@
       ]
     },
     {
-      "name": "org.sosy_lab.java_smt.solvers.bitwuzla.BitwuzlaTheoremProver$1",
+      "name": "org.sosy_lab.java_smt.solvers.bitwuzla.BitwuzlaAbstractProver$1",
       "methods": [
         { "name": "terminate", "parameterTypes": [] }
       ]

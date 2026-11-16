@@ -39,7 +39,6 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
@@ -157,7 +156,6 @@ public class ExecutionTest {
                 .withSolver(SolverContextFactory.Solvers.Z3)
                 .withBound(bound)
                 .withTarget(arch)
-                .withOption(PHANTOM_REFERENCES, "true")
                 // Same options as the litmus and LLVM suites use
                 .withOption(INITIALIZE_REGISTERS, String.valueOf(programPath.toString().endsWith(".litmus")))
                 .build(TestHelper.parseProgram(programPath),

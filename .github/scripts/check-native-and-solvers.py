@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / "dartagnan" / "target"
 PROGRAM = "dartagnan/src/test/resources/locks/ticketlock.ll"
 NS = {"m": "http://maven.apache.org/POM/4.0.0"}
+SOLVER_ALIASES = {"MATHSAT": "MATHSAT5"}
 
 
 def main():
@@ -28,7 +29,9 @@ def main():
             continue
         artifact = dependency.findtext("m:artifactId", namespaces=NS)
         if artifact and artifact.startswith("javasmt-solver-"):
-            solvers.add(artifact.removeprefix("javasmt-solver-").upper())
+            solver = artifact.removeprefix("javasmt-solver-").upper()
+            # JavaSMT publishes MathSAT5 as "javasmt-solver-mathsat"
+            solvers.add(SOLVER_ALIASES.get(solver, solver))
     if not solvers:
         raise RuntimeError("The active Maven profile supplies no native solvers")
 
