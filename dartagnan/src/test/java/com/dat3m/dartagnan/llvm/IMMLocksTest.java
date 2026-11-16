@@ -53,6 +53,7 @@ public class IMMLocksTest extends AbstractCTest {
                 {"clh_mutex-acq2rx", IMM, FAIL},
                 {"ticket_awnsb_mutex", IMM, PASS},
                 {"ticket_awnsb_mutex-acq2rx", IMM, FAIL},
+                {"brgpk", IMM, UNKNOWN},
         });
     }
 }
