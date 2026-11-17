@@ -1,10 +1,12 @@
 #include <pthread.h>
 #include <assert.h>
 #include <stdint.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdatomic.h>
 
 // Writes before a barrier are visible after it, the phases of a reused barrier are kept apart,
-// each phase has exactly one serial thread, and the barrier fits into pthread_barrier_t.
+// each phase has exactly one serial thread, the barrier fits into pthread_barrier_t, and invalid counts are rejected.
 
 struct { pthread_barrier_t barrier; int guard; } s = { .guard = 42 };
 int data[3];
@@ -35,6 +37,10 @@ void *worker(void *arg)
 int main()
 {
     pthread_t t0, t1, t2;
+    assert(pthread_barrier_init(&s.barrier, NULL, 0) == EINVAL);
+#ifdef __GLIBC__
+    assert(pthread_barrier_init(&s.barrier, NULL, (unsigned)INT_MAX + 1) == EINVAL);
+#endif
     assert(pthread_barrier_init(&s.barrier, NULL, 3) == 0);
     assert(s.guard == 42);
     pthread_create(&t0, NULL, worker, (void *)0);

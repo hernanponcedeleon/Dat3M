@@ -1001,13 +1001,14 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         return expressions.makeGetElementPointer(types.getByteType(), state, List.of(byteOffset));
     }
 
-    // Returns the address of the barrier state, which may require loading it into the given register.
-    private Expression getBarrierState(Expression barrierAddress, Register stateRegister, List<Event> events) {
+    // Returns the address of the barrier state, which may need to be loaded from the barrier.
+    private Expression newLoadBarrierState(FunctionCall call, Expression barrierAddress, List<Event> events) {
         if (isBarrierStateInPlace()) {
             return barrierAddress;
         }
-        events.add(newLoad(stateRegister, barrierAddress));
-        return stateRegister;
+        final Register state = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
+        events.add(newLoad(state, barrierAddress));
+        return state;
     }
 
     private List<Event> inlinePthreadBarrierInit(FunctionCall call) {
@@ -1018,30 +1019,44 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final IntegerType counterType = getNativeIntType();
         final Expression required = expressions.makeIntegerCast(call.getArguments().get(2), counterType, false);
         final Expression zero = expressions.makeZero(counterType);
-        final List<Event> events = new ArrayList<>();
+        // glibc also rejects counts that do not fit into an int.
+        final Expression fitsInt = expressions.makeLTE(required,
+                expressions.makeValue(Integer.MAX_VALUE, counterType), false);
+        final Expression isValid = expressions.makeAnd(expressions.makeNEQ(required, zero),
+                clib == GLIBC ? fitsInt : expressions.makeTrue());
+        final Label invalid = newLabel("__pthread_barrier_init_invalid");
+        final Label end = newLabel("__pthread_barrier_init_end");
         Expression state = barrierAddress;
+        Register allocatedState = null;
         if (!isBarrierStateInPlace()) {
-            final Register stateRegister = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
-            events.add(newAlloc(stateRegister, types.getByteType(),
-                    expressions.makeValue(BARRIER_STATE_SIZE, archType), true, false));
-            events.add(newStore(barrierAddress, stateRegister));
-            state = stateRegister;
+            allocatedState = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
+            state = allocatedState;
         }
-        events.add(newStore(getBarrierField(state, BARRIER_TICKETS_OFFSET), zero));
-        events.add(newStore(getBarrierField(state, BARRIER_COMPLETED_OFFSET), zero));
-        events.add(newStore(getBarrierField(state, BARRIER_REQUIRED_OFFSET), required));
-        events.add(assignSuccessOrPosixError(errorRegister, expressions.makeNEQ(required, zero), PosixErrorCode.EINVAL));
-        return events;
+        return eventSequence(
+                newJumpUnless(isValid, invalid),
+                allocatedState == null ? null : List.of(
+                        newAlloc(allocatedState, types.getByteType(),
+                                expressions.makeValue(BARRIER_STATE_SIZE, archType), true, false),
+                        newStore(barrierAddress, allocatedState)),
+                newStore(getBarrierField(state, BARRIER_TICKETS_OFFSET), zero),
+                newStore(getBarrierField(state, BARRIER_COMPLETED_OFFSET), zero),
+                newStore(getBarrierField(state, BARRIER_REQUIRED_OFFSET), required),
+                assignSuccess(errorRegister),
+                newGoto(end),
+                invalid,
+                assignPosixError(errorRegister, PosixErrorCode.EINVAL),
+                end
+        );
     }
 
     private List<Event> inlinePthreadBarrierDestroy(FunctionCall call) {
         //see https://man7.org/linux/man-pages/man3/pthread_barrier_destroy.3p.html
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final List<Event> events = new ArrayList<>();
-        if (!isBarrierStateInPlace()) {
-            final Register stateRegister = call.getFunction().newUniqueRegister("__pthread_barrier_state", pointerType);
-            events.add(newDealloc(getBarrierState(call.getArguments().get(0), stateRegister, events)));
+        if (isBarrierStateInPlace()) {
+            return List.of(assignSuccess(errorRegister));
         }
+        final List<Event> events = new ArrayList<>();
+        events.add(newDealloc(newLoadBarrierState(call, call.getArguments().get(0), events)));
         events.add(assignSuccess(errorRegister));
         return events;
     }
@@ -1053,14 +1068,13 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final IntegerType resultType = (IntegerType) resultRegister.getType();
         final IntegerType counterType = getNativeIntType();
         final Function caller = call.getFunction();
-        final Register stateRegister = caller.newUniqueRegister("__pthread_barrier_state", pointerType);
         final Register required = caller.newUniqueRegister("__pthread_barrier_required", counterType);
         final Register ticket = caller.newUniqueRegister("__pthread_barrier_ticket", counterType);
         final Register completed = caller.newUniqueRegister("__pthread_barrier_completed", counterType);
         final Register ignored = caller.newUniqueRegister("__pthread_barrier_ignored", counterType);
 
         final List<Event> events = new ArrayList<>();
-        final Expression state = getBarrierState(call.getArguments().get(0), stateRegister, events);
+        final Expression state = newLoadBarrierState(call, call.getArguments().get(0), events);
         final Expression completedAddress = getBarrierField(state, BARRIER_COMPLETED_OFFSET);
         final Expression one = expressions.makeOne(counterType);
         final Expression phase = expressions.makeDiv(ticket, required, false);
