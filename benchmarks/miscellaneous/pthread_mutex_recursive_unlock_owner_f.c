@@ -1,15 +1,12 @@
 #include <pthread.h>
-#include <assert.h>
-#include <errno.h>
 
-// Only the owner can unlock a recursive mutex.
+// Unlocking a recursive mutex owned by another thread is a bug.
 
 pthread_mutex_t mutex;
 
 void *worker(void *arg)
 {
-    assert(pthread_mutex_unlock(&mutex) == EPERM);
-    assert(pthread_mutex_trylock(&mutex) == EBUSY);
+    pthread_mutex_unlock(&mutex);
     return NULL;
 }
 

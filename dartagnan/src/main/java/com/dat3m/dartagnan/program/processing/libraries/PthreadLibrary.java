@@ -513,30 +513,32 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_cond_wait
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         //final Expression condAddress = call.getArguments().get(0);
-        final Expression mutex = call.getArguments().get(1);
-        return eventSequence(
-                // Allow other threads to access the condition variable.
-                newMutexUnlock(call, mutex, null),
-                // This thread would sleep here.  Explicit or spurious signals may wake it.
-                // Re-lock.
-                newMutexLock(call, mutex, null),
-                assignSuccess(errorRegister)
-        );
+        return newCondWait(call, call.getArguments().get(1), errorRegister, null);
     }
 
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_timedwait
         final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
         //final Expression condAddress = call.getArguments().get(0);
-        final Expression mutex = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
+        return newCondWait(call, call.getArguments().get(1), errorRegister, PosixErrorCode.ETIMEDOUT);
+    }
+
+    // Unlocks the mutex, waits, and locks it again. Since signals are not modeled, waking up is always possible.
+    // Fails with EPERM if the caller may not unlock the mutex.
+    private List<Event> newCondWait(FunctionCall call, Expression mutex, Register errorRegister, PosixErrorCode wakeUp) {
+        final Register permitted = call.getFunction().newUniqueRegister("__pthread_cond_permitted", types.getBooleanType());
+        final Label error = newLabel("__pthread_cond_wait_error");
+        final Label end = newLabel("__pthread_cond_wait_end");
         return eventSequence(
-                // Allow other threads to access the condition variable.
-                newMutexUnlock(call, mutex, null),
-                // This thread would sleep here.  Explicit or spurious signals may wake it.
-                // Re-lock.
+                newMutexUnlock(call, mutex, permitted),
+                newJumpUnless(permitted, error),
                 newMutexLock(call, mutex, null),
-                assignPosixError(errorRegister, PosixErrorCode.ETIMEDOUT)
+                wakeUp == null ? assignSuccess(errorRegister) : assignPosixError(errorRegister, wakeUp),
+                newGoto(end),
+                error,
+                assignPosixError(errorRegister, PosixErrorCode.EPERM),
+                end
         );
     }
 
@@ -801,9 +803,12 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final List<Event> events = new ArrayList<>();
         final Expression self = newLoadSelf(call, events);
         final Expression isRecursive = newLoadIsRecursive(call, mutex, events);
+        final Expression success = expressions.makeExtract(oldValueAndSuccess, 1);
         final Label acquire = newLabel("__pthread_mutex_acquire");
-        final Label spin = newLabel("__spinloop_head");
         final Label end = newLabel("__pthread_mutex_lock_end");
+        // A lock is a CAS-spinlock, a trylock a single CAS.
+        final boolean blocking = acquired == null;
+        final Label spin = blocking ? newLabel("__spinloop_head") : null;
         return eventSequence(
                 events,
                 newJump(expressions.makeNot(isRecursive), acquire),
@@ -811,22 +816,19 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newJump(expressions.makeNEQ(owner, self), acquire),
                 newLoad(count, getMutexCount(mutex)),
                 newStore(getMutexCount(mutex), expressions.makeAdd(count, expressions.makeOne(type))),
-                acquired == null ? null : newLocal(acquired, expressions.makeTrue()),
+                blocking ? null : newLocal(acquired, expressions.makeTrue()),
                 newGoto(end),
                 acquire,
-                // A lock is a CAS-spinlock.
-                acquired == null ? newLoopBound(expressions.makeOne(types.getIntegerType(32))) : null,
+                blocking ? newLoopBound(expressions.makeOne(types.getIntegerType(32))) : null,
                 spin,
                 Llvm.newCompareExchange(oldValueAndSuccess, lockWord, expressions.makeZero(type), self,
                         Tag.C11.MO_ACQUIRE, true),
-                acquired == null
-                        ? newJumpUnless(expressions.makeExtract(oldValueAndSuccess, 1), spin)
-                        : newLocal(acquired, expressions.makeExtract(oldValueAndSuccess, 1)),
+                blocking ? newJumpUnless(success, spin) : newLocal(acquired, success),
                 end
         );
     }
 
-    // Unlocks the mutex. If 'permitted' is given, it is set to whether the caller may unlock the mutex
+    // Unlocks the mutex and sets 'permitted' to whether the caller may unlock it
     // (only the owner can unlock a recursive mutex, which is released by its last unlock).
     private List<Event> newMutexUnlock(FunctionCall call, Expression mutex, Register permitted) {
         final Function caller = call.getFunction();
@@ -850,18 +852,23 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 newLoad(count, getMutexCount(mutex)),
                 newJump(expressions.makeEQ(count, expressions.makeZero(type)), release),
                 newStore(getMutexCount(mutex), expressions.makeSub(count, expressions.makeOne(type))),
-                permitted == null ? null : newLocal(permitted, expressions.makeTrue()),
+                newLocal(permitted, expressions.makeTrue()),
                 newGoto(end),
                 notOwner,
-                permitted == null ? null : newLocal(permitted, expressions.makeFalse()),
+                // Like for other mutexes, unlocking a recursive mutex that the caller does not own is a bug.
+                checkLocked ? newAssert(expressions.makeNEQ(owner, unlocked), ALREADY_UNLOCKED) : null,
+                checkLocked ? newAssert(expressions.makeEQ(owner, unlocked), "Unlocking a mutex owned by another thread") : null,
+                newLocal(permitted, expressions.makeFalse()),
                 newGoto(end),
                 release,
-                checkLocked ? newAssert(expressions.makeNEQ(owner, unlocked), "Unlocking an already unlocked mutex") : null,
+                checkLocked ? newAssert(expressions.makeNEQ(owner, unlocked), ALREADY_UNLOCKED) : null,
                 Llvm.newStore(lockWord, unlocked, Tag.C11.MO_RELEASE),
-                permitted == null ? null : newLocal(permitted, expressions.makeTrue()),
+                newLocal(permitted, expressions.makeTrue()),
                 end
         );
     }
+
+    private static final String ALREADY_UNLOCKED = "Unlocking an already unlocked mutex";
 
     private static final List<String> P_THREAD_RWLOCK_ATTR = List.of(
             "pshared"
