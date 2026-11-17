@@ -143,6 +143,10 @@ public abstract class AbstractLibrary<TSelf extends Library> implements Library 
         Event abort = null;
         if (abortOnFailure) {
             abort = EventFactory.newAbortIf(expressions.makeNot(condition), Tag.EXCEPTIONAL_TERMINATION);
+            if (type == AssertionType.UNKNOWN_FUNCTION) {
+                // Marks the abort even if the assertion is skipped, so that reaching it yields UNKNOWN.
+                abort.addTags(Tag.UNKNOWN_FUNCTION);
+            }
         }
         return eventSequence(assertion, abort);
     }

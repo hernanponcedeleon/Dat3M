@@ -87,11 +87,31 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         logger.info("Starting first solver.check()");
         VerificationStatus res;
         if (prover.isUnsatWithAssumptions(List.of(assumption))) {
+            res = UNKNOWN;
             checkForInterrupts();
-            prover.writeComment("Bound encoding");
-            prover.addConstraint(programEncoder.encodeBoundEventExec());
-            logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : UNKNOWN;
+            boolean doBoundsCheck = true;
+
+            if (task instanceof WitnessValidationTask) {
+                // Executions beyond calls to unknown functions are cut off, so we cannot refute a witness if such a
+                // call is reachable. This check has precedence over bounds checking.
+                // TODO: Like the bounds check, this check does not follow the witness but instead checks
+                //  if any unknown function is reachable (even if that function is unreachable under the witness)
+                final BooleanFormula unknownFunctionReached = programEncoder.encodeUnknownFunctionReached();
+                final boolean reachesUnknownFunction = !bmgr.isFalse(unknownFunctionReached)
+                        && !prover.isUnsatWithAssumptions(List.of(unknownFunctionReached));
+                if (reachesUnknownFunction) {
+                    logger.info("Unknown functions are reachable: Specification unknown.");
+                    doBoundsCheck = false;
+                }
+                checkForInterrupts();
+            }
+
+            if (doBoundsCheck) {
+                prover.writeComment("Bound encoding");
+                prover.addConstraint(programEncoder.encodeBoundEventExec());
+                logger.info("Starting second solver.check()");
+                res = prover.isUnsat() ? PASS : UNKNOWN;
+            }
         } else {
             res = FAIL;
         }
