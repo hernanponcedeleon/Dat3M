@@ -316,7 +316,7 @@ def summarize_total(rows):
     }
 
 
-def render_markdown(rows, minimum, timeout):
+def render_markdown(rows, minimum, timeout, new_benchmarks=()):
     visible_rows = [row for row in rows if max(row["base"]["average"], row["head"]["average"]) >= minimum]
     lines = [
         "<!-- dat3m-performance-report -->",
@@ -377,6 +377,9 @@ def render_markdown(rows, minimum, timeout):
             f"_{' and '.join(timed_out_revisions)} timed out after {timeout:g} seconds "
             f"({MAX_TIMEOUT_ATTEMPTS} attempts each) and were recorded as {timeout:g} seconds._",
         ])
+    if new_benchmarks:
+        names = ", ".join(f"`{name}`" for name in sorted(set(new_benchmarks)))
+        lines.extend(["", f"_Not compared because the base branch does not contain them: {names}._"])
     return "\n".join(lines) + "\n"
 
 
@@ -385,6 +388,8 @@ def main():
     for output_path in (arguments.markdown, arguments.json):
         output_path.parent.mkdir(parents=True, exist_ok=True)
     benchmarks = load_benchmarks(arguments.benchmarks)
+    new_benchmarks = [b["program"] for b in benchmarks if not (arguments.base_checkout / b["program"]).is_file()]
+    benchmarks = [b for b in benchmarks if b["program"] not in new_benchmarks]
     rows = []
     measurements = []
     with ThreadPoolExecutor(max_workers=arguments.jobs) as executor:
@@ -399,9 +404,11 @@ def main():
             rows.append(row)
             measurements.extend(benchmark_measurements)
     arguments.markdown.write_text(
-        render_markdown(rows, arguments.min_average_seconds, arguments.timeout), encoding="utf-8"
+        render_markdown(rows, arguments.min_average_seconds, arguments.timeout, new_benchmarks), encoding="utf-8"
     )
-    arguments.json.write_text(json.dumps({"measurements": measurements, "summary": rows}, indent=2) + "\n", encoding="utf-8")
+    arguments.json.write_text(json.dumps(
+        {"measurements": measurements, "summary": rows, "new_benchmarks": sorted(set(new_benchmarks))}, indent=2
+    ) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
