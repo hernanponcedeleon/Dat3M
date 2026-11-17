@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
 import com.dat3m.dartagnan.utils.OperatingSystem;
 import org.slf4j.Logger;
@@ -144,6 +145,7 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private IntegerType archType;
     private Type pointerType;
     private FunctionType threadType;
+    private Function pthreadSelf;
 
     public PthreadLibrary(Configuration config) throws InvalidConfigurationException {
         super(config);
@@ -174,8 +176,21 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         archType = program.getArchType();
         pointerType = program.getPointerType();
         threadType = types.getFunctionType(program.getPointerType(), List.of(program.getPointerType()));
+        pthreadSelf = getOrDeclarePthreadSelf(program);
         logger.info("Linking pthread library matching {}", clib);
         super.link(program);
+    }
+
+    // pthread_self is resolved late (after thread creation), so we call it rather than inline it.
+    private Function getOrDeclarePthreadSelf(Program program) {
+        return program.getFunctionByName("pthread_self").orElseGet(() -> {
+            final int id = program.getFunctions().stream().mapToInt(Function::getId).max().orElse(0) + 1;
+            final Function function = new Function("pthread_self", types.getFunctionType(archType, List.of()),
+                    List.of(), id, null);
+            function.setIntrinsicInfo(Intrinsics.Info.P_THREAD_SELF);
+            program.addFunction(function);
+            return function;
+        });
     }
 
     private static CLibImplementation deriveClibFromProgram(Program program) {
@@ -498,17 +513,13 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_cond_wait
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         //final Expression condAddress = call.getArguments().get(0);
-        final Expression lockAddress = call.getArguments().get(1);
-        final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
-        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_wait", mutexType);
-        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_wait", oldValueAndSuccessType);
+        final Expression mutex = call.getArguments().get(1);
         return eventSequence(
                 // Allow other threads to access the condition variable.
-                newPthreadUnlock(oldValueRegister, lockAddress),
+                newMutexUnlock(call, mutex, null),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                newPthreadLock(oldValueAndSuccess, lockAddress),
+                newMutexLock(call, mutex, null),
                 assignSuccess(errorRegister)
         );
     }
@@ -517,18 +528,14 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         //see https://linux.die.net/man/3/pthread_cond_timedwait
         final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
         //final Expression condAddress = call.getArguments().get(0);
-        final Expression lockAddress = call.getArguments().get(1);
+        final Expression mutex = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
-        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", mutexType);
-        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", oldValueAndSuccessType);
         return eventSequence(
                 // Allow other threads to access the condition variable.
-                newPthreadUnlock(oldValueRegister, lockAddress),
+                newMutexUnlock(call, mutex, null),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                newPthreadLock(oldValueAndSuccess, lockAddress),
+                newMutexLock(call, mutex, null),
                 assignPosixError(errorRegister, PosixErrorCode.ETIMEDOUT)
         );
     }
@@ -590,73 +597,18 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         );
     }
 
+    // ----- Mutexes -----
+    // The lock word holds the owner (thread id + 1, 0 means unlocked) and a recursive mutex counts the additional
+    // locks of its owner. Fields are kept where the C library keeps them, so that static initializers work:
+    // - glibc: lock word, count, and type at the offsets of __lock (0), __count (4), and __kind (16, or 12 on 32-bit).
+    // - Darwin: the type is given by __sig (0), the lock word and count are at offsets 8 and 12.
+    // - MinGW: pthread_mutex_t is a single word, so it only holds the lock word and cannot be recursive.
+
     private static final List<String> P_THREAD_MUTEXATTR = List.of(
             "prioceiling",
             "protocol",
             "type"
     );
-
-    private List<Event> inlinePthreadMutexInit(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_mutex_init
-        //TODO use attributes
-        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
-        final Expression lockAddress = call.getArguments().get(0);
-        final IntegerType type = getPthreadMutexType();
-        final Expression unlocked = expressions.makeZero(type);
-        return List.of(
-                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
-                assignSuccess(errorRegister)
-        );
-    }
-
-    private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_mutex_destroy
-        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        //TODO store a value such that later uses of the lock fail
-        return List.of(
-                assignSuccess(errorRegister)
-        );
-    }
-
-    private List<Event> inlinePthreadMutexLock(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_mutex_lock
-        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final IntegerType mutexType = getPthreadMutexType();
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(mutexType, types.getBooleanType()));
-        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_lock", oldValueAndSuccessType);
-        final Expression lockAddress = call.getArguments().get(0);
-        return eventSequence(
-                newPthreadLock(oldValueAndSuccess, lockAddress),
-                assignSuccess(errorRegister)
-        );
-    }
-
-    private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_mutex_trylock
-        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final Type oldValueAndSuccessType = types.getAggregateType(List.of(getPthreadMutexType(), types.getBooleanType()));
-        final Register oldValueAndSuccess = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", oldValueAndSuccessType);
-        final Expression lockAddress = call.getArguments().get(0);
-        final Expression success = expressions.makeExtract(oldValueAndSuccess, 1);
-        return List.of(
-                newPthreadTryLock(oldValueAndSuccess, lockAddress),
-                assignSuccessOrPosixError(errorRegister, success, PosixErrorCode.EBUSY)
-        );
-    }
-
-    private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_mutex_unlock
-        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final IntegerType type = getPthreadMutexType();
-        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_mutex_unlock", type);
-        final Expression lockAddress = call.getArguments().get(0);
-        return eventSequence(
-                newPthreadUnlock(oldValueRegister, lockAddress),
-                assignSuccess(errorRegister)
-        );
-    }
 
     private enum PthreadMutexTypeValue {
         NORMAL(0, 0, 0),
@@ -681,6 +633,67 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         }
     }
 
+    // Values of Darwin's __sig set by the static initializers.
+    private static final long DARWIN_MUTEX_SIG = 0x32AAABA7L;
+    private static final long DARWIN_ERRORCHECK_MUTEX_SIG = 0x32AAABA1L;
+    private static final long DARWIN_RECURSIVE_MUTEX_SIG = 0x32AAABA2L;
+
+    private List<Event> inlinePthreadMutexInit(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_mutex_init
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression mutex = call.getArguments().get(0);
+        final Expression attributes = call.getArguments().get(1);
+        final Register type = call.getFunction().newUniqueRegister("__pthread_mutex_type", getMutexWordType());
+        final Label noAttributes = newLabel("__pthread_mutex_init_no_attr");
+        return eventSequence(
+                newLocal(type, getMutexTypeValue(PthreadMutexTypeValue.NORMAL)),
+                newJump(expressions.makeEQ(attributes, expressions.makeGeneralZero(attributes.getType())), noAttributes),
+                newLoad(type, attributes),
+                noAttributes,
+                newStoreMutexType(mutex, type),
+                Llvm.newStore(getMutexLockWord(mutex), expressions.makeZero(getMutexWordType()), Tag.C11.MO_RELEASE),
+                assignSuccess(errorRegister)
+        );
+    }
+
+    private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_mutex_destroy
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        //TODO store a value such that later uses of the lock fail
+        return List.of(
+                assignSuccess(errorRegister)
+        );
+    }
+
+    private List<Event> inlinePthreadMutexLock(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_mutex_lock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        return eventSequence(
+                newMutexLock(call, call.getArguments().get(0), null),
+                assignSuccess(errorRegister)
+        );
+    }
+
+    private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_mutex_trylock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Register acquired = call.getFunction().newUniqueRegister("__pthread_mutex_acquired", types.getBooleanType());
+        return eventSequence(
+                newMutexLock(call, call.getArguments().get(0), acquired),
+                assignSuccessOrPosixError(errorRegister, acquired, PosixErrorCode.EBUSY)
+        );
+    }
+
+    private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_mutex_unlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Register permitted = call.getFunction().newUniqueRegister("__pthread_mutex_permitted", types.getBooleanType());
+        return eventSequence(
+                newMutexUnlock(call, call.getArguments().get(0), permitted),
+                assignSuccessOrPosixError(errorRegister, permitted, PosixErrorCode.EPERM)
+        );
+    }
+
     private List<Event> inlinePthreadMutexAttr(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutexattr_init
         final String functionName = call.getCalledFunction().getName();
@@ -690,65 +703,164 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final boolean init = suffix.equals("init");
         final boolean destroy = suffix.equals("destroy");
         final Register errorRegister = getResultRegisterAndCheckArguments(init || destroy ? 1 : 2, call);
-        final Expression attrAddress = call.getArguments().get(0);
-        if (init || destroy) {
-            return List.of(
-                    newStore(attrAddress, expressions.makeValue(init)),
-                    assignSuccess(errorRegister)
-            );
-        }
-
-        checkUnknownIntrinsic(suffix.startsWith("get") || suffix.startsWith("set"), call);
-        checkUnknownIntrinsic(P_THREAD_MUTEXATTR.contains(suffix.substring(3)), call);
-
-        final List<Event> events = new ArrayList<>();
-        if (suffix.startsWith("settype")) {
-            final Expression typeArg = call.getArguments().get(1);
-            final Expression recVal = expressions.makeValue(PthreadMutexTypeValue.RECURSIVE.value(clib), (IntegerType) typeArg.getType());
-            final Expression isNonRec = expressions.makeNEQ(typeArg, recVal);
-            // FIXME: We add the "unknown function" suffix only to satisfy Svcomp/BenchExec
-            events.addAll(inlineAssert(isNonRec, true,
-                    AssertionType.UNKNOWN_FUNCTION, "Recursive mutexes are unsupported. #unknown function"));
-        }
-
+        checkUnknownIntrinsic(init || destroy || (suffix.startsWith("get") || suffix.startsWith("set"))
+                && P_THREAD_MUTEXATTR.contains(suffix.substring(3)), call);
+        // The attributes only hold the mutex type.
+        final Expression attributes = call.getArguments().get(0);
+        final Register type = call.getFunction().newUniqueRegister("__pthread_mutexattr_type", getMutexWordType());
         return eventSequence(
-                events,
+                switch (suffix) {
+                    case "init" -> newStore(attributes, getMutexTypeValue(PthreadMutexTypeValue.NORMAL));
+                    case "settype" -> newStore(attributes,
+                            expressions.makeIntegerCast(call.getArguments().get(1), getMutexWordType(), true));
+                    case "gettype" -> List.of(newLoad(type, attributes), newStore(call.getArguments().get(1), type));
+                    default -> null;
+                },
                 assignSuccess(errorRegister)
         );
     }
 
-    private List<Event> newPthreadUnlock(Register oldValueRegister, Expression address) {
-        final Expression unlocked = expressions.makeGeneralZero(oldValueRegister.getType());
-        final boolean skipCheck = notToInline.contains(AssertionType.USER);
-        final Event load = skipCheck ? null : EventFactory.Llvm.newLoad(oldValueRegister, address, Tag.C11.MO_RELAXED);
-        final Expression isLocked = skipCheck ? null : expressions.makeNEQ(oldValueRegister, unlocked);
-        final Event check = skipCheck ? null : EventFactory.newAssert(isLocked, "Unlocking an already unlocked mutex");
-        final Event store = EventFactory.Llvm.newStore(address, unlocked, Tag.C11.MO_RELEASE);
-        return Arrays.asList(load, check, store);
+    private IntegerType getMutexWordType() {
+        return getNativeIntType();
     }
 
-    private Event newPthreadTryLock(Register oldValueAndSuccess, Expression lockAddress) {
-        final Expression unlocked = expressions.makeZero(getPthreadMutexType());
-        final Expression locked = expressions.makeOne(getPthreadMutexType());
-        return Llvm.newCompareExchange(oldValueAndSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
+    private Expression getMutexTypeValue(PthreadMutexTypeValue type) {
+        return expressions.makeValue(type.value(clib), getMutexWordType());
     }
 
-    private List<Event> newPthreadLock(Register oldValueSuccessRegister, Expression address) {
-        // We implement this as a CAS-spinlock
-        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
-        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
-        return List.of(
-                newLoopBound(expressions.makeOne(types.getIntegerType(32))),
-                spinLoopHead,
-                newPthreadTryLock(oldValueSuccessRegister, address),
-                EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),
-                EventFactory.newGoto(spinLoopHead),
-                spinLoopEnd
+    private Expression getMutexField(Expression mutex, int offset) {
+        return expressions.makeGetElementPointer(types.getByteType(), mutex,
+                List.of(expressions.makeValue(offset, archType)));
+    }
+
+    private Expression getMutexLockWord(Expression mutex) {
+        return clib == DARWIN_LIBC ? getMutexField(mutex, 8) : mutex;
+    }
+
+    private Expression getMutexCount(Expression mutex) {
+        return getMutexField(mutex, clib == DARWIN_LIBC ? 12 : 4);
+    }
+
+    private Expression getGlibcMutexKind(Expression mutex) {
+        return getMutexField(mutex, archType.getBitWidth() == 64 ? 16 : 12);
+    }
+
+    // Stores the type of a mutex and resets its count.
+    private List<Event> newStoreMutexType(Expression mutex, Expression type) {
+        final Expression zero = expressions.makeZero(getMutexWordType());
+        final Expression isRecursive = expressions.makeEQ(type, getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE));
+        return switch (clib) {
+            case GLIBC -> List.of(newStore(getMutexCount(mutex), zero), newStore(getGlibcMutexKind(mutex), type));
+            case DARWIN_LIBC -> List.of(newStore(getMutexCount(mutex), zero), newStore(mutex, expressions.makeITE(
+                    isRecursive,
+                    expressions.makeValue(DARWIN_RECURSIVE_MUTEX_SIG, archType),
+                    expressions.makeITE(
+                            expressions.makeEQ(type, getMutexTypeValue(PthreadMutexTypeValue.ERRORCHECK)),
+                            expressions.makeValue(DARWIN_ERRORCHECK_MUTEX_SIG, archType),
+                            expressions.makeValue(DARWIN_MUTEX_SIG, archType)))));
+            // FIXME: We add the "unknown function" suffix only to satisfy Svcomp/BenchExec
+            case MINGW -> inlineAssert(expressions.makeNot(isRecursive), true, AssertionType.UNKNOWN_FUNCTION,
+                    "Recursive mutexes are unsupported. #unknown function");
+        };
+    }
+
+    private Expression newLoadIsRecursive(FunctionCall call, Expression mutex, List<Event> events) {
+        return switch (clib) {
+            case GLIBC -> {
+                final Register kind = call.getFunction().newUniqueRegister("__pthread_mutex_kind", getMutexWordType());
+                events.add(newLoad(kind, getGlibcMutexKind(mutex)));
+                yield expressions.makeEQ(kind, getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE));
+            }
+            case DARWIN_LIBC -> {
+                final Register signature = call.getFunction().newUniqueRegister("__pthread_mutex_sig", archType);
+                events.add(newLoad(signature, mutex));
+                yield expressions.makeEQ(signature, expressions.makeValue(DARWIN_RECURSIVE_MUTEX_SIG, archType));
+            }
+            case MINGW -> expressions.makeFalse();
+        };
+    }
+
+    // The lock word of a mutex owned by the caller.
+    private Expression newLoadSelf(FunctionCall call, List<Event> events) {
+        final IntegerType type = getMutexWordType();
+        final Register tid = call.getFunction().newUniqueRegister("__pthread_mutex_self", archType);
+        events.add(newValueFunctionCall(tid, pthreadSelf, List.of()));
+        return expressions.makeAdd(expressions.makeIntegerCast(tid, type, false), expressions.makeOne(type));
+    }
+
+    // Locks the mutex (pthread_mutex_lock) or, if 'acquired' is given, tries to (pthread_mutex_trylock).
+    // The owner of a recursive mutex locks it again.
+    private List<Event> newMutexLock(FunctionCall call, Expression mutex, Register acquired) {
+        final Function caller = call.getFunction();
+        final IntegerType type = getMutexWordType();
+        final Register owner = caller.newUniqueRegister("__pthread_mutex_owner", type);
+        final Register count = caller.newUniqueRegister("__pthread_mutex_count", type);
+        final Register oldValueAndSuccess = caller.newUniqueRegister("__pthread_mutex_lock",
+                types.getAggregateType(List.of(type, types.getBooleanType())));
+        final Expression lockWord = getMutexLockWord(mutex);
+        final List<Event> events = new ArrayList<>();
+        final Expression self = newLoadSelf(call, events);
+        final Expression isRecursive = newLoadIsRecursive(call, mutex, events);
+        final Label acquire = newLabel("__pthread_mutex_acquire");
+        final Label spin = newLabel("__spinloop_head");
+        final Label end = newLabel("__pthread_mutex_lock_end");
+        return eventSequence(
+                events,
+                newJump(expressions.makeNot(isRecursive), acquire),
+                Llvm.newLoad(owner, lockWord, Tag.C11.MO_RELAXED),
+                newJump(expressions.makeNEQ(owner, self), acquire),
+                newLoad(count, getMutexCount(mutex)),
+                newStore(getMutexCount(mutex), expressions.makeAdd(count, expressions.makeOne(type))),
+                acquired == null ? null : newLocal(acquired, expressions.makeTrue()),
+                newGoto(end),
+                acquire,
+                // A lock is a CAS-spinlock.
+                acquired == null ? newLoopBound(expressions.makeOne(types.getIntegerType(32))) : null,
+                spin,
+                Llvm.newCompareExchange(oldValueAndSuccess, lockWord, expressions.makeZero(type), self,
+                        Tag.C11.MO_ACQUIRE, true),
+                acquired == null
+                        ? newJumpUnless(expressions.makeExtract(oldValueAndSuccess, 1), spin)
+                        : newLocal(acquired, expressions.makeExtract(oldValueAndSuccess, 1)),
+                end
         );
     }
 
-    private IntegerType getPthreadMutexType() {
-        return types.getIntegerType(1);
+    // Unlocks the mutex. If 'permitted' is given, it is set to whether the caller may unlock the mutex
+    // (only the owner can unlock a recursive mutex, which is released by its last unlock).
+    private List<Event> newMutexUnlock(FunctionCall call, Expression mutex, Register permitted) {
+        final Function caller = call.getFunction();
+        final IntegerType type = getMutexWordType();
+        final Register owner = caller.newUniqueRegister("__pthread_mutex_owner", type);
+        final Register count = caller.newUniqueRegister("__pthread_mutex_count", type);
+        final Expression lockWord = getMutexLockWord(mutex);
+        final Expression unlocked = expressions.makeZero(type);
+        final boolean checkLocked = !notToInline.contains(AssertionType.USER);
+        final List<Event> events = new ArrayList<>();
+        final Expression self = newLoadSelf(call, events);
+        final Expression isRecursive = newLoadIsRecursive(call, mutex, events);
+        final Label release = newLabel("__pthread_mutex_release");
+        final Label notOwner = newLabel("__pthread_mutex_not_owner");
+        final Label end = newLabel("__pthread_mutex_unlock_end");
+        return eventSequence(
+                events,
+                Llvm.newLoad(owner, lockWord, Tag.C11.MO_RELAXED),
+                newJump(expressions.makeNot(isRecursive), release),
+                newJump(expressions.makeNEQ(owner, self), notOwner),
+                newLoad(count, getMutexCount(mutex)),
+                newJump(expressions.makeEQ(count, expressions.makeZero(type)), release),
+                newStore(getMutexCount(mutex), expressions.makeSub(count, expressions.makeOne(type))),
+                permitted == null ? null : newLocal(permitted, expressions.makeTrue()),
+                newGoto(end),
+                notOwner,
+                permitted == null ? null : newLocal(permitted, expressions.makeFalse()),
+                newGoto(end),
+                release,
+                checkLocked ? newAssert(expressions.makeNEQ(owner, unlocked), "Unlocking an already unlocked mutex") : null,
+                Llvm.newStore(lockWord, unlocked, Tag.C11.MO_RELEASE),
+                permitted == null ? null : newLocal(permitted, expressions.makeTrue()),
+                end
+        );
     }
 
     private static final List<String> P_THREAD_RWLOCK_ATTR = List.of(
