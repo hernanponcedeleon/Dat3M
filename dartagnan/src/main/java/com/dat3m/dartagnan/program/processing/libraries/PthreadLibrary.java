@@ -528,12 +528,13 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     // Fails with EPERM if the caller may not unlock the mutex.
     private List<Event> newCondWait(FunctionCall call, Expression mutex, Register errorRegister, PosixErrorCode wakeUp) {
         final Register permitted = call.getFunction().newUniqueRegister("__pthread_cond_permitted", types.getBooleanType());
+        final Register relocked = call.getFunction().newUniqueRegister("__pthread_cond_relocked", getNativeIntType());
         final Label error = newLabel("__pthread_cond_wait_error");
         final Label end = newLabel("__pthread_cond_wait_end");
         return eventSequence(
                 newMutexUnlock(call, mutex, permitted),
                 newJumpUnless(permitted, error),
-                newMutexLock(call, mutex, null),
+                newMutexLock(call, mutex, relocked, true),
                 wakeUp == null ? assignSuccess(errorRegister) : assignPosixError(errorRegister, wakeUp),
                 newGoto(end),
                 error,
@@ -604,7 +605,11 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     // locks of its owner. Fields are kept where the C library keeps them, so that static initializers work:
     // - glibc: lock word, count, and type at the offsets of __lock (0), __count (4), and __kind (16, or 12 on 32-bit).
     // - Darwin: the type is given by __sig (0), the lock word and count are at offsets 8 and 12.
-    // - MinGW: pthread_mutex_t is a single word, so it only holds the lock word and cannot be recursive.
+    // - MinGW: pthread_mutex_t is a single word, so it only holds the lock word and all mutexes behave like normal
+    //   ones (except that initializing a recursive mutex is reported as unsupported).
+    // FIXME: MinGW's static initializers are special values (-1, -2, -3) that are only replaced on first use.
+    //  We treat them as locked, so statically initialized mutexes block forever (spurious PASS) and a statically
+    //  initialized recursive mutex is not reported as unsupported.
 
     private static final List<String> P_THREAD_MUTEXATTR = List.of(
             "prioceiling",
@@ -670,20 +675,13 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
     private List<Event> inlinePthreadMutexLock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_lock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        return eventSequence(
-                newMutexLock(call, call.getArguments().get(0), null),
-                assignSuccess(errorRegister)
-        );
+        return newMutexLock(call, call.getArguments().get(0), errorRegister, true);
     }
 
     private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Register acquired = call.getFunction().newUniqueRegister("__pthread_mutex_acquired", types.getBooleanType());
-        return eventSequence(
-                newMutexLock(call, call.getArguments().get(0), acquired),
-                assignSuccessOrPosixError(errorRegister, acquired, PosixErrorCode.EBUSY)
-        );
+        return newMutexLock(call, call.getArguments().get(0), errorRegister, false);
     }
 
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
@@ -766,20 +764,33 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         };
     }
 
-    private Expression newLoadIsRecursive(FunctionCall call, Expression mutex, List<Event> events) {
+    private Expression newLoadMutexType(FunctionCall call, Expression mutex, List<Event> events) {
         return switch (clib) {
             case GLIBC -> {
                 final Register kind = call.getFunction().newUniqueRegister("__pthread_mutex_kind", getMutexWordType());
                 events.add(newLoad(kind, getGlibcMutexKind(mutex)));
-                yield expressions.makeEQ(kind, getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE));
+                yield kind;
             }
             case DARWIN_LIBC -> {
                 final Register signature = call.getFunction().newUniqueRegister("__pthread_mutex_sig", archType);
                 events.add(newLoad(signature, mutex));
-                yield expressions.makeEQ(signature, expressions.makeValue(DARWIN_RECURSIVE_MUTEX_SIG, archType));
+                yield expressions.makeITE(
+                        expressions.makeEQ(signature, expressions.makeValue(DARWIN_RECURSIVE_MUTEX_SIG, archType)),
+                        getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE),
+                        expressions.makeITE(
+                                expressions.makeEQ(signature, expressions.makeValue(DARWIN_ERRORCHECK_MUTEX_SIG, archType)),
+                                getMutexTypeValue(PthreadMutexTypeValue.ERRORCHECK),
+                                getMutexTypeValue(PthreadMutexTypeValue.NORMAL)));
             }
-            case MINGW -> expressions.makeFalse();
+            case MINGW -> getMutexTypeValue(PthreadMutexTypeValue.NORMAL);
         };
+    }
+
+    // Recursive and error-checking mutexes track their owner.
+    private Expression isOwnedMutexType(Expression type) {
+        return expressions.makeOr(
+                expressions.makeEQ(type, getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE)),
+                expressions.makeEQ(type, getMutexTypeValue(PthreadMutexTypeValue.ERRORCHECK)));
     }
 
     // The lock word of a mutex owned by the caller.
@@ -790,9 +801,10 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         return expressions.makeAdd(expressions.makeIntegerCast(tid, type, false), expressions.makeOne(type));
     }
 
-    // Locks the mutex (pthread_mutex_lock) or, if 'acquired' is given, tries to (pthread_mutex_trylock).
-    // The owner of a recursive mutex locks it again.
-    private List<Event> newMutexLock(FunctionCall call, Expression mutex, Register acquired) {
+    // Locks the mutex (pthread_mutex_lock) or, if not 'blocking', tries to (pthread_mutex_trylock),
+    // and sets 'error' to the result. If the caller owns the mutex, a recursive mutex is locked again
+    // and an error-checking mutex fails with EDEADLK (EBUSY for trylock).
+    private List<Event> newMutexLock(FunctionCall call, Expression mutex, Register error, boolean blocking) {
         final Function caller = call.getFunction();
         final IntegerType type = getMutexWordType();
         final Register owner = caller.newUniqueRegister("__pthread_mutex_owner", type);
@@ -802,34 +814,41 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final Expression lockWord = getMutexLockWord(mutex);
         final List<Event> events = new ArrayList<>();
         final Expression self = newLoadSelf(call, events);
-        final Expression isRecursive = newLoadIsRecursive(call, mutex, events);
+        final Expression mutexType = newLoadMutexType(call, mutex, events);
         final Expression success = expressions.makeExtract(oldValueAndSuccess, 1);
         final Label acquire = newLabel("__pthread_mutex_acquire");
+        final Label owned = newLabel("__pthread_mutex_owned");
         final Label end = newLabel("__pthread_mutex_lock_end");
         // A lock is a CAS-spinlock, a trylock a single CAS.
-        final boolean blocking = acquired == null;
         final Label spin = blocking ? newLabel("__spinloop_head") : null;
         return eventSequence(
                 events,
-                newJump(expressions.makeNot(isRecursive), acquire),
+                newJumpUnless(isOwnedMutexType(mutexType), acquire),
                 Llvm.newLoad(owner, lockWord, Tag.C11.MO_RELAXED),
                 newJump(expressions.makeNEQ(owner, self), acquire),
+                newJump(expressions.makeNEQ(mutexType, getMutexTypeValue(PthreadMutexTypeValue.RECURSIVE)), owned),
                 newLoad(count, getMutexCount(mutex)),
                 newStore(getMutexCount(mutex), expressions.makeAdd(count, expressions.makeOne(type))),
-                blocking ? null : newLocal(acquired, expressions.makeTrue()),
+                assignSuccess(error),
+                newGoto(end),
+                owned,
+                assignPosixError(error, blocking ? PosixErrorCode.EDEADLK : PosixErrorCode.EBUSY),
                 newGoto(end),
                 acquire,
                 blocking ? newLoopBound(expressions.makeOne(types.getIntegerType(32))) : null,
                 spin,
                 Llvm.newCompareExchange(oldValueAndSuccess, lockWord, expressions.makeZero(type), self,
                         Tag.C11.MO_ACQUIRE, true),
-                blocking ? newJumpUnless(success, spin) : newLocal(acquired, success),
+                blocking ? newJumpUnless(success, spin) : null,
+                blocking ? assignSuccess(error) : assignSuccessOrPosixError(error, success, PosixErrorCode.EBUSY),
                 end
         );
     }
 
-    // Unlocks the mutex and sets 'permitted' to whether the caller may unlock it
-    // (only the owner can unlock a recursive mutex, which is released by its last unlock).
+    // Unlocks the mutex and sets 'permitted' to whether the caller may unlock it.
+    // Only the owner can unlock a recursive or error-checking mutex, and a recursive mutex is released by its last
+    // unlock. POSIX defines unlocking such a mutex without owning it to fail with EPERM. We also report it as a bug,
+    // because it almost always is one. For normal mutexes, we only check that the mutex is locked.
     private List<Event> newMutexUnlock(FunctionCall call, Expression mutex, Register permitted) {
         final Function caller = call.getFunction();
         final IntegerType type = getMutexWordType();
@@ -840,22 +859,22 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
         final boolean checkLocked = !notToInline.contains(AssertionType.USER);
         final List<Event> events = new ArrayList<>();
         final Expression self = newLoadSelf(call, events);
-        final Expression isRecursive = newLoadIsRecursive(call, mutex, events);
+        final Expression mutexType = newLoadMutexType(call, mutex, events);
         final Label release = newLabel("__pthread_mutex_release");
         final Label notOwner = newLabel("__pthread_mutex_not_owner");
         final Label end = newLabel("__pthread_mutex_unlock_end");
         return eventSequence(
                 events,
                 Llvm.newLoad(owner, lockWord, Tag.C11.MO_RELAXED),
-                newJump(expressions.makeNot(isRecursive), release),
+                newJumpUnless(isOwnedMutexType(mutexType), release),
                 newJump(expressions.makeNEQ(owner, self), notOwner),
+                // Only recursive mutexes increase the count.
                 newLoad(count, getMutexCount(mutex)),
                 newJump(expressions.makeEQ(count, expressions.makeZero(type)), release),
                 newStore(getMutexCount(mutex), expressions.makeSub(count, expressions.makeOne(type))),
                 newLocal(permitted, expressions.makeTrue()),
                 newGoto(end),
                 notOwner,
-                // Like for other mutexes, unlocking a recursive mutex that the caller does not own is a bug.
                 checkLocked ? newAssert(expressions.makeNEQ(owner, unlocked), ALREADY_UNLOCKED) : null,
                 checkLocked ? newAssert(expressions.makeEQ(owner, unlocked), "Unlocking a mutex owned by another thread") : null,
                 newLocal(permitted, expressions.makeFalse()),
