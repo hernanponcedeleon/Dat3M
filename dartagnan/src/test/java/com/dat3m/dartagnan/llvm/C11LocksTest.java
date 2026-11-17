@@ -64,6 +64,7 @@ public class C11LocksTest extends AbstractCTest {
                 {"ticket_awnsb_mutex", C11, PASS},
                 {"ticket_awnsb_mutex-acq2rx", C11, FAIL},
                 {"pthread_mutex", C11, PASS},
+                {"brgpk", C11, UNKNOWN},
         });
     }
 }

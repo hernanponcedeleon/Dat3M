@@ -65,6 +65,8 @@ public class VMMLocksTest extends AbstractCTest {
                 {"clh_mutex-acq2rx", C11, FAIL},
                 {"ticket_awnsb_mutex", C11, PASS},
                 {"ticket_awnsb_mutex-acq2rx", C11, FAIL},
+                {"brgpk", C11, UNKNOWN},
+                {"brgpk-fail", C11, FAIL},
         });
     }
 }

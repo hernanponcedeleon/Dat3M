@@ -29,6 +29,15 @@ benchmarks:
         target: c11
         options: ["--bound=3"]
 
+  - program: benchmarks/locks/brgpk.c
+    runs: 3
+    options: ["--bound=4"]
+    configurations:
+      - cat: cat/aarch64.cat
+        target: arm8
+      - cat: cat/vmm.cat
+        target: c11
+
   - program: benchmarks/lfds/dglm.c
     runs: 3
     configurations:
