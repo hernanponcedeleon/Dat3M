@@ -322,9 +322,8 @@ public class OutputGenerator {
             // TODO having witness-specific code here is ugly. We need to fix this
             // Witness validation reached functions we cannot model. Increasing the bounds does not help here.
             final List<CondJump> reachedUnknownFunctions = !(task instanceof WitnessValidationTask) ? List.of()
-                    : p.getThreadEventsWithAllTags(Tag.UNKNOWN_FUNCTION).stream()
-                    .filter(CondJump.class::isInstance).map(CondJump.class::cast)
-                    .filter(execution::jumpTaken)
+                    : execution.getEvents(CondJump.class).stream()
+                    .filter(jump -> jump.hasTag(Tag.UNKNOWN_FUNCTION) && execution.jumpTaken(jump))
                     .toList();
             if (!reachedUnknownFunctions.isEmpty()) {
                 for (CondJump jump : reachedUnknownFunctions) {
