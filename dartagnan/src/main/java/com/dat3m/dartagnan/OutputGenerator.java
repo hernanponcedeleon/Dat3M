@@ -73,6 +73,7 @@ public class OutputGenerator {
     private static final String CAT_SPEC_REASON = "CAT specification violation found";
     private static final String SVCOMP_UNTRACKABLE_OBJECT_REASON = "Untrackable object found";
     private static final String BOUND_REASON = "Not fully unrolled loops";
+    private static final String UNKNOWN_FUNCTION_REASON = "Reached unknown functions";
 
     // ==================================== Configurables ====================================
 
@@ -228,7 +229,8 @@ public class OutputGenerator {
     private static ExitCode toValidationExitCode(ExitCode verificationCode, VerificationStatus status) {
         return switch (status) {
             case FAIL -> NORMAL_TERMINATION;
-            case UNKNOWN -> verificationCode == BOUNDED_RESULT ? BOUNDED_RESULT : WITNESS_NOT_VALIDATED;
+            case UNKNOWN -> verificationCode == BOUNDED_RESULT || verificationCode == WITNESS_VALIDATION_UNKNOWN
+                    ? verificationCode : WITNESS_NOT_VALIDATED;
             case PASS -> WITNESS_NOT_VALIDATED;
         };
     }
@@ -316,6 +318,21 @@ public class OutputGenerator {
             return new Output(NORMAL_TERMINATION, toVerificationSummary(programSource, filter, status,
                     getSpecificationString(p), PROGRAM_SPEC_REASON, details.toString(), time, witnessFile));
         } else if (status == UNKNOWN && execution != null) {
+
+            // TODO having witness-specific code here is ugly. We need to fix this
+            // Witness validation reached functions we cannot model. Increasing the bounds does not help here.
+            final List<CondJump> reachedUnknownFunctions = !(task instanceof WitnessValidationTask) ? List.of()
+                    : p.getThreadEventsWithAllTags(Tag.UNKNOWN_FUNCTION).stream()
+                    .filter(CondJump.class::isInstance).map(CondJump.class::cast)
+                    .filter(execution::jumpTaken)
+                    .toList();
+            if (!reachedUnknownFunctions.isEmpty()) {
+                for (CondJump jump : reachedUnknownFunctions) {
+                    appendTo(details, jump, synContext);
+                }
+                return new Output(WITNESS_VALIDATION_UNKNOWN, toVerificationSummary(programSource, filter, status,
+                        "", UNKNOWN_FUNCTION_REASON, details.toString(), time, witnessFile));
+            }
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(execution::isExecuted)
