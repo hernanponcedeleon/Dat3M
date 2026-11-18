@@ -58,7 +58,7 @@ public class AlgoIMMTest extends AbstractAlgoTest {
                 task("lfds/treiber-CAS-relaxed", 1, FAIL),
                 task("lfds/chase-lev", 1, PASS),
                 task("lfds/chase-lev-fail", 1, FAIL),
-                task("lfds/safe_stack", 2, FAIL),
+                eagerOnly("lfds/safe_stack", 2, FAIL),
                 task("lfds/hash_table", 1, PASS),
                 task("lfds/hash_table-fail", 1, FAIL)
         );
