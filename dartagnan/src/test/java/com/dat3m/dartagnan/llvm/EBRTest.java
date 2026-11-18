@@ -13,7 +13,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class EBRTest extends AbstractCTest {
+public class EBRTest extends AbstractLlvmTest {
 
     public EBRTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);

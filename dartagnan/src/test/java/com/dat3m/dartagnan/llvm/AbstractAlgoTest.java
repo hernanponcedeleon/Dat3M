@@ -12,7 +12,7 @@ import java.util.EnumSet;
  * Subclasses list their rows via task(...) or eagerOnly(...), each with its own bound.
  * Rows built with eagerOnly(...) disable the lazy method, because it times out at that bound.
  */
-public abstract class AbstractAlgoTest extends AbstractCTest {
+public abstract class AbstractAlgoTest extends AbstractLlvmTest {
 
     private final int bound;
     private final boolean lazyEnabled;

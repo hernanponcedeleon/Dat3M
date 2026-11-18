@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class RC11Test extends AbstractCTest {
+public class RC11Test extends AbstractLlvmTest {
 
     public RC11Test(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);

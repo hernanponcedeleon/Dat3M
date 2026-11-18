@@ -12,9 +12,9 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class CLKMMTest extends AbstractCTest {
+public class LKMMTest extends AbstractLlvmTest {
 
-    public CLKMMTest(String name, Arch target, VerificationStatus expected) {
+    public LKMMTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
     }
 

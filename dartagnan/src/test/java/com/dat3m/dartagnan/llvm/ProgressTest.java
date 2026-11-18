@@ -15,11 +15,11 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class CProgressTest extends AbstractCTest {
+public class ProgressTest extends AbstractLlvmTest {
 
     protected ProgressModel progressModel;
 
-    public CProgressTest(String name, ProgressModel progressModel, VerificationStatus expected) {
+    public ProgressTest(String name, ProgressModel progressModel, VerificationStatus expected) {
         super(name, C11, expected);
         this.progressModel = progressModel;
     }

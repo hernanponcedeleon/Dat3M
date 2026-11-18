@@ -13,7 +13,7 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
-public class MiscellaneousTest extends AbstractCTest {
+public class MiscellaneousTest extends AbstractLlvmTest {
 
     private final int bound;
 

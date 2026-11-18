@@ -13,7 +13,7 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
-public class LivenessTest extends AbstractCTest {
+public class LivenessTest extends AbstractLlvmTest {
 
     public LivenessTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);

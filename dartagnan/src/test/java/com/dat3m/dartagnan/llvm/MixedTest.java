@@ -16,7 +16,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class MixedTest extends AbstractCTest {
+public class MixedTest extends AbstractLlvmTest {
 
     public MixedTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);

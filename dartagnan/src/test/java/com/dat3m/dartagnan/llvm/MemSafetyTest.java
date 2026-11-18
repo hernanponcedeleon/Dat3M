@@ -14,7 +14,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class MemSafetyTest extends AbstractCTest {
+public class MemSafetyTest extends AbstractLlvmTest {
 
     private final int bound;
 

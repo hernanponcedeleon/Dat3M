@@ -10,13 +10,13 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
+public abstract class AbstractLlvmTest extends AbstractVerificationTaskSolverTest {
 
     protected String name;
     protected Arch target;
     protected VerificationStatus expected;
 
-    protected AbstractCTest(String name, Arch target, VerificationStatus expected) {
+    protected AbstractLlvmTest(String name, Arch target, VerificationStatus expected) {
         this.name = name;
         this.target = target;
         this.expected = expected;
