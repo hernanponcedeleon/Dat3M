@@ -835,7 +835,6 @@ public class PthreadLibrary extends AbstractLibrary<PthreadLibrary> {
                 assignPosixError(error, blocking ? PosixErrorCode.EDEADLK : PosixErrorCode.EBUSY),
                 newGoto(end),
                 acquire,
-                blocking ? newLoopBound(expressions.makeOne(types.getIntegerType(32))) : null,
                 spin,
                 Llvm.newCompareExchange(oldValueAndSuccess, lockWord, expressions.makeZero(type), self,
                         Tag.C11.MO_ACQUIRE, true),
