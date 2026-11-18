@@ -15,7 +15,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.UNKNOWN;
 
 @RunWith(Parameterized.class)
-public class LibvsyncTest extends AbstractCTest {
+public class LibvsyncTest extends AbstractLlvmTest {
 
     public LibvsyncTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);

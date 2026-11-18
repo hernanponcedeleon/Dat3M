@@ -146,10 +146,25 @@ jobs:
         run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*ExplorationTest" -f dartagnan/pom.xml
 
   llvm-tests:
-    name: LLVM tests
+    name: LLVM tests (${{ matrix.name }})
     runs-on: ubuntu-latest
     needs: [enforce-not-master-target, code-style]
     if: ${{ github.event_name != 'schedule' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Lock and lock-free data structure benchmarks, one job per memory model
+          - { name: TSO,     tests: "com/dat3m/dartagnan/llvm/AlgoTSOTest" }
+          - { name: ARM8,    tests: "com/dat3m/dartagnan/llvm/AlgoARM8Test" }
+          - { name: Power,   tests: "com/dat3m/dartagnan/llvm/AlgoPowerTest" }
+          - { name: RISCV,   tests: "com/dat3m/dartagnan/llvm/AlgoRISCVTest" }
+          - { name: IMM,     tests: "com/dat3m/dartagnan/llvm/AlgoIMMTest" }
+          - { name: C11,     tests: "com/dat3m/dartagnan/llvm/AlgoC11Test" }
+          - { name: RC11,    tests: "com/dat3m/dartagnan/llvm/AlgoRC11Test" }
+          - { name: VMM,     tests: "com/dat3m/dartagnan/llvm/AlgoVMMTest" }
+          # Everything else under llvm/
+          - { name: Other,   tests: "com/dat3m/dartagnan/llvm/**/*,!com/dat3m/dartagnan/llvm/Algo*Test" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -165,7 +180,7 @@ jobs:
         run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
 
       - name: LLVM tests
-        run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/llvm/**/*" -f dartagnan/pom.xml
+        run: mvn --batch-mode test -DforkCount=2 -Dtest="${{ matrix.tests }}" -f dartagnan/pom.xml
 
   other-tests:
     name: Other tests

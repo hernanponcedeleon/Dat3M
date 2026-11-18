@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -16,7 +17,7 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
-public class MixedTest extends AbstractCTest {
+public class MixedTest extends AbstractLlvmTest {
 
     public MixedTest(String name, Arch target, VerificationStatus expected) {
         super(name, target, expected);
@@ -30,6 +31,9 @@ public class MixedTest extends AbstractCTest {
 
     @Override
     protected long getTimeoutSeconds() { return 180; }
+
+    @Override
+    protected Solvers getSolver() { return Solvers.Z3; }
 
     @Override
     protected EnumSet<Property> getTestedProperties() {

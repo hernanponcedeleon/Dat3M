@@ -5,18 +5,20 @@ import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.utils.EnvironmentInfo;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
+public abstract class AbstractLlvmTest extends AbstractVerificationTaskSolverTest {
 
     protected String name;
     protected Arch target;
     protected VerificationStatus expected;
 
-    protected AbstractCTest(String name, Arch target, VerificationStatus expected) {
+    protected AbstractLlvmTest(String name, Arch target, VerificationStatus expected) {
         this.name = name;
         this.target = target;
         this.expected = expected;
@@ -31,7 +33,7 @@ public abstract class AbstractCTest extends AbstractVerificationTaskSolverTest {
     }
 
     protected Solvers getSolver() {
-        return Solvers.Z3;
+        return EnvironmentInfo.getOperatingSystem() == OperatingSystem.LINUX ? Solvers.YICES2 : Solvers.Z3;
     }
 
     protected String getWmmName() {
