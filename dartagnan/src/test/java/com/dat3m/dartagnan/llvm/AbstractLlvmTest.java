@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.test.AbstractVerificationTaskSolverTest;
 import com.dat3m.dartagnan.test.ResourceHelper;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.utils.EnvironmentInfo;
+import com.dat3m.dartagnan.utils.OperatingSystem;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.nio.file.Path;
@@ -31,7 +33,7 @@ public abstract class AbstractLlvmTest extends AbstractVerificationTaskSolverTes
     }
 
     protected Solvers getSolver() {
-        return Solvers.Z3;
+        return EnvironmentInfo.getOperatingSystem() == OperatingSystem.LINUX ? Solvers.YICES2 : Solvers.Z3;
     }
 
     protected String getWmmName() {

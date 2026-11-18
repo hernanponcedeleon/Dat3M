@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.EnumSet;
 
@@ -36,9 +35,6 @@ public abstract class AbstractAlgoTest extends AbstractLlvmTest {
 
     @Override
     protected EnumSet<Property> getTestedProperties() { return Property.getDefault(); }
-
-    @Override
-    protected Solvers getSolver() { return Solvers.YICES2; }
 
     @Override
     protected long getTimeoutSeconds() { return 300; }
