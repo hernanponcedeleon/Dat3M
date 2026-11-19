@@ -82,9 +82,8 @@ let lws = po-loc; [W]
 let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
-let dob = addr; [R]
+let dob = (addr; [R] | data)
     | [R]; (__idd | __ctrlDirect | lrs)*; __addrDirect; [W]
-    | data
     | (ctrl | (addr; po)); ([W] | [ISB]; po; [R])
     | (addr | data); lrs
 
@@ -105,7 +104,8 @@ let bob = po; [dmb.full]; po
 let lob = lws; si | dob | aob | bob
 
 (** Hazard-ordered-before **)
-let haz-ob = [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
+let haz-ob =
+  [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
 
 (* Ordered-before *)
 let ob = obs; si | lob | haz-ob

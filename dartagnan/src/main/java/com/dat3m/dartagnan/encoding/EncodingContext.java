@@ -5,11 +5,9 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -22,6 +20,8 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.DirectAddressDependency;
+import com.dat3m.dartagnan.wmm.definition.DirectDataDependency;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -48,7 +48,6 @@ public final class EncodingContext {
     private final Task task;
     private final Context analysisContext;
     private final ExecutionAnalysis executionAnalysis;
-    private final ReachingDefinitionsAnalysis reachingDefinitionsAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
     private final EdgeEquivalenceAnalysis edgeEquivalenceAnalysis;
@@ -67,7 +66,6 @@ public final class EncodingContext {
     private final Map<Relation, EdgeEncoder> edgeEncoders = new HashMap<>();
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
-    private final Map<Event, BooleanFormula> speculationVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
 
     private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
@@ -83,7 +81,6 @@ public final class EncodingContext {
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
-        reachingDefinitionsAnalysis = a.requires(ReachingDefinitionsAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
         edgeEquivalenceAnalysis = a.requires(EdgeEquivalenceAnalysis.class);
@@ -251,25 +248,10 @@ public final class EncodingContext {
         return results.get(event);
     }
 
-    public BooleanFormula speculate(Event event) {
-        return speculationVariables.get(event);
-    }
-
     // ====================================================================================
     // Relations
 
     public BooleanFormula dependency(Event first, Event second) {
-        if (!(first instanceof RegWriter w) ||!(second instanceof RegReader r)) {
-            return bmgr.makeFalse();
-        }
-        final ReachingDefinitionsAnalysis.RegisterWriters writers
-                = reachingDefinitionsAnalysis.getWriters(r).ofRegister(w.getResultRegister());
-        if (!writers.getMayWriters().contains(w)) {
-            return bmgr.makeFalse();
-        }
-        if (writers.getMustWriters().contains(w)) {
-            return execution(first, second);
-        }
         return bmgr.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
@@ -302,10 +284,10 @@ public final class EncodingContext {
     }
 
     private EdgeEncoder createEdgeEncoder(Relation relation) {
-        final RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
-        final EventGraph may = k.getMaySet();
-        final EventGraph must = k.getMustSet();
-        final String name = relation.getNameOrTerm();
+        RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
+        EventGraph may = k.getMaySet();
+        EventGraph must = k.getMustSet();
+        EdgeEncoder variable = getEdgeVariableEncoder(relation.getDefinition());
         // Relations whose definition is not encoded (e.g. cut in refinement) must stay free variables.
         final boolean useEquivalents = edgeEquivalenceAnalysis.hasEquivalents(relation)
                 && isEncoded(relation.getDefinition());
@@ -323,12 +305,21 @@ public final class EncodingContext {
                     return edge(eq.get().relation(), eq.get().first(), eq.get().second());
                 }
             }
-            return edgeVariable(name, e1, e2);
+            return variable.encode(e1, e2);
         };
     }
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation).encode(first, second);
+    }
+
+    private EdgeEncoder getEdgeVariableEncoder(Definition def) {
+        if (def instanceof DirectAddressDependency || def instanceof DirectDataDependency) {
+            return this::dependency;
+        } else {
+            final String name = def.getDefinedRelation().getNameOrTerm();
+            return (e1, e2) -> edgeVariable(name, e1, e2);
+        }
     }
 
     // ====================================================================================
@@ -382,9 +373,6 @@ public final class EncodingContext {
             }
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
-            }
-            if (e instanceof Local l && l.isSpeculatable()) {
-                speculationVariables.put(e, bmgr.makeVariable("spec " + e.getGlobalId()));
             }
             if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();

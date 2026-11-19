@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -668,37 +669,30 @@ public class WmmEncoder {
 
         @Override
         public Void visitInternalDataDependency(DirectDataDependency idd) {
-            return visitDirectDependency(idd, true);
+            return visitDirectDependency(idd);
         }
 
         @Override
         public Void visitAddressDependency(DirectAddressDependency addrDirect) {
-            return visitDirectDependency(addrDirect, false);
+            return visitDirectDependency(addrDirect);
         }
 
-        @Override
-        public Void visitPickDependency(DirectPickDependency pick) {
-            return visitDirectDependency(pick, false);
-        }
-
-        private Void visitDirectDependency(Definition dep, boolean speculate) {
+        private Void visitDirectDependency(Definition dep) {
+            final ReachingDefinitionsAnalysis definitions = context.getAnalysisContext()
+                    .get(ReachingDefinitionsAnalysis.class);
             final EncodingContext.EdgeEncoder edge = context.edge(dep.getDefinedRelation());
             getActiveSet(dep).apply((writer, reader) -> {
-                final BooleanFormula spec;
-                final BooleanFormula dependency = context.dependency(writer, reader);
-                final Local speculatable = speculate && reader instanceof Local l && l.isSpeculatable() ? l : null;
-                if (!(writer instanceof RegWriter wr) || !(reader instanceof RegReader)) {
-                    spec = bmgr.makeFalse();
-                } else if (speculatable == null) {
-                    spec = dependency;
-                } else if (!wr.getResultRegister().equals(speculatable.getResultRegister())) {
-                    spec = bmgr.and(bmgr.not(context.speculate(reader)), dependency);
-                } else if (speculatable.getExpr().getRegs().contains(speculatable.getResultRegister())) {
-                    spec = dependency;
+                if (!(writer instanceof RegWriter wr) || !(reader instanceof RegReader rr)) {
+                    enc.add(bmgr.not(edge.encode(writer, reader)));
                 } else {
-                    spec = bmgr.and(context.speculate(reader), dependency);
+                    final ReachingDefinitionsAnalysis.RegisterWriters state = definitions.getWriters(rr)
+                            .ofRegister(wr.getResultRegister());
+                    if (state.getMustWriters().contains(writer)) {
+                        enc.add(bmgr.equivalence(edge.encode(writer, reader), context.execution(writer, reader)));
+                    } else if (!state.getMayWriters().contains(writer)) {
+                        enc.add(bmgr.not(edge.encode(writer, reader)));
+                    }
                 }
-                enc.add(bmgr.equivalence(edge.encode(writer, reader), spec));
             });
             return null;
         }

@@ -162,11 +162,6 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public DirectPickDependency visitPickDependency(DirectPickDependency pick) {
-        return new DirectPickDependency(translate(pick.getDefinedRelation()));
-    }
-
-    @Override
     public AMOPairs visitAMOPairs(AMOPairs amo) {
         return new AMOPairs(translate(amo.getDefinedRelation()));
     }
