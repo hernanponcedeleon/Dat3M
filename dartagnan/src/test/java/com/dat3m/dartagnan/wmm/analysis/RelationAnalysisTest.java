@@ -112,8 +112,9 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     Path filePath = file.toAbsolutePath();
-                    if (filePath.endsWith(EXTENSION_LITMUS) || filePath.endsWith(EXTENSION_LL)
-                            || filePath.endsWith(EXTENSION_SPV_DIS) || filePath.endsWith(EXTENSION_SPVASM)) {
+                    String name = filePath.toString();
+                    if (name.endsWith(EXTENSION_LITMUS) || name.endsWith(EXTENSION_LL)
+                            || name.endsWith(EXTENSION_SPV_DIS) || name.endsWith(EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
                 }
