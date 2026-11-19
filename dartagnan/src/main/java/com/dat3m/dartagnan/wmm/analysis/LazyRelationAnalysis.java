@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
@@ -240,9 +241,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             Map<Event, Set<Event>> data = new HashMap<>();
             program.getThreads().forEach(t -> t.getEvents(CondJump.class).forEach(j -> {
                 if (!j.isGoto() && !j.isDead()) {
-                    data.put(j, ((j instanceof IfAsJump ifJump)
-                            ? ifJump.getBranchesEvents()
-                            : j.getSuccessor().getSuccessors()).stream()
+                    data.put(j, IRHelper.getBranchesEvents(j).stream()
                             .filter(e -> !exec.areMutuallyExclusive(j, e))
                             .collect(ImmutableSet.toImmutableSet()));
                 }
