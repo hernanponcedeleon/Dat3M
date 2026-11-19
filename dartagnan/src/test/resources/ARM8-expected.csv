@@ -7896,6 +7896,7 @@ litmus/AARCH64/CAS/LB+rel+CAS-ok-RsRs-addr.litmus,1
 litmus/AARCH64/CAS/LB+rel+CAS-ok-RtM-data.litmus,0
 litmus/AARCH64/CAS/LB+rel+CAS-ok-RtRs-addr.litmus,1
 litmus/AARCH64/CAS/LB+rel+CAS.litmus,0
+litmus/AARCH64/CAS/LB+rel+LDR+CAS-ok-RsRs-addr.litmus,0
 litmus/AARCH64/CAS/MP+rel+CAS-addr.litmus,1
 litmus/AARCH64/CAS/MP+rel+CAS-no-MRs-addr.litmus,0
 litmus/AARCH64/CAS/MP+rel+CAS-no-RnM-addr.litmus,1
@@ -7912,3 +7913,4 @@ litmus/AARCH64/CAS/MP+rel+CAS-ok-RsM-addr.litmus,1
 litmus/AARCH64/CAS/MP+rel+CAS-ok-RsRs-addr.litmus,1
 litmus/AARCH64/CAS/MP+rel+CAS-ok-RtM-addr.litmus,0
 litmus/AARCH64/CAS/MP+rel+CAS-ok-RtRs-addr.litmus,1
+litmus/AARCH64/CAS/MP+rel+LDR+CAS-ok-RsRs-addr.litmus,0
