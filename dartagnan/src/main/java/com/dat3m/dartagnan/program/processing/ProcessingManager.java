@@ -104,11 +104,15 @@ public class ProcessingManager implements ProgramProcessor {
                 simplifyFunction, Target.THREADS, true
         );
         programProcessors.addAll(Arrays.asList(
+                // --------- Lowering of frontend-specifics ------------
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", ProgramPrinter.Mode.ALL, config) : null,
+                PointerWidthVerification.newInstance(),
                 intrinsics.markIntrinsicsPass(),
                 LibraryLinker.fromConfig(config),
-                PointerWidthVerification.newInstance(),
                 GEPToAddition.newInstance(),
+                Compilation.fromConfig(config), // We keep compilation global for now
+                printAfterCompilation ? DebugPrint.withHeader("After compilation", ProgramPrinter.Mode.ALL, config) : null,
+                // --------- Main processing for verification ------------
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
@@ -122,9 +126,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", ProgramPrinter.Mode.ALL, config) : null,
-                Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),
-                printAfterCompilation ? DebugPrint.withHeader("After compilation", ProgramPrinter.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(JumpForwarding.newInstance(), Target.FUNCTIONS, false),
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),

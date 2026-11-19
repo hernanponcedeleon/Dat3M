@@ -82,17 +82,7 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
-        // TODO: Refactor processors such that compiler is resolved
-        //  based on the source language and target
-        if (program.getFormat() == Program.SourceLanguage.SPV) {
-            if (target == Arch.VULKAN) {
-                compiler = new VisitorSpirvVulkan();
-            } else if (target == Arch.OPENCL) {
-                compiler = new VisitorSpirvOpenCL();
-            } else {
-                throw new UnsupportedOperationException("SPIR-V can only be compiled to Vulkan or OpenCL");
-            }
-        }
+        compiler = getCompiler(program.getFormat());
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);
         program.setArch(target);
@@ -126,6 +116,19 @@ public class Compilation implements ProgramProcessor {
 
     // -----------------------------------------------------------------------------
 
+    // Selects the compiler for the given source language and the configured target.
+    private VisitorBase getCompiler(Program.SourceLanguage source) {
+        if (source == Program.SourceLanguage.SPV) {
+            return switch (target) {
+                case VULKAN -> new VisitorSpirvVulkan();
+                case OPENCL -> new VisitorSpirvOpenCL();
+                default -> throw new UnsupportedOperationException("SPIR-V can only be compiled to Vulkan or OpenCL");
+            };
+        }
+        return getCompiler();
+    }
+
+    // Selects the compiler for the configured target, assuming a non-SPIR-V source language.
     private VisitorBase getCompiler() {
         return switch (target) {
             case C11, OPENCL -> new VisitorC11();
