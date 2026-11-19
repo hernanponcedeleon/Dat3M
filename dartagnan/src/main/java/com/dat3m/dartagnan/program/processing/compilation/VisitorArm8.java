@@ -74,11 +74,13 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newLocal(expected, cas.getExpectedValue()),
                 load,
+                newLocal(resultRegister, actual),
                 newIfJump(expressions.makeNEQ(actual, expected), casEnd, casEnd),
                 store,
-                casEnd,
+                newIfJump(cas.getFunction().getProgram().newConstant(types.getBooleanType()), casEnd, casEnd),
                 newLocal(resultRegister, expected),
-                newSpeculatableLocal(resultRegister, actual)
+                newGoto(casEnd),
+                casEnd
         );
     }
 

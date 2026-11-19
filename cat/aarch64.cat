@@ -83,14 +83,14 @@ let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
 let dob = addr; [R]
-    | [R]; (__pickDirect | __ctrlDirect | lrs)*; __addrDirect; [W]
+    | [R]; (__idd | __ctrlDirect | lrs)*; __addrDirect; [W]
     | data
     | (ctrl | (addr; po)); ([W] | [ISB]; po; [R])
     | (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
-    | [range(rmw)]; lrs; [A | Q]
+  | [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
