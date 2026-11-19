@@ -16,20 +16,17 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     protected Register register;
     protected Expression expr;
-    protected final boolean speculatable;
 
-    public Local(Register register, Expression expr, boolean speculatable) {
+    public Local(Register register, Expression expr) {
         Preconditions.checkArgument(register.getType().equals(expr.getType()));
         this.register = register;
         this.expr = expr;
-        this.speculatable = speculatable;
     }
 
     protected Local(Local other) {
         super(other);
         this.register = other.register;
         this.expr = other.expr;
-        this.speculatable = other.speculatable;
     }
 
     public Expression getExpr() {
@@ -39,12 +36,6 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     public void setExpr(Expression expr) {
         this.expr = expr;
     }
-
-    /**
-     * Indicates that this event does not initialise a register
-     * and loads are allowed to speculate that the value does not change.
-     */
-    public boolean isSpeculatable() { return speculatable; }
 
     @Override
     public Register getResultRegister() {
@@ -58,11 +49,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> reads = Register.collectRegisterReads(expr, Register.UsageType.DATA, new LinkedHashSet<>());
-        if (speculatable) {
-            reads.add(new Register.Read(getResultRegister(), Register.UsageType.SPEC));
-        }
-        return reads;
+        return Register.collectRegisterReads(expr, Register.UsageType.DATA, new LinkedHashSet<>());
     }
 
     @Override
