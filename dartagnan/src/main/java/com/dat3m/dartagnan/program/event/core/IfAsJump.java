@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class IfAsJump extends CondJump {
@@ -30,19 +29,9 @@ public class IfAsJump extends CondJump {
         // Because it is used for RelCtrlDirect
         Preconditions.checkState(getFunction().getProgram().isCompiled(),
                 "getBranchesEvents() must be called after compilation");
-        List<Event> events = new ArrayList<>();
-        Event next = getSuccessor();
-        // For IfAsJump events, getLabel() returns the label representing the else branch
-        while (next != null && next.getSuccessor() != getLabel()) {
-            events.add(next);
-            next = next.getSuccessor();
-        }
-        next = getLabel().getSuccessor();
-        while (next != end && next != null) {
-            events.add(next);
-            next = next.getSuccessor();
-        }
-        return events;
+        final List<Event> events = getSuccessor().getSuccessors();
+        final int end = this.end == null ? events.size() : events.indexOf(this.end);
+        return events.subList(0, end);
     }
 
     @Override
