@@ -39,6 +39,10 @@ public final class RelationEventDomains {
         return analysis;
     }
 
+    public boolean mayHaveInvisibleEvents(Relation relation) {
+        return relationsWithInvisibleDomain.contains(relation) || relationsWithInvisibleRange.contains(relation);
+    }
+
     public IndexedEventGraph newGraph(Relation relation) {
         final DomainBound domainBound = getBound(relation, relationsWithInvisibleDomain);
         final DomainBound rangeBound = getBound(relation, relationsWithInvisibleRange);
