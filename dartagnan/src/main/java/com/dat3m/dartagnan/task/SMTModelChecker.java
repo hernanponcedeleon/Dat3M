@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.processing.ReassociateCompositions;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 
@@ -186,6 +187,8 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationEventDomains.class, RelationEventDomains.newInstance(task.getMemoryModel(), analysisContext));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+        ReassociateCompositions.newInstance().run(task.getMemoryModel(), analysisContext.requires(RelationAnalysis.class),
+                analysisContext.requires(RelationEventDomains.class));
         analysisContext.register(ActiveSetAnalysis.class, ActiveSetAnalysis.newInstance(task.getMemoryModel(), analysisContext, config));
         analysisContext.register(EdgeEquivalenceAnalysis.class, EdgeEquivalenceAnalysis.fromConfig(task.getMemoryModel(), analysisContext, config));
     }

@@ -69,6 +69,11 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
     }
 
     @Override
+    public void addRelation(Relation relation) {
+        // getKnowledge() computes it from the definition when first asked.
+    }
+
+    @Override
     public EventGraph getContradictions() {
         return ImmutableEventGraph.empty();
     }
