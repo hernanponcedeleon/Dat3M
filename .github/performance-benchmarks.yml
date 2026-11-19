@@ -9,7 +9,7 @@ benchmarks:
 
   - program: benchmarks/locks/linuxrwlock.c
     runs: 3
-    options: ["--bound=2"]
+    options: ["--bound=4"]
     configurations:
       - cat: cat/aarch64.cat
         target: arm8
