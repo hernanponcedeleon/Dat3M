@@ -2,9 +2,11 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
+import com.dat3m.dartagnan.frontend.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
@@ -112,9 +114,8 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     Path filePath = file.toAbsolutePath();
-                    String name = filePath.toString();
-                    if (name.endsWith(EXTENSION_LITMUS) || name.endsWith(EXTENSION_LL)
-                            || name.endsWith(EXTENSION_SPV_DIS) || name.endsWith(EXTENSION_SPVASM)) {
+                    String ext = "." + Utils.getFileExtension(filePath);
+                    if (ProgramParser.NATIVE_EXTENSIONS.contains(ext)) {
                         result.add(filePath);
                     }
                 }
