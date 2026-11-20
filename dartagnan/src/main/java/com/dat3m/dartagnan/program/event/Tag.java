@@ -31,6 +31,9 @@ public final class Tag {
     public static final String BOUND            = "__BOUND";
     // Marks jumps that designate an exceptional termination, typically due to assertion failures
     public static final String EXCEPTIONAL_TERMINATION = "__EXCEPTIONAL_TERMINATION";
+    // Marks jumps that terminate a thread because it reached a function we cannot model (e.g. an undefined function).
+    // Executions beyond such a jump are not explored, so reaching it makes a negative result inconclusive.
+    public static final String UNKNOWN_FUNCTION = "__UNKNOWN_FUNCTION";
     // Marks jumps that designate non-termination, typically spinloops and bound events
     // (and control barriers in the future)
     public static final String NONTERMINATION   = "__NONTERMINATION";
