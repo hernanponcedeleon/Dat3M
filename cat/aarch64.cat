@@ -83,13 +83,14 @@ let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
 let dob = (addr; [R] | data)
-    | [R]; (__idd | __ctrlDirect | lrs)*; __addrDirect; [W]
     | (ctrl | (addr; po)); ([W] | [ISB]; po; [R])
     | (addr | data); lrs
 
+(* Pick-ordered-before *)
+let pob = (pick; lrs)*; pick; [W]
+
 (* Atomic-ordered-before *)
-let aob = rmw
-  | [range(rmw)]; lrs; [A | Q]
+let aob = rmw | [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
@@ -101,11 +102,10 @@ let bob = po; [dmb.full]; po
     | po; [L]
 
 (* Locally-ordered-before *)
-let lob = lws; si | dob | aob | bob
+let lob = lws; si | dob | pob | aob | bob
 
 (** Hazard-ordered-before **)
-let haz-ob =
-  [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
+let haz-ob = [R]; (po & loc); [R]; si?; [R]; (ca & ext); [W]; si?; [W]
 
 (* Ordered-before *)
 let ob = obs; si | lob | haz-ob
