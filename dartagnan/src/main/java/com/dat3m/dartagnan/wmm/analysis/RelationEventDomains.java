@@ -45,6 +45,11 @@ public final class RelationEventDomains {
         return new IndexedEventGraph(repository.getDomain(domainBound), repository.getDomain(rangeBound));
     }
 
+    // Registers a non-recursive relation that was added to the memory model after this analysis ran.
+    public void addRelation(Relation relation) {
+        update(relation);
+    }
+
     public IndexedDomain<Event> smallestDomain(Relation relation) {
         final DomainBound domainBound = getBound(relation, relationsWithInvisibleDomain);
         final DomainBound rangeBound = getBound(relation, relationsWithInvisibleRange);
@@ -64,12 +69,16 @@ public final class RelationEventDomains {
         while (changed) {
             changed = false;
             for (DependencyGraph<Relation>.Node node : scc) {
-                final Relation relation = node.getContent();
-                final Result result = relation.getDefinition().accept(new Inspector());
-                changed |= ((result == Result.NY || result == Result.YY) && relationsWithInvisibleRange.add(relation));
-                changed |= ((result == Result.YN || result == Result.YY) && relationsWithInvisibleDomain.add(relation));
+                changed |= update(node.getContent());
             }
         }
+    }
+
+    private boolean update(Relation relation) {
+        final Result result = relation.getDefinition().accept(new Inspector());
+        boolean changed = (result == Result.NY || result == Result.YY) && relationsWithInvisibleRange.add(relation);
+        changed |= (result == Result.YN || result == Result.YY) && relationsWithInvisibleDomain.add(relation);
+        return changed;
     }
 
     private final class Inspector implements Constraint.Visitor<Result> {
