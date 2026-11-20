@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -27,6 +28,15 @@ public class IRHelper {
 
     public static boolean isBackJump(CondJump jump) {
         return jump.getLocalId() > jump.getLabel().getLocalId();
+    }
+
+    public static List<Event> getBranchesEvents(CondJump jump) {
+        if (!jump.getFunction().getProgram().isCompiled()) {
+            throw new UnsupportedOperationException("getBranchesEvents() must be called after compilation");
+        }
+        final List<Event> events = jump.getSuccessor().getSuccessors();
+        final Event endLabel = jump instanceof IfAsJump j ? j.getEndIf() : null;
+        return endLabel == null ? events : events.subList(0, events.indexOf(endLabel));
     }
 
     /*

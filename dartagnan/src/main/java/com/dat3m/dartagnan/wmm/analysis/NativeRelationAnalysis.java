@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
@@ -686,17 +687,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         continue; // There is no point in ctrl-edges from unconditional jumps.
                     }
 
-                    final List<Event> ctrlDependentEvents;
-                    if (jump instanceof IfAsJump ifJump) {
-                        // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
-                        // branches.
-                        ctrlDependentEvents = ifJump.getBranchesEvents();
-                    } else {
-                        // Regular jumps give dependencies to all successors.
-                        ctrlDependentEvents = jump.getSuccessor().getSuccessors();
-                    }
-
-                    ctrlDependentEvents.stream()
+                    IRHelper.getBranchesEvents(jump).stream()
                             .filter(e -> !exec.areMutuallyExclusive(jump, e))
                             .forEach(e -> must.add(jump, e));
                 }
