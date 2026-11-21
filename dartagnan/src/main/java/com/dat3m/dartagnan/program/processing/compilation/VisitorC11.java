@@ -21,16 +21,6 @@ import static com.google.common.base.Verify.verify;
 
 public class VisitorC11 extends Compiler.Visitor {
 
-    @Override
-    public List<Event> visitLoad(Load e) {
-        return tagList(eventSequence(e));
-    }
-
-    @Override
-    public List<Event> visitStore(Store e) {
-        return tagList(eventSequence(e));
-    }
-
     // =============================================================================================
     // =========================================== C11 =============================================
     // =============================================================================================

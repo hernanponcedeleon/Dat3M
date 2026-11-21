@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import com.google.common.base.Verify;
+
 import java.util.List;
 
 /*
@@ -56,6 +58,16 @@ class CompilerBasedLowering implements TargetLowering {
     }
 
     @Override
+    public Event newPlainLoad(Function context, Register result, Expression address) {
+        return compileSingle(context, EventFactory.newLoad(result, address));
+    }
+
+    @Override
+    public Event newPlainStore(Function context, Expression address, Expression value) {
+        return compileSingle(context, EventFactory.newStore(address, value));
+    }
+
+    @Override
     public Init newInit(MemoryObject base, int offset) {
         final Init init = EventFactory.newInit(base, offset);
         if (target == Arch.C11 || target == Arch.OPENCL) {
@@ -68,6 +80,12 @@ class CompilerBasedLowering implements TargetLowering {
 
     private List<Event> compile(Function context, Event highLevelEvent) {
         return compiler.compile(highLevelEvent, context);
+    }
+
+    private Event compileSingle(Function context, Event plainAccess) {
+        final List<Event> compiled = compile(context, plainAccess);
+        Verify.verify(compiled.size() == 1, "Plain access compiled to %s events", compiled.size());
+        return compiled.getFirst();
     }
 
     private static String toC11(Order order) {

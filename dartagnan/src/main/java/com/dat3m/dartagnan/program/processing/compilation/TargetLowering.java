@@ -29,6 +29,12 @@ public interface TargetLowering {
     List<Event> newFetchOp(Function context, Register result, Expression address, Expression operand,
                            IntBinaryOp op, Order order);
 
+    // Plain (non-atomic) accesses, represented the way the target represents plain accesses of the source language
+    // (e.g. IMM has no non-atomics and makes them relaxed).
+    Event newPlainLoad(Function context, Register result, Expression address);
+
+    Event newPlainStore(Function context, Expression address, Expression value);
+
     // Initial write to a memory location, tagged as required by the target.
     Init newInit(MemoryObject base, int offset);
 }

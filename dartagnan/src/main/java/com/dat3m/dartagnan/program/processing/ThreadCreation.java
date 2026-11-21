@@ -167,7 +167,7 @@ public class ThreadCreation implements ProgramProcessor {
                 //  so the spawned thread (and threads synchronizing with it) observe the stored tid.
                 final Expression tid = new TIdExpr(archType, spawnedThread.thread());
                 final List<Event> replacement = eventSequence(
-                        create.hasTidAddress() ? newStore(create.getTidAddress(), tid) : null,
+                        create.hasTidAddress() ? newPlainStore(thread, create.getTidAddress(), tid) : null,
                         newReleaseStore(thread, spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
                         newLocal(tidRegister, tid)
@@ -225,7 +225,7 @@ public class ThreadCreation implements ProgramProcessor {
                 newLocal(argc, program.newConstant(argcType)),
                 newAssume(argcInRange),
                 newAlloc(argv, pointerType, arraySize, false, false),
-                newStore(lastEntry, expressions.makeGeneralZero(pointerType))
+                newPlainStore(main, lastEntry, expressions.makeGeneralZero(pointerType))
         ));
     }
 
@@ -513,7 +513,7 @@ public class ThreadCreation implements ProgramProcessor {
             // Initialize allocated object with regular stores.
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
-                initialization.add(EventFactory.newStore(
+                initialization.add(newPlainStore(thread,
                         expressions.makeAdd(reg, expressions.makeValue(initOffset, archType)),
                         memoryObject.getInitialValue(initOffset)
                 ));
@@ -576,7 +576,7 @@ public class ThreadCreation implements ProgramProcessor {
             storage.add(new Storage(id, data, destructor));
             create.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_create"),
-                    newStore(destructor, create.getDestructor()),
+                    newPlainStore(create.getThread(), destructor, create.getDestructor()),
                     newLocal(create.getResultRegister(), expressions.makeValue(id, t)),
                     newFunctionReturnMarker("__dat3m_dynamic_thread_create")
             ));
@@ -598,7 +598,7 @@ public class ThreadCreation implements ProgramProcessor {
                     newFunctionCallMarker("__dat3m_dynamic_thread_delete"),
                     newLocal(destructor, match.compute(Storage::destructor, delete.getKey())),
                     newIfJump(expressions.makeEQ(destructor, nil), end, end),
-                    newStore(destructor, nil),
+                    newPlainStore(delete.getThread(), destructor, nil),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_delete")
             ));
@@ -612,7 +612,7 @@ public class ThreadCreation implements ProgramProcessor {
                     // pthread_getspecific returns NULL for invalid keys.
                     newLocal(get.getResultRegister(), expressions.makeGeneralZero(get.getResultRegister().getType())),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
-                    newLoad(get.getResultRegister(), data),
+                    newPlainLoad(get.getResultRegister(), data),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_get")
             ));
@@ -626,7 +626,7 @@ public class ThreadCreation implements ProgramProcessor {
                     // Signals success, unless the key is invalid.
                     newLocal(set.getResultRegister(), expressions.makeNEQ(data, nil)),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
-                    newStore(data, set.getValue()),
+                    newPlainStore(set.getThread(), data, set.getValue()),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_set")
             ));
@@ -642,9 +642,9 @@ public class ThreadCreation implements ProgramProcessor {
             for (Storage s : storage) {
                 final Label end = newLabel("__thread_exit_destructor_%d".formatted(++index));
                 exit.addAll(List.of(
-                        newLoad(destructor, s.destructor),
+                        newPlainLoad(destructor, s.destructor),
                         newIfJump(expressions.makeEQ(destructor, nil), end, end),
-                        newLoad(value, s.data),
+                        newPlainLoad(value, s.data),
                         newVoidFunctionCall(destructorType, destructor, List.of(value)),
                         end
                 ));
@@ -664,6 +664,15 @@ public class ThreadCreation implements ProgramProcessor {
     // Thread synchronization is lowered to the target the program was compiled to.
     private static TargetLowering lowering(Function context) {
         return context.getProgram().getTargetLowering();
+    }
+
+    private Event newPlainLoad(Register resultRegister, Expression address) {
+        final Function context = resultRegister.getFunction();
+        return lowering(context).newPlainLoad(context, resultRegister, address);
+    }
+
+    private Event newPlainStore(Function context, Expression address, Expression value) {
+        return lowering(context).newPlainStore(context, address, value);
     }
 
     private List<Event> newReleaseStore(Function context, Expression address, Expression storeValue) {
