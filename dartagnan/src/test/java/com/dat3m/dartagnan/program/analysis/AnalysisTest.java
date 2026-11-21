@@ -112,6 +112,7 @@ public class AnalysisTest {
 
         final Configuration config = Configuration.defaultConfiguration();
         final Program program = b.build();
+        Compilation.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         final Event init = program.getThreadEvents(Init.class).getFirst();
         // Required by BranchEquivalence.

@@ -86,6 +86,7 @@ public class Compilation implements ProgramProcessor {
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);
         program.setArch(target);
+        program.setTargetLowering(new CompilerBasedLowering(target, compiler));
         program.markAsCompiled();
         IdReassignment.newInstance().run(program); // Reassign ids
 
@@ -97,21 +98,6 @@ public class Compilation implements ProgramProcessor {
             compiler.funcToBeCompiled = function;
             function.getEvents().forEach(e -> compileEvent(e, compiler));
         }
-    }
-
-    /*
-        Returns the plain result of what an event would be compiled to.
-        The following holds:
-        (1) The original event is not affected. The result may be a singleton that contains exactly the original event.
-        (2) The resultant events do not inherit any metadata, nor are they inserted anywhere.
-        (3) CARE: The resultant events may reference events that the original referenced, i.e., they may be EventUsers.
-            This means their existence can affect other events even if not inserted anywhere: the events have to get
-            deleted properly!
-
-     */
-    public List<Event> getCompilationResult(Event toBeCompiled) {
-        compiler.funcToBeCompiled = toBeCompiled.getFunction();
-        return toBeCompiled.accept(compiler);
     }
 
     // -----------------------------------------------------------------------------

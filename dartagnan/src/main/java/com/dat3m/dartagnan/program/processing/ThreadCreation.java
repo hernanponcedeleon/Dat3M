@@ -26,7 +26,8 @@ import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.compilation.TargetLowering;
+import com.dat3m.dartagnan.program.processing.compilation.TargetLowering.Order;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -78,8 +79,6 @@ public class ThreadCreation implements ProgramProcessor {
     @IntegerOption(min = 0)
     private int argcMax = 10;
 
-    private final Compilation compiler;
-
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     // The thread state consists of two flags: ALIVE and JOINABLE.
@@ -87,7 +86,6 @@ public class ThreadCreation implements ProgramProcessor {
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        compiler = Compilation.fromConfig(config);
     }
 
     public static final String THREAD_SELF_REGISTER_NAME = "__dat3m_thread_self";
@@ -170,7 +168,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final Expression tid = new TIdExpr(archType, spawnedThread.thread());
                 final List<Event> replacement = eventSequence(
                         create.hasTidAddress() ? newStore(create.getTidAddress(), tid) : null,
-                        newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
+                        newReleaseStore(thread, spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
                         newLocal(tidRegister, tid)
                 );
@@ -663,42 +661,35 @@ public class ThreadCreation implements ProgramProcessor {
         return ((ValueFunctionCall) call).getResultRegister();
     }
 
-    private List<Event> newReleaseStore(Expression address, Expression storeValue) {
-        final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newStore(address, storeValue, Tag.Linux.MO_RELEASE) :
-                EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore);
+    // Thread synchronization is lowered to the target the program was compiled to.
+    private static TargetLowering lowering(Function context) {
+        return context.getProgram().getTargetLowering();
+    }
+
+    private List<Event> newReleaseStore(Function context, Expression address, Expression storeValue) {
+        return lowering(context).newStore(context, address, storeValue, Order.RELEASE);
     }
 
     private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
-        final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
-                EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad);
+        final Function context = resultRegister.getFunction();
+        return lowering(context).newLoad(context, resultRegister, address, Order.ACQUIRE);
     }
 
     private List<Event> newRelaxedAnd(Register register, Expression address, Expression value) {
-        final Event relaxedAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ONCE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELAXED);
-        relaxedAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(relaxedAnd);
+        return newAnd(register, address, value, Order.RELAXED);
     }
 
     private List<Event> newReleaseAnd(Register register, Expression address, Expression value) {
-        final Event releaseAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_RELEASE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELEASE);
-        releaseAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(releaseAnd);
+        return newAnd(register, address, value, Order.RELEASE);
     }
 
     private List<Event> newAcquireAnd(Register register, Expression address, Expression value) {
-        final Event acquireAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ACQUIRE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_ACQUIRE);
-        acquireAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(acquireAnd);
+        return newAnd(register, address, value, Order.ACQUIRE);
+    }
+
+    private List<Event> newAnd(Register register, Expression address, Expression value, Order order) {
+        final Function context = register.getFunction();
+        return lowering(context).newFetchOp(context, register, address, value, IntBinaryOp.AND, order);
     }
 
 
