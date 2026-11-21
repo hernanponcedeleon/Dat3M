@@ -1,3 +1,4 @@
+; @Input: %11=4
 ; @Config: 4, 1, 2
 ; SPIR-V
 ; Version: 1.6
