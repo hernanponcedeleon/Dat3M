@@ -20,12 +20,12 @@ import java.util.List;
 class CompilerBasedLowering implements TargetLowering {
 
     private final Arch target;
-    private final VisitorBase compiler;
+    private final Compiler compiler;
     // VisitorLKMM only compiles LKMM events, all other compilers accept C11-style atomics.
     private final boolean useLinuxEvents;
 
-    CompilerBasedLowering(Arch target, VisitorBase compiler) {
-        this.target = target;
+    CompilerBasedLowering(Compiler compiler) {
+        this.target = compiler.getTarget();
         this.compiler = compiler;
         this.useLinuxEvents = target == Arch.LKMM;
     }
@@ -67,9 +67,7 @@ class CompilerBasedLowering implements TargetLowering {
     // ------------------------------------------------------------------------------------------
 
     private List<Event> compile(Function context, Event highLevelEvent) {
-        // The compilers allocate helper registers in the function the events are compiled for.
-        compiler.funcToBeCompiled = context;
-        return highLevelEvent.accept(compiler);
+        return compiler.compile(highLevelEvent, context);
     }
 
     private static String toC11(Order order) {

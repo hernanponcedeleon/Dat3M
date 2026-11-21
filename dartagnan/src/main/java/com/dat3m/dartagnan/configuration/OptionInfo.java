@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.processing.*;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.compilation.Compiler;
 import com.dat3m.dartagnan.program.processing.libraries.AbstractLibrary;
 import com.dat3m.dartagnan.program.processing.libraries.PthreadLibrary;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
@@ -61,7 +61,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
                 ProcessingManager.class,
                 SparseConditionalConstantPropagation.class,
                 ThreadCreation.class,
-                Compilation.class,
+                Compiler.class,
                 CoreReasoner.class,
                 Dartagnan.DartagnanOptions.class,
                 ProgramPrinter.class,

@@ -21,7 +21,7 @@ import static com.google.common.base.Verify.verify;
 
 //FIXME: Some compilations generate simple load/store operations with memory orderings, however,
 // it seems that RISCV does not support mo's on arbitrary memory operations (only on LL/SC and AMOs).
-class VisitorRISCV extends VisitorBase {
+class VisitorRISCV extends Compiler.Visitor {
     // Some language memory models (e.g. RC11) are non-dependency tracking and might need a
     // strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
     // "Repairing Sequential Consistency in C/C++11"

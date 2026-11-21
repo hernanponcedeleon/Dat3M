@@ -7,73 +7,30 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
-import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
-
-@Options
 public class Compilation implements ProgramProcessor {
-
 
     private static final Logger logger = LoggerFactory.getLogger(Compilation.class);
 
-    // =========================== Configurables ===========================
+    private final Compiler compiler;
 
-    @Option(name = TARGET,
-            description = "The target architecture to which the program shall be compiled to.",
-            secure = true,
-            toUppercase = true)
-    private Arch target = Arch.C11;
-
-    public Arch getTarget() { return target; }
-    public void setTarget(Arch target) {
-        this.target = target;
-        compiler = getCompiler();
-    }
-
-    @Option(name = USE_RC11_TO_ARCH_SCHEME,
-            description = "Use the RC11 to Arch (Power/ARMv8) compilation scheme to forbid out-of-thin-air behaviours.",
-            secure = true,
-            toUppercase = true)
-    private boolean useRC11Scheme = false;
-
-    @Option(name = C_TO_POWER_SCHEME,
-            description = "Use the leading/trailing-sync compilation scheme from C to Power.",
-            secure = true,
-            toUppercase = true)
-    private PowerScheme cToPowerScheme = LEADING_SYNC;
-
-    // =====================================================================
-
-    private VisitorBase compiler;
-
-    private Compilation() {
-        compiler = getCompiler();
-    }
-
-    private Compilation(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
-        Preconditions.checkNotNull(target);
-        compiler = getCompiler();
+    private Compilation(Compiler compiler) {
+        this.compiler = compiler;
     }
 
     public static Compilation fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new Compilation(config);
+        return new Compilation(Compiler.fromConfig(config));
     }
 
     public static Compilation newInstance() {
-        return new Compilation();
+        return new Compilation(Compiler.newInstance());
     }
 
     @Override
@@ -82,11 +39,11 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
-        compiler = getCompiler(program.getFormat());
+        final Arch target = compiler.getTarget();
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);
         program.setArch(target);
-        program.setTargetLowering(new CompilerBasedLowering(target, compiler));
+        program.setTargetLowering(new CompilerBasedLowering(compiler));
         program.markAsCompiled();
         IdReassignment.newInstance().run(program); // Reassign ids
 
@@ -95,48 +52,19 @@ public class Compilation implements ProgramProcessor {
 
     private void run(Function function) {
         if (function.hasBody()) {
-            compiler.funcToBeCompiled = function;
-            function.getEvents().forEach(e -> compileEvent(e, compiler));
+            function.getEvents().forEach(e -> compileEvent(e, function));
         }
     }
 
     // -----------------------------------------------------------------------------
 
-    // Selects the compiler for the given source language and the configured target.
-    private VisitorBase getCompiler(Program.SourceLanguage source) {
-        if (source == Program.SourceLanguage.SPV) {
-            return switch (target) {
-                case VULKAN -> new VisitorSpirvVulkan();
-                case OPENCL -> new VisitorSpirvOpenCL();
-                default -> throw new UnsupportedOperationException("SPIR-V can only be compiled to Vulkan or OpenCL");
-            };
-        }
-        return getCompiler();
-    }
-
-    // Selects the compiler for the configured target, assuming a non-SPIR-V source language.
-    private VisitorBase getCompiler() {
-        return switch (target) {
-            case C11, OPENCL -> new VisitorC11();
-            case LKMM -> new VisitorLKMM();
-            case TSO -> new VisitorTso();
-            case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
-            case ARM7 -> new VisitorArm7();
-            case ARM8 -> new VisitorArm8(useRC11Scheme);
-            case IMM -> new VisitorIMM();
-            case RISCV -> new VisitorRISCV(useRC11Scheme);
-            case PTX -> new VisitorPTX();
-            case VULKAN -> new VisitorVulkan();
-        };
-    }
-
-    private void compileEvent(Event toBeCompiled, VisitorBase compiler) {
+    private void compileEvent(Event toBeCompiled, Function function) {
         toBeCompiled.setMetadata(new Event.CompilationId(toBeCompiled.getGlobalId()));
         final Event pred = toBeCompiled.getPredecessor();
         if (pred == null) {
             return; // We do not compile the entry event.
         }
-        final List<Event> compiledEvents = toBeCompiled.accept(compiler);
+        final List<Event> compiledEvents = compiler.compile(toBeCompiled, function);
         if (compiledEvents.size() == 1 && compiledEvents.getFirst() == toBeCompiled) {
             // In the special case where the compilation does nothing, we keep the event as is.
             return;

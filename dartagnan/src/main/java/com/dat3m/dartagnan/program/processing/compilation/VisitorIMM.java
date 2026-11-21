@@ -17,7 +17,7 @@ import static com.dat3m.dartagnan.program.event.Tag.IMM.extractLoadMo;
 import static com.dat3m.dartagnan.program.event.Tag.IMM.extractStoreMo;
 import static com.google.common.base.Verify.verify;
 
-class VisitorIMM extends VisitorBase {
+class VisitorIMM extends Compiler.Visitor {
 
     @Override
     public List<Event> visitLoad(Load e) {

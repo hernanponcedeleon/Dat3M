@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorVulkan extends VisitorBase {
+public class VisitorVulkan extends Compiler.Visitor {
 
     private static final Set<String> commonTags = Set.of(
             Tag.Vulkan.SUB_GROUP, Tag.Vulkan.WORK_GROUP,

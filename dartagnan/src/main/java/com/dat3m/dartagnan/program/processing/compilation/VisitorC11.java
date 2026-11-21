@@ -19,7 +19,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 import static com.google.common.base.Verify.verify;
 
-public class VisitorC11 extends VisitorBase {
+public class VisitorC11 extends Compiler.Visitor {
 
     @Override
     public List<Event> visitLoad(Load e) {

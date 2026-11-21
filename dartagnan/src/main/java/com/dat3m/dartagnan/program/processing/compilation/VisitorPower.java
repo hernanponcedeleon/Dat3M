@@ -19,7 +19,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Verify.verify;
 
-public class VisitorPower extends VisitorBase {
+public class VisitorPower extends Compiler.Visitor {
 
     // The compilation schemes below follows the paper
     // "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"

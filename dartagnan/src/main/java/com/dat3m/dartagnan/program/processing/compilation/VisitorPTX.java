@@ -15,7 +15,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorPTX extends VisitorBase {
+public class VisitorPTX extends Compiler.Visitor {
 
     @Override
     public List<Event> visitPtxAtomOp(PTXAtomOp e) {

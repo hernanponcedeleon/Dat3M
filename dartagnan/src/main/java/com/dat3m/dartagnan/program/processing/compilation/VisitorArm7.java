@@ -12,7 +12,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-class VisitorArm7 extends VisitorBase {
+class VisitorArm7 extends Compiler.Visitor {
 
     protected VisitorArm7() {}
 

@@ -19,7 +19,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorLKMM extends VisitorBase {
+public class VisitorLKMM extends Compiler.Visitor {
 
     @Override
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {

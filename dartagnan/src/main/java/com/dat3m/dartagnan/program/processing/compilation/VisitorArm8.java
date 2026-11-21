@@ -20,7 +20,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.google.common.base.Verify.verify;
 
-class VisitorArm8 extends VisitorBase {
+class VisitorArm8 extends Compiler.Visitor {
 
     // If the source WMM does not allow OOTA behaviors (e.g. RC11)
     // we need to strength the compilation following the paper

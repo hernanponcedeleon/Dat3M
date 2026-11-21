@@ -17,7 +17,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Verify.verify;
 
-class VisitorTso extends VisitorBase {
+class VisitorTso extends Compiler.Visitor {
 
     @Override
     public List<Event> visitTSOXchg(TSOXchg e) {
