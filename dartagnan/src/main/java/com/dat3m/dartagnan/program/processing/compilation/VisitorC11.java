@@ -43,11 +43,11 @@ public class VisitorC11 extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
+                funcToBeCompiled.newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
+        Register regExpected = funcToBeCompiled.newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -78,7 +78,7 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, storeMO(mo));
@@ -95,7 +95,7 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(e.getAccessType());
+        Register dummyReg = funcToBeCompiled.newRegister(e.getAccessType());
         Load load = newRMWLoad(dummyReg, address);
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(dummyReg, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, Tag.C11.storeMO(mo));
@@ -191,7 +191,7 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));

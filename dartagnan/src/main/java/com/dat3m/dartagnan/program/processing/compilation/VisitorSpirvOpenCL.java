@@ -34,7 +34,6 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
     public List<Event> visitSpirvLoad(SpirvLoad e) {
         String mo = moToOpenCLTag(Tag.Spirv.getMoTag(e.getTags()));
         Load load = newLoadWithMo(e.getResultRegister(), e.getAddress(), mo);
-        load.setFunction(e.getFunction());
         load.addTags(Tag.C11.ATOMIC);
         load.addTags(toOpenCLTags(e.getTags()));
         return eventSequence(load);
@@ -44,7 +43,6 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
     public List<Event> visitSpirvStore(SpirvStore e) {
         String mo = moToOpenCLTag(Tag.Spirv.getMoTag(e.getTags()));
         Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), mo);
-        store.setFunction(e.getFunction());
         store.addTags(Tag.C11.ATOMIC);
         store.addTags(toOpenCLTags(e.getTags()));
         return eventSequence(store);
@@ -56,7 +54,6 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
         Event rmw = Atomic.newExchange(e.getResultRegister(), e.getAddress(),
                 e.getValue(), mo);
         rmw.addTags(toOpenCLTags(e.getTags()));
-        rmw.setFunction(e.getFunction());
         return rmw.accept(this);
     }
 
@@ -65,7 +62,6 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
         String mo = moToOpenCLTag(Tag.Spirv.getMoTag(e.getTags()));
         Event rmwOp = Atomic.newFetchOp(e.getResultRegister(), e.getAddress(),
                 e.getOperand(), e.getOperator(), mo);
-        rmwOp.setFunction(e.getFunction());
         rmwOp.addTags(toOpenCLTags(e.getTags()));
         return rmwOp.accept(this);
     }
@@ -95,7 +91,7 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
         Expression value = e.getStoreValue();
-        Register cmpResultRegister = e.getFunction().newRegister(types.getBooleanType());
+        Register cmpResultRegister = funcToBeCompiled.newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end");
         Load load = newRMWLoadWithMo(resultRegister, address, Tag.C11.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, value, Tag.C11.storeMO(mo));

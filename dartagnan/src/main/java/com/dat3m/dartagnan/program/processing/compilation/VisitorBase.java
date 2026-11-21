@@ -96,8 +96,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
         final Type resultType = e.getResultRegister().getType();
         verify(resultType instanceof AggregateType t && t.getFields().size() == 2, "Invalid result type of '%s'", e);
         final AggregateType type = (AggregateType) resultType;
-        final Register oldValue = e.getFunction().newUniqueRegister("LlvmCmpXchg.oldValue", e.getExpectedValue().getType());
-        final Register success = e.getFunction().newUniqueRegister("LlvmCmpXchg.success", types.getBooleanType());
+        final Register oldValue = funcToBeCompiled.newUniqueRegister("LlvmCmpXchg.oldValue", e.getExpectedValue().getType());
+        final Register success = funcToBeCompiled.newUniqueRegister("LlvmCmpXchg.success", types.getBooleanType());
         final Expression r0 = expressions.makeCast(oldValue, type.getFields().get(0).type());
         final Expression r1 = expressions.makeCast(success, type.getFields().get(1).type());
         final Expression expected = e.getExpectedValue();

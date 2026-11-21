@@ -51,11 +51,11 @@ class VisitorIMM extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
+                funcToBeCompiled.newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
+        Register regExpected = funcToBeCompiled.newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue);
@@ -89,7 +89,7 @@ class VisitorIMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
@@ -185,7 +185,7 @@ class VisitorIMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));

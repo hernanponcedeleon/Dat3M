@@ -109,7 +109,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         // Power does not have mo tags, thus we use null
@@ -171,11 +171,11 @@ public class VisitorPower extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
+                funcToBeCompiled.newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
+        Register regExpected = funcToBeCompiled.newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -208,7 +208,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newCoreLoadReserved(resultRegister, address);
@@ -411,7 +411,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
+        Register dummy = funcToBeCompiled.newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
@@ -435,7 +435,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, e.getValue(), true);
 
@@ -453,7 +453,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
         Load load = newCoreLoadReserved(dummy, address);
@@ -473,7 +473,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, dummy, true);
 
@@ -493,7 +493,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
 
@@ -518,12 +518,12 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         Type type = resultRegister.getType();
 
-        Register regValue = e.getFunction().newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newCoreLoadReserved(regValue, address);
         Store store = newCoreStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
 
-        Register dummy = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
@@ -549,7 +549,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newCoreLoadReserved(dummy, address);
@@ -573,7 +573,7 @@ public class VisitorPower extends VisitorBase {
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(
                 newCoreLoadReserved(dummy, e.getLock()),
@@ -610,7 +610,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     private List<Event> newAssignExecutionStatus(Register register, Event store) {
-        final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
+        final Register status = funcToBeCompiled.newUniqueRegister("status", types.getBooleanType());
         return List.of(
                 newExecutionStatus(status, store),
                 newLocal(register, expressions.makeNot(status))

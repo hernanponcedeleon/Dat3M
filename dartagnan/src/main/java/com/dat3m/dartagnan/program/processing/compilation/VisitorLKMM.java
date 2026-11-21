@@ -25,11 +25,11 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Expression operand = e.getOperand();
-        Register dummy = e.getFunction().newRegister(operand.getType());
+        Register dummy = funcToBeCompiled.newRegister(operand.getType());
         Expression cmp = e.getCmp();
         Expression address = e.getAddress();
         Expression unexpected = expressions.makeNEQ(dummy, cmp);
-        Register havocRegister = e.getFunction().getOrNewRegister("__guess", types.getBooleanType());
+        Register havocRegister = funcToBeCompiled.getOrNewRegister("__guess", types.getBooleanType());
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
@@ -55,11 +55,11 @@ public class VisitorLKMM extends VisitorBase {
         Expression cmp = e.getExpectedValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register havocRegister = e.getFunction().getOrNewRegister("__guess", types.getBooleanType());
+        Register havocRegister = funcToBeCompiled.getOrNewRegister("__guess", types.getBooleanType());
 
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load loadFail = newCoreLoad(dummy, address, Tag.Linux.MO_ONCE);
         loadFail.addTags(Tag.RMW);
         Load loadSuccess;
@@ -86,7 +86,7 @@ public class VisitorLKMM extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, mo);
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
 
@@ -101,7 +101,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
         load.addTags(Tag.Linux.NORETURN);
@@ -117,7 +117,7 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         Expression operand = e.getOperand();
-        Register dummy = e.getFunction().newRegister(operand.getType());
+        Register dummy = funcToBeCompiled.newRegister(operand.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_MB);
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
@@ -135,7 +135,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, mo);
 
         return eventSequence(
@@ -173,7 +173,7 @@ public class VisitorLKMM extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, mo);
 
         return eventSequence(
@@ -185,9 +185,9 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        boolean litmusFormat = e.getFunction().getProgram().getFormat().equals(LITMUS);
+        boolean litmusFormat = funcToBeCompiled.getProgram().getFormat().equals(LITMUS);
         IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         Expression zeroDummy = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load lockRead = newLockRead(dummy, e.getLock());

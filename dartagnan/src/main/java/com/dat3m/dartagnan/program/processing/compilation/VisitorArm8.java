@@ -48,7 +48,7 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = xchg.hasTag(MO_ACQ) ? MO_ACQ : "";
         final String storeMo = xchg.hasTag(MO_REL) ? MO_REL : "";
 
-        final Register dummy = xchg.getFunction().newRegister(resultRegister.getType());
+        final Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
 
         return eventSequence(
                 propagateNoRet(xchg, newCoreLoadExclusive(dummy, address, loadMo)),
@@ -65,7 +65,7 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = cas.hasTag(MO_ACQ) ? MO_ACQ : "";
         final String storeMo = cas.hasTag(MO_REL) ? MO_REL : "";
 
-        final Register dummy = cas.getFunction().newRegister(resultRegister.getType());
+        final Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         final Load load = propagateNoRet(cas, newRMWLoadWithMo(dummy, address, loadMo));
         final Store store = newRMWStoreWithMo(load, address, cas.getStoreValue(), storeMo);
         final Expression cmp = expressions.makeEQ(dummy, cas.getExpectedValue());
@@ -87,7 +87,7 @@ class VisitorArm8 extends VisitorBase {
         final Expression address = rmwOp.getAddress();
         final String storeMo = rmwOp.hasTag(MO_REL) ? MO_REL : "";
 
-        final Register dummy = rmwOp.getFunction().newRegister(rmwOp.getAccessType());
+        final Register dummy = funcToBeCompiled.newRegister(rmwOp.getAccessType());
         final Load load = newRMWLoad(dummy, address);
         load.addTags(NO_RET);
         final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
@@ -105,7 +105,7 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = rmwOp.hasTag(MO_ACQ) ? MO_ACQ : "";
         final String storeMo = rmwOp.hasTag(MO_REL) ? MO_REL : "";
 
-        final Register dummy = rmwOp.getFunction().newRegister(resultRegister.getType());
+        final Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         final Load load = propagateNoRet(rmwOp, newRMWLoadWithMo(dummy, address, loadMo));
         final Expression value = expressions.makeBinary(dummy, rmwOp.getOperator(), rmwOp.getOperand());
 
@@ -167,7 +167,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newCoreLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
@@ -229,11 +229,11 @@ class VisitorArm8 extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
+                funcToBeCompiled.newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
+        Register regExpected = funcToBeCompiled.newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -264,7 +264,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
 
         Load load = newCoreLoadExclusive(resultRegister, address, extractLoadMoFromCMo(mo));
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
@@ -406,7 +406,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
+        Register dummy = funcToBeCompiled.newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         // The real scheme uses XOR instead of comparison, but both are semantically
         // equivalent and XOR harms performance substantially.
@@ -435,7 +435,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newCoreStoreExclusive(address, e.getValue(), true, extractStoreMoFromLKMo(mo));
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
@@ -455,7 +455,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newCoreLoadExclusive(dummy, address, "");
         Store store = newCoreStoreExclusive(address, storeValue, true, "");
@@ -475,7 +475,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newCoreStoreExclusive(address, dummy, true, extractStoreMoFromLKMo(mo));
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? newDmbIsh() : null;
@@ -498,7 +498,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newCoreLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
         Store store = newCoreStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
@@ -525,12 +525,12 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
         Type type = resultRegister.getType();
 
-        Register regValue = e.getFunction().newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Expression value = expressions.makeAdd(regValue, e.getOperand());
         Load load = newCoreLoadExclusive(regValue, address, extractLoadMoFromLKMo(mo));
         Store store = newCoreStoreExclusive(address, value, true, extractStoreMoFromLKMo(mo));
 
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
@@ -557,7 +557,7 @@ class VisitorArm8 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newCoreLoadExclusive(dummy, address, extractLoadMoFromLKMo(mo));
@@ -581,7 +581,7 @@ class VisitorArm8 extends VisitorBase {
         IntegerType type = (IntegerType) e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         // With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.
@@ -601,7 +601,7 @@ class VisitorArm8 extends VisitorBase {
     }
 
     private List<Event> newAssignExecutionStatus(Register register, Event store) {
-        final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
+        final Register status = funcToBeCompiled.newUniqueRegister("status", types.getBooleanType());
         return List.of(
                 newExecutionStatus(status, store),
                 newLocal(register, expressions.makeNot(status))

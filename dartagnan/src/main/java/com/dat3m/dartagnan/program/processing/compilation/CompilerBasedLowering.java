@@ -67,8 +67,8 @@ class CompilerBasedLowering implements TargetLowering {
     // ------------------------------------------------------------------------------------------
 
     private List<Event> compile(Function context, Event highLevelEvent) {
-        // The compilers allocate helper registers in the function of the compiled event.
-        highLevelEvent.setFunction(context);
+        // The compilers allocate helper registers in the function the events are compiled for.
+        compiler.funcToBeCompiled = context;
         return highLevelEvent.accept(compiler);
     }
 
