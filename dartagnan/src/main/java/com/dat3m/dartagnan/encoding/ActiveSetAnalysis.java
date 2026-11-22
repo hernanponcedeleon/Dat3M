@@ -136,10 +136,6 @@ public class ActiveSetAnalysis {
         logger.info("#Active constraints: {}", definition2ActiveSets.values().stream()
                 .mapToLong(EventGraph::size)
                 .sum());
-        logger.info("#Active constraints of transitive closures: {}", definition2ActiveSets.entrySet().stream()
-                .filter(e -> e.getKey() instanceof TransitiveClosure)
-                .mapToLong(e -> e.getValue().size())
-                .sum());
         logger.info("#Relevant edges for acyclicity: {}",
                 memoryModel.getAxioms().stream()
                         .filter(Acyclicity.class::isInstance)
