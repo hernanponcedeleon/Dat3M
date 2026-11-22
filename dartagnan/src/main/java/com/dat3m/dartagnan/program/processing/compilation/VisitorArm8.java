@@ -137,7 +137,10 @@ class VisitorArm8 extends Compiler.Visitor {
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMoFromCMo(e.getMo()));
+        // The RC11 scheme compiles all atomic stores as release stores (non-atomic ones stay plain).
+        final boolean isAtomic = !e.getMo().equals(Tag.C11.NONATOMIC);
+        final String mo = useRC11Scheme && isAtomic ? MO_REL : extractStoreMoFromCMo(e.getMo());
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), mo);
 
         return eventSequence(
                 store
