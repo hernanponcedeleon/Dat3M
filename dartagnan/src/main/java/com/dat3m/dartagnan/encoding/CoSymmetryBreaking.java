@@ -86,11 +86,15 @@ class CoSymmetryBreaking {
         final List<Thread> threads = new ArrayList<>(symmClass);
         threads.sort(Comparator.comparingInt(Thread::getId));
         final List<Store> levels = computeLevels(threads);
-        logger.info("Co symmetry breaking for class of {} ({} threads): {} levels: {}", threads.getFirst(),
-                threads.size(), levels.size(),
-                levels.stream().map(w -> "E" + w.getGlobalId() + "@" + threads.getFirst().getEvents().indexOf(w)).toList());
         if (levels.isEmpty()) {
+            logger.warn("Cannot break symmetry of {} threads like {}: no store whose symmetric copies must alias.",
+                    threads.size(), threads.getFirst());
             return bmgr.makeTrue();
+        }
+        logger.debug("Breaking symmetry of {} threads like {} on {} stores, first: {}",
+                threads.size(), threads.getFirst(), levels.size(), levels.getFirst());
+        if (logger.isTraceEnabled()) {
+            logger.trace("Store order for threads like {}: {}", threads.getFirst(), levels);
         }
 
         final List<BooleanFormula> enc = new ArrayList<>();
@@ -224,10 +228,10 @@ class CoSymmetryBreaking {
                 sameAddressDependent.add(w);
             }
         }
-        logger.info("Stores depending on a load from the same address: {}", sameAddressDependent.stream()
-                .map(w -> "E" + w.getGlobalId() + "@" + events.indexOf(w)).toList());
-        logger.info("Loop-exiting stores (with iteration): {}", exitIteration.entrySet().stream()
-                .map(en -> "E" + en.getKey().getGlobalId() + "@" + events.indexOf(en.getKey()) + "#" + en.getValue()).toList());
+        if (logger.isTraceEnabled()) {
+            logger.trace("Stores of {} depending on a load from the same address: {}", rep, sameAddressDependent);
+            logger.trace("Loop-exiting stores of {} (with iteration): {}", rep, exitIteration);
+        }
         levels.sort(Comparator
                 // Same-address dependent stores first, earliest in program order first.
                 .comparing((Store w) -> !sameAddressDependent.contains(w))

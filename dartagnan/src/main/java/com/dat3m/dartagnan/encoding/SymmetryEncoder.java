@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -8,6 +11,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+
+import java.util.Comparator;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
@@ -54,6 +60,13 @@ public class SymmetryEncoder {
     }
 
     public BooleanFormula encodeFullSymmetryBreaking() {
+        if (!symmBreakTarget.isEmpty()) {
+            final Set<? extends EquivalenceClass<Thread>> classes =
+                    context.getAnalysisContext().requires(ThreadSymmetry.class).getNonTrivialClasses();
+            logger.info("Found {} class(es) of symmetric threads: {}", classes.size(), classes.stream()
+                    .sorted(Comparator.comparingInt(c -> c.getRepresentative().getId()))
+                    .map(c -> c.size() + " x " + c.getRepresentative().getName()).toList());
+        }
         return switch (symmBreakTarget) {
             case CO -> new CoSymmetryBreaking(context).encode();
             case CF -> new CfSymmetryBreaking(context).encode();
