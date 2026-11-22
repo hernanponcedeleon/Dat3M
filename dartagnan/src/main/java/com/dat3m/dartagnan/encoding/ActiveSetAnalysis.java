@@ -36,6 +36,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_CLOSURE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound.*;
 
 /*
@@ -65,6 +66,12 @@ public class ActiveSetAnalysis {
             description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
             secure = true)
     private boolean reduceAcyclicityRelevantSets = true;
+
+    @Option(name = REDUCE_CLOSURE_ACTIVE_SETS,
+            description = "Reduce active sets below transitive closures by propagating only the edges " +
+                    "used by the (must-reduced) closure encoding.",
+            secure = true)
+    private boolean reduceClosureActiveSets = true;
 
     // ==============================================================================================
 
@@ -113,6 +120,7 @@ public class ActiveSetAnalysis {
     private void logConfig() {
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
         logger.info("{}: {}", REDUCE_ACYCLICITY_RELEVANT_SETS, reduceAcyclicityRelevantSets);
+        logger.info("{}: {}", REDUCE_CLOSURE_ACTIVE_SETS, reduceClosureActiveSets);
     }
 
     private void logStatistics(long startTime) {
@@ -127,6 +135,10 @@ public class ActiveSetAnalysis {
                 .sum());
         logger.info("#Active constraints: {}", definition2ActiveSets.values().stream()
                 .mapToLong(EventGraph::size)
+                .sum());
+        logger.info("#Active constraints of transitive closures: {}", definition2ActiveSets.entrySet().stream()
+                .filter(e -> e.getKey() instanceof TransitiveClosure)
+                .mapToLong(e -> e.getValue().size())
                 .sum());
         logger.info("#Relevant edges for acyclicity: {}",
                 memoryModel.getAxioms().stream()
@@ -281,6 +293,7 @@ public class ActiveSetAnalysis {
     private final class ActiveSetPropagator implements Constraint.Visitor<Map<Relation, EventGraph>> {
 
         private EventGraph news;
+        private final Map<TransitiveClosure, TransitiveClosureDecomposition> closureDecompositions = new HashMap<>();
 
         public void propagateAndUpdateQueue(Definition def, EventGraph update, Map<Relation, List<EventGraph>> propagationQueue) {
             if (update.isEmpty()) {
@@ -401,6 +414,9 @@ public class ActiveSetAnalysis {
 
         @Override
         public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
+            if (reduceClosureActiveSets) {
+                return propagateReducedClosure(trans);
+            }
             final Relation rel = trans.getDefinedRelation();
             final Relation r1 = trans.getOperand();
             final IndexedEventGraph factors = newGraph(rel);
@@ -419,6 +435,32 @@ public class ActiveSetAnalysis {
             factors.addAll(factorsInverse.inverse());
             factors.removeAll(k0.getMustSet());
             return map(rel, factors, r1, filterUnknowns(news, r1));
+        }
+
+        // Propagates exactly those edges that the encoding of the new closure edges refers to.
+        private Map<Relation, EventGraph> propagateReducedClosure(TransitiveClosure trans) {
+            final TransitiveClosureDecomposition decomposition = closureDecompositions.computeIfAbsent(trans,
+                    t -> new TransitiveClosureDecomposition(t, ra));
+            final Relation rel = decomposition.getClosure();
+            final Relation r1 = decomposition.getInner();
+            final MutableEventGraph closureEdges = newGraph(rel);
+            final MutableEventGraph innerEdges = newGraph(r1);
+            news.apply((e1, e2) -> {
+                final TransitiveClosureDecomposition.Decomposition d = decomposition.decompose(e1, e2);
+                if (d == null) {
+                    return;
+                }
+                if (d.direct()) {
+                    innerEdges.add(e1, e2);
+                }
+                for (TransitiveClosureDecomposition.Step step : d.steps()) {
+                    final Event e = step.mid();
+                    (step.leftIsClosure() ? closureEdges : innerEdges).add(e1, e);
+                    (step.rightIsClosure() ? closureEdges : innerEdges).add(e, e2);
+                }
+            });
+            closureEdges.removeAll(ra.getKnowledge(rel).getMustSet());
+            return map(rel, closureEdges, r1, filterUnknowns(innerEdges, r1));
         }
 
         @Override

@@ -39,6 +39,7 @@ public class OptionNames {
     // Encoding Options
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_RELEVANT_SETS = "encoding.wmm.reduceAcyclicityRelevantSets";
+    public static final String REDUCE_CLOSURE_ACTIVE_SETS = "encoding.wmm.reduceClosureActiveSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
     public static final String IGNORE_FILTER_SPECIFICATION = "encoding.ignoreFilterSpecification";
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
