@@ -20,6 +20,18 @@ import static com.google.common.base.Verify.verify;
 
 public class VisitorC11 extends Compiler.Visitor {
 
+    // Plain accesses get the NA tag (or A if they carry an atomic order), independent of the frontend.
+    // TODO: Move to the compilation of C-family plain accesses once frontends emit those.
+    @Override
+    public List<Event> visitLoad(Load e) {
+        return tagList(eventSequence(e));
+    }
+
+    @Override
+    public List<Event> visitStore(Store e) {
+        return tagList(eventSequence(e));
+    }
+
     // =============================================================================================
     // =========================================== C11 =============================================
     // =============================================================================================
