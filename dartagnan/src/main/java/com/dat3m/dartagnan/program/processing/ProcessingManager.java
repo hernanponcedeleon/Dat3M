@@ -104,15 +104,15 @@ public class ProcessingManager implements ProgramProcessor {
                 simplifyFunction, Target.THREADS, true
         );
         programProcessors.addAll(Arrays.asList(
-                // --------- Lowering of frontend-specifics ------------
+                // ------------ Lowering of frontend-specifics ------------
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", ProgramPrinter.Mode.ALL, config) : null,
-                PointerWidthVerification.newInstance(),
                 intrinsics.markIntrinsicsPass(),
                 LibraryLinker.fromConfig(config),
                 GEPToAddition.newInstance(),
                 Compilation.fromConfig(config), // We keep compilation global for now
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", ProgramPrinter.Mode.ALL, config) : null,
-                // --------- Main processing for verification ------------
+                PointerWidthVerification.newInstance(),
+                // ------------ Main processing for verification ------------
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
@@ -163,7 +163,7 @@ public class ProcessingManager implements ProgramProcessor {
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 memoryBoundsChecks ? MemoryBoundsChecks.fromConfig(config) : null,
-                // --- Statistics + verification ---
+                // ------------ Statistics + verification ------------
                 PointerWidthVerification.newInstance(),
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", ProgramPrinter.Mode.THREADS, config) : null,
