@@ -45,10 +45,7 @@ public class SymmetryEncoder {
         switch (symmBreakTarget) {
             case "" -> logger.info("Symmetry breaking disabled.");
             case CO -> logger.info("Breaking symmetry on coherence.");
-            case CF -> {
-                logger.info("Breaking symmetry on control flow.");
-                c.getAnalysisContext().requires(BranchEquivalence.class);
-            }
+            case CF -> logger.info("Breaking symmetry on control flow.");
             default -> throw new InvalidConfigurationException(String.format(
                     "Unknown value \"%s\" for option %s. Allowed values are \"%s\", \"%s\", and \"\".",
                     symmBreakTarget, BREAK_SYMMETRY_ON, CO, CF));
