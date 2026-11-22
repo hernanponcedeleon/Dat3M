@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.utils.symmetry;
+package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ExitImplicationAnalysis;
@@ -52,7 +51,7 @@ import java.util.*;
           successful CAS of a retry loop, typically the linearization point; earlier iterations first), and
           closeness to the middle of the thread.
  */
-public class CoSymmetryBreaking {
+class CoSymmetryBreaking {
 
     private static final Logger logger = LoggerFactory.getLogger(CoSymmetryBreaking.class);
 
@@ -63,7 +62,7 @@ public class CoSymmetryBreaking {
     private final ReachingDefinitionsAnalysis reachingDefinitions;
     private final Relation co;
 
-    public CoSymmetryBreaking(EncodingContext context) {
+    CoSymmetryBreaking(EncodingContext context) {
         this.context = context;
         this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
         this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
@@ -72,7 +71,7 @@ public class CoSymmetryBreaking {
         this.co = context.getTask().getMemoryModel().getRelation(RelationNameRepository.CO);
     }
 
-    public BooleanFormula encode() {
+    BooleanFormula encode() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {

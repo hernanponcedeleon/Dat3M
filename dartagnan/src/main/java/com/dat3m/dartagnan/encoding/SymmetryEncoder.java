@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.utils.symmetry.CoSymmetryBreaking;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
