@@ -91,10 +91,13 @@ class CoSymmetryBreaking {
                     threads.size(), threads.getFirst());
             return bmgr.makeTrue();
         }
-        logger.debug("Breaking symmetry of {} threads like {} on {} stores, first: {}",
-                threads.size(), threads.getFirst(), levels.size(), levels.getFirst());
+        if (logger.isDebugEnabled()) {
+            logger.debug("Breaking symmetry of {} threads like {} on {} stores, first: {}",
+                    threads.size(), threads.getFirst(), levels.size(), describe(levels.getFirst()));
+        }
         if (logger.isTraceEnabled()) {
-            logger.trace("Store order for threads like {}: {}", threads.getFirst(), levels);
+            logger.trace("Store order for threads like {}: {}", threads.getFirst(),
+                    levels.stream().map(CoSymmetryBreaking::describe).toList());
         }
 
         final List<BooleanFormula> enc = new ArrayList<>();
@@ -135,6 +138,10 @@ class CoSymmetryBreaking {
             }
         }
         return bmgr.and(enc);
+    }
+
+    private static String describe(Store store) {
+        return "E" + store.getGlobalId() + ": " + store.toString().replaceAll("\\s+", " ");
     }
 
     // Maps each store whose execution implies that (the current iteration of) some enclosing loop exits
@@ -229,8 +236,11 @@ class CoSymmetryBreaking {
             }
         }
         if (logger.isTraceEnabled()) {
-            logger.trace("Stores of {} depending on a load from the same address: {}", rep, sameAddressDependent);
-            logger.trace("Loop-exiting stores of {} (with iteration): {}", rep, exitIteration);
+            logger.trace("Stores of {} depending on a load from the same address: {}", rep, sameAddressDependent.stream()
+                    .sorted(Comparator.comparingInt(Event::getGlobalId)).map(CoSymmetryBreaking::describe).toList());
+            logger.trace("Loop-exiting stores of {} (with iteration): {}", rep, exitIteration.keySet().stream()
+                    .sorted(Comparator.comparingInt(Event::getGlobalId))
+                    .map(w -> describe(w) + " (iteration " + exitIteration.get(w) + ")").toList());
         }
         levels.sort(Comparator
                 // Same-address dependent stores first, earliest in program order first.
