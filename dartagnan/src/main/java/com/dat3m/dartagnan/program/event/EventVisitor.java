@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.NonDetChoice;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -75,18 +74,11 @@ public interface EventVisitor<T> {
     // ------------------ TSO Events ------------------
     default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }
 
-    // ------------------ C-Atomic Events ------------------
-    default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitMemEvent(e); }
-    default T visitAtomicFetchOp(AtomicFetchOp e) { return visitMemEvent(e); }
-    default T visitAtomicLoad(AtomicLoad e) { return visitMemEvent(e); }
-    default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
-    default T visitAtomicThreadFence(AtomicThreadFence e) { return visitEvent(e); }
-    default T visitAtomicXchg(AtomicXchg e) { return visitMemEvent(e); }
-    default T visitAtomicOp(AtomicOp e) { return visitMemEvent(e); }
-
-    // ------------------ LLVM Events ------------------
+    // ------------------ C-family (LLVM) Events ------------------
+    // Also used by litmus-C and by the SPIR-V to OpenCL compilation.
     default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitMemEvent(e); }
     default T visitLlvmRMW(LlvmRMW e) { return visitMemEvent(e); }
+    default T visitLlvmRMWNoReturn(LlvmRMWNoReturn e) { return visitMemEvent(e); }
     default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
     default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
     default T visitLlvmXchg(LlvmXchg e) { return visitMemEvent(e); }

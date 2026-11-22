@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
 import java.util.List;
@@ -80,7 +79,7 @@ class VisitorTso extends Compiler.Visitor {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -110,90 +109,6 @@ class VisitorTso extends Compiler.Visitor {
     // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        Expression value = e.getStoreValue();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Type type = resultRegister.getType();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                funcToBeCompiled.newRegister(types.getBooleanType());
-        Local castResult = booleanResultRegister == resultRegister ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = funcToBeCompiled.newRegister(type);
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Register regValue = funcToBeCompiled.newRegister(type);
-        Load loadValue = newRMWLoad(regValue, address);
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        Label casFail = newLabel("CAS_fail");
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        Store storeValue = newRMWStore(loadValue, address, value);
-        Label casEnd = newLabel("CAS_end");
-        CondJump gotoCasEnd = newGoto(casEnd);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        return tagList(eventSequence(
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                castResult
-        ));
-    }
-
-    @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
-
-        Expression address = e.getAddress();
-        Load load = newRMWLoad(resultRegister, address);
-
-        return tagList(eventSequence(
-                load,
-                newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
-                newRMWStore(load, address, dummyReg)
-        ));
-    }
-
-    @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        return eventSequence(
-                newLoad(e.getResultRegister(), e.getAddress())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        return eventSequence(
-                newStore(e.getAddress(), e.getMemValue()),
-                optionalMFence(e.getMo())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return eventSequence(
-                optionalMFence(e.getMo())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Expression address = e.getAddress();
-        Load load = newRMWLoad(e.getResultRegister(), address);
-
-        return tagList(eventSequence(
-                load,
-                newRMWStore(load, address, e.getValue())
-        ));
-    }
 
     private Event optionalMFence(String mo) {
         return mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence("mfence") : null;

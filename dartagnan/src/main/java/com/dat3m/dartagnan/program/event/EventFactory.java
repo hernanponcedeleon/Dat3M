@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.annotations.*;
 import com.dat3m.dartagnan.program.event.core.special.*;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.functions.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -417,55 +416,6 @@ public class EventFactory {
     // ========================================== Atomics ==========================================
     // =============================================================================================
 
-    public static class Atomic {
-        private Atomic() {
-        }
-
-        public static AtomicCmpXchg newCompareExchange(Register register, Expression address, Expression expectedAddr, Expression desiredValue, String mo, boolean isStrong) {
-            return new AtomicCmpXchg(register, address, expectedAddr, desiredValue, mo, isStrong);
-        }
-
-        public static AtomicCmpXchg newCompareExchange(Register register, Expression address, Expression expectedAddr, Expression desiredValue, String mo) {
-            return newCompareExchange(register, address, expectedAddr, desiredValue, mo, false);
-        }
-
-        public static AtomicFetchOp newFetchOp(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
-            return new AtomicFetchOp(register, address, op, value, mo);
-        }
-
-        public static AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {
-            return newFetchOp(register, address, value, IntBinaryOp.ADD, mo);
-        }
-
-        public static AtomicOp newRMWOp(Expression address, Expression value, IntBinaryOp op, String mo) {
-            return new AtomicOp(address, op, value, mo);
-        }
-
-        public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
-            if (!(register.getType() instanceof IntegerType integerType)) {
-                throw new IllegalArgumentException(
-                        String.format("Non-integer type %s for increment operation.", register.getType()));
-            }
-            return newFetchOp(register, address, expressions.makeOne(integerType), IntBinaryOp.ADD, mo);
-        }
-
-        public static AtomicLoad newLoad(Register register, Expression address, String mo) {
-            return new AtomicLoad(register, address, mo);
-        }
-
-        public static AtomicStore newStore(Expression address, Expression value, String mo) {
-            return new AtomicStore(address, value, mo);
-        }
-
-        public static AtomicThreadFence newFence(String mo) {
-            return new AtomicThreadFence(mo);
-        }
-
-        public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
-            return new AtomicXchg(register, address, value, mo);
-        }
-    }
-
     // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
@@ -493,6 +443,10 @@ public class EventFactory {
 
         public static LlvmRMW newRMW(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
             return new LlvmRMW(register, address, op, value, mo);
+        }
+
+        public static LlvmRMWNoReturn newRMWNoReturn(Expression address, Expression value, IntBinaryOp op, String mo) {
+            return new LlvmRMWNoReturn(address, op, value, mo);
         }
 
         public static LlvmFence newFence(String mo) {

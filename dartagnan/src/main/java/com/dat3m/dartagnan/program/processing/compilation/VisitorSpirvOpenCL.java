@@ -51,7 +51,7 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
     @Override
     public List<Event> visitSpirvXchg(SpirvXchg e) {
         String mo = moToOpenCLTag(Tag.Spirv.getMoTag(e.getTags()));
-        Event rmw = Atomic.newExchange(e.getResultRegister(), e.getAddress(),
+        Event rmw = Llvm.newExchange(e.getResultRegister(), e.getAddress(),
                 e.getValue(), mo);
         rmw.addTags(toOpenCLTags(e.getTags()));
         return rmw.accept(this);
@@ -60,7 +60,7 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
     @Override
     public List<Event> visitSpirvRMW(SpirvRmw e) {
         String mo = moToOpenCLTag(Tag.Spirv.getMoTag(e.getTags()));
-        Event rmwOp = Atomic.newFetchOp(e.getResultRegister(), e.getAddress(),
+        Event rmwOp = Llvm.newRMW(e.getResultRegister(), e.getAddress(),
                 e.getOperand(), e.getOperator(), mo);
         rmwOp.addTags(toOpenCLTags(e.getTags()));
         return rmwOp.accept(this);

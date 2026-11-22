@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
 import java.util.List;
@@ -26,62 +25,32 @@ public class VisitorC11 extends Compiler.Visitor {
     // =============================================================================================
 
     @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Type type = resultRegister.getType();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                funcToBeCompiled.newRegister(types.getBooleanType());
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = funcToBeCompiled.newRegister(type);
-        Register regValue = funcToBeCompiled.newRegister(type);
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newRMWLoadWithMo(regValue, address, loadMO(mo));
-        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getStoreValue(), storeMO(mo));
+    public List<Event> visitControlBarrier(ControlBarrier e) {
+        Event barrier = EventFactory.newControlBarrier(e.getName(), e.getInstanceId(), e.getExecScope());
+        barrier.addTags(MO_ACQUIRE_RELEASE);
+        return tagList(e, eventSequence(barrier));
+    }
 
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+    @Override
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
         return tagList(e, eventSequence(
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                castResult
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), loadMO(e.getMo()))
         ));
     }
 
     @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-        RMWStore store = newRMWStoreWithMo(load, address, dummyReg, storeMO(mo));
-
+    public List<Event> visitLlvmStore(LlvmStore e) {
         return tagList(e, eventSequence(
-                load,
-                localOp,
-                store
+                newStoreWithMo(e.getAddress(), e.getMemValue(), storeMO(e.getMo()))
         ));
     }
 
     @Override
-    public List<Event> visitAtomicOp(AtomicOp e) {
+    public List<Event> visitLlvmRMWNoReturn(LlvmRMWNoReturn e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -101,66 +70,6 @@ public class VisitorC11 extends Compiler.Visitor {
     }
 
     @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        return tagList(e, eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), loadMO(e.getMo()))
-        ));
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        return tagList(e, eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), storeMO(e.getMo()))
-        ));
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return tagList(e, eventSequence(
-                newFence(e.getMo())
-        ));
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Load load = newRMWLoadWithMo(e.getResultRegister(), address, loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), storeMO(mo));
-
-        return tagList(e, eventSequence(
-                load,
-                store
-        ));
-    }
-
-    @Override
-    public List<Event> visitControlBarrier(ControlBarrier e) {
-        Event barrier = EventFactory.newControlBarrier(e.getName(), e.getInstanceId(), e.getExecScope());
-        barrier.addTags(MO_ACQUIRE_RELEASE);
-        return tagList(e, eventSequence(barrier));
-    }
-
-    // =============================================================================================
-    // =========================================== LLVM ============================================
-    // =============================================================================================
-
-    @Override
-    public List<Event> visitLlvmLoad(LlvmLoad e) {
-        return tagList(eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), loadMO(e.getMo()))
-        ));
-    }
-
-    @Override
-    public List<Event> visitLlvmStore(LlvmStore e) {
-        return tagList(eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), storeMO(e.getMo()))
-        ));
-    }
-
-    @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
@@ -169,7 +78,7 @@ public class VisitorC11 extends Compiler.Visitor {
         Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
         Store store = newRMWStoreWithMo(load, address, e.getValue(), storeMO(mo));
 
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 load,
                 store
         ));
@@ -187,7 +96,7 @@ public class VisitorC11 extends Compiler.Visitor {
         Load load = newRMWLoadWithMo(resultRegister, address, loadMO(mo));
         Store store = newRMWStoreWithMo(load, address, dummyReg, storeMO(mo));
 
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 load,
                 localOp,
                 store
@@ -195,7 +104,7 @@ public class VisitorC11 extends Compiler.Visitor {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -206,7 +115,7 @@ public class VisitorC11 extends Compiler.Visitor {
         Load load = newRMWLoadExclusiveWithMo(oldValue, address, loadMO(mo));
         Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, false, storeMO(mo));
 
-        return tagList(eventSequence(
+        return tagList(original, eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
@@ -219,7 +128,7 @@ public class VisitorC11 extends Compiler.Visitor {
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 newFence(e.getMo())
         ));
     }

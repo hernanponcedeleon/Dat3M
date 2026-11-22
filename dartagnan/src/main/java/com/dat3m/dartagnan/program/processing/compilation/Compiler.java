@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMWNoReturn;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
@@ -197,6 +198,14 @@ public final class Compiler {
             throw error(e);
         }
 
+        // No-return RMWs are only supported by targets with a known compilation scheme (C11 and ARMv8).
+        // We do not fall back to a returning RMW: its read would add ordering a real compiler might not have,
+        // which can yield wrong verdicts.
+        @Override
+        public List<Event> visitLlvmRMWNoReturn(LlvmRMWNoReturn e) {
+            throw error(e);
+        }
+
         @Override
         public final List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
             final Type resultType = e.getResultRegister().getType();
@@ -209,13 +218,15 @@ public final class Compiler {
             final Expression expected = e.getExpectedValue();
             final Expression newValue = e.getStoreValue();
             return EventFactory.eventSequence(
-                    newLlvmCmpXchg(oldValue, success, e.getAddress(), expected, newValue, e.getMo(), e.isStrong()),
+                    newLlvmCmpXchg(e, oldValue, success, e.getAddress(), expected, newValue, e.getMo(), e.isStrong()),
                     EventFactory.newLocal(e.getResultRegister(), expressions.makeConstruct(type, List.of(r0, r1)))
             );
         }
 
-        protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
-                Expression newValue, String mo, boolean strong) {
+        // Compiles a compare-exchange whose result is split into the old value and a success flag.
+        // The original event is passed for tags that the compiled events should inherit.
+        protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address,
+                Expression expected, Expression newValue, String mo, boolean strong) {
             throw new UnsupportedOperationException("Compilation of LlvmCmpXchg by %s.".formatted(getClass()));
         }
 

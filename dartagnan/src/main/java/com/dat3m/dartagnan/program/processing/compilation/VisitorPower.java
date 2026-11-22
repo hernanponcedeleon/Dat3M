@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
@@ -126,7 +125,7 @@ public class VisitorPower extends Compiler.Visitor {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -162,132 +161,6 @@ public class VisitorPower extends Compiler.Visitor {
     // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        Expression value = e.getStoreValue();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Type type = resultRegister.getType();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                funcToBeCompiled.newRegister(types.getBooleanType());
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = funcToBeCompiled.newRegister(type);
-        Register regValue = funcToBeCompiled.newRegister(type);
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-        // Power does not have mo tags, thus we use the empty string
-        Load loadValue = newCoreLoadReserved(regValue, address);
-        Store storeValue = newCoreStoreConditional(address, value, e.isStrong());
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                e.isStrong() ? null : newAssignExecutionStatus(booleanResultRegister, storeValue),
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                optionalBarrierAfter(e.getMo()),
-                castResult
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-
-        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-
-        Load load = newCoreLoadReserved(resultRegister, address);
-        Store store = newCoreStoreConditional(address, dummyReg, true);
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                load,
-                newFakeCtrlDep(resultRegister),
-                localOp,
-                store,
-                optionalBarrierAfter(e.getMo())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Event optionalBarrierBefore = mo.equals(C11.MO_SC) && leadingSync() ? newSync() : null;
-        Load load = newLoad(resultRegister, address);
-        final boolean doCtrlDependency = switch (mo) {
-            case C11.MO_SC -> leadingSync();
-            case C11.MO_ACQUIRE -> true;
-            case C11.MO_RELAXED -> useRC11Scheme;
-            default -> false;
-        };
-
-        return eventSequence(
-                optionalBarrierBefore,
-                load,
-                doCtrlDependency ? newFakeCtrlDep(resultRegister) : null,
-                optionalBarrierAfter(mo)
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        Expression value = e.getMemValue();
-        Expression address = e.getAddress();
-
-        Store store = newStore(address, value);
-        Event optionalBarrierAfter = e.getMo().equals(C11.MO_SC) && !leadingSync() ? newSync() : null;
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                store,
-                optionalBarrierAfter
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        String mo = e.getMo();
-        Event fence = mo.equals(Tag.C11.MO_SC) ? newSync() : newLwSync();
-
-        return eventSequence(
-                fence
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-
-        Load load = newCoreLoadReserved(resultRegister, address);
-        Store store = newCoreStoreConditional(address, e.getValue(), true);
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                load,
-                newFakeCtrlDep(resultRegister),
-                store,
-                optionalBarrierAfter(e.getMo())
-        );
-    }
 
     private Event optionalBarrierBefore(String mo) {
         return switch (mo) {

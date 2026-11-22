@@ -23,7 +23,7 @@ class CompilerBasedLowering implements TargetLowering {
 
     private final Arch target;
     private final Compiler compiler;
-    // VisitorLKMM only compiles LKMM events, all other compilers accept C11-style atomics.
+    // VisitorLKMM only compiles LKMM events, all other compilers accept the C-family (LLVM) events.
     private final boolean useLinuxEvents;
 
     CompilerBasedLowering(Compiler compiler) {
@@ -36,7 +36,7 @@ class CompilerBasedLowering implements TargetLowering {
     public List<Event> newLoad(Function context, Register result, Expression address, Order order) {
         final Event load = useLinuxEvents ?
                 EventFactory.Linux.newLoad(result, address, toLinux(order)) :
-                EventFactory.Atomic.newLoad(result, address, toC11(order));
+                EventFactory.Llvm.newLoad(result, address, toC11(order));
         return compile(context, load);
     }
 
@@ -44,7 +44,7 @@ class CompilerBasedLowering implements TargetLowering {
     public List<Event> newStore(Function context, Expression address, Expression value, Order order) {
         final Event store = useLinuxEvents ?
                 EventFactory.Linux.newStore(address, value, toLinux(order)) :
-                EventFactory.Atomic.newStore(address, value, toC11(order));
+                EventFactory.Llvm.newStore(address, value, toC11(order));
         return compile(context, store);
     }
 
@@ -53,7 +53,7 @@ class CompilerBasedLowering implements TargetLowering {
                                   IntBinaryOp op, Order order) {
         final Event fetchOp = useLinuxEvents ?
                 EventFactory.Linux.newRMWFetchOp(address, result, operand, op, toLinux(order)) :
-                EventFactory.Atomic.newFetchOp(result, address, operand, op, toC11(order));
+                EventFactory.Llvm.newRMW(result, address, operand, op, toC11(order));
         return compile(context, fetchOp);
     }
 

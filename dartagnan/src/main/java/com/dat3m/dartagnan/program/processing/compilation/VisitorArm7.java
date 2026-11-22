@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFetchOp;
@@ -30,7 +30,7 @@ class VisitorArm7 extends Compiler.Visitor {
     // The rest of the synchronization is expected to be done via inline asm.
 
     @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
         return eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress()),
                 isAtomicAcquire(e.getMo()) ? newDmbIsh() : null
@@ -38,7 +38,7 @@ class VisitorArm7 extends Compiler.Visitor {
     }
 
     @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
+    public List<Event> visitLlvmStore(LlvmStore e) {
         return eventSequence(
                 isAtomicRelease(e.getMo()) ? newDmbIsh() : null,
                 newStore(e.getAddress(), e.getMemValue())
@@ -46,7 +46,7 @@ class VisitorArm7 extends Compiler.Visitor {
     }
 
     @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+    public List<Event> visitLlvmRMW(LlvmRMW e) {
         final Expression value = expressions.makeIntBinary(e.getResultRegister(), e.getOperator(), e.getOperand());
         final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
         return eventSequence(

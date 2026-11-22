@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
@@ -157,7 +156,7 @@ class VisitorRISCV extends Compiler.Visitor {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -197,127 +196,6 @@ class VisitorRISCV extends Compiler.Visitor {
     // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
-        Expression address = e.getAddress();
-        Expression value = e.getStoreValue();
-        String mo = e.getMo();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                funcToBeCompiled.newRegister(types.getBooleanType());
-        Register regExpected = funcToBeCompiled.newRegister(type);
-        Register regValue = funcToBeCompiled.newRegister(type);
-
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newCoreLoadReserved(regValue, address, extractLoadMoFromCMo(mo));
-        Store storeValue = newCoreStoreConditional(address, value, e.isStrong(), extractStoreMoFromCMo(mo));
-        Register statusReg = funcToBeCompiled.newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
-        // We normally make the following two events optional.
-        // Here we make them mandatory to guarantee correct dependencies.
-        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
-        Local updateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        return eventSequence(
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                execStatus,
-                updateCasCmpResult,
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                castResult
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Register dummyReg = funcToBeCompiled.newRegister(type);
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-
-        Load load = newCoreLoadReserved(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newCoreStoreConditional(address, dummyReg, true, extractStoreMoFromCMo(mo));
-
-        return eventSequence(
-                load,
-                newFakeCtrlDep(resultRegister),
-                localOp,
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        String mo = e.getMo();
-        Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? newRWRWFence() : null;
-        Event optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? newRRWFence() : null;
-
-        return eventSequence(
-                optionalBarrierBefore,
-                newLoad(e.getResultRegister(), e.getAddress()),
-                optionalBarrierAfter
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        String mo = e.getMo();
-        Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? newRWWFence() : null;
-
-        return eventSequence(
-                optionalBarrierBefore,
-                newStore(e.getAddress(), e.getMemValue())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE         -> newRRWFence();
-            case Tag.C11.MO_RELEASE         -> newRWWFence();
-            case Tag.C11.MO_ACQUIRE_RELEASE -> newTsoFence();
-            case Tag.C11.MO_SC              -> newRWRWFence();
-            default -> null;
-        };
-
-        return eventSequence(
-                fence
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Load load = newCoreLoadReserved(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newCoreStoreConditional(address, e.getValue(), true, extractStoreMoFromCMo(mo));
-
-        return eventSequence(
-                load,
-                newFakeCtrlDep(resultRegister),
-                store
-        );
-    }
 
     // =============================================================================================
     // =========================================== LKMM ============================================
