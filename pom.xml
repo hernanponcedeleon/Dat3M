@@ -48,7 +48,7 @@
         <antlr.version>4.13.0</antlr.version>
         <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
-        <logback.version>1.4.14</logback.version>
+        <logback.version>1.5.34</logback.version>
         <slf4j.version>2.0.7</slf4j.version>
         <sosy-common.version>0.3000-585-g7a5f95c1</sosy-common.version>
         <checker-qual.version>3.33.0</checker-qual.version>
