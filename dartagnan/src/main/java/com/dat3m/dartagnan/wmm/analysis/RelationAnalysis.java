@@ -154,6 +154,12 @@ public interface RelationAnalysis {
 
     Knowledge computeTransitiveClosure(EventGraph operand);
 
+    /**
+     * Computes the knowledge of a non-recursive relation that was added to the memory model after the analysis ran.
+     * The knowledge of its dependencies must already be available.
+     */
+    void addRelation(Relation relation);
+
     @Options
     final class Config {
         @Option(name = RELATION_ANALYSIS,

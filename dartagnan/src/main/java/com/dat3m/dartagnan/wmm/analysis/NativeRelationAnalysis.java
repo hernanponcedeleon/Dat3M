@@ -123,6 +123,31 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     @Override
+    public void addRelation(Relation relation) {
+        checkArgument(!relation.isRecursive(), "Cannot add recursive relation %s.", relation);
+        final Definition definition = relation.getDefinition();
+        final MutableKnowledge initial = definition.accept(getInitializer());
+        final MutableKnowledge knowledge = new MutableKnowledge(newGraph(relation), newGraph(relation));
+        knowledgeMap.put(relation, knowledge);
+        final List<Delta> deltas = new ArrayList<>();
+        deltas.add(new Delta(initial.getMaySet(), initial.getMustSet()));
+        final Propagator propagator = new Propagator();
+        for (Relation dependency : relation.getDependencies()) {
+            propagator.setSource(dependency);
+            propagator.setMay(knowledgeMap.get(dependency).getMaySet());
+            propagator.setMust(knowledgeMap.get(dependency).getMustSet());
+            deltas.add(definition.accept(propagator));
+        }
+        final Delta toAdd = combine(deltas);
+        if (definition instanceof Difference difference) {
+            final MutableKnowledge k = knowledgeMap.get(difference.getSubtrahend());
+            toAdd.may.removeAll(k.getMustSet());
+            toAdd.must.removeAll(k.getMaySet());
+        }
+        joinSet(knowledge, toAdd);
+    }
+
+    @Override
     public Knowledge computeTransitiveClosure(EventGraph operand) {
         final IndexedEventGraph indexedOperand = operand instanceof IndexedEventGraph g ? g
                 : new IndexedEventGraph(allEvents, allEvents, operand);
