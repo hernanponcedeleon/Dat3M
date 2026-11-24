@@ -22,6 +22,7 @@ jobs:
   native-build:
     name: Native (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
+    needs: [enforce-not-master-target, code-style]
     strategy:
       fail-fast: false
       matrix:
@@ -258,6 +259,18 @@ jobs:
 
       - name: SPIRV tests
         run: mvn --batch-mode test -DforkCount=2 -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
+
+  ci-passed:
+    name: CI passed
+    runs-on: ubuntu-latest
+    needs: [native-build, enforce-not-master-target, code-style, asm-tests, litmus-tests,
+            litmus-exploration-tests, llvm-tests, other-tests, spirv-tests]
+    if: ${{ always() && github.event_name != 'schedule' }}
+    steps:
+      - name: Check job results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: echo "$NEEDS" | jq -e 'all(.[]; .result == "success")'
 
   weekly:
     name: All tests
