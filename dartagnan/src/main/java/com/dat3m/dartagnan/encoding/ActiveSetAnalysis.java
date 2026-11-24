@@ -35,7 +35,6 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
 import static com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound.*;
 
 /*
@@ -60,11 +59,6 @@ public class ActiveSetAnalysis {
             description = "Compute subset of memory model definitions that affect memory model consistency.",
             secure = true)
     private boolean enableActiveSetComputation = true;
-
-    @Option(name = REDUCE_ACYCLICITY_RELEVANT_SETS,
-            description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
-            secure = true)
-    private boolean reduceAcyclicityRelevantSets = true;
 
     // ==============================================================================================
 
@@ -112,7 +106,6 @@ public class ActiveSetAnalysis {
 
     private void logConfig() {
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
-        logger.info("{}: {}", REDUCE_ACYCLICITY_RELEVANT_SETS, reduceAcyclicityRelevantSets);
     }
 
     private void logStatistics(long startTime) {
@@ -252,14 +245,11 @@ public class ActiveSetAnalysis {
                 sccEvents.forEach(e1 -> result.addRange(e1, SetUtil.intersection(sccEvents, maySet.getRange(e1))));
             }
 
-            if (reduceAcyclicityRelevantSets) {
-                final int originalSize = result.size();
-                result.removeAll(transitivelyDerivableMustEdges(rel));
-                final int reducedSize = result.size();
-                logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
-            } else {
-                logger.info("Relevant set size: {} ", result.size());
-            }
+            // ====== Apply transitive reduction ======
+            final int originalSize = result.size();
+            result.removeAll(transitivelyDerivableMustEdges(rel));
+            final int reducedSize = result.size();
+            logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
 
             return result;
         }
@@ -281,6 +271,7 @@ public class ActiveSetAnalysis {
     private final class ActiveSetPropagator implements Constraint.Visitor<Map<Relation, EventGraph>> {
 
         private EventGraph news;
+        private final Map<TransitiveClosure, TransitiveClosureDecomposition> closureDecompositions = new HashMap<>();
 
         public void propagateAndUpdateQueue(Definition def, EventGraph update, Map<Relation, List<EventGraph>> propagationQueue) {
             if (update.isEmpty()) {
@@ -399,26 +390,32 @@ public class ActiveSetAnalysis {
             return map(product.getDomain(), set1, product.getRange(), set2);
         }
 
+        // Propagates exactly those edges that the encoding of the new closure edges refers to
+        // (see TransitiveClosureDecomposition).
         @Override
         public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
-            final Relation rel = trans.getDefinedRelation();
-            final Relation r1 = trans.getOperand();
-            final IndexedEventGraph factors = newGraph(rel);
-            final IndexedEventGraph factorsInverse = newGraph(rel);
-            final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-            final EventGraph k0MayIn = k0.getMaySet().inverse();
-            for (Event e1 : news.getDomain()) {
-                final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
-                for (Event e3 : news.getRange(e1)) {
-                    // Compute { e2 | e1 -may(r0)> e2 -may(r0)> e3 }.
-                    final Set<Event> e2Set = SetUtil.intersection(e1k0May, k0MayIn.getRange(e3));
-                    factors.addRange(e1, e2Set);
-                    factorsInverse.addRange(e3, e2Set);
+            final TransitiveClosureDecomposition decomposition = closureDecompositions.computeIfAbsent(trans,
+                    t -> new TransitiveClosureDecomposition(t, ra));
+            final Relation rel = decomposition.getClosure();
+            final Relation r1 = decomposition.getInner();
+            final MutableEventGraph closureEdges = newGraph(rel);
+            final MutableEventGraph innerEdges = newGraph(r1);
+            news.apply((e1, e2) -> {
+                final TransitiveClosureDecomposition.Decomposition d = decomposition.decompose(e1, e2);
+                if (d == null) {
+                    return;
                 }
-            }
-            factors.addAll(factorsInverse.inverse());
-            factors.removeAll(k0.getMustSet());
-            return map(rel, factors, r1, filterUnknowns(news, r1));
+                if (d.direct()) {
+                    innerEdges.add(e1, e2);
+                }
+                for (TransitiveClosureDecomposition.Step step : d.steps()) {
+                    final Event e = step.mid();
+                    (step.leftIsClosure() ? closureEdges : innerEdges).add(e1, e);
+                    (step.rightIsClosure() ? closureEdges : innerEdges).add(e, e2);
+                }
+            });
+            closureEdges.removeAll(ra.getKnowledge(rel).getMustSet());
+            return map(rel, closureEdges, r1, filterUnknowns(innerEdges, r1));
         }
 
         @Override

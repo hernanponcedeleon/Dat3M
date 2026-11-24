@@ -525,15 +525,9 @@ public class WmmEncoder {
 
         @Override
         public Void visitTransitiveClosure(TransitiveClosure trans) {
-            final Relation inner = trans.getOperand();
-            final Relation rel = trans.getDefinedRelation();
-            final EventGraph relMustSet = ra.getKnowledge(rel).getMustSet();
-            final EventGraph relMaySet = ra.getKnowledge(rel).getMaySet();
-            final EventGraph innerMaySet = ra.getKnowledge(inner).getMaySet();
-
-            final EncodingContext.EdgeEncoder innerEdge = context.edge(inner).withCache();
-            final EncodingContext.EdgeEncoder transEdge = context.edge(rel).withCache();
-            final ApproxType approxType = getApproxType(rel);
+            final EncodingContext.EdgeEncoder innerEdge = context.edge(trans.getOperand()).withCache();
+            final EncodingContext.EdgeEncoder transEdge = context.edge(trans.getDefinedRelation()).withCache();
+            final ApproxType approxType = getApproxType(trans.getDefinedRelation());
 
             // WARNING: Although we generate clauses according to <approxType>,
             // the encoding is generally over-approximate (even with <approxType> == EXACT).
@@ -542,78 +536,24 @@ public class WmmEncoder {
             // An always-exact recursive encoding would require Kleene-Iteration or a
             // refinement loop to fix spurious over approximation
             // We have no such fallback encoding.
-
-            // OPTIMIZATION:
-            // Instead of encoding r+, we encode transMustRed(r)+ where
-            // transMustRed is a transitive reduction over the must-set:
-            //    transMustRed(r) = r \ must(r+);must(r+)
-            // This is the same trick we use to reduce acyclicity encoding.
-            // The computation is only correct if must(r+) is acyclic
-            final boolean acyclicMust = relMustSet.getDomain().stream().noneMatch(e -> relMustSet.contains(e, e));
-            final EventGraph implied = acyclicMust
-                    ? ra.computeComposition(relMustSet, relMustSet).getMustSet()
-                    : EventGraph.empty();
-
-            final Map<Event, List<Event>> relevantSuccessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getOutMap(),
-                    (x, succs) -> succs.stream()
-                            .filter(y -> y != x && !implied.contains(x, y))
-                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
-            ));
-            final Map<Event, List<Event>> relevantPredecessors = ImmutableMap.copyOf(Maps.transformEntries(innerMaySet.getInMap(),
-                    (x, preds) -> preds.stream()
-                            .filter(y -> y != x && !implied.contains(y, x))
-                            .sorted(Comparator.comparingInt(Event::getGlobalId)).toList()
-            ));
-
+            // See TransitiveClosureDecomposition for the (must-reduced) clause structure.
+            final TransitiveClosureDecomposition decomposition = new TransitiveClosureDecomposition(trans, ra);
             getActiveSet(trans).apply((e1, e2) -> {
-                final BooleanFormula edge = transEdge.encode(e1, e2);
-                if (relMustSet.contains(e1, e2) && implied.contains(e1, e2)) {
-                    // Must-edge derivable from other must-edges: (e1, e) and (e, e2) imply (e1, e2) via transitivity.
+                final TransitiveClosureDecomposition.Decomposition d = decomposition.decompose(e1, e2);
+                if (d == null) {
                     return;
                 }
-
-                // Left-linear: step(e1, e) & trans(e, e2) => trans(e1, e2)
-                final List<Event> leftSteps = new ArrayList<>();
-                for (Event e : relevantSuccessors.getOrDefault(e1, List.of())) {
-                    if (e == e2 || !relMaySet.contains(e, e2)) {
-                        continue;
-                    }
-                    leftSteps.add(e);
-                }
-
-                // Right-linear: trans(e1, e) & step(e, e2) => trans(e1, e2)
-                List<Event> rightSteps = null;
-                if (leftSteps.size() > 1) {
-                    rightSteps = new ArrayList<>();
-                    for (Event e : relevantPredecessors.getOrDefault(e2, List.of())) {
-                        if (e == e2 || !relMaySet.contains(e1, e)) {
-                            continue;
-                        }
-                        rightSteps.add(e);
-
-                        if (rightSteps.size() >= leftSteps.size()) {
-                            rightSteps = null;
-                            break;
-                        }
-                    }
-                }
-
                 final List<BooleanFormula> orClause = new ArrayList<>();
-                if (innerMaySet.contains(e1, e2)) {
+                if (d.direct()) {
                     orClause.add(innerEdge.encode(e1, e2));
                 }
-                if (rightSteps != null) {
-                    for (Event e : rightSteps) {
-                        final BooleanFormula tVar = relMustSet.contains(e, e2) ? transEdge.encode(e, e2) : innerEdge.encode(e, e2);
-                        orClause.add(bmgr.and(transEdge.encode(e1, e), tVar));
-                    }
-                } else {
-                    for (Event e : leftSteps) {
-                        final BooleanFormula tVar = relMustSet.contains(e1, e) ? transEdge.encode(e1, e) : innerEdge.encode(e1, e);
-                        orClause.add(bmgr.and(tVar, transEdge.encode(e, e2)));
-                    }
+                for (TransitiveClosureDecomposition.Step step : d.steps()) {
+                    final Event e = step.mid();
+                    final BooleanFormula left = (step.leftIsClosure() ? transEdge : innerEdge).encode(e1, e);
+                    final BooleanFormula right = (step.rightIsClosure() ? transEdge : innerEdge).encode(e, e2);
+                    orClause.add(bmgr.and(left, right));
                 }
-                encodeDisjunctiveDefinition(approxType, edge, orClause);
+                encodeDisjunctiveDefinition(approxType, transEdge.encode(e1, e2), orClause);
             });
             return null;
         }
