@@ -22,6 +22,7 @@ jobs:
   native-build:
     name: Native (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
+    needs: [enforce-not-master-target, code-style]
     strategy:
       fail-fast: false
       matrix:
