@@ -16,6 +16,7 @@ import java.util.PriorityQueue;
 public interface ModifierTrait <Modifier> {
 
     /// Checks if `x[modifier]y` and `x[modifier]z` implies `y == z` for all `x`, `y` and `z`.
+    /// A functional modifier must include only modifiers equal to it.
     boolean isFunctional(Modifier modifier);
 
     /// Checks if `compose(m, modifier) == m` for all `m`.

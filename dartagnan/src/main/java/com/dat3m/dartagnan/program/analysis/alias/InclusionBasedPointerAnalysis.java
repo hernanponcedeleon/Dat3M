@@ -657,7 +657,8 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     private List<Modifier> getAllCyclicPaths(Variable<Modifier> start, Set<Variable<Modifier>> includerSet) {
         final PathSet cycles = new PathSet();
         // Paths found so far, per variable. A path whose modifier is included in another path's modifier to the
-        // same variable is redundant: composition preserves inclusion, so all its extensions are subsumed as well.
+        // same variable is redundant: compose over-approximates relational composition, so its extensions are
+        // included in the extensions of the other path.
         final Map<Variable<Modifier>, PathSet> paths = new HashMap<>();
         List<IncludeEdge<Modifier>> worklist = new ArrayList<>();
         worklist.add(new IncludeEdge<>(start, IDENTITY));
@@ -695,13 +696,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         boolean add(Modifier modifier) {
             for (final Modifier o : other) {
                 if (trait.mustInclude(o, modifier)) {
-                    addIntoCyclesFails++;
                     return false;
                 }
             }
             if (trait.isFunctional(modifier)) {
                 if (!functional.add(modifier)) {
-                    addIntoCyclesFails++;
                     return false;
                 }
             } else {
@@ -709,7 +708,6 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 other.add(modifier);
                 functional.removeIf(f -> trait.mustInclude(modifier, f));
             }
-            addIntoCyclesSuccesses++;
             return true;
         }
 
