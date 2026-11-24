@@ -36,7 +36,6 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_CLOSURE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound.*;
 
 /*
@@ -66,12 +65,6 @@ public class ActiveSetAnalysis {
             description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
             secure = true)
     private boolean reduceAcyclicityRelevantSets = true;
-
-    @Option(name = REDUCE_CLOSURE_ACTIVE_SETS,
-            description = "Reduce active sets below transitive closures by propagating only the edges " +
-                    "used by the (must-reduced) closure encoding.",
-            secure = true)
-    private boolean reduceClosureActiveSets = true;
 
     // ==============================================================================================
 
@@ -120,7 +113,6 @@ public class ActiveSetAnalysis {
     private void logConfig() {
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
         logger.info("{}: {}", REDUCE_ACYCLICITY_RELEVANT_SETS, reduceAcyclicityRelevantSets);
-        logger.info("{}: {}", REDUCE_CLOSURE_ACTIVE_SETS, reduceClosureActiveSets);
     }
 
     private void logStatistics(long startTime) {
@@ -408,33 +400,10 @@ public class ActiveSetAnalysis {
             return map(product.getDomain(), set1, product.getRange(), set2);
         }
 
+        // Propagates exactly those edges that the encoding of the new closure edges refers to
+        // (see TransitiveClosureDecomposition).
         @Override
         public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
-            if (reduceClosureActiveSets) {
-                return propagateReducedClosure(trans);
-            }
-            final Relation rel = trans.getDefinedRelation();
-            final Relation r1 = trans.getOperand();
-            final IndexedEventGraph factors = newGraph(rel);
-            final IndexedEventGraph factorsInverse = newGraph(rel);
-            final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-            final EventGraph k0MayIn = k0.getMaySet().inverse();
-            for (Event e1 : news.getDomain()) {
-                final Set<Event> e1k0May = k0.getMaySet().getRange(e1);
-                for (Event e3 : news.getRange(e1)) {
-                    // Compute { e2 | e1 -may(r0)> e2 -may(r0)> e3 }.
-                    final Set<Event> e2Set = SetUtil.intersection(e1k0May, k0MayIn.getRange(e3));
-                    factors.addRange(e1, e2Set);
-                    factorsInverse.addRange(e3, e2Set);
-                }
-            }
-            factors.addAll(factorsInverse.inverse());
-            factors.removeAll(k0.getMustSet());
-            return map(rel, factors, r1, filterUnknowns(news, r1));
-        }
-
-        // Propagates exactly those edges that the encoding of the new closure edges refers to.
-        private Map<Relation, EventGraph> propagateReducedClosure(TransitiveClosure trans) {
             final TransitiveClosureDecomposition decomposition = closureDecompositions.computeIfAbsent(trans,
                     t -> new TransitiveClosureDecomposition(t, ra));
             final Relation rel = decomposition.getClosure();
