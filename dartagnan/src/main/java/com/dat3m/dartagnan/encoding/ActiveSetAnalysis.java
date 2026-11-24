@@ -35,7 +35,6 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_RELEVANT_SETS;
 import static com.dat3m.dartagnan.program.analysis.EventDomainRepository.DomainBound.*;
 
 /*
@@ -60,11 +59,6 @@ public class ActiveSetAnalysis {
             description = "Compute subset of memory model definitions that affect memory model consistency.",
             secure = true)
     private boolean enableActiveSetComputation = true;
-
-    @Option(name = REDUCE_ACYCLICITY_RELEVANT_SETS,
-            description = "Reduce relevant sets of acyclicity axiom by removing transitively implied edges.",
-            secure = true)
-    private boolean reduceAcyclicityRelevantSets = true;
 
     // ==============================================================================================
 
@@ -112,7 +106,6 @@ public class ActiveSetAnalysis {
 
     private void logConfig() {
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, enableActiveSetComputation);
-        logger.info("{}: {}", REDUCE_ACYCLICITY_RELEVANT_SETS, reduceAcyclicityRelevantSets);
     }
 
     private void logStatistics(long startTime) {
@@ -252,14 +245,11 @@ public class ActiveSetAnalysis {
                 sccEvents.forEach(e1 -> result.addRange(e1, SetUtil.intersection(sccEvents, maySet.getRange(e1))));
             }
 
-            if (reduceAcyclicityRelevantSets) {
-                final int originalSize = result.size();
-                result.removeAll(transitivelyDerivableMustEdges(rel));
-                final int reducedSize = result.size();
-                logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
-            } else {
-                logger.info("Relevant set size: {} ", result.size());
-            }
+            // ====== Apply transitive reduction ======
+            final int originalSize = result.size();
+            result.removeAll(transitivelyDerivableMustEdges(rel));
+            final int reducedSize = result.size();
+            logger.info("Relevant set size original/reduced: {} / {}", originalSize, reducedSize);
 
             return result;
         }
