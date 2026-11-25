@@ -228,10 +228,6 @@ class CoSymmetryBreaking {
         final Set<Event> excluded = new HashSet<>();
         threads.forEach(t -> excluded.addAll(t.getSpawningEvents()));
         final List<Event> events = rep.getEvents();
-        final Map<Event, Integer> position = new HashMap<>(events.size());
-        for (int i = 0; i < events.size(); i++) {
-            position.put(events.get(i), i);
-        }
         final List<ThreadReturn> returns = rep.getEvents(ThreadReturn.class);
         final double middle = (events.size() - 1) / 2.0;
 
@@ -259,13 +255,13 @@ class CoSymmetryBreaking {
         levels.sort(Comparator
                 // Same-address dependent stores first, earliest in program order first.
                 .comparing((Store w) -> !sameAddressDependent.contains(w))
-                .thenComparingInt(w -> sameAddressDependent.contains(w) ? position.get(w) : 0)
+                .thenComparingInt(w -> sameAddressDependent.contains(w) ? w.getLocalId() : 0)
                 // Remaining stores: implied by ThreadReturn, plain over RMW, loop exiting, close to the middle.
                 .thenComparing((Store w) -> !returns.stream().allMatch(r -> exec.isImplied(r, w)))
                 .thenComparing(w -> w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL))
                 .thenComparing((Store w) -> !exitIteration.containsKey(w))
                 .thenComparing(w -> exitIteration.getOrDefault(w, 0))
-                .thenComparingDouble(w -> Math.abs(position.get(w) - middle)));
+                .thenComparingDouble(w -> Math.abs(w.getLocalId() - middle)));
         return levels.size() > MAX_LEVELS ? levels.subList(0, MAX_LEVELS) : levels;
     }
 }
