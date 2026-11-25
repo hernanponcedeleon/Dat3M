@@ -454,7 +454,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
     }
 
     private static Set<Constraint> generateCut(Wmm model) {
-        // We cut (i) negated axioms, (ii) negated relations (if derived),
+        // We cut (i) negated and flagged axioms (CAAT ignores them), (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
         // We also cut annotated constraints.
@@ -468,8 +468,8 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
             }
 
             switch (c) {
-                case Axiom ax when ax.isNegated() ->
-                    // (i) Negated axioms
+                case Axiom ax when ax.isNegated() || ax.isFlagged() ->
+                    // (i) Negated and flagged axioms
                     constraintsToCut.add(ax);
                 case Difference diff -> {
                     // (ii) Negated relations (if derived)
