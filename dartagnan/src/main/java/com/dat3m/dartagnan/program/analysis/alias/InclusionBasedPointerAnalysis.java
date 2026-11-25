@@ -655,9 +655,11 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
     }
 
     private List<Modifier> getAllCyclicPaths(Variable<Modifier> start, Set<Variable<Modifier>> includerSet) {
-        final List<Modifier> cycles = new ArrayList<>();
-        // Use 'set' for performance.
-        final Set<IncludeEdge<Modifier>> set = new HashSet<>();
+        final PathSet cycles = new PathSet();
+        // Paths found so far, per variable. A path whose modifier is included in another path's modifier to the
+        // same variable is redundant: compose over-approximates relational composition, so its extensions are
+        // included in the extensions of the other path.
+        final Map<Variable<Modifier>, PathSet> paths = new HashMap<>();
         List<IncludeEdge<Modifier>> worklist = new ArrayList<>();
         worklist.add(new IncludeEdge<>(start, IDENTITY));
         // Since cycles are detected lazily, we need a bound for cycle lengths.
@@ -670,19 +672,50 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
                 for (final IncludeEdge<Modifier> i : current.source.includes) {
                     if (includerSet.contains(i.source)) {
                         final IncludeEdge<Modifier> joinedEdge = compose(i, current.modifier);
-                        if (set.add(joinedEdge)) {
-                            if (start == i.source) {
-                                cycles.add(joinedEdge.modifier);
-                            } else {
-                                next.add(joinedEdge);
-                            }
+                        if (start == i.source) {
+                            cycles.add(joinedEdge.modifier);
+                        } else if (paths.computeIfAbsent(i.source, _ -> new PathSet()).add(joinedEdge.modifier)) {
+                            next.add(joinedEdge);
                         }
                     }
                 }
             }
             worklist = next;
         }
-        return cycles;
+        return cycles.modifiers();
+    }
+
+    // Modifiers of paths with the same source, without modifiers that are included in others.
+    // A functional modifier only includes itself, so functional modifiers are deduplicated by hashing,
+    // and only non-functional modifiers are compared for inclusion.
+    private final class PathSet {
+        private final Set<Modifier> functional = new LinkedHashSet<>();
+        private final List<Modifier> other = new ArrayList<>();
+
+        // Returns false if the modifier is included in an existing one.
+        boolean add(Modifier modifier) {
+            for (final Modifier o : other) {
+                if (trait.mustInclude(o, modifier)) {
+                    return false;
+                }
+            }
+            if (trait.isFunctional(modifier)) {
+                if (!functional.add(modifier)) {
+                    return false;
+                }
+            } else {
+                other.removeIf(o -> trait.mustInclude(modifier, o));
+                other.add(modifier);
+                functional.removeIf(f -> trait.mustInclude(modifier, f));
+            }
+            return true;
+        }
+
+        List<Modifier> modifiers() {
+            final List<Modifier> result = new ArrayList<>(functional);
+            result.addAll(other);
+            return result;
+        }
     }
 
     private boolean addInto(List<IncludeEdge<Modifier>> list, IncludeEdge<Modifier> element, boolean isGraphModification) {
