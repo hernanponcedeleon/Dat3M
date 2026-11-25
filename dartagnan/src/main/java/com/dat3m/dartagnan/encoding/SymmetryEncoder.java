@@ -1,21 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
-import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
@@ -23,13 +10,10 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SYNC_DEGREE;
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
 @Options
@@ -37,50 +21,33 @@ public class SymmetryEncoder {
 
     private static final Logger logger = LoggerFactory.getLogger(SymmetryEncoder.class);
 
-    private final Wmm memoryModel;
+    private static final String CO = "co";
+    private static final String CF = "cf";
+
     private final EncodingContext context;
-    private final List<Axiom> acycAxioms;
-    private final ThreadSymmetry symm;
-    private final RelationAnalysis ra;
 
     @Option(name = BREAK_SYMMETRY_ON,
             description = """
                     The target to break symmetry on. Allowed options are:
-                    - A relation name to break symmetry on.
-                    - The special value "_cf" to break symmetry on the control flow.
+                    - "co" to break symmetry on the coherence order of symmetric stores (see CoSymmetryBreaking).
+                    - "cf" to break symmetry on the control flow (see CfSymmetryBreaking).
                     - The empty string to disable symmetry breaking.""",
             secure = true)
     private String symmBreakTarget = "";
-
-    @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
-            description = "Orders the relation edges to break on based on their synchronization strength." +
-                    "Only has impact if breaking symmetry on relations rather than control flow.",
-            secure = true)
-    private boolean breakBySyncDegree = true;
 
     // =====================================================================
 
     private SymmetryEncoder(EncodingContext c, Configuration config) throws InvalidConfigurationException {
         context = c;
-        memoryModel = c.getTask().getMemoryModel();
-        acycAxioms = memoryModel.getAxioms().stream().filter(Acyclicity.class::isInstance).collect(Collectors.toList());
-        symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
-        ra = c.getAnalysisContext().requires(RelationAnalysis.class);
         config.inject(this);
 
-        if (symmBreakTarget.isEmpty()) {
-            logger.info("Symmetry breaking disabled.");
-        } else if (symmBreakTarget.equals("_cf")) {
-            logger.info("Breaking symmetry on control flow.");
-            c.getAnalysisContext().requires(BranchEquivalence.class);
-            this.breakBySyncDegree = false; // We cannot break by sync degree here
-        } else {
-            logger.info("Breaking symmetry on relation: {}", symmBreakTarget);
-            if (breakBySyncDegree && acycAxioms.isEmpty()) {
-                breakBySyncDegree = false;
-                logger.info("Disabled breaking by sync degree: Memory model has no acyclicity axioms.");
-            }
-            logger.info("Breaking by sync degree: {}", breakBySyncDegree);
+        switch (symmBreakTarget) {
+            case "" -> logger.info("Symmetry breaking disabled.");
+            case CO -> logger.info("Breaking symmetry on coherence.");
+            case CF -> logger.info("Breaking symmetry on control flow.");
+            default -> throw new InvalidConfigurationException(String.format(
+                    "Unknown value \"%s\" for option %s. Allowed values are \"%s\", \"%s\", and \"\".",
+                    symmBreakTarget, BREAK_SYMMETRY_ON, CO, CF));
         }
     }
 
@@ -89,125 +56,17 @@ public class SymmetryEncoder {
     }
 
     public BooleanFormula encodeFullSymmetryBreaking() {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EventGraph maySet;
-        final EncodingContext.EdgeEncoder edgeEncoder;
-        switch(symmBreakTarget) {
-            case "":
-                return bmgr.makeTrue();
-            case "_cf":
-                maySet = cfSet();
-                edgeEncoder = context::execution;
-                break;
-            default:
-                Wmm baseline = this.memoryModel;
-                if (!baseline.containsRelation(symmBreakTarget) || !memoryModel.containsRelation(symmBreakTarget)) {
-                    logger.warn("The wmm has no relation named {} to break symmetry on." +
-                            " Symmetry breaking was disabled.", symmBreakTarget);
-                    return bmgr.makeTrue();
-                }
-                maySet = ra.getKnowledge(memoryModel.getRelation(symmBreakTarget)).getMaySet();
-                edgeEncoder = context.edge(baseline.getRelation(symmBreakTarget));
+        if (!symmBreakTarget.isEmpty()) {
+            final Set<? extends EquivalenceClass<Thread>> classes =
+                    context.getAnalysisContext().requires(ThreadSymmetry.class).getNonTrivialClasses();
+            logger.info("Found {} class(es) of symmetric threads: {}", classes.size(), classes.stream()
+                    .sorted(Comparator.comparingInt(c -> c.getRepresentative().getId()))
+                    .map(c -> c.size() + " x " + c.getRepresentative().getName()).toList());
         }
-        return symm.getNonTrivialClasses().stream()
-                .map(symmClass -> encodeSymmetryBreakingOnClass(maySet, edgeEncoder, symmClass))
-                .reduce(bmgr.makeTrue(), bmgr::and);
-    }
-
-    private BooleanFormula encodeSymmetryBreakingOnClass(EventGraph maySet, EncodingContext.EdgeEncoder edge, EquivalenceClass<Thread> symmClass) {
-        Preconditions.checkArgument(symmClass.getEquivalence() == symm,
-                "Symmetry class belongs to unexpected symmetry relation.");
-
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final Thread rep = symmClass.getRepresentative();
-        final List<Thread> symmThreads = new ArrayList<>(symmClass);
-        symmThreads.sort(Comparator.comparingInt(Thread::getId));
-
-        // ===== Construct row =====
-        // IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
-        // These need to get skipped.
-        Thread t1 = symmThreads.getFirst();
-        List<Tuple> t1Tuples = computeThreadTuples(maySet, symmClass, t1);
-
-        // Construct symmetric rows
-        List<BooleanFormula> enc = new ArrayList<>();
-        final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
-        for (int i = 1; i < symmThreads.size(); i++) {
-            final Thread t2 = symmThreads.get(i);
-            final Function<Event, Event> p = symm.createEventTransposition(t1, t2);
-            final List<Tuple> t2Tuples = t1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).toList();
-
-            final List<BooleanFormula> r1 = t1Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
-            final List<BooleanFormula> r2 = t2Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
-            final String id = String.format("T%d_%d", rep.getId(), i);
-            enc.add(utils.encodeLexLeader(r2, r1, id)); // r1 >= r2
-
-            t1 = t2;
-            t1Tuples = t2Tuples;
-        }
-
-        return bmgr.and(enc);
-    }
-
-    private List<Tuple> computeThreadTuples(EventGraph maySet, EquivalenceClass<Thread> symmClass, Thread thread) {
-        List<Tuple> tuples = new ArrayList<>();
-        List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
-        maySet.apply((a, b) -> {
-            if (!spawned.contains(a) && !spawned.contains(b)
-                    && a.getThread() == thread && symmClass.contains(b.getThread())) {
-                tuples.add(new Tuple(a, b));
-            }
-        });
-        sort(tuples);
-        return tuples;
-    }
-
-    private void sort(List<Tuple> row) {
-        if (!breakBySyncDegree) {
-            // ===== Natural order =====
-            row.sort(Comparator.naturalOrder());
-            return;
-        }
-
-        // ====== Sync-degree based order ======
-
-        // Setup of data structures
-        final Set<Event> inEvents = new HashSet<>();
-        final Set<Event> outEvents = new HashSet<>();
-        for (Tuple t : row) {
-            inEvents.add(t.first());
-            outEvents.add(t.second());
-        }
-
-        final List<RelationAnalysis.Knowledge> knowledge = acycAxioms.stream()
-                .map(a -> ra.getKnowledge(a.getRelation()))
-                .toList();
-        final List<Map<Event, Set<Event>>> mustIn = knowledge.stream().map(k -> k.getMustSet().getInMap()).toList();
-        final List<Map<Event, Set<Event>>> mustOut = knowledge.stream().map(k -> k.getMustSet().getOutMap()).toList();
-        final Map<Event, Integer> combinedInDegree = new HashMap<>(inEvents.size());
-        final Map<Event, Integer> combinedOutDegree = new HashMap<>(outEvents.size());
-        for (Event e : inEvents) {
-            int syncDeg = mustIn.stream().map(m -> m.getOrDefault(e, Set.of()).size() + 1).reduce(0, Integer::max);
-            combinedInDegree.put(e, syncDeg);
-        }
-        for (Event e : outEvents) {
-            int syncDec = mustOut.stream().map(m -> m.getOrDefault(e, Set.of()).size() + 1).reduce(0, Integer::max);
-            combinedOutDegree.put(e, syncDec);
-        }
-
-        // Sort by sync degrees
-        row.sort(Comparator.<Tuple>comparingInt(t -> combinedInDegree.get(t.first()) * combinedOutDegree.get(t.second())).reversed());
-    }
-
-    private EventGraph cfSet() {
-        final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
-        MutableEventGraph cfSet = new MapEventGraph();
-        branchEq.getAllEquivalenceClasses().forEach(c -> {
-            if (c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass()) {
-                Event rep = c.getRepresentative();
-                cfSet.add(rep, rep);
-            }
-        });
-        return cfSet;
+        return switch (symmBreakTarget) {
+            case CO -> new CoSymmetryBreaking(context).encode();
+            case CF -> new CfSymmetryBreaking(context).encode();
+            default -> context.getBooleanFormulaManager().makeTrue();
+        };
     }
 }
