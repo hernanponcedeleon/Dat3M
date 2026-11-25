@@ -30,6 +30,7 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.PolarityAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationEventDomains;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -55,7 +56,6 @@ import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 import static com.dat3m.dartagnan.utils.Utils.toTimeString;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -177,7 +177,9 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         final ProverWithTracker prover = this.prover;
 
         //  ------- Generate refinement model -------
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), generateCut(task.getMemoryModel()));
+        final RelationEventDomains relationEventDomains = analysisContext.requires(RelationEventDomains.class);
+        final Set<Constraint> cut = generateCut(task.getMemoryModel(), relationEventDomains);
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), cut);
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context, wmmEncoder);
@@ -390,7 +392,13 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
 
-    private static boolean isUnknownDefinitionForCAAT(Definition def) {
+    private static boolean isUnknownDefinitionForCAAT(Definition def, RelationEventDomains domains) {
+        // Mark all relations that demand reasoning over invisible events.
+        // This includes `addr`, `ctrl` and `data`, but also `pick-addr` etc.
+        if (!domains.mayHaveInvisibleEvents(def.getDefinedRelation())
+                && def.getConstrainedRelations().stream().anyMatch(domains::mayHaveInvisibleEvents)) {
+            return true;
+        }
         // TODO: We should probably automatically cut all "unknown relation",
         //  i.e., use a white list of known relations instead of a black list of unknown one's.
         return def instanceof AMOPairs || def instanceof SameInstruction || def instanceof Free // Basic
@@ -453,7 +461,7 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
         );
     }
 
-    private static Set<Constraint> generateCut(Wmm model) {
+    private static Set<Constraint> generateCut(Wmm model, RelationEventDomains relationEventDomains) {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
         // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
@@ -479,12 +487,9 @@ public class RefinementSolver extends SMTModelChecker<VerificationTask> implemen
                         constraintsToCut.add(subDef);
                     }
                 }
-                case Definition def when def.getDefinedRelation().hasName() -> {
+                case Definition def when isUnknownDefinitionForCAAT(def, relationEventDomains) -> {
                     // (iii) Special relations
-                    final String name = def.getDefinedRelation().getName().get();
-                    if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || isUnknownDefinitionForCAAT(def)) {
-                        constraintsToCut.add(c);
-                    }
+                    constraintsToCut.add(c);
                 }
                 default -> { }
             }

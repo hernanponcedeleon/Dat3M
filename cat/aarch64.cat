@@ -82,15 +82,14 @@ let lws = po-loc; [W]
 let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
-let dob = (addr | data)
-    | ctrl; [W]
-    | (ctrl | (addr; po)); [ISB]; po; [R]
-    | addr; po; [W]
+let dob = (addr; [R] | data)
+    | [R]; (__idd | __ctrlDirect | lrs)*; __addrDirect; [W]
+    | (ctrl | (addr; po)); ([W] | [ISB]; po; [R])
     | (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
-    | [range(rmw)]; lrs; [A | Q]
+  | [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po

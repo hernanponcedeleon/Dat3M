@@ -65,18 +65,22 @@ class VisitorArm8 extends VisitorBase {
         final String loadMo = cas.hasTag(MO_ACQ) ? MO_ACQ : "";
         final String storeMo = cas.hasTag(MO_REL) ? MO_REL : "";
 
-        final Register dummy = cas.getFunction().newRegister(resultRegister.getType());
-        final Load load = propagateNoRet(cas, newRMWLoadWithMo(dummy, address, loadMo));
+        final Register actual = cas.getFunction().newRegister(resultRegister.getType());
+        final Register expected = cas.getFunction().newRegister(resultRegister.getType());
+        final Load load = propagateNoRet(cas, newRMWLoadWithMo(actual, address, loadMo));
         final Store store = newRMWStoreWithMo(load, address, cas.getStoreValue(), storeMo);
-        final Expression cmp = expressions.makeEQ(dummy, cas.getExpectedValue());
         final Label casEnd = newLabel("CAS_end");
 
         return eventSequence(
+                newLocal(expected, cas.getExpectedValue()),
                 load,
-                newJumpUnless(cmp, casEnd),
+                newLocal(resultRegister, actual),
+                newIfJump(expressions.makeNEQ(actual, expected), casEnd, casEnd),
                 store,
-                casEnd,
-                newLocal(resultRegister, dummy)
+                newIfJump(cas.getFunction().getProgram().newConstant(types.getBooleanType()), casEnd, casEnd),
+                newLocal(resultRegister, expected),
+                newGoto(casEnd),
+                casEnd
         );
     }
 
