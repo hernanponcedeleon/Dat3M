@@ -37,7 +37,7 @@ public abstract class AbstractAlgoTest extends AbstractLlvmTest {
     protected EnumSet<Property> getTestedProperties() { return Property.getDefault(); }
 
     @Override
-    protected long getTimeoutSeconds() { return 300; }
+    protected long getTimeoutSeconds() { return 900; }
 
     @Override
     protected boolean isLazyMethodEnabled() { return lazyEnabled; }

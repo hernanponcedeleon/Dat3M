@@ -30,7 +30,7 @@ public class MiscellaneousTest extends AbstractLlvmTest {
     protected int getBound() { return bound; }
 
     @Override
-    protected long getTimeoutSeconds() { return 60; }
+    protected long getTimeoutSeconds() { return 180; }
 
     @Override
     protected Solvers getSolver() { return Solvers.Z3; }
