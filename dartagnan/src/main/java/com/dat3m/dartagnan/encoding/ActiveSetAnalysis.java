@@ -257,10 +257,13 @@ public class ActiveSetAnalysis {
         // Computes the transitively-derivable must edges via `must(relation+ ; relation+)`.
         // Basically, `exec(x) and exec(z) implies relation(x,z)` is obsolete,
         // if `exec(x) implies relation(x,y)` and `exec(z) implies relation(y,z)` exist.
-        // NOTE: Assumes that `must(relation)` is acyclic.
+        // NOTE: This is only correct if `must(relation)` is acyclic, so we return the empty set otherwise.
         private EventGraph transitivelyDerivableMustEdges(Relation relation) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
             final EventGraph transitiveClosure = ra.computeTransitiveClosure(k.getMustSet()).getMustSet();
+            if (transitiveClosure.getDomain().stream().anyMatch(e -> transitiveClosure.contains(e, e))) {
+                return EventGraph.empty();
+            }
             return ra.computeComposition(transitiveClosure, transitiveClosure).getMustSet();
         }
     }
