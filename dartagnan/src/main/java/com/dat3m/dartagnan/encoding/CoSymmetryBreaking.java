@@ -164,14 +164,7 @@ class CoSymmetryBreaking {
     // to the number of that iteration (in the unrolled program).
     private Map<Store, Integer> computeLoopExitingStores(Thread thread, List<Store> stores) {
         final Map<Store, Integer> result = new HashMap<>();
-        final List<LoopAnalysis.LoopInfo> loops;
-        try {
-            loops = LoopAnalysis.onFunction(thread).getLoopsOfFunction(thread);
-        } catch (RuntimeException e) {
-            logger.warn("Could not compute loops of {}: {}", thread, e.getMessage());
-            return result;
-        }
-        for (LoopAnalysis.LoopInfo loop : loops) {
+        for (LoopAnalysis.LoopInfo loop : LoopAnalysis.onFunction(thread).getLoopsOfFunction(thread)) {
             for (LoopAnalysis.LoopIterationInfo iteration : loop.iterations()) {
                 if (iteration.getIterationEnd() == null) {
                     continue;
@@ -193,35 +186,36 @@ class CoSymmetryBreaking {
     private boolean dependsOnLoadFromSameAddress(Store store) {
         final Deque<RegReader> worklist = new ArrayDeque<>();
         final Set<Event> visited = new HashSet<>();
-        final Set<Register> valueRegs = store.getMemValue().getRegs();
-        for (Register reg : valueRegs) {
-            for (RegWriter writer : reachingDefinitions.getWriters(store).ofRegister(reg).getMayWriters()) {
-                if (visited.add(writer)) {
-                    if (writer instanceof Load load) {
-                        if (alias.mustAlias(load, store)) {
-                            return true;
-                        }
-                    } else if (writer instanceof RegReader reader) {
-                        worklist.add(reader);
-                    }
-                }
-            }
+        // Start from the registers of the stored value only (not those of the address).
+        if (visitWriters(store, store.getMemValue().getRegs(), store, worklist, visited)) {
+            return true;
         }
         while (!worklist.isEmpty()) {
             final RegReader reader = worklist.poll();
-            final ReachingDefinitionsAnalysis.Writers writers = reachingDefinitions.getWriters(reader);
-            for (Register reg : writers.getUsedRegisters()) {
-                for (RegWriter writer : writers.ofRegister(reg).getMayWriters()) {
-                    if (!visited.add(writer)) {
-                        continue;
+            final Set<Register> regs = reachingDefinitions.getWriters(reader).getUsedRegisters();
+            if (visitWriters(reader, regs, store, worklist, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Visits the writers of <regs> reaching <reader>. Returns true if one of them is a load that must alias with
+    // <store>; otherwise adds unvisited register-reading writers to the worklist.
+    private boolean visitWriters(RegReader reader, Set<Register> regs, Store store,
+            Deque<RegReader> worklist, Set<Event> visited) {
+        final ReachingDefinitionsAnalysis.Writers writers = reachingDefinitions.getWriters(reader);
+        for (Register reg : regs) {
+            for (RegWriter writer : writers.ofRegister(reg).getMayWriters()) {
+                if (!visited.add(writer)) {
+                    continue;
+                }
+                if (writer instanceof Load load) {
+                    if (alias.mustAlias(load, store)) {
+                        return true;
                     }
-                    if (writer instanceof Load load) {
-                        if (alias.mustAlias(load, store)) {
-                            return true;
-                        }
-                    } else if (writer instanceof RegReader next) {
-                        worklist.add(next);
-                    }
+                } else if (writer instanceof RegReader next) {
+                    worklist.add(next);
                 }
             }
         }
@@ -234,6 +228,10 @@ class CoSymmetryBreaking {
         final Set<Event> excluded = new HashSet<>();
         threads.forEach(t -> excluded.addAll(t.getSpawningEvents()));
         final List<Event> events = rep.getEvents();
+        final Map<Event, Integer> position = new HashMap<>(events.size());
+        for (int i = 0; i < events.size(); i++) {
+            position.put(events.get(i), i);
+        }
         final List<ThreadReturn> returns = rep.getEvents(ThreadReturn.class);
         final double middle = (events.size() - 1) / 2.0;
 
@@ -261,13 +259,13 @@ class CoSymmetryBreaking {
         levels.sort(Comparator
                 // Same-address dependent stores first, earliest in program order first.
                 .comparing((Store w) -> !sameAddressDependent.contains(w))
-                .thenComparingInt(w -> sameAddressDependent.contains(w) ? events.indexOf(w) : 0)
+                .thenComparingInt(w -> sameAddressDependent.contains(w) ? position.get(w) : 0)
                 // Remaining stores: implied by ThreadReturn, plain over RMW, loop exiting, close to the middle.
                 .thenComparing((Store w) -> !returns.stream().allMatch(r -> exec.isImplied(r, w)))
                 .thenComparing(w -> w.hasTag(Tag.RMW) || w.hasTag(Tag.EXCL))
                 .thenComparing((Store w) -> !exitIteration.containsKey(w))
                 .thenComparing(w -> exitIteration.getOrDefault(w, 0))
-                .thenComparingDouble(w -> Math.abs(events.indexOf(w) - middle)));
+                .thenComparingDouble(w -> Math.abs(position.get(w) - middle)));
         return levels.size() > MAX_LEVELS ? levels.subList(0, MAX_LEVELS) : levels;
     }
 }
