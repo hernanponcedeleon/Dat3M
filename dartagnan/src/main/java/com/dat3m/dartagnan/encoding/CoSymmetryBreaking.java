@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ExitImplicationAnalysis;
@@ -30,15 +31,20 @@ import java.util.*;
     Coherence-based symmetry breaking.
 
     For every class of symmetric threads T_1 < ... < T_k (ordered by id), we consider the stores W^1, W^2, ... of
-    T_1 whose symmetric copies W^l_1, ..., W^l_k must alias. Since co is total per address, the executed copies of
-    each W^l have a well-defined co-rank. We restrict the search to executions where the threads are sorted
-    lexicographically by the key
-        (not exec(W^1), co-rank of W^1, not exec(W^2), co-rank of W^2, ...).
+    T_1 whose symmetric copies W^l_1, ..., W^l_k must alias. Fix any linear extension of co (co is acyclic); the
+    executed copies of each W^l have a well-defined rank in it. We restrict the search to executions where the
+    threads are sorted lexicographically by the key
+        (not exec(W^1), rank of W^1, not exec(W^2), rank of W^2, ...).
     That is, for threads i < j and each level l, guarded by "both threads skip W^1, ..., W^(l-1)":
         exec(W^l_j) => exec(W^l_i)                           (executing threads come first)
         exec(W^l_i) && exec(W^l_j) => co(W^l_i, W^l_j)       (executing threads are ordered by co)
+    If co is not total per address (e.g., PTX, Vulkan), two executed copies may be unordered, and we only require
+        not co(W^l_j, W^l_i)                                 (executing threads are not ordered against co)
+    which needs no execution literals since co-edges imply execution.
     The key is invariant under thread renaming, so sorting the threads of any execution by it yields an equivalent
     execution satisfying all constraints: no symmetry orbit is excluded.
+    Only the first MAX_LEVELS stores are used, which bounds the encoding size (dropping levels only removes
+    constraints, so it is sound).
 
     Level order:
       (1) Stores whose value depends on a load from the same address come first, earliest in program order first.
@@ -55,12 +61,16 @@ class CoSymmetryBreaking {
 
     private static final Logger logger = LoggerFactory.getLogger(CoSymmetryBreaking.class);
 
+    // The first few levels do most of the breaking; the encoding grows quadratically in the number of levels.
+    private static final int MAX_LEVELS = 5;
+
     private final EncodingContext context;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
     private final ExecutionAnalysis exec;
     private final ReachingDefinitionsAnalysis reachingDefinitions;
     private final Relation co;
+    private final boolean coIsTotal;
 
     CoSymmetryBreaking(EncodingContext context) {
         this.context = context;
@@ -69,6 +79,7 @@ class CoSymmetryBreaking {
         this.exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         this.reachingDefinitions = context.getAnalysisContext().requires(ReachingDefinitionsAnalysis.class);
         this.co = context.getTask().getMemoryModel().getRelation(RelationNameRepository.CO);
+        this.coIsTotal = Arch.coIsTotal(context.getTask().getProgram().getArch());
     }
 
     BooleanFormula encode() {
@@ -110,7 +121,7 @@ class CoSymmetryBreaking {
         }
         // Each level is encoded as two flat clauses; the guard "both threads skip all earlier levels" contributes
         // the disjunction of the earlier execution literals. On the first level (no guard), "e_i && e_j => co"
-        // is simplified to "e_j => co" using "e_j => e_i". (Both measurably help the solver.)
+        // (total co) is simplified to "e_j => co" using "e_j => e_i". (Both measurably help the solver.)
         for (int i = 0; i < threads.size(); i++) {
             for (int j = i + 1; j < threads.size(); j++) {
                 final List<BooleanFormula> earlierExecs = new ArrayList<>();
@@ -124,13 +135,18 @@ class CoSymmetryBreaking {
                     execOrder.add(bmgr.not(ej));
                     execOrder.add(ei);
                     enc.add(bmgr.or(execOrder));
-                    // guard => (e_i && e_j => co(W_i, W_j))
                     final List<BooleanFormula> coOrder = new ArrayList<>(earlierExecs);
-                    if (!earlierExecs.isEmpty()) {
-                        coOrder.add(bmgr.not(ei));
+                    if (coIsTotal) {
+                        // guard => (e_i && e_j => co(W_i, W_j))
+                        if (!earlierExecs.isEmpty()) {
+                            coOrder.add(bmgr.not(ei));
+                        }
+                        coOrder.add(bmgr.not(ej));
+                        coOrder.add(edge.encode(wi, wj));
+                    } else {
+                        // guard => not co(W_j, W_i)
+                        coOrder.add(bmgr.not(edge.encode(wj, wi)));
                     }
-                    coOrder.add(bmgr.not(ej));
-                    coOrder.add(edge.encode(wi, wj));
                     enc.add(bmgr.or(coOrder));
                     earlierExecs.add(ei);
                     earlierExecs.add(ej);
@@ -252,6 +268,6 @@ class CoSymmetryBreaking {
                 .thenComparing((Store w) -> !exitIteration.containsKey(w))
                 .thenComparing(w -> exitIteration.getOrDefault(w, 0))
                 .thenComparingDouble(w -> Math.abs(events.indexOf(w) - middle)));
-        return levels;
+        return levels.size() > MAX_LEVELS ? levels.subList(0, MAX_LEVELS) : levels;
     }
 }
