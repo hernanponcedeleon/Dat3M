@@ -1,5 +1,8 @@
+; @Input: %15=64
 ; @Input: %14 = {{0, 0, 0, 0, 0, 0, 0, 0, 0}}
 ; @Config: 3, 1, 3
+; Unsupported: for this configuration graph (%14) is accessed at indices 2080..2082,
+; i.e. the input needs an array much larger than we currently support.
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0
