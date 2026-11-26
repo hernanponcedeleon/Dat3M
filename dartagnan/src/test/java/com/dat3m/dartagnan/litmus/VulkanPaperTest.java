@@ -35,8 +35,8 @@ public class VulkanPaperTest {
 
     private final Path oldModel = getRootPath("cat/vulkan.cat");
     private final Path oldModelChains = getRootPath("cat/vulkan-chains.cat");
-    private final Path newModel = getRootPath("cat/vulkan-fixed.cat");
-    private final Path newModelChains = getRootPath("cat/vulkan-fixed-chains.cat");
+    private final Path newModel = getRootPath("cat/vulkan-new.cat");
+    private final Path newModelChains = getRootPath("cat/vulkan-new-chains.cat");
     private final Path programPath;
     private final List<VerificationStatus> expectedOldModel;
     private final List<VerificationStatus> expectedNewModel;

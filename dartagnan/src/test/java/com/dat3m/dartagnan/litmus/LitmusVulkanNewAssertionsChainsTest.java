@@ -9,17 +9,17 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanFixedAssertionsChainsTest extends AbstractLitmusTest {
+public class LitmusVulkanNewAssertionsChainsTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Fixed-Assertions-Chains");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-New-Assertions-Chains");
     }
 
-    public LitmusVulkanFixedAssertionsChainsTest(Path path, VerificationStatus expected) {
+    public LitmusVulkanNewAssertionsChainsTest(Path path, VerificationStatus expected) {
         super(Arch.VULKAN, path, expected);
     }
 
     @Override
-    protected String getTargetWmmName() { return "vulkan-fixed-chains"; }
+    protected String getTargetWmmName() { return "vulkan-new-chains"; }
 }

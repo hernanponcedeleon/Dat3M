@@ -9,7 +9,7 @@ import java.util.List;
 
 abstract class AbstractSpirvVulkanTest extends AbstractSpirvTest {
 
-    private static final List<String> MODELS = List.of("vulkan", "vulkan-fixed");
+    private static final List<String> MODELS = List.of("vulkan", "vulkan-new");
 
     protected static Iterable<Object[]> withModels(Object[][] rows) {
         final List<Object[]> out = new ArrayList<>(MODELS.size() * rows.length);

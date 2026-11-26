@@ -1,25 +1,29 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.nio.file.Path;
 import java.io.IOException;
+import java.nio.file.Path;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanAssertionsTest extends AbstractLitmusTest {
+public class LitmusVulkanNewRacesChainsTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Assertions");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-New-Races-Chains");
     }
 
-    public LitmusVulkanAssertionsTest(Path path, VerificationStatus expected) {
+    public LitmusVulkanNewRacesChainsTest(Path path, VerificationStatus expected) {
         super(Arch.VULKAN, path, expected);
     }
 
     @Override
-    protected String getTargetWmmName() { return "vulkan"; }
+    protected Property getTestedProperty() { return Property.CAT_SPEC; }
+
+    @Override
+    protected String getTargetWmmName() { return "vulkan-new-chains"; }
 }

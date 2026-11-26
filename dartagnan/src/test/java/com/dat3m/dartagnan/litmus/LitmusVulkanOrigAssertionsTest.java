@@ -5,21 +5,21 @@ import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.nio.file.Path;
+import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanFixedRacesChainsTest extends AbstractLitmusTest {
+public class LitmusVulkanOrigAssertionsTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Fixed-Races-Chains");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Orig-Assertions");
     }
 
-    public LitmusVulkanFixedRacesChainsTest(Path path, VerificationStatus expected) {
+    public LitmusVulkanOrigAssertionsTest(Path path, VerificationStatus expected) {
         super(Arch.VULKAN, path, expected);
     }
 
     @Override
-    protected String getTargetWmmName() { return "vulkan-fixed-chains"; }
+    protected String getTargetWmmName() { return "vulkan"; }
 }
