@@ -1,44 +1,47 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationTask;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.test.TestHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.SolverContextFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
+import static com.dat3m.dartagnan.configuration.Method.EAGER;
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class VulkanPaperTest {
 
-    private final String oldModel = getRootPath("cat/vulkan.cat");
-    private final String oldModelChains = getRootPath("cat/vulkan-chains.cat");
-    private final String newModel = getRootPath("cat/vulkan-fixed.cat");
-    private final String newModelChains = getRootPath("cat/vulkan-fixed-chains.cat");
-    private final String programPath;
-    private final List<Result> expectedOldModel;
-    private final List<Result> expectedNewModel;
+    private final Path oldModel = getRootPath("cat/vulkan.cat");
+    private final Path oldModelChains = getRootPath("cat/vulkan-chains.cat");
+    private final Path newModel = getRootPath("cat/vulkan-fixed.cat");
+    private final Path newModelChains = getRootPath("cat/vulkan-fixed-chains.cat");
+    private final Path programPath;
+    private final List<VerificationStatus> expectedOldModel;
+    private final List<VerificationStatus> expectedNewModel;
 
-    public VulkanPaperTest(String file, List<Result> expectedOldModel, List<Result> expectedNewModel) {
+    public VulkanPaperTest(String file, List<VerificationStatus> expectedOldModel, List<VerificationStatus> expectedNewModel) {
         this.programPath = getRootPath("litmus/VULKAN/Paper/" + file + ".litmus");
         this.expectedOldModel = expectedOldModel;
         this.expectedNewModel = expectedNewModel;
@@ -90,13 +93,21 @@ public class VulkanPaperTest {
         runTest(expectedNewModel.get(3), newModelChains, CAT_SPEC);
     }
 
-    private void runTest(Result expected, String modelPath, Property property) throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(TestHelper.getBasicConfig())
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
-        VerificationTask task = builder.build(program, mcm, EnumSet.of(property));
-        assertEquals(expected, TestHelper.createAndRunSolver(task, Method.EAGER));
+    private void runTest(VerificationStatus expected, Path modelPath, Property property) throws Exception {
+        Task.TaskBuilder builder = Task.builder()
+                .withSolver(SolverContextFactory.Solvers.Z3)
+                .withTarget(Arch.VULKAN)
+                .withProgressModel(ProgressModel.defaultHierarchy())
+                .withOption(OptionNames.PHANTOM_REFERENCES, "true")
+                .withOption(INITIALIZE_REGISTERS, "true");
+
+        Program program = TestHelper.parseProgram(programPath);
+        Wmm model = TestHelper.parseWmm(modelPath);
+        VerificationTask task = builder.build(program, model, EnumSet.of(property));
+
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, EAGER)) {
+            solver.run();
+            assertEquals(expected, solver.getResult().getStatus());
+        }
     }
 }

@@ -22,6 +22,8 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
 
     private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
+    public Context analysisContext;
+
     private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);
     }
@@ -36,7 +38,7 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         preprocessProgram(task, config);
         preprocessMemoryModel(task);
 
-        final Context analysisContext = Context.create();
+        analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
         performIntervalAnalysis(task, analysisContext, config);

@@ -5,8 +5,6 @@ import com.dat3m.dartagnan.task.Task;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
@@ -14,13 +12,13 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 @RunWith(Parameterized.class)
 public class PatternsAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public PatternsAssertionsTest(String file, VerificationStatus expected) {
-        super("spirv/vulkan/patterns/" + file, 1, expected);
+    public PatternsAssertionsTest(String model, String file, VerificationStatus expected) {
+        super(model, "spirv/vulkan/patterns/" + file, 1, expected);
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}")
     public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]{
+        return withModels(new Object[][]{
                 {"corr.spvasm", PASS},
                 {"iriw.spvasm", PASS},
                 {"mp.spvasm", PASS},

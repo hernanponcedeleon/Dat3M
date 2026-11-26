@@ -21,9 +21,9 @@ public abstract class AbstractSpirvTest extends AbstractVerificationTaskSolverTe
     private final int bound;
     private final VerificationStatus expected;
 
-    protected AbstractSpirvTest(Arch target, String programPath, int bound, VerificationStatus expected) {
+    protected AbstractSpirvTest(Arch target, String model, String programPath, int bound, VerificationStatus expected) {
         this.target = target;
-        this.targetModelPath = ResourceHelper.getCatPath(target, null);
+        this.targetModelPath = ResourceHelper.getCatPath(target, model);
         this.programPath = ResourceHelper.getTestResourcePath(programPath);
         this.bound = bound;
         this.expected = expected;

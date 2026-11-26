@@ -57,7 +57,7 @@ public abstract class AbstractTest {
                    %label = OpLabel
                             OpReturn
                             OpFunctionEnd
-                             """;
+                            """;
 
     protected Program parse(String header) {
         ParserSpirv parser = new ParserSpirv();

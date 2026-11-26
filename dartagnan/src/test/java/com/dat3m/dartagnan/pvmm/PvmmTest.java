@@ -2,18 +2,18 @@ package com.dat3m.dartagnan.pvmm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.ProgramPrinter;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.printer.Printer;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.task.SMTModelChecker;
+import com.dat3m.dartagnan.task.Task;
+import com.dat3m.dartagnan.task.verification.AssumeSolver;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
+import com.dat3m.dartagnan.task.verification.VerificationTask;
+import com.dat3m.dartagnan.task.verification.VerificationTaskSolver;
+import com.dat3m.dartagnan.test.TestHelper;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -33,24 +33,25 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.Method.EAGER;
+import static com.dat3m.dartagnan.configuration.Method.LAZY;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.test.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.*;
+import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 public class PvmmTest {
 
-    private static final Map<String, Map<String, Map<String, Result>>> expected = new HashMap<>();
+    private static final Map<String, Map<String, Map<String, VerificationStatus>>> expected = new HashMap<>();
     static {
         try {
             expected.put("chains", readFile("expected-chains"));
             expected.put("nochains", readFile("expected-nochains"));
-            Map<String, Map<String, Result>> all = readFile("expected-all");
+            Map<String, Map<String, VerificationStatus>> all = readFile("expected-all");
             expected.get("chains").putAll(all);
             expected.get("nochains").putAll(all);
         } catch (IOException e) {
@@ -58,12 +59,12 @@ public class PvmmTest {
         }
     }
 
-    private static final Map<String, Map<String, Map<String, Result>>> expectedRaces = new HashMap<>();
+    private static final Map<String, Map<String, Map<String, VerificationStatus>>> expectedRaces = new HashMap<>();
     static {
         try {
             expectedRaces.put("chains", readFile("expected-races-chains"));
             expectedRaces.put("nochains", readFile("expected-races-nochains"));
-            Map<String, Map<String, Result>> all = readFile("expected-races-all");
+            Map<String, Map<String, VerificationStatus>> all = readFile("expected-races-all");
             expectedRaces.get("chains").putAll(all);
             expectedRaces.get("nochains").putAll(all);
         } catch (IOException e) {
@@ -71,10 +72,10 @@ public class PvmmTest {
         }
     }
 
-    private static Map<String, Map<String, Result>> readFile(String file) throws IOException {
-        file = getRootPath("litmus/VULKAN/pvmm/" + file + ".csv");
-        Map<String, Map<String, Result>> result = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+    private static Map<String, Map<String, VerificationStatus>> readFile(String f) throws IOException {
+        Path file = getRootPath("litmus/VULKAN/pvmm/" + f + ".csv");
+        Map<String, Map<String, VerificationStatus>> result = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(file.toFile()))) {
             String line = br.readLine();
             assertNotNull(line);
             String[] models = line.split(",");
@@ -82,9 +83,9 @@ public class PvmmTest {
                 if (!line.isBlank()) {
                     String[] values = line.split(",");
                     if (values.length > 0) {
-                        Map<String, Result> data = new HashMap<>();
+                        Map<String, VerificationStatus> data = new HashMap<>();
                         for (int i = 1; i < models.length; i++) {
-                            data.put(models[i], Result.valueOf(values[i]));
+                            data.put(models[i], VerificationStatus.valueOf(values[i]));
                         }
                         result.put(values[0], data);
                     }
@@ -94,37 +95,40 @@ public class PvmmTest {
         return result;
     }
 
-    private final Printer printer = Printer.newInstance();
+    private final ProgramPrinter printer = ProgramPrinter.newInstance();
 
     @Test
     public void checkRace() throws Exception {
-        for (Map.Entry<String, Map<String, Map<String, Result>>> typeEntry : expectedRaces.entrySet()) {
+        for (Map.Entry<String, Map<String, Map<String, VerificationStatus>>> typeEntry : expectedRaces.entrySet()) {
             System.out.println(typeEntry.getKey());
-            for (Map.Entry<String, Map<String, Result>> programEntry : typeEntry.getValue().entrySet()) {
-                String programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+            for (Map.Entry<String, Map<String, VerificationStatus>> programEntry : typeEntry.getValue().entrySet()) {
+                Path programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
                 System.out.println(programPath);
-                for (Map.Entry<String, Result> resultEntry : programEntry.getValue().entrySet()) {
-                    Result result = resultEntry.getValue() == PASS ? FAIL : PASS;
+                for (Map.Entry<String, VerificationStatus> resultEntry : programEntry.getValue().entrySet()) {
+                    VerificationStatus result = resultEntry.getValue() == PASS ? FAIL : PASS;
                     String suffix = typeEntry.getKey().equals("chains") ? "-chains" : "";
-                    String model = getRootPath("cat/" + resultEntry.getKey() + suffix + ".cat");
+                    Path model = getRootPath("cat/" + resultEntry.getKey() + suffix + ".cat");
                     System.out.println("    " + resultEntry.getKey());
-                    Program program = new ProgramParser().parse(new File(programPath));
-                    Wmm mcm = new ParserCat().parse(new File(model));
+                    Program program = TestHelper.parseProgram(programPath);
+                    Wmm mcm = TestHelper.parseWmm(model);
                     VerificationTask taskEager = mkTask(program, mcm, CAT_SPEC);
-                    try (ModelChecker mc = AssumeSolver.create(taskEager)) {
-                        mc.run();/*
-                        if (!result.equals(mc.getResult())) {
-                            System.out.println("Expected: " + result + " Actual: " + mc.getResult());
-                        }*/
-                        assertEquals(result, mc.getResult());
-                    }/*
-                    program = new ProgramParser().parse(new File(programPath));
-                    mcm = new ParserCat().parse(new File(model));
+                    try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskEager, EAGER)) {
+                        solver.run();
+                        if (!result.equals(solver.getResult().getStatus())) {
+                            System.out.println("Expected: " + result + " Actual: " + solver.getResult());
+                        }
+                        assertEquals(result, solver.getResult().getStatus());
+                    }
+                    program = TestHelper.parseProgram(programPath);
+                    mcm = TestHelper.parseWmm(model);
                     VerificationTask taskLazy = mkTask(program, mcm, CAT_SPEC);
-                    try (ModelChecker mc = RefinementSolver.create(taskLazy)) {
-                        mc.run();
-                        assertEquals(result, mc.getResult());
-                    }*/
+                    try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskLazy, LAZY)) {
+                        solver.run();
+                        if (!result.equals(solver.getResult().getStatus())) {
+                            System.out.println("Expected: " + result + " Actual: " + solver.getResult());
+                        }
+                        assertEquals(result, solver.getResult().getStatus());
+                    }
                 }
             }
         }
@@ -132,33 +136,36 @@ public class PvmmTest {
 
     @Test
     public void checkResult() throws Exception {
-        for (Map.Entry<String, Map<String, Map<String, Result>>> typeEntry : expected.entrySet()) {
+        for (Map.Entry<String, Map<String, Map<String, VerificationStatus>>> typeEntry : expected.entrySet()) {
             System.out.println(typeEntry.getKey());
-            for (Map.Entry<String, Map<String, Result>> programEntry : typeEntry.getValue().entrySet()) {
-                String programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+            for (Map.Entry<String, Map<String, VerificationStatus>> programEntry : typeEntry.getValue().entrySet()) {
+                Path programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
                 System.out.println(programPath);
-                for (Map.Entry<String, Result> resultEntry : programEntry.getValue().entrySet()) {
-                    Result result = resultEntry.getValue();
+                for (Map.Entry<String, VerificationStatus> resultEntry : programEntry.getValue().entrySet()) {
+                    VerificationStatus result = resultEntry.getValue();
                     String suffix = typeEntry.getKey().equals("chains") ? "-chains" : "";
-                    String model = getRootPath("cat/" + resultEntry.getKey() + suffix + ".cat");
+                    Path model = getRootPath("cat/" + resultEntry.getKey() + suffix + ".cat");
                     System.out.println("    " + resultEntry.getKey());
-                    Program program = new ProgramParser().parse(new File(programPath));
-                    Wmm mcm = new ParserCat().parse(new File(model));
+                    Program program = TestHelper.parseProgram(programPath);
+                    Wmm mcm = TestHelper.parseWmm(model);
                     VerificationTask taskEager = mkTask(program, mcm, PROGRAM_SPEC);
-                    try (ModelChecker mc = AssumeSolver.create(taskEager)) {
-                        mc.run();/*
-                        if (!result.equals(mc.getResult())) {
-                            System.out.println("Expected: " + result + " Actual: " + mc.getResult());
-                        }*/
-                        assertEquals(result, mc.getResult());
-                    }/*
-                    program = new ProgramParser().parse(new File(programPath));
-                    mcm = new ParserCat().parse(new File(model));
+                    try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskEager, EAGER)) {
+                        solver.run();
+                        if (!result.equals(solver.getResult().getStatus())) {
+                            System.out.println("Expected: " + result + " Actual: " + solver.getResult());
+                        }
+                        assertEquals(result, solver.getResult().getStatus());
+                    }
+                    program = TestHelper.parseProgram(programPath);
+                    mcm = TestHelper.parseWmm(model);
                     VerificationTask taskLazy = mkTask(program, mcm, PROGRAM_SPEC);
-                    try (ModelChecker mc = RefinementSolver.create(taskLazy)) {
-                        mc.run();
-                        assertEquals(result, mc.getResult());
-                    }*/
+                    try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskLazy, LAZY)) {
+                        solver.run();
+                        if (!result.equals(solver.getResult().getStatus())) {
+                            System.out.println("Expected: " + result + " Actual: " + solver.getResult());
+                        }
+                        assertEquals(result, solver.getResult().getStatus());
+                    }
                 }
             }
         }
@@ -166,12 +173,12 @@ public class PvmmTest {
 
     @Test
     public void logRelations() throws Exception {
-        for (Map.Entry<String, Map<String, Map<String, Result>>> typeEntry : expected.entrySet()) {
-            for (Map.Entry<String, Map<String, Result>> programEntry : typeEntry.getValue().entrySet()) {
-                String programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+        for (Map.Entry<String, Map<String, Map<String, VerificationStatus>>> typeEntry : expected.entrySet()) {
+            for (Map.Entry<String, Map<String, VerificationStatus>> programEntry : typeEntry.getValue().entrySet()) {
+                Path programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
                 System.out.println(programPath);
-                for (Map.Entry<String, Result> resultEntry : programEntry.getValue().entrySet()) {
-                    String modelPath = getRootPath("cat/" + resultEntry.getKey() + ".cat");
+                for (Map.Entry<String, VerificationStatus> resultEntry : programEntry.getValue().entrySet()) {
+                    Path modelPath = getRootPath("cat/" + resultEntry.getKey() + ".cat");
                     System.out.println(modelPath);
                     mkLogRelationsTask(programPath, typeEntry.getKey(), resultEntry.getKey(), resultEntry.getValue(), true);
                 }
@@ -179,11 +186,11 @@ public class PvmmTest {
         }
     }
 
-    private void mkLogRelationsTask(String programPath, String modelType, String model, Result result, boolean locallyConsistent) throws Exception {
+    private void mkLogRelationsTask(Path programPath, String modelType, String model, VerificationStatus result, boolean locallyConsistent) throws Exception {
         String suffix = modelType.equals("chains") ? "-chains" : "";
-        String modelPath = getRootPath("cat/" + model + suffix + ".cat");
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Path modelPath = getRootPath("cat/" + model + suffix + ".cat");
+        Program program = TestHelper.parseProgram(programPath);
+        Wmm mcm = TestHelper.parseWmm(modelPath);
         Property property = PROGRAM_SPEC;
         if (result == FAIL) {
             removeAxiom(mcm, "racy");
@@ -223,15 +230,16 @@ public class PvmmTest {
             property = CAT_SPEC;
         }
         VerificationTask task = mkTask(program, mcm, property, locallyConsistent);
-        try (ModelChecker mc = AssumeSolver.create(task)) {
-            mc.run();
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, EAGER)) {
+            solver.run();
+            SMTModelChecker checker = (SMTModelChecker) solver.verifier;
             if (!locallyConsistent) {
-            assertTrue(mc.hasModel());
+                assertFalse(checker.getProver().isUnsat());
             }
-            if (mc.hasModel()) {
-                RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+            if (!checker.getProver().isUnsat()) {
+                RelationAnalysis ra = ((AssumeSolver)solver.verifier).analysisContext.get(RelationAnalysis.class);
                 Set<Relation> relations = task.getMemoryModel().getRelations();
-                Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, mc.getProver().getModel());
+                Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, checker.getProver().getModel());
                 data = translateEventIds(task.getProgram(), data);
                 log("data", model, task.getProgram(), modelType, data);
                 return;
@@ -242,24 +250,24 @@ public class PvmmTest {
 
     @Test
     public void logRaces() throws Exception {
-        for (Map.Entry<String, Map<String, Map<String, Result>>> typeEntry : expectedRaces.entrySet()) {
-            for (Map.Entry<String, Map<String, Result>> programEntry : typeEntry.getValue().entrySet()) {
-                String programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+        for (Map.Entry<String, Map<String, Map<String, VerificationStatus>>> typeEntry : expectedRaces.entrySet()) {
+            for (Map.Entry<String, Map<String, VerificationStatus>> programEntry : typeEntry.getValue().entrySet()) {
+                Path programPath = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
                 System.out.println(programPath);
-                for (Map.Entry<String, Result> resultEntry : programEntry.getValue().entrySet()) {
-                    Result result = resultEntry.getValue() == PASS ? FAIL : PASS;
+                for (Map.Entry<String, VerificationStatus> resultEntry : programEntry.getValue().entrySet()) {
+                    VerificationStatus result = resultEntry.getValue() == PASS ? FAIL : PASS;
                     doLogRaces(programPath, typeEntry.getKey(), resultEntry.getKey(), result, false);
                 }
             }
         }
     }
 
-    private void doLogRaces(String programPath, String modelType, String model, Result result, boolean asmoFix) throws Exception {
+    private void doLogRaces(Path programPath, String modelType, String model, VerificationStatus result, boolean asmoFix) throws Exception {
         String suffix = modelType.equals("chains") ? "-chains" : "";
-        String modelPath = getRootPath("cat/" + model + suffix + ".cat");
+        Path modelPath = getRootPath("cat/" + model + suffix + ".cat");
         System.out.println(modelPath);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Program program = TestHelper.parseProgram(programPath);
+        Wmm mcm = TestHelper.parseWmm(modelPath);
         if (asmoFix) {
             removeAxiom(mcm, "consistent-asmo");
         }
@@ -269,15 +277,16 @@ public class PvmmTest {
             program.setSpecification(Program.SpecificationType.EXISTS, program.getFilterSpecification());
         }
         VerificationTask task = mkTask(program, mcm, property);
-        try (ModelChecker mc = AssumeSolver.create(task)) {
-            mc.run();
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(task, EAGER)) {
+            solver.run();
+            SMTModelChecker checker = (SMTModelChecker) solver.verifier;
             if (asmoFix) {
-                assertTrue(mc.hasModel());
+                assertFalse(checker.getProver().isUnsat());
             }
-            if (mc.hasModel()) {
-                RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+            if (!checker.getProver().isUnsat()) {
+                RelationAnalysis ra = ((AssumeSolver)solver.verifier).analysisContext.get(RelationAnalysis.class);
                 Set<Relation> relations = task.getMemoryModel().getRelations();
-                Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, mc.getProver().getModel());
+                Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, checker.getProver().getModel());
                 data = translateEventIds(task.getProgram(), data);
                 log("races", model, task.getProgram(), modelType, data);
                 return;
@@ -356,9 +365,9 @@ public class PvmmTest {
                 sb.append(relation).append(": ").append(data.get(relation)).append("\n");
             }
         }
-        Files.createDirectories(Path.of(getRootPath("output/" + dir + "/" + type + "/" + model)));
-        String filePath = getRootPath("output/" + dir + "/" + type + "/" + model + "/" + program.getName() + ".log");
-        Files.write(Path.of(filePath), sb.toString().getBytes());
+        Files.createDirectories(getRootPath("output/" + dir + "/" + type + "/" + model));
+        Path filePath = getRootPath("output/" + dir + "/" + type + "/" + model + "/" + program.getName() + ".log");
+        Files.write(filePath, sb.toString().getBytes());
     }
 
     private VerificationTask mkTask(Program program, Wmm mcm, Property property) throws Exception {
@@ -366,7 +375,7 @@ public class PvmmTest {
     }
 
     private VerificationTask mkTask(Program program, Wmm mcm, Property property, boolean locallyConsistent) throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+        Task.TaskBuilder builder = Task.builder()
                 .withConfig(Configuration.builder()
                         .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                         .setOption(ENABLE_ACTIVE_SETS, "false")
@@ -380,19 +389,20 @@ public class PvmmTest {
 
     //@Test
     public void myTest() throws Exception {
-        String programPath = getRootPath("litmus/VULKAN/pvmm/tmp2.litmus");
-        String model = getRootPath("cat/vulkan-fixed.cat");
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(model));
+        Path programPath = getRootPath("litmus/VULKAN/pvmm/tmp2.litmus");
+        Path model = getRootPath("cat/vulkan-fixed.cat");
+        Program program = TestHelper.parseProgram(programPath);
+        Wmm mcm = TestHelper.parseWmm(model);
         VerificationTask taskEager = mkTask(program, mcm, PROGRAM_SPEC);
-        try (ModelChecker mc = AssumeSolver.create(taskEager)) {
-            mc.run();
+        try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskEager, EAGER)) {
+            solver.run();
             System.out.println(printer.print(taskEager.getProgram()));
-            System.out.println(mc.getResult());
-            RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+            System.out.println(solver.getResult());
+            RelationAnalysis ra = ((AssumeSolver)solver.verifier).analysisContext.get(RelationAnalysis.class);
             Set<Relation> relations = taskEager.getMemoryModel().getRelations();
-            Map<String, MutableEventGraph> data = extractRelationsData(taskEager.getProgram(), relations, ra, mc.getProver().getModel());
-            for (Map.Entry<String, MutableEventGraph> e : data.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey())).toList()){
+            SMTModelChecker checker = (SMTModelChecker) solver.verifier;
+            Map<String, MutableEventGraph> data = extractRelationsData(taskEager.getProgram(), relations, ra, checker.getProver().getModel());
+            for (Map.Entry<String, MutableEventGraph> e : data.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()){
                 System.out.println(e.getKey() + ": " + e.getValue());
             }
         }

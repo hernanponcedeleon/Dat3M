@@ -4,9 +4,27 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.spirv.AbstractSpirvTest;
 import com.dat3m.dartagnan.task.verification.VerificationStatus;
 
+import java.util.ArrayList;
+import java.util.List;
+
 abstract class AbstractSpirvVulkanTest extends AbstractSpirvTest {
 
-    protected AbstractSpirvVulkanTest(String programPath, int bound, VerificationStatus expected) {
-        super(Arch.VULKAN, programPath, bound, expected);
+    private static final List<String> MODELS = List.of("vulkan", "vulkan-fixed");
+
+    protected static Iterable<Object[]> withModels(Object[][] rows) {
+        final List<Object[]> out = new ArrayList<>(MODELS.size() * rows.length);
+        for (String model : MODELS) {
+            for (Object[] row : rows) {
+                final Object[] expanded = new Object[row.length + 1];
+                expanded[0] = model;
+                System.arraycopy(row, 0, expanded, 1, row.length);
+                out.add(expanded);
+            }
+        }
+        return out;
+    }
+
+    protected AbstractSpirvVulkanTest(String model, String programPath, int bound, VerificationStatus expected) {
+        super(Arch.VULKAN, model, programPath, bound, expected);
     }
 }

@@ -28,7 +28,7 @@ public final class VerificationTaskSolver extends TaskSolverBase<VerificationTas
 
     // ====================================== State ======================================
 
-    private Verifier verifier;
+    public Verifier verifier;
 
     // =================================== Construction ===================================
 

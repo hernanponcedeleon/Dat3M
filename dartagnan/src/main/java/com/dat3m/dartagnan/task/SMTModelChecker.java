@@ -90,15 +90,6 @@ public abstract class SMTModelChecker<TTask extends Task> implements AutoCloseab
         task.getConfig().inject(smtConfig);
     }
 
-    public final Result getResult() {
-        Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
-        return res;
-    }
-
-    public EncodingContext getEncodingContext() {
-        return context;
-    }
-
     public ProverWithTracker getProver() {
         return prover;
     }

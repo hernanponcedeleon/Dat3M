@@ -4,21 +4,19 @@ import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 
 @RunWith(Parameterized.class)
 public class BarrierLoopsAssertionsTest extends AbstractSpirvVulkanTest {
 
-    public BarrierLoopsAssertionsTest(String file, int bound, VerificationStatus expected) {
-        super("spirv/vulkan/barrier/loops/" + file, bound, expected);
+    public BarrierLoopsAssertionsTest(String model, String file, int bound, VerificationStatus expected) {
+        super(model, "spirv/vulkan/barrier/loops/" + file, bound, expected);
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}")
     public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]{
+        return withModels(new Object[][]{
                 {"barrier-loop-1-forall.spvasm", 3, PASS},
                 {"barrier-loop-1-exists.spvasm", 3, PASS},
                 {"barrier-no-loop-1-forall.spvasm", 1, PASS},

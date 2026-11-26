@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.FAIL;
@@ -16,18 +15,14 @@ import static com.dat3m.dartagnan.task.verification.VerificationStatus.PASS;
 @RunWith(Parameterized.class)
 public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
 
-    private final String oldModelPath = getRootPath("cat/vulkan.cat");
-    private final String newModelFixed = getRootPath("cat/vulkan-fixed.cat");
-    private final String programPath;
-    private final int bound;
     private final ProgressModel.Hierarchy progressModel;
 
-    public TerminationLivenessTest(String file, int bound, ProgressModel.Hierarchy progressModel, VerificationStatus expected) {
-        super("spirv/vulkan/termination/" + file, bound, expected);
+    public TerminationLivenessTest(String model, String file, int bound, ProgressModel.Hierarchy progressModel, VerificationStatus expected) {
+        super(model, "spirv/vulkan/termination/" + file, bound, expected);
         this.progressModel = progressModel;
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}")
     public static Iterable<Object[]> data() {
 
         ProgressModel.Hierarchy fairUniform = ProgressModel.uniform(ProgressModel.FAIR);
@@ -54,7 +49,7 @@ public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
                                                     Tag.Vulkan.QUEUE_FAMILY, ProgressModel.HSA,
                                                     Tag.Vulkan.SUB_GROUP, ProgressModel.OBE));
 
-        return Arrays.asList(new Object[][]{
+        return withModels(new Object[][]{
                 {"non-uniform-barrier-1.spvasm", 1, fairUniform, PASS},
                 {"non-uniform-barrier-2.spvasm", 1, fairUniform, FAIL},
                 {"mp-groupID.spvasm", 1, fairUniform, PASS},
@@ -81,20 +76,9 @@ public class TerminationLivenessTest extends AbstractSpirvVulkanTest {
         });
     }
 
-    @Test
-    public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(oldModelPath), Method.EAGER));
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(newModelFixed), Method.EAGER));
-    }
+    @Override
+    protected ProgressModel.Hierarchy getProgressModel() { return progressModel; }
 
-    private VerificationTask mkTask(String modelPath) throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(TestHelper.getBasicConfig())
-                .withBound(bound)
-                .withProgressModel(progressModel)
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(TERMINATION));
-    }
+    @Override
+    protected Property getTestedProperty() { return Property.TERMINATION; }
 }

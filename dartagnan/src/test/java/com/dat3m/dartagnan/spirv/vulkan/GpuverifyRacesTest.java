@@ -5,28 +5,18 @@ import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-
 import static com.dat3m.dartagnan.task.verification.VerificationStatus.*;
 
 @RunWith(Parameterized.class)
 public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
 
-    private final String oldModelPath = getRootPath("cat/vulkan.cat");
-    private final String newModelFixed = getRootPath("cat/vulkan-fixed.cat");
-    private final String programPath;
-    private final int bound;
-    private final Result expected;
-
-    public SpirvRacesTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/vulkan/gpuverify/" + file);
-        this.bound = bound;
-        this.expected = expected;
+    public GpuverifyRacesTest(String model, String file, int bound, VerificationStatus expected) {
+        super(model, "spirv/vulkan/gpuverify/" + file, bound, expected);
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}")
     public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]{
+        return withModels(new Object[][]{
                 // Agree with gpu-verify
                 {"atomics/atomic_read_race.spvasm", 1, FAIL},
                 {"atomics/equality_fail.spvasm", 1, PASS},
@@ -327,19 +317,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
         });
     }
 
-    @Test
-    public void test() throws Exception {
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(oldModelPath), Method.EAGER));
-        assertEquals(expected, TestHelper.createAndRunSolver(mkTask(newModelFixed), Method.EAGER));
-    }
-
-    private VerificationTask mkTask(String modelPath) throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(TestHelper.getBasicConfig())
-                .withBound(bound)
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
-    }
+    @Override
+    protected Property getTestedProperty() { return Property.CAT_SPEC; }
 }

@@ -1,16 +1,12 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.task.verification.VerificationStatus;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.util.EnumSet;
+import java.nio.file.Path;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanFixedAssertionsTest extends AbstractLitmusTest {
@@ -20,22 +16,10 @@ public class LitmusVulkanFixedAssertionsTest extends AbstractLitmusTest {
         return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-Fixed-Assertions");
     }
 
-    public LitmusVulkanFixedAssertionsTest(String path, Result expected) {
-        super(path, expected);
+    public LitmusVulkanFixedAssertionsTest(Path path, VerificationStatus expected) {
+        super(Arch.VULKAN, path, expected);
     }
 
     @Override
-    protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.VULKAN;
-    }
-
-    @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "vulkan-fixed");
-    }
+    protected String getTargetWmmName() { return "vulkan-fixed"; }
 }
