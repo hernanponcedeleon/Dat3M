@@ -856,8 +856,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         final List<Event> loads = transactionMap.getOrDefault(load, List.of(load));
                         // Only match with the last load of an instruction.
                         if (loads.getLast().equals(load)) {
-                            final Set<Event> loadMutex = execExcluding(load);
-                            final boolean noIntermediaries = loadMutex.containsAll(intermediaries);
+                            final boolean noIntermediaries = execExcluding(load).containsAll(intermediaries);
                             addLXSX(may, must, loads, stores, noIntermediaries, requiresMatchingAddresses);
                         }
                     }
@@ -871,7 +870,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             final boolean sameType = sameType(loads, stores);
             for (int i = 0; i < loads.size(); i++) {
                 final MemoryCoreEvent ld = (MemoryCoreEvent) loads.get(i);
-                final MemoryCoreEvent st = (MemoryCoreEvent) stores.get(i);
+                final MemoryCoreEvent st = sameType ? (MemoryCoreEvent) stores.get(i) : null;
                 if (sameType && requiresMatchingAddresses) {
                     may.add(ld, st);
                 } else {
@@ -889,8 +888,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 return false;
             }
             for (int i = 0; i < loads.size(); i++) {
-                if (loads.get(i) instanceof MemoryCoreEvent ld && stores.get(i) instanceof MemoryCoreEvent st &&
-                        ld.getAccessType().equals(st.getAccessType())) {
+                if (!(loads.get(i) instanceof MemoryCoreEvent ld) || !(stores.get(i) instanceof MemoryCoreEvent st) ||
+                        !ld.getAccessType().equals(st.getAccessType())) {
                     return false;
                 }
             }
@@ -1538,6 +1537,22 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 return Map.of(r0, new ExtendedDelta(disabled.inverse(), enabled.inverse()));
             }
             return Map.of();
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitProjection(Projection def) {
+            return Constraint.Visitor.super.visitProjection(def);
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitSetIdentity(SetIdentity def) {
+            final Relation r = origin == def.getDefinedRelation() ? def.getDomain() : def.getDefinedRelation();
+            return Map.of(r, new ExtendedDelta(disabled, enabled));
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitProduct(CartesianProduct def) {
+            return Constraint.Visitor.super.visitProduct(def);
         }
 
         @Override
