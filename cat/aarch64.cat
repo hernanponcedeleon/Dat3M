@@ -87,7 +87,7 @@ let dob = (addr; [R] | data)
     | (addr | data); lrs
 
 (* Pick-ordered-before *)
-let pob = (pick; lrs)*; pick; [W]
+let pob = ((pick-data | pick-ctrl); lrs)*; ((pick-addr | pick-ctrl); [W] | pick-data | pick-addr; [M]; po; [W])
 
 (* Atomic-ordered-before *)
 let aob = rmw | [range(rmw)]; lrs; [A | Q]

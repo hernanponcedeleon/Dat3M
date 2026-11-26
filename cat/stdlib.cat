@@ -15,6 +15,8 @@ let fencerel(F) = po;[F];po
 // Enforce that reads from uninitialized memory are impossible if an init write exists.
 empty ([R \ range(rf)]);loc;[IW] as force-init-read
 
-let pick = [M]; ((__idd | __ctrlDirect)+; __addrDirect? | __addrDirect); [_]
+let pick-addr = [M]; (__idd | __ctrlDirect)*; __addrDirect; [M]
+let pick-ctrl = [M]; (__idd | __ctrlDirect)*; __ctrlDirect; [_]
+let pick-data = [M]; (__idd | __ctrlDirect)*; __idd; [W]
 
 flag ~empty [UB] as undefined-behavior
