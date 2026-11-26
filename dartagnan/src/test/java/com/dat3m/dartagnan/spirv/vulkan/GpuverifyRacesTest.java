@@ -110,8 +110,6 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // {"atomics/refined_atomic_abstraction/many_accesses.spvasm", 1, PASS},
                 // {"atomics/refined_atomic_abstraction/one_access.spvasm", 1, PASS},
                 // {"misc/fail/miscfail1.spvasm", 1, FAIL},
-                // {"transitiveclosuresimplified.spvasm", 1, PASS},
-                // {"warpsync/intragroup_scan.spvasm", 1, FAIL},
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spvasm", 1, FAIL},
@@ -119,11 +117,13 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // Unsupported (array size too large)
                 // TODO: Analyze
                 // {"test_mod_invariants/local_direct.spvasm", 1, UNKNOWN},
+                // {"transitiveclosuresimplified.spvasm", 1, PASS},
 
                 // Unsupported null as a pointer
                 // {"null_pointers/atomic_null.spvasm", 1, ??},
 
                 // Unsupported cuda warps
+                // {"warpsync/intragroup_scan.spvasm", 1, FAIL},
                 // {"warpsync/scan_warp.spvasm", 1, FAIL},
 
                 // Unsupported non-constant tags
@@ -200,7 +200,7 @@ public class GpuverifyRacesTest extends AbstractSpirvVulkanTest {
                 // {"misc/fail/4d_array_of_vectors_race.spvasm", 1, FAIL},
                 // {"misc/fail/miscfail9.spvasm", 1, FAIL},
                 // {"misc/fail/vector_element_race.spvasm", 1, FAIL},
-                // {"misc/pass/misc15.spvasm", 1, FAIL},
+                // {"misc/pass/misc15.spvasm", 1, PASS},
                 // {"misc/pass/misc16.spvasm", 1, PASS},
                 // {"misc/pass/misc7.spvasm", 1, PASS},
                 // {"misc/pass/misc8.spvasm", 1, PASS},
