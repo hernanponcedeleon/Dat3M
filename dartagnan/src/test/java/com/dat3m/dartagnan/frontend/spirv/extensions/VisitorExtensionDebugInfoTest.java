@@ -29,7 +29,7 @@ public class VisitorExtensionDebugInfoTest {
         visit(input);
 
         // then
-        assertEquals(new SourceLocation.Generic("test.slang", 42),
+        assertEquals(new SourceLocation.SourceFile("test.slang", 42),
                 builder.getControlFlowBuilder().getCurrentLocation());
     }
 

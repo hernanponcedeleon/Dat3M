@@ -23,6 +23,13 @@ public sealed interface SourceLocation extends Metadata {
         }
     }
 
+    record SourceFile(String fileName, int lineNumber) implements SourceLocation {
+        @Override
+        public String toString() {
+            return fileName + "#" + lineNumber;
+        }
+    }
+
     record Generic(Path sourcePath, int lineNumber) implements SourceLocation {
 
         public Generic(String sourcePath, int lineNumber) {

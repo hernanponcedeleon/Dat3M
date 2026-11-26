@@ -77,7 +77,7 @@ public class ControlFlowBuilder {
     }
 
     public void setCurrentLocation(String file, int line) {
-        currentLocation = new SourceLocation.Generic(file, line);
+        currentLocation = new SourceLocation.SourceFile(file, line);
     }
 
     public void removeCurrentLocation() { currentLocation = null; }
