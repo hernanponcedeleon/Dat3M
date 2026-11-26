@@ -212,15 +212,6 @@ public class Wmm {
                 final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
                 yield new Intersection(r, composition(idd, ctrl), product(memory, visible));
             }
-            case PICKDEP -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
-                final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
-                final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
-                final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
-                final Relation addr = getOrCreatePredefinedRelation(ADDRDIRECT);
-                final Relation trans = addDefinition(new TransitiveClosure(newRelation(), union(idd, ctrl)));
-                yield new Intersection(r, union(trans, composition(trans, addr), addr), product(memory, visible));
-            }
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
