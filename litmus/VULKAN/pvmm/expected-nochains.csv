@@ -5,35 +5,6 @@ test,vulkan,vulkan-new,vulkan-update,
 2-background-avvis-chains-semvis-a,PASS,PASS,PASS,
 2-background-avvis-chains-semvis-b,PASS,PASS,PASS,
 ,,,,
-3.2-problem-avvis-a,PASS,PASS,PASS,Figure 6a
-3.2-problem-avvis-b,FAIL,PASS,PASS,Figure 6b
-3.2-problem-avvis-c,FAIL,PASS,PASS,
-,,,,
-3.2-x-problem-chains-avvis-5-th-a,PASS,PASS,PASS,
-3.2-x-problem-chains-avvis-5-th-b,PASS,PASS,PASS,
-3.2-x-problem-chains-avvis-5-th-c,PASS,PASS,PASS,
-3.2-x-problem-chains-avvis-5-th-d,PASS,PASS,PASS,
-3.2-x-problem-chains-avvis-5-th-e,PASS,PASS,PASS,
-,,,,
-3.2-x-problem-chains-chain-av-a,PASS,PASS,PASS,
-3.2-x-problem-chains-chain-av-b,PASS,PASS,PASS,
-3.2-x-problem-chains-chain-av-c,PASS,PASS,PASS,
-3.2-x-problem-chains-chain-av-d,PASS,PASS,PASS,
-3.2-x-problem-chains-chain-vis-a,PASS,PASS,PASS,Figure15a
-3.2-x-problem-chains-chain-vis-b,PASS,PASS,PASS,Figure15b
-3.2-x-problem-chains-chain-vis-c,PASS,PASS,PASS,Figure15c
-3.2-x-problem-chains-chain-vis-d,PASS,PASS,PASS,Figure15d
-,,,,
-3.2-y-problem-chains-chain-av-a,PASS,PASS,PASS,
-3.2-y-problem-chains-chain-av-b,PASS,PASS,PASS,
-3.2-y-problem-chains-chain-vis-a,PASS,PASS,PASS,
-3.2-y-problem-chains-chain-vis-b,PASS,PASS,PASS,
-,,,,
-3.2-z-problem-chains-chain-av-a,PASS,PASS,PASS,
-3.2-z-problem-chains-chain-av-b,PASS,PASS,PASS,
-3.2-z-problem-chains-chain-vis-a,PASS,PASS,PASS,
-3.2-z-problem-chains-chain-vis-b,PASS,PASS,PASS,
-,,,,
 3.3-problem-race-both-a,FAIL,FAIL,FAIL,Figure 7
 3.3-problem-race-both-b,FAIL,FAIL,FAIL,
 3.3-problem-race-chain-a,FAIL,FAIL,FAIL,
