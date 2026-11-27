@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 
@@ -67,12 +66,10 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public Expression size() { return size; }
     public boolean hasKnownSize() { return size instanceof IntLiteral; }
-    // The size in bytes, as an unsigned number.
-    // NOTE: Size literals are not necessarily non-negative: e.g., malloc(-16) requests 2^n - 16 bytes.
+    // The size in bytes (sizes are unsigned, see Memory).
     public BigInteger getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
-        final IntLiteral literal = (IntLiteral) size;
-        return IntegerHelper.normalizeUnsigned(literal.getValue(), literal.getType().getBitWidth());
+        return ((IntLiteral) size).getValue();
     }
 
     // Objects of at most this many bytes can be initialized byte by byte with Init events.

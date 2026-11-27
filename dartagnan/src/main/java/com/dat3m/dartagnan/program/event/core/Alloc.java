@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
@@ -87,10 +88,10 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         final TypeFactory types = TypeFactory.getInstance();
         final Expression allocationSize;
         if (arraySize instanceof IntLiteral value) {
-            allocationSize = expressions.makeValue(
-                    BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue()),
-                    (IntegerType) arraySize.getType()
-            );
+            final IntegerType type = (IntegerType) arraySize.getType();
+            // Sizes are unsigned, but frontends may produce negative size literals (in two's complement).
+            final BigInteger size = BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue());
+            allocationSize = expressions.makeValue(IntegerHelper.normalizeUnsigned(size, type.getBitWidth()), type);
         } else {
             allocationSize = expressions.makeMul(
                     expressions.makeValue(types.getMemorySizeInBytes(allocationType), (IntegerType) arraySize.getType()),
