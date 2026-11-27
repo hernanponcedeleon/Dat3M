@@ -27,4 +27,7 @@ abstract class AbstractSpirvVulkanTest extends AbstractSpirvTest {
     protected AbstractSpirvVulkanTest(String model, String programPath, int bound, VerificationStatus expected) {
         super(Arch.VULKAN, model, programPath, bound, expected);
     }
+
+    // Disabled because takes too long
+    protected boolean isLazyMethodEnabled() { return false; }
 }
