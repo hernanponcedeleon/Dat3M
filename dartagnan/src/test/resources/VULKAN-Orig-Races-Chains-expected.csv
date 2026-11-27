@@ -387,3 +387,8 @@ litmus/VULKAN/Basic/Chains/chain-semav-2.litmus,1
 litmus/VULKAN/Basic/Chains/chain-semav.litmus,1
 litmus/VULKAN/Basic/Chains/chain-semvis-2.litmus,1
 litmus/VULKAN/Basic/Chains/chain-semvis.litmus,1
+litmus/VULKAN/Basic/Semsc/semsc-matching.litmus,1
+litmus/VULKAN/Basic/Semsc/semsc-mismatching.litmus,0
+litmus/VULKAN/Basic/Semsc/semsc-combined.litmus,1
+litmus/VULKAN/Basic/AvVis/mp-avvis.litmus,1
+litmus/VULKAN/Basic/AvVis/mp-noavvis.litmus,0
