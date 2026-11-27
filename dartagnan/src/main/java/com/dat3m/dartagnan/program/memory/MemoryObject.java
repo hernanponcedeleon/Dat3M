@@ -66,7 +66,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public Expression size() { return size; }
     public boolean hasKnownSize() { return size instanceof IntLiteral; }
-    // The size in bytes (sizes are unsigned, see Memory).
+    // The size in bytes (sizes are unsigned, see Alloc).
     public BigInteger getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
         return ((IntLiteral) size).getValue();
