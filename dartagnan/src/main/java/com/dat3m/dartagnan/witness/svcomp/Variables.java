@@ -40,7 +40,7 @@ public final class Variables {
             return Optional.empty();
         }
         // Frontends store the initializer of the whole object at offset 0.
-        verify(TypeFactory.getInstance().getMemorySizeInBytes(type) == object.getKnownSize(),
+        verify(TypeFactory.getInstance().getMemorySizeInBytes(type) == object.getKnownSize().intValueExact(),
                 "Initial value of %s does not span the object", object);
         return Optional.of(type);
     }

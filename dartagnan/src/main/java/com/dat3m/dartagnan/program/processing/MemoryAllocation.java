@@ -63,8 +63,9 @@ public class MemoryAllocation implements ProgramProcessor {
                 continue;
             }
             if (alloc.doesZeroOutMemory() || createInitsForDynamicAllocations) {
-                Preconditions.checkState(allocatedObject.hasKnownSize(), "Cannot initialize dynamic allocation of unknown size.");
-                for (int i = 0; i < allocatedObject.getKnownSize(); i++) {
+                Preconditions.checkState(allocatedObject.hasInitializableSize(),
+                        "Cannot initialize dynamic allocation of unknown or too large size: %s", allocatedObject);
+                for (int i = 0; i < allocatedObject.getKnownSize().intValueExact(); i++) {
                     allocatedObject.setInitialValue(i, zero);
                 }
             }

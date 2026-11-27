@@ -218,7 +218,7 @@ public class VisitorOpsMemoryTest {
         for (int i = 0; i < 4; i++) {
             ScopedPointerVariable pointer = (ScopedPointerVariable) builder.getExpression(variables[i]);
             assertNotNull(pointer);
-            assertEquals(VisitorOpsMemoryTest.types.getMemorySizeInBytes(types[i]), pointer.getAddress().getKnownSize());
+            assertEquals(VisitorOpsMemoryTest.types.getMemorySizeInBytes(types[i]), pointer.getAddress().getKnownSize().intValueExact());
         }
     }
 
@@ -298,17 +298,17 @@ public class VisitorOpsMemoryTest {
 
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
-        assertEquals(types.getMemorySizeInBytes(builder.getType("%bool")), v1.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(builder.getType("%bool")), v1.getAddress().getKnownSize().intValueExact());
         assertEquals(o1, v1.getAddress().getInitialValue(0));
 
         ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(types.getMemorySizeInBytes(builder.getType("%int")), v2.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(builder.getType("%int")), v2.getAddress().getKnownSize().intValueExact());
         assertEquals(o2, v2.getAddress().getInitialValue(0));
 
         ScopedPointerVariable v3 = (ScopedPointerVariable) builder.getExpression("%v3");
         assertNotNull(v3);
-        assertEquals(types.getMemorySizeInBytes(builder.getType("%v3int")), v3.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(builder.getType("%v3int")), v3.getAddress().getKnownSize().intValueExact());
         List<Expression> arrElements = o3.getOperands();
         assertEquals(arrElements.get(0), v3.getAddress().getInitialValue(0));
         assertEquals(arrElements.get(1), v3.getAddress().getInitialValue(4));
@@ -316,7 +316,7 @@ public class VisitorOpsMemoryTest {
 
         ScopedPointerVariable v4 = (ScopedPointerVariable) builder.getExpression("%v4");
         assertNotNull(v4);
-        assertEquals(types.getMemorySizeInBytes(builder.getType("%struct")), v4.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(builder.getType("%struct")), v4.getAddress().getKnownSize().intValueExact());
         List<Expression> structElements = o4.getOperands();
         assertEquals(structElements.get(0), v4.getAddress().getInitialValue(0));
         assertEquals(structElements.get(1), v4.getAddress().getInitialValue(4));
@@ -383,12 +383,12 @@ public class VisitorOpsMemoryTest {
         Type ot3 = types.getAggregateType(List.of(iType, ot1));
 
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
-        assertEquals(types.getMemorySizeInBytes(ot1), v1.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(ot1), v1.getAddress().getKnownSize().intValueExact());
         assertEquals(o1, v1.getAddress().getInitialValue(0));
         assertEquals(o2, v1.getAddress().getInitialValue(4));
 
         ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
-        assertEquals(types.getMemorySizeInBytes(ot2), v2.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(ot2), v2.getAddress().getKnownSize().intValueExact());
         assertEquals(o1, v2.getAddress().getInitialValue(0));
         assertEquals(o2, v2.getAddress().getInitialValue(4));
         assertEquals(o3, v2.getAddress().getInitialValue(8));
@@ -397,7 +397,7 @@ public class VisitorOpsMemoryTest {
         assertEquals(o6, v2.getAddress().getInitialValue(20));
 
         ScopedPointerVariable v3 = (ScopedPointerVariable) builder.getExpression("%v3");
-        assertEquals(types.getMemorySizeInBytes(ot3), v3.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(ot3), v3.getAddress().getKnownSize().intValueExact());
         assertEquals(o1, v3.getAddress().getInitialValue(0));
         assertEquals(o1, v3.getAddress().getInitialValue(4));
         assertEquals(o2, v3.getAddress().getInitialValue(8));
@@ -421,7 +421,7 @@ public class VisitorOpsMemoryTest {
         // then
         ScopedPointerVariable v = (ScopedPointerVariable) builder.getExpression("%v");
         assertNotNull(v);
-        assertEquals(types.getMemorySizeInBytes(arr.getType()), v.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(arr.getType()), v.getAddress().getKnownSize().intValueExact());
         assertEquals(arr.getOperands().get(0), v.getAddress().getInitialValue(0));
         assertEquals(arr.getOperands().get(1), v.getAddress().getInitialValue(4));
     }
@@ -459,13 +459,13 @@ public class VisitorOpsMemoryTest {
         // then
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
-        assertEquals(types.getMemorySizeInBytes(a1.getType()), v1.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(a1.getType()), v1.getAddress().getKnownSize().intValueExact());
         assertEquals(i1, v1.getAddress().getInitialValue(0));
         assertEquals(i2, v1.getAddress().getInitialValue(8));
 
         ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(types.getMemorySizeInBytes(a2.getType()), v2.getAddress().getKnownSize());
+        assertEquals(types.getMemorySizeInBytes(a2.getType()), v2.getAddress().getKnownSize().intValueExact());
         assertEquals(i1, v2.getAddress().getInitialValue(0));
         assertEquals(i2, v2.getAddress().getInitialValue(8));
         assertEquals(i3, v2.getAddress().getInitialValue(16));

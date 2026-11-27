@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -65,16 +66,26 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public Expression size() { return size; }
     public boolean hasKnownSize() { return size instanceof IntLiteral; }
-    public int getKnownSize() {
+    // The size in bytes (sizes are unsigned, see Alloc).
+    public BigInteger getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
-        return ((IntLiteral)size).getValueAsInt();
+        return ((IntLiteral) size).getValue();
     }
 
-    // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size) cannot be
-    // initialized with Init events. Instead, reads from such objects that have no write partner (uninit reads)
-    // return zero (see WmmEncoder).
+    // Objects of at most this many bytes can be initialized byte by byte with Init events.
+    // Larger objects would need too many events.
+    public static final int MAX_INITIALIZABLE_SIZE = 1000;
+
+    // Checks if the size is known and small enough to initialize the object byte by byte.
+    public boolean hasInitializableSize() {
+        return hasKnownSize() && getKnownSize().compareTo(BigInteger.valueOf(MAX_INITIALIZABLE_SIZE)) <= 0;
+    }
+
+    // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size), or too large to
+    // initialize byte by byte, cannot be initialized with Init events. Instead, reads from such objects that have no
+    // write partner (uninit reads) return zero (see WmmEncoder).
     public boolean isImplicitlyZeroInitialized() {
-        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasKnownSize();
+        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasInitializableSize();
     }
 
     public Expression alignment() { return alignment; }
@@ -85,7 +96,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     }
 
     public boolean isInRange(int offset) {
-        return hasKnownSize() && offset >= 0 && offset < getKnownSize();
+        return hasKnownSize() && offset >= 0 && BigInteger.valueOf(offset).compareTo(getKnownSize()) < 0;
     }
 
     public Set<Integer> getInitializedFields() {

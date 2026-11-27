@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
+import java.math.BigInteger;
+
 // TODO: Should work with an arbitrary pointer rather than "base + offset"
 // Represents the final (co-maximal) value at a memory address as if read by a load instruction
 // that observed the final store.
@@ -44,7 +46,7 @@ public class FinalMemoryValue extends LeafExpressionBase<Type> {
         final int lowerByte = offset;
         final int upperByte = offset + accessSize;
         final String baseName = base.toString().substring(1);
-        if (base.hasKnownSize() && (lowerByte == 0 && upperByte == base.getKnownSize())) {
+        if (base.hasKnownSize() && (lowerByte == 0 && BigInteger.valueOf(upperByte).equals(base.getKnownSize()))) {
             // Access whole range: just print the variable
             return baseName;
         } else {

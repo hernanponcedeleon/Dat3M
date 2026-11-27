@@ -148,7 +148,7 @@ public class ProgramPrinter {
     }
 
     private void appendMemoryObject(MemoryObject obj, StringBuilder result) {
-        final String size = obj.hasKnownSize() ? Integer.toString(obj.getKnownSize()) : "unknown";
+        final String size = obj.hasKnownSize() ? obj.getKnownSize().toString() : "unknown";
         final String align = obj.hasKnownAlignment() ? Integer.toString(obj.getKnownAlignment()) : "unknown";
         final String modifier = obj.isStaticallyAllocated() ? "static" : "dynamic";
         final String name = obj.isStaticallyAllocated()

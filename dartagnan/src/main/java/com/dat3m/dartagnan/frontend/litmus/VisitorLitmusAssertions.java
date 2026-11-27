@@ -172,7 +172,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Express
             checkState(base != null, "uninitialized location %s", name);
             TerminalNode offset = ctx.DigitSequence();
             int o = offset == null ? 0 : Integer.parseInt(offset.getText());
-            final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize()));
+            final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize().intValueExact()));
             value = right && offset == null ? base : new FinalMemoryValue(type, base, o);
         }
 
