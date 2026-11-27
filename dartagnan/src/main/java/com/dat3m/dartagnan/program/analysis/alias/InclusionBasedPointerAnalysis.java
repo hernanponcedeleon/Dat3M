@@ -547,10 +547,10 @@ public class InclusionBasedPointerAnalysis<Modifier> implements AliasAnalysis {
         }
         // If the only included address refers to the last element, treat it as a direct static offset instead.
         // This only works on concrete objects, where size is reliable.
-        if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
+        if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasEnumerableSize()) {
             return;
         }
-        final Modifier post = trait.shrinkToBounds(modifier, includeEdge.source.object.getKnownSize());
+        final Modifier post = trait.shrinkToBounds(modifier, includeEdge.source.object.getKnownSize().intValueExact());
         entry.setValue(new DerivedVariable<>(includeEdge.source, post));
     }
 

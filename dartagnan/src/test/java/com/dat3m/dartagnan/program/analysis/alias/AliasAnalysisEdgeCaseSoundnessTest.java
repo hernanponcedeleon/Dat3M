@@ -193,6 +193,43 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
     }
 
     @Test
+    public void boundsReductionTreatsSizeLiteralsAsUnsigned() throws Exception {
+        /*
+         * P0:
+         *   base = malloc(-16); *slot = base;
+         *   pointer = *slot; *slot = pointer + 16;
+         *   Dereference pointer, base + 16, and base.
+         * Through the cycle over slot, pointer may address base + 16 * k for any k >= 0.
+         * malloc(-16) requests 2^n - 16 bytes, so the negative size literal must not be used
+         * to shrink pointer to the offset 0: pointer may alias base + 16, and may but need not alias base.
+         */
+        ProgramBuilder builder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject slot = builder.newMemoryObject("slot", 8);
+        builder.newThread(0);
+
+        IntegerType type = builder.getArchType();
+        Register base = builder.getOrNewRegister(0, "base", builder.getPointerType());
+        Register pointer = builder.getOrNewRegister(0, "pointer", type);
+        Expression second = expressions.makeAdd(base, expressions.makeValue(16, type));
+        Alloc alloc = EventFactory.newAlloc(base, types.getByteType(), expressions.makeValue(-16, type), true, false);
+        builder.addChildWithoutSourceLoc(0, alloc);
+        builder.addChildWithoutSourceLoc(0, EventFactory.newStore(slot, base));
+        builder.addChildWithoutSourceLoc(0, EventFactory.newLoad(pointer, slot));
+        builder.addChildWithoutSourceLoc(0, EventFactory.newStore(slot,
+                expressions.makeAdd(pointer, expressions.makeValue(16, type))));
+        Store throughPointer = addStore(builder, pointer);
+        Store atSecond = addStore(builder, second);
+        Store atFirst = addStore(builder, base);
+        Program program = builder.build();
+        alloc.setAllocatedObject(program.getMemory().allocate(alloc));
+
+        AliasAnalysis analysis = analyze(program);
+
+        assertMayAlias(analysis, throughPointer, atSecond);
+        assertMayButNotMust(analysis, throughPointer, atFirst);
+    }
+
+    @Test
     public void replacementRedirectsAddressAndLoadEdges() throws Exception {
         /*
          * P0:

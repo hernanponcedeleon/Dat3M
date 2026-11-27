@@ -8,9 +8,11 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -65,16 +67,24 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public Expression size() { return size; }
     public boolean hasKnownSize() { return size instanceof IntLiteral; }
-    public int getKnownSize() {
+    // The size in bytes, as an unsigned number.
+    // NOTE: Size literals are not necessarily non-negative: e.g., malloc(-16) requests 2^n - 16 bytes.
+    public BigInteger getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
-        return ((IntLiteral)size).getValueAsInt();
+        final IntLiteral literal = (IntLiteral) size;
+        return IntegerHelper.normalizeUnsigned(literal.getValue(), literal.getType().getBitWidth());
     }
 
-    // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size) cannot be
-    // initialized with Init events. Instead, reads from such objects that have no write partner (uninit reads)
-    // return zero (see WmmEncoder).
+    // Checks if the size is known and small enough to enumerate the bytes of the object (with int offsets).
+    public boolean hasEnumerableSize() {
+        return hasKnownSize() && getKnownSize().bitLength() < Integer.SIZE;
+    }
+
+    // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size), or too large to
+    // enumerate their bytes, cannot be initialized with Init events. Instead, reads from such objects that have no
+    // write partner (uninit reads) return zero (see WmmEncoder).
     public boolean isImplicitlyZeroInitialized() {
-        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasKnownSize();
+        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasEnumerableSize();
     }
 
     public Expression alignment() { return alignment; }
@@ -85,7 +95,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     }
 
     public boolean isInRange(int offset) {
-        return hasKnownSize() && offset >= 0 && offset < getKnownSize();
+        return hasKnownSize() && offset >= 0 && BigInteger.valueOf(offset).compareTo(getKnownSize()) < 0;
     }
 
     public Set<Integer> getInitializedFields() {

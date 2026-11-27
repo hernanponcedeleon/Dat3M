@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.List;
 
 public class LogThreadStatistics implements ProgramProcessor {
@@ -51,11 +52,13 @@ public class LogThreadStatistics implements ProgramProcessor {
         }
 
         int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
-        int staticAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(m -> m.isStaticallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
-        int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(m -> m.isDynamicallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
-        int totalAddressSpaceSize = dynamicAddressSpaceSize + staticAddressSpaceSize;
+        BigInteger staticAddressSpaceSize = program.getMemory().getObjects().stream()
+                .filter(m -> m.isStaticallyAllocated() && m.hasKnownSize()).map(MemoryObject::getKnownSize)
+                .reduce(BigInteger.ZERO, BigInteger::add);
+        BigInteger dynamicAddressSpaceSize = program.getMemory().getObjects().stream()
+                .filter(m -> m.isDynamicallyAllocated() && m.hasKnownSize()).map(MemoryObject::getKnownSize)
+                .reduce(BigInteger.ZERO, BigInteger::add);
+        BigInteger totalAddressSpaceSize = dynamicAddressSpaceSize.add(staticAddressSpaceSize);
         int numUnknownSizedAllocations = Math.toIntExact(program.getMemory().getObjects().stream()
                 .filter(m -> !m.hasKnownSize()).count());
 

@@ -235,7 +235,7 @@ public class VisitorExtensionClspvReflectionTest {
         visit(input);
 
         // then
-        assertEquals(12, pointer.getAddress().getKnownSize());
+        assertEquals(12, pointer.getAddress().getKnownSize().intValueExact());
     }
 
     @Test
@@ -255,7 +255,7 @@ public class VisitorExtensionClspvReflectionTest {
         visit(input);
 
         // then
-        assertEquals(16, pointer.getAddress().getKnownSize());
+        assertEquals(16, pointer.getAddress().getKnownSize().intValueExact());
         verifyPushConstant(pointer, 0, List.of(24, 1, 1));
     }
 

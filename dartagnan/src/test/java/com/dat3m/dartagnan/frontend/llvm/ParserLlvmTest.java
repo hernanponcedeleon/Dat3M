@@ -221,7 +221,7 @@ public class ParserLlvmTest {
         final Program program = new ProgramParser().parse(
                 ResourceHelper.getTestResourcePath("miscellaneous/ilp32-long-in-struct.ll"));
         assertEquals(12, program.getMemory().getObjects().stream()
-                .filter(o -> "s".equals(o.getName())).findFirst().orElseThrow().getKnownSize());
+                .filter(o -> "s".equals(o.getName())).findFirst().orElseThrow().getKnownSize().intValueExact());
     }
 
     @Test
@@ -235,7 +235,7 @@ public class ParserLlvmTest {
 
     private static void assertGlobalSize(String layout, String type, int expected) {
         final Program program = parse(layout, "@g = global " + type + " zeroinitializer", "ret i32 0");
-        assertEquals(expected, program.getMemory().getObjects().iterator().next().getKnownSize());
+        assertEquals(expected, program.getMemory().getObjects().iterator().next().getKnownSize().intValueExact());
     }
 
     private static void assertInferredAlignment(String layout, String type, long expected) {
