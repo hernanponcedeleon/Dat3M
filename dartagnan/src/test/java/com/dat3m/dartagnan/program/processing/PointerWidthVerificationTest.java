@@ -23,7 +23,6 @@ import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static org.junit.Assert.assertSame;
@@ -70,7 +69,7 @@ public class PointerWidthVerificationTest {
         final Store store = EventFactory.newStore(gep, value);
         final Dealloc deallocation = EventFactory.newDealloc(address);
         function.append(List.of(allocation, load, store, deallocation));
-        final MemoryObject object = program.getMemory().allocate(BigInteger.valueOf(8));
+        final MemoryObject object = program.getMemory().allocate(8);
         final Expression initialValue = expressions.makeGetElementPointer(types.getByteType(), object, List.of(count));
         object.setInitialValue(0, initialValue);
 
@@ -136,7 +135,7 @@ public class PointerWidthVerificationTest {
 
     @Test
     public void rejectsWrongGepBaseInInitialValue() {
-        program.getMemory().allocate(BigInteger.valueOf(8)).setInitialValue(0, wrongGep());
+        program.getMemory().allocate(8).setInitialValue(0, wrongGep());
 
         assertRejected("GEP base");
     }

@@ -65,8 +65,16 @@ public class Memory {
     }
 
     // Generates a new, statically allocated memory object.
+    public MemoryObject allocate(long size) {
+        return allocate(BigInteger.valueOf(size));
+    }
+
     public MemoryObject allocate(BigInteger size) {
         return allocate(size, DEFAULT_ALIGNMENT);
+    }
+
+    public MemoryObject allocate(long size, long alignment) {
+        return allocate(BigInteger.valueOf(size), alignment);
     }
 
     public MemoryObject allocate(BigInteger size, long alignment) {
@@ -87,6 +95,10 @@ public class Memory {
                 allocationSite.getAlignment(), allocationSite, ptrType);
         objects.add(memoryObject);
         return memoryObject;
+    }
+
+    public VirtualMemoryObject allocateVirtual(long size, boolean generic, VirtualMemoryObject alias) {
+        return allocateVirtual(BigInteger.valueOf(size), generic, alias);
     }
 
     public VirtualMemoryObject allocateVirtual(BigInteger size, boolean generic, VirtualMemoryObject alias) {

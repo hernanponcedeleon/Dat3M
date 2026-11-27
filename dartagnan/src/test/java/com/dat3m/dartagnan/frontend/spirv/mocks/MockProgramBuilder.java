@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -140,7 +139,7 @@ public class MockProgramBuilder extends ProgramBuilder {
         ScopedPointerType pointerType = (ScopedPointerType) getType(typeId);
         Type pointedType = pointerType.getPointedType();
         int bytes = typeFactory.getMemorySizeInBytes(pointedType);
-        MemoryObject memoryObject = program.getMemory().allocate(BigInteger.valueOf(bytes));
+        MemoryObject memoryObject = program.getMemory().allocate(bytes);
         memoryObject.setName(id);
         ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, pointerType, memoryObject);
         return (ScopedPointerVariable) addExpression(id, pointer);

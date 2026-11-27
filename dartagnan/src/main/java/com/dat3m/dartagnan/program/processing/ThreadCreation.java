@@ -460,7 +460,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
 
             // We use accesses to a common memory object to synchronize creator and thread.
-            final MemoryObject comAddress = function.getProgram().getMemory().allocate(BigInteger.ONE);
+            final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
             comAddress.setName("__com_" + function.getName() + "#" + tid);
             comAddress.setInitialValue(0, threadState(0));
 
@@ -567,8 +567,8 @@ public class ThreadCreation implements ProgramProcessor {
         final Expression nil = expressions.makeGeneralZero(type);
         for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {
             final int id = storage.size() + 1;
-            final MemoryObject data = program.getMemory().allocate(BigInteger.valueOf(size));
-            final MemoryObject destructor = program.getMemory().allocate(BigInteger.valueOf(size));
+            final MemoryObject data = program.getMemory().allocate(size);
+            final MemoryObject destructor = program.getMemory().allocate(size);
             final var t = (IntegerType) create.getResultRegister().getType();
             data.setIsThreadLocal(true);
             // Initially, pthread_getspecific returns NULL in every thread.

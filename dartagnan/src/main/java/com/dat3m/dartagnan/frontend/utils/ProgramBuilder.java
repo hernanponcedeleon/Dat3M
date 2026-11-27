@@ -26,7 +26,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -223,7 +222,7 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name, int size) {
-        return getOrNewMemoryObject(name, size, (m, s) -> m.allocate(BigInteger.valueOf(s)));
+        return getOrNewMemoryObject(name, size, Memory::allocate);
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
@@ -378,11 +377,11 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewVirtualMemoryObject(String name) {
-        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(BigInteger.valueOf(s), true, null));
+        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(s, true, null));
     }
 
     private MemoryObject getOrNewVirtualMemoryObject(String name, boolean generic, VirtualMemoryObject alias) {
-        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(BigInteger.valueOf(s), generic, alias));
+        return getOrNewMemoryObject(name, archSize, (m, s) -> m.allocateVirtual(s, generic, alias));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

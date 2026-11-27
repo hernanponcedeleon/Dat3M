@@ -309,7 +309,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final AlignContext explicitAlignment = ctx.globalField().stream()
                     .map(GlobalFieldContext::align).filter(Objects::nonNull).findFirst().orElse(null);
             final long alignment = getAllocationAlignment(type, explicitAlignment);
-            final MemoryObject globalObject = program.getMemory().allocate(BigInteger.valueOf(size), alignment);
+            final MemoryObject globalObject = program.getMemory().allocate(size, alignment);
             globalObject.setName(name);
             if (ctx.threadLocal() != null) {
                 globalObject.setIsThreadLocal(true);

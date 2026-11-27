@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -192,7 +191,7 @@ public class ProgramBuilder {
 
     public ScopedPointerVariable allocateMemory(String id, ScopedPointerType type, Expression value) {
         int size = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
-        MemoryObject memObj = program.getMemory().allocateVirtual(BigInteger.valueOf(size), true, null);
+        MemoryObject memObj = program.getMemory().allocateVirtual(size, true, null);
         memObj.setInitialValue(0, value);
         memObj.setName(id);
         memObj.setIsThreadLocal(false);
