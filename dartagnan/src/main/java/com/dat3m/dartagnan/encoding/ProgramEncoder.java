@@ -412,7 +412,8 @@ public class ProgramEncoder {
             final Expression sizeVar = context.size(cur);
             final Expression size = cur.size();
             final Expression curAvailableAddr = nextAvailableAddr;
-            final Expression nextAlignedAddr = alignUp(curAvailableAddr, cur.alignment());
+            final Expression nextAlignedAddr = exprs.makeAdd(curAvailableAddr, exprs.makeSub(cur.alignment(),
+                    exprs.makeRem(curAvailableAddr, cur.alignment(), false)));
             nextAvailableAddr = exprs.makeAdd(addrVar, sizeVar);
 
             // Dynamic objects reserve memory only if their allocation is executed (and succeeds).
@@ -449,19 +450,6 @@ public class ProgramEncoder {
         }
 
         return bmgr.and(enc);
-    }
-
-    // Returns the smallest multiple of alignment that is strictly above addr.
-    // For (the usual) power-of-two alignments, we avoid encoding a costly remainder: (addr & -alignment) + alignment
-    // Otherwise, we encode addr + (alignment - srem(addr, alignment)), which is well-aligned, but whose padding
-    //  may be in [1, 2*alignment) for addresses above 2^(n-1).
-    private Expression alignUp(Expression addr, Expression alignment) {
-        final ExpressionFactory exprs = ExpressionFactory.getInstance();
-        if (alignment instanceof IntLiteral lit && lit.getValue().signum() > 0 && lit.getValue().bitCount() == 1) {
-            final Expression mask = exprs.makeValue(lit.getValue().negate(), lit.getType());
-            return exprs.makeAdd(exprs.makeIntAnd(addr, mask), alignment);
-        }
-        return exprs.makeAdd(addr, exprs.makeSub(alignment, exprs.makeRem(addr, alignment, true)));
     }
 
     // ====================================== Data flow ======================================
