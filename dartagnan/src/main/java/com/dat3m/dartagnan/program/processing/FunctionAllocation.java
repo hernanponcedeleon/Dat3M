@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,7 +67,7 @@ public class FunctionAllocation implements ProgramProcessor {
 
         @Override
         public Expression visitFunction(Function function) {
-            return func2AddressMap.computeIfAbsent(function, k -> program.getMemory().allocate(1));
+            return func2AddressMap.computeIfAbsent(function, k -> program.getMemory().allocate(BigInteger.ONE));
         }
     }
 }

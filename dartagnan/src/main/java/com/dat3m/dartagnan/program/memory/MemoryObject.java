@@ -75,16 +75,20 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         return IntegerHelper.normalizeUnsigned(literal.getValue(), literal.getType().getBitWidth());
     }
 
-    // Checks if the size is known and small enough to enumerate the bytes of the object (with int offsets).
-    public boolean hasEnumerableSize() {
-        return hasKnownSize() && getKnownSize().bitLength() < Integer.SIZE;
+    // Objects of at most this many bytes can be initialized byte by byte with Init events.
+    // Larger objects would need too many events.
+    public static final int MAX_INITIALIZABLE_SIZE = 1000;
+
+    // Checks if the size is known and small enough to initialize the object byte by byte.
+    public boolean hasInitializableSize() {
+        return hasKnownSize() && getKnownSize().compareTo(BigInteger.valueOf(MAX_INITIALIZABLE_SIZE)) <= 0;
     }
 
     // Zero-initialized dynamic allocations of unknown size (e.g., calloc with a non-constant size), or too large to
-    // enumerate their bytes, cannot be initialized with Init events. Instead, reads from such objects that have no
+    // initialize byte by byte, cannot be initialized with Init events. Instead, reads from such objects that have no
     // write partner (uninit reads) return zero (see WmmEncoder).
     public boolean isImplicitlyZeroInitialized() {
-        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasEnumerableSize();
+        return allocationSite != null && allocationSite.doesZeroOutMemory() && !hasInitializableSize();
     }
 
     public Expression alignment() { return alignment; }

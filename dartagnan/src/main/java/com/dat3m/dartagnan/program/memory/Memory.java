@@ -65,11 +65,11 @@ public class Memory {
     }
 
     // Generates a new, statically allocated memory object.
-    public MemoryObject allocate(long size) {
+    public MemoryObject allocate(BigInteger size) {
         return allocate(size, DEFAULT_ALIGNMENT);
     }
 
-    public MemoryObject allocate(long size, long alignment) {
+    public MemoryObject allocate(BigInteger size, long alignment) {
         final Expression sizeExpr = createSizeExpression(size);
         Preconditions.checkArgument(alignment > 0, "Alignment must be positive");
         Preconditions.checkArgument(archType.canContain(BigInteger.valueOf(alignment)),
@@ -89,7 +89,7 @@ public class Memory {
         return memoryObject;
     }
 
-    public VirtualMemoryObject allocateVirtual(long size, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(BigInteger size, boolean generic, VirtualMemoryObject alias) {
         final Expression sizeExpr = createSizeExpression(size);
         final VirtualMemoryObject memoryObject = new VirtualMemoryObject(nextIndex++, sizeExpr, defaultAlignment,
                 generic, alias, ptrType);
@@ -105,9 +105,9 @@ public class Memory {
         return types.getIntegerType(DEFAULT_POINTER_SIZE);
     }
 
-    private Expression createSizeExpression(long size) {
-        Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
-        Preconditions.checkArgument(archType.canContain(BigInteger.valueOf(size)),
+    private Expression createSizeExpression(BigInteger size) {
+        Preconditions.checkArgument(size.signum() > 0, "Illegal allocation. Size must be positive");
+        Preconditions.checkArgument(archType.canContain(size),
                 "Allocation size does not fit the program's address width");
         return expressions.makeValue(size, archType);
     }
