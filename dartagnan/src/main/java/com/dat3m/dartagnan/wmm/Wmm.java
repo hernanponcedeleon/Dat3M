@@ -194,24 +194,6 @@ public class Wmm {
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
-            case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
-                yield new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(memory, memory));
-            }
-            case ADDR -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
-                final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
-                final Relation addr = getOrCreatePredefinedRelation(ADDRDIRECT);
-                yield new Intersection(r, union(addr, composition(idd, addr)), product(memory, memory));
-            }
-            case CTRL -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
-                final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
-                final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
-                final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
-                yield new Intersection(r, composition(idd, ctrl), product(memory, visible));
-            }
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
@@ -228,18 +210,6 @@ public class Wmm {
                     throw new RuntimeException(name + " is part of RelationNameRepository but it has no associated relation.");
         };
         return addDefinition(def);
-    }
-
-    private Relation union(Relation... rs) {
-        return addDefinition(new Union(newRelation(), rs));
-    }
-
-    private Relation composition(Relation r1, Relation r2) {
-        return addDefinition(new Composition(newRelation(), r1, r2));
-    }
-
-    private Relation product(Relation domain, Relation range) {
-        return addDefinition(new CartesianProduct(newRelation(), domain, range));
     }
 
     // ================================ Metadata ================================

@@ -1,3 +1,5 @@
+(* This file is implicitly included by Dartagnan to provide a set of predefined relations. *)
+
 let fr = rf^-1;co | ([R \ range(rf)]);loc;[W]
 
 let po-loc = po & loc
@@ -15,6 +17,11 @@ let fencerel(F) = po;[F];po
 // Enforce that reads from uninitialized memory are impossible if an init write exists.
 empty ([R \ range(rf)]);loc;[IW] as force-init-read
 
+(* Dependency relations follow chains over invisible events that are not covered by `_`. *)
+(* NOTE: Dartagnan parses `r*` as `[_] | r+`! *)
+let addr = [M]; __idd*; __addrDirect; [M]
+let ctrl = [M]; __idd*; __ctrlDirect; [_]
+let data = [M]; __idd+; [W]
 let pick-addr = [M]; (__idd | __ctrlDirect)*; __addrDirect; [M]
 let pick-ctrl = [M]; (__idd | __ctrlDirect)*; __ctrlDirect; [_]
 let pick-data = [M]; (__idd | __ctrlDirect)*; __idd; [W]

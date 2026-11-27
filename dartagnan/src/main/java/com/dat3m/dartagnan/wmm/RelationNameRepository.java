@@ -18,9 +18,6 @@ public class RelationNameRepository {
     public static final String LXSX = "lxsx";
     public static final String CRIT = "rcu-rscs";
     public static final String EMPTY = "0";
-    public static final String DATA = "data";
-    public static final String ADDR = "addr";
-    public static final String CTRL = "ctrl";
     public static final String CASDEP = "casdep";
     public static final String SI = "si";
     public static final String SR = "sr";
@@ -37,7 +34,6 @@ public class RelationNameRepository {
     public static final String IDD = "__idd";
     public static final String ADDRDIRECT = "__addrDirect";
     public static final String CTRLDIRECT = "__ctrlDirect";
-    public static final String IDDTRANS = "__iddTrans";
 
     public static final String VISIBLE = Tag.VISIBLE;
     public static final String MEMORY = Tag.MEMORY;
