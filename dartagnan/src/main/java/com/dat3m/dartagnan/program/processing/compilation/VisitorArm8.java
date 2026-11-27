@@ -67,6 +67,7 @@ class VisitorArm8 extends VisitorBase {
 
         final Register actual = cas.getFunction().newRegister(resultRegister.getType());
         final Register expected = cas.getFunction().newRegister(resultRegister.getType());
+        final Register noSpeculate = cas.getFunction().newRegister(types.getBooleanType());
         final Load load = propagateNoRet(cas, newRMWLoadWithMo(actual, address, loadMo));
         final Store store = newRMWStoreWithMo(load, address, cas.getStoreValue(), storeMo);
         final Label casEnd = newLabel("CAS_end");
@@ -77,7 +78,8 @@ class VisitorArm8 extends VisitorBase {
                 newLocal(resultRegister, actual),
                 newIfJump(expressions.makeNEQ(actual, expected), casEnd, casEnd),
                 store,
-                newIfJump(cas.getFunction().getProgram().newConstant(types.getBooleanType()), casEnd, casEnd),
+                newNonDetChoice(noSpeculate),
+                newIfJump(noSpeculate, casEnd, casEnd),
                 newLocal(resultRegister, expected),
                 newGoto(casEnd),
                 casEnd
