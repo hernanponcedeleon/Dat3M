@@ -380,43 +380,40 @@ public class ProgramEncoder {
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<BooleanFormula> enc = new ArrayList<>();
 
-        // TODO: We could sort the objects to generate better encoding:
-        //  "static -> dynamic with known size -> dynamic with unknown size"
-        //  For the former two we can then statically assign addresses as we do now and
-        //  only the latter needs dynamic encodings.
-        // NOTE: Heap objects are placed after all static and stack objects.
+        // Objects are placed one after another, each at the next well-aligned address that is available,
+        // i.e., with a padding in [1, alignment] (so the first object is placed at its alignment).
+        // NOTE: Static objects are placed first, then stack objects, then heap objects.
         //  A heap allocation that does not fit into the remaining address space returns NULL (see visitAlloc)
         //  and reserves no memory, so the layout never wraps around the address space.
         //  Dynamic allocations that are not executed reserve no memory.
         //  Static and stack objects are assumed to be small enough to never wrap around.
-        final List<MemoryObject> memoryObjects = ImmutableList.<MemoryObject>builder()
-                .addAll(memory.getObjects().stream().filter(o -> !o.isHeapAllocated()).iterator())
+
+        // Static objects have known sizes and alignments, so we compute their layout here rather than in the solver.
+        BigInteger staticEnd = BigInteger.ZERO;
+        for (MemoryObject cur : memory.getObjects()) {
+            if (cur.isStaticallyAllocated()) {
+                final BigInteger alignment = BigInteger.valueOf(cur.getKnownAlignment());
+                final BigInteger addr = staticEnd.add(alignment).subtract(staticEnd.mod(alignment));
+                staticEnd = addr.add(cur.getKnownSize());
+                Verify.verify(archType.canContain(staticEnd), "Static memory does not fit into the address space.");
+                enc.add(exprEnc.assignEqual(context.size(cur), cur.size()));
+                enc.add(exprEnc.assignEqual(context.address(cur), exprs.makeValue(addr, archType)));
+            }
+        }
+
+        final List<MemoryObject> dynamicObjects = ImmutableList.<MemoryObject>builder()
+                .addAll(memory.getObjects().stream().filter(o -> o.isDynamicallyAllocated() && !o.isHeapAllocated()).iterator())
                 .addAll(memory.getObjects().stream().filter(MemoryObject::isHeapAllocated).iterator())
                 .build();
         final Expression zero = exprs.makeZero(archType);
-        for (int i = 0; i < memoryObjects.size(); i++) {
-            final MemoryObject cur = memoryObjects.get(i);
+        Expression nextAvailableAddr = exprs.makeValue(staticEnd, archType);
+        for (MemoryObject cur : dynamicObjects) {
             final Expression addrVar = context.address(cur);
             final Expression sizeVar = context.size(cur);
             final Expression size = cur.size();
-            final Expression alignment = cur.alignment();
-
-            // Objects are placed at the next well-aligned address that is available
-            // (the first object is placed at alignment).
-            // NOTE: The padding is in [1, alignment] for addresses below 2^(n-1) and in [1, 2*alignment) otherwise
-            //  (signed remainder), and the resulting address is well-aligned in both cases.
-            final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
-            final Expression nextAvailableAddr = prev == null ? zero
-                    : exprs.makeAdd(context.address(prev), context.size(prev));
-            final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                    exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
-            );
-
-            if (cur.isStaticallyAllocated()) {
-                enc.add(exprEnc.assignEqual(sizeVar, size));
-                enc.add(exprEnc.assignEqual(addrVar, nextAlignedAddr));
-                continue;
-            }
+            final Expression curAvailableAddr = nextAvailableAddr;
+            final Expression nextAlignedAddr = alignUp(curAvailableAddr, cur.alignment());
+            nextAvailableAddr = exprs.makeAdd(addrVar, sizeVar);
 
             // Dynamic objects reserve memory only if their allocation is executed (and succeeds).
             // A non-reserved object has size 0 and does not consume padding: its (unobservable) address is the next
@@ -432,7 +429,7 @@ public class ProgramEncoder {
                 // NOTE: The end address must also be non-zero, so that the next object does not start at address 0.
                 final Expression endAddr = exprs.makeAdd(nextAlignedAddr, size);
                 final Expression fitsExpr = exprs.makeAnd(
-                        exprs.makeLT(nextAvailableAddr, nextAlignedAddr, false),
+                        exprs.makeLT(curAvailableAddr, nextAlignedAddr, false),
                         exprs.makeAnd(
                                 exprs.makeLTE(nextAlignedAddr, endAddr, false),
                                 exprs.makeNEQ(endAddr, zero)
@@ -448,10 +445,23 @@ public class ProgramEncoder {
             final Expression isReserved = exprEnc.wrap(reserved);
             enc.add(exprEnc.assignEqualAt(sizeVar, alloc, exprs.makeITE(isReserved, size, zero), alloc));
             enc.add(exprEnc.assignEqualAt(addrVar, alloc,
-                    exprs.makeITE(isReserved, nextAlignedAddr, nextAvailableAddr), alloc));
+                    exprs.makeITE(isReserved, nextAlignedAddr, curAvailableAddr), alloc));
         }
 
         return bmgr.and(enc);
+    }
+
+    // Returns the smallest multiple of alignment that is strictly above addr.
+    // For (the usual) power-of-two alignments, we avoid encoding a costly remainder: (addr & -alignment) + alignment
+    // Otherwise, we encode addr + (alignment - srem(addr, alignment)), which is well-aligned, but whose padding
+    //  may be in [1, 2*alignment) for addresses above 2^(n-1).
+    private Expression alignUp(Expression addr, Expression alignment) {
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+        if (alignment instanceof IntLiteral lit && lit.getValue().signum() > 0 && lit.getValue().bitCount() == 1) {
+            final Expression mask = exprs.makeValue(lit.getValue().negate(), lit.getType());
+            return exprs.makeAdd(exprs.makeIntAnd(addr, mask), alignment);
+        }
+        return exprs.makeAdd(addr, exprs.makeSub(alignment, exprs.makeRem(addr, alignment, true)));
     }
 
     // ====================================== Data flow ======================================
