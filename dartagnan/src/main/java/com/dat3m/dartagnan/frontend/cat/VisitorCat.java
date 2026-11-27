@@ -31,7 +31,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
 class VisitorCat extends CatBaseVisitor<Object> {
 
@@ -47,6 +46,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
     // Counts the number of occurrences of a name on the lhs of a definition
     // This is used to give proper names to re-definitions
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
+    private final Relation visible;
+    private final Relation id;
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
     // Used for error messages.
@@ -69,6 +70,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         this.includePath = includePath;
         this.wmm = new Wmm();
         this.currentFileName = currentFileName;
+        this.visible = wmm.addDefinition(new TagSet(wmm.newRelation(Relation.Arity.UNARY), VISIBLE));
+        this.id = wmm.addDefinition(new SetIdentity(wmm.newRelation(), visible));
         includeStdlib();
     }
 
@@ -305,8 +308,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Object visitExprComplement(ExprComplementContext c) {
         checkNoRecursion(c);
         final Relation r1 = parseAsRelation(c.e);
-        final Relation visible = wmm.newSet();
-        wmm.addDefinition(new TagSet(visible, VISIBLE));
         final Relation r0 = wmm.newRelation(r1.getArity());
         final Relation all = r1.isSet() ? visible : wmm.newRelation();
         if (!r1.isSet()) {
@@ -342,7 +343,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         Relation transClosure = addDefinition(new TransitiveClosure(wmm.newRelation(), r1));
-        return addDefinition(new Union(r0, transClosure, wmm.getOrCreatePredefinedRelation(ID)));
+        return addDefinition(new Union(r0, transClosure, id));
     }
 
     @Override
@@ -363,7 +364,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Relation visitExprOptional(ExprOptionalContext c) {
         Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Union(r0, r1, wmm.getOrCreatePredefinedRelation(ID)));
+        return addDefinition(new Union(r0, r1, id));
     }
 
     @Override

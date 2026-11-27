@@ -164,14 +164,6 @@ public class Wmm {
     // ========================================== Utility Methods ========================================
 
     private Relation makePredefinedRelation(String name) {
-        /*
-            WARNING: The code has possibly unexpected behaviour:
-             - If a relation like `ext` is already defined (different from the standard definition),
-               constructing e.g. `rfe` will refer to this new definition.
-             - When constructing derived relations like fr, the intermediately defined relations like rf^-1
-               will get constructed even if they already exist in the model.
-             TODO: Clarify what the intended behaviour should be.
-         */
         final Relation.Arity arity = switch (name) {
             case VISIBLE, MEMORY -> Relation.Arity.UNARY;
             default -> Relation.Arity.BINARY;
@@ -180,7 +172,6 @@ public class Wmm {
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r);
             case LOC -> new SameLocation(r);
-            case ID -> new SetIdentity(r, getOrCreatePredefinedRelation(VISIBLE));
             case INT -> new Internal(r);
             case EXT -> new External(r);
             case CO -> new Coherence(r);

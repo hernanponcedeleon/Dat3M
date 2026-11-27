@@ -1,5 +1,7 @@
 (* This file is implicitly included by Dartagnan to provide a set of predefined relations. *)
 
+let id = [_]
+
 let fr = rf^-1;co | ([R \ range(rf)]);loc;[W]
 
 let po-loc = po & loc
@@ -14,7 +16,7 @@ let fri = fr & int
 
 let fencerel(F) = po;[F];po
 
-// Enforce that reads from uninitialized memory are impossible if an init write exists.
+(* Enforce that reads from uninitialized memory are impossible if an init write exists. *)
 empty ([R \ range(rf)]);loc;[IW] as force-init-read
 
 (* Dependency relations follow chains over invisible events that are not covered by `_`. *)
