@@ -383,3 +383,7 @@ litmus/VULKAN/SemscTrans/4-threads-chain-dec-broken.litmus,0
 litmus/VULKAN/SemscTrans/4-threads-chain-dec-broken-vis.litmus,1
 litmus/VULKAN/SemscTrans/3-threads.litmus,1
 litmus/VULKAN/SemscTrans/5-threads.litmus,1
+litmus/VULKAN/Basic/Chains/chain-semav-2.litmus,1
+litmus/VULKAN/Basic/Chains/chain-semav.litmus,1
+litmus/VULKAN/Basic/Chains/chain-semvis-2.litmus,1
+litmus/VULKAN/Basic/Chains/chain-semvis.litmus,1

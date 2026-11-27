@@ -1,10 +1,5 @@
 test,vulkan,vulkan-new,vulkan-update,
 ,,,,
-2-background-avvis-chains-semav-a,PASS,PASS,PASS,Figure 3a
-2-background-avvis-chains-semav-b,PASS,PASS,PASS,Figure 3b
-2-background-avvis-chains-semvis-a,PASS,PASS,PASS,
-2-background-avvis-chains-semvis-b,PASS,PASS,PASS,
-,,,,
 3.3-problem-race-both-a,FAIL,FAIL,FAIL,Figure 7
 3.3-problem-race-both-b,FAIL,FAIL,FAIL,
 3.3-problem-race-chain-a,FAIL,FAIL,FAIL,
