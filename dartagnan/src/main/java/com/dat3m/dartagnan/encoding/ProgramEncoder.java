@@ -783,6 +783,15 @@ public class ProgramEncoder {
         return bmgr.and(enc);
     }
 
+    // Holds if some thread is terminated because it reached a function we cannot model.
+    // False if the program has no such function calls.
+    public BooleanFormula encodeUnknownFunctionReached() {
+        logger.info("Encoding unknown function reachability");
+        return context.getTask().getProgram().getThreadEvents(CondJump.class)
+                .stream().filter(e -> e.hasTag(Tag.UNKNOWN_FUNCTION)).map(context::jumpTaken)
+                .reduce(bmgr.makeFalse(), bmgr::or);
+    }
+
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         return context.getTask().getProgram().getThreadEvents()
