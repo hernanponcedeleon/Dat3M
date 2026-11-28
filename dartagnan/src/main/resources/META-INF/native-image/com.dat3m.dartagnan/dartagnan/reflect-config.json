@@ -138,7 +138,7 @@
         "queryAllDeclaredMethods":true
       },
       {
-        "name":"com.dat3m.dartagnan.program.processing.compilation.Compilation",
+        "name":"com.dat3m.dartagnan.program.processing.compilation.Compiler",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
       },

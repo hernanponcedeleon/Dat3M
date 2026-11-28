@@ -119,7 +119,6 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
                 target.addTags(tag);
             }
         });
-        target.setFunction(source.getFunction());
         validateSemanticsTags(target.getTags());
         return target;
     }

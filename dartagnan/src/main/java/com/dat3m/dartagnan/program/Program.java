@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.metadata.Metadata;
 import com.dat3m.dartagnan.metadata.MetadataCarrierBase;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.processing.compilation.TargetLowering;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.utils.OperatingSystem;
@@ -74,6 +74,7 @@ public class Program extends MetadataCarrierBase<Program> {
     private int unrollingBound = 0;
     private Arch arch;
     private boolean isCompiled;
+    private TargetLowering targetLowering;
 
     private int nextThreadId = 0;
     private int nextConstantId = 0;
@@ -118,6 +119,16 @@ public class Program extends MetadataCarrierBase<Program> {
 
     public void setArch(Arch arch) {
         this.arch = arch;
+    }
+
+    public void setTargetLowering(TargetLowering targetLowering) {
+        this.targetLowering = targetLowering;
+    }
+
+    // Available once the program is compiled.
+    public TargetLowering getTargetLowering() {
+        Preconditions.checkState(targetLowering != null, "The program has no target lowering: it is not compiled yet.");
+        return targetLowering;
     }
 
     public Arch getArch() {
@@ -268,17 +279,12 @@ public class Program extends MetadataCarrierBase<Program> {
     }
 
     public void addInit(MemoryObject object, int offset) {
-        final boolean isC11 = arch == Arch.C11 || arch == Arch.OPENCL;
         final List<String> paramNames = List.of();
         // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
         final String threadName = "Init_" + nextThreadId;
         final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
                 EventFactory.newThreadStart(null));
-        final Event init = EventFactory.newInit(object, offset);
-        thread.append(init);
-        if (isC11) {
-            init.addTags(Tag.C11.NONATOMIC);
-        }
+        thread.append(getTargetLowering().newInit(object, offset));
         thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
         addThread(thread);
     }

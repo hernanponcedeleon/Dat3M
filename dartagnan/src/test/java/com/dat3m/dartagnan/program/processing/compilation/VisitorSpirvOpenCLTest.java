@@ -137,7 +137,7 @@ public class VisitorSpirvOpenCLTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newLoad(register, address, scope, spvTags);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -179,7 +179,7 @@ public class VisitorSpirvOpenCLTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newStore(address, value, scope, spvTags);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -233,7 +233,7 @@ public class VisitorSpirvOpenCLTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newXchg(register, address, value, scope, spvTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -290,7 +290,7 @@ public class VisitorSpirvOpenCLTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -355,7 +355,7 @@ public class VisitorSpirvOpenCLTest {
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -398,7 +398,7 @@ public class VisitorSpirvOpenCLTest {
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         try {
             // when
@@ -485,7 +485,7 @@ public class VisitorSpirvOpenCLTest {
     public void testSpirvControlBarrierExecScope() {
         // given
         ControlBarrier e = EventFactory.newControlBarrier("test-wg", "test-wg", Tag.Spirv.WORKGROUP);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = visitor.visitControlBarrier(e);

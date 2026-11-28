@@ -58,7 +58,7 @@ public class VisitorSpirvVulkanTest {
         Register register = mock(Register.class);
         MemoryObject address = mock(MemoryObject.class);
         Load e = EventFactory.newLoad(register, address);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
         e.addTags(spvTags);
 
         // when
@@ -96,7 +96,7 @@ public class VisitorSpirvVulkanTest {
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
         Store e = EventFactory.newStore(address, value);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
         e.addTags(spvTags);
 
         // when
@@ -131,7 +131,7 @@ public class VisitorSpirvVulkanTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newLoad(register, address, scope, spvTags);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -166,7 +166,7 @@ public class VisitorSpirvVulkanTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newStore(address, value, scope, spvTags);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -211,7 +211,7 @@ public class VisitorSpirvVulkanTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newXchg(register, address, value, scope, spvTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -262,7 +262,7 @@ public class VisitorSpirvVulkanTest {
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         Event e = EventFactory.Spirv.newRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -317,7 +317,7 @@ public class VisitorSpirvVulkanTest {
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         // when
         List<Event> seq = e.accept(visitor);
@@ -362,7 +362,7 @@ public class VisitorSpirvVulkanTest {
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         Event e = EventFactory.Spirv.newCmpXchg(register, address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);
-        e.setFunction(function);
+        visitor.funcToBeCompiled = function;
 
         try {
             // when
@@ -397,7 +397,7 @@ public class VisitorSpirvVulkanTest {
     private void doTestSpirvMemoryBarrier(Set<String> spvTags, Set<String> expected) {
         // given
         GenericVisibleEvent e = new GenericVisibleEvent("membar", Tag.FENCE);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
         e.addTags(spvTags);
 
         // when
@@ -437,7 +437,7 @@ public class VisitorSpirvVulkanTest {
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
         // given
         ControlBarrier e = EventFactory.newControlBarrier("test", "test", Tag.Spirv.WORKGROUP);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
             e.addTags(spvTags);
@@ -464,7 +464,7 @@ public class VisitorSpirvVulkanTest {
     public void toTestSpirvControlBarrierExecScope(String spvScope, String expected) {
         // given
         ControlBarrier e = EventFactory.newControlBarrier("test-wg", "test-wg", spvScope);
-        e.setFunction(mock(Function.class));
+        visitor.funcToBeCompiled = mock(Function.class);
 
         // when
         List<Event> seq = visitor.visitControlBarrier(e);

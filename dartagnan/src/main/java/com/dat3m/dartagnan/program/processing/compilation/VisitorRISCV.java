@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
@@ -21,7 +20,7 @@ import static com.google.common.base.Verify.verify;
 
 //FIXME: Some compilations generate simple load/store operations with memory orderings, however,
 // it seems that RISCV does not support mo's on arbitrary memory operations (only on LL/SC and AMOs).
-class VisitorRISCV extends VisitorBase {
+class VisitorRISCV extends Compiler.Visitor {
     // Some language memory models (e.g. RC11) are non-dependency tracking and might need a
     // strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
     // "Repairing Sequential Consistency in C/C++11"
@@ -49,7 +48,7 @@ class VisitorRISCV extends VisitorBase {
 
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
 
         String loadMo = e.hasTag(MO_ACQ) || e.hasTag(MO_ACQ_REL) ? MO_ACQ : "";
         String storeMo = e.hasTag(MO_REL) || e.hasTag(MO_ACQ_REL) ? MO_REL : "";
@@ -71,7 +70,7 @@ class VisitorRISCV extends VisitorBase {
 
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Expression value = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
 
         String loadMo = e.hasTag(MO_ACQ) || e.hasTag(MO_ACQ_REL) ? MO_ACQ : "";
@@ -142,7 +141,7 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getFunction().newRegister(type);
+        Register dummyReg = funcToBeCompiled.newRegister(type);
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newCoreLoadReserved(resultRegister, address, extractLoadMoFromCMo(mo));
@@ -157,7 +156,7 @@ class VisitorRISCV extends VisitorBase {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -197,127 +196,6 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
-        Expression address = e.getAddress();
-        Expression value = e.getStoreValue();
-        String mo = e.getMo();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
-
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newCoreLoadReserved(regValue, address, extractLoadMoFromCMo(mo));
-        Store storeValue = newCoreStoreConditional(address, value, e.isStrong(), extractStoreMoFromCMo(mo));
-        Register statusReg = e.getFunction().newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
-        // We normally make the following two events optional.
-        // Here we make them mandatory to guarantee correct dependencies.
-        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
-        Local updateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        return eventSequence(
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                execStatus,
-                updateCasCmpResult,
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                castResult
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Register dummyReg = e.getFunction().newRegister(type);
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-
-        Load load = newCoreLoadReserved(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newCoreStoreConditional(address, dummyReg, true, extractStoreMoFromCMo(mo));
-
-        return eventSequence(
-                load,
-                newFakeCtrlDep(resultRegister),
-                localOp,
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        String mo = e.getMo();
-        Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? newRWRWFence() : null;
-        Event optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? newRRWFence() : null;
-
-        return eventSequence(
-                optionalBarrierBefore,
-                newLoad(e.getResultRegister(), e.getAddress()),
-                optionalBarrierAfter
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        String mo = e.getMo();
-        Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? newRWWFence() : null;
-
-        return eventSequence(
-                optionalBarrierBefore,
-                newStore(e.getAddress(), e.getMemValue())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        Event fence = switch (e.getMo()) {
-            case Tag.C11.MO_ACQUIRE         -> newRRWFence();
-            case Tag.C11.MO_RELEASE         -> newRWWFence();
-            case Tag.C11.MO_ACQUIRE_RELEASE -> newTsoFence();
-            case Tag.C11.MO_SC              -> newRWRWFence();
-            default -> null;
-        };
-
-        return eventSequence(
-                fence
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Load load = newCoreLoadReserved(resultRegister, address, extractLoadMoFromCMo(mo));
-        Store store = newCoreStoreConditional(address, e.getValue(), true, extractStoreMoFromCMo(mo));
-
-        return eventSequence(
-                load,
-                newFakeCtrlDep(resultRegister),
-                store
-        );
-    }
 
     // =============================================================================================
     // =========================================== LKMM ============================================
@@ -395,8 +273,8 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
-        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(e.getResultRegister().getType());
+        Register statusReg = funcToBeCompiled.newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
@@ -431,8 +309,8 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(type);
-        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(type);
+        Register statusReg = funcToBeCompiled.newRegister(types.getBooleanType());
         String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? MO_ACQ : "";
         Load load = newCoreLoadReserved(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? MO_ACQ_REL : "";
@@ -461,8 +339,8 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
         IntegerType type = (IntegerType)e.getAccessType();
 
-        Register dummy = e.getFunction().newRegister(type);
-        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(type);
+        Register statusReg = funcToBeCompiled.newRegister(types.getBooleanType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? MO_ACQ : "";
         Load load = newCoreLoadReserved(dummy, address, moLoad);
@@ -493,8 +371,8 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(type);
-        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(type);
+        Register statusReg = funcToBeCompiled.newRegister(types.getBooleanType());
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
 
         Load load = newCoreLoadReserved(dummy, address, ""); // TODO: No mo on the load?
@@ -528,8 +406,8 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(type);
-        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(type);
+        Register statusReg = funcToBeCompiled.newRegister(types.getBooleanType());
 
         Load load = newCoreLoadReserved(dummy, address, ""); // TODO: No mo on the load?
         String moStore = mo.equals(Tag.Linux.MO_MB) ? MO_REL : "";
@@ -563,7 +441,7 @@ class VisitorRISCV extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register regValue = e.getFunction().newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         Expression value = expressions.makeAdd(regValue, e.getOperand());
 
         Load load = newCoreLoadReserved(regValue, address, ""); // TODO: No mo on the load?
@@ -573,7 +451,7 @@ class VisitorRISCV extends VisitorBase {
         // TODO: Why does this use a different fake dep (from the load) than the other RMW events (from the store)?
         List<Event> fakeCtrlDep = newFakeCtrlDep(regValue);
 
-        Register dummy = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
@@ -599,7 +477,7 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         // TODO: No mo on the load?
@@ -625,7 +503,7 @@ class VisitorRISCV extends VisitorBase {
         IntegerType type = (IntegerType)e.getAccessType();
         Expression one = expressions.makeOne(type);
         Expression zero = expressions.makeZero(type);
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
         // https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
         // We replace AMO instructions with LL/SC

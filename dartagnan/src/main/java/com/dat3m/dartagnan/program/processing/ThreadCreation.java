@@ -26,7 +26,8 @@ import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.compilation.TargetLowering;
+import com.dat3m.dartagnan.program.processing.compilation.TargetLowering.Order;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -78,8 +79,6 @@ public class ThreadCreation implements ProgramProcessor {
     @IntegerOption(min = 0)
     private int argcMax = 10;
 
-    private final Compilation compiler;
-
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     // The thread state consists of two flags: ALIVE and JOINABLE.
@@ -87,7 +86,6 @@ public class ThreadCreation implements ProgramProcessor {
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        compiler = Compilation.fromConfig(config);
     }
 
     public static final String THREAD_SELF_REGISTER_NAME = "__dat3m_thread_self";
@@ -169,8 +167,8 @@ public class ThreadCreation implements ProgramProcessor {
                 //  so the spawned thread (and threads synchronizing with it) observe the stored tid.
                 final Expression tid = new TIdExpr(archType, spawnedThread.thread());
                 final List<Event> replacement = eventSequence(
-                        create.hasTidAddress() ? newStore(create.getTidAddress(), tid) : null,
-                        newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
+                        create.hasTidAddress() ? newPlainStore(thread, create.getTidAddress(), tid) : null,
+                        newReleaseStore(thread, spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
                         newLocal(tidRegister, tid)
                 );
@@ -227,7 +225,7 @@ public class ThreadCreation implements ProgramProcessor {
                 newLocal(argc, program.newConstant(argcType)),
                 newAssume(argcInRange),
                 newAlloc(argv, pointerType, arraySize, false, false),
-                newStore(lastEntry, expressions.makeGeneralZero(pointerType))
+                newPlainStore(main, lastEntry, expressions.makeGeneralZero(pointerType))
         ));
     }
 
@@ -515,7 +513,7 @@ public class ThreadCreation implements ProgramProcessor {
             // Initialize allocated object with regular stores.
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
-                initialization.add(EventFactory.newStore(
+                initialization.add(newPlainStore(thread,
                         expressions.makeAdd(reg, expressions.makeValue(initOffset, archType)),
                         memoryObject.getInitialValue(initOffset)
                 ));
@@ -578,7 +576,7 @@ public class ThreadCreation implements ProgramProcessor {
             storage.add(new Storage(id, data, destructor));
             create.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_create"),
-                    newStore(destructor, create.getDestructor()),
+                    newPlainStore(create.getThread(), destructor, create.getDestructor()),
                     newLocal(create.getResultRegister(), expressions.makeValue(id, t)),
                     newFunctionReturnMarker("__dat3m_dynamic_thread_create")
             ));
@@ -600,7 +598,7 @@ public class ThreadCreation implements ProgramProcessor {
                     newFunctionCallMarker("__dat3m_dynamic_thread_delete"),
                     newLocal(destructor, match.compute(Storage::destructor, delete.getKey())),
                     newIfJump(expressions.makeEQ(destructor, nil), end, end),
-                    newStore(destructor, nil),
+                    newPlainStore(delete.getThread(), destructor, nil),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_delete")
             ));
@@ -614,7 +612,7 @@ public class ThreadCreation implements ProgramProcessor {
                     // pthread_getspecific returns NULL for invalid keys.
                     newLocal(get.getResultRegister(), expressions.makeGeneralZero(get.getResultRegister().getType())),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
-                    newLoad(get.getResultRegister(), data),
+                    newPlainLoad(get.getResultRegister(), data),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_get")
             ));
@@ -628,7 +626,7 @@ public class ThreadCreation implements ProgramProcessor {
                     // Signals success, unless the key is invalid.
                     newLocal(set.getResultRegister(), expressions.makeNEQ(data, nil)),
                     newIfJump(expressions.makeEQ(data, nil), end, end),
-                    newStore(data, set.getValue()),
+                    newPlainStore(set.getThread(), data, set.getValue()),
                     end,
                     newFunctionReturnMarker("__dat3m_dynamic_thread_set")
             ));
@@ -644,9 +642,9 @@ public class ThreadCreation implements ProgramProcessor {
             for (Storage s : storage) {
                 final Label end = newLabel("__thread_exit_destructor_%d".formatted(++index));
                 exit.addAll(List.of(
-                        newLoad(destructor, s.destructor),
+                        newPlainLoad(destructor, s.destructor),
                         newIfJump(expressions.makeEQ(destructor, nil), end, end),
-                        newLoad(value, s.data),
+                        newPlainLoad(value, s.data),
                         newVoidFunctionCall(destructorType, destructor, List.of(value)),
                         end
                 ));
@@ -663,42 +661,44 @@ public class ThreadCreation implements ProgramProcessor {
         return ((ValueFunctionCall) call).getResultRegister();
     }
 
-    private List<Event> newReleaseStore(Expression address, Expression storeValue) {
-        final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newStore(address, storeValue, Tag.Linux.MO_RELEASE) :
-                EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore);
+    // Thread synchronization is lowered to the target the program was compiled to.
+    private static TargetLowering lowering(Function context) {
+        return context.getProgram().getTargetLowering();
+    }
+
+    private Event newPlainLoad(Register resultRegister, Expression address) {
+        final Function context = resultRegister.getFunction();
+        return lowering(context).newPlainLoad(context, resultRegister, address);
+    }
+
+    private Event newPlainStore(Function context, Expression address, Expression value) {
+        return lowering(context).newPlainStore(context, address, value);
+    }
+
+    private List<Event> newReleaseStore(Function context, Expression address, Expression storeValue) {
+        return lowering(context).newStore(context, address, storeValue, Order.RELEASE);
     }
 
     private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
-        final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
-                EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad);
+        final Function context = resultRegister.getFunction();
+        return lowering(context).newLoad(context, resultRegister, address, Order.ACQUIRE);
     }
 
     private List<Event> newRelaxedAnd(Register register, Expression address, Expression value) {
-        final Event relaxedAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ONCE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELAXED);
-        relaxedAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(relaxedAnd);
+        return newAnd(register, address, value, Order.RELAXED);
     }
 
     private List<Event> newReleaseAnd(Register register, Expression address, Expression value) {
-        final Event releaseAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_RELEASE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELEASE);
-        releaseAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(releaseAnd);
+        return newAnd(register, address, value, Order.RELEASE);
     }
 
     private List<Event> newAcquireAnd(Register register, Expression address, Expression value) {
-        final Event acquireAnd = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ACQUIRE) :
-                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_ACQUIRE);
-        acquireAnd.setFunction(register.getFunction());
-        return compiler.getCompilationResult(acquireAnd);
+        return newAnd(register, address, value, Order.ACQUIRE);
+    }
+
+    private List<Event> newAnd(Register register, Expression address, Expression value, Order order) {
+        final Function context = register.getFunction();
+        return lowering(context).newFetchOp(context, register, address, value, IntBinaryOp.AND, order);
     }
 
 

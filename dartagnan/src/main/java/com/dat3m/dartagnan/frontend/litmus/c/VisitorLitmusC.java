@@ -35,6 +35,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private int scope;
     private int ifId = 0;
     private int whileId = 0;
+    private int cmpXchgId = 0;
     private Register returnRegister;
     private boolean isOpenCL = false;
     private final List<Integer> threadIds = new ArrayList<>();
@@ -289,7 +290,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression value = returnExpressionOrOne(ctx.value);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newFetchOp(register, address, value, ctx.op, ctx.c11Mo().mo);
+        Event event = EventFactory.Llvm.newRMW(register, address, value, ctx.op, ctx.c11Mo().mo);
         addScopeTag(event, ctx.openCLScope());
         append(event, ctx);
         return register;
@@ -320,7 +321,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression value = (Expression) ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newExchange(register, address, value, Tag.C11.MO_SC);
+        Event event = EventFactory.Llvm.newExchange(register, address, value, Tag.C11.MO_SC);
         addScopeTag(event, null);
         append(event, ctx);
         return register;
@@ -331,7 +332,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression value = (Expression) ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newExchange(register, address, value, ctx.c11Mo().mo);
+        Event event = EventFactory.Llvm.newExchange(register, address, value, ctx.c11Mo().mo);
         addScopeTag(event, ctx.openCLScope());
         append(event, ctx);
         return register;
@@ -388,11 +389,32 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
+    // C11 compare-exchange: compares the value at 'address' with the value at 'expectedAddress' and, on failure,
+    // writes the observed value to 'expectedAddress'. Returns whether the exchange succeeded.
+    // Expressed by an LLVM-style compare-exchange that returns the observed value and a success flag.
     private void addCmpXchg(Register register, Expression address, Expression expectedAddress, Expression value,
             String mo, boolean strong, OpenCLScopeContext scope, ParserRuleContext ctx) {
-        final Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAddress, value, mo, strong);
-        addScopeTag(event, scope);
-        append(event, ctx);
+        final TypeFactory types = TypeFactory.getInstance();
+        final Register expected = programBuilder.getOrNewRegister(this.scope, null, archType);
+        final Register oldValueAndSuccess = programBuilder.getOrNewRegister(this.scope, null,
+                types.getAggregateType(List.of(archType, types.getBooleanType())));
+        final Expression oldValue = expressions.makeExtract(oldValueAndSuccess, 0);
+        final Expression success = expressions.makeExtract(oldValueAndSuccess, 1);
+        final Label end = programBuilder.getOrCreateLabel(currentThread, "cmpxchg_end_" + cmpXchgId++);
+
+        final Event loadExpected = EventFactory.newLoadWithMo(expected, expectedAddress, C11.NONATOMIC);
+        final Event cmpXchg = EventFactory.Llvm.newCompareExchange(oldValueAndSuccess, address, expected,
+                expressions.makeCast(value, archType), mo, strong);
+        final Event storeExpected = EventFactory.newStoreWithMo(expectedAddress, oldValue, C11.NONATOMIC);
+        for (Event e : List.of(loadExpected, cmpXchg, storeExpected)) {
+            addScopeTag(e, scope);
+        }
+        append(loadExpected, ctx);
+        append(cmpXchg, ctx);
+        append(EventFactory.newJump(success, end), ctx);
+        append(storeExpected, ctx);
+        append(end, ctx);
+        append(EventFactory.newLocal(register, expressions.makeCast(success, register.getType())), ctx);
     }
 
     @Override
@@ -409,7 +431,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitReC11LoadExplicit(ReC11LoadExplicitContext ctx) {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newLoad(register, address, ctx.c11Mo().mo);
+        Event event = EventFactory.Llvm.newLoad(register, address, ctx.c11Mo().mo);
         addScopeTag(event, ctx.openCLScope());
         append(event, ctx);
         return register;
@@ -419,7 +441,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitReC11Load(ReC11LoadContext ctx) {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newLoad(register, address, C11.DEFAULT_MO);
+        Event event = EventFactory.Llvm.newLoad(register, address, C11.DEFAULT_MO);
         addScopeTag(event, null);
         append(event, ctx);
         return register;
@@ -539,7 +561,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreC11AtomicOp(NreC11AtomicOpContext ctx){
         Expression value = returnExpressionOrOne(ctx.value);
-        Event event = EventFactory.Atomic.newRMWOp(getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
+        final String mo = ctx.c11Mo() != null ? ctx.c11Mo().mo : C11.DEFAULT_MO;
+        Event event = EventFactory.Llvm.newRMWNoReturn(getAddress(ctx.address), value, ctx.op, mo);
         return append(event, ctx);
     }
 
@@ -561,7 +584,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreC11StoreExplicit(NreC11StoreExplicitContext ctx) {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newStore(address, value, ctx.c11Mo().mo);
+        Event event = EventFactory.Llvm.newStore(address, value, ctx.c11Mo().mo);
         addScopeTag(event, ctx.openCLScope());
         return append(event, ctx);
     }
@@ -570,7 +593,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreC11Store(NreC11StoreContext ctx) {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newStore(address, value, C11.DEFAULT_MO);
+        Event event = EventFactory.Llvm.newStore(address, value, C11.DEFAULT_MO);
         addScopeTag(event, null);
         return append(event, ctx);
     }
@@ -614,7 +637,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreC11Fence(NreC11FenceContext ctx) {
-        Event fence = EventFactory.Atomic.newFence(ctx.c11Mo().mo);
+        Event fence = EventFactory.Llvm.newFence(ctx.c11Mo().mo);
         return append(fence, ctx);
     }
 
@@ -625,7 +648,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreOpenCLFence(NreOpenCLFenceContext ctx){
-        Event fence = EventFactory.Atomic.newFence(ctx.c11Mo().mo);
+        Event fence = EventFactory.Llvm.newFence(ctx.c11Mo().mo);
         if (ctx.openCLScope() != null) {
             fence.addTags(ctx.openCLScope().scope);
         }

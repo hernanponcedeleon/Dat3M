@@ -34,6 +34,7 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.task.Context;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -474,6 +475,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
 
         Program program = builder.build();
         program.setEntrypoint(new Entrypoint.Simple(main));
+        Compilation.newInstance().run(program);
         ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
         AliasAnalysis analysis = analyze(program);
 
@@ -530,6 +532,8 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
                 p2Indirect, direct, p2End));
 
         Program program = builder.build();
+        // ThreadCreation and Program.addInit need the target lowering of a compiled program.
+        Compilation.newInstance().run(program);
         program.addInit(x, 0);
         program.addInit(slot, 0);
         program.setEntrypoint(new Entrypoint.Simple(p0));
@@ -566,6 +570,7 @@ public class AliasAnalysisEdgeCaseSoundnessTest {
 
         Program program = builder.build();
         program.setEntrypoint(new Entrypoint.Simple(main));
+        Compilation.newInstance().run(program);
         ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
         store = findProcessedStore(program, store);
         AliasAnalysis analysis = analyze(program);

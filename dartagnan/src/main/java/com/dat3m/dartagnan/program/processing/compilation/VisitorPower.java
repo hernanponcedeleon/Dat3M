@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 
@@ -19,7 +18,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Verify.verify;
 
-public class VisitorPower extends VisitorBase {
+public class VisitorPower extends Compiler.Visitor {
 
     // The compilation schemes below follows the paper
     // "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
@@ -109,7 +108,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Register dummyReg = funcToBeCompiled.newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         // Power does not have mo tags, thus we use null
@@ -126,7 +125,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     @Override
-    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+    protected List<Event> newLlvmCmpXchg(Event original, Register oldValue, Register success, Expression address, Expression expected,
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
@@ -162,132 +161,6 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        Expression value = e.getStoreValue();
-        Expression expectedAddr = e.getAddressOfExpected();
-        Type type = resultRegister.getType();
-        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getFunction().newRegister(types.getBooleanType());
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getFunction().newRegister(type);
-        Register regValue = e.getFunction().newRegister(type);
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-        // Power does not have mo tags, thus we use the empty string
-        Load loadValue = newCoreLoadReserved(regValue, address);
-        Store storeValue = newCoreStoreConditional(address, value, e.isStrong());
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                storeValue,
-                e.isStrong() ? null : newAssignExecutionStatus(booleanResultRegister, storeValue),
-                gotoCasEnd,
-                casFail,
-                storeExpected,
-                casEnd,
-                optionalBarrierAfter(e.getMo()),
-                castResult
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
-
-        Load load = newCoreLoadReserved(resultRegister, address);
-        Store store = newCoreStoreConditional(address, dummyReg, true);
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                load,
-                newFakeCtrlDep(resultRegister),
-                localOp,
-                store,
-                optionalBarrierAfter(e.getMo())
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicLoad(AtomicLoad e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-
-        Event optionalBarrierBefore = mo.equals(C11.MO_SC) && leadingSync() ? newSync() : null;
-        Load load = newLoad(resultRegister, address);
-        final boolean doCtrlDependency = switch (mo) {
-            case C11.MO_SC -> leadingSync();
-            case C11.MO_ACQUIRE -> true;
-            case C11.MO_RELAXED -> useRC11Scheme;
-            default -> false;
-        };
-
-        return eventSequence(
-                optionalBarrierBefore,
-                load,
-                doCtrlDependency ? newFakeCtrlDep(resultRegister) : null,
-                optionalBarrierAfter(mo)
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicStore(AtomicStore e) {
-        Expression value = e.getMemValue();
-        Expression address = e.getAddress();
-
-        Store store = newStore(address, value);
-        Event optionalBarrierAfter = e.getMo().equals(C11.MO_SC) && !leadingSync() ? newSync() : null;
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                store,
-                optionalBarrierAfter
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        String mo = e.getMo();
-        Event fence = mo.equals(Tag.C11.MO_SC) ? newSync() : newLwSync();
-
-        return eventSequence(
-                fence
-        );
-    }
-
-    @Override
-    public List<Event> visitAtomicXchg(AtomicXchg e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-
-        Load load = newCoreLoadReserved(resultRegister, address);
-        Store store = newCoreStoreConditional(address, e.getValue(), true);
-
-        return eventSequence(
-                optionalBarrierBefore(e.getMo()),
-                load,
-                newFakeCtrlDep(resultRegister),
-                store,
-                optionalBarrierAfter(e.getMo())
-        );
-    }
 
     private Event optionalBarrierBefore(String mo) {
         return switch (mo) {
@@ -411,7 +284,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
+        Register dummy = funcToBeCompiled.newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
@@ -435,7 +308,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, e.getValue(), true);
 
@@ -453,7 +326,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
         Load load = newCoreLoadReserved(dummy, address);
@@ -473,7 +346,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, dummy, true);
 
@@ -493,7 +366,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newCoreLoadReserved(dummy, address);
         Store store = newCoreStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
 
@@ -518,12 +391,12 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         Type type = resultRegister.getType();
 
-        Register regValue = e.getFunction().newRegister(type);
+        Register regValue = funcToBeCompiled.newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newCoreLoadReserved(regValue, address);
         Store store = newCoreStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
 
-        Register dummy = e.getFunction().newRegister(types.getBooleanType());
+        Register dummy = funcToBeCompiled.newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
@@ -549,7 +422,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newCoreLoadReserved(dummy, address);
@@ -573,7 +446,7 @@ public class VisitorPower extends VisitorBase {
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = funcToBeCompiled.newRegister(type);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(
                 newCoreLoadReserved(dummy, e.getLock()),
@@ -610,7 +483,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     private List<Event> newAssignExecutionStatus(Register register, Event store) {
-        final Register status = register.getFunction().newUniqueRegister("status", types.getBooleanType());
+        final Register status = funcToBeCompiled.newUniqueRegister("status", types.getBooleanType());
         return List.of(
                 newExecutionStatus(status, store),
                 newLocal(register, expressions.makeNot(status))

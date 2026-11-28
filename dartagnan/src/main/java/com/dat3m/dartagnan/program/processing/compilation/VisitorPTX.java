@@ -15,14 +15,14 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorPTX extends VisitorBase {
+public class VisitorPTX extends Compiler.Visitor {
 
     @Override
     public List<Event> visitPtxAtomOp(PTXAtomOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, value, Tag.PTX.storeMO(mo));
@@ -66,7 +66,7 @@ public class VisitorPTX extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.PTX.storeMO(mo));
         propagateTags(e, load);
@@ -81,7 +81,7 @@ public class VisitorPTX extends VisitorBase {
     @Override
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
+        Register dummy = funcToBeCompiled.newRegister(e.getAccessType());
         Expression value = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address, value, Tag.PTX.storeMO(e.getMo()));

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorVulkan extends VisitorBase {
+public class VisitorVulkan extends Compiler.Visitor {
 
     private static final Set<String> commonTags = Set.of(
             Tag.Vulkan.SUB_GROUP, Tag.Vulkan.WORK_GROUP,
@@ -49,7 +49,7 @@ public class VisitorVulkan extends VisitorBase {
         replaceAcqRelMemoryOrder(e);
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(e.getMo()));
         propagateLoadTags(e, load);
@@ -66,7 +66,7 @@ public class VisitorVulkan extends VisitorBase {
         replaceAcqRelMemoryOrder(e);
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = funcToBeCompiled.newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.Vulkan.storeMO(e.getMo()));
@@ -86,7 +86,7 @@ public class VisitorVulkan extends VisitorBase {
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
         Expression value = e.getStoreValue();
-        Register cmpResultRegister = e.getFunction().newRegister(types.getBooleanType());
+        Register cmpResultRegister = funcToBeCompiled.newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end_" + labelIdx++);
         Load load = newRMWLoadWithMo(resultRegister, address, Tag.Vulkan.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address, value, Tag.Vulkan.storeMO(e.getMo()));

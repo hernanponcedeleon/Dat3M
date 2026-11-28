@@ -26,6 +26,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.ThreadCreation;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.task.Context;
 import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.Candidate;
 import com.dat3m.dartagnan.witness.svcomp.WitnessResolver.ResolvedVariable;
@@ -99,6 +100,7 @@ public class WitnessResolverTest {
             add(builder, 1, WORKER_LINE, EventFactory.newStore(x, expressions.makeValue(1, INT)));
             final Program program = builder.build();
             program.setEntrypoint(new Entrypoint.Simple(main));
+            Compilation.newInstance().run(program);
             ThreadCreation.fromConfig(Configuration.defaultConfiguration()).run(program);
             return new TestProgram(program, analyze(program), x);
         }

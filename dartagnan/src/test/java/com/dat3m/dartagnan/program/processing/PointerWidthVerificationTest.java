@@ -166,15 +166,17 @@ public class PointerWidthVerificationTest {
         assertRejected("Memory address");
     }
 
+    // Processing verifies the program after lowering frontend-specifics (GEPs are lowered to additions by then),
+    // so we use a malformed access that survives lowering.
     @Test
-    public void processingRejectsWrongGepBeforeLowering() throws InvalidConfigurationException {
-        final Register address = function.newRegister("address", addressType);
-        function.append(EventFactory.newLocal(address, expressions.makeCast(wrongGep(), addressType)));
+    public void processingRejectsWrongAddressAfterLowering() throws InvalidConfigurationException {
+        function.append(EventFactory.newStore(expressions.makeZero(wrongWidthType),
+                expressions.makeValue(1, types.getByteType())));
         final ProcessingManager processing = ProcessingManager.fromConfig(Configuration.defaultConfiguration());
 
         final MalformedProgramException error = assertThrows(MalformedProgramException.class,
                 () -> processing.run(program));
-        assertTrue(error.getMessage(), error.getMessage().contains("GEP base"));
+        assertTrue(error.getMessage(), error.getMessage().contains("Memory address"));
     }
 
     private Expression wrongGep() {
