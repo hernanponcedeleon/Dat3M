@@ -193,7 +193,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         final Map<Register, Expression> smallerMap = x.size() <= y.size() ? x : y;
         final Map<Register, Expression> largerMap = smallerMap == x ? y : x;
         final Map<Register, Expression> joined = new HashMap<>(smallerMap);
-        joined.entrySet().removeIf(entry -> entry.getValue() != largerMap.getOrDefault(entry.getKey(), null));
+        joined.entrySet().removeIf(entry -> !entry.getValue().equals(largerMap.get(entry.getKey())));
         return joined;
     }
 
