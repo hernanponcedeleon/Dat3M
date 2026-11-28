@@ -470,21 +470,15 @@ public class ProgramEncoder {
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
             for (Register register : writers.getUsedRegisters()) {
+                if (context.isForwarded(reader, register)) {
+                    continue;
+                }
                 final List<BooleanFormula> overwrite = new ArrayList<>();
                 final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
                 for (RegWriter writer : reg.getMayWriters().reversed()) {
                     BooleanFormula edge;
                     if (reg.getMustWriters().contains(writer)) {
-                        if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
-                            // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
-                            // By getting rid of the guard "dep" in this special case, we end up with an unconditional
-                            // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
-                            // in preprocessing.
-                            assert reg.getMayWriters().size() == 1;
-                            edge = bmgr.makeTrue();
-                        } else {
-                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
-                        }
+                        edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
                     } else {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
@@ -568,7 +562,8 @@ public class ProgramEncoder {
 
         @Override
         public BooleanFormula visitLocal(Local e) {
-            return exprEnc.assignEqualAt(context.result(e), e, e.getExpr(), e);
+            // The result of a local is its encoded expression (see EncodingContext).
+            return bmgr.makeTrue();
         }
 
         @Override

@@ -650,6 +650,10 @@ public class ExpressionEncoder {
 
         @Override
         public Formula visitRegister(Register reg) {
+            final TypedFormula<?, ?> forwarded = event == null ? null : context.forwardedRegisterValue(event, reg);
+            if (forwarded != null) {
+                return forwarded.formula();
+            }
             final String name = event == null ?
                     reg.getName() + "_" + reg.getFunction().getId() + "_final" :
                     reg.getName() + "(" + event.getGlobalId() + ")";

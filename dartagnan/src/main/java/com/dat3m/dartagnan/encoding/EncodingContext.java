@@ -5,9 +5,11 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -39,6 +41,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 @Options
 public final class EncodingContext {
@@ -70,6 +73,7 @@ public final class EncodingContext {
 
     private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
     private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
+    private final Map<Event, Map<Register, TypedFormula<?, ?>>> forwardedRegisters = new HashMap<>();
 
     // TODO: Once we have a PointerType, this needs to get updated.
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
@@ -248,6 +252,19 @@ public final class EncodingContext {
         return results.get(event);
     }
 
+    TypedFormula<?, ?> forwardedRegisterValue(Event reader, Register register) {
+        final Map<Register, TypedFormula<?, ?>> forwarded = forwardedRegisters.get(reader);
+        if (forwarded == null) {
+            checkState(!(reader instanceof RegReader), "Register forwarding at %s is queried before it is computed", reader);
+            return null;
+        }
+        return forwarded.get(register);
+    }
+
+    public boolean isForwarded(Event reader, Register register) {
+        return forwardedRegisterValue(reader, register) != null;
+    }
+
     // ====================================================================================
     // Relations
 
@@ -333,6 +350,28 @@ public final class EncodingContext {
     // ====================================================================================
     // Private implementation
 
+    // A register read is forwarded, if its unique writer is executed whenever the reader is.
+    private void computeForwardedRegisters(RegReader reader, ReachingDefinitionsAnalysis definitions) {
+        final Map<Register, TypedFormula<?, ?>> forwarded = new HashMap<>();
+        forwardedRegisters.put(reader, forwarded);
+        if (!reader.cfImpliesExec()) {
+            return;
+        }
+        final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
+        for (Register register : writers.getUsedRegisters()) {
+            final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
+            if (reg.getMayWriters().size() != 1) {
+                continue;
+            }
+            final RegWriter writer = reg.getMayWriters().getFirst();
+            if (reg.getMustWriters().contains(writer) && executionAnalysis.isImplied(reader, writer)) {
+                final TypedFormula<?, ?> result = results.get(writer);
+                checkState(result != null, "Writer %s of %s has no result yet", writer, reader);
+                forwarded.put(register, result);
+            }
+        }
+    }
+
     private static Collection<? extends Constraint> computeConstraintDependencies(Constraint c) {
         final List<? extends Relation> rels = c.getConstrainedRelations();
         final List<? extends Relation> deps = c instanceof Definition ? rels.subList(1, rels.size()) : rels;
@@ -367,14 +406,20 @@ public final class EncodingContext {
         }
 
         // ------- Event variables  -------
+        final ReachingDefinitionsAnalysis definitions = analysisContext.requires(ReachingDefinitionsAnalysis.class);
         for (Event e : task.getProgram().getThreadEvents()) {
+            if (e instanceof RegReader reader) {
+                computeForwardedRegisters(reader, definitions);
+            }
             if (e instanceof NamedBarrier b) {
                 syncVariables.put(b, bmgr.makeVariable("sync " + e.getGlobalId()));
             }
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, bmgr.makeVariable("exec " + e.getGlobalId()));
             }
-            if (e instanceof RegWriter rw) {
+            if (e instanceof Local local) {
+                results.put(e, exprEncoder.encodeAt(local.getExpr(), local));
+            } else if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();
                 final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 results.put(e, exprEncoder.makeVariable(name, register.getType()));
