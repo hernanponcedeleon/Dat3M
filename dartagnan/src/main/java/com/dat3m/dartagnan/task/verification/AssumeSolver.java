@@ -11,6 +11,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
@@ -82,33 +83,50 @@ public class AssumeSolver extends SMTModelChecker<VerificationTask> implements V
         }
         prover.addConstraint(bmgr.implication(assumption, assumedEncoding));
 
-        checkForInterrupts();
+        // A single query for "property violated or bound event executed": UNSAT proves the property with one
+        // check. A violation is real even if a bound event executes in the same execution.
+        final BooleanFormula boundAssumption = bmgr.makeVariable("DAT3M_bound_assumption");
+        final BooleanFormula combinedAssumption = bmgr.makeVariable("DAT3M_combined_assumption");
+        prover.writeComment("Bound encoding");
+        prover.addConstraint(bmgr.implication(boundAssumption, programEncoder.encodeBoundEventExec()));
+        prover.addConstraint(bmgr.implication(combinedAssumption, bmgr.or(assumption, boundAssumption)));
 
-        logger.info("Starting first solver.check()");
-        VerificationStatus res;
-        if (prover.isUnsatWithAssumptions(List.of(assumption))) {
-            checkForInterrupts();
-            prover.writeComment("Bound encoding");
-            prover.addConstraint(programEncoder.encodeBoundEventExec());
-            logger.info("Starting second solver.check()");
-            res = prover.isUnsat() ? PASS : UNKNOWN;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        final VerificationStatus satStatus =
+                Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? FAIL : PASS;
+
+        checkForInterrupts();
+        logger.info("Starting combined (property or bound) solver.check()");
+        final VerificationResult result;
+        if (prover.isUnsatWithAssumptions(List.of(combinedAssumption))) {
+            result = VerificationResult.withoutExecution(task, satStatus.invert());
+        } else if (modelSatisfies(assumption)) {
+            result = resultFromModel(context, satStatus);
         } else {
-            res = FAIL;
+            // The model executes a bound event but does not violate the property.
+            final VerificationResult unknownResult = resultFromModel(context, UNKNOWN);
+            checkForInterrupts();
+            logger.info("Starting property-only solver.check()");
+            result = prover.isUnsatWithAssumptions(List.of(assumption))
+                    ? unknownResult
+                    : resultFromModel(context, satStatus);
         }
 
         logProverStatistics(logger, prover);
-        checkForInterrupts();
+        logger.info("Verification finished with result {}", result.getStatus());
+        return result;
+    }
 
-        final boolean hasModel = res != PASS;
-        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
-        res = Property.getCombinedType(task.getProperties(), task) == Property.Type.SAFETY ? res : res.invert();
-
-        logger.info("Verification finished with result {}", res);
-        if (!hasModel) {
-            return VerificationResult.withoutExecution(task, res);
+    private boolean modelSatisfies(BooleanFormula literal) throws SolverException {
+        try (Model model = prover.getModel()) {
+            return Boolean.TRUE.equals(model.evaluate(literal));
         }
+    }
+
+    private VerificationResult resultFromModel(EncodingContext context, VerificationStatus status)
+            throws SolverException {
         try (IREvaluator model = context.newEvaluator(prover)) {
-            return VerificationResult.fromModel(task, res, model);
+            return VerificationResult.fromModel(task, status, model);
         }
     }
 
