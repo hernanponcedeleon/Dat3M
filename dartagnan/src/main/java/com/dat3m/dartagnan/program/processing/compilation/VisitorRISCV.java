@@ -661,12 +661,14 @@ class VisitorRISCV extends VisitorBase {
     }
 
     private Load newCoreLoadReserved(Register value, Expression address, String mo) {
-        return newRMWLoadExclusiveWithMo(value, address, mo);
+        Load load = newRMWLoadExclusiveWithMo(value, address, mo);
+        load.addTags(LRSC);
+        return load;
     }
 
     private Store newCoreStoreConditional(Expression address, Expression value, boolean strong, String mo) {
         Store store = newRMWStoreExclusiveWithMo(address, value, strong, true, mo);
-        store.addTags(STCOND);
+        store.addTags(LRSC);
         return store;
     }
 

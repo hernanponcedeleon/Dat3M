@@ -788,7 +788,9 @@ public class EventFactory {
         }
 
         public static Event newLoadReserve(Register value, Expression address, MemoryOrder mo) {
-            return EventFactory.newRMWLoadExclusiveWithMo(value, address, toTag(mo));
+            final Load load = EventFactory.newRMWLoadExclusiveWithMo(value, address, toTag(mo));
+            load.addTags(Tag.RISCV.LRSC);
+            return load;
         }
 
         public static Event newStoreConditional(Register status, Expression address, Expression value, MemoryOrder mo) {
