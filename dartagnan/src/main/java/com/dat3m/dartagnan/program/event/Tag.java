@@ -91,8 +91,8 @@ public final class Tag {
         public static final String MO_REL       = "Rel";
         public static final String MO_ACQ_REL   = "AcqRel";
 
-        // Store conditional
-        public static final String STCOND       = "X";
+        // Load-reserved and store-conditional
+        public static final String LRSC         = "X";
 
         public static final String AMO          = "AMO";
 

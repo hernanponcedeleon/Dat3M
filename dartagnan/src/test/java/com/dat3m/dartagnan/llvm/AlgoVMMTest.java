@@ -63,7 +63,9 @@ public class AlgoVMMTest extends AbstractAlgoTest {
                 task("lfds/chase-lev-fail", 1, FAIL),
                 eagerOnly("lfds/safe_stack", 2, FAIL),
                 task("lfds/hash_table", 1, PASS),
-                task("lfds/hash_table-fail", 1, FAIL)
+                task("lfds/hash_table-fail", 1, FAIL),
+                eagerOnly("lfds/wsq", 5, PASS),
+                task("lfds/wsq-fail", 1, FAIL)
         );
     }
 }
